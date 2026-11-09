@@ -293,7 +293,7 @@ fn runner_events(eng: &Eng, g: Game, code: usize, subject: u32) {
     }
 }
 
-/// runner::Game::default_draft (cambc 5.0.0 at 0x4169680, unchanged from 4.0.0): a splitmix64 Fisher-Yates shuffle of 0..11 seeded with
+/// runner::Game::default_draft (cambc 5.0.1 at 0x41acd50, unchanged from 4.0.0): a splitmix64 Fisher-Yates shuffle of 0..11 seeded with
 /// FNV-1a-64 of the map file bytes, the state shared by both teams for the whole game; the first accepted pick wins.
 pub(crate) fn default_draft(eng: &Eng, g: Game, state: &mut u64) -> Result<()> {
     let mut a: [u32; 12] = core::array::from_fn(|i| i as u32);

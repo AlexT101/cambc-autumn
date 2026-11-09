@@ -13,7 +13,8 @@ path = "src/lib.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
-# cambc 5.0.0 (like 4.0.0) embeds wasmtime 49.0.2 (vendored, with a modified out_of_gas). vendor/wasmtime is
+# cambc 5.0.1 (like 4.0.0 and 5.0.0) embeds wasmtime 49.0.2 (vendored, with a modified out_of_gas and, from
+# 5.0.1, a fuel check after host calls). vendor/wasmtime is
 # upstream 49.0.2 plus wasmtime-49.0.2-cambc.patch (setup_vendor.sh); compiled code is unchanged.
 wasmtime = "=49.0.2"
 anyhow = "1"

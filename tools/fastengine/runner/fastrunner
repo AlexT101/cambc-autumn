@@ -1,5 +1,5 @@
 #!/bin/sh
-# Run the fast runner: cambc 4.0.0 with libfastrunner.so preloaded, which replaces cambc's main for
+# Run the fast runner: cambc 5.0.1 with libfastrunner.so preloaded, which replaces cambc's main for
 # `run` and `run-batch` (other commands run as stock cambc).
 #   fastrunner run BOT_A BOT_B --map MAP [-o DIR]     fastrunner run-batch MANIFEST --jobs N
 # FASTRUNNER_CAMBC overrides the cambc binary (default: the one on PATH); FASTRUNNER_LIB the library.

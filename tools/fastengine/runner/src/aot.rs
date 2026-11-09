@@ -668,6 +668,8 @@ impl<'m, 'a> Fx<'m, 'a> {
                     }
                     let callee = format!("(({})IMPS[{f}])", Self::fn_ptr_type(&sig));
                     self.call(&sig, callee, false);
+                    // cambc 5.0.1's host trampolines run out_of_gas as soon as a host call returns with the chunk spent.
+                    self.line("FUEL_CHECK();");
                 } else {
                     let mt = self.m.may_throw[f];
                     self.call(&sig, format!("wf{f}"), mt);

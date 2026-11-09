@@ -1,10 +1,10 @@
-# fastrunner: a drop-in, fuel-exact runner for cambc 5.0.0
+# fastrunner: a drop-in, fuel-exact runner for cambc 5.0.1
 
 2026-11-01. Code: [tools/fastengine/runner/](../../tools/fastengine/runner/). It plays matches like `cambc run` /
 `cambc run-batch` and writes the same replay bundles, byte for byte, with cambc's own engine. Two ways to run the
 bots, both exact: on wasmtime 49.0.2 (default), or translated to C and compiled natively (`FASTRUNNER_MODE=native`).
-Background: [DESIGN.md](DESIGN.md) (route B, §6). Built for cambc 4.0.0, ported to 5.0.0 on 2026-11-05 (see
-"Port to cambc 5.0.0"); the numbers before that section are 4.0.0's.
+Background: [DESIGN.md](DESIGN.md) (route B, §6). Built for cambc 4.0.0, ported to 5.0.0 on 2026-11-05 and to 5.0.1 on
+2026-11-09 (see "Port to cambc 5.0.0" and "Port to cambc 5.0.1"); the numbers before those sections are 4.0.0's.
 
 ## Summary
 
@@ -67,7 +67,7 @@ CAMBC_BIN=$PWD/tools/fastengine/runner/fastrunner FASTRUNNER_MODE=native py tool
   counter at every host call; with `FASTRUNNER_TRACE_SITES=1` in native mode, the calling wasm function and offset),
   `FASTRUNNER_MEMO=0` / `FASTRUNNER_NATIVE=0` (read memo / native bitboard ops off), `FASTRUNNER_CC`,
   `FASTRUNNER_COPT`, `FASTRUNNER_CFLAGS`, `FASTRUNNER_UNITS`, `FASTRUNNER_KEEP_C=1` (keep the generated C).
-- Linux x86-64 only, and only cambc 5.0.0 (build-id `f89c3843...`; checked at start: under any other build,
+- Linux x86-64 only, and only cambc 5.0.1 (build-id `a4f85bb9...`; checked at start: under any other build,
   `fastrunner` and `CAMBC_BIN` run that cambc stock, so results stay right but are not faster).
 
 ## How it works
@@ -106,8 +106,8 @@ meters it, operator by operator:
 - the cost is buffered and added to a local fuel variable at wasmtime's points (calls, return, throw, unreachable,
   loop, if, br, br_if, br_table, end, else); the variable is saved to the instance before calls, returns, throws and
   unreachable, and reloaded after calls and on entering a catch handler, so host calls, traps and handlers see
-  wasmtime's counter; checks (out of gas at >= 0) at function entry, loop headers and after bulk operations whose
-  size cost was deferred;
+  wasmtime's counter; checks (out of gas at >= 0) at function entry, loop headers, after bulk operations whose
+  size cost was deferred, and (cambc 5.0.1's host trampolines) after every import call;
 - memory.copy/fill charge 1 per byte, either up front (constant size up to 128 bytes, no check) or afterwards with a
   check. Which applies depends on whether Cranelift's SSA value for the size is a constant, which can see through
   `local.get`; the translator does not guess: a vendored wasmtime-internal-cranelift
@@ -321,6 +321,53 @@ Parity against stock 5.0.0 (`compare.py --camstat`, both sides, debug builds unl
 `FASTRUNNER_CHECK_SHADOW=1` on 8 games per mode: every hit (about 11k a batch) matched the original, the callers were
 attributed (other 0) and the replays equalled stock's. CPU a game on a 96-core EPYC 9R45 (40 jobs, the 768 games): stock
 0.87 s, exact 0.25 s (3.5x), native 0.17 s (5.1x, bots already compiled).
+
+## Port to cambc 5.0.1 (2026-11-09)
+
+cambc 5.0.1 (build-id `a4f85bb94ee2629daa3ce9997207bb581b554807`; no patch notes) is a rebuild with the same compilers
+(rustc 1.100.0-nightly 5db7f4be8, GCC 14.2.1, LLD 23.1.0). Compared function by function with 5.0.0's wheel (objdump,
+addresses, rodata references and jump tables normalised):
+
+- **The C++ engine is unchanged**: every `Engine::*`, `Game_*`, `Bitboard_*` and `DistanceField_*` function is
+  identical but ShadowCast, ReachableMask and GetDistanceFieldScratch, whose only change is their thread-local
+  offsets; the design tables (`k_championDesigns`, `k_campDesigns`, `k_draftChampions`, `k_copyMasks`) are byte
+  for byte the same. The last-error slot stays at fs:0 - 0x5f0. The replay format byte and summary version (3) are
+  unchanged. No game rule changes.
+- **Fuel: a host call now ends in a fuel check.** cambc's wasmtime gained a store flag, set by
+  `wasm_runtime::Runtime::start` once fuel is configured, and all 295 host trampolines of a bot's store (SDK and
+  WASI imports alike, `HostFunc::array_call_trampoline`) now run `libcalls::out_of_gas` right after a host function
+  returns `Ok` if the fuel counter is >= 0. In 5.0.0 a host call that spent the chunk (a host price, or guest work
+  since the last check) let the guest run on to its next check (function entry or loop header), host calls
+  included. Fuel totals are unchanged; what moves is where an out-of-fuel turn stops, and so which actions land in
+  it and how the fuel of the next turn reads. With 5.0.0's runner forced onto 5.0.1 (`FASTRUNNER_ANY_CAMBC=1`), 80
+  of the 768 games below differ in their replay and 458 in their `.fuel` (2 winners); at a 37k quantum, 22 of 24.
+- The rest is the cambc CLI (account, submissions, map pool, Python packing, `tool_server`), `GuestCtx` growing
+  (store fields move by 0x20), wasmtime-wasi and component glue re-inlined, `runner::summary::collect` and
+  `default_draft` recompiled (same constants and shuffle), and `runner::api::primitives::gc_copy_in/out` (OCaml and
+  Python GC arrays; not imported by C++ bots) inlining `ArrayRef::copy_*`.
+
+The port:
+- `engine.rs`: the build-id. `patch.rs`: ShadowCast (5.0.1: 0x41ebfa0, `.cold` 0x41ebf81, same sizes and prologue)
+  checked against 5.0.1's FNV-1a (0x1002781ca8f6a7b3, 0xd01963b5f1b65add); the callers' offsets (+0xfa, +0x27e)
+  hold. `stats.rs`: serde_json::Value's drop glue at 0x41a7fe0. Only 5.0.1 is supported.
+- The fuel check, in both modes: the vendored wasmtime's `array_call_trampoline` runs `out_of_gas` after a host
+  call that returns `Ok` with the counter >= 0, on stores with cambc's chunk accounting (`cambc_cell` set, i.e.
+  exact mode) ([patch](../../tools/fastengine/runner/wasmtime-49.0.2-cambc.patch)); native code does `FUEL_CHECK()`
+  after every import call (`aot.rs`, so the native cache key changes and every bot recompiles once).
+- `compare.py --fuel Q` passes `--fuel-quantum Q` to every runner.
+
+Parity against stock 5.0.1 (`compare.py --camstat`, both sides): every bundle member (`replay.repl26a`, both `.fuel`
+and `.stdout`) and `.camstat` byte-identical, in both modes:
+
+| bots | maps | games | identical (exact / native) |
+|---|---|---|---|
+| astraeus vs hyperion, debug | `maps/` (128) + `maps/gen` (256) | 768 | 768 / 768 |
+| ocean vs astraeus, `--release` | `maps/gen-s1` (256) | 512 | 512 / 512 |
+| ocean vs hyperion, `--release`, `--fuel 37000` (67k out-of-fuel turns) | 12 of `maps/` | 24 | 24 / 24 |
+| astraeus vs hyperion, debug | 20 of `maps/` | 40 | 40 / 40 |
+
+`FASTRUNNER_CHECK_SHADOW=1` on a game: all 37,160 hits matched the original, callers attributed (other 0). CPU a game
+on the loaded 96-core box (load ~90, the 768 games, 24 jobs): stock 2.52 s, exact 0.31 s, native 0.21 s.
 
 ## Reproducing
 

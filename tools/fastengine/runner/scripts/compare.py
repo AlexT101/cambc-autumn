@@ -4,12 +4,13 @@ agreement, bot A's win rate under each runner (Wilson 95% CI, and the paired dif
 
     python3 tools/fastengine/runner/scripts/compare.py BOT_A BOT_B --out DIR [--suites ladder,gen] [--maps N]
         [--jobs 4] [--cpus 8-11] [--modes exact,approx] [--release] [--rounds N] [--no-stock] [--turbo /abs/turbo.so]
-        [--camstat]
+        [--camstat] [--fuel Q]
 
 Every map is played from both sides. Stock runs `cambc run-batch` with tools/cambc_env.py's environment; fastrunner
 runs `tools/fastengine/runner/fastrunner run-batch` with FASTRUNNER_MODE set. Results are cached per runner in
 DIR/<runner>/ (delete a directory to replay it). Debug builds unless --release (tools/ab.py plays debug builds).
---camstat also writes each game's .camstat (`--statistics`) and compares them.
+--camstat also writes each game's .camstat (`--statistics`) and compares them. --fuel Q passes `--fuel-quantum Q` to
+every runner (a small quantum makes most turns end out of fuel).
 """
 import argparse
 import math
@@ -87,6 +88,8 @@ def run(runner, games, out, args):
         cmd.append("--release")
     if args.rounds:
         cmd += ["--rounds", str(args.rounds)]
+    if args.fuel:
+        cmd += ["--fuel-quantum", str(args.fuel)]
     c0 = resource.getrusage(resource.RUSAGE_CHILDREN)
     t0 = time.time()
     r = subprocess.run(cmd, env=env, cwd=ROOT, capture_output=True, text=True)
@@ -146,6 +149,7 @@ def main():
     ap.add_argument("--no-stock", action="store_true")
     ap.add_argument("--turbo")
     ap.add_argument("--camstat", action="store_true")
+    ap.add_argument("--fuel", type=int, default=0)
     args = ap.parse_args()
     a, b = bot_path(args.bot_a), bot_path(args.bot_b)
     games = []

@@ -1,4 +1,4 @@
-//! fastrunner: plays Cambridge Battlecode matches like `cambc run` / `cambc run-batch` (cambc 5.0.0),
+//! fastrunner: plays Cambridge Battlecode matches like `cambc run` / `cambc run-batch` (cambc 5.0.1),
 //! with cambc's own native engine (loaded from the cambc binary) and wasmtime 49.0.2.
 //!
 //!   fastrunner run BOT_A BOT_B --map MAP [-o OUTDIR] [--rounds N] [--log-limit B] [--release]

@@ -1,6 +1,5 @@
-
---- a/src/runtime/func.rs	2026-11-01 18:35:54.886963869 -0600
-+++ b/src/runtime/func.rs	2026-11-01 18:35:47.792377597 -0600
+--- a/src/runtime/func.rs
++++ b/src/runtime/func.rs
 @@ -2187,6 +2187,16 @@
      pub fn fuel_async_yield_interval(&mut self, interval: Option<u64>) -> Result<()> {
          self.store.fuel_async_yield_interval(interval)
@@ -18,9 +17,26 @@
  }
  
  impl<T: 'static> AsContext for Caller<'_, T> {
+@@ -2411,6 +2421,16 @@
+ 
+             store.0.exit_gc_lifo_scope(gc_lifo_scope);
+ 
++            // cambc 5.0.1: a host call that returns with the active fuel chunk spent (counter >= 0) runs
++            // out_of_gas at once, before any more guest code; only stores with cambc's chunk accounting.
++            if ret.is_ok()
++                && store.0.cambc_cell != 0
++                && unsafe { *store.0.vm_store_context().fuel_consumed.get() } >= 0
++            {
++                let vs: &mut dyn crate::vm::VMStore = &mut *store.0;
++                crate::runtime::vm::libcalls::cambc_out_of_gas(vs, instance)?;
++            }
++
+             ret
+         };
+ 
 
---- a/src/runtime/memory.rs	2026-11-01 18:35:54.887426563 -0600
-+++ b/src/runtime/memory.rs	2026-11-01 19:04:15.839588973 -0600
+--- a/src/runtime/memory.rs
++++ b/src/runtime/memory.rs
 @@ -434,6 +434,14 @@
          }
      }
@@ -37,8 +53,8 @@
      /// [`StoreContextMut`].
      ///
 
---- a/src/runtime/store.rs	2026-11-01 18:35:54.887684139 -0600
-+++ b/src/runtime/store.rs	2026-11-01 18:35:47.791591533 -0600
+--- a/src/runtime/store.rs
++++ b/src/runtime/store.rs
 @@ -495,6 +495,10 @@
      // until the reserve is empty.
      fuel_reserve: u64,
@@ -157,9 +173,17 @@
          crate::ensure!(
              self.engine().tunables().consume_fuel,
 
---- a/src/runtime/vm/libcalls.rs	2026-11-01 18:35:54.888789174 -0600
-+++ b/src/runtime/vm/libcalls.rs	2026-11-01 18:35:47.775555782 -0600
-@@ -676,12 +676,18 @@
+--- a/src/runtime/vm/libcalls.rs
++++ b/src/runtime/vm/libcalls.rs
+@@ -673,15 +673,26 @@
+         .atomic_wait64(addr_index, expected, timeout)? as u32)
+ }
+ 
++/// cambc 5.0.1: host trampolines call out_of_gas after a host call that leaves the fuel chunk spent.
++pub(crate) fn cambc_out_of_gas(store: &mut dyn VMStore, instance: InstanceId) -> Result<()> {
++    out_of_gas(store, instance)
++}
++
  // Hook for when an instance runs out of fuel.
  fn out_of_gas(store: &mut dyn VMStore, _instance: InstanceId) -> Result<()> {
      block_on!(store, async |store, _| {
@@ -178,3 +202,4 @@
          }
          Ok(())
      })?
+

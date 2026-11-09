@@ -3,7 +3,7 @@
 //! as well as the C API's (`Bitboard_ShadowCastWithScanCount`, whose calls api.rs only caches in native mode).
 //!
 //! `void ShadowCast(Metadata meta, ChunkPtr walls, Vec2i pos, unsigned short radius, ChunkPtr out, unsigned* scan)`
-//! (cambc 5.0.0 at 0x4197820, 0x3495 bytes; found by symbol). The 24-byte Metadata `{w, h, w8, h8, w8 rounded to even, cw}` is
+//! (cambc 5.0.1 at 0x41ebfa0, 0x3495 bytes; found by symbol). The 24-byte Metadata `{w, h, w8, h8, w8 rounded to even, cw}` is
 //! passed in memory; walls in rdi, pos in rsi (x low, y high), the radius in dx, out in rcx, scan in r8.
 //! It is pure, from its disassembly: it reads only its arguments (the low 16 bits of the radius; walls only within
 //! the board's `h8 * cw * 16` bytes, since the octant scans clamp to the board), a rodata constant, and its private
@@ -19,7 +19,8 @@
 //! whole instructions, no RIP-relative operands, no branch into them) become `jmp [rip+0]` to a stub
 //! (`mov r9,[rsp]`: the return address, to count hits per caller), which jumps to `cast`; a trampoline runs the
 //! displaced bytes and jumps back to the original's 15th byte. Applied only if the whole function (and its .cold
-//! part) has 5.0.0's FNV-1a. (5.0.0's ShadowCast is 4.0.0's but for its own thread-local offsets: s_rows moved.)
+//! part) has 5.0.1's FNV-1a. (5.0.0's and 5.0.1's ShadowCast are 4.0.0's but for their own thread-local offsets:
+//! s_rows moves.)
 //!
 //! Env: FASTRUNNER_SHADOW=0 leaves the engine unpatched; FASTRUNNER_CHECK_SHADOW=1 also runs the original on
 //! every hit and aborts on any difference; FASTRUNNER_SHADOW_STATS=1 (or FASTRUNNER_STATS) prints counts at exit.
@@ -34,9 +35,9 @@ const SYM_COLD: &str = "_ZN6Engine8Bitboard10ShadowCastENS0_8MetadataENS0_8Chunk
 pub const SYM_DRAW_VISION: &str = "_ZN6Engine4Game10DrawVisionENS_8Bitboard8ChunkPtrEN4Deep5Vec2iEfb";
 pub const SYMS: [&str; 3] = [SYM, SYM_COLD, SYM_DRAW_VISION];
 const SIZE: usize = 0x3495;
-const FNV: u64 = 0x795d7b527f5e8e25;
+const FNV: u64 = 0x1002781ca8f6a7b3; // 5.0.0: 0x795d7b527f5e8e25
 const SIZE_COLD: usize = 0x18;
-const FNV_COLD: u64 = 0xb032be59967740a8;
+const FNV_COLD: u64 = 0xd01963b5f1b65add; // 5.0.0: 0xb032be59967740a8
 const NCOPY: usize = 14;
 /// Return addresses of the two callers, from their entries (only for hit counts per caller).
 const RET_DRAW_VISION: usize = 0xfa;
@@ -404,7 +405,7 @@ unsafe fn install_at(eng: &Eng) -> Result<(), String> {
     let sym = |n: &str| eng.sym(n).ok_or_else(|| format!("no symbol {n}"));
     let site = sym(SYM)? as *mut u8;
     if fnv1a(site, SIZE) != FNV || fnv1a(sym(SYM_COLD)? as *const u8, SIZE_COLD) != FNV_COLD {
-        return Err("Engine::Bitboard::ShadowCast differs from cambc 5.0.0's".into());
+        return Err("Engine::Bitboard::ShadowCast differs from cambc 5.0.1's".into());
     }
     RET_DV_ABS.store(sym(SYM_DRAW_VISION)? + RET_DRAW_VISION, Ordering::Relaxed);
     RET_CAPI_ABS.store(sym("Bitboard_ShadowCastWithScanCount")? + RET_CAPI, Ordering::Relaxed);

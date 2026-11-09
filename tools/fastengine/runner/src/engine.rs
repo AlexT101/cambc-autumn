@@ -1,4 +1,4 @@
-//! cambc 5.0.0's native C++ game engine, loaded from the cambc binary itself.
+//! cambc 5.0.1's native C++ game engine, loaded from the cambc binary itself.
 //!
 //! cambc is a PIE executable, which glibc refuses to dlopen; a copy with DF_1_PIE cleared loads. The
 //! engine's C API (Game_*, Bitboard_*, DistanceField_*) is not in .dynsym, so addresses come from the
@@ -8,7 +8,7 @@ use object::{Object, ObjectSymbol};
 use std::collections::HashMap;
 use std::ffi::{c_char, c_void};
 
-pub const CAMBC_BUILD_ID: &str = "f89c384317d66a7dec5afa7be5ebe98969e9f406";
+pub const CAMBC_BUILD_ID: &str = "a4f85bb94ee2629daa3ce9997207bb581b554807";
 
 pub type Game = u64;
 /// Perspective: team in the low 32 bits, champion id in the high 32 (0xFFFFFFFF for a draft bot,
@@ -106,7 +106,7 @@ impl Eng {
     }
 }
 
-/// The engine's thread-local last error: Engine::Result stores its message pointer at fs:0 - 0x5f0 in cambc 5.0.0 (as in 4.0.0),
+/// The engine's thread-local last error: Engine::Result stores its message pointer at fs:0 - 0x5f0 in cambc 5.0.1 (as in 4.0.0 and 5.0.0),
 /// where GetLastErrorMsg reads it.
 #[inline(always)]
 pub fn err_slot() -> *mut *const u8 {
@@ -142,7 +142,7 @@ fn map_exe() -> Result<&'static [u8]> {
     Ok(unsafe { std::slice::from_raw_parts(p as *const u8, len) })
 }
 
-/// Is this process cambc 5.0.0 (the build this runner was made for)?
+/// Is this process cambc 5.0.1 (the build this runner was made for)?
 pub fn is_cambc_process() -> bool {
     let Ok(b) = map_exe() else { return false };
     let ok = object::File::parse(b).ok().and_then(|e| build_id(&e)).map_or(false, |id| {
@@ -158,7 +158,7 @@ pub fn load() -> Result<&'static Eng> {
     let elf = object::File::parse(bytes)?;
     let id = build_id(&elf).unwrap_or_default();
     if id != CAMBC_BUILD_ID && std::env::var_os("FASTRUNNER_ANY_CAMBC").is_none() {
-        bail!("this process has build-id {id}, the runner was built against cambc 5.0.0 ({CAMBC_BUILD_ID})");
+        bail!("this process has build-id {id}, the runner was built against cambc 5.0.1 ({CAMBC_BUILD_ID})");
     }
     let mut syms = HashMap::new();
     for s in elf.symbols() {
