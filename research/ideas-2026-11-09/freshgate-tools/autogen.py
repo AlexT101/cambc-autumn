@@ -6,7 +6,7 @@ T = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, T)
 import fgate  # noqa: E402
 from fgate import R, local, CAMBC, LOGS, ENG  # noqa: E402
 A = f'{R}more_maps/autogen'; FOLDERS = ['bc26', 'cambc1', 'fcode', 'vae']
-BOTS = ['oc-base23', 'oc32s-bsk', 'oc32s-spy2', 'oc32-cg-fs-nh', 'oc-base25', 'oc-base31']
+BOTS = ['oc-base23', 'oc32s-bsk', 'oc32s-spy2', 'oc32-cg-fs-nh']
 def rn(bot, k, o, f): return f'fga{ENG}-{bot.removeprefix("oc-")}-dvn{k}{o}-{f}'
 def nmaps(f): return len([x for x in os.listdir(f'{A}/{f}') if x.endswith('.map26a')])
 def main():

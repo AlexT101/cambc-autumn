@@ -46,6 +46,80 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   leave a narrowly lost stand are right to. Recalibrating the model has nothing to correct; the level combat and team
   arms opened opportunities at this boundary, where fighting and declining are worth the same.
 
+## (ocean line, 2026-11-09) Fresh-map gate: the line holds off the ladder maps; the oc32 parts are being re-read
+
+The final tournament plays fresh maps from the ladder's distribution. dgate's bodies looked up Fish's and Mite's picks
+by exact map, and it played only the 128 ladder maps. `fgate.py` (research/ideas-2026-11-09/freshgate-tools,
+diverse-panel.md "Fresh-map gate") fixes both:
+- each block adds a 128-map slice of 1,024 fresh `--mix ladder-v2` maps;
+- the bodies draft from a feature pick model;
+- it decides on the fresh units only.
+Engine cambc 5.0.1.
+
+**Stopped after 9 blocks** (coordinator): the overfit question is answered, and these steps are already on the
+removal branch. Their reads (fresh units 1,152 each; pts and 95% CI):
+
+| Gate | Fresh | Ladder | Fresh Fish / Mite |
+|---|---|---|---|
+| oc32s-bsk vs oc-base23 (v86) | **+4.88 ±1.77** | +6.36 | +6.29 / +3.47 |
+| oc-base31 vs oc-base25 | +0.48 ±1.67 | +1.43 | +2.30 / -1.35 |
+| oc-base32 vs oc-base31 | +1.50 ±1.56 | +1.56 | +1.00 / +2.00 |
+| oc32-cv vs oc-base32 | +2.02 ±1.66 | +1.50 | +2.82 / +1.22 |
+
+**The oc32 ports, stopped at block 53 and not ported** (coordinator, to free compute): 6,784 fresh units each, against
+oc32-cg-fs-nh. Each reads about level on fresh maps, below its ladder read:
+
+| Candidate | Fresh | Ladder | Fresh Fish / Mite |
+|---|---|---|---|
+| oc32s-bsk | +0.27 ±0.63 | +1.34 | +0.63 / -0.10 |
+| oc32s-bagf | +0.15 ±0.42 | +0.91 | +0.32 / -0.01 |
+| oc32s-knob | -0.10 ±0.49 (high LLR -2.85) | +0.47 | -0.03 / -0.16 |
+| oc32s-spy2 | -0.04 ±0.56 | +0.37 | -0.10 / +0.03 |
+
+oc32-cg-fs-nh vs oc32-cv runs on (+0.67 ±0.57 at block 53). fs-enemy + nh-6-3 are re-read on the new base as
+`variants/oc16-fsnh` (ocean-16d6f78 + oc31-fs-nh's safety.cc, abilities.cc and params.h hunks; the base already has
+the chase fuel gate).
+
+**Off-distribution check** (`autogen.py`, once, more_maps/autogen, both sides, both bodies, 3 noise seeds; pts ±95% CI):
+
+| Folder (maps) | bsk vs v86 | cg-fs-nh vs v86 | spy2 vs cg-fs-nh |
+|---|---|---|---|
+| bc26 (162) | +7.96 ±2.70 | +4.84 ±2.82 | +0.26 ±2.34 |
+| cambc1 (140) | +9.17 ±3.71 | +7.02 ±3.28 | +0.77 ±2.56 |
+| fcode (53) | +12.89 ±5.56 | +8.33 ±5.05 | -1.26 ±3.78 |
+| vae (48) | +6.60 ±5.95 | +11.11 ±6.02 | -3.82 ±3.97 |
+
+The line's gain over v86 holds on every folder: no sign of overfitting.
+
+**Fish body fidelity (Flp2)** (`research/ideas-2026-11-09/fishfid/patch_fish2.py` on Flp; `fgate.py --fish-body Flp2`).
+Two changes:
+- Banking: a non-Prism bag is held while gems < 8 × (altar walk − 2) (FISH_MODEL 8.3), in place of the 25-gem floor.
+- Emblems: each Fish champion's modal emblem order, from real Fish games since 11-08T16.
+
+ocean-16d6f78 against the body, 256 ladder games each; live, v84-v103 beat Fish ~62-66%:
+
+| Body | ocean win % (95% CI) |
+|---|---|
+| Flp | 80.5 (75.2-84.9) |
+| Flp2 | **71.1 (65.3-76.3)** |
+| Bank change only | 72.3 (66.5-77.4) |
+| Emblems only | 79.7 (74.3-84.2) |
+
+Flp2 against real Fish (fish-re's tributes.py, bags.py and builds.py):
+
+| Stat | Flp | Flp2 | Real Fish |
+|---|---|---|---|
+| 10+ turn channels / game | 0.66 | 1.64 | 2.40 |
+| 1-turn channels / game | 0.41 | 2.55 | 2.55 |
+| Gems banked / game | 559 | 598 | 678 |
+| Bags of 100+ in Fish wins | | 2.28 / game, 136 rounds | 2.15 / game, 144 rounds |
+| Bags of 100+ in Fish losses | | 1.09 / game, 116 rounds | 1.18 / game, 120 rounds |
+| Marcella Focus share | | .65 | .63 |
+| Marcella shards / game | 42 | 55 | 83 |
+
+The Mite body (Mt3p) has a gap of the same size: ocean beats it 74.2% (68.5-79.2) of 256 on the ladder, against ~63%
+live.
+
 ## (ocean, 2026-11-09) Draft first-turn fuel (CHANGES 491): 14.4M -> 8.8M at most, level, plans identical
 
 `variants/dfpfuel-a` (= bots/ocean at 491) against `variants/ocean-rm3` (490), own drafts, release, fast runner, on

@@ -5,7 +5,8 @@ opponents that draft from map features and a map pool of the 128 ladder maps plu
 
 - Opponents: noise block k plays v87 noise seed k (dgate's spar-dvnK bodies with Fish's locks or Mite's tribute habit),
   drafting with Fish's or Mite's pick model (fitgen.py, patch_fm.py: spar-dvnK-Flp / -Mt3p). There is no per-map
-  table, so they play the same on every map.
+  table, so they play the same on every map. Fish's default body is Flp2 (fishfid/patch_fish2.py on Flp: Fish's
+  banking rule and emblem orders; closer to live), `--fish-body Flp` for the first version.
 - Maps: each block plays the ladder maps and one 128-map slice of the fresh pool (slice (k - 1) mod 8), both sides,
   against both bodies.
 - Decision: the SPRTs, the ZONE and the NARROWED stop read only the fresh units, so a gain that holds only on the
@@ -20,6 +21,9 @@ from dgate import R, LOCKS, LOGS, CAMBC, local, ab  # noqa: E402
 FRESH = os.path.expanduser('~/tmp-offload/diverse/fresh')
 POOL = [f'{FRESH}/pool/f{j}' for j in range(8)]
 BODY = {'F': 'Flp', 'M': 'Mt3p'}
+# Later body versions (--fish-body), each a patch on the one before; a run name carries its version past the first.
+FISH_PATCHES = {'Flp2': '../fishfid/patch_fish2.py'}
+def tag(o): return '' if BODY[o] in ('Flp', 'Mt3p') else BODY[o].removeprefix('Fl').removeprefix('Mt3')
 ENG = 'e' + CAMBC.replace('.', '')
 
 def feats():
@@ -37,7 +41,7 @@ def one_site(m):
 def mdir(k, o): return f'variants/spar-dvn{k}-{BODY[o]}'
 def slice_of(k): return (k - 1) % len(POOL)
 def suites(k): return [('L', 'ladder', 2 * 128), (f'f{slice_of(k)}', POOL[slice_of(k)], 2 * len(os.listdir(POOL[slice_of(k)])))]
-def rname(bot, k, o, s): return f'fg{ENG}-{os.path.basename(bot.rstrip("/")).removeprefix("oc-")}-dvn{k}{o}-{s}'
+def rname(bot, k, o, s): return f'fg{ENG}-{os.path.basename(bot.rstrip("/")).removeprefix("oc-")}-dvn{k}{o}{tag(o)}-{s}'
 def done(n, games):
     p = f'{R}replays/ab/{n}/summary.json'
     if not os.path.exists(p): return False
@@ -54,9 +58,24 @@ def build_seed(k):
         if os.path.exists(mark): return
         for o, base in (('F', 'Fl'), ('M', 'Mt3')):
             d = f'{R}bots/{mdir(k, o)}'
-            if not os.path.isdir(d):
-                subprocess.run([f'{R}copybot', f'variants/spar-dvn{k}-{base}', mdir(k, o)], cwd=R, check=True, capture_output=True)
-                subprocess.run([sys.executable, f'{T}/patch_fm.py', d, o, str(k)], cwd=R, check=True, capture_output=True)
+            p = 'Flp' if o == 'F' else 'Mt3p'
+            if not os.path.isdir(f'{R}bots/variants/spar-dvn{k}-{p}'):
+                subprocess.run([f'{R}copybot', f'variants/spar-dvn{k}-{base}', f'variants/spar-dvn{k}-{p}'], cwd=R, check=True, capture_output=True)
+                subprocess.run([sys.executable, f'{T}/patch_fm.py', f'{R}bots/variants/spar-dvn{k}-{p}', o, str(k)], cwd=R, check=True, capture_output=True)
+        open(mark, 'w').close()
+
+def build_version(k):
+    build_seed(k)
+    if BODY['F'] not in FISH_PATCHES: return
+    mark = f'{LOCKS}/built-dvn{k}-{BODY["F"]}'
+    if os.path.exists(mark): return
+    with open(f'{LOCKS}/build-dvn{k}-{BODY["F"]}', 'w') as fh:
+        fcntl.flock(fh, fcntl.LOCK_EX)
+        if os.path.exists(mark): return
+        d = f'{R}bots/{mdir(k, "F")}'
+        if not os.path.isdir(d):
+            subprocess.run([f'{R}copybot', f'variants/spar-dvn{k}-Flp', mdir(k, 'F')], cwd=R, check=True, capture_output=True)
+            subprocess.run([sys.executable, f'{T}/{FISH_PATCHES[BODY["F"]]}', d], cwd=R, check=True, capture_output=True)
         open(mark, 'w').close()
 
 class Runner(dgate.Runner):
@@ -105,15 +124,17 @@ def main():
     ap.add_argument('--ahead', type=int, default=2); ap.add_argument('--seed', type=int, default=0)
     ap.add_argument('--no-run', action='store_true'); ap.add_argument('--zone-stop', action='store_true')
     ap.add_argument('--ci', type=float, default=0.25, help='NARROWED once the fresh 95%% CI half-width is this many points')
+    ap.add_argument('--fish-body', default='Flp2', choices=['Flp'] + list(FISH_PATCHES), help='Fish body version (Flp2 from 2026-11-09 23:40; Flp before)')
     ap.add_argument('--min-blocks', type=int, default=8, help='blocks before NARROWED can stop (every fresh slice played once)')
     a = ap.parse_args(); p0, p1 = map(float, a.sprt.split(',')); q0, q1 = map(float, a.low.split(','))
+    BODY["F"] = a.fish_body
     lo, screen_hi, live_hi = math.log(0.05 / 0.95), math.log(0.95 / 0.05), math.log(99)
     run = Runner(a.jobs); U = {'L': {}, 'fresh': {}}; k = 1; outcome = None
     screen_at = low_at = high_h0_at = zone_at = None
     while k <= a.max_seeds:
         if not a.no_run:
             for j in range(k, min(k + a.ahead, a.max_seeds) + 1):
-                build_seed(j)
+                build_version(j)
                 for o in 'FM':
                     for s, suite, games in suites(j):
                         for bot in (a.ref, a.cand): run.want(bot, j, o, s, suite, games)
@@ -150,14 +171,14 @@ def main():
     n = min(len(Lu), len(Fu))
     gap = est(list(0.5 + np.array(Lu[:n]) - np.array(Fu[:n]))) if n > 1 else None  # paired by block position
     res = {'cand': a.cand, 'ref': a.ref, 'outcome': outcome, 'blocks': k if outcome != 'undecided' else k - 1, 'cambc': CAMBC,
-           'bodies': 'pick-model (Flp/Mt3p)', 'fresh': est(Fu), 'ladder': est(Lu), 'pooled': est(Lu + Fu), 'ladder_minus_fresh': gap,
+           'bodies': f'pick-model ({BODY["F"]}/{BODY["M"]})', 'fresh': est(Fu), 'ladder': est(Lu), 'pooled': est(Lu + Fu), 'ladder_minus_fresh': gap,
            'fresh_fish': est(U['fresh'].get('F', [])), 'fresh_mite': est(U['fresh'].get('M', [])),
            'fresh_one_site': est(U['fresh'].get('one', [])), 'fresh_multi_site': est(U['fresh'].get('multi', [])),
            'ladder_fish': est(U['L'].get('F', [])), 'ladder_mite': est(U['L'].get('M', [])),
            'fresh_units': len(Fu), 'llr_high': round(ab.llr(Fu, p0, p1), 3) if Fu else None, 'llr_low': round(ab.llr(Fu, q0, q1), 3) if Fu else None,
            'zone_at_units': zone_at, 'screen_at_units': screen_at, 'low_h1_at_units': low_at, 'high_h0_at_units': high_h0_at}
     print(json.dumps(res))
-    if not a.no_run: json.dump(res, open(f'{LOGS}/fgate-{os.path.basename(a.cand.rstrip("/"))}--{os.path.basename(a.ref.rstrip("/"))}.json', 'w'))
+    if not a.no_run: json.dump(res, open(f'{LOGS}/fgate-{os.path.basename(a.cand.rstrip("/"))}--{os.path.basename(a.ref.rstrip("/"))}{tag("F")}.json', 'w'))
 
 if __name__ == '__main__':
     main()

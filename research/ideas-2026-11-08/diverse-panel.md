@@ -355,6 +355,10 @@ in our scrims, on the draft-lab map features.
 
 - `patch_fm.py` puts the model in the bodies (`spar-dvnK-Flp/-Mt3p`, built from `-Fl/-Mt3`). There is no table, so
   the bodies play the same on ladder and fresh maps.
+- Body versions: each a patch on the one before, named in the run and json (`p2`) so old reads keep their label.
+  **Flp2** (`research/ideas-2026-11-09/fishfid/patch_fish2.py`, the default from 2026-11-09 ~23:40) adds FISH_MODEL
+  8.3's banking rule and Fish's emblem orders. ocean-16d6f78 beats it 71.1% of 256 ladder games, against 80.5% for
+  Flp and ~64% live (EXPERIMENTS "Fresh-map gate"). `--fish-body Flp` plays the first version.
 
 **`fgate.py`.** dgate's three-way sequential test.
 - Each noise block plays the ladder maps and one fresh slice, both sides, against both bodies.
