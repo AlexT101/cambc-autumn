@@ -118,3 +118,82 @@ always-first danger order by ~2.5 points, so ahead is taken only where it decide
 - Untested leads: the pin prediction is the weak link of v1 (half wrong); an exact read is possible only for an
   enemy that has acted, so a cleaner test is v1 restricted to acted enemies in their rounds. A pair model that prices
   the next boundary's double (two boundaries ahead) would say when giving up 464's double is worth it.
+
+## Round 4 (2026-11-09): on cl2-stack1 (belief + seat v1 + team2c's chase bit)
+
+Copies: `variants/cl2-seat4` (r1), `variants/cl2-seat4r2` (r2). Reference `variants/oc-cl2-base`, cl2-dev, 20,480
+games, `--no-test-draft`; paired per map against cl2-stack1's own cl2-dev log (51.2, 50.5-51.8). Scratchpad
+`seat4/`: `seatcheck4.py` (SEAT / SEATSKIP lines against the replay's real order next round), `pairsim.py` (the v4
+run for simple kinds).
+
+### r1 (`cl2-seat4`): exact rank only
+In their rounds the seat fires only against an enemy that has acted (or whose team never changes priority), so its
+next rank is final; the pin prediction and the unacted fires are gone. Our rounds as v1.
+- Debug batch (300 games, scratchpad `seatdbg`): SEAT's "ahead" matched the real order next round 95-99% in every
+  class (their rounds, acted: 99.2% of 507). Fires a game: our rounds 18.3 fleeing acted, 7.2 fleeing unacted, 13.4 /
+  1.0 chasing; their rounds 1.3 fleeing, 0.4 chasing. Skipped (unacted, their rounds) 33.2 fleeing and 7.4 chasing a
+  game; under 464 we were before that enemy anyway in 19% / 9% of those.
+- A/B: **50.2 (49.5-50.8)**, OOF 214,556 / 206,374; paired per map against stack1 **−1.01 ±0.82**. A dip.
+- Why (1,000 kept games each, `ana/doubles.py`): our fleers were caught 30.1% against stack1's 28.6%; episodes with
+  no double at the first boundary fell from 25.6% to 21.9% and pursuer-first rose from 36.3% to 37.4%; the base's
+  fleers were caught 30.0% against 31.4% by stack1's pursuers. v1's predicted fires against unacted enemies were
+  real denials (92% achieved), and its half-wrong pin errs toward skipping, which costs little. Exact-only drops
+  about 17 denials a game and the point they were worth.
+
+## v4 model (written before its games)
+
+For an engaged pair (us X, enemy Y) our next priority only picks the order of X and Y in round R+1. 464 seats the
+round after (R+2) by its starter, the team that started R: in our rounds our contact seat is first, in theirs the
+enemy's is. So both orders lead to the same multiset of pair turns over
+`[Y(R) if Y has not acted] · {X, Y in R+1, in the chosen order} · R+2 starter's, the other's · R+3 starter's first`,
+the last being the team that starts R+1. Ahead denies one double and gives up the next one: the window holds both
+boundaries, so the run prices the lost double instead of assuming it away.
+
+- **Run:** 1-D gap. The fleer steps away (+1). The pursuer strikes when its real one-turn reach covers the gap
+  (`strike_with` over the slots ready that round and not spent earlier in the run; one cast a turn, the fewest slots
+  that land the same blow), else walks in (−1). After a strike it stands at its attack range when it had to move
+  (walked or dashed), one step nearer after a reset or spell. A stun takes the victim's next turn.
+- **Discount:** a blow k rounds on counts 0.8^k (chases end: home, help, a pursuer turning back). Undiscounted, every
+  ranged pursuer ties (walking spends its attack, so the double only moves a blow to a later turn).
+- **Value:** fleeing, the damage we take from every pursuer we pass, plus a life (max health, one round discounted)
+  when the window's undiscounted total reaches our health and shield; chasing, the damage we deal the prey, plus its
+  life when the total reaches its health. Ahead iff that sum is better by > 0.01 and some passed enemy favours it.
+- **What it reproduces** (`pairsim.py`, melee reach 2, dash melee 4/2, ranged 3, ranged with reset 4): for melee
+  and dashers ahead gains exactly at v1's gap (fleeing r+1 unacted, r acted; chasing g+1 = r unacted, g = r acted)
+  and loses at the one or two gaps nearer (the burst gaps v3 fired at, which lost); ranged pursuers gain 0.16-0.29 a
+  blow at gaps 3-4. So the lost next double is already outweighed at v1's gaps; v4's changes from v1 come from real
+  reach by round (cooldowns spent in the window), stuns, life thresholds, ranged pairs and summing every enemy passed.
+- **Who we pass:** our rounds, every enemy (the contact seat is first, as v1). Their rounds: an acted enemy by its
+  final rank (`can_act_before`); one yet to act by v1's prediction (pinned when its move leaves us or an ally in
+  464's contact, or its last read rank is 0; else its last read rank). r1 showed the predicted fires were worth about
+  a point, so they stay.
+- **Second-order effects:**
+  - Other enemies: ahead moves us before every enemy we pass, not just the decider. v1 priced only the first decisive
+    pair; v4 sums the run over each passed enemy (fleeing: all within reach + 1; chasing: only struck prey, so a
+    third enemy hitting the pursuer is not priced) and the life term over their summed blows.
+  - Allies' seats: the ahead seat is the contact seat for our start (contact_first + j), so it pushes allies below j
+    down a rank. In their rounds that can move an ally after one more enemy, unpriced (as v1). Several engaged allies
+    still order by j.
+  - Kill-bid band: kill, heal, protect (escape) and channel bids outrank the seat and are untouched; a fleer whose
+    death is certain whatever the order is in offer_escape's protect band, so the life term matters mostly for
+    pursuers and for blows that kill only with the double. `follow::binding` reads the bid, not the seat.
+
+### r2 (`cl2-seat4r2`): v4 model, on stack1 (v1's prediction kept for unacted enemies)
+- Implementation: `seat_priority` runs the pair both ways per passed enemy (`PairRun`, `run_pair`); strikes by slot
+  mask from safety's strike memo (`strike_slots`); enemies whose max reach cannot meet the gap in the window are
+  skipped; stops pricing below end_reserve + 8k fuel (it costs 1.1k a call on average, 9k at p99, 22k at most).
+- Debug batch (300 games): fires a game, our rounds 16.9 fleeing acted, 13.5 fleeing unacted, 14.6 / 1.0 chasing;
+  their rounds 17.3 fleeing unacted, 1.1 acted, 1.4 / 0.4 chasing: about v1's rates. "Ahead" matched the real
+  order: our rounds 95-98%; their rounds acted 92-98%, unacted 88% fleeing, 80% chasing.
+- A/B: **51.3 (50.6-51.9)**, OOF 215,031 / 205,315 (+4.7%, as stack1's +5%); paired per map against stack1
+  **+0.10 ±0.70**. Level with stack1.
+- Why level: the model agrees with v1 where it matters. Its runs for melee and dashers pick exactly v1's gap, and
+  the lost next double never outweighs the decided blow there. Its changes (ranged pairs at gaps 3-4, cooldowns spent
+  in the window, stuns, life thresholds, the sum over passed enemies) touch few decisions or decide nothing.
+
+### Round 4 conclusion
+- v1's one-gap rule is what a two-boundary pair model picks; pricing the next double adds nothing measurable.
+- Exact-rank-only loses about a point: the predicted unacted fires are most of the seat's value.
+- What's left is feasibility: 12% of fleeing fires in their rounds still fail, and the pin skips about 59%
+  feasible cases (v1 diagnosis). Untested: fire whenever the enemy's last read rank allows it and drop only the
+  distance pin. v2 meant to test that but was bugged, and v3 mixed it with bursts.

@@ -271,16 +271,13 @@ bool can_act_before(const World& world, int their, std::int32_t ours) {
     return next_slot(world, true, ally_next_rank(world, world.me(), ours)) < their;
 }
 
-// The reach 464's contact reads for a champion: a walk and a blow, as the enemy's copy of it would.
-int fixed_reach(const ChampionBelief& c) { return c.facts().ranged ? 3 : 2; }
-
 // For an engaged pair our priority only picks whether we act before the enemy next round (ahead) or
 // after it. Until our next turn that is: if it has acted, us then it (our double) or it then us; if
 // not, it, us, it or it, it, us (its double). On a gap with equal walks ahead is never worse for us,
 // and it decides a blow only where the gap meets the next turn's real reach (Strike: walk, dash,
 // reset, spells). Elsewhere 464's alternating doubles stay: they beat always-first. The contact
-// seat for our start is ahead in our rounds; in theirs only above its rank, read once it has acted,
-// else predicted: 464 pins it first when its move leaves us in its contact.
+// seat for our start is ahead in our rounds; in theirs only above its rank: exact once it has acted,
+// else its last read rank, even where 464 may pin it first (skipping those cost more than the misses).
 int seat_priority(const World& world, const ChampionBelief& self, float health, const std::vector<Enemy>& enemies) {
     const auto& role = chase_role;
     if (!role.fleeing && !role.struck) return no_contact;
@@ -295,13 +292,12 @@ int seat_priority(const World& world, const ChampionBelief& self, float health, 
         const bool acted = e->acted;
         const int theirs = strike(*e, next).reach;
         if (g <= Strike::max_reach) incoming += strike(*e, acted ? next : world.round).at(g);
-        bool decides = false, toward = false;
+        bool decides = false;
         if (role.fleeing) {
             // Its blow on its next turn after ours: from g if it has acted; else from where its turn
             // this round leaves it (a ranged blow from here, or a walk in).
             const int from = acted ? g : (e->facts().ranged && g <= e->facts().attack_range() ? g : std::max(1, g - 1));
             decides = theirs >= 0 && from == theirs;
-            toward = true;
         } else if (const auto h = static_cast<std::uint32_t>(e->handle); h < 32 && (role.struck >> h & 1u)
                    && (role.chasing || (g >= 2 && e->health < 0.5f * e->max_health))) {
             // Our prey steps away on each of its turns.
@@ -316,11 +312,7 @@ int seat_priority(const World& world, const ChampionBelief& self, float health, 
         if (acted) {
             rank = enemy_next_rank(world, *e);
         } else {
-            const int after = toward ? std::max(1, g - 1) : g + 1;
-            bool pinned = after <= std::max(fixed_reach(*e), fixed_reach(self)) || e->next_rank == 0;
-            for (const auto& a : world.allies)
-                pinned = pinned || (!a.is_self && a.alive && a.visible && dist(a.pos, e->pos) - 1 <= std::max(fixed_reach(a), fixed_reach(*e)));
-            if (pinned) continue;
+            if (e->next_rank == 0) continue;
             rank = e->next_rank;
         }
         const int raw = contact_first + threat_level(self, health, incoming);

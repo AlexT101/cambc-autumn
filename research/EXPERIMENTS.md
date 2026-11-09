@@ -120,7 +120,7 @@ The H0 stops at about 20k games had very negative LLRs (-9 to -18), so few map p
 
 All null within +0.1 overall except crh, which lost.
 
-## (ocean = oc-cl2-base, 2026-11-08/09) Combat lab round 2: chase seats, the chase bit and healed-at-home beliefs; merged as CHANGES 475
+## (ocean = oc-cl2-base, 2026-11-08/09) Combat lab round 2: chase seats, the chase bit and healed-at-home beliefs; merged as CHANGES 475 and 476
 
 Coordinator log and every arm: [combat-lab/cl2-log.md](combat-lab/cl2-log.md); plan [PLAN2.md](combat-lab/PLAN2.md).
 Reference `variants/oc-cl2-base` (ocean at 0dd304df9), own drafts, real budget, 20,480 games on `merged/cl2-dev`
@@ -152,11 +152,14 @@ Reference `variants/oc-cl2-base` (ocean at 0dd304df9), own drafts, real budget, 
 | beliefs (`heal_if_home`) | 50.2 (49.5-50.8) | |
 | **cl2-stack1 = all three** | **51.2 (50.5-51.8)**, OOF +5.0% | cl2-held 50.8 (50.3-51.3) of 40,960; cl2-var 51.0 (50.0-52.0) of 10,240 |
 | cl2-stack2 = stack1 + camp fire in sims | 51.2 (50.5-51.9), OOF +15.5% | not kept |
+| **cl2-seat5 = stack1 + last-rank seats (CHANGES 476)** | **51.7 (51.1-52.4)**; paired vs stack1 +0.59 ±0.78 | cl2-held 51.4 (50.9-51.9) of 40,960; paired vs stack1 **+0.64 ±0.55** |
 
   - Seats: at gaps 3-5, the side with the boundary double catches or escapes 9.4 ±3.3 points more often. Doubles
     alternate by default, so seating only moves the phase.
   - Seats v3, firing more widely, gave the gain back (50.1): our pursuers' seats removed our own pursuit doubles.
-  - v1's pin prediction is wrong about half the time; seats v4 (exact ranks only) is in progress.
+  - v1's pin prediction is wrong about half the time. Seating only against exact ranks (v4 r1) lost: 50.2, paired
+    -1.01 ±0.82, as v1's predicted seats were real gains. A pair model pricing this boundary and the next (v4 r2) was
+    level: 51.3, held 50.9 (paired +0.13 ±0.49). Dropping the pin and trusting the enemy's last read rank (seat5) won.
 - *Not run:* the panel.
 
 ## (ocean = oc-base25, 2026-11-09) Camp aggro: waking a Monolith onto a nearer enemy is an even exchange; stopped

@@ -3759,3 +3759,18 @@ lines; replays differ only in the posted priority values (the chase bit's positi
 -4.6%). `variants/oc-cl2-merged` equals bots/ocean.
 
 Evidence: EXPERIMENTS "Combat lab round 2".
+
+## 476: Chase seats trust an unacted enemy's last rank (ocean, 2026-11-09)
+
+`variants/cl2-seat5`, on 475 (turn_order.cc `seat_priority`). In rounds the enemy starts, a chase seat against an
+enemy yet to act used 475's prediction: 464's fixed-reach contact pin, wrong about half the time. Now it reads the
+enemy's last posted rank, even where 464 may pin it first; skipping those (seats v4 r1, exact ranks only) lost 1 point.
+
+Against `variants/cl2-stack1` (= 475's behaviour), paired per map:
+- cl2-dev: 51.7% (51.1-52.4) of 20,480 vs oc-cl2-base; paired +0.59 ±0.78.
+- cl2-held, held out: 51.4% (50.9-51.9) of 40,960 vs oc-cl2-base; paired +0.64 ±0.55. OOF turns +5.1% (as 475).
+
+The 100M wide bench against cl2-seat5 has the same winners, drafts and decision traces in 52/52 games.
+`variants/oc-cl2-seat5m` equals bots/ocean.
+
+Evidence: EXPERIMENTS "Combat lab round 2".
