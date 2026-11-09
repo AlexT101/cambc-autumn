@@ -407,7 +407,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     fixc_bush_threatened = false;
     if (!world.me().can_act(world.round)) return;
     fixc_bush_threatened = fixc_bush_threat(world, safety);
-    if (const auto* ender = game_ender(world)) {
+    if (const auto* ender = game_ender(world); ender && holds_hard_stop(world, *ender)) {
         stop_game_ender(world, pathing, memory, *ender);
         return;
     }

@@ -342,6 +342,7 @@ const ChampionBelief* stoppable_winning_tribute(const World& world);
 bool ally_stops(const World& world, const ChampionBelief& e);
 const ChampionBelief* game_ender(const World& world);
 void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e);
+bool holds_hard_stop(const World& world, const ChampionBelief& e);
 void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory);
 
 // economy/comeback.cc: cooked comebacks.

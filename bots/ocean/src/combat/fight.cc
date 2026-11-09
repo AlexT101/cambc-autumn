@@ -1042,6 +1042,14 @@ const ChampionBelief* game_ender(const World& world) {
     return best;
 }
 
+// A stop that cancels the ender's channel: a stun ready for our next turn, or a lock for its altar. Only that stop
+// decides the game before the channel lands; a walking ender, or a channel we can only damage, is fought as priced.
+bool holds_hard_stop(const World& world, const ChampionBelief& e) {
+    if (e.channel != Channel::tribute) return false;
+    if (e.facts().passive != Passive::stun_immune && world.me().ready_stun_reach(world.round + 1) >= 0) return true;
+    return tribute_altar(world, e.pos) >= 0 && carried_locks() > 0;
+}
+
 // Into reach of the enemy whose bag ends the game, whatever the risk: a stun or a lock if it is
 // tributing, else attacks, followed until it stops at an altar.
 void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e) {

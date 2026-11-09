@@ -4034,3 +4034,20 @@ The patch applied with offsets only; an audit found it equal to oc-base31's ft-k
 
 Evidence (the live line): new-body dgate LIVE BAR H1 at +1.01 ±0.28 against oc-base25 (Fish +1.04, Mite +0.99);
 +0.77 on oc-base31's blocks. EXPERIMENTS "Feint tributes" and "oc-base31: dfp-pure + ft-k on v87".
+
+## 489: the forced game-ender stop only with a hard stop in hand (ocean, 2026-11-09)
+
+From the removal-gap analysis (`variants/gap-fix-ender`, a diff on `variants/ocean-rm2`), ported onto 488.
+`stop_game_ender`'s forced branch in `decide`, and continue_recall's cancel for it, run only when `holds_hard_stop`
+(fight.cc): the ender is channelling a tribute and we hold a stun ready for our next turn (ender not stun-immune) or a
+lock for its altar. A walking ender, or a channel we can only damage, goes through the normal priced fight play. No
+new constants. continue_tribute's cancel for a channelling ender is unchanged, as in the source, so ft-k's turn-end
+tribute may start ours again on a turn that cancelled it.
+
+The diff applied cleanly (bank.cc at ft-k's offset); `holds_hard_stop` sits above stop_game_ender's comment rather
+than between it and its function (comment-only). An audit found it equal to the source.
+
+Evidence (research/ideas-2026-11-09/removal-gap/REPORT.md section 3, on ocean-rm2): on `merged/gap-1930`, paired
+against ocean-rm2 +0.18 ±0.20 (4.5% of games flip), 50.2% (49.8-50.7) head to head; screen +0.20 ±0.20; pooled
+about +0.19 ±0.14 against ocean-ba65375; OOF +1.8% against ocean-rm2's. Traced: deaths near walking enders 34% ->
+15%, near channels 52% -> 39%; enders land no more often.

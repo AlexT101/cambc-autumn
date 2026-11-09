@@ -1345,7 +1345,7 @@ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memo
 bool continue_recall(World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home, int recall_farm) {
     auto& me = cambc::self();
     decision = Branch::recall_kept;
-    if (game_ender(world)) {
+    if (const auto* ender = game_ender(world); ender && holds_hard_stop(world, *ender)) {
         throw_if_stale();
         try {
             me.cancel_recall();
