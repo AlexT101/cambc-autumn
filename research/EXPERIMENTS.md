@@ -1053,6 +1053,21 @@ source of losses. Rejected: none of these is queued for live.
     - 62% of those Prism deaths come from >=80% HP within 12 rounds (bursts), and 67% while outnumbered.
     - A Prism bag cap is settled (TODO). So the arms lower bag_big, the bag at stake that breaks off a fight sooner
       (100 gems; pack ratio 2.0), against bsk. 50: +0.07 ±0.24; 30: +0.05 ±0.25. Both are level (NARROWED).
+    - Two weaker regression knobs that point the same way against Fish and Mite, x1.2214 on bsk: heal_trip_fraction
+      +0.07 ±0.24; stun_tribute_horizon +0.02 ±0.05 (it barely changes games). Both are level.
+  - **Where bsk's gain comes from.** Of its +1.00, 00expanse gives +27 points and 00quadrants +20; the other 126 maps
+    +0.64.
+    - sp-y2 is all of the two-map gain: +26.8 and +19.1 there, -0.13 on the other maps. bagf (+0.55) and the knob
+      step (+0.15) act elsewhere.
+    - The weighting is right: in 5,525 ranked ladder games (11-08 and 11-09, big-arm archive) these maps are 0.74%
+      and 0.83% of the games, against dgate's uniform 0.78%.
+    - The situation exists live. Measured: a cleared one-holder gold group with no enemy on it, our Cassi or Issac
+      within 7, and another ally within their distance + 2.
+      - It comes up 23-24 times a game on 00expanse and 15-16 on 00quadrants, both in 159 of our live games against
+        Fish and Mite (v78-v101) and on the bodies.
+      - Enemies sit on cleared groups at similar rates (53-74 against 57-62; 15-22 against 24-25).
+  - **Without sp-y2,** `oc32s-bk` (bagf + knob) against oc32-cg-fs-nh: +0.44 ±0.25, NARROWED (ZONE crossed); Fish +0.85,
+    Mite +0.04. Not a live candidate: bsk stays queued.
 
   t5 is dfp-race-d0 (dfp-pure plus the mirror-race enemy model) on five-pick teams only, the base's draft elsewhere, so it
   gives up pure's plan on 3-4 picks; the race model was already H0 against pure, and the five-pick condition fails the map
