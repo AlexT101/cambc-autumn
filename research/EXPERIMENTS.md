@@ -12732,6 +12732,21 @@ read in play. Details in CHANGES 461. Checks:
   cd68d6ef305c). In games with no Heart of Ruin, where 468's floor can't act, 9 of 32 games changed: that's the mask's
   reroll rate. HoR on both sides +6 (z +1.03), theirs only 0, ours only +1. OOF turns 11.7 -> 11.2 per 1k rounds. The
   local dgate called nh-6-3 H0 (+0.07 +-0.41); live agrees that there's no visible effect (first live check of dgate's call).
+- **Submitted (2026-11-09 04:33 UTC) as v96** after the user's "keep the live slot busy" (judgement zone 50-50.5 may
+  go live as informative pairs against v87): `variants/v87-dfp-pure` (oc-base25 + the draft-solved early farm plan;
+  dgate 50.63%, 50.26-51.00), masked 51f3f74deb70, live 04:37, 104 r2 groups.
+- **Live gate (r2): v96 (v87-dfp-pure).** 104 groups, 512 games, done 07:00 UTC: Fish 67.2%, Mite 66.4%. Paired against
+  v87: **+14 (93 / 79, z +1.07), level**; Fish +6 (z +0.65), Mite +8 (z +0.86); one-site maps +14 (Fish +4, Mite +10),
+  multi-site 0. Only 42 of 512 games repeat v87's (the farm plan changes nearly every game). Against v95 +9 (z +0.70), v86
+  +5 (z +0.39), v93 +32 (z +2.44). **Against the pooled v86/87/89/95 (64.6% of 2,048): 66.8%, +2.2 points**, about
+  1.2 times the ~1.8-point noise of a single rebuild. OOF turns 11.7 -> 10.6 per 1k rounds.
+- **Mite updated (probe 05:00 UTC).** v96's `v1core-r2-*-01` was replayed unpinned against each team's current bot:
+  Fish's 5 games came out identical (seeds too), Mite's 5 all differed (new picks: Prism, Willow). From v97 on, gates play Fish
+  on r2 and Mite on a new ref set **r3** (its first group's Mite bot); `sched/refsets.json` holds the mapping.
+- **Submitted (07:00 UTC) as v97**: `variants/v86-reup`, a masked rebuild of oc-base23 (= v86; the uncoded v92 control
+  repeated v86 190 / 190), live 07:06, Fish r2 + Mite r3. It tests the lucky-roll question: against the v87 reupload
+  on the new Mite games (all fresh draws), and against v86 on the Fish games the mask rerolled. Next: v87-reup, then
+  oc-base30 (CHANGES 477, frozen as `variants/live-oc-base30`), null-a / -b, ctx-g2 and sp-y2 singly.
 
 ## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
 
