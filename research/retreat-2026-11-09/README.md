@@ -95,3 +95,10 @@ an A/B (10k+ games), with deaths from `tools/replay/fight_metrics.py`.
 **Result:** at unlimited fuel, 53.1% local and dgate ACCEPT at +2.2 points. At normal fuel the first version read
 33.9% (fuel), and the same plans at a quarter of the fuel read about 51.6%. Deaths barely move; gems rise ~4%.
 Numbers in EXPERIMENTS "Escape planner fuel".
+
+## After 478
+
+Three follow-ups (EXPERIMENTS "Escape planner after 478"):
+- [fuel-opt.md](fuel-opt.md): an exact build 5.6% cheaper, merged as CHANGES 480.
+- [logic-audit.md](logic-audit.md): the plan's hits against the games, and four model fixes, all level or below.
+- [fuel-gate.md](fuel-gate.md): the out-of-fuel hazard by caller, and per-caller reserves, which read level.

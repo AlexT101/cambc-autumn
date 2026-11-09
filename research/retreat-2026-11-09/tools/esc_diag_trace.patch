@@ -1,0 +1,88 @@
+diff --git a/bots/ocean/src/combat/fight.cc b/bots/ocean/src/combat/fight.cc
+index be74ec9ed..cfb5d8526 100644
+--- a/bots/ocean/src/combat/fight.cc
++++ b/bots/ocean/src/combat/fight.cc
+@@ -183,10 +183,14 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
+     const vec2 here = my_position();
+     if (!safety.avoid_within(here, vision_radius)) {
+         pathing.step_towards(home);
++        debug_block({ std::printf("ESR %d %u A %d %d\n", world.round, my_handle(), my_position().x, my_position().y); });
+         return;
+     }
+     const auto& avoid = safety.avoid();
+-    if (!test(avoid, here) && pathing.step_towards(home, &avoid)) return;
++    if (!test(avoid, here) && pathing.step_towards(home, &avoid)) {
++        debug_block({ std::printf("ESR %d %u B %d %d\n", world.round, my_handle(), my_position().x, my_position().y); });
++        return;
++    }
+     const int steps = home.at(here);
+     const auto& blocked = pathing.blocked();
+     struct Option {
+@@ -303,7 +307,15 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
+         }
+         std::stable_sort(group.begin(), group.begin() + m, by_index);
+         for (int i = 0; i < m; ++i)
+-            if (pathing.try_move(options[group[i]].p)) return;
++            if (pathing.try_move(options[group[i]].p)) {
++                debug_block({
++                    const auto& o = options[group[i]];
++                    std::printf("ESR %d %u C %d %d %d %d %d %d %d %d %.0f %.0f %d\n", world.round, my_handle(), o.p.x, o.p.y, plan.active() ? 1 : 0,
++                                o.home ? 1 : 0, o.rank, hit_now(o), plan.active() ? plan.after_walk(o.p, false) : -1,
++                                plan.active() ? plan.after_walk(o.p, true) : -1, o.damage, life, safe ? 1 : 0);
++                });
++                return;
++            }
+         g = e;
+     }
+     std::stable_sort(last.begin(), last.begin() + lasts, by_index);
+diff --git a/bots/ocean/src/combat/self_abilities.cc b/bots/ocean/src/combat/self_abilities.cc
+index b5912db65..02b7eccc8 100644
+--- a/bots/ocean/src/combat/self_abilities.cc
++++ b/bots/ocean/src/combat/self_abilities.cc
+@@ -222,6 +222,11 @@ Landings escape_landings(const World& world, Pathing& pathing, Safety& safety, v
+             const auto planned = ranked(
+                 landings, [&](vec2 q) { return Planned{rank_of(q), danger(threats, q), home.at(q)}; },
+                 [&](vec2 q, const Planned& r) { return r.rank < stay && !landing_harmful(world, q, dead); });
++            debug_block({
++                std::printf("ESD %d %u %d %d", static_cast<int>(round_now()), my_handle(), stay, planned.count);
++                for (int i = 0; i < planned.count; ++i) std::printf(" %d,%d:%d", planned.tiles[i].x, planned.tiles[i].y, rank_of(planned.tiles[i]));
++                std::printf("\n");
++            });
+             if (planned.count > 0) return planned;
+         }
+     const float here_danger = danger(threats, here);
+diff --git a/bots/ocean/src/model/escape.cc b/bots/ocean/src/model/escape.cc
+index 9d0b08af5..ea794b93e 100644
+--- a/bots/ocean/src/model/escape.cc
++++ b/bots/ocean/src/model/escape.cc
+@@ -249,6 +249,14 @@ void Plan::build(const World& world, Pathing& pathing, Safety& safety) {
+     };
+     for (const auto& e : world.enemies) {
+         if (!e.alive) continue;
++        debug_block({
++            const auto& f = e.facts();
++            const int rs = f.slot_of(AbilityKind::attack_reset);
++            const int rk = rs >= 0 ? std::max(1, e.ready_round[static_cast<std::size_t>(rs)] - world.round + (e.visible && !e.acted ? 1 : 0)) : -1;
++            const vec2 o = enemy_reach::origin(e);
++            std::printf("ESE %d %u %u %d %d %d %d %d %d %d %d %d\n", world.round, my_handle(), static_cast<std::uint32_t>(e.handle), e.visible ? 1 : 0,
++                        e.tracked ? 1 : 0, e.stun_pending ? 1 : 0, f.ranged ? 1 : 0, rk, o.x, o.y, e.acted ? 1 : 0, static_cast<int>(e.channel));
++        });
+         if (e.visible) {
+             const vec2 o = enemy_reach::origin(e);
+             const int x = std::clamp(o.x - origin_.x, 0, side - 1), y = std::clamp(o.y - origin_.y, 0, side - 1);
+@@ -367,6 +375,15 @@ void Plan::build(const World& world, Pathing& pathing, Safety& safety) {
+     debug_block({
+         std::printf("ESC %d %u kinds %d dash %d/%d fuel %llu\n", world.round, my_handle(), n, dash_ ? dash_turn_ : 0, dash_now_ ? 1 : 0,
+                     static_cast<unsigned long long>(start_fuel - fuel()));
++        std::printf("ESH %d %u %d %d %d", world.round, my_handle(), origin_.x, origin_.y, steps);
++        for (int k = 1; k <= horizon; ++k) {
++            std::printf(" ");
++            for (int y = 0; y < side; ++y) std::printf("%04x", get(hit_[k], y));
++        }
++        std::printf("\n");
++        for (int c = 0; c < n; ++c)
++            std::printf("ESK %d %u %d %d %d %d %d %d %d\n", world.round, my_handle(), kinds[c].ranged ? 1 : 0, kinds[c].reach, kinds[c].dash_turn,
++                        kinds[c].burst, kinds[c].burst_turn, kinds[c].blind ? 1 : 0, kinds[c].delay);
+     });
+ }
+ 

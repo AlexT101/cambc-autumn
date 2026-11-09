@@ -220,6 +220,88 @@ Asked (user): "test feint tributes locally in our bot to see if it works, can us
 - **Verdict:** ready for the live scheduler at about +200 fuel a turn. Unlike the current mask's +30, it changes
   real-budget play in most games, as any +200 does.
 
+## (ocean = oc-esc-478, 2026-11-09) Escape planner after 478: an exact fuel pass merged (CHANGES 480); model fixes and smarter gates level
+
+Three lines of work from 478, run in parallel. Only the fuel pass changes the bot. All A/Bs are release builds,
+`--no-test-draft` and normal fuel.
+
+**Fuel pass, exact (fo-lean, merged as CHANGES 480).** [retreat-2026-11-09/fuel-opt.md](retreat-2026-11-09/fuel-opt.md).
+- The build falls from 10,193 to 9,622 mean (-5.6%; p90 14,032 → 13,521; slack pass 1,110 → 1,040). This is bench
+  `--set wide --test-draft` at 100M against oc-cl2-seat5m: 52 games, 13,705 builds.
+- **Where the saving comes from:**
+  - grows reused across a pursuer's strike, walk and dash landings, with `moved` = walked | dashed;
+  - `grow_by` split into `widen`, which carries on from a set already within 1;
+  - one grow of a union in the backward pass;
+  - four static boards in one row loop (`Span`), where 478 read seven with a `RowAt` table a row; the spawns are
+    read only on rows their box meets;
+  - one plan read in `escape_landings` when the slack goal is off.
+- **The profile:** the grows are not the cost. A pursuer class costs ~2.1-2.4k of loop, spill and lambda overhead,
+  however few grows it does, and ~20% of escape.cc's fuel has no source line.
+- **Identity:** the plan-hash dumps (every hit layer, the window, the goals and both passes) of 478 and fo-lean match
+  over 13,705 builds and 7,080 slack passes, and the bench replays are 52/52 identical. The merge's own check is
+  oc-esc-merge against oc-esc-478, wide set, `--test-draft`, 100M: identical replays 52/52 (total fuel 13,337.7M → 13,329.3M; 13,120 turns cheaper, 1,587 dearer).
+- **Rejected:** merged strikes for classes that share a reach (~3% of the planner), a per-tile flag grid (~100k+ to
+  build once), a byte-aligned board stride (~15k repack), camps folded into the static boards (~1.5k a flip), a lazy
+  slack goal (~60 a build net), and reusing the build after a dash (not exact: the window moves and `see_again`
+  changes the beliefs).
+- **On `merged/esc2-dev`** (40,960 games against oc-cl2-seat5m): fo-lean 51.3% (50.8-51.8), and oc-esc-478 51.4%
+  (50.9-51.8, OOF 461,924 against 432,918).
+  - fo-lean's run printed no OOF counts because it played on stock cambc: its launcher's env line read
+    `CAMBC_SLOT_WEIGHT=12CAMBC_BIN=...`, a missing space, so `CAMBC_BIN` was never set. Its win rate stands, since
+    stock and the fast runner play the same games.
+  - Its replay proxy (fuel entries of exactly 100k, the 988 games both batches saved) reads CAND OOF -4.1%.
+- **Held out** (`merged/esc2-held`, 61,440 games against oc-cl2-seat5m, fast runner): oc-esc-merge **51.3%
+  (50.9-51.7)**, OOF 679,972 against 637,483 (11.07 a game, 6.7% over the reference, as 478's on esc2-dev). Level
+  with 478, as an exact change should be: the planner's gain holds on unseen maps.
+
+**Logic audit (la-*, nothing merged).** [retreat-2026-11-09/logic-audit.md](retreat-2026-11-09/logic-audit.md);
+tools `esc_diag_trace.patch`, `esc_diag.py` and `chase.py`.
+- **The trace:** a traced 256-game batch replayed each plan's hit layers against the damage taken after it.
+  - The layers are a sound superset: 1.7% of predicted-clear turn-2 intervals were hit, mostly by camps.
+  - But only 9.5% of predicted hits land, because 62-72% of the counted pursuers do not follow.
+  - 37% of plan-ranked walks had every option at "many", and those turns took 1.06M of the 1.5M hp that followed
+    plan-ranked walks.
+  - The step taken when the homeward step is clear of every reach (path B, no plan) was damaged within 3 turns in
+    only 3%.
+- **The rules audit:** turn order, dash paths, the ranged walk and bush sight are right. The mismatches: stunned
+  pursuers act; awake camps are only terrain; Vesper-style walk, reset, attack is missing; hits saturate at 2.
+- **Arms** against `variants/oc-esc-478` on `maps/suites/merged/retreat-911000b` (10,240 games):
+  - `la-cnt` (hits counted exactly to horizon - 1; build 9.8k → ~11.2k): 49.6% (48.6-50.5).
+  - `la-cf` (la-cnt + stunned pursuers lose a turn + awake camps strike every turn): 49.9% (48.9-50.9).
+  - `la-fid` (stunned pursuers + awake camps + ranged attack-reset bursts, no exact counts): 49.0% (48.0-50.0).
+  - Deaths a game rose slightly (la-cf 6.04 against 5.85 in its first 1,000 games) and gems fell ~25.
+- **The reading:** adding sound hits to an already pessimistic model saturates more options. The evidence points to
+  less pessimism, but nothing cheap separates chasers from the rest. Nothing merged; no final.
+
+**Fuel gate (fg-*, nothing merged).** [retreat-2026-11-09/fuel-gate.md](retreat-2026-11-09/fuel-gate.md); tools
+`fg_instrument*.py`, `fg_parse.py`, `fg_summary.py`, `fg_hazard.py` and `fg-site.patch`. Debug checkpoints over 1,600
+games, at the 20k and 50k gates.
+- **Why lower gates lost.** A planned turn runs out according to X, the fuel left after the build, exactly as an
+  unplanned turn does with the same fuel. The plan adds no work after it, so a lower gate leaves too little for the
+  same retreat_step pricing. At 20k/12k, OOF turns in retreat rose from 1,304 to 6,213, and 4,580 of them lost the
+  move (2,931 in retreat_step's pricing).
+- **The hazard differs by caller.** The walk's ask (retreat_step) reaches 1% at X ≈ 35k; the dash's ask
+  (escape_landings, before the dash and all of retreat_step) at X ≈ 53k. The flat 50k leaves X ≈ 40k at a 10k
+  build: 0.3% for the walk, ~3% for the dash.
+- **Gate tested:** the fuel left must pay for the caller's reserve plus a running mean of the measured build cost,
+  and a gated plan is retried by the next ask. Screens against oc-esc-478 on merged/retreat-911000b (10,240 games
+  each):
+
+| Variant | dash / walk / slack reserve | win % (95% CI) | OOF CAND / REF |
+|---|---|---:|---:|
+| fg-site | 53k / 35k / 16k | 49.8 (48.8-50.7) | 112,025 / 114,561 |
+| fg-site05 | 57k / 38k / 16k | 49.5 (48.6-50.5) | 109,322 / 113,576 |
+| fg-walk | 40k / 35k / 16k | 49.9 (48.9-50.8) | 118,774 / 115,671 |
+
+- **All level.** A gate change in either direction trades plans for OOF turns at about par, inside the +0.9 ceiling
+  of a free plan. The flat 50k/40k gate stays, so fo-lean's saving goes to fewer OOF turns, not more plans. No final.
+
+**Safe to delete** (bots/variants and replays/ab are untracked, in the main checkout):
+- the arms and instrumented copies `bots/variants/{la-cnt,la-cf,la-fid,la-diag}` and `fg-*`;
+- the fuel pass's working copies `fo-*` except `fo-lean` (`fo-base*`, `fo-h*`, `fo-p3..5`, `fo-prof*`, `fo-lean-dump`);
+- every `bench-td-fo-*`, `bench-td-oc-esc-478` and `bench-td-oc-esc-merge`.
+- fo-lean and oc-esc-merge are the same code; keep one.
+
 ## (ocean, 2026-11-09) Escape planner fuel: the same plans at a quarter of the fuel; 33.9% -> ~51.6% at normal fuel
 
 The retreat planner (`model/escape.cc`, research/retreat-2026-11-09) read 53.1% against `oc-cl2-seat5m` with unlimited

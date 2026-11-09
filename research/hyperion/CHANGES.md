@@ -3839,3 +3839,25 @@ plan's anytime search. New-body dgate against oc-base25, 45 blocks: +1.28 ±0.75
 the parts on the same blocks were ft-k +0.77 and dfp-pure +0.74 (sum +1.51). Queued live at p79, paired against v87.
 
 Evidence: EXPERIMENTS "oc-base31: dfp-pure + ft-k on v87".
+
+## 480: Escape planner build 10.2k -> 9.6k, plans identical (ocean, 2026-11-09; fuel-only)
+
+`model/escape.cc` and `escape_landings`' plan read, on 478. The same plans at 5.6% less fuel a build:
+- mean 10,193 → 9,622, p90 14,032 → 13,521;
+- measured over 13,705 builds on bench `--set wide --test-draft` at 100M.
+
+The saving comes from three places:
+- the hit layers reuse each pursuer's grows across its strike, walk and dash landings;
+- the backward pass grows a union once;
+- the window reads four static boards in one row loop instead of seven, with the spawns read only where their boxes
+  meet the window.
+
+Exact: bench replays identical against 478 (52/52 at 100M), and plan-hash dumps identical over 13,705 builds.
+- The gates stay at 50k/40k, so the saving goes to fewer OOF turns, not more plans.
+- Against `variants/oc-cl2-seat5m` (= 476) on the held-out `merged/esc2-held`: 51.3% (50.9-51.7) of 61,440, OOF
+  679,972 against 637,483 (fast runner). 478 read 51.4% (50.9-51.8) on `merged/esc2-dev`.
+- The planner model fixes and per-caller fuel gates tried alongside read level or below 478 and are not in.
+
+`variants/oc-esc-merge` equals bots/ocean (as does `variants/fo-lean`).
+
+Evidence: EXPERIMENTS "Escape planner after 478"; research/retreat-2026-11-09/fuel-opt.md.

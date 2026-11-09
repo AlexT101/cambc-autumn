@@ -192,7 +192,10 @@ Landings escape_landings(const World& world, Pathing& pathing, Safety& safety, v
     const escape::Plan* plan = nullptr;
     int stay = 0;      // the plan's rank of keeping the dash
     bool slack = false; // the slack goal counts only when the full one has no clean way
-    const auto rank_of = [&](vec2 p) { return escape::rank(plan->after_dash(p, false), plan->after_dash(p, slack)); };
+    const auto rank_of = [&](vec2 p) {
+        const int full = plan->after_dash(p, false);
+        return escape::rank(full, slack ? plan->after_dash(p, true) : full);
+    };
     if (use_plan && my_can_move())
         if (auto& p = escape::plan(world, pathing, safety); p.active() && p.dash_now()) {
             const auto& landings = pathing.dash_landings();

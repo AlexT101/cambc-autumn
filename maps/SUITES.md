@@ -269,6 +269,7 @@ Single-seed generated suites, `suites/fresh/fresh-<seed>/` (256 maps each, the d
 | 1000400-1000479, 1000500-1000519, 1000600-1000639, 1000700-1000779, 1000800-1000839, 1000900-1000919, 1001000-1001039, 1001100-1001179 | 380 | ladder-v2; varied (10005xx, 10009xx) | `--mix ladder-v2` / `--mix varied` (tune3 oc6 confirmation on oc-base29: `merged/tune3-v2held-1004`, `-v2held2-1007`, `-v2held3-1010`; `tune3-v2panel-1006`, `-v2panel2-1008`, `-v2panel3-1011`; `tune3-varied-1005`, `-varied2-1009`) | 2026-11-08 |
 | 1060000-1060199, 1061000-1061159, 1062000-1062019, 1063000-1063059 | 440 | ladder; varied (1062xxx) | context knobs (ctxknob): `merged/ctx-scr-1060` (+ `-rest-g2`, `-rest-d1` resume subsets), `ctx-held-1061`, `ctx-varied-1062` (`--mix varied`), `ctx-panel-1063`. All used; range 1060000-1069999 reserved for ctxknob | 2026-11-08 |
 | 911000-911019 | 5,120 | ladder-v2 | `--mix ladder-v2` (escape planner, CHANGES 478: `merged/retreat-911000b`). Used | 2026-11-09 |
+| 1700000-1700079, 1701000-1701119 | 51,200 | ladder-v2 | `--mix ladder-v2` (escape planner after 478: `merged/esc2-dev` = 1700000-1700079, 478's reference and fo-lean, used; `merged/esc2-held` = 1701000-1701119, held out for the CHANGES 480 merge, used once) | 2026-11-09 |
 
 ## suites/merged/
 
@@ -589,6 +590,9 @@ Directories of relative symlinks (`../../fresh/fresh-<seed>/<map>`) merging many
 | `retreat-911000b` | 5120 | 911000-911019 | escape planner (CHANGES 478) |
 | `retreat-911000` | 5120 | 911000-911019 | broken links (one `..` too many): use `retreat-911000b`; safe to delete |
 | `retreat-911` | 5376 | 911000-911019 and 9110 | stray (its glob caught `fresh-9110`); safe to delete |
+| `esc2-dev` | 20480 | 1700000-1700079 | escape planner after 478: oc-esc-478's reference A/B and fo-lean (used) |
+| `esc2-held` | 30720 | 1701000-1701119 | escape planner merge (CHANGES 480), held out: its one A/B |
+| `*-538060.map26a` .. `*-538069.map26a` | - | - | stray: ten dangling links from an unexpanded glob into `fixm-varied-538060`; safe to delete |
 
 ## suites/inv2/
 

@@ -66,10 +66,9 @@ template <int S> [[gnu::always_inline]] inline Rows spread_by(const Rows& h) { r
     return {{o.v[0] & full, o.v[1] & last}};
 }
 
-// Within r, by doubling: steps of 1, 2, then what is left.
-[[gnu::noinline]] Rows grow_by(const Rows& a, int r) {
-    if (r <= 0) return a;
-    Rows h = spread_raw(sideways(a, 1));
+// Within r >= 1 of a set, from `h`, the tiles within 1 of it (as grow gives them, or unmasked): by
+// doubling, steps of 1, 2, then what is left.
+[[gnu::noinline]] Rows widen(Rows h, int r) {
     if (r >= 3) h = spread_by<2>(sideways(h, 2));
     else if (r == 2) h = spread_by<1>(sideways(h, 1));
     switch (r) {
@@ -82,6 +81,7 @@ template <int S> [[gnu::always_inline]] inline Rows spread_by(const Rows& h) { r
     for (int c = 7; c < r; ++c) h = spread_raw(sideways(h, 1));
     return {{h.v[0] & full, h.v[1] & last}};
 }
+inline Rows grow_by(const Rows& a, int r) { return r <= 0 ? a : widen(spread_raw(sideways(a, 1)), r); }
 
 // A board's tiles packed a bit each in row-major order (export_linear_buffer), read a window row at a time.
 struct Packed {
@@ -91,9 +91,10 @@ struct Packed {
 struct Statics {
     bool tried = false, ok = false;
     int width = 0, height = 0;
-    // Each the open tiles of its kind, so tiles off the map read as closed.
-    Packed walk_us, path_us, walk_them, path_them, bushes, ally_spawn;
-    bool any_bushes = false;
+    // Tiles off the map read as closed: walking and landing are on `passable` and dash paths on
+    // `unwalled`, each off the other team's spawn, read only where the window meets that spawn's box.
+    Packed passable, unwalled, bushes, ally_spawn, enemy_spawn;
+    GrowBox ally_box, enemy_box;
 };
 Statics statics;
 Packed camps_packed, scratch_packed;
@@ -116,34 +117,39 @@ bool export_board(const bitboard& b, Packed& out) {
 
 bool bit(const Packed& p, int i) { return p.bytes[static_cast<std::size_t>(i >> 3)] >> (i & 7) & 1; }
 
-// Where a window row lies in the packed boards: bit k of its row is tile (x0 + k, y), 0 off the map.
-struct RowAt {
-    std::size_t byte = 0;
-    int shift = 0, lo = 0;
-    std::uint64_t mask = 0; // 0: the row is off the map
+// Where the window lies in the packed boards: its rows y0..y1-1 are on the map, and bit k of such a row
+// y is the tile (origin.x + k, origin.y + y), bit `first` + (y - y0) * width of a board for k >= lo.
+struct Span {
+    int y0 = 0, y1 = 0, first = 0, lo = 0;
+    std::uint64_t mask = 0; // the row's tiles on the map, from lo
 };
-[[gnu::always_inline]] inline RowAt row_at(int x0, int y) {
-    RowAt r;
-    if (y < 0 || y >= statics.height) return r;
-    const int lo = std::max(0, -x0), hi = std::min(side, statics.width - x0);
-    if (lo >= hi) return r;
-    const int i = x0 + lo + y * statics.width;
-    r.byte = static_cast<std::size_t>(i >> 3), r.shift = i & 7, r.lo = lo;
-    r.mask = (std::uint64_t{1} << (hi - lo)) - 1;
-    return r;
+Span span_of(vec2 origin) {
+    Span s;
+    const int lo = std::max(0, -origin.x), hi = std::min(side, statics.width - origin.x);
+    s.y0 = std::max(0, -origin.y), s.y1 = std::max(s.y0, std::min(side, statics.height - origin.y));
+    if (lo >= hi) s.y1 = s.y0;
+    else s.lo = lo, s.mask = (std::uint64_t{1} << (hi - lo)) - 1, s.first = origin.x + lo + (origin.y + s.y0) * statics.width;
+    return s;
 }
-[[gnu::always_inline]] inline std::uint32_t row(const Packed& p, const RowAt& r) {
-    std::uint64_t word;
-    std::memcpy(&word, &p.bytes[r.byte], sizeof word);
-    return static_cast<std::uint32_t>((word >> r.shift) & r.mask) << r.lo;
-}
-// The window's rows of a board; an off-map row's RowAt reads 0.
-[[gnu::always_inline]] inline Rows rows_of(const Packed& p, const RowAt* at) {
-    alignas(16) std::uint16_t t[16] = {};
-    for (int y = 0; y < side; ++y) t[y] = static_cast<std::uint16_t>(row(p, at[y]));
-    Rows r;
+// The window's rows y0..y1-1 of each board, the rest 0: boards read together share the row arithmetic.
+template <std::size_t N>
+[[gnu::always_inline]] inline std::array<Rows, N> rows_of(const std::array<const Packed*, N>& p, const Span& at, int y0 = 0, int y1 = side) {
+    alignas(16) std::uint16_t t[N][16] = {};
+    const int from = std::max(y0, at.y0), to = std::min(y1, at.y1);
+    for (int y = from, i = at.first + (from - at.y0) * statics.width; y < to; ++y, i += statics.width) {
+        const auto byte = static_cast<std::size_t>(i >> 3);
+        for (std::size_t b = 0; b < N; ++b) {
+            std::uint64_t word;
+            std::memcpy(&word, &p[b]->bytes[byte], sizeof word);
+            t[b][y] = static_cast<std::uint16_t>(((word >> (i & 7)) & at.mask) << at.lo);
+        }
+    }
+    std::array<Rows, N> r;
     std::memcpy(&r, t, sizeof r);
     return r;
+}
+[[gnu::always_inline]] inline Rows rows_of(const Packed& p, const Span& at, int y0 = 0, int y1 = side) {
+    return rows_of<1>({&p}, at, y0, y1)[0];
 }
 
 // The static boards, once a game; the bit order is checked on a set tile, as Safety's terrain is.
@@ -156,19 +162,18 @@ bool ready_statics(const World& world) {
     if (!export_board(map.ally_spawn, statics.ally_spawn)) return false;
     const vec2 probe = first_tile(map.ally_spawn);
     if (!in_bounds(probe) || !bit(statics.ally_spawn, probe.x + probe.y * statics.width)) return false;
-    if (!export_board(~map.blocked_for_us, statics.walk_us) || !export_board(~(map.walls | map.enemy_spawn), statics.path_us)
-        || !export_board(~map.blocked_for_them, statics.walk_them) || !export_board(~(map.walls | map.ally_spawn), statics.path_them)
-        || !export_board(map.bushes, statics.bushes))
+    if (!export_board(map.passable, statics.passable) || !export_board(~map.walls, statics.unwalled)
+        || !export_board(map.enemy_spawn, statics.enemy_spawn) || !export_board(map.bushes, statics.bushes))
         return false;
-    statics.any_bushes = !map.bushes.is_empty();
+    for (const vec2 t : map.ally_spawn_tiles) statics.ally_box.add(t);
+    statics.enemy_box = map.enemy_spawn_box;
     statics.ok = true;
     return true;
 }
 
-// The tiles a dash of at most 2 king steps from a tile of `from` can land on: the first step anywhere
-// within 1, the second only from a tile the path may cross (`path`), landing on `land`.
-[[gnu::always_inline]] inline Rows dash_landings_of(const Rows& from, const Rows& path, const Rows& land) {
-    const Rows one = grow(from);
+// The tiles a dash of at most 2 king steps from a set can land on, given `one` = grow() of the set: the
+// first step anywhere within 1, the second only from a tile the path may cross (`path`), landing on `land`.
+[[gnu::always_inline]] inline Rows dash_landings(const Rows& one, const Rows& path, const Rows& land) {
     return (grow(one & path) | one) & land;
 }
 
@@ -212,8 +217,7 @@ void Plan::build(const World& world, Pathing& pathing, Safety& safety) {
     const int steps = home.at(here);
     if (steps == unreachable || steps == 0) return;
     origin_ = {here.x - radius, here.y - radius};
-    RowAt at[side];
-    for (int y = 0; y < side; ++y) at[y] = row_at(origin_.x, origin_.y + y);
+    const Span at = span_of(origin_);
 
     // The pursuers, merged by kind.
     std::array<Pursuers, 8> kinds;
@@ -269,12 +273,16 @@ void Plan::build(const World& world, Pathing& pathing, Safety& safety) {
         if (!export_board(camps, camps_packed)) return;
         camps_flips = pathing.live_flips();
     }
-    const Rows camp = rows_of(camps_packed, at), spawn = rows_of(statics.ally_spawn, at);
-    walk_ = rows_of(statics.walk_us, at), path_ = rows_of(statics.path_us, at);
-    Rows walk_them = rows_of(statics.walk_them, at), path_them = rows_of(statics.path_them, at);
-    const Rows bush = statics.any_bushes ? rows_of(statics.bushes, at) : Rows{};
-    const Rows uncamped = ~camp;
-    walk_ &= uncamped, path_ &= uncamped, walk_them &= uncamped, path_them &= uncamped;
+    const auto spawn_rows = [&](const Packed& p, const GrowBox& b) {
+        const bool meets = b.x0 < origin_.x + side && b.x1 >= origin_.x && b.y0 < origin_.y + side && b.y1 >= origin_.y;
+        return meets ? rows_of(p, at, std::max(0, b.y0 - origin_.y), std::min(side, b.y1 - origin_.y + 1)) : Rows{};
+    };
+    const auto terrain = rows_of<4>({&camps_packed, &statics.passable, &statics.unwalled, &statics.bushes}, at);
+    const Rows bush = terrain[3], spawn = spawn_rows(statics.ally_spawn, statics.ally_box);
+    const Rows uncamped = ~terrain[0], walkable = terrain[1] & uncamped, crossable = terrain[2] & uncamped;
+    const Rows ours = ~spawn_rows(statics.enemy_spawn, statics.enemy_box), theirs = ~spawn;
+    walk_ = walkable & ours, path_ = crossable & ours;
+    const Rows walk_them = walkable & theirs, path_them = crossable & theirs;
     const bool bushes = !none_set(bush);
 
     // Where each turn ends hit.
@@ -282,37 +290,49 @@ void Plan::build(const World& world, Pathing& pathing, Safety& safety) {
     const Rows open = ~bush;
     for (int c = 0; c < n; ++c) {
         const auto& kind = kinds[c];
-        Rows walked, dashed, shooters, landed;
-        const auto strike = [&](int k, const Rows& from, int reach, bool blind) {
-            const auto reached = [&](const Rows& f) { return reach == 1 ? grow(f) : grow_by(f, reach); };
+        // `near`: grow(from), which the walk reuses.
+        const auto strike = [&](int k, const Rows& from, const Rows& near, int reach, bool blind) {
+            const Rows reached = widen(near, reach);
             if (!bushes || blind) {
-                hit_[k] |= reached(from);
+                hit_[k] |= reached;
                 return;
             }
             // Off bushes from anywhere it stands; a bush tile only from a bush tile.
-            hit_[k] |= reached(from) & open;
-            if (const Rows hidden = from & bush; !none_set(hidden)) hit_[k] |= reached(hidden) & bush;
+            hit_[k] |= reached & open;
+            if (const Rows hidden = from & bush; !none_set(hidden)) hit_[k] |= grow_by(hidden, reach) & bush;
         };
+        // `moved`: where it may stand, dash spent or not; `walked`: dash unspent. They are equal until its
+        // first dash turn, and from then on its dash landings hold `walked`, so a ranged pursuer's dash
+        // from an undashed tile and its shot after it are in `moved` from the turn after.
+        Rows walked, moved, near_moved, near_walked; // near_*: grow() of each, when known
+        bool known = false, split = false;
         // Nothing stands anywhere before its first turn on `start`.
-        bool landed_ready = false; // `landed`: the dash landings from `walked` as it stands
         for (int k = kind.delay + 1; k <= horizon; ++k) {
             const bool dash = kind.dash_turn > 0 && k >= kind.dash_turn;
-            if (k == kind.delay + 1) walked |= kind.start;
-            shooters = walked | dashed;
+            if (k == kind.delay + 1) walked |= kind.start, moved |= kind.start;
+            if (!known) near_moved = grow(moved);
+            if (!split) near_walked = near_moved;
             // A spell is cast once, but on whichever turn suits it: its first two ready turns count.
-            if (kind.burst > 0 && (k == kind.burst_turn || k == kind.burst_turn + 1)) strike(k, shooters, kind.burst, kind.blind);
+            if (kind.burst > 0 && (k == kind.burst_turn || k == kind.burst_turn + 1)) strike(k, moved, near_moved, kind.burst, kind.blind);
             // A ranged pursuer shoots from where it stood, or after a dash from an undashed tile.
-            if (kind.ranged && dash) shooters |= landed_ready ? landed : dash_landings_of(walked, path_them, walk_them);
-            walked = grow(walked) & walk_them;
-            if (kind.dash_turn > 0) {
-                dashed = grow(dashed) & walk_them;
-                if (dash) {
-                    landed = dash_landings_of(walked, path_them, walk_them), landed_ready = true;
-                    dashed |= landed;
+            if (kind.ranged) {
+                if (dash && !split) {
+                    const Rows shooters = moved | dash_landings(near_walked, path_them, walk_them);
+                    strike(k, shooters, grow(shooters), kind.reach, false);
+                } else {
+                    strike(k, moved, near_moved, kind.reach, false);
                 }
             }
-            if (!kind.ranged) shooters = walked | dashed;
-            strike(k, shooters, kind.reach, false);
+            walked = near_walked & walk_them, moved = near_moved & walk_them;
+            if (dash) {
+                near_walked = grow(walked), split = true;
+                moved |= dash_landings(near_walked, path_them, walk_them);
+            }
+            known = !kind.ranged;
+            if (known) {
+                near_moved = grow(moved);
+                strike(k, moved, near_moved, kind.reach, false);
+            }
         }
     }
     for (int k = 1; k <= horizon; ++k) hit_[k] &= ~spawn;
@@ -382,13 +402,13 @@ template <bool Dash>
         const Rows hit = hits[k], clear = ~hit;
         const Rows g0 = grow(s00 & clear), g1 = grow((s10 & clear) | (s00 & hit));
         if constexpr (Dash) {
-            Rows k0 = grow(s01 & clear), k1 = grow((s11 & clear) | (s01 & hit));
+            Rows k0 = s01 & clear, k1 = (s11 & clear) | (s01 & hit);
             if (k >= dash_turn) {
                 // The tiles a dash from lands in T (dash spent), stood on after this turn's walk.
-                k0 |= grow((grow(g0 & path) | g0) & walk);
-                k1 |= grow((grow(g1 & path) | g1) & walk);
+                k0 |= dash_landings(g0, path, walk);
+                k1 |= dash_landings(g1, path, walk);
             }
-            s01 = k0 & walk, s11 = k1 & walk;
+            s01 = grow(k0) & walk, s11 = grow(k1) & walk;
         }
         s00 = g0 & walk, s10 = g1 & walk;
     }
