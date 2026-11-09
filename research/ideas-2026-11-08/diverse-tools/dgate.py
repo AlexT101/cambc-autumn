@@ -37,15 +37,24 @@ def done(n):
     return s['games'] + s['errors'] >= LADDER_GAMES
 def release(n): return json.load(open(f'{R}replays/ab/{n}/summary.json')).get('release') is True
 
+# cambc 5.0.1 changed ~7% of outcomes against 5.0.0 (oc-base25 +1.1 pts against the bodies), so a pair is read only from
+# runs of the engine installed now. Runs before ab.py recorded `cambc` are dated: 5.0.1 from 14:44 on 2026-11-09.
+CAMBC = subprocess.run(['cambc', '--version'], capture_output=True, text=True).stdout.split()[-1]
+def engine(n):
+    s = json.load(open(f'{R}replays/ab/{n}/summary.json'))
+    return s.get('cambc') or ('5.0.1' if s['started'] >= '20261109-144400' else '5.0.0')
+
 def rname(bot, b, o):
-    """The run of (bot vs member): an existing release run under spar_ab's names, else a new name. Runs from before
-    ab.py played release builds (no 'release' key: legacy spar-c25-o29F and the like) are never paired with release ones."""
+    """The run of (bot vs member): an existing complete release run on this engine under spar_ab's names, else a new
+    name tagged with the engine. Runs from before ab.py played release builds (no 'release' key: legacy spar-c25-o29F
+    and the like) are never paired with release ones."""
     tag = os.path.basename(bot.rstrip('/')).removeprefix('oc-')
     v = '2' if NEW else ''
     names = [f'spar-c{tag}-{b}{o}{v}', f'spar-c{tag.removeprefix("base")}-{b}{o}{v}', f'spar-c{tag}-{b}{o}{v}-rel']
+    names += [f'{n}-e{CAMBC.replace(".", "")}' for n in names[:1]]
     for n in names:
-        if done(n) and release(n): return n
-    return names[2] if done(names[0]) else names[0]
+        if done(n) and release(n) and engine(n) == CAMBC: return n
+    return names[-1]
 
 def build_seed(k):
     # Gates sharing the pool build the same seed at once, and a body dir exists before it is patched, so a seed counts

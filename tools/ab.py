@@ -473,6 +473,9 @@ def main():
         "notes": notes,
         "suites": results,
     }
+    # Engines change outcomes (5.0.1 against 5.0.0: ~7% of games), so runs record which one played them.
+    with contextlib.suppress(OSError, IndexError):
+        summary["cambc"] = subprocess.run(["cambc", "--version"], capture_output=True, text=True).stdout.split()[-1]
     # A suite without OOF counts (a release build on stock cambc) would read as 0 in the totals.
     if any(r.get("oof_error") for r in results):
         summary["oof_error"] = "; ".join(sorted({r["oof_error"] for r in results if r.get("oof_error")}))
