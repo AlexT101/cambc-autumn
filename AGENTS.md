@@ -10,12 +10,12 @@ Always read `cambc-rules.yaml` if you haven't already. Your next message should 
 ## Bots
 
 C++ only.
-- **astraeus** and **ocean** are our main bots. Changes often move between them: each shipped change is in [CHANGES.md](research/hyperion/CHANGES.md), tagged with its bot and date, with its evidence in [EXPERIMENTS.md](research/EXPERIMENTS.md); open work is in [TODO.md](research/hyperion/TODO.md). Frozen copies for A/Bs live in `bots/variants/`. ocean is `variants/oc-base29` plus CHANGES 472's helper/dead-code cleanup and 473's exact ward sight (`variants/oc-wardexact`) and 474's fuel-only terrain windows, and 475's chase seats, chase bit and healed-at-home beliefs (`variants/oc-cl2-merged`) and 476's last-rank chase seats (`variants/oc-cl2-seat5m`) (CHANGES 471: soup-k's heavier fight emblems, later Tribute emblem and cheaper casts, on oc-base28's no altar-deny lock before round 600 and 469's cleanup).
+- **astraeus** and **ocean** are our main bots. Changes often move between them: each shipped change is in [CHANGES.md](research/hyperion/CHANGES.md), tagged with its bot and date, with its evidence in [EXPERIMENTS.md](research/EXPERIMENTS.md); open work is in [TODO.md](research/hyperion/TODO.md). Frozen copies for A/Bs live in `bots/variants/`; the latest CHANGES entry for a bot names the copy that equals it.
 - **fish** tests replicating Intercontinental Fish's behaviour ([PLAN.md](research/fish-bot-2026-11-06/PLAN.md)).
 - The other bots are older experiments and baselines, kept for reference.
 - Their `src/`: `bot.cc` is the turn (`decide`); its branches are in `economy/` and `combat/`, sharing `bot_parts.h`; `model/` is the world, pathing and safety; `draft/` the draft. `unity.cpp` includes every `.cc`: a new one goes there.
 - `ab.py`'s git refs build `bots/hyperion` (the main bot before astraeus). To A/B astraeus or ocean, pass bot directories: the working one and a frozen copy of a commit's, e.g. `./copybot -r <sha> astraeus variants/astraeus-<sha7>`.
-- Drafts are compiled in. ocean drafts from draft7's F92 model (draft6's ladder-mix lab repeated with oc-base10 the player; CHANGES 454, oc-base14); astraeus stays on draft5. With `params::test_draft` on, a bot plays ladder compositions (`tools/draftlab/test_comps.py`) in place of its own draft; every bot directory's is off.
+- Drafts are compiled in. ocean drafts from draft7's F92 model (CHANGES 454); astraeus stays on draft5. With `params::test_draft` on, a bot plays ladder compositions (`tools/draftlab/test_comps.py`) in place of its own draft; every bot directory's is off.
 - The engine is cambc 5.0.0; frozen baselines and `tools/replay/harness` trace bots keep their 2.0.0 stat tables.
 - `bots/baselines/` holds frozen A/B baselines: never edit them; delete one once current bots beat it ~80% of the time.
 - When copying a bot, leave out `.cambc/` (its CMake cache breaks the build): `./copybot SRC DST` does (`-f` replaces DST, `-r REF` copies a commit's).
