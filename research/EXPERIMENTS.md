@@ -72,6 +72,44 @@ Verdict: null. Half the teams change, but the wins don't. The refit's better log
 Not queued live. Only a 2x fuel screen was left out: the play code is identical and the draft turn is checked above.
 Files: `~/tmp-offload/draft9` (lab, f92, dgate.out, firstturn.out, teams-*.txt).
 
+## (ocean = oc-base25, 2026-11-09) Escape planner (478) on the v87 line: live bar on v87 and on oc-base31; oc-base32 queued
+
+The diff 478 makes to ocean (`model/escape.{h,cc}`, plus the retreat_step and escape_landings hooks in fight.cc and
+self_abilities.cc and the `params::escape` gates) was ported onto oc-base25 as `variants/v87-esc`. oc-base32 =
+oc-base31 + the same hunks, applied clean: the oc-base31 → oc-base32 diff equals oc-base25 → v87-esc line for line.
+It is 478 as committed, without 480's fuel-only rewrite or 481's chase verdict.
+
+Results on the new-body dgate (Fl/Mt3, 0.505/0.5075, release, real budget):
+
+| cand vs base | outcome | pts (95%) | units | Fish / Mite picks | one-site / multi |
+|---|---|---|---|---|---|
+| v87-esc vs oc-base25 | LIVE BAR H1 | +1.55 ±0.43 | 15,872 | +1.19 / +1.91 | +1.36 / +1.66 |
+| oc-base32 vs oc-base31 | LIVE BAR H1 (screen at 7,424) | +1.59 ±0.45 (post-screen +1.32) | 14,277 | +2.00 / +1.18 | +1.40 / +1.70 |
+
+- **Adding it to oc-base31 keeps the gain:** +1.59 against +1.55 on v87, and the escape gain doesn't shrink on top of
+  dfp-pure + ft-k. Fish and Mite swap places: v87-esc gains most against Mite's picks, oc-base32 against Fish's.
+- **Fuel, release, real budget** (dgate's shared runs: 58-60k games of each bot against the same opponents):
+  - OOF turns are 12.30 a game against 11.48 (+7%);
+  - games with any OOF turn are 80.4% against 78.8%.
+- **Fuel, debug fp copies** (`oc-base32-fp`, ESC/ESCS lines; ladder + `escport-1450000`, 768 games):
+  - at 1x, the 50k gate skips 16-17% of builds;
+  - a build costs 9.6-9.7k mean, p99 16-17k, max 25.6k;
+  - the most the plan spent in one turn was 46.4k (two builds plus the slack pass, in 0.4-0.5% of turns), p99 17k;
+  - at 100M, ungated: p99 18k a build, 22-24k a turn, max 46k.
+  - The planner can't empty a turn by itself, because a build only starts with at least 50k left.
+- **Fuel, bench at 100M** (128 ladder maps, against oc-base31, a turn's total fuel), oc-base32 against oc-base31:
+  - mean 52.2k against 51.1k;
+  - p99 112.7k against 110.6k;
+  - turns over 100k 2.09% against 1.78%;
+  - max 324k against 315k.
+- The debug fp A/B against oc-base31 read 47.9% (44.4-51.5) of 768. That is debug builds on a small sample, so it is
+  not a gate.
+- Queued live at p85 as `live-oc-base32` (tree 7a82c7c28a48), paired against v99 (oc-base31) and v87. Live
+  can't resolve a 1-point gain on one pair, so read it next to the pooled average of comparable versions on each
+  opponent.
+- Next: oc32-fs-nh (oc-base32 + oc31-fs-nh's fs-enemy and nh-6-3 diff) on dgate against oc-base32. 480 (fuel-only,
+  identical plans) and 481 (chase verdict, +8% OOF) are open ports onto oc-base32.
+
 ## (ocean = oc-base25, 2026-11-09) oc-base31: dfp-pure + ft-k on v87; the parts add up on the new-body dgate
 
 oc-base31 = oc-base25 + v87-dfp-pure's diff + v87-ft-k's diff (patches in `~/tmp-offload/narrow/patches/`; clean

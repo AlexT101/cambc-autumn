@@ -3895,3 +3895,26 @@ Open: the +8% OOF, mostly the ungated build in `chase_aim()` before the strike s
 (`merged/plan3-dev` is reserved for it).
 
 Evidence: EXPERIMENTS "Chase verdict" and "Chase verdict held out"; research/retreat-2026-11-09/chase-verdict.md.
+
+## 482: oc-base32: 478's escape planner on oc-base31 (ocean, 2026-11-09)
+
+`variants/oc-base32` = `variants/oc-base31` (v99) plus 478's escape planner diff and nothing else; not in bots/ocean.
+The diff is the same as `variants/v87-esc` against oc-base25:
+- `model/escape.{h,cc}`;
+- the retreat_step and escape_landings hooks (fight.cc, self_abilities.{h,cc});
+- `params::escape` (a build needs 50k left, the slack pass 40k).
+
+It does not include 480's fuel-only rewrite or 481's chase verdict.
+
+Results on the new-body dgate (release, real budget):
+- Against oc-base31: LIVE BAR H1 at +1.59 ±0.45 pts over 14,277 units (post-screen +1.32). Fish picks +2.00, Mite
+  +1.18; one-site +1.40, multi-site +1.70.
+- The same diff on v87 (v87-esc against oc-base25): LIVE BAR H1 at +1.55 ±0.43.
+
+Fuel:
+- OOF turns are +7% a game (12.30 against 11.48, release).
+- A build costs ~9.7k mean (p99 ~17k). The most the planner spent in one turn was 46k.
+
+Queued live at p85 as `variants/live-oc-base32` (frozen copy), paired against v99 and v87.
+
+Evidence: EXPERIMENTS "Escape planner (478) on the v87 line".
