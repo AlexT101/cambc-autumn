@@ -12368,6 +12368,13 @@ read in play. Details in CHANGES 461. Checks:
   H1 at alpha 0.01, LLR 4.62), live and pinned since 01:06, 104 r2 groups, paired against v87. v95 is masked
   (mask_rev 51f3f74deb70, about +28 fuel a turn) while v87 went up uncoded, so most of the pairing is a fuel reroll
   (v93 repeated only 11 of 512 of its parent's games); the null controls that would have sized it were dropped.
+- **Live gate (r2): v95 (v87-nh-6-3).** 104 groups, 512 games, done 03:31 UTC: Fish 67.2%, Mite 62.9%. Paired against
+  v87 (its base): **+5 (41 / 36, z +0.57), level**; Fish +6 (z +1.18), Mite -1. Against v86 -4 (z -0.32), v89 +8
+  (z +0.69), v93 +23 (106 / 83, z +1.67; Fish +19, z +1.95). v95 is masked and v87 is not, yet 235 of 512 games repeat
+  v87's: with the cheaper mask (51f3f74deb70, about +28 fuel a turn) the reroll is smaller than v93's (11 / 512 on
+  cd68d6ef305c). In games with no Heart of Ruin, where 468's floor can't act, 9 of 32 games changed: that's the mask's
+  reroll rate. HoR on both sides +6 (z +1.03), theirs only 0, ours only +1. OOF turns 11.7 -> 11.2 per 1k rounds. The
+  local dgate called nh-6-3 H0 (+0.07 +-0.41); live agrees that there's no visible effect (first live check of dgate's call).
 
 ## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
 
