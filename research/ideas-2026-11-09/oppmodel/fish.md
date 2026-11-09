@@ -57,3 +57,23 @@ Archive extract (all Fish games 11-07..09, per-game summaries): ~/tmp-offload/fi
   it leads +207 at r200 and +693 at r600).
 - Kills before r400: Fish dies to camps 0.42/g (15% of its deaths) vs our 0.19/g. Fish's Marcella makes
   0.66 kills/g early, HoR 0.48, Vendetta 0.38.
+
+## Handoff for fish-coh (2026-11-10)
+- bots/fishx = variants/ocean-16d6f78 plus the following:
+  - The opponent classifier (model/opp_class.{h,cc}, opp_token.h, opp_tables.h from variants/ocean-opp, v2: +71 fuel a turn). Its hooks: `#include "opp_class.h"` and `opp::observe(*this);` at the end of World::update in model/world.cc; `if (side == 1) opp::note(b.index, priority);` in World::read_priorities; and `#include "model/opp_class.cc"` in unity.cpp.
+  - The switch, model/fishx.h: `fishx::on(world)` is true when the posterior's Fish share is at least `fish_on` (0.8). `params::opp_fish_stub` >= 0 overrides the posterior (1 forces the arm on, 0 forces it off); fishx's default is -1 (use the classifier). Local Fish bodies read as "other" (they write ocean's priorities), so freeze gate variants with opp_fish_stub = 1.
+  - The parked deny arms, each behind fishx::on:
+    - lock_plan_turn, channel_to_deny and lock_plan in combat/fight.cc, with the entry points in bot.cc;
+    - a comms "deny" record (model/comms.cc, laid out after the other fields) with post_denial and adopt_told_deny.
+    To start clean, delete them, or copy variants/ocean-16d6f78 and take only the classifier, the hooks and fishx.h.
+- Frozen copies: bots/variants/fx1-deny, fx2-denyc (both with stub 1; variants/ is gitignored).
+- Scripts in ~/tmp-offload/fishre/tools/:
+  - fl.py is the loader: `games(filt, limit, rounds)` over the decoded real replays. With env LOCAL=<extract.mjs --out dir> it reads an ab batch (-12: Fish body is team B).
+  - pairs.py measures cohesion and pair proximity.
+  - hazard.py gives the death hazard by foes-mates and health; cohesion.py gives mates within 5 and the reaction when outnumbered.
+  - killctx.py gives kill contexts (RMAX=); hidden.py, econ.py, denymech.py, tributes.py, bagkills.py, deaths.py us, ourdeaths.py.
+- Data:
+  - Real replays decoded in ~/tmp-offload/fishre/ana2 (latest Fish since 11-08 16:00: ~500 vs us + 490 vs others) and ana (11-07). The raw replays are ~/tmp-offload/oppre/replays/fish/ (list.tsv) and the dl/ downloads (Fish vs non-Mite; slow worker, PID in ~/tmp-offload/fishre/dl.pid, done file oppre/replays/fish-dl.done).
+  - Local decodes: ~/tmp-offload/fishre/anaL (base vs Flp), ~/tmp-offload/diverse/flp2/ana (base vs Flp2), ~/tmp-offload/fishre/anaX2 (fx2 vs Flp2).
+  - All Fish matches since 11-05: ~/tmp-offload/fishre/fish_matches.tsv. Archive extracts: ~/tmp-offload/fishre/arch/.
+- Keep replays in an ab run with `--keep-replays 0`, then decode with `node tools/replay/extract.mjs <batch> --out DIR`; fgate prunes its replays.
