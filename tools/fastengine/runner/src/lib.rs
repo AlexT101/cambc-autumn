@@ -6,6 +6,8 @@
 //!                        [--rounds N] [--log-limit B] [--release] [--slot-dir DIR --slots N]
 //!   fastrunner scenario SPECS.jsonl --bot-a BOT --bot-b BOT --rollouts N --rounds H --out OUT.jsonl [--jobs J]
 //!                        (FASTRUNNER_ENGINE=wasm; the combat lab's scenarios, src/scenario.rs)
+//!   fastrunner forkgame --bot-a BOT --bot-b BOT --maps M,... --out OUT.jsonl [--jobs J]
+//!                        (FASTRUNNER_ENGINE=wasm; forks of real games, src/forkgame.rs)
 //!   fastrunner __fastrunner     (prints "fastrunner slots": how run_batched.py recognises it)
 //!
 //! Manifest lines: BOT_A BOT_B MAP OUT.repl26a [--statistics OUT.camstat]; paths relative to the
@@ -29,6 +31,8 @@ mod stats;
 pub mod wengine;
 #[cfg(wasm_engine)]
 mod scenario;
+#[cfg(wasm_engine)]
+mod forkgame;
 
 /// cambc's __libc_start_main, with main replaced by ours when FASTRUNNER_MAIN is set.
 type StartMain = unsafe extern "C" fn(
@@ -57,7 +61,7 @@ pub unsafe extern "C" fn __libc_start_main(
     // cambc command (build, bundle, ...) runs as stock, without us in its children.
     if !libc::getenv(c"FASTRUNNER_MAIN".as_ptr()).is_null() && engine::is_cambc_process() {
         let cmd = if argc > 1 { std::ffi::CStr::from_ptr(*argv.add(1)).to_bytes() } else { b"" };
-        ours = matches!(cmd, b"run" | b"run-batch" | b"__worker" | b"__fastrunner" | b"__fuzzdf" | b"__pgotrain" | b"__wsnap" | b"scenario" | b"__scenario_worker");
+        ours = matches!(cmd, b"run" | b"run-batch" | b"__worker" | b"__fastrunner" | b"__fuzzdf" | b"__pgotrain" | b"__wsnap" | b"scenario" | b"__scenario_worker" | b"forkgame" | b"__forkgame_worker");
         if !ours {
             libc::unsetenv(c"LD_PRELOAD".as_ptr());
             libc::unsetenv(c"FASTRUNNER_MAIN".as_ptr());
@@ -750,6 +754,10 @@ fn real_main() -> Result<i32> {
         Some("scenario") => return scenario::main(&args[2..]),
         #[cfg(wasm_engine)]
         Some("__scenario_worker") => return scenario::worker_main(&args[2..]),
+        #[cfg(wasm_engine)]
+        Some("forkgame") => return forkgame::main(&args[2..]),
+        #[cfg(wasm_engine)]
+        Some("__forkgame_worker") => return forkgame::worker_main(&args[2..]),
         #[cfg(not(wasm_engine))]
         Some("scenario") => bail!("fastrunner scenario needs the wasm engine (build.rs found no wasm2c or clang)"),
         _ => {}

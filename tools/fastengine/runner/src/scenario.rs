@@ -27,28 +27,28 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
 
-const OBS: u64 = 2 | (u32::MAX as u64) << 32;
+pub(crate) const OBS: u64 = 2 | (u32::MAX as u64) << 32;
 /// The lab warm start's default fuel before its warm point (`--warm-pre`; 0: as the first turn spent it): the
 /// mean of lab ocean's later turns (median 7.1k, p90 10.4k); a fresh instance's first world update takes ~50k.
 const WARM_PRE: u32 = 7300;
 const WARM_RADIUS: i32 = 12;
-type P = *mut u8;
+pub(crate) type P = *mut u8;
 
-fn ck(r: i32, what: &str) -> Result<()> {
+pub(crate) fn ck(r: i32, what: &str) -> Result<()> {
     if r != 0 {
         bail!("{what} failed ({r}): {}", unsafe { args::last_error() });
     }
     Ok(())
 }
 
-fn err_of(r: u32) -> String {
+pub(crate) fn err_of(r: u32) -> String {
     format!("{r} {}", unsafe { args::last_error() })
 }
 
-fn fnv(h: u64, b: &[u8]) -> u64 {
+pub(crate) fn fnv(h: u64, b: &[u8]) -> u64 {
     b.iter().fold(h, |h, &x| (h ^ x as u64).wrapping_mul(0x0100_0000_01B3))
 }
-const FNV0: u64 = 0xCBF2_9CE4_8422_2325;
+pub(crate) const FNV0: u64 = 0xCBF2_9CE4_8422_2325;
 
 // ---------------------------------------------------------------- spec
 
@@ -170,31 +170,31 @@ fn parse_spec(v: &Value, root: &Path) -> Result<Spec> {
 // ---------------------------------------------------------------- engine reads and edits
 
 #[derive(Clone, Copy, Debug)]
-struct Ch {
-    x: i32,
-    y: i32,
-    hp: f32,
-    max: f32,
+pub(crate) struct Ch {
+    pub x: i32,
+    pub y: i32,
+    pub hp: f32,
+    pub max: f32,
 }
 
-struct W {
-    g: Game,
+pub(crate) struct W {
+    pub g: Game,
 }
 
 impl W {
-    fn st(&self) -> [u32; 4] {
+    pub(crate) fn st(&self) -> [u32; 4] {
         let mut s = [0u32; 4];
         unsafe { shim::Game_Runner_GetState(self.g, s.as_mut_ptr() as P) };
         s
     }
-    fn end(&self, kind: u32) -> Result<()> {
+    pub(crate) fn end(&self, kind: u32) -> Result<()> {
         ck(unsafe { shim::Game_Runner_EndTurn(self.g, kind) }, "EndTurn")
     }
-    fn adv(&self) -> Result<()> {
+    pub(crate) fn adv(&self) -> Result<()> {
         ck(unsafe { shim::Game_Runner_Advance(self.g) }, "Advance")
     }
     /// Advances through runner steps to the next champion's turn (or the game's end).
-    fn boundary(&self) -> Result<[u32; 4]> {
+    pub(crate) fn boundary(&self) -> Result<[u32; 4]> {
         loop {
             let s = self.st();
             if s[0] == 2 || s[1] != 2 {
@@ -203,11 +203,11 @@ impl W {
             self.adv()?;
         }
     }
-    fn alive(&self, id: u32) -> bool {
+    pub(crate) fn alive(&self, id: u32) -> bool {
         let mut o = 0u32;
         unsafe { shim::Game_API_Champion_IsAlive(self.g, id, &mut o as *mut u32 as P) == 0 && o != 0 }
     }
-    fn champ(&self, id: u32) -> Option<Ch> {
+    pub(crate) fn champ(&self, id: u32) -> Option<Ch> {
         let mut c = [0u32; 11];
         if unsafe { shim::Game_API_Champion_Get(self.g, OBS, id, c.as_mut_ptr() as P) } != 0 {
             return None;
@@ -215,17 +215,17 @@ impl W {
         Some(Ch { x: c[2] as i32, y: c[3] as i32, hp: f32::from_bits(c[4]), max: f32::from_bits(c[5]) })
     }
     /// (team, champion type), readable whether alive or not.
-    fn identity(&self, id: u32) -> (u32, u32) {
+    pub(crate) fn identity(&self, id: u32) -> (u32, u32) {
         let mut c = [0u32; 2];
         unsafe { shim::Game_API_Champion_GetIdentity(self.g, OBS, id, c.as_mut_ptr() as P) };
         (c[0], c[1])
     }
-    fn cd(&self, id: u32, s: u32) -> Option<u32> {
+    pub(crate) fn cd(&self, id: u32, s: u32) -> Option<u32> {
         let mut o = 0u32;
         (unsafe { shim::Game_API_Champion_GetCooldown(self.g, OBS, id, s, &mut o as *mut u32 as P) } == 0).then_some(o)
     }
     /// (type, turns, amount): 0 shield, 1 stun, 2 enhanced attack.
-    fn buffs(&self, id: u32) -> Vec<(u32, u32, f32)> {
+    pub(crate) fn buffs(&self, id: u32) -> Vec<(u32, u32, f32)> {
         let mut b = [0u32; 3 * 8];
         let mut n = 0u32;
         if unsafe { shim::Game_API_Champion_GetBuffData(self.g, OBS, id, b.as_mut_ptr() as P, 8, &mut n as *mut u32 as P) } != 0 {
@@ -233,36 +233,36 @@ impl W {
         }
         (0..n.min(8) as usize).map(|i| (b[3 * i], b[3 * i + 1], f32::from_bits(b[3 * i + 2]))).collect()
     }
-    fn shield(&self, id: u32) -> f32 {
+    pub(crate) fn shield(&self, id: u32) -> f32 {
         self.buffs(id).iter().filter(|b| b.0 == 0).map(|b| b.2).sum()
     }
-    fn gold(&self, id: u32, team: u32) -> u32 {
+    pub(crate) fn gold(&self, id: u32, team: u32) -> u32 {
         let mut o = 0u32;
         unsafe { shim::Game_API_Champion_GetGold(self.g, persp(team, id), id, &mut o as *mut u32 as P) };
         o
     }
-    fn tributed(&self, team: u32) -> u32 {
+    pub(crate) fn tributed(&self, team: u32) -> u32 {
         let mut o = 0u32;
         unsafe { shim::Game_API_GetSubmittedGemCount(self.g, team, &mut o as *mut u32 as P) };
         o
     }
-    fn gems(&self, id: u32) -> u32 {
+    pub(crate) fn gems(&self, id: u32) -> u32 {
         let mut o = 0u32;
         unsafe { shim::Game_API_Champion_GetGems(self.g, OBS, id, &mut o as *mut u32 as P) };
         o
     }
-    fn items(&self, id: u32) -> Vec<(u32, u32)> {
+    pub(crate) fn items(&self, id: u32) -> Vec<(u32, u32)> {
         let mut b = [0u32; 84];
         unsafe { shim::Game_API_Champion_GetItems(self.g, OBS, id, b.as_mut_ptr() as P, 84) };
         (0..84).filter(|&i| b[i] > 0).map(|i| (i as u32, b[i])).collect()
     }
-    fn cons(&self, id: u32) -> [u32; 4] {
+    pub(crate) fn cons(&self, id: u32) -> [u32; 4] {
         let mut b = [0u32; 4];
         unsafe { shim::Game_API_Champion_GetConsumables(self.g, OBS, id, b.as_mut_ptr() as P, 4) };
         b
     }
     /// (state: 0 dead, 1 awake, 2 asleep; health)
-    fn camp(&self, id: u32) -> Option<(u32, f32)> {
+    pub(crate) fn camp(&self, id: u32) -> Option<(u32, f32)> {
         let mut s = 0u32;
         let mut c = [0u32; 8];
         unsafe {
@@ -278,7 +278,7 @@ impl W {
         }
         Some((s, f32::from_bits(c[2])))
     }
-    fn champion_ids(&self) -> Result<Vec<u32>> {
+    pub(crate) fn champion_ids(&self) -> Result<Vec<u32>> {
         let mut n = 0u32;
         ck(unsafe { shim::Game_API_Champion_GetNumAllies(self.g, OBS, &mut n as *mut u32 as P) }, "GetNumAllies")?;
         let mut ids = vec![0u32; n as usize];
@@ -288,12 +288,12 @@ impl W {
         Ok(ids)
     }
     /// A champion's ward (charges, recharge rounds).
-    fn ward_res(&self, id: u32) -> Option<(u32, i32)> {
+    pub(crate) fn ward_res(&self, id: u32) -> Option<(u32, i32)> {
         let mut o = [0u32; 2];
         (unsafe { shim::Game_API_Champion_GetWards(self.g, OBS, id, o.as_mut_ptr() as P) } == 0).then_some((o[0], o[1] as i32))
     }
     /// Every ward on the map: (owner, team, x, y).
-    fn wards(&self) -> Vec<(u32, u32, i32, i32)> {
+    pub(crate) fn wards(&self) -> Vec<(u32, u32, i32, i32)> {
         let mut b = [0u32; 6 * 64];
         let mut n = 0u32;
         if unsafe { shim::Game_API_GetWards(self.g, OBS, b.as_mut_ptr() as P, 64, &mut n as *mut u32 as P) } != 0 {
@@ -302,24 +302,24 @@ impl W {
         (0..n.min(64) as usize).map(|k| (b[6 * k + 5], b[6 * k], b[6 * k + 1] as i32, b[6 * k + 2] as i32)).collect()
     }
     /// The champion at the input boundary places its ward.
-    fn place_ward(&self, x: i32, y: i32) -> u32 {
+    pub(crate) fn place_ward(&self, x: i32, y: i32) -> u32 {
         let mut o = 0u32;
         (unsafe { shim::Game_Action_PlaceWard(self.g, x as u32 as u64 | (y as u32 as u64) << 32, &mut o as *mut u32 as P) }) as u32
     }
-    fn teleport(&self, id: u32, x: i32, y: i32) -> u32 {
+    pub(crate) fn teleport(&self, id: u32, x: i32, y: i32) -> u32 {
         unsafe { w2c_engine_Game_Sandbox_Teleport(wengine::instance(), self.g, args::entity(0, 1, id), args::pos(1, x, y)) }
     }
     /// Damage from no source (kind 0) to a champion (kind 1) or camp (kind 2).
-    fn damage(&self, kind: u32, id: u32, amount: f32) -> u32 {
+    pub(crate) fn damage(&self, kind: u32, id: u32, amount: f32) -> u32 {
         unsafe { w2c_engine_Game_Sandbox_Damage(wengine::instance(), self.g, args::entity(0, 0, 0), args::entity(1, kind, id), amount) }
     }
-    fn buff(&self, kind: u32, id: u32, ty: u32, turns: u32, amount: f32) -> u32 {
+    pub(crate) fn buff(&self, kind: u32, id: u32, ty: u32, turns: u32, amount: f32) -> u32 {
         unsafe { w2c_engine_Game_Sandbox_Buff(wengine::instance(), self.g, args::entity(0, kind, id), ty, turns, amount) }
     }
-    fn give_gold(&self, id: u32, n: u32) -> u32 {
+    pub(crate) fn give_gold(&self, id: u32, n: u32) -> u32 {
         unsafe { w2c_engine_Game_Sandbox_GiveGold(wengine::instance(), self.g, id, n) }
     }
-    fn give_gems(&self, id: u32, n: u32) -> u32 {
+    pub(crate) fn give_gems(&self, id: u32, n: u32) -> u32 {
         unsafe { w2c_engine_Game_Sandbox_GiveGems(wengine::instance(), self.g, id, n) }
     }
 }
@@ -370,12 +370,12 @@ impl DraftCache {
 // ---------------------------------------------------------------- the lab bot's control block
 
 /// tools/combatlab/lab.h's LabBlock: found by its magic in a lab bot's linear memory, read and written between turns.
-const LAB_MAGIC: &[u8; 16] = b"CAMBC-LAB-BLK-1\0";
-const LAB_SIZE: u32 = 512;
+pub(crate) const LAB_MAGIC: &[u8; 16] = b"CAMBC-LAB-BLK-1\0";
+pub(crate) const LAB_SIZE: u32 = 512;
 /// A bot's feature block (`--hitlog`): magic, version, size, round, bytes used, then the bytes. The bot fills it in
 /// its turn; the runner copies it into that turn's hit record (base64) when its round is the turn's.
 const FEAT_MAGIC: &[u8; 16] = b"CAMBC-LAB-FEAT-1";
-mod lb {
+pub(crate) mod lb {
     pub const FLAGS: usize = 24;
     pub const WARM_PRE_IN: usize = 28;
     pub const BAN_ROUND: usize = 32;
@@ -424,7 +424,7 @@ fn b64(d: &[u8]) -> String {
     o
 }
 
-fn find_block(m: &[u8]) -> Option<usize> {
+pub(crate) fn find_block(m: &[u8]) -> Option<usize> {
     let mut i = 0;
     while i + 16 <= m.len() {
         let j = i + m[i..].iter().position(|&b| b == b'C')?;
@@ -436,28 +436,28 @@ fn find_block(m: &[u8]) -> Option<usize> {
     None
 }
 
-fn rd_i8(m: &[u8], o: usize) -> i32 {
+pub(crate) fn rd_i8(m: &[u8], o: usize) -> i32 {
     m[o] as i8 as i32
 }
-fn rd_i16(m: &[u8], o: usize) -> i32 {
+pub(crate) fn rd_i16(m: &[u8], o: usize) -> i32 {
     i16::from_le_bytes([m[o], m[o + 1]]) as i32
 }
-fn rd_u16(m: &[u8], o: usize) -> u32 {
+pub(crate) fn rd_u16(m: &[u8], o: usize) -> u32 {
     u16::from_le_bytes([m[o], m[o + 1]]) as u32
 }
-fn rd_i32(m: &[u8], o: usize) -> i32 {
+pub(crate) fn rd_i32(m: &[u8], o: usize) -> i32 {
     i32::from_le_bytes(m[o..o + 4].try_into().unwrap())
 }
-fn rd_u32(m: &[u8], o: usize) -> u32 {
+pub(crate) fn rd_u32(m: &[u8], o: usize) -> u32 {
     u32::from_le_bytes(m[o..o + 4].try_into().unwrap())
 }
-fn rd_u64(m: &[u8], o: usize) -> u64 {
+pub(crate) fn rd_u64(m: &[u8], o: usize) -> u64 {
     u64::from_le_bytes(m[o..o + 8].try_into().unwrap())
 }
-fn rd_f32(m: &[u8], o: usize) -> f64 {
+pub(crate) fn rd_f32(m: &[u8], o: usize) -> f64 {
     (f32::from_le_bytes(m[o..o + 4].try_into().unwrap()) as f64 * 100.0).round() / 100.0
 }
-fn wr_i32(m: &mut [u8], o: usize, v: i32) {
+pub(crate) fn wr_i32(m: &mut [u8], o: usize, v: i32) {
     m[o..o + 4].copy_from_slice(&v.to_le_bytes());
 }
 
@@ -488,11 +488,11 @@ struct Inputs {
 }
 
 /// A forced verdict: (fighter, first round, 0 want_home / 1 chase, verdict, rounds it holds).
-type Force = (u32, i32, u8, i32, i32);
+pub(crate) type Force = (u32, i32, u8, i32, i32);
 
 /// Before fighter `id`'s turn in `round`: a force holding over several rounds is moved to this one (the bot obeys a
 /// force only in its own round).
-fn renew_forces(m: &mut [u8], o: usize, id: u32, round: i32, forces: &[Force]) {
+pub(crate) fn renew_forces(m: &mut [u8], o: usize, id: u32, round: i32, forces: &[Force]) {
     for &(f, r, what, v, span) in forces {
         if f == id && span > 1 && round > r && round < r + span {
             let (ro, fo) = if what == 0 { (lb::HOME_ROUND, lb::HOME_FORCE) } else { (lb::CHASE_ROUND, lb::CHASE_FORCE) };
@@ -533,7 +533,7 @@ fn write_inputs(m: &mut [u8], o: usize, flags: u32, warm: (u32, i32), id: u32, i
 }
 
 /// The block's outputs of the turn just played.
-fn read_decision(m: &[u8], o: usize) -> Value {
+pub(crate) fn read_decision(m: &[u8], o: usize) -> Value {
     let b = |k: usize| rd_i8(m, o + k);
     let mut v = json!({
         "r": rd_i32(m, o + lb::ROUND), "b": (m[o + lb::DECISION] as char).to_string(),
@@ -2093,17 +2093,17 @@ pub mod ph {
 }
 
 /// This thread's CPU time in ms (the box is shared: wall time measures the neighbours too).
-fn cpu_ms() -> f64 {
+pub(crate) fn cpu_ms() -> f64 {
     let mut t = libc::timespec { tv_sec: 0, tv_nsec: 0 };
     unsafe { libc::clock_gettime(libc::CLOCK_THREAD_CPUTIME_ID, &mut t) };
     t.tv_sec as f64 * 1e3 + t.tv_nsec as f64 * 1e-6
 }
 
-fn round1(x: f64) -> f64 {
+pub(crate) fn round1(x: f64) -> f64 {
     (x * 10.0).round() / 10.0
 }
 
-fn mem_hash() -> u64 {
+pub(crate) fn mem_hash() -> u64 {
     let m = wengine::memory();
     let mut h = FNV0;
     for c in m.chunks_exact(8) {

@@ -4,6 +4,7 @@
 // to the bot. With flags 0 and no inputs (rounds -1) the bot plays as the unpatched one.
 #include <cambc.h>
 #include <cstddef>
+#include <cstdlib>
 #include <cstdint>
 
 struct LabCand {
@@ -124,3 +125,90 @@ inline bool lab_stand(int reason, bool verdict) {
     return verdict;
 }
 
+
+// The forced-action block (fastrunner forkgame, research/combat-lab/lab2-notes.md), behind its own magic: ops the
+// runner sets for the turn of `round` (a hold is the runner rewriting `round` before each turn of its span). They run
+// at the start of decide; ocean then plays the rest of the turn on what they left unspent (a world re-read, as after
+// its own reveal). With round -1 the copy plays as without it.
+struct LabActOp {
+    // 1 walk to (x, y): a step, or move_towards for a farther tile; 2 dash to (x, y) (a cast of `slot` at the tile);
+    // 3 basic attack on champion `target`; 4 cast `slot` on champion `target`; 5 cast `slot` at tile (x, y);
+    // 6 cast `slot` with no target (self); 7 end the turn now (decide is skipped); 8 basic attack on camp `target`.
+    std::int8_t op, slot;
+    std::int16_t x, y, pad;
+    std::uint32_t target;
+};
+struct LabAct {
+    char magic[16];
+    std::uint32_t version, size;
+    std::int32_t round, n; // inputs
+    LabActOp ops[4];
+    // Outputs: the round they ran in; per op 0 done, 1 refused by a hidden unit, 2 not run (dead), 3 a far walk found
+    // no step, 100 + the error code if refused; the tile before them.
+    std::int32_t done_round;
+    std::int32_t res[4];
+    std::int32_t from_x, from_y;
+    std::int32_t pad2[5];
+};
+static_assert(sizeof(LabActOp) == 12 && sizeof(LabAct) == 128);
+static_assert(offsetof(LabAct, round) == 24 && offsetof(LabAct, ops) == 32 && offsetof(LabAct, done_round) == 80
+              && offsetof(LabAct, res) == 84 && offsetof(LabAct, from_x) == 100);
+
+extern "C" {
+[[gnu::used, gnu::visibility("default")]] inline LabAct cambc_lab_act = {"CAMBC-LAB-ACT-1", 1, sizeof(LabAct), -1, 0, {}, -1, {}, 0, 0, {}};
+}
+
+// The forced ops of this round's turn, if any. Bit 0: one acted (the world is re-read); bit 1: end the turn now.
+inline int lab_act_run(int round) {
+    auto& a = cambc_lab_act;
+    if (a.round != round || a.n <= 0) return 0;
+    a.done_round = round;
+    int out = 0;
+    cambc::detail::champion_info rec{};
+    const auto me = static_cast<std::uint32_t>(static_cast<cambc::handle_champion_t>(cambc::self()));
+    const bool alive = cambc::detail::sdk_champion(me, &rec) == 0 && rec.x >= 0;
+    a.from_x = alive ? rec.x : -1, a.from_y = alive ? rec.y : -1;
+    // A recall or tribute channel refuses every action: an op other than ending the turn cancels it first.
+    const auto channel = cambc::champion_state::recalling | cambc::champion_state::submitting_gems;
+    bool acts = false;
+    for (int i = 0; i < a.n && i < 4; ++i) acts |= a.ops[i].op != 7;
+    if (alive && acts && cambc::champion_state::from_bits_retain(rec.state).intersects(channel)) cambc::detail::sdk_cancel_channel();
+    for (int i = 0; i < a.n && i < 4; ++i) {
+        const auto& o = a.ops[i];
+        std::int32_t ok = 0, rc = 0;
+        bool far = false;
+        if (o.op == 7) {
+            out |= 2;
+            a.res[i] = 0;
+            continue;
+        }
+        if (!alive) {
+            a.res[i] = 2;
+            continue;
+        }
+        cambc::detail::sdk_champion(me, &rec);
+        switch (o.op) {
+        case 1:
+            if (std::abs(rec.x - o.x) <= 1 && std::abs(rec.y - o.y) <= 1) rc = cambc::detail::sdk_move_to(o.x, o.y, &ok);
+            else {
+                far = true;
+                try {
+                    ok = cambc::self().move_towards({o.x, o.y});
+                } catch (const cambc::error& e) {
+                    rc = static_cast<std::int32_t>(e.code());
+                }
+            }
+            break;
+        case 2:
+        case 5: rc = cambc::detail::sdk_cast(static_cast<std::uint32_t>(o.slot), 0, 0, o.x, o.y, &ok); break;
+        case 3: rc = cambc::detail::sdk_attack(1, o.target), ok = 1; break;
+        case 8: rc = cambc::detail::sdk_attack(2, o.target), ok = 1; break;
+        case 4: rc = cambc::detail::sdk_cast(static_cast<std::uint32_t>(o.slot), 1, o.target, -1, -1, &ok); break;
+        case 6: rc = cambc::detail::sdk_cast(static_cast<std::uint32_t>(o.slot), 0, 0, -1, -1, &ok); break;
+        default: rc = -1; break;
+        }
+        a.res[i] = rc ? 100 + rc : ok ? 0 : far ? 3 : 1;
+        if (!rc && ok) out |= 1;
+    }
+    return out;
+}

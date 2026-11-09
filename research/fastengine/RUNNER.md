@@ -651,3 +651,149 @@ Left, with estimates:
 - The API and shim layer (~14%): a few % at most.
 
 `FR_PHASES=1` prints each worker's CPU by phase to stderr.
+
+## Forks of real games (`fastrunner forkgame`, 2026-11-08)
+
+`forkgame` plays whole local games on the wasm engine and, at chosen rounds, forks the full state and plays
+alternatives from it. The state includes every bot's memory, the shared and capture state, and the channels.
+Source: `src/forkgame.rs`. Lab plan: [PLAN2.md](../combat-lab/PLAN2.md) Phase 1. Usage and results:
+[lab2-notes.md](../combat-lab/lab2-notes.md).
+
+```
+FASTRUNNER_LIB=$PWD/tools/fastengine/runner/target-lab2/release/libfastrunner.so FASTRUNNER_ENGINE=wasm FASTRUNNER_MODE=native \
+  tools/fastengine/runner/fastrunner forkgame --bot-a variants/lab-cl2 --bot-b variants/lab-cl2 \
+  --maps maps/00ambush.map26a[,...] | --games GAMES.jsonl  [--both-sides] --out OUT.jsonl --jobs 16 \
+  [--slot-dir .git/cambc-slots --slots 86] [--trigger near:6,branch:RC] [--decider a|b|both] [--gap 20] [--max-forks 8] \
+  [--min-round 2] [--seed S] [--marks 10,30,60] [--arms none,sweep,end,home:V[:N],chase:V[:N]] [--holds 1,3] \
+  [--ground all] [--work FPGBTW --work-radius 8] [--lab-flags 2] [--full] [--hash] [--decisions] [--digests] \
+  [--save-replays DIR] [--debug]
+```
+
+- **Builds.** It needs the wasm engine (`cfg(wasm_engine)`), so it is built into its own target directory with
+  `CARGO_TARGET_DIR=target-lab2 cargo build --release`. Bots are release builds unless `--debug` is passed. Games
+  in `GAMES.jsonl` are `{"id", "map", "a", "b"}`; `--maps` with `--both-sides` makes both orders.
+- **Pass 1** plays the game whole and records, each round, a digest of the champions' state, their alive mask and
+  each decision's branch. The digest covers every champion's `Champion_Get` record, alive, gems and cooldowns, plus
+  both teams' tributed gems and the timeline position. Triggers on the decider team's champions:
+  - `near:D`: an enemy comes within D, at onset;
+  - `close:D`: every turn with an enemy within D;
+  - `branch:CHARS`: the decision branch is one of CHARS (the lab block's branch chars; `RC` is retreat or chase);
+  - `death:N` / `kill:N`: N rounds before one of ours dies, or an enemy dies;
+  - `every:K`: every K rounds.
+
+  Candidates whose decider is alive in rounds `--min-round`..end are merged per (round, champion) and kept at least
+  `--gap` rounds apart per champion. If more than `--max-forks` remain, a seeded sample is taken.
+- **Pass 2** replays the game from scratch and checks every main-line round's digest against pass 1. At a fork's
+  boundary (before the decider's turn) it snapshots the state: the engine memory, the host state, every bot (as in
+  the scenario layer's fork), the log lengths and the loop's tallies. It plays each arm from that snapshot, then
+  restores it and goes on. It stops after the last fork unless `--full` is passed; then it plays to the end and
+  compares the final replay bytes with pass 1's.
+- **Arms**:
+  - `none`: the bots' own play. Its digests are checked against pass 1 over the whole horizon.
+  - `sweep`: one arm per legal action of the decider × `--holds`.
+  - `end`: the turn is ended at once, × holds.
+  - `home:V[:N]` / `chase:V[:N]`: the lab block's forced verdicts for N rounds.
+
+  Each arm plays `max(marks)` rounds.
+- **Legal actions** are found by trying each candidate on the engine, cancelling a recall or tribute channel first,
+  and restoring after each try. Candidates:
+  - the 8 walks;
+  - a basic attack on each alive enemy champion;
+  - per ready ability slot, by its props' target mask: self, an enemy or ally champion, a ground tile within 4
+    (`--ground all`; by default one tile per distinct set of enemies within 1 of it, empty sets dropped), and dashes
+    to tiles within 2 that move the caster;
+  - `end`.
+
+  Ocean starts every turn mid recall (its feint), so the fork row records `channel_cancelled`.
+- **Forced actions** go through a second block in `tools/combatlab/lab.h`, `LabAct` (128 bytes, magic
+  `CAMBC-LAB-ACT-1`), which `labify.py` patches in as `lab_act_run` at the start of `decide`:
+  - The runner writes up to 4 ops for one round:
+    - 1 walk (a step, or `move_towards` for a farther tile);
+    - 2 dash;
+    - 3 attack a champion;
+    - 4 cast on a champion;
+    - 5 cast at a tile;
+    - 6 cast with no target;
+    - 7 end the turn;
+    - 8 attack a camp.
+  - The op runs, the bot re-reads its world (`see_again`, `see_stuns`) and plays the rest of the turn itself;
+    op 7 skips `act` entirely.
+  - A hold of N rewrites the ops before each of the decider's next N turns. A held walk heads to the tile N - 1
+    steps further on.
+  - `res` per op: 0 done, 1 refused by a hidden unit (rc 0, out 0), 2 dead, 3 a far walk found no step, and
+    100 + the engine's error code otherwise.
+- **Output**, one JSON line per row:
+  - `game`: the champions, rounds, winner, deaths, the branch histogram, the checks (`check.main_ok`,
+    `none_arms_differing`, and with `--full` `replay_identical`), `fork_errors`, and CPU ms by phase (pass 1,
+    pass 2, arms, snapshots, restores, enumeration).
+  - `fork`: round, decider, trigger, every champion's state, tributed gems, the legal list, the snapshot size and
+    the CPU time of the enumeration.
+  - `arm`: label, `first` (branch, `done_round`, `res`, the tile reached, cooldowns, hits as `[id, hp lost, died]`),
+    the decider's first 16 branch chars, and per mark:
+    - per champion: alive, deaths, kills, hp, max_hp, gems, gold, items, work turns, turns;
+    - per team: tributed gems, deaths, kills, gems, gold, items, work.
+  - `--hash` adds the engine memory hash; `--decisions` adds the decider's lab block each turn.
+- **Rewards** are left to the driver, `tools/combatlab/fork_sweep.py`.
+  - Each arm's value at a mark is a weighted sum of parts, as changes since the fork, own team minus enemy:
+    tributed gems, gems carried, wealth (gold + items), kills, deaths, work turns, and whether the decider is dead.
+  - Regret is the best arm's value minus the `none` arm's.
+  - Its default weights are placeholders, not fitted.
+
+### Checks
+
+- **Identity of the lab copy.** `variants/lab-cl2` is `labify.py variants/oc-cl2-base variants/lab-cl2`. Its flags
+  are 0 and its `LabAct` round is -1.
+  - At a 100M fuel quantum (`run-batch`, 24 ladder maps, lab-cl2 as A and as B against oc-cl2-base), 47 of 48
+    replays are identical, stdout and debug included.
+  - The odd one, 00elkring with the lab bot as B, parts at round 39 with a one-tile step difference; the result is
+    the same.
+  - The cause: ocean's turn-end queue budgets to 100k relative to the turn's start fuel, even at 100M. The hooks'
+    fuel (median 224-324 a turn) therefore moves how much of its caches it fills.
+  - With `FASTRUNNER_UNLIMITED_BOTS=lab-cl2,oc-cl2-base`, all 48 are identical (only `.fuel` differs).
+- **Pass 1 against `fastrunner run`** (wasm engine, lab flags 0): the replays are byte-identical, 4 of 4.
+- **Determinism**:
+  - The `none` arms match pass 1's digests over all 60 rounds in all 254 forks.
+  - The main line after the forks matches pass 1 in 32 of 32 games.
+  - With `--full`, the final replays are identical.
+  - Arm results (marks, memory hash, `first`) do not depend on the order the arms are played in (636 of 636).
+  - A rerun gives identical output (684 of 684 arms).
+- **The scenario layer is unchanged.** On 60 bank0 frames with lab-v83, `target/` (HEAD) and `target-lab2/` give the
+  same rollout lines when sorted: plain, `--alt 4`, and hitlog + decisions + marks + hash + turns. Setup lines
+  differ only in timings.
+
+### Speed
+
+Measured with `fork_sweep.py --games 16 --both-sides --seed 1 --holds 1,3`: 32 cl2-dev games, lab-cl2 against
+itself, 254 forks, 5466 arms at H = 60, 16 jobs on the shared box.
+- 6.2 s wall, 74 s CPU: 3.4 forks/s and 74 arms/s a core.
+- With `--holds 1`: 2860 arms, 56 s CPU, 4.5 forks/s.
+- An arm costs ~14 ms of CPU for 60 rounds with all 12 champions alive.
+- Pass 1 costs ~0.2 s a game.
+- A fork's snapshot is 1.3-2.8 MiB of engine and 5-23 MiB of bots. Taking it costs ~2 ms; restoring it costs
+  0.3-1.5 ms an arm, ~10% of the arm CPU on the largest maps.
+- Enumerating the legal actions costs 2-15 ms a fork.
+
+### Limits
+
+- **Regret is biased.** Each arm is one deterministic continuation of a chaotic game, and the best of ~21 arms
+  gains from selection alone. Regret grows with the number of arms: at mark 60 the mean was 66 with holds 1 and 89
+  with holds 1,3.
+  - No arm is repeated under perturbation.
+  - No second opponent is played.
+  - No placebo is measured, such as an arm equal to ocean's own first action.
+
+  Read the results across many forks, never as single verdicts.
+- **Parts that need a lab bot or have no reading:**
+  - `work` needs lab bots on that side, since it is read from the branch char.
+  - The gold a champion earned is not readable, so the parts use the current gold plus the items' shop prices.
+- **Forced actions:**
+  - A forced action is a single op on the first turn, or a hold of the same kind; there are no sequences of
+    different ops.
+  - Camps are not enumerated as attack or cast targets, although op 8 exists.
+  - `end` skips all of `decide`, so the decider places no ward, shops nothing and starts no recall that turn.
+- **The lab copy plays differently.** With lab flags 2 (the default, needed for branches), the hooks cost fuel, so
+  the main line is the lab copy's own game rather than oc-cl2-base's. At 100M fuel this differs in about 1 of 48
+  games.
+- **Failures:** a bot that restarts in an arm cannot be restored. The rest of that fork's arms are lost (listed in
+  `fork_errors`), and if the main line cannot be restored, the game stops there.
+- **Not done:** Front::admit, guard and cap discard logging.

@@ -414,6 +414,7 @@ py tools/replay/harness/pipeline.py --version v47   # v47: manifest from replay 
 ```
 py tools/combatlab/frames.py replays/batch-X [DIR...] --name NAME [--games N] [--copy] [--gz] [--threads 16]   # -> replays/combatlab/NAME/
 python3 tools/combatlab/labify.py baselines/v83 variants/lab-v83                                       # a lab copy of an ocean or astraeus bot
+py tools/combatlab/fork_sweep.py --games 16 --both-sides --seed 1 --out DIR [--holds 1,3]             # fork real games, sweep the decider's legal actions
 node tools/combatlab/spotcheck.mjs replays/combatlab/NAME/frames.jsonl --n 40                            # specs against the replays' snapshots
 ```
 
@@ -424,6 +425,8 @@ node tools/combatlab/spotcheck.mjs replays/combatlab/NAME/frames.jsonl --n 40   
 - About 0.2 s a game on 16 threads for extraction, and the frames under a second per 30 games; output streams, so banks scale with disk.
 - Play them with `fastrunner scenario SPECS.jsonl --bot-a BOT --bot-b BOT --rollouts N --rounds H --out OUT.jsonl --jobs J` (`FASTRUNNER_ENGINE=wasm`; output, setup and limits in [RUNNER.md](../research/fastengine/RUNNER.md#the-scenario-layer-fastrunner-scenario-2026-11-07)).
 - `labify.py SRC DST` (names under `bots/`) copies the bot with `./copybot` and patches in `lab.h`'s control block: a warm start, the decision outputs (branch, `want_home`, `stand_lost_at`, `plan_strikes`' choice) and inputs (strike bans, forced `want_home` / chase verdicts) that `fastrunner scenario --lab` reads and writes. Each patch anchor must match once, so a bot whose code moved fails loudly. Rebuild with `cambc build bots/DST`. Details in [RUNNER.md](../research/fastengine/RUNNER.md#lab-bots---lab).
+- `labify.py` also patches in `lab.h`'s forced-action block (`LabAct`, `lab_act_run` at the start of ocean's `decide`): a walk, dash, attack, cast or end of turn that `fastrunner forkgame` sets for a round, after which the bot plays the rest of the turn itself.
+- `fork_sweep.py` drives `fastrunner forkgame` (target-lab2's library, wasm engine). It plays real games, forks the full state at triggered rounds (`--trigger near:D,close:D,branch:CHARS,death:N,kill:N,every:K`), plays the bots' own line and every legal action of the deciding champion (× `--holds`) for `max(--marks)` rounds, and scores each arm. It writes `DIR/forks.jsonl` and `DIR/regret.jsonl` (each arm's value and parts, the best arm, and regret against ocean's own choice). `--analyze DIR --weights k=v,...` re-scores without replaying. Usage and results are in [lab2-notes.md](../research/combat-lab/lab2-notes.md), and the runner side is in [RUNNER.md](../research/fastengine/RUNNER.md#forks-of-real-games-fastrunner-forkgame-2026-11-08).
 
 ## Engine speed research: tools/fastengine
 

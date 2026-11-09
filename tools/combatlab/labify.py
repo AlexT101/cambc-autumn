@@ -13,6 +13,8 @@ magic "CAMBC-LAB-BLK-1", that `fastrunner scenario --lab` reads and writes betwe
   - fight.cc: want_home's verdict (forced by home_round/home_force), stand_lost_at's prediction, chase's
     target (forced by chase_round/chase_force: 0 no chase, 1 chase prey or else the nearest visible enemy).
   - plan.cc: each plan_strikes call's chosen candidate and score parts; the ban list (ban_round, ban_call).
+  - bot.cc: forced actions (lab.h LabAct, fastrunner forkgame): ops run at the start of decide, then the world is
+    re-read (see_again, see_stuns) and ocean plays the rest of the turn; op 7 skips act (the turn ends).
 With flags 0 and no inputs set, the copy plays as BOT (checked by bundle identity). Each anchor must occur
 exactly once, so a bot whose code moved fails loudly rather than being patched wrongly.
 """
@@ -34,9 +36,12 @@ def sub(text, old, new, what, scope=None):
         lo = text.index(scope)
         hi = text.index("\n}\n", lo) + 3
     part = text[lo:hi]
-    if part.count(old) != 1:
-        sys.exit(f"labify: {what}: anchor {old[:70]!r} found {part.count(old)} times")
-    return text[:lo] + part.replace(old, new) + text[hi:]
+    # Alternatives (old, new) pairs: the first whose anchor occurs exactly once (the base's code moved between versions).
+    alts = list(zip(old, new)) if isinstance(old, tuple) else [(old, new)]
+    for o, n in alts:
+        if part.count(o) == 1:
+            return text[:lo] + part.replace(o, n) + text[hi:]
+    sys.exit(f"labify: {what}: anchor {alts[0][0][:70]!r} found {part.count(alts[0][0])} times")
 
 
 def patch(path, edits):
@@ -163,6 +168,16 @@ def main():
         ('        run("comms receive", [&] { aph::comms::receive(*world); });',
          WARM + '        run("comms receive", [&] { aph::comms::receive(*world); });', "warm start"),
     ])
+    # Forced actions (lab.h LabAct): run at the start of decide, then ocean plays the rest on a re-read world.
+    bc = (d / "bot.cc").read_text()
+    ACT = "    try {\n        act(world, pathing, safety, memory);\n    } catch (const StaleTurn&) {"
+    if bc.count(ACT) == 1:
+        bc = bc.replace(ACT, "    const int lab_forced = lab_act_run(world.round);\n    try {\n"
+                        "        if (lab_forced & 1) see_again(world, pathing, safety), see_stuns(world, safety);\n"
+                        "        if (!(lab_forced & 2)) act(world, pathing, safety, memory);\n    } catch (const StaleTurn&) {")
+        (d / "bot.cc").write_text(bc)
+    else:
+        print("labify: no forced-action hook (bot.cc's act call not found): LabAct inputs are ignored")
     patch(d / "bot.cc", [
         ("    memory.round = world.round;\n",
          "    if (lab_on()) cambc_lab.round = world.round, cambc_lab.decision = static_cast<char>(decision);\n    memory.round = world.round;\n",
@@ -191,8 +206,10 @@ def main():
         (PS + "\n    Planned out;\n",
          PS + "\n    Planned out;\n    LabPlan& lab = lab_plan_begin(world.round, keep_only ? 'K' : std::exchange(lab_site, 'S'));\n"
          "    const bool lab_bans = lab_bans_on(world.round);\n", "plan begin"),
-        ("    const int empty = strike_free(world, pathing, safety, intent, ready, ready_known);\n",
-         "    const int empty = strike_free(world, pathing, safety, intent, ready, ready_known);\n    lab.early = static_cast<std::int8_t>(empty);\n",
+        (("    const int empty = strike_free(world, pathing, safety, intent, ready, ready_known);\n",
+          "    const int empty = strike_free(world, pathing, safety, intent, ready);\n"),
+         ("    const int empty = strike_free(world, pathing, safety, intent, ready, ready_known);\n    lab.early = static_cast<std::int8_t>(empty);\n",
+          "    const int empty = strike_free(world, pathing, safety, intent, ready);\n    lab.early = static_cast<std::int8_t>(empty);\n"),
          "plan early", PS),
         ("                cand[k++] = {fr.e[i].raw, 0, fr.e[i].leaf, fr.e[i].removed, keep == 1, static_cast<std::int8_t>(i)};",
          "                if (!lab_bans || !lab_banned(S.tile(c).x, S.tile(c).y, keep == 1, fr.e[i].removed))\n"

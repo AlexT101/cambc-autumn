@@ -820,6 +820,13 @@ pub struct GuestSnap {
     api: crate::api::ApiState,
 }
 
+impl GuestSnap {
+    /// Bytes held (memory pages and stack).
+    pub fn bytes(&self) -> usize {
+        self.pages.len() + self.stack.len()
+    }
+}
+
 impl Guest {
     fn stack_top(&self) -> *mut u8 {
         let s = self.stack.as_ref().unwrap();

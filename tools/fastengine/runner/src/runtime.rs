@@ -197,6 +197,12 @@ pub struct BotSnap {
     meter: Meter,
 }
 
+impl BotSnap {
+    pub fn bytes(&self) -> usize {
+        self.guest.bytes()
+    }
+}
+
 pub struct Bot {
     fut: Option<GuestFuture>,
     native: Option<crate::native::NativeBot>,
