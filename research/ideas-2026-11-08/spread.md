@@ -47,7 +47,8 @@ Results table: EXPERIMENTS.md, "Spread".
 - Arms (sp-dev4, yield_mode 1, yield_step_price 0, no telling): vg2 (value ratio >= 2, +2 steps), vg0 (ratio 2, no
   farther), vg2w (ratio 1.5, +2). Sanity: the ratio-2 model makes y2's C&I yields (base-stat table above, and in games
   C&I give up a bit more gold than under y2) and adds non-shy low-efficiency holders' yields to the carries.
-- dgate, all H0: vg2 -1.56, vg0 -0.95, vg2w -1.39 pts; y0 +0.19 (H0), y2 +0.45 ±0.36 (undecided, diverse agent's run).
+- dgate, all H0: vg2 -1.56, vg0 -0.95, vg2w -1.39 pts; y0 +0.19 (H0). y2 on the new bodies (Fl/Mt3, dgate2): ZONE,
+  +0.18 ±0.25 pts over 36,608 units (146,944 games; low LLR +4.64, high -6.92): in 50-50.5, so oc-base31 rightly dropped it.
 - Reading: the C&I yield pays because the pair is shy (one death takes both bodies and bags), not because its stats
   grow slowly. Under the same gate, every yield the efficiency model adds loses, so stat-growth efficiency overrates
   the carry's gold against a walk. What the value model leaves out: the holder's risk (which drives C&I's) and

@@ -624,7 +624,7 @@ of 19,968. Old screens agree (y2t 49.0, yh 48.5, yv 47.5, yc 47.2, ycw 48.2; all
   plus Prism/HoR/Stellar to Ryth/Vesper/Vendetta and Willow to all. In games (vg2, 512): Cassi 92 -> 77, Issac 208 ->
   180 (y2: 91 -> 82, 199 -> 187), Vesper +70, Ryth +67, team -0.8%. dgate, all H0: vg2 (ratio 2, +2 steps) -1.56
   ±0.83; vg0 (ratio 2, no farther) -0.95 ±0.70; vg2w (ratio 1.5, +2) -1.39 ±0.80. Controls: y0 +0.19 ±0.37 of 13,952
-  units (H0); y2 +0.45 ±0.36 at 18,432 units (diverse agent's run, still undecided). Only the shy holders' yields pay;
+  units (H0); y2 on the new bodies (dgate2) ZONE, +0.18 ±0.25 over 36,608 units (146,944 games). Only the shy holders' yields pay;
   each yield the efficiency model adds for a non-shy holder costs. So C&I's gain is the pair's death risk (both bodies
   and bags), not stat efficiency, and a value model that sends gold to the carry by efficiency rates that gold too high.
 
