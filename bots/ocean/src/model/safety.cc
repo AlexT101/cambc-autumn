@@ -3043,14 +3043,8 @@ Trade Safety::new_fight(std::uint32_t key, bool falls, std::uint32_t late, bool 
     return slot.trade;
 }
 
-// Our side's health and max health x (1 + boost).
-void boost_side(Side& us, float boost) {
-    for (int i = 0; i < us.count; ++i) us.fighters[i].health *= 1.0f + boost, us.fighters[i].max_health *= 1.0f + boost;
-    us.weak = -2;
-}
-
 Trade Safety::chase_trade(std::uint32_t key, std::uint32_t delayed, const std::array<int, 2>& self_cooldowns, bool can_cast, bool falls,
-                          std::uint32_t late, float boost) {
+                          std::uint32_t late) {
     world_.throw_if_stale();
     if (key == no_fight) return {};
     Side us, them;
@@ -3069,13 +3063,12 @@ Trade Safety::chase_trade(std::uint32_t key, std::uint32_t delayed, const std::a
         }
         f.next_cast = next_cast(f);
     }
-    if (!changed && boost <= 0) return fight_of(key, falls, late, falls);
+    if (!changed) return fight_of(key, falls, late, falls);
     build();
     const auto enemies = (key >> 16 | late_mask(late)) & threat_mask_;
     fill(them, world_, world_.enemies, enemies, made_);
     if (late) join_late(them, enemies, late);
     walk_allies_in(world_, us, key & 0xFFFFu, enemies);
-    if (boost > 0) boost_side(us, boost);
     world_.throw_if_stale();
     // No cross-target memo: roster alone omits the delayed mask and our live action state.
     const auto before = fuel();

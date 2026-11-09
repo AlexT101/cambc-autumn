@@ -46,6 +46,31 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   leave a narrowly lost stand are right to. Recalibrating the model has nothing to correct; the level combat and team
   arms opened opportunities at this boundary, where fighting and declining are worth the same.
 
+## (ocean, 2026-11-09) Ocean removal batches 2 and 3 (CHANGES 486): every removal loses or is level on the mirror
+
+Against `variants/ocean-rm1` (CHANGES 485), own drafts, release, fast runner, all on `merged/ocrm-1921`
+(1921000-1921079, ladder-v2, unused before), 40,960 games each. Local games are deterministic, so the arms pair game
+by game with the seven-removal arm (`ocrm2`); the paired difference isolates each arm's own change.
+
+| Arm (on ocean-rm1) | Win % (95% CI) | Paired vs ocrm2 | Same outcome | OOF turns (ref ~460k) |
+|---|---|---|---|---|
+| ocrm2: b1, gf, b5, b3w, c1, mapcond-q, 466 removed | 49.0 (48.5-49.5) | | | 482k |
+| ocrm2-gm: ocrm2 with 466 and mapcond-q back (CHANGES 486) | 49.2 (48.7-49.7) | +0.22 ±0.64 | 57.0% | 489k |
+| ocrm3-nopull: ocrm2 less cbdp's mirror pull | 48.6 (48.1-49.1) | **-0.42 ±0.29** | 90.8% | 478k |
+| ocrm3-noptw: ocrm2 less ptw's turn windows | 48.6 (48.1-49.1) | -0.36 ±0.64 | 56.1% | **330k (-32%)** |
+
+- **cbdp's mirror pull** is worth about +0.4 on the mirror, most of cbdp's own +0.3-0.5. Kept. Without it the cooked
+  denial keeps the farm's pre-prunes off, as cbdp's deny-only setting did: their bound (farm.cc's SIMD pass) omits
+  the denial's scale. Copy: `variants/ocrm3-nopull`.
+- **ptw** is level at best (-0.36 ±0.64) but costs about a third of the out-of-fuel turns, as pool.md found at the
+  real budget. Kept on win rate; a fuel-aware change that spends ptw's savings elsewhere could still use it. Every
+  ptw read went back to `World::slot` (oc-pool1's off branches), and the repeated-blow test to oc-base9's forms.
+  Copy: `variants/ocrm3-noptw`.
+- **466 and mapcond-q** read +0.22, within noise but in the direction of their own records, so they were put back.
+- The five removals in CHANGES 486 read about -0.8 together on the mirror, where the pool's leave-one-out (on
+  oc-base9) read each at 50.0 or (c1) +0.3 for removing it. Since then, 478-483's chase gates were built with gf in
+  play, and ocean's heavier turns may make c1's caps a saving rather than a loss. The A/B can't tell which.
+
 ## (ocean, 2026-11-09) Removing what the live line dropped (CHANGES 485): 48.4% on the mirror
 
 `variants/ocean-rm1` (CHANGES 485: 467, 468, 470, 471 and 429's timed lock and deny removed) against

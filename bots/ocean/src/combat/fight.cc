@@ -869,17 +869,14 @@ const ChampionBelief* prey(const World& world, Pathing& pathing, Safety& safety)
         // Enemies who walk to the target in time join the fight.
         const auto late = key == Safety::no_fight ? 0u : safety.late(target.pos, key);
         const std::pair<std::uint64_t, std::uint32_t> fight{std::uint64_t{key} << 32 | delayed, late};
-        // A chase against a carrier plays out with our health x (1 + min(0.3, its bag's value over a life's)):
-        // the bag is worth risking more for. Boosted chases skip the lost-fight memo, which has no boost.
-        const float boost = std::min(0.3f, params::gem_value * static_cast<float>(pair_gems(world, target)) / params::life_value);
-        if (boost <= 0 && std::find(lost.begin(), lost.begin() + n_lost, fight) != lost.begin() + n_lost) continue;
+        if (std::find(lost.begin(), lost.begin() + n_lost, fight) != lost.begin() + n_lost) continue;
         // Its verdict before the fight's, which it spares when the target escapes; the fight still needs its fuel after.
         if (escapes(world, pathing, target)) continue;
         if (!fuel_ok(safety.fight_cost_estimate() + reserve)) {
             note_shortcut("prey-cut-short");
             break;
         }
-        const auto t = safety.chase_trade(key, delayed, cooldowns, cast_available, linked, late, boost);
+        const auto t = safety.chase_trade(key, delayed, cooldowns, cast_available, linked, late);
         debug_block({
             static int traced = 0;
             if (delayed && traced < 64) {
@@ -890,7 +887,7 @@ const ChampionBelief* prey(const World& world, Pathing& pathing, Safety& safety)
         });
         if (!t.lost && !(linked && t.self_falls)) return &target;
         if (!linked && comeback::accept_lost(world, t, target)) return &target;
-        if (boost <= 0) lost[n_lost++] = fight;
+        lost[n_lost++] = fight;
     }
     return nullptr;
 }

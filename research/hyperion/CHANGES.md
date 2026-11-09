@@ -3982,3 +3982,22 @@ live, and without CHANGES 429's timed lock and 100-gem deny. Frozen as `variants
 Own drafts, release, fast runner, against ocean-ba65375 on fresh `merged/ocrm-1920` (ladder-v2): **48.4% (47.9-48.8)
 of 40,960**, OOF turns 457k against 466k (-1.9%), no failed matches or broken drafts. The mirror reads the removed
 changes as gains, as their own mirror tests did; the removal is on live evidence, which this A/B cannot show.
+
+## 486: b1, gf, b5, b3w and c1 removed (ocean, 2026-11-09)
+
+`bots/ocean` = `variants/ocean-rm2`: CHANGES 485 without five of CHANGES 441's pool members, each 50.0 or better
+removed in the pool's leave-one-out.
+- **Removed:** b1 (bank.cc `safer_altar`, `strike_eta`); gf (safety `boost_side` and chase_trade's `boost`, prey's
+  call); b5 (`fixc::bag_big`, `bag_ratio`: guard.cc's pack zone at `hurt_retreat_ratio` again); b3w (altar_guard.cc's
+  escort clearing and `clear_leash`; `escorting()` kept); c1 (plan.cc strike search at 24 nodes and 10 exact queries,
+  astraeus's). bank_gems, carry_bag's wait and chase_trade equal astraeus's; altar_guard.cc equals oc-base9's but for
+  469's helper. An audit found no remnants or hybrids.
+- **Kept:** 466's mid-game gold hump and mapcond-q (put back after the seven-removal arm, below), cbdp's mirror pull,
+  ptw's turn windows.
+
+Own drafts, release, fast runner, against `variants/ocean-rm1` (CHANGES 485) on fresh `merged/ocrm-1921` (ladder-v2):
+**49.2% (48.7-49.7) of 40,960**, OOF 489k against 466k (+5%, mostly c1's larger search). With 466 and mapcond-q also
+removed: 49.0% (48.5-49.5); the two are worth +0.22 ±0.64 paired, n.s. The mirror reads b1, gf, b5, b3w and c1 together
+as about +0.8, more than the pool's leave-one-out did (each 50.0, c1's removal +0.3).
+
+Evidence: EXPERIMENTS "Ocean removal batches 2 and 3".

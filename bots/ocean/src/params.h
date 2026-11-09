@@ -256,9 +256,6 @@ inline constexpr int pack_radius = 4;
 } // namespace comeback
 // research/ladder-scrims-2026-11-06/fix-combat.md.
 namespace fixc {
-// A bag at stake this big: the pack zone outmatches us at bag_ratio.
-inline constexpr int bag_big = 100;
-inline constexpr float bag_ratio = 2.0f;
 // Path first steps and retreat ties take a hidden bush first; within a visible enemy's ready strike reach +
 // bush_threat, the bush rank goes ahead of pull, aim and steps, and a hidden bush step is let off bush_margin x
 // our health and shield of retreat damage.

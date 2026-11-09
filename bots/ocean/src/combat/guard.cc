@@ -158,9 +158,7 @@ PackZone& pack_members_of(const World& world, Safety& safety) {
             our_health += ((a.is_self ? health : a.health) + a.shield) / a.taken;
             our_damage += output(a);
         }
-    float ratio = home ? params::home_retreat_ratio : params::hurt_retreat_ratio;
-    if (pz.bag >= params::fixc::bag_big) ratio = std::min(ratio, params::fixc::bag_ratio); // a big bag at stake breaks off sooner
-    pz.ours = ratio * our_health * our_damage;
+    pz.ours = (home ? params::home_retreat_ratio : params::hurt_retreat_ratio) * our_health * our_damage;
     pz.n = n;
     return pz;
 }

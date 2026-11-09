@@ -899,4 +899,5 @@ In `suites/fresh/fresh-{seed}` (EXPERIMENTS "Draft lab refit on v87 (draft9)"; s
 
 `--mix ladder-v2`, in `suites/fresh/fresh-{seed}`, symlinked into `merged/` (CHANGES 485-486):
 - `ocrm-1920`: 1920000-1920079, 20,480 maps (CHANGES 485's A/B).
-- `ocrm-1921`: 1921000-1921079, 20,480 maps (CHANGES 486's A/B).
+- `ocrm-1921`: 1921000-1921079, 20,480 maps (CHANGES 486's A/B and the paired batch-3 arms; EXPERIMENTS "Ocean
+  removal batches 2 and 3").
