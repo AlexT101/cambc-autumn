@@ -81,7 +81,7 @@ against a release oc-base25 copy (live drafts, ladder maps).
 | v87-nh-6-2 (= 468) | 50.5% of 18,543, H1 | 518 434 | -0.92 (±1.20), flips +167 -228 |
 | v87-nh-5-2 | 50.3% of 33,744, H1 | 795 700 | -0.24 (±0.97), flips +142 -158 |
 | v87-nh-7-2 | 50.24% of 60,475, H1 | | -0.96 (±1.17), flips +176 -240 |
-| v87-fs-enemy | running (50.30% at 83k, LLR +2.67) | | -0.83 (±3.15), flips +804 -859 |
+| v87-fs-enemy | 50.3% of 83,781, H1 | | -0.83 (±3.15), flips +804 -859 |
 
 **Contested camp landings: rejected.** The mechanism does what it should (k3 takes the 5-6 band from 13% to 19% camp
 landings, 7-8 from 40% to 49%), but it doesn't win. Each cd arm changes 7-8% of map pairs and splits them evenly, on
@@ -116,3 +116,23 @@ family's weakest after nh-5-2, and the family has one live slot, now nh-6-3's. T
 the live verdict: if nh-6-3 wins live, an SPSA fit of (fraction, multiple) is the next step, not more single arms.
 fs-enemy's screen is near a decision; on H1, chain5.sh gives it held out (held2-1245, alpha 0.01), 2x, varied and
 dpanel.
+
+**Closed (2026-11-09): nothing in the family clears the new bar** (TEST-STANDARD rule 0: CI lower bound above 50.5%;
+rule 5: dgate decides, against Fish's and Mite's live picks). Final gates against oc-base25:
+
+| arm | gate | result |
+|---|---|---|
+| nh-6-3 | dgate (release, live picks) | +0.07 pts (±0.41) of 3,456 units (14,336 games), **H0** (LLR -3.10) |
+| nh-6-2 (= 468) | held out v87hor-held-1242, alpha 0.01 | 50.19% of 81,920 (CI 49.8-50.5), LLR +2.63, undecided, suite done |
+| nh-6-2 | 2x fuel, scr-1241 | 50.2% of 77,403, H1 |
+| nh-6-2 | varied, 0.4975/0.50 | 50.2% of 19,515, H1 |
+| fs-enemy | held out v87hor-held2-1245, alpha 0.01 | 50.14% of 81,920 (CI 49.8-50.5), LLR +0.21, undecided, suite done |
+| fs-enemy | 2x fuel, scr-1241 | 50.48% of 36,447, H1 |
+| fs-enemy | varied, 0.4975/0.50 | 50.08% of 20,480, LLR +0.78, undecided |
+| fs-enemy | dgate (the diverse agent's run, still going) | +0.19 pts (±0.43) of 13,824 units, LLR -2.27, heading for H0 |
+
+fs-enemy's old dpanel crashed in its base spar (`spar-cbase25-dvn25M`) and was not rerun, since dgate replaced it.
+nh-6-3 met the old 99% bar (held out LLR 4.62) and is live as v95 for calibration, but dgate reads it level: the
+old mirror held outs found +0.2 to +0.3 points that the live-pick opponents don't show. Each mechanism is worth at
+most about half a point, below what rule 0 can confirm, so the camp-dash, landing-floor and fight-scale lines are
+all closed.

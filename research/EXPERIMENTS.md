@@ -488,7 +488,7 @@ camp-dash openings (Fish 44%, Mite 63% of camp engagements opened by a dash, our
   49.99%, LLR -1.81), so retested on oc-base26 (hor-scr-1059): `hor26-d-hold` H0 (49.9% of 58,497), `hor26-d-both`
   50.1% (49.8-50.4) of 102,400, LLR -0.91, **undecided, dropped**. D closed: the opening changes, the win rate doesn't.
 
-## (ocean, 2026-11-08) v87 Heart of Ruin: contested camp landings H0; 468's hurt landing floor retested on v87
+## (ocean, 2026-11-08/09) v87 Heart of Ruin: contested camp landings H0; 468's hurt landing floor and enemy fight_scale level on dgate; closed
 
 Against oc-base25 (v87), own drafts, real budget, release, fast runner; write-up research/ideas-2026-11-08/hor-camp-dash.md,
 arms `variants/v87-*`, data `~/tmp-offload/v87hor/`. Screen suite v87hor-scr-1241 (ladder-v2), SPRT 0.50/0.5025.
@@ -516,6 +516,13 @@ arms `variants/v87-*`, data `~/tmp-offload/v87hor/`. Screen suite v87hor-scr-124
   +0.60); spar stays -0.53 (±1.06). nh-6-2 trails it on every gate (held out 50.20% of 63k, LLR +2.23, running; panel
   +0.80 pts). nh-7-2's screen went H1 (50.24% of 60,475; spar -0.96): no gates, since the family has one live slot.
   Spars: nh-5-2 -0.24 (±0.97), fs-enemy -0.83 (±3.15); fs-enemy's screen is still running (50.30% at 83k).
+- **Closed on the new bar (2026-11-09; CI lower bound above 50.5%, dgate decides).** nh-6-3's dgate (release, Fish's
+  and Mite's live picks) is H0: +0.07 pts (±0.41) of 14,336 games, LLR -3.10, although it is live as v95 for
+  calibration. nh-6-2 (= 468): held out 50.19% of 81,920 (LLR +2.63 of ±4.595, suite done, undecided); 2x fuel H1
+  50.2% of 77,403; varied H1. `v87-fs-enemy` (467's fight_scale for enemy HoRs only): screen H1 50.3% of 83,781;
+  held out (held2-1245, alpha 0.01) 50.14% of 81,920, LLR +0.21, undecided; 2x H1 50.48% of 36,447; varied 50.08%;
+  dgate +0.19 pts (±0.43) of 13,824 units at LLR -2.27, heading for H0. The mirror held outs' +0.2 to +0.3 points
+  don't show against live picks, and no arm is worth the half point rule 0 can confirm: the family is closed.
 
 ## (ocean, 2026-11-08) Exclusive spells and Marcella's gold: six arms, all H0
 
