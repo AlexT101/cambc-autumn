@@ -117,10 +117,15 @@ Results on the new-body dgate (Fl/Mt3, 0.505/0.5075, release, real budget):
     +2.16); Fish +1.87, Mite +1.19; one-site +1.90, multi +1.31. OOF turns +9.0% a game (13.38 against 12.27).
   - Queued live at p84 as `live-oc32-cv` (tree 8a0225ceff90), paired against v99, v87 and oc-base32's live version.
     On top of oc-base32's +1.59, it should be about +3 against v99.
-  - Still open: 483 (chase_aim's fuel gate, which halves 481's OOF cost in ocean).
 - **OOF accounting:** 651 dgate runs (across all gates) record 0 out-of-fuel turns for both bots, with normal win rates.
   Runs stopped mid-block keep partial `summary.json` files (oc-base32's dvn111-115). OOF tallies here skip both kinds.
-- oc32-fs-nh (oc-base32 + oc31-fs-nh's fs-enemy and nh-6-3 diff) is on dgate against oc-base32.
+  - `oc32-cg` = oc32-cv + 483 (ba65375a9: chase_aim's build needs its own measured cost plus the search reserve).
+    dgate against oc32-cv: +0.14 ±0.25 of 14,464 units, NARROWED (ZONE: low H1, so confidently non-negative); Fish
+    +0.14, Mite +0.15. OOF −4.3% a game (12.79 against 13.36), half of 481's excess back. Kept, as a fuel cap.
+- **fs-enemy + nh-6-3 on the escape line:** `oc32-fs-nh` (oc-base32 + oc31-fs-nh's diff) against oc-base32: **LIVE BAR
+  H1, +1.01 ±0.28** of 31,109 units (post-screen +1.31); Fish +1.08, Mite +0.94; one-site +0.81, multi +1.12; OOF +0.9%.
+  On oc-base31 the same diff read about +0.4-0.5 (diverse agent), so it gains more with escape in. Not queued on its
+  own: the live candidate after oc32-cv is the stack `oc32-cg-fs-nh` (oc32-cg + the same diff), gated against oc32-cv.
 
 ## (ocean = oc-base25, 2026-11-09) oc-base31: dfp-pure + ft-k on v87; the parts add up on the new-body dgate
 
