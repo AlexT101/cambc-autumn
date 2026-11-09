@@ -202,6 +202,15 @@ restores that). The gate runs to ACCEPT, REJECT, or NARROWED: a 95% CI of ±0.25
 +0.25 change from 0 and leaves the Fish and Mite halves at ~±0.35, enough to read them apart. The result JSON gives
 both halves (`fish`, `mite`).
 
+## New opponent bodies (2026-11-09, coordinator)
+
+From 06:00 dgate plays the oppfidelity agent's bodies (EXPERIMENTS "Opponent tribute fidelity"): Fish's picks on
+`spar-*-Fl`, which places locks by Fish's rule, and Mite's on `spar-*-Mt3`, which feints tributes as Mite does and buys
+no locks. On one-site maps the old bodies gave the wrong sign for changes that live punished (470: old +0.59, new
+-2.04 ±1.53; soup-k +0.27 against -2.63 ±1.66); nh-6-3 stays level. Run names end in `2` so nothing is reused across
+bodies. The gate reports one-site and multi-site maps (`mapclass.json`) apart as well as Fish and Mite; `--old-bodies`
+plays the old ones. Every result above this section is an old-body read.
+
 ## Flip analysis (2026-11-09)
 
 `diverse-tools/flips.py CAND` tabulates an arm's paired flips against the base by opponent, picks, team size, game
@@ -226,6 +235,17 @@ length and map. `condscan.py CAND...` chooses a pick condition on odd seeds and 
   - sp-y0: they have Vendetta, +0.54 against +0.24;
   - rv-ctxg3: we lack Vendetta, +0.58 against +0.32;
   - dfp-race-d0: team size 5, +0.82 against +0.16.
+- **Map-feature conditions (user, 2026-11-09: allowed, map names not).** `condscan.py` adds tercile cuts of 24
+  draftlab features (area, altars, spawn distance, choke, openness, contested share, gems and gold a side, camps and
+  so on). On the seed split these look strong: dfp-race-d0 on contested share > 0.54 reads +1.06 odd, +1.03 even
+  against the whole arm's +0.16; mp-tank on detour <= 0.96 +0.61 and +0.61 against +0.29.
+  - **They are map picking.** Cell effects repeat across seeds, so the seed split cannot tell a mechanism from a set
+    of maps. With a map split as well (choose on odd seeds of half the maps, read on even seeds of the other half, 40
+    splits), no condition beats its whole arm: fs-enemy -0.25, mp-tank -0.13, sp-y0 -0.03, dfp-race-d0 +0.02
+    (sd 0.65), comms-bagf -0.24, rv-ctxg3 -0.03, mp-chan -0.22. The pick leads above fail it too (rv-ctxg3's
+    we lack Vendetta is chosen 16 times of 40 and reads -0.03).
+  - So no map- or pick-conditioned variant was built from these. A condition needs the map split, or a mechanism
+    read on a fresh suite, before it is worth a gate.
 - **Built:** `v87-dfp-race-d0-t5`, the opening plan on five-pick teams only. Of these leads it has the largest
   held-out gain and a mechanism: a plan coordinating five bodies is worth more than one committing three. On 3-4
   picks it plays as oc-base25.

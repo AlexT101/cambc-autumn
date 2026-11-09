@@ -562,6 +562,15 @@ source of losses. Rejected: none of these is queued for live.
 |---|---|
 | v87-nh-6-3 | +0.05 ±0.41 pts of 14,848 cand games; **H0** (LLR -3.26). The mirror held out was H1 at 99% (+0.30). |
 
+- **Old-body reads (to 05:40, 2026-11-09; three-way, playing on past ZONE), against oc-base25:** mp-chan +0.36 ±0.33
+  (27,264 units), fs-enemy +0.27 ±0.33, mp-tank +0.27 ±0.31, nh-6-3 +0.16 ±0.30 (ZONE), dfp-race-d0 +0.26 ±0.60,
+  sp-y0 +0.15 ±0.34, comms-bagf +0.15 ±0.38, rv-ctxg3 +0.14 ±0.40, rv-ngd +0.11 ±0.35, ng2-rs2 -0.03 ±0.30.
+  None reached ACCEPT. All were stopped and restarted on the new bodies.
+- **New bodies (from ~06:00):** dgate plays `spar-*-Fl` and `spar-*-Mt3` (oppfidelity agent), reports one-site and
+  multi-site maps apart, and writes `gate-logs/dgate2-<cand>.json`; `--old-bodies` keeps the old ones.
+- **Map-feature conditions** pass the seed split only by picking maps: with a map split too, no condition beats its
+  whole arm (-0.25 to +0.02). Nothing was built from them ([diverse-panel.md "Flip analysis"](ideas-2026-11-08/diverse-panel.md)).
+
 ## (ocean, 2026-11-08) Diverse panel: noise-seeded live-draft opponents; per-map r 0.10 → 0.37, chain still reads above live
 
 [research/ideas-2026-11-08/diverse-panel.md](ideas-2026-11-08/diverse-panel.md), tools in `diverse-tools/`. This

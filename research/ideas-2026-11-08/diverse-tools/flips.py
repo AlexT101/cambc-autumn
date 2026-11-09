@@ -8,6 +8,8 @@ import argparse, collections, json, math, os, sys, numpy as np
 T = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(T, '..', 'spar-tools')); sys.path.insert(0, T)
 import local, live, dgate  # noqa: E402
+# OLD_BODIES=1 reads the games against the bodies before 2026-11-09 (dgate --old-bodies).
+dgate.NEW = os.environ.get("OLD_BODIES") != "1"
 
 def matches(name):
     s = json.load(open(f'{local.R}replays/ab/{name}/summary.json'))

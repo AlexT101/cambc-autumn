@@ -19,9 +19,14 @@ sys.path.insert(0, os.path.join(T, '..', 'spar-tools')); sys.path.insert(0, os.p
 import local, spar_ab, ab  # noqa: E402
 R = local.R; LOCKS = os.path.expanduser('~/tmp-offload/diverse/locks'); LOGS = os.path.expanduser('~/tmp-offload/diverse/gate-logs')
 DIRS = {'o25': 'spar-o25', 'o29': 'spar-oc29'}
+# Opponent fidelity (EXPERIMENTS "Opponent tribute fidelity", 2026-11-09): Fish's bodies carry Fish's lock policy,
+# Mite's Mite's tribute habit and no locks. Their run names end in 2 so no run against the old bodies is reused;
+# --old-bodies plays the old ones.
+BODY = {'F': 'Fl', 'M': 'Mt3'}; OF = '/home/ubuntu/cambc-autumn/research/ideas-2026-11-09/oppfidelity-tools'; NEW = True
+MC = {k.replace('_', '-'): v for k, v in json.load(open(os.path.expanduser('~/tmp-offload/handoff/gate/mapclass.json'))).items()}
 
 def block(k): return [('o25', 'F'), ('o25', 'M'), ('o29', 'F'), ('o29', 'M')] if k == 0 else [(f'dvn{k}', 'F'), (f'dvn{k}', 'M')]
-def mdir(b, o): return f'variants/{DIRS.get(b, "spar-" + b)}-{o}'
+def mdir(b, o): return f'variants/{DIRS.get(b, "spar-" + b)}-{BODY[o] if NEW else o}'
 def done(n): return os.path.exists(f'{R}replays/ab/{n}/summary.json')
 def release(n): return json.load(open(f'{R}replays/ab/{n}/summary.json')).get('release') is True
 
@@ -29,16 +34,19 @@ def rname(bot, b, o):
     """The run of (bot vs member): an existing release run under spar_ab's names, else a new name. Runs from before
     ab.py played release builds (no 'release' key: legacy spar-c25-o29F and the like) are never paired with release ones."""
     tag = os.path.basename(bot.rstrip('/')).removeprefix('oc-')
-    names = [f'spar-c{tag}-{b}{o}', f'spar-c{tag.removeprefix("base")}-{b}{o}', f'spar-c{tag}-{b}{o}-rel']
+    v = '2' if NEW else ''
+    names = [f'spar-c{tag}-{b}{o}{v}', f'spar-c{tag.removeprefix("base")}-{b}{o}{v}', f'spar-c{tag}-{b}{o}{v}-rel']
     for n in names:
         if done(n) and release(n): return n
     return names[2] if done(names[0]) else names[0]
 
 def build_seed(k):
     if all(os.path.isdir(f'{R}bots/{mdir(f"dvn{k}", o)}') for o in 'FM'): return
-    subprocess.run([sys.executable, f'{T}/bodies.py', f'n{1310000 + k}'], cwd=R, check=True, capture_output=True)
-    subprocess.run([f'{R}research/ideas-2026-11-08/spar-tools/makespar.sh', f'variants/dvp-n{k}', f'dvn{k}'], cwd=R,
-                   check=True, capture_output=True)
+    if not all(os.path.isdir(f'{R}bots/variants/spar-dvn{k}-{o}') for o in 'FM'):
+        subprocess.run([sys.executable, f'{T}/bodies.py', f'n{1310000 + k}'], cwd=R, check=True, capture_output=True)
+        subprocess.run([f'{R}research/ideas-2026-11-08/spar-tools/makespar.sh', f'variants/dvp-n{k}', f'dvn{k}'], cwd=R,
+                       check=True, capture_output=True)
+    if NEW: subprocess.run([f'{OF}/newbodies.sh', f'dvn{k}'], cwd=R, check=True, capture_output=True)
 
 def running_elsewhere(n):
     ps = subprocess.run(['ps', '-eww', '-o', 'args'], capture_output=True, text=True).stdout
@@ -71,16 +79,19 @@ class Runner:
                                           stderr=subprocess.STDOUT), lock)
         return False
 
+GROUPS = {'F': lambda o, m: o == 'F', 'M': lambda o, m: o == 'M', 'one': lambda o, m: MC.get(m) == 'one',
+          'multi': lambda o, m: MC.get(m) == 'other'}
+
 def units_opp(cand, ref, k, order):
-    """{F|M: units}: as units(), but each opponent's picks apart."""
+    """{group: units}: as units(), but each opponent's picks (F, M) and each map class (one-site, multi) apart."""
     out = {}
-    for o in 'FM':
+    for g, f in GROUPS.items():
         diff = {}
-        for b, oo in block(k):
-            if oo != o: continue
+        for b, o in block(k):
             x, y = local.cells(rname(cand, b, o)), local.cells(rname(ref, b, o))
-            for c in x.keys() & y.keys(): diff.setdefault(c[0], []).append(x[c] - y[c])
-        out[o] = [0.5 + float(np.mean(diff[m])) for m in order if m in diff]
+            for c in x.keys() & y.keys():
+                if f(o, c[0]): diff.setdefault(c[0], []).append(x[c] - y[c])
+        out[g] = [0.5 + float(np.mean(diff[m])) for m in order if m in diff]
     return out
 
 def units(cand, ref, k, order):
@@ -103,12 +114,13 @@ def main():
     ap.add_argument('--zone-stop', action='store_true', help='stop at a ZONE crossing (default: play on)')
     ap.add_argument('--ci', type=float, default=0.25, help='stop as NARROWED once the 95%% CI half-width is this many '
                     'points: 0.25 tells +0.25 from 0 and leaves each opponent half at ~0.35')
-    a = ap.parse_args(); p0, p1 = map(float, a.sprt.split(',')); q0, q1 = map(float, a.low.split(','))
+    ap.add_argument('--old-bodies', action='store_true', help='the opponent bodies before 2026-11-09 (spar-*-F/-M)')
+    a = ap.parse_args(); global NEW; NEW = not a.old_bodies; p0, p1 = map(float, a.sprt.split(',')); q0, q1 = map(float, a.low.split(','))
     lo, screen_hi, live_hi = math.log(0.05 / 0.95), math.log(0.95 / 0.05), math.log(99)
     maps = None
     run = Runner(a.jobs); scores, screen_at, outcome, k = [], None, None, 0
     low_at = high_h0_at = zone_at = None  # first crossings: the low SPRT's H1, the high SPRT's H0
-    opp = {'F': [], 'M': []}
+    opp = {g: [] for g in GROUPS}
     while k <= a.max_seeds:
         if not a.no_run:
             for j in range(k, min(k + a.ahead, a.max_seeds) + 1):  # keep the next blocks playing
@@ -126,7 +138,8 @@ def main():
         tag = 'v87+v91' if k == 0 else f'noise {k}'
         print(f'block {k:2d} ({tag}): {len(scores)} units, {100*d.mean():+.2f} pts ±{196*se:.2f}, '
               f'LLR high {hl:+.2f}' + ('' if a.single else f' low {ll:+.2f}') +
-              f' [{lo:.2f} | {screen_hi:.2f} | live {live_hi:.2f}]', flush=True)
+              f' [{lo:.2f} | {screen_hi:.2f} | live {live_hi:.2f}] ' +
+              ' '.join(f'{g} {100 * (np.mean(u) - 0.5):+.2f}' for g, u in opp.items() if u), flush=True)
         if a.single:
             if hl <= lo: outcome = 'H0'; break
         else:
@@ -161,11 +174,12 @@ def main():
            'units': len(scores), 'pts': round(100 * d.mean(), 3) if len(d) else None,
            'ci95': round(196 * d.std() / math.sqrt(len(d)), 3) if len(d) else None,
            'llr_high': round(ab.llr(scores, p0, p1), 3), 'llr_low': round(ab.llr(scores, q0, q1), 3),
-           'fish': est(opp['F']), 'mite': est(opp['M']), 'zone_at_units': zone_at,
+           'fish': est(opp['F']), 'mite': est(opp['M']), 'one_site': est(opp['one']), 'multi_site': est(opp['multi']),
+           'bodies': 'new (Fl/Mt3)' if NEW else 'old', 'zone_at_units': zone_at,
            'screen_at_units': screen_at, 'low_h1_at_units': low_at, 'high_h0_at_units': high_h0_at,
            'post_screen_pts': round(100 * post.mean(), 3) if len(post) else None, 'cand_games': len(scores) * 4 + (512 if scores else 0)}
     print(json.dumps(res))
-    if not a.no_run: json.dump(res, open(f'{LOGS}/dgate-{os.path.basename(a.cand.rstrip("/"))}.json', 'w'))
+    if not a.no_run: json.dump(res, open(f'{LOGS}/dgate{"2" if NEW else ""}-{os.path.basename(a.cand.rstrip("/"))}.json', 'w'))
 
 if __name__ == '__main__':
     main()
