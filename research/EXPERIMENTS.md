@@ -784,6 +784,31 @@ maps where their first group is reachable before payout.
 **5. Draft heal price: no-op.** 0 games changed in 5,120: no map has every member of a group in our reach from a
 spawn tile. Dropped.
 
+## Terrain windows (ocean, 2026-11-09; `bots/variants/oc-terrain`, not A/B'd; merged as CHANGES 474)
+
+Exact savings in `model/safety.cc`, for any map (nothing precomputed per map):
+- **`sight()`'s plain test:** "no bush or wall within win_r" is one bit lookup. The first turn after the draft dilates
+  bushes and walls by win_r with host shifts (`make_near`). Doing it eagerly in round 1 added fuel to round 1.
+- **`attack_viewers`' bush window** is kept per tile for the game. A tile next to a kept one in y shifts that window by
+  a row and reads one new row.
+- **`static_window`:** the same vertical slide (one row read in place of nine).
+
+**Bench at 100M** (`--set wide`, opp oc-base29, against ocean):
+- 52/52 byte-identical.
+- Mean -4.3% (50,926 -> 48,728); p50 -3.6%, p90 -1.3%, p99 -0.1%.
+- Round 1 is unchanged.
+- Most of the saving is in cheap turns, so the heavy turns where budgets bite gain ~1k.
+
+Tried and reverted: reading `Terrain::test` from an exported linear board in place of `sdk_Bitboard_Test`. It was +2.1%:
+the raw host test (~16) costs less than our own bounds-checked bit read (~20 ops).
+
+**Profile after** (fuelprof, 48 games):
+- Flat: no line above 2.5%. Operators are 89% of the fuel, host calls 11%.
+- Allocation is <0.1%, field reads 0.8% and `static_window` 1.2%.
+- Our own record reads are 1.1% over 174 sites (campaign 16's cache of them was level).
+
+At ~+0.17 points per 1k a turn (fuel ceiling, below), the expected gain is ~+0.4: under 20k games' noise.
+
 ## Fuel ceiling (ocean, 2026-11-08; measurement, nothing merged)
 
 Against oc-base25, own drafts, fast runner. Ceiling (mirror, ~20k games a stratum, weighted): 10M ~53.5%, 2x ~53.3%.

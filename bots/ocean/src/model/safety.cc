@@ -1201,6 +1201,9 @@ struct Terrain {
     const StaticMap* map = nullptr;
     std::array<std::uint8_t, bytes> walls, blocked, bushes, camps;
     std::array<std::uint8_t, bytes> uncrossable; // walls and our spawn: no enemy dash path crosses them
+    // By tile, any_near(bushes) and any_near(walls): the boards dilated by win_r, once `near_ready`.
+    bool near_ready = false;
+    std::array<std::uint8_t, bytes> near_bushes, near_walls;
 
     static bool bit(const std::array<std::uint8_t, bytes>& b, int i) { return b[static_cast<std::size_t>(i >> 3)] >> (i & 7) & 1; }
     // Bit k: tile (x0 + k, y), for the window's width.
@@ -1314,6 +1317,33 @@ const Terrain& terrain(const StaticMap& map) {
     return terrain_storage;
 }
 
+// Terrain::near_* (~2k on 100x100): built on first need after the first turn, whose double budget
+// is already short on big maps; until then sight() scans rows.
+[[gnu::noinline]] void make_near(Terrain& t, const StaticMap& map) {
+    t.near_ready = true;
+    // Shifted-off tiles never come back, so the dilation clips to the map as row() does.
+    const auto near = [&](const bitboard& b, std::array<std::uint8_t, Terrain::bytes>& out) {
+        bitboard across, shifted, d;
+        copy_into(b, across);
+        for (int k = 1; k <= win_r; ++k) {
+            ok(cambc::detail::sdk_Bitboard_ShiftRight(b.ptr(), shifted.ptr(), k));
+            or_into(across, shifted, across);
+            ok(cambc::detail::sdk_Bitboard_ShiftRight(b.ptr(), shifted.ptr(), -k));
+            or_into(across, shifted, across);
+        }
+        copy_into(across, d);
+        for (int k = 1; k <= win_r; ++k) {
+            ok(cambc::detail::sdk_Bitboard_ShiftUp(across.ptr(), shifted.ptr(), k));
+            or_into(d, shifted, d);
+            ok(cambc::detail::sdk_Bitboard_ShiftUp(across.ptr(), shifted.ptr(), -k));
+            or_into(d, shifted, d);
+        }
+        d.export_linear_buffer({out.data(), bitboard::linear_buffer_size()});
+    };
+    near(map.bushes, t.near_bushes);
+    near(map.walls, t.near_walls);
+}
+
 // The box around group g's members, as x0, x1, y0, y1; each worked out on first use, as all of
 // them at once cost ~6k on a many-group map.
 const std::array<int, 4>& member_box(const StaticMap& map, int g) {
@@ -1411,6 +1441,9 @@ int ward_of(const World& world, int owner) {
 
 std::array<Window, 100 * 100> sight_masks;
 std::array<std::uint8_t, 100 * 100> sight_known;
+// attack_viewers' bushes around a tile, laid out as a window: terrain only, so kept for the game.
+std::array<Window, 100 * 100> bush_windows;
+std::array<std::uint8_t, 100 * 100> bush_known;
 
 // Who sees p, laid out around p: within 1 (`far` false) or within win_r. Far masks depend only on
 // terrain, so they are kept for the game.
@@ -1439,8 +1472,11 @@ Window sight(const World& world, vec2 p, bool far, bool store = true) {
     static bitboard viewers{cambc::uninitialized}, outside{cambc::uninitialized};
     Window m;
     // Without bushes in the square, walls alone decide; without walls too, all of it sees p.
-    const bool plain = t.packed && !t.any_near(t.bushes, p);
-    if (plain && !t.any_near(t.walls, p)) {
+    if (t.packed && !t.near_ready && world.round > world.first_round) make_near(terrain_storage, map);
+    const bool on = t.near_ready && t.inside(p);
+    const int pi = p.x + p.y * t.width;
+    const bool plain = t.packed && !(on ? Terrain::bit(t.near_bushes, pi) : t.any_near(t.bushes, p));
+    if (plain && !(on ? Terrain::bit(t.near_walls, pi) : t.any_near(t.walls, p))) {
         m = tables.columns[std::max(0, win_r - p.x)][std::min(win_n - 1, win_r + t.width - 1 - p.x)]
             & tables.rows[std::max(0, win_r - p.y)][std::min(win_n - 1, win_r + t.height - 1 - p.y)];
     } else {
@@ -1473,9 +1509,31 @@ Reach::Window attack_viewers(const World& world, vec2 target, int range, bool st
     if (range <= 1) return near;
     const auto& t = terrain(world.map());
     if (!t.packed) return near;
+    const auto bush_rows = [&] {
+        Window w;
+        for (int r = 0; r < win_n; ++r)
+            if (const std::uint32_t bits = t.row(t.bushes, target.x - win_r, target.y - win_r + r)) w |= Window{bits, 0}.shl(win_n * r);
+        return w;
+    };
     Window bush;
-    for (int r = 0; r < win_n; ++r)
-        if (const std::uint32_t bits = t.row(t.bushes, target.x - win_r, target.y - win_r + r)) bush |= Window{bits, 0}.shl(win_n * r);
+    if (t.inside(target)) {
+        const auto i = static_cast<std::size_t>(target.x + target.y * t.width);
+        if (!bush_known[i]) {
+            // Beside a kept tile in y: its window moved by a row, and one new row (as static_window).
+            const auto W = static_cast<std::size_t>(t.width);
+            if (target.y > 0 && bush_known[i - W])
+                bush_windows[i] = bush_windows[i - W].shr(win_n)
+                                  | Window{t.row(t.bushes, target.x - win_r, target.y + win_r), 0}.shl(win_n * (win_n - 1));
+            else if (target.y + 1 < t.height && bush_known[i + W])
+                bush_windows[i] = bush_windows[i + W].shl(win_n) | Window{t.row(t.bushes, target.x - win_r, target.y - win_r), 0};
+            else
+                bush_windows[i] = bush_rows();
+            bush_known[i] = 1;
+        }
+        bush = bush_windows[i];
+    } else {
+        bush = bush_rows();
+    }
     return (sight(world, target, true, store) & tables.square[range] & ~bush) | near;
 }
 
@@ -1518,36 +1576,58 @@ const StaticWindow& static_window(const World& world, vec2 origin) {
     const int lo = std::max(0, -x0), hi = std::min(win_n, t.width - x0);
     const std::uint32_t columns = lo >= hi ? 0u : ((1u << hi) - 1) & ~((1u << lo) - 1);
     const std::uint64_t width_mask = lo >= hi ? 0 : (std::uint64_t{1} << (hi - lo)) - 1;
+    // One row's masks: through (a dash path may cross), open (they may land), camp.
+    const auto row_masks = [&](int y, std::uint32_t& open, std::uint32_t& through, std::uint32_t& camp) __attribute__((always_inline)) {
+        open = 0, through = 0, camp = 0;
+        if (t.packed) {
+            if (columns != 0 && y >= 0 && y < t.height) {
+                // Terrain::row() of each board, sharing the word offset.
+                const int i = x0 + lo + y * t.width;
+                const auto at = static_cast<std::size_t>(i >> 3);
+                const int shift = i & 7;
+                std::uint64_t uncrossable, blocked, camps;
+                std::memcpy(&uncrossable, &t.uncrossable[at], sizeof uncrossable);
+                std::memcpy(&blocked, &t.blocked[at], sizeof blocked);
+                std::memcpy(&camps, &t.camps[at], sizeof camps);
+                through = columns & ~(static_cast<std::uint32_t>((uncrossable >> shift) & width_mask) << lo);
+                open = columns & ~(static_cast<std::uint32_t>((blocked >> shift) & width_mask) << lo);
+                camp = static_cast<std::uint32_t>((camps >> shift) & width_mask) << lo;
+            }
+        } else {
+            for (int k = 0; k < win_n; ++k) {
+                const vec2 p{x0 + k, y};
+                if (!t.inside(p) || test(world.map().walls, p)) continue;
+                if (!test(world.map().ally_spawn, p)) through |= 1u << k;
+                if (!test(world.map().blocked_for_them, p)) open |= 1u << k;
+                if (world.map().group_at(p) >= 0) camp |= 1u << k;
+            }
+        }
+    };
     Window pass, land, camps;
+    // A tile beside one in y that is kept: its window moved by a row, and one new row.
+    const int W = t.width;
+    if (origin.y > 0 && scanned[oi - static_cast<std::size_t>(W)]) {
+        const auto& b = statics[oi - static_cast<std::size_t>(W)];
+        std::uint32_t open, through, camp;
+        row_masks(origin.y + win_r, open, through, camp);
+        constexpr int top = win_n * (win_n - 1);
+        st = {b.pass.shr(win_n) | Window{through, 0}.shl(top), b.land.shr(win_n) | Window{open, 0}.shl(top),
+              b.camps.shr(win_n) | Window{camp, 0}.shl(top)};
+        return st;
+    }
+    if (origin.y + 1 < t.height && scanned[oi + static_cast<std::size_t>(W)]) {
+        const auto& a = statics[oi + static_cast<std::size_t>(W)];
+        std::uint32_t open, through, camp;
+        row_masks(origin.y - win_r, open, through, camp);
+        st = {a.pass.shl(win_n) | Window{through, 0}, a.land.shl(win_n) | Window{open, 0}, a.camps.shl(win_n) | Window{camp, 0}};
+        return st;
+    }
     // Unrolled, so that each row's place in the window is a constant shift.
     [&]<int... Row>(std::integer_sequence<int, Row...>) {
         (
             [&] {
-                const int y = origin.y - win_r + Row;
-                std::uint32_t open = 0, through = 0, camp = 0;
-                if (t.packed) {
-                    if (columns != 0 && y >= 0 && y < t.height) {
-                        // Terrain::row() of each board, sharing the word offset.
-                        const int i = x0 + lo + y * t.width;
-                        const auto at = static_cast<std::size_t>(i >> 3);
-                        const int shift = i & 7;
-                        std::uint64_t uncrossable, blocked, camps;
-                        std::memcpy(&uncrossable, &t.uncrossable[at], sizeof uncrossable);
-                        std::memcpy(&blocked, &t.blocked[at], sizeof blocked);
-                        std::memcpy(&camps, &t.camps[at], sizeof camps);
-                        through = columns & ~(static_cast<std::uint32_t>((uncrossable >> shift) & width_mask) << lo);
-                        open = columns & ~(static_cast<std::uint32_t>((blocked >> shift) & width_mask) << lo);
-                        camp = static_cast<std::uint32_t>((camps >> shift) & width_mask) << lo;
-                    }
-                } else {
-                    for (int k = 0; k < win_n; ++k) {
-                        const vec2 p{x0 + k, y};
-                        if (!t.inside(p) || test(world.map().walls, p)) continue;
-                        if (!test(world.map().ally_spawn, p)) through |= 1u << k;
-                        if (!test(world.map().blocked_for_them, p)) open |= 1u << k;
-                        if (world.map().group_at(p) >= 0) camp |= 1u << k;
-                    }
-                }
+                std::uint32_t open, through, camp;
+                row_masks(origin.y - win_r + Row, open, through, camp);
                 // A row's 9 bits straddle the words only on row 7.
                 constexpr int at = Row * win_n;
                 const auto place = [](Window& w, std::uint64_t row) __attribute__((always_inline)) {

@@ -3720,3 +3720,16 @@ Real budget, own drafts, against `variants/ocean-97412ec`: 50.3% (49.8-50.8) of 
 `bench.py` identity for the fuel-only part was not run.
 
 Evidence: EXPERIMENTS "Exact ward sight".
+
+## 474: Terrain windows (ocean, 2026-11-09; fuel-only)
+
+safety.cc, exact and general to any map:
+- `sight()`'s "no bush or wall within win_r" test reads bushes and walls dilated once by host shifts (`make_near`), on
+  the first turn after the draft.
+- `attack_viewers`' bush window is kept per tile for the game.
+- That window and `static_window` slide from a kept neighbour in y, reading one new row in place of nine.
+
+100M wide bench against the previous ocean: 52/52 byte-identical; mean play fuel -4.3% (p90 -1.3%, p99 -0.1%); round
+1 unchanged. Not A/B'd: the expected gain (~+0.4) is under 20k games' noise.
+
+Evidence: EXPERIMENTS "Terrain windows".

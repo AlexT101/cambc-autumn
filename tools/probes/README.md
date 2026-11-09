@@ -18,7 +18,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 | YAML | Probes |
 |---|---|
 | `champions` (stats, abilities, modifiers), `camps.types`, settings, items | `probe-designs` (all designs and the item table from the engine; diff its output across engine versions); `probe-facts` (hyperion's champions.h against the engine); `probe-heart` (Heart of Ruin, draft id 11, drafts and plays) |
-| `result.round_limit`, `fuel` | `probe-fuel`, `probe-fuel-b..e`; `probe-firstturn`; `probe-fuel-ops` (fuel per arithmetic instruction: a 64-bit division ~3.5 above a multiply) |
+| `result.round_limit`, `fuel` | `probe-fuel`, `probe-fuel-b..e`; `probe-firstturn`; `probe-fuel-ops` (fuel per arithmetic instruction: a 64-bit division ~3.5 above a multiply); `probe-fuel-arb` + `probe-fuel-arb-big` (`run.sh`; release, 2026-11-08): an 8 MiB `#embed` table costs no start-up fuel (first turn 189,746 left either way); `memory.grow` of 1 MiB 7; a 64 KiB `memcpy` 1 a byte, a 4-wide v128 copy loop 0.43 a byte (clang turns a plain copy loop into `memcpy`), `memset` 0.2 a byte; 16 byte lookups 112 scalar, 12 by `i8x16.swizzle`; `powf` 54, `sinf` 41, `expf` 28, `logf` 23, `atan2f` 17 a call; `sqrt` and divides ~1 above an add; a non-inlined call ~5; on 100x100 a full distance field 25k and its `export_linear_buffer` 2.5k, the export equal to `sdk_DistanceField_Get` on every tile |
 | `map.coordinates`, `map.symmetry` | `probe-introspect` |
 | `map.size` (the engine's width and height); the published range, 28x28 (04pinwheel, 04plaza) to 100x100, from the ladder map files (`node tools/mapgen/mapgen.mjs check maps` prints each map's size; 2026-11-05) | `probe-mapsize` (04pinwheel reads 28x28) |
 | `map.corners`, diagonal sight | `probe-corner` |
