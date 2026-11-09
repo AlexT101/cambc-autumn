@@ -13286,3 +13286,43 @@ The details are in [fuelcap-2026-11-09](fuelcap-2026-11-09/README.md#the-farm-lo
 - **An exact speedup finishes few cut loops.** Reaching the stop needs a median 20k more. A 20% speedup finishes 16% of cut loops, and a 50% speedup 40%.
 - **A full evaluation changes the best in 29% of cut loops.** In another 29% the loop was cut before it found any best (14% before the first pass).
 - **Carrying the cut loop to the next turn (v87-fresume) fails.** It is bench-identical at 100M, but dgate gives H0 at +0.04 points (6,528 units, 26,624 games).
+
+## v87 econ: subvariants of CHANGES 465 (comms follow) and 466 (mid-game gold) on oc-base25 (2026-11-08/09)
+
+Each arm is `variants/oc-base25` plus only its diff (`variants/v87-<arm>`). Big files and scripts: `~/tmp-offload/v87econ/`.
+- Gold (466's hump, per_gold x (1 + (M-1) h)):
+  - gold-off: M = 1.
+  - gold-early: h = 1 from score 0 to 300, 0 by 600, M = 1.4. The archive's lean peaks at 100-250 tributed.
+  - gold-r300: h keyed on the round (1 to r300, 0 by r600), M = 1.4. Fish and Mite lead on gold from r25 (carry.md).
+  - gold-max: max(score hump, round lean) at M = 1.25.
+- Comms (465):
+  - comms-off.
+  - comms-stale: seen within 1, posted within 10.
+  - comms-carry: the biggest bag (20+) posts every other round.
+  - comms-bagf: Willow's follow adds bag/40 (up to 3) to the crowd count.
+  - comms-coarse: cells up to 13, and the record no longer needs the camp record to fit.
+
+Screens on `merged/ve-scr` (fresh-1250000..199, `--mix ladder-v2`), own drafts, SPRT 0.50/0.5025, seeds 1250001-19, at the real budget / 2x fuel:
+
+| arm | real budget | 2x fuel | spar_ab (v87-base) |
+|---|---|---|---|
+| gold-off | 50.0% of 102,400, undecided (LLR -1.23) | 50.0% of 102,400, undecided | +1.28 ±2.55 |
+| gold-early | 50.0% of 102,400, undecided (-1.78) | 50.1% of 102,400, undecided | +0.62 ±3.14 |
+| gold-r300 | 50.0% of 102,400, undecided (-1.73) | 50.1% of 102,400, undecided | +0.80 ±3.22 |
+| gold-max | 49.6% of 50,807, H0 | 50.2% of 102,400, undecided | -0.54 ±3.01 |
+| comms-off | 49.3% of 14,841, H0 | 49.9% of 49,836, H0 | -1.35 ±2.19 |
+| comms-stale | 50.1% of 102,400, undecided (-0.19) | 50.0% of 102,400, undecided | -0.24 ±2.01 |
+| comms-carry | 49.4% of 14,856, H0 | 49.8% of 33,022, H0 | -0.09 ±1.75 |
+| comms-bagf | 50.6% of 27,916, H1 | 50.9% of 17,751, H1 | -2.06 ±2.16 |
+| comms-coarse | 50.0% of 10,073, H0 | 50.1% of 9,275, H0 | +0.09 ±0.62 |
+
+dgate at 0.505/0.5075 against oc-base25 (real budget, live picks, CRN-paired), on the best three:
+- comms-bagf: +0.16 pts ±0.39 over 9,344 units (37,888 games a bot): H0.
+- gold-early: +0.13 ±0.40 over 19,456 units (78,336): H0.
+- gold-r300: +0.09 ±0.41 over 19,072 units (76,800): H0.
+
+- **Verdict:** no subvariant is a meaningful change, so none is queued live.
+  - 466's hump sits on a flat optimum: off, earlier, round-keyed or wider all read 50.0.
+  - 465 is worth keeping: removing it lost (H0 at both fuels).
+  - bagf's mirror H1 didn't carry to live picks (spar -2.1, dgate +0.16).
+- The 2x screens track the real-budget ones, so none of these ideas is fuel-limited.
