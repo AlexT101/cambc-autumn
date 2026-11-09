@@ -1,0 +1,6 @@
+1a2
+> #include "opp_class.h"
+1803a1805
+>     opp::observe(*this);
+3076a3079
+> #include "model/opp_class.cc"
