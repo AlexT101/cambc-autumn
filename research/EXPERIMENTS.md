@@ -986,7 +986,24 @@ source of losses. Rejected: none of these is queued for live.
   | v87-mp-chan | +0.09 ±0.25 (ZONE crossed; old bodies +0.36 ±0.33) | 46,848 | -0.17 | +0.35 | +0.26 | -0.00 |
   | v87-mp-tank | +0.16 ±0.25 (ZONE crossed; old bodies +0.27 ±0.31) | 22,528 | +0.21 | +0.10 | +0.72 | -0.17 |
   | v87-sp-y0 | +0.11 ±0.25 (ZONE crossed; old bodies +0.15 ±0.34) | 28,672 | +0.37 | -0.16 | +0.36 | -0.04 |
+  | v87-comms-bagf | +0.13 ±0.25 (ZONE crossed; old bodies +0.15 ±0.38) | 23,296 | +0.30 | -0.03 | +0.06 | +0.18 |
+  | v87-ng2-rs2 | -0.11 ±0.25 (old bodies -0.03 ±0.30) | 8,576 | -0.02 | -0.20 | +0.17 | -0.27 |
+  | v87-rv-ngd | +0.26 ±0.25 (ZONE crossed; old bodies +0.11 ±0.35) | 16,640 | +0.05 | +0.46 | +0.19 | +0.29 |
+  | v87-nh-6-3 | +0.34 ±0.25 (ZONE crossed; old bodies +0.16 ±0.30) | 9,472 | +0.45 | +0.22 | +0.40 | +0.30 |
+  | v87-rv-ctxg3 | -0.14 ±0.25 (old bodies +0.14 ±0.40) | 31,872 | -0.36 | +0.08 | +0.26 | -0.38 |
+  | v87-gold-early | -0.10 ±0.25 | 48,128 | -0.05 | -0.16 | -0.10 | -0.11 |
+  | v87-gold-r300 | -0.23 ±0.25 | 48,886 | -0.20 | -0.26 | -0.17 | -0.27 |
+  | v87-mp-contact | +0.31 ±0.25 (ZONE crossed) | 50,223 | +0.70 | -0.09 | +0.01 | +0.48 |
+  | v87-ng2-wg | -0.02 ±0.25 | 32,987 | +0.04 | -0.09 | +0.01 | -0.04 |
   | oc31-fsenemy (against **oc-base31**) | +0.20 ±0.25 (ZONE crossed; queued live as an informative pair vs v99) | 37,888 | +0.11 | +0.30 | +0.13 | +0.25 |
+  | oc31-fs-ngd (against **oc-base31**: + fs-enemy + rv-ngd) | +0.18 ±0.25 (ZONE crossed) | 40,320 | +0.02 | +0.34 | -0.00 | +0.29 |
+  | oc31-fs-ngd-nh (against **oc-base31**: + fs-enemy + rv-ngd + nh-6-3) | +0.41 ±0.25 (ZONE crossed) | 41,088 | +0.35 | +0.47 | +0.23 | +0.51 |
+
+  Read directly against each other on the same draws (cached runs, `dgate.py A B --no-run --ci 0`): nh-6-3 on top of
+  fs-enemy + rv-ngd +0.23 ±0.12 of 40,448 units (Fish +0.34, Mite +0.12); rv-ngd on top of fs-enemy -0.07 ±0.16.
+  So nh-6-3 adds and rv-ngd does not; oc31-fs-nh (oc-base31 + fs-enemy + nh-6-3) is gated against oc-base31.
+  mp-contact on top of oc31-fs-nh, read directly: -0.06 ±0.37 of 21,969 units, so it was left out of the oc-base32 stack
+  (escport's oc32-fs-nh: +1.01 ±0.28 against oc-base32, LIVE BAR H1). The oc31 stacks are for reading parts only.
 
   t5 is dfp-race-d0 (dfp-pure plus the mirror-race enemy model) on five-pick teams only, the base's draft elsewhere, so it
   gives up pure's plan on 3-4 picks; the race model was already H0 against pure, and the five-pick condition fails the map
