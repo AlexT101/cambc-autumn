@@ -359,6 +359,11 @@ in our scrims, on the draft-lab map features.
   **Flp2** (`research/ideas-2026-11-09/fishfid/patch_fish2.py`, the default from 2026-11-09 ~23:40) adds FISH_MODEL
   8.3's banking rule and Fish's emblem orders. ocean-16d6f78 beats it 71.1% of 256 ladder games, against 80.5% for
   Flp and ~64% live (EXPERIMENTS "Fresh-map gate"). `--fish-body Flp` plays the first version.
+  **Flp3 / Mt3q** (the defaults from 2026-11-10 ~00:30) write Fish's / Mite's own priority encodings
+  (`fishfid/patch_prio.py`): the body's raw ranks map monotonically onto the team's values, keeping the body's idle
+  order (Fish's early-to-quiet levels; Mite's alert 0 and quiet ±2). Allies lose ocean's 16-bit priority payload, which
+  costs nothing measurable (71.9% against Flp2's 71.1%). Mapping idle bodies onto Fish's exact health band instead cost
+  the body 8 points (79.7%).
 
 **`fgate.py`.** dgate's three-way sequential test.
 - Each noise block plays the ladder maps and one fresh slice, both sides, against both bodies.

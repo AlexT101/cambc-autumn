@@ -120,6 +120,28 @@ Flp2 against real Fish (fish-re's tributes.py, bags.py and builds.py):
 The Mite body (Mt3p) has a gap of the same size: ocean beats it 74.2% (68.5-79.2) of 256 on the ladder, against ~63%
 live.
 
+**Body arms after Flp2** (ocean-16d6f78 against each, 256 ladder games; ±5 points at this size):
+
+| Body | ocean win % | What it changes | Fidelity read |
+|---|---|---|---|
+| Flp2h | 73.8 | Flp2, prey chases any visible enemy (patch_hunt.py) | not kept: the body gets no stronger |
+| Flp2np | 71.9 | Flp2 without ocean's priority payload | payload costs nothing |
+| Flp3x | 79.7 | Flp2, Fish's exact encoding (idle = health band) | the body loses ~8 points: idle order matters |
+| **Flp3** | 74.2 | Flp2, Fish's encoding keeping the body's idle order | classifier: Fish 0.97 at r100 (Flp2: 0.20, "other") |
+| Mt3p2fight | 73.8 | Mt3p, a bag never brakes | mite-re: deaths gap unmoved (ours 6.0 vs real 10.4 one-site) |
+| Mt3p2bank | 73.0 | Mt3p, Fish's 8 × (walk − 2) floor | mite-re: real Mite banks smaller bags, so the wrong way |
+| Mt3p2 | 69.1 | both of the above | |
+| Mt3p3 | 73.8 | fight + no banking trips on one-altar maps | mite-re: overshoots (altar time 1% vs real 4%, bags 3x) |
+| Mt3pqo | 73.8 | Mt3p, Mite's values spread over 1000..1049 | classifier: Mite 0.68 at r100 |
+| **Mt3q** | 73.4 | Mt3p, Mite's encoding (alert 0, quiet ±2 by idle order) | classifier: Mite 0.98 at r100 |
+
+Flp3 and Mt3q are fgate's defaults. What still separates the bodies from live, from fish-re and mite-re:
+- Kill pressure. Real Fish kills our bodies 9.6 times a game against the body's 6.5, and real Mite 10.4 against 6.0
+  on one-site maps. fish-re traces it to cohesion: real Fish has 1.54 teammates within 5 against the body's 1.20,
+  so we are outnumbered at contact. The death hazard at equal numbers is the same, so it is numbers, not fighting
+  skill.
+- Mite's softer banking trips, and its mid-altar locks from about r400.
+
 ## (ocean, 2026-11-09) Draft first-turn fuel (CHANGES 491): 14.4M -> 8.8M at most, level, plans identical
 
 `variants/dfpfuel-a` (= bots/ocean at 491) against `variants/ocean-rm3` (490), own drafts, release, fast runner, on

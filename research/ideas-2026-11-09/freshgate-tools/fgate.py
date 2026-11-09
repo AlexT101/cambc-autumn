@@ -5,8 +5,9 @@ opponents that draft from map features and a map pool of the 128 ladder maps plu
 
 - Opponents: noise block k plays v87 noise seed k (dgate's spar-dvnK bodies with Fish's locks or Mite's tribute habit),
   drafting with Fish's or Mite's pick model (fitgen.py, patch_fm.py: spar-dvnK-Flp / -Mt3p). There is no per-map
-  table, so they play the same on every map. Fish's default body is Flp2 (fishfid/patch_fish2.py on Flp: Fish's
-  banking rule and emblem orders; closer to live), `--fish-body Flp` for the first version.
+  table, so they play the same on every map. Body versions (VERSIONS; --fish-body, --mite-body): Flp2 adds Fish's
+  banking rule and emblem orders (fishfid/patch_fish2.py; closer to live); Flp3 and Mt3q (the defaults) write Fish's
+  and Mite's own priority encodings (fishfid/patch_prio.py), so the opponent classifier reads them as Fish and Mite.
 - Maps: each block plays the ladder maps and one 128-map slice of the fresh pool (slice (k - 1) mod 8), both sides,
   against both bodies.
 - Decision: the SPRTs, the ZONE and the NARROWED stop read only the fresh units, so a gain that holds only on the
@@ -22,7 +23,12 @@ FRESH = os.path.expanduser('~/tmp-offload/diverse/fresh')
 POOL = [f'{FRESH}/pool/f{j}' for j in range(8)]
 BODY = {'F': 'Flp', 'M': 'Mt3p'}
 # Later body versions (--fish-body), each a patch on the one before; a run name carries its version past the first.
-FISH_PATCHES = {'Flp2': '../fishfid/patch_fish2.py'}
+FF = '../fishfid'
+# version: (the version it patches, [patch command after the bot dir]). Flp3/Mt3q write Fish's/Mite's own priorities.
+VERSIONS = {'Flp2': ('Flp', [f'{FF}/patch_fish2.py']), 'Flp3': ('Flp2', [f'{FF}/patch_prio.py', 'F', 'order']),
+            'Mt3q': ('Mt3p', [f'{FF}/patch_prio.py', 'M', 'near'])}
+FISH_PATCHES = [v for v in VERSIONS if v.startswith('Fl')]
+MITE_PATCHES = [v for v in VERSIONS if v.startswith('Mt')]
 def tag(o): return '' if BODY[o] in ('Flp', 'Mt3p') else BODY[o].removeprefix('Fl').removeprefix('Mt3')
 ENG = 'e' + CAMBC.replace('.', '')
 
@@ -64,19 +70,24 @@ def build_seed(k):
                 subprocess.run([sys.executable, f'{T}/patch_fm.py', f'{R}bots/variants/spar-dvn{k}-{p}', o, str(k)], cwd=R, check=True, capture_output=True)
         open(mark, 'w').close()
 
-def build_version(k):
-    build_seed(k)
-    if BODY['F'] not in FISH_PATCHES: return
-    mark = f'{LOCKS}/built-dvn{k}-{BODY["F"]}'
+def build_body(k, v):
+    if v not in VERSIONS: return
+    base, cmd = VERSIONS[v]
+    build_body(k, base)
+    mark = f'{LOCKS}/built-dvn{k}-{v}'
     if os.path.exists(mark): return
-    with open(f'{LOCKS}/build-dvn{k}-{BODY["F"]}', 'w') as fh:
+    with open(f'{LOCKS}/build-dvn{k}-{v}', 'w') as fh:
         fcntl.flock(fh, fcntl.LOCK_EX)
         if os.path.exists(mark): return
-        d = f'{R}bots/{mdir(k, "F")}'
+        d = f'{R}bots/variants/spar-dvn{k}-{v}'
         if not os.path.isdir(d):
-            subprocess.run([f'{R}copybot', f'variants/spar-dvn{k}-Flp', mdir(k, 'F')], cwd=R, check=True, capture_output=True)
-            subprocess.run([sys.executable, f'{T}/{FISH_PATCHES[BODY["F"]]}', d], cwd=R, check=True, capture_output=True)
+            subprocess.run([f'{R}copybot', f'variants/spar-dvn{k}-{base}', f'variants/spar-dvn{k}-{v}'], cwd=R, check=True, capture_output=True)
+            subprocess.run([sys.executable, f'{T}/{cmd[0]}', d] + cmd[1:], cwd=R, check=True, capture_output=True)
         open(mark, 'w').close()
+
+def build_version(k):
+    build_seed(k)
+    build_body(k, BODY['F']); build_body(k, BODY['M'])
 
 class Runner(dgate.Runner):
     def want(self, bot, k, o, s, suite, games):
@@ -124,10 +135,11 @@ def main():
     ap.add_argument('--ahead', type=int, default=2); ap.add_argument('--seed', type=int, default=0)
     ap.add_argument('--no-run', action='store_true'); ap.add_argument('--zone-stop', action='store_true')
     ap.add_argument('--ci', type=float, default=0.25, help='NARROWED once the fresh 95%% CI half-width is this many points')
-    ap.add_argument('--fish-body', default='Flp2', choices=['Flp'] + list(FISH_PATCHES), help='Fish body version (Flp2 from 2026-11-09 23:40; Flp before)')
+    ap.add_argument('--fish-body', default='Flp3', choices=['Flp'] + FISH_PATCHES, help='Fish body version (Flp3 from 2026-11-10 ~00:30, Flp2 from 2026-11-09 23:40, Flp before)')
+    ap.add_argument('--mite-body', default='Mt3q', choices=['Mt3p'] + MITE_PATCHES, help='Mite body version (Mt3q from 2026-11-10 ~00:30, Mt3p before)')
     ap.add_argument('--min-blocks', type=int, default=8, help='blocks before NARROWED can stop (every fresh slice played once)')
     a = ap.parse_args(); p0, p1 = map(float, a.sprt.split(',')); q0, q1 = map(float, a.low.split(','))
-    BODY["F"] = a.fish_body
+    BODY["F"], BODY["M"] = a.fish_body, a.mite_body
     lo, screen_hi, live_hi = math.log(0.05 / 0.95), math.log(0.95 / 0.05), math.log(99)
     run = Runner(a.jobs); U = {'L': {}, 'fresh': {}}; k = 1; outcome = None
     screen_at = low_at = high_h0_at = zone_at = None
@@ -178,7 +190,7 @@ def main():
            'fresh_units': len(Fu), 'llr_high': round(ab.llr(Fu, p0, p1), 3) if Fu else None, 'llr_low': round(ab.llr(Fu, q0, q1), 3) if Fu else None,
            'zone_at_units': zone_at, 'screen_at_units': screen_at, 'low_h1_at_units': low_at, 'high_h0_at_units': high_h0_at}
     print(json.dumps(res))
-    if not a.no_run: json.dump(res, open(f'{LOGS}/fgate-{os.path.basename(a.cand.rstrip("/"))}--{os.path.basename(a.ref.rstrip("/"))}{tag("F")}.json', 'w'))
+    if not a.no_run: json.dump(res, open(f'{LOGS}/fgate-{os.path.basename(a.cand.rstrip("/"))}--{os.path.basename(a.ref.rstrip("/"))}{tag("F")}{tag("M")}.json', 'w'))
 
 if __name__ == '__main__':
     main()
