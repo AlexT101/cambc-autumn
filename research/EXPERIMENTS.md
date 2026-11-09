@@ -13192,3 +13192,13 @@ Results against oc-base23 (oc-base25's win %, 95% CI):
 - **Rejected.** None of the reserve or guard changes pays.
 - **Raw SDK imports (v87-sdkraw): exact, -0.39% fuel.** The changes: `in_bounds` in two unsigned compares, and raw ward_cooldown, is_alive and recall. Bench replays were identical in 67/68. The remaining SDK-wrapper instructions are 1.84% of all fuel.
 - **The 68th bench game changed play through the turn-end queue.** The queue reached `prepare_approach` on a cheaper turn. Without it in the queue, base and patch are identical.
+
+## Farm loop: what finishing it is worth, and why a speedup can't finish it (v87 = oc-base25, 2026-11-09): no arm
+
+The details are in [fuelcap-2026-11-09](fuelcap-2026-11-09/README.md#the-farm-loop-second-round-2026-11-09).
+
+- **Raw fuel in the farm loop alone is worth about +1.5.** The 2x view arm with raw fuel only in the loop scores 52.5% (50.9-54.0) of 4,096 on dec8. The view arm scores 51.0, and raw fuel in all of `farm_turn` 54.1.
+- **A cut loop has done 8 of 24 groups at about 2k a pass.** Crew pricing (`plan_crew`, 3.6k a call) is about 30% of its fuel, `live_steps` 8%, and the header and pre-bounds 11%.
+- **An exact speedup finishes few cut loops.** Reaching the stop needs a median 20k more. A 20% speedup finishes 16% of cut loops, and a 50% speedup 40%.
+- **A full evaluation changes the best in 29% of cut loops.** In another 29% the loop was cut before it found any best (14% before the first pass).
+- **Carrying the cut loop to the next turn (v87-fresume) fails.** It is bench-identical at 100M, but dgate gives H0 at +0.04 points (6,528 units, 26,624 games).

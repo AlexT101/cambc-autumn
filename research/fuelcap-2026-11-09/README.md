@@ -167,3 +167,49 @@ Consequence: **any fuel-only change can break bench identity on some maps** thro
 - `*.patch`: candidate patches against `bots/variants/oc-base25/src`; their frozen copies are in `bots/variants/v87-*` (gitignored builds).
 - Results: `replays/ab/fuelcap-{dec-f2x,dec-view,raw-*,p1a,frsv50,frsv75,glethal}/summary.md`.
 - Scripts: `~/tmp-offload/fuelcap/` (cen3.sh census runs, oofctx.py live OOF by context, pairs.py).
+
+## The farm loop (second round, 2026-11-09)
+
+The question here was whether a genuinely cheaper farm evaluation could finish the loops that now get cut. All games are against oc-base25 at 1x.
+
+**How much finishing the loop is worth.** `v87-raw-loop` is the 2x "view" bot with raw fuel in the loop only; after the loop it restores the fuel the view would have had at its cut. On `dec8` (4,096 games):
+
+| arm | win % (CI) |
+|---|---|
+| view | 51.0 |
+| raw fuel in the loop only | 52.5 (50.9–54.0) |
+| raw fuel in all of `farm_turn` | 54.1 |
+
+So finishing the loop is worth about +1.5. The other ~+1.6 comes from the work after the loop: route and field searches that read fuel.
+
+**What a cut loop spends** (`v87-floop`: segment marks and function probes; 256 games, 528k farm loops):
+- 5.7% of loops are cut. A cut loop has spent a median 19.5k by the cut, over 8 of 24 groups (about 2k a pass, against about 600 a pass in loops that finish).
+- Where the cut loop's fuel goes:
+
+| part | share |
+|---|---|
+| claimed groups' crew pricing (`plan_crew`, 3.6k a call: base price 0.95k, the expected allies 2.2k) | about 30% |
+| `live_steps` (300 a call, 6 calls) | 8% |
+| `min_camp_damage` misses (1.8 a loop) | |
+| the loop header, `stop_from` and pre-bounds | 11% |
+| the flattened inline arithmetic | the rest |
+
+- `min_camp_damage`'s 4-slot cache misses on new belief versions, not on eviction: only 0.29 of 1.82 misses find the slots full. So a bigger or cross-turn cache would save little.
+
+**The arithmetic is against a speedup.** Reaching the stop bound needs a median 20k more (p75 52k). An exact speedup of s finishes:
+
+| speedup | cut loops finished |
+|---|---|
+| 10% | 8% |
+| 20% | 16% |
+| 30% | 23% |
+| 50% | 40% |
+
+About 13 fuel campaigns have already tuned this code, so a realistic 15–20% would buy perhaps 0.2–0.3 of the +1.5.
+
+**What a full evaluation changes** (`v87-flcut`: loop on raw fuel, the best at the view's cut recorded; 24,650 cut loops):
+- In 71% of cut loops the full evaluation keeps the same best.
+- In 29% of cut loops there was no best at all by the cut: 14% are cut before their first pass.
+- Where the full best differs and one existed, it lies a median 2–4 positions past the cut. More passes, not a different order, is what pays.
+
+**Carrying the cut loop across turns fails.** `v87-fresume` goes on next turn from where the loop stopped, after a head of 4. It is bench-identical at 100M (16/16) because it changes only turns after a cut. dgate against oc-base25: H0 at +0.04 points (6,528 units, 26,624 games). Skipping the near groups costs what the far ones gain.
