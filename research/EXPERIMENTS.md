@@ -13170,3 +13170,18 @@ Results against oc-base23 (oc-base25's win %, 95% CI):
 - **No correction pays.** Champion mains gain -8.6e-4 CV log loss; counters and feature terms lose. Cross-fitted
   re-picks are -1.4 to +2.1 ±2.9 points. Nothing to gate.
 
+
+## Fuel caps and budget table (v87 = oc-base25, 2026-11-09): no arm merged
+
+[fuelcap-2026-11-09](fuelcap-2026-11-09/README.md) holds the details. All games are against oc-base25 at the real budget, with own drafts, on ladder-v2 suites with seeds 1370000-1370033.
+
+- **Live drift is not fuel.** Live OOF per 1k rounds is flat across v86-v93 (10.6-11.7) while wins fell 65.8 → 60.5%. Local OOF matches it, and won games have as much OOF as lost ones.
+- **Budget table.** It covers about 2.27M turns (`CHIST`, `tools/fuel/census/budget.py`). The mean turn is 53.6k and p99 93k. 71% of first-OOF turns passed no fuel check before running out. The ungated parts and their measured maxima: world update 36k, continue_recall's want_home 92k, wh.stand_lost 73k, strike search 82k.
+- **Decomposition (8,192 games).** The 2x budget scores 53.6% (52.6-54.7). The 2x budget with gates seeing 1x scores 51.4% (50.3-52.5). So never running out is worth about +1.4 and the gated work about +2.2.
+- **Per-gate arms (4,096 games each).** Raw fuel for one consumer, on top of the 1x view at 51.0: farm 54.1, guard 52.0, order 52.1, prey 51.8, queue 50.9. The farm's cut evaluation is what converts fuel into wins.
+- **P1a: the strike search stops growing and pricing below `act_reserve`.** Bench-identical at 100M. Result: 49.5% (48.0-51.0) of 4,096, OOF -1.5%. Level, but it bounds the search.
+- **Farm reserve.** The work after a cut uses a median of 0.47 of the reserve. Scaling the reserve by 0.75 gives 50.7% with OOF +11%; by 0.5, 50.0% with OOF +24%.
+- **Step guard failing closed on lethal tiles.** 49.6% with OOF +28%.
+- **Rejected.** None of the reserve or guard changes pays.
+- **Raw SDK imports (v87-sdkraw): exact, -0.39% fuel.** The changes: `in_bounds` in two unsigned compares, and raw ward_cooldown, is_alive and recall. Bench replays were identical in 67/68. The remaining SDK-wrapper instructions are 1.84% of all fuel.
+- **The 68th bench game changed play through the turn-end queue.** The queue reached `prepare_approach` on a cheaper turn. Without it in the queue, base and patch are identical.

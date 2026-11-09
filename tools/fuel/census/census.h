@@ -64,6 +64,7 @@ struct State {
     std::uint64_t dear_cost[8]{};
     int n_dear = 0;
     Event decide_check{};
+    const char* first_fail = nullptr; // the turn's first failed fuel check (a gate that fired)
     bool decided = false;
     std::uint64_t decide_fuel = 0;
 };
@@ -92,6 +93,7 @@ inline void note(char kind, const char* file, int line, std::uint64_t fuel, std:
     check_resume();
     if (s.ran_out) return;
     if (kind == 'c') s.last_check = {kind, file, line, fuel, needed}, s.last_check_n = s.n_events;
+    if (kind == 'f' && !s.first_fail && !s.decided) s.first_fail = file;
     if (file[0] == 'f' && std::strcmp(file, "farm_loop") == 0) {
         if (s.loop_n > 0 && s.loop_prev > fuel + 5000 && s.n_dear < 8) s.dear_k[s.n_dear] = s.loop_n - 1, s.dear_cost[s.n_dear++] = s.loop_prev - fuel;
         ++s.loop_n, s.loop_prev = fuel;
@@ -197,11 +199,91 @@ inline void begin(bool late) {
     s.late = late;
 }
 
+// Budget histograms (budget.py): every turn's inclusive fuel per label, in 1k buckets (100: 100k or more),
+// printed as one CHIST line a label every hist_period rounds (deltas since the last print), so a run gives
+// each component's distribution over all turns, not only heavy ones. CHIST label n sum max bucket:count... A game's last < hist_period rounds are
+// not printed. `@turn` is the whole turn (the census's own `turn` scope is the play_turn meter); an out-of-fuel turn's components count to its exhaustion.
+inline constexpr bool hist_on = true;
+inline constexpr std::uint32_t hist_period = 100;
+inline constexpr int hist_labels = 64, hist_buckets = 101;
+struct Hist {
+    const char* label = nullptr;
+    std::uint32_t n = 0;
+    std::uint64_t max = 0, sum = 0;
+    std::uint32_t b[hist_buckets]{};
+};
+struct Hists {
+    Hist h[hist_labels];
+    int n = 0;
+    std::uint32_t turns = 0, oof = 0, last_print = 0;
+};
+inline Hists& hists() {
+    static Hists h;
+    return h;
+}
+// The labels histogrammed (stdout is 1 MiB a team): the turn's phases and decide's branches.
+inline constexpr const char* hist_wanted[] = {
+    "@turn", "world", "update", "comms receive", "map conditioning", "decide", "channels", "want_home", "wh.stand_lost",
+    "local_support", "support_work", "strike_search", "leave", "carry_bag", "chase", "goal", "farm_tail", "farm.loop",
+    "farm.post", "guard_steps", "guard_work", "act_end", "strike_after", "turn_order", "turn end", "comms send", "queue",
+    "s.new_fight", "s.stand", "route", "field", "track", "observe"};
+inline void hist_add(const char* label, std::uint64_t v) {
+    bool wanted = label[0] == '@';
+    for (const char* w : hist_wanted) wanted |= std::strcmp(w, label) == 0;
+    if (!wanted) return;
+    auto& H = hists();
+    int i = 0;
+    while (i < H.n && H.h[i].label != label && std::strcmp(H.h[i].label, label) != 0) ++i;
+    if (i == H.n) {
+        if (H.n >= hist_labels) return;
+        H.h[H.n++].label = label;
+    }
+    auto& h = H.h[i];
+    ++h.n, h.sum += v, h.max = std::max(h.max, v), ++h.b[std::min<std::uint64_t>(v / 1000, hist_buckets - 1)];
+}
+inline void hist_print(std::uint32_t round) {
+    auto& H = hists();
+    if (round < H.last_print + hist_period) return;
+    H.last_print = round - round % hist_period;
+    count(std::printf("CHT %u %u %u %u\n", round, static_cast<unsigned>(static_cast<cambc::handle_champion_t>(cambc::self())), H.turns, H.oof));
+    for (int i = 0; i < H.n; ++i) {
+        auto& h = H.h[i];
+        if (!h.n) continue;
+        count(std::printf("CHIST %s %u %llu %llu", h.label, h.n, static_cast<unsigned long long>(h.sum), static_cast<unsigned long long>(h.max)));
+        for (int k = 0; k < hist_buckets; ++k)
+            if (h.b[k]) count(std::printf(" %d:%u", k, h.b[k]));
+        count(std::printf("\n"));
+        h.n = 0, h.max = 0, h.sum = 0;
+        std::memset(h.b, 0, sizeof h.b);
+    }
+    H.turns = H.oof = 0;
+}
+
 inline void end() {
     auto& s = st();
     if (!s.on) return;
     check_resume();
     const std::uint64_t spent = s.ran_out ? s.start : s.start - now_fuel();
+    if (hist_on && !s.late && s.round > 1) {
+        auto& H = hists();
+        ++H.turns, H.oof += s.ran_out;
+        hist_add("@turn", spent);
+        // Gate slack: on a turn a gate cut that still finished, the fuel decide left unspent (the comms
+        // send, ~1.5k, and the queue follow). By the first failing check's file.
+        if (s.first_fail && !s.ran_out && s.decided) {
+            const char* f = s.first_fail;
+            for (const char* q = f; *q; ++q)
+                if (*q == '/') f = q + 1;
+            const char* lab = std::strncmp(f, "farm", 4) == 0 ? "@slack.farm" : std::strncmp(f, "guard", 5) == 0 ? "@slack.guard"
+                            : std::strncmp(f, "fight", 5) == 0 ? "@slack.fight" : std::strncmp(f, "turn_order", 10) == 0 ? "@slack.order"
+                            : std::strncmp(f, "pathing", 7) == 0 ? "@slack.pathing" : "@slack.other";
+            hist_add("@slack", s.decide_fuel);
+            hist_add(lab, s.decide_fuel);
+        }
+        for (int i = 0; i < s.n; ++i)
+            if (s.incl[i]) hist_add(s.labels[i], s.incl[i]);
+        hist_print(s.round);
+    }
     if (s.ran_out) s.post = s.resume_fuel > now_fuel() ? s.resume_fuel - now_fuel() : 0;
     s.on = false;
     // A finished turn's decide: its last passed check, the fuel there, what it needed and what decide spent

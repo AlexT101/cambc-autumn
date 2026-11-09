@@ -1,0 +1,14 @@
+diff -ru a/src/economy/farm.cc b/src/economy/farm.cc
+--- a/src/economy/farm.cc	2026-11-07 01:14:33.641820932 +0000
++++ b/src/economy/farm.cc	2026-11-09 02:24:40.324073342 +0000
+@@ -1310,7 +1310,9 @@
+     const int most_layers = map.width + map.height + max_detour;
+     const auto after_loop = [&](int layers) __attribute__((always_inline)) {
+         const auto l = static_cast<std::uint64_t>(std::clamp(layers, 0, most_layers));
+-        return end_reserve + after.base + chunks * after.per_chunk + chunks * after.quarters_per_layer * l / 4;
++        // Scaled to the measured spend after a cut loop (fuelcap 2026-11-09: p50 0.47, p95 0.71, p99 0.84
++        // of the full reserve): the route search after it keeps its own funding check and fallbacks.
++        return end_reserve + (after.base + chunks * after.per_chunk + chunks * after.quarters_per_layer * l / 4) * 75 / 100;
+     };
+     // With the floor included.
+     const auto loop_reserve = [&]() __attribute__((always_inline)) {
