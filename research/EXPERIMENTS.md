@@ -13793,3 +13793,38 @@ dgate against oc-base25 (release, real fuel, own drafts, SPRT 0.505/0.5075 on (s
     Both measurably lose.
   - Acting last through a recall loses a little too: the seat goes to allies whose order the idle rule already sets.
 - 2x fuel was not screened: the arms cost a few comparisons a turn, and none won at the real budget.
+
+### Conditioned chan (user: "maybe do this if under threat or maybe if there's enemies nearby (in cheb 7 or smth)")
+
+- **Where a channel's final turn is decided:** 1,536 oc-base25 ladder games against v87/v91/dvn1 (F and M).
+  - 51,712 final channel turns, of which 197 were cancelled before our turn by an enemy champion. Another 43 were
+    cancelled by camps, which no order prevents.
+  - Cancel rate by the nearest enemy (Chebyshev, at the round's end): 20-26% at 1-2, 6-7% at 3-4, 1.7% at 5, 0.2%
+    at 6, at most 0.07% beyond.
+  - 94% of those cancels had an enemy within 6.
+  - 69 came from an enemy acting first in the round, which no order saves; 35 of the rest were lock placements,
+    which offer_channel never priced.
+  - That leaves about 0.09 saveable channels a game.
+- **Paired deviations, mp-chan against oc-base25:** the same 1,536 games, replayed.
+  - The order first differs in every pair, nearly always at an early-game recall with no enemy within 11 (1,023 of
+    1,536). The bid there only moves allies' seats.
+  - Pairs whose first deviation had an enemy within 3 went +13/-3.
+- **Arms:**
+  - **chan6:** bid when an enemy is within 6, seen, or tracked, possible and credible.
+  - **chan4:** the same within 4.
+  - **chanthr:** bid when any listed threat can cancel, without the base's "saves nothing" exits.
+- **Results:** new-body dgate (Fl/Mt3) against oc-base25, NARROWED at ±0.25 pts.
+
+| arm | pts (95% CI) | units | Fish | Mite | outcome |
+| --- | ---: | ---: | ---: | ---: | --- |
+| chan6 | +0.23 (-0.03, +0.48) | 26,240 | +0.31 | +0.14 | NARROWED, ZONE crossed |
+| chanthr | +0.11 (-0.14, +0.36) | 3,456 | +0.38 | -0.16 | NARROWED, ZONE crossed |
+| chan4 | -0.07 (-0.32, +0.18) | 14,464 | -0.29 | +0.15 | NARROWED |
+
+- **Old-body reads, stopped when dgate moved to the new bodies:**
+  - chan6 +0.36 ±0.67 of 3,584;
+  - chanthr +0.25 ±0.25 of 3,328 (ZONE);
+  - chan4 -0.85 ±1.25 of 384.
+- **Read:** no conditioned form beats plain chan, whose last old-body read was +0.36 ±0.33.
+  - The saved channels are too few to carry +0.2 pts, and chan4, which keeps most of them, reads 0.
+  - Whatever chan gains comes from the reordering itself, not from saving channels. Nothing merged.
