@@ -2,6 +2,8 @@
 
 Every script takes `--version` (default `v38`); [versions.py](versions.py) maps a version to its commit, bot, trace bot and data directory. To add a version, add a row there, then port `trace-bot/`'s instrumentation onto that commit's sources as `trace-bot-v47/` did. The [v47](#v47) and [v66](#v66) sections have their commands; the rest of this page describes v38.
 
+**Engine by date:** ladder games before ~05:25 UTC on 2026-11-09 reproduce only under cambc 5.0.0 and later ones only under 5.0.1 (they stop out-of-fuel turns at different points, and per-turn fuel differs even on ordinary turns); every script uses the `cambc` on `PATH`, so put the matching one there (an old wheel: `pip download cambc==5.0.0 --no-deps`).
+
 The harness re-runs the 390 ladder games that submission v38 (`bots/hyperion` at 5b02a02) played against top-20 teams. Each re-run pairs an opponent puppet with our real code. The harness proves every re-run reproduces its ladder game, records a per-turn trace of v38's decisions, and joins that trace with the game state in a Python loader.
 
 - **Analysts** studying deaths, fight-sim predictions, ability timing, missed kills, gem losses, target oscillation and ward or bush blindness start at [the loader](#loader-v38libpy) and [EXAMPLES.md](EXAMPLES.md).
