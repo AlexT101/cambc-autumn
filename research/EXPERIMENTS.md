@@ -162,6 +162,33 @@ Reference `variants/oc-cl2-base` (ocean at 0dd304df9), own drafts, real budget, 
     level: 51.3, held 50.9 (paired +0.13 ±0.49). Dropping the pin and trusting the enemy's last read rank (seat5) won.
 - *Not run:* the panel.
 
+## (ocean = oc-base25, 2026-11-09) Paused live entries revived on v87: nuke guard and ctx-g2 H0 on dgate
+
+The paused and stopped live-queue entries (ctx-g2, bm-cb29, oc-s2-ngd27, join15, oc-s2-mp2-shop), reviewed for a port to
+v87 and the one gate (dgate.py, 0.505/0.5075). bm-cb29 is v87port's (bm-a/a1/ap/b). join15's lever (farm choice for the carry)
+is spread's and draftfarm's, and it moved togetherness only 45 → 47% (Fish 61%). mp2-shop read +0.18 on the mirror. Neither was
+rebuilt: both are far below the bar.
+- **Ports** (`bots/variants/v87-rv-*`, oc-base25 plus only the arm's diff; patches in `~/tmp-offload/revive/patches/`):
+  `v87-rv-ngd` is the nuke guard (oc-s2-ngd27's fixc.cc, guard.cc and bot_parts.h diff) and `v87-rv-ctxg2` is mid_gold +0.5 on
+  one-site and short multi-site maps (live-ctx-g2-26's diff). Both smokes were clean (53.9% and 52.0% of 256, no errors).
+- **Lean-in** `v87-rv-ctxg3`: g2 plus mid_gold 1.0 on multi-site maps with a walk over 73. In every older source, more
+  mid_gold lost there.
+- **The old dpanel couldn't decide these.** Its unit variance is about 0.08/k for k members, with no map heterogeneity
+  visible. All 37 members (~19k games) give a standard error of ±0.41 pts, so its SPRT decided only about ±2 pts. dgate's
+  (seed, map) units remove that cap. The old dpanel's readings: ngd +0.17 ±0.61, ctx-g2 +0.51 ±0.78, both undecided.
+
+| arm | dgate (0.505/0.5075) |
+|---|---|
+| v87-rv-ngd | 50.09% (49.67-50.51) of 26,112: H0 |
+| v87-rv-ctxg2 | 50.34% (50.04-50.64) of 75,264: H0 |
+| v87-rv-ctxg3 | 50.10% (49.69-50.51) of 51,200: H0 |
+
+- ngd's +0.22 on the mirror doesn't carry to live-pick opponents: it is a risk change the mirror flatters (v84 pattern).
+- ctx-g2 is probably a real gain of about +0.3, but below the 50.5% bar. Most of it sits on one-site maps (32% of games).
+  Cutting gold on long multi-site maps cost about 0.2 pts on the same draws, the opposite of the old fits.
+- The lead: we win only 40% of one-site live games past round 1200. A one-site plan larger than a gold price is the form
+  that could be meaningful there.
+
 ## (ocean = oc-base25, 2026-11-09) Camp aggro: waking a Monolith onto a nearer enemy is an even exchange; stopped
 
 Write-up [campaggro-2026-11-08/NOTES.md](campaggro-2026-11-08/NOTES.md), arm patch `ca-flee.patch`, scripts alongside.
