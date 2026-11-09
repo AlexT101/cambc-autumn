@@ -41,7 +41,19 @@ def rname(bot, b, o):
     return names[2] if done(names[0]) else names[0]
 
 def build_seed(k):
-    if all(os.path.isdir(f'{R}bots/{mdir(f"dvn{k}", o)}') for o in 'FM'): return
+    # Gates sharing the pool build the same seed at once, and a body dir exists before it is patched, so a seed counts
+    # as built only once its marker is written under the lock.
+    mark = f'{LOCKS}/built-dvn{k}{"-nb" if NEW else ""}'
+    if os.path.exists(mark): return
+    import fcntl
+    os.makedirs(LOCKS, exist_ok=True)
+    with open(f'{LOCKS}/build-dvn{k}', 'w') as fh:
+        fcntl.flock(fh, fcntl.LOCK_EX)
+        if os.path.exists(mark): return
+        if not all(os.path.isdir(f'{R}bots/{mdir(f"dvn{k}", o)}') for o in 'FM'): _build_seed(k)
+        open(mark, 'w').close()
+
+def _build_seed(k):
     if not all(os.path.isdir(f'{R}bots/variants/spar-dvn{k}-{o}') for o in 'FM'):
         subprocess.run([sys.executable, f'{T}/bodies.py', f'n{1310000 + k}'], cwd=R, check=True, capture_output=True)
         subprocess.run([f'{R}research/ideas-2026-11-08/spar-tools/makespar.sh', f'variants/dvp-n{k}', f'dvn{k}'], cwd=R,
