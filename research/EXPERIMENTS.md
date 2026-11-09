@@ -1045,6 +1045,14 @@ source of losses. Rejected: none of these is queued for live.
   - A second knob step on bsk (`oc32s-bsk-k2`, the same five knobs moved one more sd the same way), against bsk:
     +0.12 ±0.25 of 25,216 units, NARROWED (ZONE crossed); Fish +0.06, Mite +0.18. The direction stops paying after
     one step.
+  - Losses of bsk (4,096 replay-kept games, paired with oc32-cg-fs-nh's on the same seeds): the oc32 picture holds.
+    - First blood: ours falls first 40% of the time; the win is 60.5% if ours dies first, 83.8% if theirs does.
+    - bsk gains in the fights we start: fewer of our deaths.
+    - The largest loss marker is our Prism dying before r600 (27% of Prism games): the win falls to 45%, against 87%
+      when it survives. With a bag of 20+ gems at death the win is about 40-48%; under 20 gems, 63%.
+    - 62% of those Prism deaths come from >=80% HP within 12 rounds (bursts), and 67% while outnumbered.
+    - A Prism bag cap is settled (TODO). So the arms lower bag_big, the bag at stake that breaks off a fight sooner
+      (100 gems; pack ratio 2.0), against bsk. 50: +0.07 ±0.24; 30: +0.05 ±0.25. Both are level (NARROWED).
 
   t5 is dfp-race-d0 (dfp-pure plus the mirror-race enemy model) on five-pick teams only, the base's draft elsewhere, so it
   gives up pure's plan on 3-4 picks; the race model was already H0 against pure, and the five-pick condition fails the map
