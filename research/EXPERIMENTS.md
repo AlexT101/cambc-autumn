@@ -14328,3 +14328,13 @@ Training win rate was flat at ~71% from iteration 100 on.
 Subsets on 5.0.1: Fish +0.51 ±0.35, Mite +0.21 ±0.35; multi-site +0.48 ±0.32, one-site +0.17 ±0.39.
 
 Verdict: a small real gain in the 50-50.5 zone with no clear per-knob mechanism, so the coordinator decides. `variants/v87-spsa-s87-b31` (oc-base31 plus the same 22 constants; none of the 26 knobs differ between oc-base25 and oc-base31) is ready to gate against oc-base31.
+
+**On the oc32 line** (`variants/bsk-spsa87`: oc32s-bsk plus 17 of the 22 constants). bsk's own values stay on its five stepped knobs (fight_weight, fight_camp_prior, pair_hold_share, bush_margin, chip_value): the tune agreed in direction on two but stopped short of the step, its other three moves were noise-sized, and bsk-k2 found the direction stops paying past one step.
+
+**Results against oc32s-bsk:**
+
+| gate | win% (CI) of n | SPRT |
+|---|---|---|
+| dgate bsk-spsa87 | 49.42 (49.04-49.80) of 81,408 games (20,224 units) | REJECT (low H0; high H0 at 8.2k units) |
+
+Fish −0.85 ±0.53, Mite −0.30 ±0.53; one-site −0.37, multi-site −0.70. Verdict: s87b's constants do not transfer. They were a mostly noise walk fitted to v87 against the old bodies, and bsk's escape planner, chase verdict and fs-enemy changed the fight and retreat behaviour they set. A fresh tune on bsk (s88: Fl/Mt3 bodies of v87 noise seeds 1370001-8, out of the dgate's sample; 12 maps × 16 opponents × 8 candidates an iteration; applied as the mean of the second-half iterates) is running.
