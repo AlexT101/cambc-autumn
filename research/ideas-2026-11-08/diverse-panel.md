@@ -178,7 +178,9 @@ screen, the held out and the panel.
   efficiency is also how it flatters.
 
 **First results (2026-11-09, against oc-base25 at 0.505/0.5075):**
-- **v87-nh-6-3: H0** at block 27: +0.05 ±0.41 pts over 14,848 cand games (LLR -3.26). At the old 0.50/0.5025 bar it
+- **v87-nh-6-3: H0** at block 26: +0.07 ±0.41 pts over 14,336 cand games (LLR -3.10). This is re-scored after the
+  base's v91 block was found to be the legacy debug-build runs (spar-c25-o29F/M); dgate now pairs only release
+  runs. The first read was +0.05, H0. At the old 0.50/0.5025 bar it
   would still be undecided (LLR -0.45). Its mirror held out read +0.30 (H1 at 99%, 62,879 games) and spar -0.53, so
   the mirror gain doesn't carry to live-like play.
 - v87-sp-y2 and v87-fs-enemy were still running (`~/tmp-offload/diverse/dgate2-*.out`): +0.47 ±0.70 and +0.40 ±0.74

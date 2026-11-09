@@ -21,6 +21,16 @@ DIRS = {'o25': 'spar-o25', 'o29': 'spar-oc29'}
 def block(k): return [('o25', 'F'), ('o25', 'M'), ('o29', 'F'), ('o29', 'M')] if k == 0 else [(f'dvn{k}', 'F'), (f'dvn{k}', 'M')]
 def mdir(b, o): return f'variants/{DIRS.get(b, "spar-" + b)}-{o}'
 def done(n): return os.path.exists(f'{R}replays/ab/{n}/summary.json')
+def release(n): return json.load(open(f'{R}replays/ab/{n}/summary.json')).get('release') is True
+
+def rname(bot, b, o):
+    """The run of (bot vs member): an existing release run under spar_ab's names, else a new name. Runs from before
+    ab.py played release builds (no 'release' key: legacy spar-c25-o29F and the like) are never paired with release ones."""
+    tag = os.path.basename(bot.rstrip('/')).removeprefix('oc-')
+    names = [f'spar-c{tag}-{b}{o}', f'spar-c{tag.removeprefix("base")}-{b}{o}', f'spar-c{tag}-{b}{o}-rel']
+    for n in names:
+        if done(n) and release(n): return n
+    return names[2] if done(names[0]) else names[0]
 
 def build_seed(k):
     if all(os.path.isdir(f'{R}bots/{mdir(f"dvn{k}", o)}') for o in 'FM'): return
@@ -44,7 +54,7 @@ class Runner:
                 if p.returncode: print(f'FAIL {n} (exit {p.returncode}; log {LOGS}/{n}.log)', flush=True)
     def want(self, bot, b, o):
         """Start (bot vs member) unless finished, running here or elsewhere; True once it is finished."""
-        n = spar_ab.run_name(bot, b, o)
+        n = rname(bot, b, o)
         if done(n): return True
         self.poll()
         if n in self.procs or len(self.procs) >= self.jobs or running_elsewhere(n): return False
@@ -62,7 +72,9 @@ class Runner:
 def units(cand, ref, k, order):
     diff = {}
     for b, o in block(k):
-        x, y = local.cells(spar_ab.run_name(cand, b, o)), local.cells(spar_ab.run_name(ref, b, o))
+        nx, ny = rname(cand, b, o), rname(ref, b, o)
+        assert release(nx) and release(ny), f'refusing to pair non-release runs: {nx}, {ny}'
+        x, y = local.cells(nx), local.cells(ny)
         for c in x.keys() & y.keys(): diff.setdefault(c[0], []).append(x[c] - y[c])
     return [0.5 + float(np.mean(diff[m])) for m in order if m in diff]
 
@@ -80,9 +92,9 @@ def main():
             if j: build_seed(j)
             for b, o in block(j):
                 for bot in (a.ref, a.cand): run.want(bot, b, o)
-        if not all(done(spar_ab.run_name(bot, b, o)) for b, o in block(k) for bot in (a.cand, a.ref)):
+        if not all(done(rname(bot, b, o)) for b, o in block(k) for bot in (a.cand, a.ref)):
             time.sleep(20); continue
-        if maps is None: maps = sorted({m for m, _ in local.cells(spar_ab.run_name(a.ref, 'o29', 'F'))})
+        if maps is None: maps = sorted({m for m, _ in local.cells(rname(a.ref, 'o29', 'F'))})
         order = list(maps); random.Random(a.seed * 1000 + k).shuffle(order)
         scores += units(a.cand, a.ref, k, order); llr = ab.llr(scores, p0, p1)
         d = np.array(scores) - 0.5; se = d.std() / math.sqrt(len(d))
