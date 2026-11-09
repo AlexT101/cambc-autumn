@@ -9,7 +9,7 @@ tools/docs-sync/node_modules/
 __pycache__/
 bots/variants/
 bots/koi/
-research/**/*.pkl
+*.pkl
 compile_commands.json
 replay-bulk/
 replay-bulk-zip/
@@ -49,3 +49,8 @@ local-oarena/
 # Claude Code agent worktrees
 .claude/worktrees/
 tools/fastengine/runner-prof/
+*.pid
+*.orig
+*.rej
+.mapcache*.jsonl
+**/run.lock
