@@ -3918,3 +3918,32 @@ Fuel:
 Queued live at p85 as `variants/live-oc-base32` (frozen copy), paired against v99 and v87.
 
 Evidence: EXPERIMENTS "Escape planner (478) on the v87 line".
+
+## 483: Chase verdict fuel gate: chase_aim's build needs its own measured cost plus the search reserve (ocean, 2026-11-09)
+
+`combat/fight.cc`, `model/escape.{h,cc}`, `util.h` and `combat/plan.cc`, on 481. cv-v2's OOF excess (+8.0%) came
+mostly from chase_aim's verdict build, which runs before the strike search under prey's flat 50k gate:
+- per build, those turns ran out ~8x as often as prey's (its build comes after the search);
+- the build's fuel accounted for 68 of chase_aim's +91 OOF turns per 100 team-games.
+
+The gate:
+- **chase_aim** builds only with `escape::chase_cost_estimate() + search_reserve` left. The estimate is a running
+  mean (1/8) of the champion's own fuel-gated chase builds. It is measured after the game's one-off boards, and skips
+  builds that resumed on a new round's budget and trace_verdict's debug builds.
+- **`search_reserve`** is `act_reserve + 30000`, goal_field's existing floor for a full search. It is now named in
+  `util.h` and shared; plan.cc's value is unchanged.
+- **prey's** asks keep `params::escape::min_fuel`. A gated-out verdict reads "catchable", so the chase goes ahead as
+  before the verdict.
+
+Results (the A/Bs release, fast runner, `--no-test-draft`):
+- **Debug check** (cv-v2 against oc-esc-merge, the same 5,120 games): chase_aim's builds −20%, and OOF turns after
+  them 75.6 → 19.3 per 100 team-games.
+- **Screen:** cg-aimgate against `variants/cv-v2` on `esc2-dev-s20` (10,240 games): 50.2% (49.2-51.2), OOF 117,482
+  against 122,314 (−4.0%).
+- Against `variants/oc-esc-merge` on `merged/plan3-dev` (seeds 1703000-1703079, 40,960 games, cambc 5.0.1):
+  **51.7% (51.2-52.2)**, OOF 473,042 against 452,955 (+4.4%). cv-v2 read 51.7% (51.3-52.2) with OOF +8.0% on
+  plan2-dev (5.0.0). The verdict's gain is kept at about half its OOF cost.
+
+`variants/cg-aimgate2` equals bots/ocean (cg-aimgate plus the audit's debug-only fix; release plays the same).
+
+Evidence: EXPERIMENTS "Chase verdict's fuel gate"; research/retreat-2026-11-09/chase-verdict.md "Fuel gate".

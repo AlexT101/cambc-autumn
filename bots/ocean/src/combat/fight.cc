@@ -655,8 +655,8 @@ const ChampionBelief* team_pressed(const World& world) {
 
 // The least hits `target` takes running home from our pursuit (escape::Plan::build_chase), the slack goal
 // counted when the full one has no clean way; -1 when no plan was built.
-int escape_hits(const World& world, Pathing& pathing, const ChampionBelief& target) {
-    auto* plan = escape::chase_plan(world, pathing, target, params::escape::min_fuel);
+int escape_hits(const World& world, Pathing& pathing, const ChampionBelief& target, std::uint64_t need) {
+    auto* plan = escape::chase_plan(world, pathing, target, need);
     if (!plan || !plan->active()) return -1;
     int hits = plan->runner_hits(false);
     if (hits > 0) {
@@ -668,8 +668,8 @@ int escape_hits(const World& world, Pathing& pathing, const ChampionBelief& targ
 
 // A chase pays through its target, and one that can walk home clear of every hit our visible team could
 // land on the way is not caught: the walk after it is futile (research/retreat-2026-11-09/chase-verdict.md).
-// No plan (fuel short, out of sight, on its spawn) reads as catchable, as before the verdict.
-bool escapes(const World& world, Pathing& pathing, const ChampionBelief& target) {
+// No plan (under `need` left, out of sight, on its spawn) reads as catchable, as before the verdict.
+bool escapes(const World& world, Pathing& pathing, const ChampionBelief& target, std::uint64_t need = params::escape::min_fuel) {
     // The race's runner walks on its next turn: one held by a stun, a teleport or a tribute it keeps is not judged.
     if (!target.visible || target.stun_pending || target.teleport_pending() || target.channel == Channel::tribute) return false;
     // One of us that strikes its tile on our first turns has it hit already, as the plan would say, without a build:
@@ -681,7 +681,7 @@ bool escapes(const World& world, Pathing& pathing, const ChampionBelief& target)
     if (strikes(world.me(), world.turn_start)) return false;
     for (const auto& a : world.allies)
         if (!a.is_self && a.alive && a.visible && strikes(a, a.pos)) return false;
-    return escape_hits(world, pathing, target) == 0;
+    return escape_hits(world, pathing, target, need) == 0;
 }
 
 // Debug trace: the verdict on a chase we take (built in the block if the rule did not ask, its fuel paused).
@@ -717,9 +717,12 @@ vec2 chase_aim(const World& world, Pathing& pathing, Safety& safety) {
     const vec2 here = my_position();
     const int range = world.me().facts().attack_range();
     int held = 0;
+    // The strike search runs after these verdicts: a build must leave it a full search's fuel. Under prey's
+    // flat gate, turns that built here ran out ~8x as often as prey's (chase-verdict.md "Fuel gate").
+    const auto need = escape::chase_cost_estimate() + search_reserve;
     // A teammate's pressed fight when we have none of our own.
     if (!engaged_before) {
-        if (const auto* t = team_pressed(world); t && preyable(world, safety, *t, here, range, held) && !escapes(world, pathing, *t))
+        if (const auto* t = team_pressed(world); t && preyable(world, safety, *t, here, range, held) && !escapes(world, pathing, *t, need))
             aim = t->pos, trace_verdict(world, pathing, *t, 'T');
         return aim;
     }
@@ -735,7 +738,7 @@ vec2 chase_aim(const World& world, Pathing& pathing, Safety& safety) {
             order[i] = {dist(here, e.pos), &e};
         }
     for (int i = 0; i < n; ++i)
-        if (!escapes(world, pathing, *order[i].second)) {
+        if (!escapes(world, pathing, *order[i].second, need)) {
             trace_verdict(world, pathing, *order[i].second, 'A');
             return order[i].second->pos;
         }

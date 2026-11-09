@@ -66,7 +66,7 @@ public:
     // The chase race: `target` (visible) runs home from its tile; we pursue from this turn's start tile with
     // the turn's moves still ours, as do the visible allies. Turn 1 is the target's last, now ended, so its
     // pursuers' first turns (ours this one) hit it where it stands. Inactive on its spawn or with it cut off.
-    void build_chase(const World& world, Pathing& pathing, const ChampionBelief& target);
+    void build_chase(const World& world, Pathing& pathing, const ChampionBelief& target, bool measured);
     // A chase plan's runner: its hits, turns 1..horizon, on its best way to the goal (`many` past one).
     int runner_hits(bool slack) const;
     bool runner_hit_now() const; // its tile in reach of our pursuers' first turns
@@ -107,6 +107,8 @@ Plan& plan(const World& world, Pathing& pathing, Safety& safety);
 // The chase plan against a visible enemy this round, built on first ask (null if the fuel left is under
 // `need` then) and kept for the round: nothing it reads moves during our turn.
 Plan* chase_plan(const World& world, Pathing& pathing, const ChampionBelief& target, std::uint64_t need);
+// A chase build's cost: the running mean (1/8) of this instance's fuel-gated builds, 0 before the first.
+std::uint64_t chase_cost_estimate();
 
 // A first move's rank, lower first, from its hits on the full and slack goals (this turn's included):
 // a hit weighs hit_steps steps of progress home, and the slack goal costs slack_steps.

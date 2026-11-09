@@ -270,7 +270,7 @@ Single-seed generated suites, `suites/fresh/fresh-<seed>/` (256 maps each, the d
 | 1060000-1060199, 1061000-1061159, 1062000-1062019, 1063000-1063059 | 440 | ladder; varied (1062xxx) | context knobs (ctxknob): `merged/ctx-scr-1060` (+ `-rest-g2`, `-rest-d1` resume subsets), `ctx-held-1061`, `ctx-varied-1062` (`--mix varied`), `ctx-panel-1063`. All used; range 1060000-1069999 reserved for ctxknob | 2026-11-08 |
 | 911000-911019 | 5,120 | ladder-v2 | `--mix ladder-v2` (escape planner, CHANGES 478: `merged/retreat-911000b`). Used | 2026-11-09 |
 | 1700000-1700079, 1701000-1701119 | 51,200 | ladder-v2 | `--mix ladder-v2` (escape planner after 478: `merged/esc2-dev` = 1700000-1700079, 478's reference and fo-lean, used; `merged/esc2-held` = 1701000-1701119, held out for the CHANGES 480 merge and CHANGES 481's check against oc-cl2-seat5m, used twice) | 2026-11-09 |
-| 1702000-1702079, 1703000-1703079 | 40,960 | ladder-v2 | `--mix ladder-v2` (chase verdict, CHANGES 481: `merged/plan2-dev` = 1702000-1702079, cv-final-v2, used; `merged/plan3-dev` = 1703000-1703079, reserved for the chase fuel-gate follow-up) | 2026-11-09 |
+| 1702000-1702079, 1703000-1703079 | 40,960 | ladder-v2 | `--mix ladder-v2` (chase verdict, CHANGES 481: `merged/plan2-dev` = 1702000-1702079, cv-final-v2, used; `merged/plan3-dev` = 1703000-1703079, chase verdict fuel gate, CHANGES 483, cg-final-aimgate2, used) | 2026-11-09 |
 
 ## suites/merged/
 
@@ -594,7 +594,7 @@ Directories of relative symlinks (`../../fresh/fresh-<seed>/<map>`) merging many
 | `esc2-dev` | 20480 | 1700000-1700079 | escape planner after 478: oc-esc-478's reference A/B and fo-lean (used) |
 | `esc2-held` | 30720 | 1701000-1701119 | escape planner merge (CHANGES 480), held out; also cv-v2 against oc-cl2-seat5m (CHANGES 481) |
 | `plan2-dev` | 20480 | 1702000-1702079 | chase verdict (CHANGES 481): cv-final-v2 (used) |
-| `plan3-dev` | 20480 | 1703000-1703079 | reserved for the chase fuel-gate follow-up (unused) |
+| `plan3-dev` | 20480 | 1703000-1703079 | chase verdict fuel gate (CHANGES 483): cg-final-aimgate2 (used) |
 | `*-538060.map26a` .. `*-538069.map26a` | - | - | stray: ten dangling links from an unexpanded glob into `fixm-varied-538060`; safe to delete |
 
 ## suites/inv2/

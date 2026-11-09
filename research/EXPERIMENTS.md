@@ -267,6 +267,32 @@ cv-v2 (CHANGES 481) against `variants/oc-cl2-seat5m` (476, before the escape pla
 - That is about half its +1.7 against oc-esc-merge on plan2-dev. The verdict gains more against opponents that flee
   well: a planner-equipped bot walks home clear more often, so more of our chases of it are futile.
 
+## (ocean = cg-aimgate2, 2026-11-09) Chase verdict's fuel gate: chase_aim's build leaves the strike search its fuel; cg-aimgate2 51.7% of 40,960, OOF +4.4% (from +8.0%), merged (CHANGES 483)
+
+[retreat-2026-11-09/chase-verdict.md](retreat-2026-11-09/chase-verdict.md#fuel-gate-cg-aimgate2-2026-11-09); tools
+`cg_instrument.py`, `cg_parse.py`, `cg_excess.py`, `cg_gate_sim.py`, `cg_preyloop.py`.
+- **Measured** (debug checkpoints, 5,120 games of cv-v2 against oc-esc-merge; OOF +8.1%, as in release):
+  - chase_aim's verdict build (40.7 a team-game, 11.4k) comes before the strike search, and its turns ran out 8x as
+    often per build as prey's (prey's comes after the search). The hazard at 50k minus a build, ~39k left, is 10% for
+    chase_aim and 1% for prey.
+  - The build's fuel accounts for 68 of the +91 OOF turns per 100 team-games from chase_aim, and 48 from prey.
+  - The heavy turns are those whose search ranks its walk by the aim, 20% of the builds.
+- **The gate:** chase_aim asks for `chase_cost_estimate()` (the running mean of fuel-gated chase builds) + `search_reserve`.
+  `search_reserve` is `act_reserve + 30000`, goal_field's existing floor for a full search, now named. prey keeps
+  `min_fuel`. With no plan, the chase goes ahead.
+  - Check (debug, same games): chase_aim builds −20%, OOF after them 75.6 → 19.3 per 100 team-games, total OOF excess
+    +8.1% → +4.0%.
+- cg-aimgate2 is cg-aimgate plus the audit's one fix, debug-only: trace_verdict's free builds no longer feed the
+  mean. Release plays the same.
+- **Screen** cg-aimgate against cv-v2 on esc2-dev-s20 (10,240): 50.2 (49.2-51.2), OOF 117,482 / 122,314 (−4.0%).
+- **Final** against oc-esc-merge on plan3-dev (40,960, cambc 5.0.1): **51.7 (51.2-52.2)**, OOF 473,042 / 452,955 (+4.4%).
+  cv-v2's own final read 51.7 (51.3-52.2) with OOF +8.0% on plan2-dev (5.0.0). The verdict's gain is kept and its OOF cost
+  halved.
+- **Not built:**
+  - running prey's fight sim before the verdict: exact, but 79% of its verdicts escape and spare a 5.6k sim, so it
+    nets ~0.4M fuel a team-game;
+  - a lazy aim verdict: at most ~3 more per 100 beyond the gate.
+
 ## (ocean = oc-esc-merge, 2026-11-09) Chase verdict: the escape planner mirrored; cv-v2 51.7% of 40,960, merged (CHANGES 481)
 
 [retreat-2026-11-09/chase-verdict.md](retreat-2026-11-09/chase-verdict.md).

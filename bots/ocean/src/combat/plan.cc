@@ -151,9 +151,8 @@ const Field* goal_field(const World& world, Pathing& pathing, const Intent& inte
     const int g = walk_target(world, pathing, intent.group);
     if (g < 0) return nullptr;
     const int range = walk_range(world, g);
-    // Off spawn the turn start leaves it to us (act). The floor leaves a full search's growth (max_nodes
-    // at ~1.1k) and the goal's work after it.
-    return pathing.prepare_approach(g, range, act_reserve + 30000);
+    // Off spawn the turn start leaves it to us (act).
+    return pathing.prepare_approach(g, range, search_reserve);
 }
 
 // ---- The strike search ----

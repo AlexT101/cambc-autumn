@@ -230,3 +230,135 @@ Follow-ups, not tried here:
 
 The extracts are `replays/cv-shadow-ex`, `replays/cv-shadow2-ex`, `replays/cv-fut-dbg-ex` and `replays/cv-v2-dbg-ex`;
 their batches hold a `.keep`.
+
+## Fuel gate (cg-aimgate2, 2026-11-09)
+
+The question: cv-v2 ran out of fuel (OOF) on 8.0% more turns than oc-esc-merge. Where do those turns come from,
+and can a gate recover them without losing the win rate?
+
+**Answer: the excess is mostly chase_aim's build, before the strike search.** Gating that build on the fuel the
+search needs after it halves the excess and reads level with cv-v2.
+
+### Measurement
+
+`tools/cg_instrument.py` patches debug checkpoints into a copy, all inside `debug_block`:
+- the fuel at chase_aim, after it, after `plan_strikes` and at prey;
+- the last checkpoint passed;
+- every chase build: its caller, the fuel at the ask and the cost; gated asks;
+- whether the search read the aim, and the prey loop's verdicts and sims.
+
+`trace_verdict` is switched off, since its free debug builds would be cached for later asks. The run: `cg-inst`
+(cv-v2) against `cg-inst-ref` (oc-esc-merge), debug, 5,120 games on `cg-meas`, seeds 1700020-29 of
+`merged/esc2-dev` (none of the screen's seeds). OOF lines: CAND 62,745 against REF 58,066 (+8.1%), the release
+excess. Parsers: `cg_parse.py` and `cg_excess.py`.
+
+**Where the excess falls** (OOF turns per 100 team-games by the last checkpoint passed, CAND − REF; total +91):
+- in the strike search after chase_aim +17.7;
+- after the search, before chase +22.3;
+- after prey +28.7 (the chase walk, or the farm after a dropped chase);
+- the act tail +16.4;
+- retreat −10.3 (fewer retreats).
+
+**The builds** (per team-game):
+
+| caller | builds | mean cost | OOF after (per 100 team-games) | of which from the build's fuel |
+|---|---:|---:|---:|---:|
+| chase_aim (before the search) | 40.7 | 11.4k | 75.6 | **68.4** |
+| prey (pressed 15.6, loop 214) | 219 build turns | 11.6k | 64.8 | 48.4 |
+
+- "From the build's fuel" is the sum over build turns of P(X) − P(X + c), where X is the fuel left after the build,
+  c is its cost, and P is the hazard of that caller's own build turns by X. It assumes the work after the build does
+  not depend on the build. fuel-gate.md found that for the retreat's plan.
+- The two together (117) exceed the net +91: the verdict's own behaviour (fewer retreats and chases) saves some.
+- **Per build, chase_aim's is ~8x as dangerous as prey's** (1.7% of its turns run out because of it, against 0.22%).
+  Both are gated at the same 50k, but chase_aim's comes before the strike search:
+
+| fuel left after the build | 34k | 38k | 42k | 46k | 50k | 54k | 58k |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| chase_aim build turns that ran out | 16.7% | 10.6% | 6.4% | 3.9% | 1.9% | 0.8% | 0.3% |
+| prey build turns that ran out | 1.2% | 1.0% | 0.6% | 0.4% | 0.2% | 0.1% | 0.1% |
+
+- At the 50k gate, chase_aim leaves ~39k at the mean build. That is a 10% hazard where prey's is 1%.
+- The heavy turns are those whose search ranks its walk by the aim (8 of the 40.7 a team-game). Their OOF is 56.5
+  of the 75.6, and their hazard at X = 50k is 7.5%.
+- **What those turns lose:** of chase_aim's 75.6:
+  - 12 ran out inside the search, losing its strikes and walk;
+  - 26 between the search and chase (the goal's step, carry or guard);
+  - 12 after prey;
+  - 15 in act's tail (ward, lock, recall feint, strike_after);
+  - the rest in turn order and comms.
+- **The prey loop:** 79% of its verdicts say "escapes" (168 of 214 a team-game). Each of those spares a fight sim,
+  which costs 5.6k mean. 70% of the sims that run are lost.
+  - Running the sim first would build only after a won fight. It would also be exact in outcome. But it would add
+    those sims back, and it nets only ~0.4M fuel a team-game. Not built.
+- **The aim is read rarely:** the search reads the aim on 20% of the turns chase_aim builds. A lazy verdict
+  computed only there would save the other turns' builds, which carry 16.8 of the 68.4. A gate saves most of those
+  too (below). Not built.
+
+### The change (`cg-aimgate2` = this branch's `bots/ocean`)
+
+- `chase_aim`'s verdicts ask for `escape::chase_cost_estimate() + search_reserve` instead of `min_fuel`.
+  - `search_reserve` (util.h) is `act_reserve + 30000`. It is the floor `goal_field` already set for a full
+    search's growth and the goal's work after it, now named and shared.
+  - `chase_cost_estimate()` is the running mean (1/8) of this instance's fuel-gated chase builds. It is measured
+    after the game's one-off boards, and a build that resumed in a later round is not counted.
+- **The audit.** A read-only auditor found no release bug.
+  - It found one debug-only problem: `trace_verdict`'s builds (need 0, inside `debug_block`, fuel paused) fed the
+    mean with ~0 and loosened the gate in debug builds. `cg-aimgate2` counts only builds with need > 0.
+  - Release plays the same as `cg-aimgate`, which the screen ran: trace_verdict is compiled out there.
+  - The instrumented check below had trace_verdict off, so it is unaffected.
+  - Left as is: the slack pass (~1k, its own 40k gate) can run after a build that just clears the gate, so the
+    search can get a little less than the reserve.
+- So the build must leave the strike search ~50k. Its hazard there is 1.9%, about where prey's asks run. prey's
+  asks keep `min_fuel`, as the retreat's do.
+- A gated verdict reads "catchable", the old behaviour; prey may still ask later at its own gate.
+- No other change. The retreat plan is untouched; `goal_field`'s floor is the same value.
+- Predicted from the traces: 24% of chase_aim's builds gated (9.6 a team-game, 2.1 of them escapes), saving ~56 of
+  the +91.
+
+**Check** (instrumented `cg-inst-gate` against `cg-inst-ref`, the same 5,120 games, 2 runner failures during the
+cambc 5.0.1 switch):
+- OOF lines CAND 62,271 against REF 59,868: **+4.0%**, from +8.1%.
+- chase_aim's builds: 32.4 a team-game (−20%). The fuel left after them is now p10 51.7k (from 43.9k).
+- OOF after them: 19.3 per 100 team-games (from 75.6); from their fuel, 17.7 (from 68.4).
+- In the search: +1.8 against REF (from +17.7).
+- prey's builds: 222 (from 219), with OOF from its fuel unchanged at 47.6.
+
+### A/Bs
+
+Release, fast runner, `--no-test-draft`.
+
+| A/B | CAND / REF | suite | games | win % (95% CI) | OOF CAND / REF |
+|---|---|---|---:|---:|---:|
+| cg-aimgate-esc2s20 | cg-aimgate / cv-v2 | esc2-dev-s20 | 10,240 | 50.2 (49.2-51.2) | 117,482 / 122,314 (−4.0%) |
+| cg-final-aimgate2 | cg-aimgate2 / oc-esc-merge | plan3-dev | 40,960 | **51.7 (51.2-52.2)** | 473,042 / 452,955 (**+4.4%**) |
+
+- For comparison, cv-v2 against oc-esc-merge read 51.7 (51.3-52.2) on plan2-dev, with OOF +8.0%. Its esc2-dev-s20
+  screen read OOF 126,970 / 114,715.
+- One screen was enough: it read level with OOF down, as the traces predicted.
+- Variants not screened, and why:
+  - the 1%-hazard reserve (53k): it predicts 61 saved instead of 56;
+  - a lazy aim: it saves at most ~3 per 100 beyond the gate;
+  - sim-first prey: ~0.4M fuel.
+  None can be told apart from this gate in a 10,240-game screen.
+
+**Reading.**
+- The final is level with cv-v2's: 51.7 (51.2-52.2) on fresh plan3-dev, against 51.7 (51.3-52.2) on plan2-dev.
+- The OOF excess over oc-esc-merge falls from +8.0% to +4.4%, as the debug check measured (+8.1% → +4.0%).
+- The final ran on cambc 5.0.1 and cv-v2's on 5.0.0, a bug-fix release.
+- The rest of the excess is prey's verdicts, at the hazard its flat gate shares with the retreat's (~1%). It is the
+  verdict's price at the gate fuel-gate.md found par-optimal.
+
+**Recommendation: merge cg-aimgate2.**
+- It keeps the verdict's full gain.
+- It halves its OOF cost.
+- The change is a fuel gate built from existing reserves and a measured cost: no tuned number.
+
+Safe to delete (untracked, main checkout):
+- `bots/variants/cg-inst`, `cg-inst-ref` and `cg-inst-gate` (instrumented copies);
+- `cg-aimgate` (plays as cg-aimgate2 in release);
+- the batches of `cg-meas3`, `cg-meas-gate`, `cg-runner-probe` and `cg-runner-probe2`.
+
+Tools: `tools/cg_instrument.py` (checkpoints; `--ref` for a bot without the verdict), `cg_parse.py` (OOF by
+checkpoint, builds, hazards), `cg_excess.py` (each caller's excess from its fuel), `cg_gate_sim.py` (a gate's
+predicted saving), `cg_preyloop.py` (prey's verdicts and sims).

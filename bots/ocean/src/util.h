@@ -652,6 +652,8 @@ template <typename T, std::size_t N> union Unwritten {
 inline constexpr std::uint64_t end_reserve = 10000;
 // Left by the fight evaluations before acting: the strikes, the goal's walk and the turn's end.
 inline constexpr std::uint64_t act_reserve = 2 * end_reserve;
+// Left before the strike search's growth (max_nodes at ~1.1k) for it and the goal's work after it.
+inline constexpr std::uint64_t search_reserve = act_reserve + 30000;
 // Left after work whose cost is bounded, at the end of the turn: little runs after warm-up.
 inline constexpr std::uint64_t last_reserve = 2000;
 // Layers a capped centre field may run past the farther spawn's steps to it; a field cut short

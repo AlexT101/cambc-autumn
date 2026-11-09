@@ -254,6 +254,7 @@ struct Kinds {
 // padded by 16 before and after for 16-column reads either way.
 std::array<std::uint16_t, 100 * 100 + 32> enemy_home;
 bool enemy_home_ready = false;
+std::uint64_t chase_cost = 0; // chase_cost_estimate()
 
 } // namespace
 
@@ -326,12 +327,11 @@ void Plan::build(const World& world, Pathing& pathing, Safety& safety) {
     });
 }
 
-void Plan::build_chase(const World& world, Pathing& pathing, const ChampionBelief& target) {
+void Plan::build_chase(const World& world, Pathing& pathing, const ChampionBelief& target, bool measured) {
     active_ = dash_ = dash_now_ = false;
     pass_[0].ready = pass_[1].ready = false;
     const auto& self = world.me();
     if (!self.alive || !target.alive || !target.visible || !ready_statics(world)) return;
-    const std::uint64_t start_fuel = fuel();
     const auto& map = world.map();
     if (!enemy_home_ready) {
         try {
@@ -341,6 +341,8 @@ void Plan::build_chase(const World& world, Pathing& pathing, const ChampionBelie
         }
         enemy_home_ready = true;
     }
+    // After the game's one-off boards, which the cost estimate leaves out.
+    const std::uint64_t start_fuel = fuel();
     const vec2 here = target.pos;
     Race race;
     race.ours = false;
@@ -369,6 +371,11 @@ void Plan::build_chase(const World& world, Pathing& pathing, const ChampionBelie
     race.flip_x = map.symmetry != cambc::symmetry::vertical;
     race.flip_y = map.symmetry != cambc::symmetry::horizontal;
     finish(pathing, race);
+    // A build that ran out resumed on a new round's budget: its fuel reads nothing.
+    if (measured && active_ && round_now() == static_cast<std::uint32_t>(world.round)) {
+        const std::uint64_t used = start_fuel - fuel();
+        chase_cost = chase_cost ? chase_cost - chase_cost / 8 + used / 8 : used;
+    }
     debug_block({
         if (active_)
             std::printf("ESCC %d %u %u kinds %d fuel %llu\n", world.round, my_handle(), static_cast<std::uint32_t>(target.handle), race.kinds.n,
@@ -569,6 +576,8 @@ bool Plan::runner_hit_now() const { return get(hit_[1], at.y - origin_.y) >> (at
 
 int Plan::runner_hits(bool slack) const { return std::min(many, (runner_hit_now() ? 1 : 0) + after_walk(at, slack)); }
 
+std::uint64_t chase_cost_estimate() { return chase_cost; }
+
 Plan* chase_plan(const World& world, Pathing& pathing, const ChampionBelief& target, std::uint64_t need) {
     // A turn chases one target or two (its aim, then prey's pick), a few at most.
     static std::array<Plan, 4> plans;
@@ -580,7 +589,7 @@ Plan* chase_plan(const World& world, Pathing& pathing, const ChampionBelief& tar
     auto& p = plans[next];
     next = (next + 1) % plans.size();
     p.round = world.round, p.handle = h, p.at = target.pos, p.observations = world.observations;
-    p.build_chase(world, pathing, target);
+    p.build_chase(world, pathing, target, need > 0); // need 0: a debug trace's build, its fuel paused
     return &p;
 }
 
