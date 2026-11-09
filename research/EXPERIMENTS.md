@@ -12929,6 +12929,12 @@ read in play. Details in CHANGES 461. Checks:
   repeated v86 190 / 190), live 07:06, Fish r2 + Mite r3. It tests the lucky-roll question: against the v87 reupload
   on the new Mite games (all fresh draws), and against v86 on the Fish games the mask rerolled. Next: v87-reup, then
   oc-base30 (CHANGES 477, frozen as `variants/live-oc-base30`), null-a / -b, ctx-g2 and sp-y2 singly.
+- **Mask switch (09:12 UTC).** From the v87 reupload on, the scheduler builds live versions with `stream_patch.py`
+  (a per-round payload mask with a 2-bit round tag; prioxor, bb91acd9a; scheduler mask_rev 723dbbb94cc2) instead of
+  `mask_patch.py` (v93 on cd68d6ef305c; v95-v97 on 51f3f74deb70). dgate of stream against the old mask, same throwaway key,
+  both on oc-base25: ZONE, +0.32 +-0.31; about +200 fuel a turn. v87-reup was already built with the old mask but not
+  live, so it was rebuilt; v97 (v86-reup) keeps the old mask. So v87-reup, oc-base31, ft-k and the later entries all
+  carry the same mask, and pairs between them are like with like. Pairs with v87 / v96 on Fish r2 cross masks.
 
 ## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
 
