@@ -14370,3 +14370,38 @@ Verdict: a small real gain in the 50-50.5 zone with no clear per-knob mechanism,
 | dgate bsk-spsa87 | 49.42 (49.04-49.80) of 81,408 games (20,224 units) | REJECT (low H0; high H0 at 8.2k units) |
 
 Fish −0.85 ±0.53, Mite −0.30 ±0.53; one-site −0.37, multi-site −0.70. Verdict: s87b's constants do not transfer. They were a mostly noise walk fitted to v87 against the old bodies, and bsk's escape planner, chase verdict and fs-enemy changed the fight and retreat behaviour they set. A fresh tune on bsk (s88: Fl/Mt3 bodies of v87 noise seeds 1370001-8, out of the dgate's sample; 12 maps × 16 opponents × 8 candidates an iteration; applied as the mean of the second-half iterates) is running.
+
+## Cut-at-the-floor on oc32s-bsk, cambc 5.0.1 (2026-11-09/10): both arms REJECT, nothing merged
+
+The provable-cap line was ported onto oc32s-bsk (patches in [fuelcap-2026-11-09](fuelcap-2026-11-09/), oc32-nof4.patch and oc32-nof5.patch). Every run here is on 5.0.1; the fast runner is exact against stock 5.0.1 (commit 3015cf488).
+
+**What the arms share.**
+- The per-part fixes: resumable rewrites, flood_into masks, and caches keyed only once they are filled.
+- Fields priced by what they do. A search is capped at the layers that fit above the floor, and the turn is cut only when the cap stopped it short. Before this, the loose layer bound cut 76 turns a game, half of them with 30k+ fuel left.
+- fit_layers leaves a 400 margin. Without it, the route's second checkpoint cut by a hair; that was the top cut site, and v87-nof had it too.
+- A stale check right before an action no longer cuts the turn.
+- Base behaviour restored for three things: the send gate, refresh_floor 5000, and no strike-search floor.
+
+**Neutral when the floors are off.** With the floors at 0, oc32-nof4-off plays byte-identical replays to oc32s-bsk at 100M (64 of 64 games). It scores 50.5% head-to-head at the real budget.
+
+**Census.** These are release builds on maps-trc, 1280 games head-to-head against oc32s-bsk, about ±2.7.
+
+| build | win% | OOF a game | mean turn fuel |
+|---|---|---|---|
+| oc32s-bsk | 50.0 | 11.0 | 52.1k |
+| oc32-nof4-off | 50.5 | 10.5 | 52.2k |
+| oc32-nof4: floors 5000, no grid | 49.3 | 8.4 | 52.2k |
+| oc32-nof5: floors 7000, grid in safety / turn_order / turn_window / support (166 ticks), order skipped below its floor | 47.3 | 2.3 | 53.3k |
+
+**Results against oc32s-bsk:**
+
+| gate | win% (CI) of n | SPRT |
+|---|---|---|
+| dgate oc32-nof4 | -1.21 pts (±0.59), 7,680 units | REJECT |
+| dgate oc32-nof5 | -2.59 pts (±0.88), 3,840 units | REJECT |
+
+**Reading.** On 5.0.1 a cut still costs more than the out-of-fuel turn it saves.
+- Cuts fall on far more turns than OOF does: nof5 cut 45 turns a game (debug census) to save about 9 OOF a game.
+- A cut drops the rest of the decision at once.
+- The fewer OOF, the bigger the loss: 8.4 OOF a game costs -1.2, and 2.3 costs -2.6.
+- What stays worth having is behaviour-neutral fuel savings: cheaper heavy parts with the same replays. A deadline is not.

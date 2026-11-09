@@ -1,0 +1,1401 @@
+diff -ruN -x .cambc oc32s-bsk/src/bot.cc oc32-nof4/src/bot.cc
+--- oc32s-bsk/src/bot.cc	2026-11-09 14:47:25.045184182 +0000
++++ oc32-nof4/src/bot.cc	2026-11-09 21:35:13.114309040 +0000
+@@ -39,7 +39,7 @@
+ }
+ 
+ bool try_ward(vec2 p, Memory& memory) {
+-    throw_if_stale();
++    stale_before_act();
+     try {
+         if (!cambc::self().place_ward(p)) return false;
+     } catch (const cambc::error&) {
+@@ -98,6 +98,7 @@
+     bool found = false;
+     int best_score = warded ? score(warded->tiles) : 0;
+     while (!candidates.is_empty()) {
++        checkpoint(); // a cluster against every suspect: many small clusters cost ~20k
+         const auto& c = map.bush_cluster(first_tile(candidates));
+         if (const int s = score(c.tiles); s > best_score) {
+             best.clear();
+@@ -205,6 +206,7 @@
+     const BushCluster* pick = nullptr;
+     float best = 0;
+     while (!candidates.is_empty()) {
++        checkpoint(); // a cluster against every suspect: many small clusters cost ~20k
+         const auto& c = map.bush_cluster(first_tile(candidates));
+         float score = 0;
+         bool credible = false;
+@@ -256,7 +258,7 @@
+ 
+ // `bushes`: a bush ward if no planned one goes down.
+ bool place_ward(const World& world, Memory& memory, bool bushes) {
+-    world.throw_if_stale();
++    world.stale_before_act();
+     // A stun refuses every ward, and the thrown error costs ~3.9k fuel.
+     if (stunned_turn || !world.me().alive || channelling() || cambc::self().ward_cooldown() > 0) return false;
+     const auto planned = ward_planned(world, memory);
+@@ -534,7 +536,7 @@
+     // Ren's reflected damage can kill us in our own turn: dead, we read as off the map.
+     const vec2 here = my_position();
+     if (here.x < 0 || test(world.map().ally_spawn, here)) return;
+-    throw_if_stale();
++    stale_before_act();
+     try {
+         cambc::self().recall();
+         recall_feint = true;
+@@ -608,6 +610,13 @@
+ }
+ 
+ void play_turn(World& world, Pathing& pathing, Memory& memory) {
++    // The decision's checkpoints abandon it below this (FuelDeadline); the essential end after it runs on
++    // what is left, and the turn's other phases have none.
++    struct Unfloor {
++        ~Unfloor() { deadline_floor = 0; }
++    } unfloor;
++    if (world.me().alive) note_income_start(world); // before the floor: the essential end reads it
++    deadline_floor = params::deadline_act;
+     Safety safety{world};
+     pathing.use_safety(&safety);
+     struct Unuse {
+@@ -635,27 +644,38 @@
+     engaged_before = memory.round == world.round - 1 ? engaged : 0;
+     engaged = 0;
+     const int camp_hits_before = camp_hits();
+-    if (world.me().alive) note_upkeep(world, safety, memory.damage), note_income_start(world);
+     stunned_turn = record && my_stunned(cambc::champion_state::from_bits_retain(record->state));
+     // A failed act still posts the claim, the bag and the health that next turn's damage reads; a
+     // stale turn abandons the rest. Caught here rather than in main's run(), a StaleTurn costs one
+     // personality call and no second unwind (~1k).
++    bool cut = false; // abandoned at a checkpoint below deadline_floor: on to the essential end
+     try {
++        // In the try: a cut here (FuelDeadline) still runs the essential end.
++        if (world.me().alive) note_upkeep(world, safety, memory.damage);
+         act(world, pathing, safety, memory);
+     } catch (const StaleTurn&) {
+         return;
++    } catch (const FuelDeadline&) {
++        cut = true;
++        debug_block({ std::printf("CUT %d %u act %s:%d %llu %llu\n", world.round, my_handle(), deadline_file, deadline_line, static_cast<unsigned long long>(deadline_thrown),
++                                  static_cast<unsigned long long>(fuel())); });
+     } catch (const std::exception& e) {
+         std::printf("r%u act error: %s\n", cambc::round_number(), e.what());
+     }
+-    try {
++    deadline_floor = params::deadline_order;
++    if (!cut) try {
+         if (!world.is_stale()) see_stuns(world, safety);
+         set_turn_order(world, safety);
+     } catch (const StaleTurn&) {
+         return;
++    } catch (const FuelDeadline&) {
++        cut = true;
++        debug_block({ std::printf("CUT %d %u order %s:%d %llu %llu\n", world.round, my_handle(), deadline_file, deadline_line, static_cast<unsigned long long>(deadline_thrown),
++                                  static_cast<unsigned long long>(fuel())); });
+     } catch (const std::exception& e) {
+         std::printf("r%u turn order error: %s\n", cambc::round_number(), e.what());
+     }
+-    if (!world.is_stale() && world.me().alive) {
++    if (!cut && !world.is_stale() && world.me().alive) try {
+         bool intent = support_requested;
+         // support_offered was judged in the vision we had: a ward since may show a threat.
+         if (world.me().facts().heals() && support_offered) {
+@@ -668,7 +688,12 @@
+         }
+         world.throw_if_stale();
+         comms::support_intent(world.round, intent);
++    } catch (const FuelDeadline&) {
+     }
++    // The essential end: no checkpoint fires below here.
++    deadline_floor = 0;
++    std::uint64_t end_from = 0;
++    debug_block({ end_from = fuel(); });
+     // Willow's formation wait (support.cc) ends with a heal, or a camp hit outside support.
+     if (world.me().alive && world.me().facts().heals()
+         && ((!support_owned && camp_hits() != camp_hits_before) || my_cooldown(world.me().facts().slot_of(AbilityKind::heal)) >= ability_cooldown))
+@@ -681,6 +706,7 @@
+     memory.health = world.me().alive ? my_health() : 0;
+     if (world.me().alive) note_income_end(world);
+     upkeep.camp_turns += camp_hits() != camp_hits_before;
++    debug_block({ if (cut) std::printf("CUTE %d %u %llu %llu\n", world.round, my_handle(), static_cast<unsigned long long>(end_from), static_cast<unsigned long long>(fuel())); });
+     debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), static_cast<char>(decision), memory.farm_group, memory.claim); });
+ }
+ 
+diff -ruN -x .cambc oc32s-bsk/src/combat/abilities.cc oc32-nof4/src/combat/abilities.cc
+--- oc32s-bsk/src/combat/abilities.cc	2026-11-09 16:05:51.885164674 +0000
++++ oc32-nof4/src/combat/abilities.cc	2026-11-09 21:35:21.422566380 +0000
+@@ -612,7 +612,7 @@
+ }
+ 
+ bool execute_camp_cast(const World& world, const Cast& selected) {
+-    world.throw_if_stale();
++    world.stale_before_act();
+     const bool cast = selected.execute();
+     world.throw_if_stale();
+     camp_hits() += cast;
+@@ -631,7 +631,7 @@
+     if (attempted) *attempted = false;
+     try {
+         const auto cast = enemy_cast(world, walk, lethal_only);
+-        world.throw_if_stale();
++        world.stale_before_act();
+         if (attempted) *attempted = cast.slot >= 0;
+         return cast.execute();
+     } catch (const cambc::error&) {
+@@ -644,7 +644,7 @@
+     attempted = false;
+     try {
+         const auto cast = enemy_cast(world, walk, false, enemy);
+-        world.throw_if_stale();
++        world.stale_before_act();
+         attempted = cast.slot >= 0;
+         const bool accepted = cast.execute();
+         world.throw_if_stale();
+@@ -655,7 +655,7 @@
+ }
+ 
+ bool cast_at_camp(const World& world, int group, bool attackers_only, bool any_value) {
+-    world.throw_if_stale();
++    world.stale_before_act();
+     try {
+         return execute_camp_cast(world, camp_cast(world, group, attackers_only, any_value));
+     } catch (const cambc::error&) {
+diff -ruN -x .cambc oc32s-bsk/src/combat/fight.cc oc32-nof4/src/combat/fight.cc
+--- oc32s-bsk/src/combat/fight.cc	2026-11-09 15:51:02.705513359 +0000
++++ oc32-nof4/src/combat/fight.cc	2026-11-09 21:25:31.272024798 +0000
+@@ -39,6 +39,7 @@
+     not_into(safety.camp_area(), m.field.goals);
+     m.field.goals &= world.map().standable;
+     home_exits(world, safety, m.field.goals);
++    checkpoint(field_need(cap));
+     m.field.steps.compute_with_expansion_count(walls, m.field.goals, visited, static_cast<std::uint16_t>(cap));
+     m.round = world.round, m.champion = me, m.cap = cap;
+     return m.field;
+@@ -1080,10 +1081,10 @@
+     if (bands.size() < world.map().altars.size()) bands.resize(world.map().altars.size());
+     auto& b = bands[static_cast<std::size_t>(altar)];
+     if (!b.made) {
+-        b.made = true;
+         clear_board(b.all), clear_board(b.band);
+         const vec2 c = world.map().altars[altar].pos;
+-        for (int dx = -r; dx <= r; ++dx)
++        for (int dx = -r; dx <= r; ++dx) {
++            checkpoint(); // a row of up to 27 tiles, ~3k: the whole square cost up to ~70k
+             for (int dy = -r; dy <= r; ++dy) {
+                 const vec2 p{c.x + dx, c.y + dy};
+                 if (!in_bounds(p) || !test(world.map().open_for_us, p)) continue;
+@@ -1092,6 +1093,8 @@
+                 set_tile(b.all, p);
+                 if (f >= lo) set_tile(b.band, p);
+             }
++        }
++        b.made = true; // once whole: an abandoned turn leaves it to redo
+     }
+     // The band out of every reach plus 2, else plus 1, else every tile up to hi.
+     bool found = false;
+diff -ruN -x .cambc oc32s-bsk/src/combat/plan.cc oc32-nof4/src/combat/plan.cc
+--- oc32s-bsk/src/combat/plan.cc	2026-11-09 15:51:02.705811603 +0000
++++ oc32-nof4/src/combat/plan.cc	2026-11-09 21:41:02.536244103 +0000
+@@ -195,6 +195,10 @@
+ constexpr int max_exact_queries = 6;
+ // Nodes a search grows, at ~1.1k fuel each; past it the leaves offered so far stand.
+ constexpr int max_nodes = 12;
++// Below this much fuel the search grows and prices no further (its node and query caps' fallbacks):
++// the plan must still be carried out and the turn ended. The search passed no fuel check, so a fight
++// turn that ran out in it lost every action.
++constexpr std::uint64_t search_floor = act_reserve;
+ // A plan breaking our kill bid (follow.h) loses this, more than any turn's hits and danger.
+ constexpr float break_penalty = 1e5f;
+ // keep_bid's search: only plans that keep the bid.
+@@ -1974,7 +1978,7 @@
+     if (!debug_strike_free && empty == 0) return out;
+     if (!debug_strike_free && (empty == 1 || empty == 3)) {
+         throw_if_stale();
+-        world.throw_if_stale();
++        world.stale_before_act();
+         bool ok = true;
+         if (empty == 3) try {
+                 ok = cast_slot(world.me().facts().slot_of(AbilityKind::shield));
+@@ -2305,7 +2309,7 @@
+     mark(2);
+     held.release();
+     // A search that ran out of fuel resumes in the next round: its plan is last round's.
+-    world.throw_if_stale();
++    world.stale_before_act();
+     // Carry it out. A move a hidden unit refuses takes the next-ranked plan from where we stand.
+     Seq seq;
+     std::array<bool, grid_cells> dropped{};
+@@ -2333,7 +2337,7 @@
+             try {
+                 const auto& x = S.u[a.unit];
+                 if (x.foe) attack_champion(x.belief->handle);
+-                else throw_if_stale(), cambc::self().attack(world.map().groups[x.group].camp(x.member));
++                else stale_before_act(), cambc::self().attack(world.map().groups[x.group].camp(x.member));
+                 ok = true;
+                 out.attacked = true;
+                 out.moved |= !S.melee;
+diff -ruN -x .cambc oc32s-bsk/src/draft/map_economy.h oc32-nof4/src/draft/map_economy.h
+--- oc32s-bsk/src/draft/map_economy.h	2026-11-07 01:14:33.642638283 +0000
++++ oc32-nof4/src/draft/map_economy.h	2026-11-09 21:25:31.272413203 +0000
+@@ -27,17 +27,23 @@
+     }
+ };
+ 
+-inline MapEconomy measure_economy(const StaticMap& map) {
+-    MapEconomy out;
++// Resumed where a cut turn left it (a group a pass): the first read on 100-group maps costs ~50k.
++inline const MapEconomy& map_economy(const StaticMap& map) {
++    static MapEconomy out;
++    static std::size_t next = 0;
++    if (next > map.groups.size()) return out;
+     const auto& own_field = map.from_ally_spawn();
+-    for (const auto& group : map.groups) {
+-        out.total_gems += group.gems;
++    for (; next < map.groups.size(); ++next) {
++        checkpoint();
++        const auto& group = map.groups[next];
+         // Nearest member, not the centre: a large group can lie near both spawns.
+         int own = unreachable, enemy = unreachable;
+-        for (const auto& member : group.members) {
+-            own = std::min(own, own_field.at(member.pos));
+-            enemy = std::min(enemy, map.enemy_spawn_steps(member.pos));
++        for (std::size_t k = 0; k < group.members.size(); ++k) {
++            if ((k & 31) == 31) checkpoint();
++            own = std::min(own, own_field.at(group.members[k].pos));
++            enemy = std::min(enemy, map.enemy_spawn_steps(group.members[k].pos));
+         }
++        out.total_gems += group.gems;
+         if (own == unreachable) continue;
+         // Groups at least as near us count in full; nearer the enemy, by the ratio of distances. Each is
+         // per round of its capture cycle (respawn plus the 6-round hold).
+@@ -58,12 +64,8 @@
+             out.gold_steps += static_cast<float>(own);
+         }
+     }
++    next = map.groups.size() + 1;
+     return out;
+ }
+ 
+-inline const MapEconomy& map_economy(const StaticMap& map) {
+-    static const MapEconomy profile = measure_economy(map);
+-    return profile;
+-}
+-
+ } // namespace aph
+diff -ruN -x .cambc oc32s-bsk/src/economy/altar_guard.cc oc32-nof4/src/economy/altar_guard.cc
+--- oc32s-bsk/src/economy/altar_guard.cc	2026-11-07 01:14:33.641864843 +0000
++++ oc32-nof4/src/economy/altar_guard.cc	2026-11-09 21:25:31.272474514 +0000
+@@ -19,24 +19,37 @@
+     const auto& map = world.map();
+     const int n = static_cast<int>(map.altars.size());
+     if (n == 0) return anchor = -1;
+-    std::vector<int> linked{0};
+-    std::vector<char> in(static_cast<std::size_t>(n), 0);
+-    in[0] = 1;
+-    for (std::size_t i = 0; i < linked.size(); ++i)
+-        for (int b = 0; b < n; ++b)
+-            if (!in[static_cast<std::size_t>(b)] && dist(map.altars[static_cast<std::size_t>(linked[i])].pos, map.altars[static_cast<std::size_t>(b)].pos) <= site_link)
+-                in[static_cast<std::size_t>(b)] = 1, linked.push_back(b);
+-    if (static_cast<int>(linked.size()) != n) return anchor = -1;
++    // One site: every altar linked to the first by a chain of links, grown a link a pass by
++    // dilation (pairwise tests cost ~55k with 03the-front's line of altars).
++    static bool linked = false;
++    if (!linked) {
++        static bitboard all{cambc::uninitialized}, reached{cambc::uninitialized}, grown{cambc::uninitialized};
++        clear_board(all);
++        for (const auto& a : map.altars) set_tile(all, a.pos);
++        clear_board(reached);
++        set_tile(reached, map.altars[0].pos);
++        for (;;) {
++            checkpoint();
++            square_dilate(reached, site_link, grown);
++            grown &= all;
++            if (boards_equal(grown, reached)) break;
++            copy_into(grown, reached);
++        }
++        if (!boards_equal(reached, all)) return anchor = -1;
++        linked = true;
++    }
++    // Resumed where a cut turn left it: each altar is one pass.
+     const auto& field = map.from_ally_spawn();
+-    int best = 0, best_theirs = unreachable, best_ours = unreachable;
+-    for (int a = 0; a < n; ++a) {
+-        const vec2 p = map.altars[static_cast<std::size_t>(a)].pos;
++    static int next = 0, best = 0, best_theirs = unreachable, best_ours = unreachable;
++    for (; next < n; ++next) {
++        checkpoint();
++        const vec2 p = map.altars[static_cast<std::size_t>(next)].pos;
+         int ours = unreachable, theirs = unreachable;
+         for (int dx = -1; dx <= 1; ++dx)
+             for (int dy = -1; dy <= 1; ++dy)
+                 if (const vec2 t{p.x + dx, p.y + dy}; (dx || dy) && in_bounds(t))
+                     ours = std::min(ours, field.at(t)), theirs = std::min(theirs, map.enemy_spawn_steps(t));
+-        if (theirs < best_theirs || (theirs == best_theirs && ours < best_ours)) best = a, best_theirs = theirs, best_ours = ours;
++        if (theirs < best_theirs || (theirs == best_theirs && ours < best_ours)) best = next, best_theirs = theirs, best_ours = ours;
+     }
+     return anchor = best;
+ }
+@@ -89,14 +102,22 @@
+     static std::vector<vec2> tiles;
+     static int built = -1;
+     if (built == a) return tiles;
+-    built = a;
+     tiles.clear();
+     const auto& map = world.map();
+     const vec2 alt = map.altars[a].pos;
++    const int r = params::altar_stand_radius;
++    // Only a member within its reach + r of the altar reaches a stand tile (Chebyshev steps).
++    struct Near {
++        vec2 pos;
++        int reach;
++    };
++    std::vector<Near> near;
++    for (const auto& g : map.groups)
++        for (const auto& m : g.members)
++            if (m.strength > 0 && dist(m.pos, alt) <= m.reach + r) near.push_back({m.pos, m.reach});
+     const auto in_camp_reach = [&](vec2 p) {
+-        for (const auto& g : map.groups)
+-            for (const auto& m : g.members)
+-                if (m.strength > 0 && dist(m.pos, p) <= m.reach) return true;
++        for (const auto& m : near)
++            if (dist(m.pos, p) <= m.reach) return true;
+         return false;
+     };
+     struct Scored {
+@@ -104,8 +125,8 @@
+         vec2 p;
+     };
+     std::vector<Scored> all, safe;
+-    const int r = params::altar_stand_radius;
+-    for (int dx = -r; dx <= r; ++dx)
++    for (int dx = -r; dx <= r; ++dx) {
++        checkpoint(); // a column: its tiles against every member near
+         for (int dy = -r; dy <= r; ++dy) {
+             const vec2 p{alt.x + dx, alt.y + dy};
+             if (!in_bounds(p) || !test(map.standable, p) || test(map.near_enemy_spawn, p)) continue;
+@@ -116,11 +137,13 @@
+             all.push_back(s);
+             if (!in_camp_reach(p)) safe.push_back(s);
+         }
++    }
+     auto& use = safe.empty() ? all : safe;
+     std::sort(use.begin(), use.end(), [](const Scored& x, const Scored& y) {
+         return x.score != y.score ? x.score < y.score : (x.p.x != y.p.x ? x.p.x < y.p.x : x.p.y < y.p.y);
+     });
+     for (const auto& s : use) tiles.push_back(s.p);
++    built = a; // only once whole: a turn abandoned while building leaves it to rebuild
+     return tiles;
+ }
+ 
+diff -ruN -x .cambc oc32s-bsk/src/economy/bank.cc oc32-nof4/src/economy/bank.cc
+--- oc32s-bsk/src/economy/bank.cc	2026-11-09 14:47:25.045812320 +0000
++++ oc32-nof4/src/economy/bank.cc	2026-11-09 21:35:21.419511249 +0000
+@@ -96,7 +96,7 @@
+                 if (own_lock_round.size() < map.altars.size()) own_lock_round.resize(map.altars.size(), -1);
+                 own_lock_round[a] = world.round;
+             };
+-            throw_if_stale();
++            stale_before_act();
+             try {
+                 if (lock.use(p)) return note_own_lock();
+             } catch (const cambc::error& e) {
+@@ -111,7 +111,7 @@
+     if (!my_can_attack() || dist(my_position(), p) > world.me().facts().attack_range()) return false;
+     for (const auto& lock : cambc::vision::altar_locks())
+         if (lock.is_enemy() && lock.position() == p) {
+-            throw_if_stale();
++            stale_before_act();
+             try {
+                 me.attack(lock);
+                 return true;
+@@ -217,7 +217,7 @@
+ 
+ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w) {
+     or_into(pathing.static_walls(), w.access.live, w.walls);
+-    w.walls.reachable_tiles_into(world.map().ally_spawn_tiles[0], unreachable, w.ours);
++    flood_into(w.walls, world.map().ally_spawn_tiles[0], w.ours); // a field: an uncapped mask has no price cap
+     w.walked = true;
+     w.behind = false;
+     altar_walk_pending = false;
+@@ -236,9 +236,10 @@
+     // most that many tiles is whole; the mask's price is its layers over the chunks within its reach.
+     constexpr std::uint16_t near = 8;
+     while (!board_empty(gone)) {
++        checkpoint(); // `ours` only grows: a cut turn adds the rest from ours_live (behind stays set)
+         const vec2 t = first_tile(gone);
+         w.walls.reachable_tiles_into(t, near, walk_seen);
+-        if (board_count(walk_seen) > near) w.walls.reachable_tiles_into(t, unreachable, walk_seen);
++        if (board_count(walk_seen) > near) flood_into(w.walls, t, walk_seen);
+         w.ours |= walk_seen;
+         drop(gone, walk_seen);
+         set_tile(gone, t, false);
+@@ -254,6 +255,7 @@
+     drop(ring, w.walls);
+     if (board_empty(ring)) return true;
+     not_into(ring, rest);
++    checkpoint((board_count(ring) + 3) * search_chunks() + 1500); // a mask's price
+     rest.reachable_tiles_into(first_tile(ring), static_cast<std::uint16_t>(board_count(ring)), seen);
+     return seen == ring;
+ }
+@@ -280,8 +282,10 @@
+     clear_board(root);
+     set_tile(root, from);
+     clear_board(seen);
+-    field.compute_to(rest, root, beside, seen);
++    const int cap = field_cap(0xffff);
++    field.compute_to(rest, root, beside, seen, static_cast<std::uint16_t>(std::min<int>(cap, unreachable)));
+     seen &= beside;
++    if (seen != beside && cap < 0xffff) deadline_hit(__FILE__, __LINE__); // perhaps short of them: would not have fitted
+     return seen == beside;
+ }
+ 
+@@ -291,11 +295,11 @@
+ // the flood from spawn with the live camps as walls is `ours` with those added.
+ void catch_up_walk(Pathing& pathing, AltarWalk& w) {
+     if (!w.behind) return;
+-    w.behind = false;
+     static bitboard gone{cambc::uninitialized};
+     copy_into(w.ours_live, gone);
+     drop(gone, w.access.live);
+     walk_deaths(pathing, w, w.access.live, gone);
++    w.behind = false; // once added: a turn abandoned in walk_deaths adds them again
+ }
+ 
+ [[gnu::noinline]] const AltarAccess& rebuild_altar_access(const World& world, Pathing& pathing, const bitboard& live) {
+@@ -344,6 +348,7 @@
+             updated = board_empty(grown);
+             if (!updated) {
+                 not_into(grown, walls);
++                checkpoint((board_count(grown) + 3) * search_chunks() + 1500);
+                 walls.reachable_tiles_into(first_tile(grown), static_cast<std::uint16_t>(board_count(grown)), seen);
+                 updated = seen == grown;
+             }
+@@ -431,7 +436,7 @@
+     clear_board(seen);
+     for (const vec2 t : a.opened.positions()) {
+         if (test(seen, t)) continue;
+-        walls.reachable_tiles_into(t, unreachable, area);
++        flood_into(walls, t, area);
+         seen |= area;
+         area &= grown;
+         for (const vec2 p : area.positions())
+@@ -590,6 +595,7 @@
+     bool exact = true;
+     float total = 0;
+     for (std::size_t at = 0; at < active.size(); at += 2 + active[at + 1]) {
++        checkpoint(); // make() fills a group whole (its pass throws nothing)
+         const auto& r = make(static_cast<int>(active[at]));
+         exact &= r.kinds >= 0;
+         total += r.total;
+@@ -599,6 +605,7 @@
+     const auto n = std::min<std::size_t>(positions_into(a.open, open.data(), static_cast<std::uint32_t>(open.size())), open.size());
+     std::size_t k = 0;
+     for (const vec2 t : std::span{open.data(), n}) {
++        checkpoint(); // a tile against every active group: all of them cost up to ~29k
+         while (k < T && tributes[k] != t) ++k;
+         float f = 0;
+         for (std::size_t at = 0; at < active.size(); at += 2 + active[at + 1]) {
+@@ -651,10 +658,13 @@
+     now.clear();
+     world.each_stirring([&](int g) {
+         if (near[g] < 0) {
+-            near[g] = 0;
+-            for (const auto& m : groups[g].members)
++            signed char reaches = 0; // set once whole: a turn abandoned inside reads it again
++            for (const auto& m : groups[g].members) {
++                checkpoint(); // a member against every altar: 03the-front's line of them costs ~30k a group
+                 for (const auto& altar : map.altars)
+-                    if (dist(m.pos, altar.pos) <= m.reach + cambc::constants::submit_gems_range) near[g] = 1;
++                    if (dist(m.pos, altar.pos) <= m.reach + cambc::constants::submit_gems_range) reaches = 1;
++            }
++            near[g] = reaches;
+         }
+         const auto& c = world.camps[g];
+         if (!near[g] || c.awake != Awake::awake) return;
+@@ -688,8 +698,9 @@
+         open_version = a.version;
+     }
+     if (same && now == key) return fire = kept;
++    key.clear(); // a turn abandoned inside leaves no key to match
++    fire = kept = fire_on_open(world, a, now);
+     key.swap(now);
+-    fire = kept = fire_on_open(world, a, key);
+     return fire;
+ }
+ 
+@@ -755,8 +766,9 @@
+     static int kept = 0;
+     const BagKey key = bag_key(world);
+     if (key == last) return kept;
+-    last = key;
+-    return kept = race_left_now(world);
++    kept = race_left_now(world);
++    last = key; // after: a turn abandoned inside leaves the key unmatched
++    return kept;
+ }
+ 
+ // The rounds left in the game for a bag: to the round limit, and for ours to the race's end.
+@@ -814,7 +826,7 @@
+             return false;
+         place_lock(world); // first: it cancels every tribute at its altar
+         place_ward(world, memory); // first: no ward goes down while channelling
+-        throw_if_stale();
++        stale_before_act();
+         try {
+             me.submit_gems(altars[a].pos);
+             const int bag = static_cast<int>(my_gems());
+@@ -940,7 +952,7 @@
+             best = l, best_steps = s, best_delays = delays, best_fire = fire;
+         }
+         if (best.x < 0) return false;
+-        throw_if_stale();
++        stale_before_act();
+         try {
+             if (cambc::self().consumables()[cambc::consumable_type::tp_crystal].use(best)) return true;
+         } catch (const cambc::error&) {
+@@ -1037,7 +1049,7 @@
+             for (const auto& m : live) {
+                 if (!tried_attack && dist(m.pos, here) <= f.attack_range()) {
+                     tried_attack = true;
+-                    throw_if_stale();
++                    stale_before_act();
+                     try {
+                         cambc::self().attack(map.groups[m.g].camp(m.i));
+                         ++camp_hits();
+@@ -1050,7 +1062,7 @@
+                     // A tile within range whose 3x3 covers the member.
+                     const vec2 t{std::clamp(m.pos.x, here.x - ability_range, here.x + ability_range),
+                                  std::clamp(m.pos.y, here.y - ability_range, here.y + ability_range)};
+-                    throw_if_stale();
++                    stale_before_act();
+                     try {
+                         if (cast_slot(spell, t)) {
+                             ++camp_hits();
+@@ -1072,6 +1084,7 @@
+         const int reach = spell >= 0 ? ability_range + ground_radius : f.attack_range();
+         if (key_prey != at || key_live != live.size() || key_reach != reach || key_health != static_cast<int>(health)
+             || key_round < world.round - 1) {
++            key_round = -1; // set once built: a turn abandoned inside rebuilds
+             key_prey = at, key_live = live.size(), key_reach = reach, key_health = static_cast<int>(health);
+             field.reset();
+             static bitboard members{cambc::uninitialized}, goals{cambc::uninitialized};
+@@ -1266,7 +1279,7 @@
+     if (a < 0 || enemy_lock_live(world.map().altars[a].pos) || retaining_gems(world, pathing)) return false;
+     if (tribute_turns(world, my_gems()) > rounds_left(world)) return false;
+     if (want_home(world, pathing, safety, memory)) return false;
+-    throw_if_stale();
++    stale_before_act();
+     try {
+         cambc::self().submit_gems(world.map().altars[a].pos);
+         return true;
+@@ -1401,7 +1414,7 @@
+     auto& me = cambc::self();
+     decision = Branch::recall_kept;
+     if (game_ender(world)) {
+-        throw_if_stale();
++        stale_before_act();
+         try {
+             me.cancel_recall();
+         } catch (const std::exception&) {
+@@ -1457,7 +1470,7 @@
+             debug_block({ std::printf("RFDROP %d %u %d %d\n", world.round, my_handle(), recall_farm, static_cast<int>(my_channel_time())); });
+         }
+     }
+-    throw_if_stale();
++    stale_before_act();
+     try {
+         me.cancel_recall();
+     } catch (const std::exception&) {
+diff -ruN -x .cambc oc32s-bsk/src/economy/camps.cc oc32-nof4/src/economy/camps.cc
+--- oc32s-bsk/src/economy/camps.cc	2026-11-07 04:38:38.459166687 +0000
++++ oc32-nof4/src/economy/camps.cc	2026-11-09 21:35:21.419896295 +0000
+@@ -73,7 +73,7 @@
+ }
+ 
+ bool attack_camp_target(const World& world, const CampAttackTarget& target) {
+-    throw_if_stale();
++    stale_before_act();
+     try {
+         cambc::self().attack(world.map().groups[target.group].camp(target.member));
+         ++camp_hits();
+@@ -160,11 +160,11 @@
+     static unsigned read_at = ~0u;
+     static OwnFactors f;
+     if (read_at != items_bought) {
+-        read_at = items_bought;
+         const auto& owned = my_items();
+         const auto dealt = dealt_with(owned);
+         f = {(has_family(owned, jungle) ? jungle_camp_taken : 1.0f) * (has_family(owned, durability) ? durability_taken : 1.0f),
+              dealt.camp, dealt.champion};
++        read_at = items_bought;
+     }
+     return f;
+ }
+@@ -217,6 +217,7 @@
+     // Each round we hit the first living target, then every living attacker hits us and takes the
+     // reflection. Stepped from one death to the next.
+     for (int i = 0; i < n;) {
++        checkpoint(); // a death: two passes over the attackers
+         const float own = left[i].strength > 0 ? reflect : 0.0f;
+         float k = std::max(1.0f, std::ceil(left[i].health / (strength + own)));
+         for (int j = i + 1; j < attackers; ++j)
+@@ -277,6 +278,7 @@
+     int kinds = -1; // -1: sums bit by bit
+     std::array<float, 4> kind_strength;
+     std::array<std::uint32_t, 4> kind_bits;
++    bool built = false; // whole: a turn abandoned mid-build leaves it to redo
+ };
+ 
+ const StandReach& stand_reach(const StaticMap& map, int g, int range) {
+@@ -286,7 +288,7 @@
+     auto& t = table[g];
+     const auto& group = map.groups[g];
+     const int n = static_cast<int>(group.members.size());
+-    if (static_cast<int>(t.slot.size()) == n) return t;
++    if (t.built || n == 0) return t;
+     t.hits.assign(n, 0), t.slot.assign(n, -1), t.strength.clear();
+     t.homes.clear(), t.gap = -2, t.n_exposed = 0;
+     vec2 lo = group.members[0].pos, hi = lo;
+@@ -339,6 +341,7 @@
+     vec2 slo = spawn.empty() ? vec2{-1, -1} : spawn[0], shi = slo;
+     for (const auto s : spawn) slo = {std::min(slo.x, s.x), std::min(slo.y, s.y)}, shi = {std::max(shi.x, s.x), std::max(shi.y, s.y)};
+     for (int i = 0; i < n; ++i) {
++        checkpoint(); // a member costs up to ~4k by the spawn (sight and each spawn tile)
+         const vec2 p = group.members[i].pos;
+         int dx = away(p.x, lo.x + hi.x), dy = away(p.y, lo.y + hi.y);
+         if (dx == 0 && dy == 0) dy = 1;
+@@ -375,6 +378,7 @@
+         for (; k > 0 && t.exposed_box[k - 1] > box; --k) t.exposed[k] = t.exposed[k - 1], t.exposed_box[k] = t.exposed_box[k - 1];
+         t.exposed[k] = {at, p}, t.exposed_box[k] = box;
+     }
++    t.built = true;
+     return t;
+ }
+ 
+@@ -443,13 +447,18 @@
+     std::uint32_t living = 0;
+     for (int i = 0; i < n; ++i)
+         if (t.slot[left[i].member] >= 0) living |= 1u << t.slot[left[i].member];
+-    for (int i = 0; i < n; ++i) left[i].fire = fire(t.hits[left[i].member] & living);
++    for (int i = 0; i < n; ++i) {
++        if ((i & 7) == 7) checkpoint(); // big groups (100+ members) cost ~30k a call
++        left[i].fire = fire(t.hits[left[i].member] & living);
++    }
++    checkpoint(400 * n); // the sort: measured 16.5k at 43 members (debug)
+     if (n > 1)
+         std::sort(left, left + n, [](const CampLeft& a, const CampLeft& b) {
+             const float x = a.strength * b.health, y = b.strength * a.health;
+             return x != y ? x > y : a.fire < b.fire;
+         });
+     for (int i = 0; i < n; ++i) {
++        if ((i & 7) == 7) checkpoint();
+         const int m = left[i].member;
+         left[i].fire = fire(t.hits[m] & living);
+         const auto bits = t.homes.empty() ? -1 : t.home_bits(m);
+@@ -484,6 +493,7 @@
+         return x > y ? 1 : x < y ? -1 : 0;
+     };
+     for (int k = 0; k < moved; ++k) {
++        checkpoint(); // a pass over the order
+         const float s = sorted[at[k]].strength, before = sorted[at[k]].health, after = now[k];
+         for (int q = 0, j = 0; q < n; ++q) {
+             float h = sorted[q].health, h_now = h;
+@@ -582,7 +592,7 @@
+     if (slot->range != range || slot->version != belief.version) {
+         const bool fresh = belief.state == CampState::respawning;
+         const bool same_order = slot->range == range && order_holds(group, belief, fresh, sorted, slot->n);
+-        slot->version = belief.version, slot->range = range;
++        slot->range = 0; // set once filled: a turn abandoned inside refills
+         if (!same_order) {
+             int living = 0;
+             for (std::size_t i = 0; i < group.members.size(); ++i) {
+@@ -592,6 +602,7 @@
+             slot->n = living;
+             clear_fire(world.map(), g, sorted, living, range);
+         }
++        slot->version = belief.version, slot->range = range;
+     }
+     const int n = slot->n;
+     // The reflect path wears its members' health down: it gets a copy.
+@@ -808,14 +819,14 @@
+     static float kept = 0;
+     const BagKey key = bag_key(world);
+     if (key == last) return kept;
+-    last = key;
+     int alive = 0;
+     for (const auto& a : world.allies) alive += a.alive;
+     const int rounds = bag_rounds_left(world);
+     int left = std::min(gems_short(world), static_cast<int>(cambc::constants::winning_gems) - world.score.enemy);
+     if (const float rate = world.ally_rate(); rate > 0) left = std::min(left, static_cast<int>(rate * static_cast<float>(rounds)));
+-    return kept = std::min(static_cast<float>(std::max(0, left)) / static_cast<float>(std::max(1, alive)),
+-                           static_cast<float>(rounds) / rounds_per_gem);
++    kept = std::min(static_cast<float>(std::max(0, left)) / static_cast<float>(std::max(1, alive)), static_cast<float>(rounds) / rounds_per_gem);
++    last = key; // after: a turn abandoned inside leaves the key unmatched
++    return kept;
+ }
+ 
+ // A live group, awake or maybe, whose monsters not read asleep reach p.
+diff -ruN -x .cambc oc32s-bsk/src/economy/capture.cc oc32-nof4/src/economy/capture.cc
+--- oc32s-bsk/src/economy/capture.cc	2026-11-09 17:25:00.132080072 +0000
++++ oc32-nof4/src/economy/capture.cc	2026-11-09 21:35:21.420658635 +0000
+@@ -506,7 +506,7 @@
+         if (!landing || d < steps || (d == steps && tile_index(p) < tile_index(*landing))) landing = p, steps = d;
+     }
+     if (!landing) return false;
+-    world.throw_if_stale();
++    world.stale_before_act();
+     bool cast = false;
+     try {
+         cast = cast_slot(dash, *landing);
+diff -ruN -x .cambc oc32s-bsk/src/economy/farm.cc oc32-nof4/src/economy/farm.cc
+--- oc32s-bsk/src/economy/farm.cc	2026-11-09 17:25:00.132415507 +0000
++++ oc32-nof4/src/economy/farm.cc	2026-11-09 21:25:31.272955501 +0000
+@@ -1552,17 +1552,19 @@
+             auto& most_from = memo.most_from;
+             auto& reach = memo.reach;
+             if (static_cast<int>(most_from.size()) != n_groups) {
+-                most_from.clear(), most_from.resize(n_groups);
++                // Sized once filled: a turn cut inside (checkpoints) fills it again.
+                 reach.resize(n_groups);
+                 for (int g = 0; g < n_groups; ++g) {
++                    if ((g & 31) == 31) checkpoint();
+                     const auto& G = groups[g];
+                     reach[g] = {G.gems + prospected(G.cluster_gems, 1), G.gold + prospected(G.cluster_gold, 1), dist(map.ally_spawn_centre, G.centre)};
+                 }
++                most_from.clear(), most_from.resize(n_groups);
+             }
+             auto& from_first = most_from[first];
+             if (!from_first) {
+-                from_first.reset(new FarmMemo::Most[n_groups]);
+-                FarmMemo::Most* const out = from_first.get();
++                std::unique_ptr<FarmMemo::Most[]> made{new FarmMemo::Most[n_groups]};
++                FarmMemo::Most* const out = made.get();
+                 const FarmMemo::Reach* const r = reach.data();
+                 const std::uint8_t* const at = order->data();
+                 const vec2 origin = groups[first].centre;
+@@ -1576,7 +1578,9 @@
+                     run.near = dist(origin, G.centre);
+                     run.spawn_near = std::min(run.spawn_near, r[g].spawn_near);
+                     out[j] = run;
++                    if ((j & 31) == 0) checkpoint();
+                 }
++                from_first = std::move(made);
+             }
+             most = from_first.get();
+         }
+@@ -1592,6 +1596,7 @@
+     const auto room = [&]() __attribute__((always_inline)) {
+         const std::uint64_t left = fuel();
+         if (left > seen) world.throw_if_stale();
++        checkpoint(); // nothing in the loop changes memory: abandoning it here is safe
+         seen = left;
+         return left >= ample + decode_bound || left >= loop_reserve();
+     };
+diff -ruN -x .cambc oc32s-bsk/src/economy/shop.cc oc32-nof4/src/economy/shop.cc
+--- oc32s-bsk/src/economy/shop.cc	2026-11-08 04:18:12.196892484 +0000
++++ oc32-nof4/src/economy/shop.cc	2026-11-09 21:35:21.420853397 +0000
+@@ -46,7 +46,7 @@
+ bool buy(cambc::item_type shard, unsigned count) {
+     auto& me = cambc::self();
+     if (!count || !me.can_buy(shard, count)) return false;
+-    throw_if_stale();
++    stale_before_act();
+     try {
+         ++items_bought;
+         me.buy(shard, count);
+@@ -60,7 +60,7 @@
+ void buy_consumable(cambc::consumable_type type) {
+     auto& me = cambc::self();
+     try {
+-        if (me.can_buy(type)) throw_if_stale(), me.buy(type), income.spent += type.cost();
++        if (me.can_buy(type)) stale_before_act(), me.buy(type), income.spent += type.cost();
+     } catch (const cambc::error&) {
+     }
+ }
+@@ -79,6 +79,7 @@
+ // Tavi shops anywhere: no trip home for it.
+ bool shops_at_home(const World& world) { return world.me().facts().passive != Passive::remote_shop; }
+ std::vector<vec2> upkeep_tiles; // noted, their steps not yet in `upkeep`
++void fold_upkeep(const StaticMap& map);
+ 
+ // At the turn's start: camps hit in the camp phase, from where we ended last turn.
+ void note_upkeep(const World& world, Safety& safety, float damage) {
+@@ -92,6 +93,9 @@
+     }
+     // Not the first turn: on spawn, its 0 steps were never in the mean.
+     if (world.round != world.first_round) upkeep_tiles.push_back(here);
++    // Folded as they come once the field is made (the sum's order is the same): a game's worth
++    // folded at once cost ~85k.
++    if (world.map().from_ally_spawn_ready()) fold_upkeep(world.map());
+ }
+ 
+ // The spawn steps of the tiles noted so far, added in turn order. Only a mean multiplied by
+@@ -554,9 +558,9 @@
+                       self.facts().passive == Passive::gem_focus && has_family(my_items(), home),
+                       self.facts().passive == Passive::gem_focus && has_family(my_items(), monster)};
+         !(now == last) || !(std::abs(share - chosen_at) <= 0.1f * chosen_at)) {
++        kept.next = best_emblem(world); // before the key: a turn abandoned in it leaves the key to redo
+         last = now;
+         chosen_at = share;
+-        kept.next = best_emblem(world);
+         priced_at = -1;
+     }
+     if (share != priced_at) {
+@@ -590,7 +594,6 @@
+     const Key key{budget / shard_price, self.strength, self.focus, self.max_health, reactive_bag(), main_stat(world)};
+     const float rounds = gems_share(world) * rounds_per_gem;
+     if (key == last) return {kept.next, kept.count, kept.gain * rounds};
+-    last = key;
+     const auto& f = self.facts();
+     auto owned = my_items();
+     const auto build = [&](const Build& bought) { return build_of(world, owned, bought); };
+@@ -599,6 +602,8 @@
+     Build bought;
+     float passives = 0;
+     for (unsigned gold = budget; gold >= shard_price;) {
++        // An emblem a pass (~8k each, a dozen with a big purse): abandoned here, the key stays unset.
++        if (quote.count) checkpoint();
+         const auto e = quote.count == 0 ? quote.next : best_emblem(world, bought, &owned);
+         const unsigned have = owned[shard_of(e.family, e.stat)];
+         const unsigned count = std::min<unsigned>(shards_needed(e.family) - have, gold / shard_price);
+@@ -617,6 +622,7 @@
+     const Upkeep u = priced_upkeep(world, others);
+     quote.gain = upkeep_cost(world, u, others, now, now) - upkeep_cost(world, u, others, now, build(bought)) + passives;
+     kept = quote;
++    last = key;
+     return {quote.next, quote.count, quote.gain * rounds};
+ }
+ 
+diff -ruN -x .cambc oc32s-bsk/src/main.cc oc32-nof4/src/main.cc
+--- oc32s-bsk/src/main.cc	2026-11-07 01:14:33.641971495 +0000
++++ oc32-nof4/src/main.cc	2026-11-09 21:41:02.534127174 +0000
+@@ -104,6 +104,8 @@
+ // The re-read of vision after moving: observe cost ~1.2k a turn, 4.3k at p99.9 and 7.2k at most over
+ // 506k turns (fuel campaign 4); at 3.5k out-of-fuel turns rose 1.1% in the A/B, at 5k they held.
+ constexpr std::uint64_t refresh_floor = 5000;
++// The queue's deadline floor: its unwind (at most ~4.2k) and the turn's end.
++constexpr std::uint64_t queue_floor = 5000;
+ constexpr std::uint64_t turn_fuel = 100000; // twice it on a champion's first turn
+ 
+ template <class F> bool run(const char* phase, F&& f) {
+@@ -280,6 +282,7 @@
+     // `late`: the turn before did not finish in its own round, or this is the first (aph::finish_late).
+     [[gnu::flatten]] void play_turn(bool late) {
+         const auto start = aph::fuel();
++        debug_block({ aph::deadline_thrown = 0; });
+         aph::FuelMeter meter{"turn"};
+         const bool updated = run("world", [&] {
+             // Default-initialised: make_unique's value-initialisation zeroed it first (a fuel a byte,
+@@ -323,8 +326,18 @@
+         run("debug", [&] { world->debug_output(); });
+         if (!aph::fuel_ok(late_floor)) return;
+         if (!world->is_stale())
+-            run("queue", [&] { queue.run(*world, *pathing, memory, start); });
++            run("queue", [&] {
++                // Under its own deadline: any checkpoint in it ends the queue (every reader makes what
++                // it needs when it is missing, so an unfinished fill is redone).
++                aph::deadline_floor = queue_floor;
++                try {
++                    queue.run(*world, *pathing, memory, start);
++                } catch (const aph::FuelDeadline&) {
++                }
++                aph::deadline_floor = 0;
++            });
+         aph::print_fuel_log();
++        debug_block({ if (aph::deadline_thrown) std::printf("CUTEND %u %llu\n", cambc::round_number(), static_cast<unsigned long long>(aph::fuel())); });
+     }
+ };
+ 
+diff -ruN -x .cambc oc32s-bsk/src/model/pathing.cc oc32-nof4/src/model/pathing.cc
+--- oc32s-bsk/src/model/pathing.cc	2026-11-07 01:14:33.642367480 +0000
++++ oc32-nof4/src/model/pathing.cc	2026-11-09 21:35:13.116050923 +0000
+@@ -368,6 +368,7 @@
+     const auto& members = map().groups[group].members;
+     const auto& field = slot.field;
+     for (const vec2 c : Tiles<8>{changed}) {
++        checkpoint(); // a changed tile against every member
+         for (const auto& m : members)
+             if (dist(c, m.pos) <= range) return false;
+         if (test(live, c)) {
+@@ -473,6 +474,7 @@
+     set_tile(walls, me, false);
+     clear_board(origin);
+     set_tile(origin, me);
++    checkpoint(field_need(layers));
+     const int reached = made.field.steps.compute_to_with_expansion_count(walls, goals, origin, visited, static_cast<std::uint16_t>(layers));
+     const int at = made.field.at(me);
+     made.dry = at == unreachable && reached < layers;
+@@ -551,6 +553,7 @@
+     bool any_freed = false;
+     for (int i = 0; i < static_cast<int>(health.size()); ++i) {
+         if (health[i] > 0) {
++            checkpoint(); // a member's tiles, a shadow cast when not drafted
+             tiles |= member_attack_tiles(group, i, range);
+             continue;
+         }
+@@ -997,6 +1000,7 @@
+         static vec2 danger_at{-1, -1};
+         if (me != danger_at || !boards_equal(*avoid, danger_of)) {
+             not_into(*avoid, outside);
++            checkpoint(static_cast<std::uint64_t>(map().width + map().height + 3) * search_chunks() + 1500); // a mask's price
+             outside.reachable_tiles_into(me, static_cast<std::uint16_t>(map().width + map().height), region);
+             copy_into(*avoid, danger);
+             drop(danger, region);
+@@ -1009,7 +1013,8 @@
+     }
+     if (guard) or_into(walls, *guard, walls);
+     set_tile(walls, me, false);
+-    const int cap = std::min<int>(max_steps, unreachable);
++    // Short of fuel, a nearer cap in place of a cut: farther goals read as out of reach this turn.
++    int cap = fit_layers(std::min<int>(max_steps, unreachable));
+     auto& kept = kept_routes_[crossing_];
+     int here = kept_steps(kept, goals, walls, me, cap);
+     if (here == unreachable) {
+@@ -1047,6 +1052,8 @@
+             origin_at = me;
+             // Goals on walls are no roots; with none left we stay unreachable. A search that runs dry
+             // counts one layer past its last; one cut off at the cap counts the cap.
++            cap = route_label_cap_ = fit_layers(cap);
++            checkpoint(field_need(cap));
+             layers = route_field_.compute_to_with_expansion_count(walls, goals, origin, route_labelled_, static_cast<std::uint16_t>(cap));
+             route_gen_ = ++field_ids_;
+             here = steps_at(route_field_, me);
+@@ -1197,7 +1204,7 @@
+ 
+ bool Pathing::move_to(vec2 tile, bool* refused) {
+     if (refused) *refused = true;
+-    throw_if_stale();
++    stale_before_act();
+     try {
+         if (cambc::self().move_absolute(tile)) {
+             turn_acts.walked = true;
+@@ -1276,6 +1283,7 @@
+     if (!near_crossings_) {
+         static bitboard none, visited{cambc::uninitialized};
+         static cambc::distance_field steps;
++        checkpoint(field_need(max_horizon + 1));
+         steps.compute(none, crossings(), visited, static_cast<std::uint16_t>(max_horizon + 1));
+         near_crossings_.emplace(visited);
+     }
+@@ -1577,7 +1585,7 @@
+ }
+ 
+ bool Pathing::dash_to(int slot, vec2 land) {
+-    throw_if_stale();
++    stale_before_act();
+     bool cast = false;
+     try {
+         cast = cast_slot(slot, land);
+diff -ruN -x .cambc oc32s-bsk/src/model/safety.cc oc32-nof4/src/model/safety.cc
+--- oc32s-bsk/src/model/safety.cc	2026-11-09 16:05:51.886079246 +0000
++++ oc32-nof4/src/model/safety.cc	2026-11-09 21:25:31.273840623 +0000
+@@ -976,13 +976,14 @@
+     const auto s = std::bit_cast<std::uint32_t>(hs), focus = std::bit_cast<std::uint32_t>(hf);
+     auto& m = memo.by_champion[(c.side == team::enemy ? 8u : 0u) + (static_cast<unsigned>(c.index) & 7u)][slots];
+     if (!m.valid || m.type != c.type || m.strength != s || m.focus != focus) {
+-        m.valid = true;
++        m.valid = false; // valid only once whole: a turn abandoned part-way leaves it to redo
++        m.value = compute_strike(c.facts(), hs, hf, slots);
+         m.type = c.type;
+         m.strength = s;
+         m.focus = focus;
+-        m.value = compute_strike(c.facts(), hs, hf, slots);
+         m.slots = static_cast<std::uint8_t>(slots);
+         m.widened_known = m.standing_known = m.ahead_known = false;
++        m.valid = true;
+     }
+     return m;
+ }
+@@ -1067,7 +1068,7 @@
+ const Strike& moved_strike(const World& world, const ChampionBelief& c, StrikeMemo& m, int round, int& turns) {
+     const auto& f = c.facts();
+     const float hs = hit_strength(c), hf = hit_focus(c);
+-    if (!m.standing_known) m.standing_known = true, m.standing = compute_strike(f, hs, hf, m.slots, true);
++    if (!m.standing_known) m.standing = compute_strike(f, hs, hf, m.slots, true), m.standing_known = true;
+     const auto& st = m.standing;
+     if (turns_before_ours(world, c, turns) < 2) return st;
+     const auto& m2 = strike_memo(c, round + 1);
+@@ -2291,6 +2292,7 @@
+         // an open board are Chebyshev distance.
+         static const bitboard open;
+         clear_board(t.area);
++        checkpoint(field_need(radius));
+         field.compute(open, e.possible, t.area, static_cast<std::uint16_t>(radius));
+         t.steps = &field;
+         if (const auto after = fuel(); after < before) costliest_unseen() = std::max(costliest_unseen(), before - after);
+@@ -2541,6 +2543,7 @@
+         if (approached_ & bit) {
+             static const bitboard open;
+             static bitboard reached{cambc::uninitialized};
++            checkpoint(field_need(reach + params::pursuit_steps));
+             approach_field(e.index).compute(open, e.possible, reached, static_cast<std::uint16_t>(reach + params::pursuit_steps));
+             approach_field_ |= bit;
+             return unseen_approach(e, p, horizon);
+diff -ruN -x .cambc oc32s-bsk/src/model/turn_order.cc oc32-nof4/src/model/turn_order.cc
+--- oc32s-bsk/src/model/turn_order.cc	2026-11-08 02:06:43.279063296 +0000
++++ oc32-nof4/src/model/turn_order.cc	2026-11-09 21:35:21.423209309 +0000
+@@ -707,7 +707,7 @@
+     try {
+         static std::int32_t next;
+         ok(cambc::detail::sdk_bc_champion_priority(my_handle(), 1, &next));
+-        if (priority != next) throw_if_stale(), cambc::self().set_priority(priority);
++        if (priority != next) stale_before_act(), cambc::self().set_priority(priority);
+     } catch (const cambc::error&) {
+     }
+ }
+diff -ruN -x .cambc oc32s-bsk/src/model/world.cc oc32-nof4/src/model/world.cc
+--- oc32s-bsk/src/model/world.cc	2026-11-09 08:42:06.836633411 +0000
++++ oc32-nof4/src/model/world.cc	2026-11-09 21:31:02.389020012 +0000
+@@ -424,13 +424,33 @@
+ 
+ const Field& StaticMap::make_ally_field() const {
+     FuelMeter meter{"ally_spawn_field"};
++    bitboard reached{cambc::uninitialized};
++    int layers = 0xffff;
+     if (foot_ || ally_spawn_tiles.empty()) {
+-        ally_field_ = make_field(blocked_for_us, ally_spawn);
++        ally_field_ = make_field(blocked_for_us, ally_spawn, reached, &layers);
+     } else {
+         // Its flood is foot(): the spawn is a rectangle of open tiles, so reached from any one.
+-        bitboard reached{cambc::uninitialized};
+-        ally_field_ = make_field(blocked_for_us, ally_spawn, reached);
+-        foot_.emplace(std::move(reached));
++        ally_field_ = make_field(blocked_for_us, ally_spawn, reached, &layers);
++        foot_.emplace(reached);
++    }
++    if (!ally_spawn_tiles.empty() && layers < 0xffff) {
++        bitboard open{cambc::uninitialized};
++        not_into(blocked_for_us, open);
++        drop(open, reached);
++        const int island = static_cast<int>(std::min<std::uint32_t>(board_count(open), static_cast<std::uint32_t>(width * height)));
++        int x0 = width, x1 = 0, y0 = height, y1 = 0; // the spawn's span: steps between two of its tiles
++        for (const vec2 t : ally_spawn_tiles) x0 = std::min(x0, t.x), x1 = std::max(x1, t.x), y0 = std::min(y0, t.y), y1 = std::max(y1, t.y);
++        const int span = std::max(x1 - x0, y1 - y0);
++        note_layer_bound({&blocked_for_us, layers, span, island, &*ally_field_});
++        // A dash's walls hold fewer (crossable tiles open): a walk over them from the spawn leaves
++        // foot (`reached`) for the last time and then crosses only open tiles off foot, x of them,
++        // so it is within layers + x; a goal off its flood floods at most those x too.
++        for (const bitboard* walls : {&dash_walls, &landing_dash_walls}) {
++            not_into(*walls, open);
++            drop(open, reached);
++            const int x = static_cast<int>(std::min<std::uint32_t>(board_count(open), static_cast<std::uint32_t>(width * height)));
++            note_layer_bound({walls, layers + x + 1, span, x, &*ally_field_});
++        }
+     }
+     return *ally_field_;
+ }
+@@ -455,8 +475,20 @@
+         flood_into(walls, ally_spawn_tiles[0], out);
+         return;
+     }
++    const int cap = field_cap(0xffff);
+     static cambc::distance_field steps;
+-    steps.compute(walls, *foot_, out);
++    const int past = steps.compute_with_expansion_count(walls, *foot_, out, static_cast<std::uint16_t>(std::min<int>(cap, unreachable)));
++    field_short(past, cap, 0xffff, __FILE__, __LINE__);
++    // Its tiles lie within `past` of foot, and foot's within the spawn field's reach (fewer walls
++    // shorten no walk): the bound over these walls (LayerBound).
++    for (const auto& e : layer_bounds())
++        if (e.walls == &blocked_for_us && past < 0xffff) {
++            bitboard open{cambc::uninitialized};
++            not_into(walls, open);
++            drop(open, out);
++            const int island = static_cast<int>(std::min<std::uint32_t>(board_count(open), static_cast<std::uint32_t>(width * height)));
++            note_layer_bound({&walls, e.reach + past, e.span, island, e.spawn});
++        }
+ }
+ 
+ const bitboard& StaticMap::make_dash_foot() const {
+@@ -603,9 +635,9 @@
+ // walk-connected, so the enemy's steps to the centre say whether their walk enters it.
+ void StaticMap::list_hop_tried() const {
+     if (hop_tried_listed_) return;
+-    hop_tried_listed_ = true;
+     group_hops_.assign(groups.size(), -1), hop_rank_.assign(groups.size(), -1);
+     auto& tried = hop_tried_;
++    tried.clear(); // a cut list starts again: listed is set once it is whole
+     if (drafted()) {
+         for (int g = 0; g < static_cast<int>(groups.size()); ++g)
+             if (!groups[g].has_monolith && groups[g].gems + groups[g].gold > 0 && ally_steps(g) == unreachable && enemy_steps(g) == unreachable)
+@@ -622,6 +654,7 @@
+         std::sort(tried.begin(), tried.end());
+     }
+     for (int i = 0; i < static_cast<int>(tried.size()); ++i) hop_rank_[tried[i]] = i;
++    hop_tried_listed_ = true;
+ }
+ 
+ // On a map with islands, a flood of our walk and one of each island's region: up to ~150k on a
+@@ -664,7 +697,10 @@
+ const BushCluster& StaticMap::bush_cluster(vec2 p) const {
+     for (;;) {
+         if (const int i = cluster_of_[tile_index(p)]; i > 0) return bush_clusters_[i - 1];
+-        grow_cluster(p, 0);
++        // Under the deadline, in batches above its floor (a whole map's labels cost ~50k): a passed
++        // checkpoint leaves every batch grow_cluster prices room to run, so each pass makes progress.
++        checkpoint(20000);
++        grow_cluster(p, deadline_floor);
+     }
+ }
+ 
+@@ -927,6 +963,7 @@
+     left.draw_chebyshev(p, static_cast<float>(radius));
+     left &= bushes;
+     while (!left.is_empty()) {
++        checkpoint(); // a cast a cluster
+         const auto& cluster = bush_cluster(first_tile(left)).tiles;
+         cast_from_inside(cluster, seen);
+         out |= seen;
+@@ -1132,7 +1169,12 @@
+     for (int i = start; i < end; i += 32)
+         for (auto w = flags.get(std::min(32, end - i)); w; w &= w - 1) {
+             const int m = i + __builtin_ctz(w);
+-            while (attack_first_[g + 1] <= m) ++g;
++            while (attack_first_[g + 1] <= m) {
++                ++g;
++                // Groups before g are whole: a cut turn resumes from g (~250 a member, 35k on round 1).
++                if (!index_.checkpoints) attack_indexed_ = g, attack_next_bit_ = at;
++            }
++            checkpoint();
+             attack_bit_[m] = at;
+             at += count_in_small_square<DraftPlan::bush_range>(open_bushes(), groups[g].members[m - attack_first_[g]].pos);
+         }
+diff -ruN -x .cambc oc32s-bsk/src/model/world.h oc32-nof4/src/model/world.h
+--- oc32s-bsk/src/model/world.h	2026-11-09 08:42:06.836850854 +0000
++++ oc32-nof4/src/model/world.h	2026-11-09 21:35:13.099181167 +0000
+@@ -653,9 +653,13 @@
+     // Resumed in a later round, finishing late or not.
+     bool resumed() const { return round_now() != static_cast<std::uint32_t>(round); }
+     // Abandons a turn that ran out of fuel at the next costly step (aph::throw_if_stale).
+-    void throw_if_stale() const {
++    void stale_before_act() const {
+         if (is_stale()) throw StaleTurn{};
+     }
++    void throw_if_stale(const char* file = __builtin_FILE(), int line = __builtin_LINE()) const {
++        if (is_stale()) throw StaleTurn{};
++        checkpoint(0, file, line);
++    }
+ 
+     const ChampionBelief& me() const { return *me_; }
+     // An enemy alive and in view, as of the last update or observe.
+diff -ruN -x .cambc oc32s-bsk/src/params.h oc32-nof4/src/params.h
+--- oc32s-bsk/src/params.h	2026-11-09 17:25:06.326160746 +0000
++++ oc32-nof4/src/params.h	2026-11-09 21:31:09.554514874 +0000
+@@ -314,4 +314,9 @@
+ inline constexpr int steps = 6;
+ } // namespace open_plan
+ 
++// FuelDeadline floors (util.h deadline_floor): a checkpoint in act, or in the turn order, abandons the
++// decision below them. Each covers its phase's costliest step between checkpoints, the unwind and the
++// essential end (research/fuelcap-2026-11-09/PROOF.md).
++inline constexpr std::uint64_t deadline_act = 5000, deadline_order = 5000;
++
+ } // namespace aph::params
+diff -ruN -x .cambc oc32s-bsk/src/util.h oc32-nof4/src/util.h
+--- oc32s-bsk/src/util.h	2026-11-09 15:51:02.706362290 +0000
++++ oc32-nof4/src/util.h	2026-11-09 21:35:13.099031335 +0000
+@@ -264,6 +264,72 @@
+ // A turn that ran out of fuel resumes in the next round, a round old: it is abandoned at the next
+ // check, so that the round's own turn, played next on what fuel is left, does not run out in turn.
+ struct StaleTurn {};
++// The fuel floor of the work in progress: below it the turn is abandoned at its next checkpoint (every
++// throw_if_stale, where a stale turn is abandoned too), and play_turn ends it on the bounded essential
++// end. 0 outside the decision. The bound per part: research/fuelcap-2026-11-09/PROOF.md.
++struct FuelDeadline {};
++inline std::uint64_t deadline_floor = 0;
++inline std::uint64_t deadline_thrown = 0; // debug_block only: the fuel left at the throw
++inline const char* deadline_file = "";      // debug_block only: where
++inline int deadline_line = 0;
++[[gnu::noinline, noreturn]] inline void deadline_hit(const char* file, int line) {
++    debug_block({
++        deadline_thrown = static_cast<std::uint64_t>(cambc::detail::sdk_fuel_remaining());
++        deadline_file = file, deadline_line = line;
++    });
++    throw FuelDeadline{};
++}
++// Whether `need` more fuel of work fits above the deadline floor (always outside the decision).
++inline bool afford(std::uint64_t need) {
++    return static_cast<std::uint64_t>(cambc::detail::sdk_fuel_remaining()) >= deadline_floor + need;
++}
++// A checkpoint before work bounded by `need`: abandons the decision if it does not fit (FuelDeadline).
++// Outside the decision (floor 0) it never fires.
++inline void checkpoint(std::uint64_t need = 0, const char* file = __builtin_FILE(), int line = __builtin_LINE()) {
++    if (deadline_floor && !afford(need)) [[unlikely]] deadline_hit(file, line);
++}
++// A checkpoint every `every`-th pass, for a hot loop or call whose pass costs too little to read the
++// fuel each time (~3 fuel a pass); sites with the same `every` share the count.
++template <unsigned every> inline void tick(const char* file = __builtin_FILE(), int line = __builtin_LINE()) {
++    static unsigned n = 0;
++    if (++n == every) n = 0, checkpoint(0, file, line);
++}
++// A host field search's price: its layers (at most max_layers) and 16 over the map's chunks, at most 40k.
++inline std::uint64_t field_need(int max_layers = 0xffff) {
++    const auto chunks = static_cast<std::uint64_t>((cambc::map::width() + 7) / 8 * ((cambc::map::height() + 7) / 8));
++    return std::min<std::uint64_t>((static_cast<std::uint64_t>(max_layers) + 16) * chunks, 40000) + 1500;
++}
++// The most layers a capped search may take for its price to leave the deadline floor: `cap` when
++// that fits or no deadline holds; a cut (FuelDeadline) when not even `least` fits. A search cut at the
++// lower cap finds what lies within it, as any capped search.
++// The layers a field search may run above the floor: all of `bound` when that fits. A search that this
++// cap stops short (field_short) would not have fitted, and cuts the decision: priced by what it does,
++// not by its bound, which can be far looser.
++inline int field_cap(int bound, const char* file = __builtin_FILE(), int line = __builtin_LINE()) {
++    if (!deadline_floor) return bound;
++    const auto fuel = static_cast<std::uint64_t>(cambc::detail::sdk_fuel_remaining());
++    if (fuel >= deadline_floor + field_need(bound)) return bound;
++    const auto chunks = static_cast<std::int64_t>((cambc::map::width() + 7) / 8 * ((cambc::map::height() + 7) / 8));
++    const int fits = static_cast<int>((static_cast<std::int64_t>(fuel) - static_cast<std::int64_t>(deadline_floor) - 1500) / chunks) - 16;
++    if (fits < 1) deadline_hit(file, line);
++    return std::min(bound, fits);
++}
++// A complete search's layer count is one over its deepest step: below the cap proves it whole.
++inline void field_short(int layers, int cap, int bound, const char* file, int line) {
++    if (cap < bound && layers >= cap) deadline_hit(file, line);
++}
++inline int fit_layers(int cap, int least = 4, const char* file = __builtin_FILE(), int line = __builtin_LINE()) {
++    if (!deadline_floor) return cap;
++    const auto fuel = static_cast<std::uint64_t>(cambc::fuel_remaining());
++    if (fuel >= deadline_floor + field_need(cap)) return cap;
++    const auto chunks = static_cast<std::int64_t>((cambc::map::width() + 7) / 8 * ((cambc::map::height() + 7) / 8));
++    // 400 under the edge: the caller's checkpoint of field_need(cap) reads the fuel again, after the
++    // map's size reads (else it cut by a hair: the top cut site, at ~30k left).
++    const auto room = static_cast<std::int64_t>(fuel) - static_cast<std::int64_t>(deadline_floor) - 1900;
++    const int fits = static_cast<int>(room / chunks) - 16;
++    if (fits < least) checkpoint(field_need(least), file, line);
++    return std::min(cap, std::max(fits, least));
++}
+ inline std::uint32_t& turn_round() { // the round the turn began in (World::update)
+     static std::uint32_t round = 0;
+     return round;
+@@ -279,9 +345,15 @@
+ // ~18 fuel: worth it in a loop whose pass costs a few hundred or more. Every action calls it first:
+ // the resumed tail runs on last round's beliefs, and the fresh turn after it plans as if nothing
+ // had acted (a second recall start or an exclusive cast after a walk is an engine error).
+-inline void throw_if_stale() {
++// Before an action: the stale check without the deadline. A cut here would drop a decision already
++// made for the price of one host call; the next checkpoint cuts instead.
++inline void stale_before_act() {
+     if (round_now() != turn_round() && !finish_late()) throw StaleTurn{};
+ }
++inline void throw_if_stale(const char* file = __builtin_FILE(), int line = __builtin_LINE()) {
++    if (round_now() != turn_round() && !finish_late()) throw StaleTurn{};
++    checkpoint(0, file, line);
++}
+ // This turn's casts per slot and walk (count_use): a kill readies Vendetta's slots, so the cooldowns
+ // at the turn's end can miss a cast, and a dash hides whether we walked.
+ struct TurnActs {
+@@ -566,45 +638,86 @@
+ }
+ 
+ // `visited` receives the tiles reached: the flood from the goals that reachable_tiles gives.
+-inline Field make_field(const bitboard& walls, const bitboard& goals, bitboard& visited) {
++// A proven bound on a field's layers over static walls `walls`, from the spawn flood over them
++// (StaticMap::make_ally_field, dash_flood). Every tile the flood reaches is within `reach` of the
++// spawn, whose tiles are within `span` of each other, so a goal g there floods it within
++// d(g, spawn) + span + reach; a goal off it floods at most the `island` open tiles it does not reach.
++// So 2 reach + span + island bounds any goals, and a single goal g reached over blocked_for_us (whose
++// walls hold these) d(g) + span + reach, d(g) read off `spawn`. +2: a field counts one layer past
++// its deepest. No entry: no bound.
++struct LayerBound {
++    const bitboard* walls = nullptr;
++    int reach = 0, span = 0, island = 0;
++    const Field* spawn = nullptr; // over blocked_for_us
++    int layers() const { return std::min(0xffff, 2 * reach + span + island + 2); }
++};
++inline std::array<LayerBound, 3>& layer_bounds() {
++    static std::array<LayerBound, 3> b;
++    return b;
++}
++inline void note_layer_bound(const LayerBound& b) {
++    for (auto& e : layer_bounds())
++        if (!e.walls || e.walls == b.walls) {
++            e = b;
++            return;
++        }
++}
++inline int layer_bound(const bitboard& walls, const bitboard* goals = nullptr) {
++    for (const auto& e : layer_bounds()) {
++        if (e.walls != &walls) continue;
++        int bound = e.layers();
++        if (goals && e.spawn && board_count(*goals) == 1)
++            if (const int d = e.spawn->at(first_tile(*goals)); d != unreachable) bound = std::min(bound, d + e.span + e.reach + 2);
++        return bound;
++    }
++    return 0xffff;
++}
++
++// `file`, `line`: the caller, for the checkpoint traces.
++inline Field make_field(const bitboard& walls, const bitboard& goals, bitboard& visited, int* layers_out = nullptr, const char* file = __builtin_FILE(), int line = __builtin_LINE()) {
++    const int bound = layer_bound(walls, &goals);
++    const int cap = field_cap(bound, file, line);
+     const auto before = cambc::fuel_remaining();
+     Field f;
+     not_into(walls, f.goals);
+     f.goals &= goals;
+-    max_field_layers() = std::max<int>(max_field_layers(), f.steps.compute_with_expansion_count(walls, f.goals, visited));
++    const int layers = f.steps.compute_with_expansion_count(walls, f.goals, visited, static_cast<std::uint16_t>(std::min<int>(cap, unreachable)));
++    field_short(layers, cap, bound, file, line);
++    if (layers_out) *layers_out = layers;
++    debug_block({
++        if (layers > bound) std::printf("LAYER-BOUND %d > %d at %s:%d\n", layers, bound, file, line);
++    });
++    max_field_layers() = std::max<int>(max_field_layers(), layers);
+     if (const auto after = cambc::fuel_remaining(); after < before) costliest_field() = std::max(costliest_field(), before - after);
+     return f;
+ }
+ 
+-inline Field make_field(const bitboard& walls, const bitboard& goals) {
++inline Field make_field(const bitboard& walls, const bitboard& goals, const char* file = __builtin_FILE(), int line = __builtin_LINE()) {
+     static bitboard visited{cambc::uninitialized};
+-    return make_field(walls, goals, visited);
++    return make_field(walls, goals, visited, nullptr, file, line);
+ }
+ 
+-// walls.reachable_tiles_into(origin, unreachable, out), for an open origin. The mask costs the
+-// map's chunk count a layer with no cap, a field's search at most 40k (235 layers on 100x100,
+-// where winding maps flood 300+), so the field floods once the deepest field so far says the
+-// layers would pass that.
+-inline void flood_into(const bitboard& walls, vec2 origin, bitboard& out) {
+-    if ((static_cast<std::uint64_t>(max_field_layers()) + 17) * search_chunks() <= 40000) {
+-        walls.reachable_tiles_into(origin, unreachable, out);
+-        return;
+-    }
++// walls.reachable_tiles_into(origin, unreachable, out), for an open origin, always by a field: the
++// mask's price has no cap (a layer costs the map's chunks, and winding maps flood 300+), a field's is 40k.
++inline void flood_into(const bitboard& walls, vec2 origin, bitboard& out, const char* file = __builtin_FILE(), int line = __builtin_LINE()) {
++    const int bound = layer_bound(walls), cap = field_cap(bound, file, line);
+     static cambc::distance_field steps;
+     static bitboard root{cambc::uninitialized};
+     clear_board(root);
+     set_tile(root, origin);
+-    steps.compute(walls, root, out);
++    field_short(steps.compute_with_expansion_count(walls, root, out, static_cast<std::uint16_t>(std::min<int>(cap, unreachable))), cap, bound, file, line);
+ }
+ 
+ // Costs at most search_cost_estimate(max_layers). Empty if cut short: a complete field's layer
+ // count is one over its deepest step, so one below the cap proves it whole.
+-inline std::optional<Field> make_field(const bitboard& walls, const bitboard& goals, int max_layers, int* layers_out = nullptr) {
++inline std::optional<Field> make_field(const bitboard& walls, const bitboard& goals, int max_layers, int* layers_out = nullptr, const char* file = __builtin_FILE(), int line = __builtin_LINE()) {
+     static bitboard visited{cambc::uninitialized};
++    const int bound = std::min<int>({max_layers, unreachable, layer_bound(walls, &goals)}), cap = field_cap(bound, file, line);
+     std::optional<Field> f{std::in_place};
+     not_into(walls, f->goals);
+     f->goals &= goals;
+-    const int layers = f->steps.compute_with_expansion_count(walls, f->goals, visited, static_cast<std::uint16_t>(std::min<int>(max_layers, unreachable)));
++    const int layers = f->steps.compute_with_expansion_count(walls, f->goals, visited, static_cast<std::uint16_t>(std::min<int>({max_layers, cap, unreachable})));
++    field_short(layers, cap, bound, file, line);
+     if (layers_out) *layers_out = layers;
+     if (layers >= max_layers) return std::nullopt;
+     max_field_layers() = std::max(max_field_layers(), layers);
+@@ -625,7 +738,11 @@
+ inline constexpr std::uint64_t small_cost_estimate = 5000;
+ inline constexpr std::uint64_t travel_cost_estimate = 12000; // a travel plan with the dash ready, and its crossing trace
+ 
+-inline bool fuel_ok(std::uint64_t needed) { return fuel() >= needed; }
++// Every gate is a checkpoint too (util.h checkpoint).
++inline bool fuel_ok(std::uint64_t needed, const char* file = __builtin_FILE(), int line = __builtin_LINE()) {
++    checkpoint(0, file, line);
++    return fuel() >= needed;
++}
+ 
+ // Storage left unwritten until used: vec2 and std::pair initialise their members.
+ template <typename T, std::size_t N> union Unwritten {
