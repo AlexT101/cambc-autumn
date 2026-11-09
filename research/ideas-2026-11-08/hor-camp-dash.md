@@ -79,9 +79,9 @@ against a release oc-base25 copy (live drafts, ladder maps).
 | v87-cd-k3h6 | 50.0% of 25,634, H0 | 431 439 | - |
 | v87-nh-6-3 | 50.7% of 13,052, H1 | 431 344 | -0.53 (±1.06), flips +215 -250 |
 | v87-nh-6-2 (= 468) | 50.5% of 18,543, H1 | 518 434 | -0.92 (±1.20), flips +167 -228 |
-| v87-nh-5-2 | 50.3% of 33,744, H1 | 795 700 | (running) |
-| v87-nh-7-2 | running (50.1% at 34k) | | |
-| v87-fs-enemy | running (50.3% at 34k) | | |
+| v87-nh-5-2 | 50.3% of 33,744, H1 | 795 700 | -0.24 (±0.97), flips +142 -158 |
+| v87-nh-7-2 | 50.24% of 60,475, H1 | | -0.96 (±1.17), flips +176 -240 |
+| v87-fs-enemy | running (50.30% at 83k, LLR +2.67) | | -0.83 (±3.15), flips +804 -859 |
 
 **Contested camp landings: rejected.** The mechanism does what it should (k3 takes the 5-6 band from 13% to 19% camp
 landings, 7-8 from 40% to 49%), but it doesn't win. Each cd arm changes 7-8% of map pairs and splits them evenly, on
@@ -95,4 +95,24 @@ x2 at 0.7). The gain sits mostly off ladder-shaped maps: ladder pairs net +0.36/
 nh-5-2 gets no gates: it is the weakest sibling of the same mechanism, and at most one of the family goes live.
 nh-6-3 leads, with nh-6-2 as its comparison. At 22:00, interim: held out nh-6-3 50.43% of 19.8k (LLR +2.50 of the
 ±4.595 needed) and nh-6-2 50.09% of 14.5k (-0.23). Direct panel: 51.0% and 50.75%. Varied: 50.0% and 50.2%,
-not H0. 2x fuel: 50.3% for both. (Gates pending.)
+not H0. 2x fuel: 50.3% for both.
+
+**nh-6-3's gates (2026-11-09 00:27): it meets the live bar, queued** (live-queue priority 48, "base oc-base25; pair vs v87").
+
+| gate (nh-6-3 against oc-base25) | result |
+|---|---|
+| screen v87hor-scr-1241 | 50.67% of 13,052, H1 |
+| held out v87hor-held-1242, alpha/beta 0.01 | 50.30% of 62,879, LLR 4.62 of 4.595, **H1** |
+| 2x fuel, scr-1241 | 50.23% of 65,018, H1 |
+| varied v87hor-varied-1243, 0.4975/0.50 | 50.05% of 20,480 (suite done), LLR +1.35, undecided, not H0 |
+| old panel (astraeus-td/proteus-td + direct), 0.4975/0.50 | pooled +0.93 pts of 61,440 units, LLR 30.2, H1; direct 51.15% of 40,960 |
+| spar (live drafts, ladder maps) | -0.53 (±1.06) |
+
+The ladder-map caveat doesn't replicate on the held out: ladder-shaped pairs net +0.71 pair points (12.1% decisive),
+other generators +0.60, mutants +0.43; at 2x fuel ladder +0.15. Only the spar stays slightly negative, inside its noise.
+nh-6-2 (= 468) runs behind it everywhere: held out 50.20% of 63k (LLR +2.23, still running), 2x 50.18%, panel
++0.80 pts (H1), varied H1, spar -0.92. **nh-7-2 gets no gates:** its screen (50.24% of 60k) and spar (-0.96) are the
+family's weakest after nh-5-2, and the family has one live slot, now nh-6-3's. The floor's constants are left to
+the live verdict: if nh-6-3 wins live, an SPSA fit of (fraction, multiple) is the next step, not more single arms.
+fs-enemy's screen is near a decision; on H1, chain5.sh gives it held out (held2-1245, alpha 0.01), 2x, varied and
+dpanel.

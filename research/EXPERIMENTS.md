@@ -418,7 +418,14 @@ arms `variants/v87-*`, data `~/tmp-offload/v87hor/`. Screen suite v87hor-scr-124
   and +795 -700 (8.9%). The gain is weakest on ladder-shaped maps (net +0.36, +0.59 and +0.59 pair points, against
   +1.1 to +2.5 on the other generators). Spar is negative for both arms it has read: nh-6-3 -0.53 (±1.06), nh-6-2
   -0.92 (±1.20). nh-5-2 is the weakest sibling of one mechanism and gets no gates of its own; nh-6-3 leads and
-  nh-6-2 is its comparison. Gates (held out at alpha 0.01, 2x fuel, varied, panel) are running (pending).
+  nh-6-2 is its comparison.
+- **nh-6-3 meets the 99% live bar and is queued** (2026-11-09; "base oc-base25, pair vs v87"): held out
+  (v87hor-held-1242, alpha/beta 0.01) H1 50.30% of 62,879, LLR 4.62; 2x fuel H1 50.23% of 65,018; old panel pooled
+  +0.93 pts of 61,440 units, H1 (direct 51.15% of 40,960); varied 50.05% of 20,480, LLR +1.35, undecided, not H0.
+  The screen's ladder-map caveat doesn't replicate on the held out (ladder-shaped pairs +0.71 pair points, others
+  +0.60); spar stays -0.53 (±1.06). nh-6-2 trails it on every gate (held out 50.20% of 63k, LLR +2.23, running; panel
+  +0.80 pts). nh-7-2's screen went H1 (50.24% of 60,475; spar -0.96): no gates, since the family has one live slot.
+  Spars: nh-5-2 -0.24 (±0.97), fs-enemy -0.83 (±3.15); fs-enemy's screen is still running (50.30% at 83k).
 
 ## (ocean, 2026-11-08) Exclusive spells and Marcella's gold: six arms, all H0
 
