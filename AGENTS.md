@@ -16,7 +16,7 @@ C++ only.
 - Their `src/`: `bot.cc` is the turn (`decide`); its branches are in `economy/` and `combat/`, sharing `bot_parts.h`; `model/` is the world, pathing and safety; `draft/` the draft. `unity.cpp` includes every `.cc`: a new one goes there.
 - `ab.py`'s git refs build `bots/hyperion` (the main bot before astraeus). To A/B astraeus or ocean, pass bot directories: the working one and a frozen copy of a commit's, e.g. `./copybot -r <sha> astraeus variants/astraeus-<sha7>`.
 - Drafts are compiled in. ocean drafts from draft7's F92 model (CHANGES 454); astraeus stays on draft5. With `params::test_draft` on, a bot plays ladder compositions (`tools/draftlab/test_comps.py`) in place of its own draft; every bot directory's is off.
-- The engine is cambc 5.0.1; frozen baselines and `tools/replay/harness` trace bots keep their 2.0.0 stat tables.
+- The engine is cambc 5.0.1 (2026-11-09): 5.0.0's game engine and stat tables, but a turn that runs out of fuel stops right after the host call that spent it (`cambc-rules.yaml` `fuel.exhaustion`), which changes ~7% of local outcomes. Frozen baselines and `tools/replay/harness` trace bots keep their 2.0.0 stat tables.
 - `bots/baselines/` holds frozen A/B baselines: never edit them; delete one once current bots beat it ~80% of the time.
 - When copying a bot, leave out `.cambc/` (its CMake cache breaks the build): `./copybot SRC DST` does (`-f` replaces DST, `-r REF` copies a commit's).
 - `.htb` bots (`bots/htb-starter`) are edited in their `.htb` files, never `src/`; run `py tools/htb/hgen.py <bot>` after.

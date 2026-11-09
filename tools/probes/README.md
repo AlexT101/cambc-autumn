@@ -11,6 +11,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 - Pass a large `--fuel`: at the default budget, logging runs out of fuel and shifts timings into the next round.
 - Each probe's source header gives its run command and scenario switches; `run.sh` scripts take `<scenario> <map> <rounds>`.
 - Logs are the `PROBE` lines in `team-a.stdout` / `team-b.stdout` inside the `.repl26a` zip; strip NULs with `tr -d '\000'` before grepping.
+- To compare engine versions, run each probe under each cambc binary: `pip download cambc==X --no-deps` fetches an old wheel, whose `cambc-X.data/scripts/cambc` runs as is (`CAMBC_NO_UPDATE_CHECK=1` silences its upgrade notice).
 - Map names need their prefix (`00interlock`); generated maps go by path (`maps/gen/<file>.map26a`). `makemap.mjs` (in `probe-corner`, `probe-denial`) builds custom maps through the engine's map builder.
 
 ## Which probe checks what
@@ -27,6 +28,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 | `memory.shared` across a turn that ran out of fuel (its writes show at once; resumed, it reads live bytes); host prices of the shared-memory read and write (9 each) | `probe-suspend-memory` |
 | `fuel.exhaustion` while channelling a recall (the bot resumes next round, still recalling) | `probe-suspend-channel` |
 | `fuel.end_turn` (ending a turn with under 40 fuel loses the next turn) | `probe-endturn-fuel` |
+| `fuel.exhaustion`, where an out-of-fuel turn stops (cambc 5.0.1 against 5.0.0, 2026-11-09): after a host call that spends the fuel (a radius-8 shadow cast, 441, with 95 left), the next raw imports (`round_number`, the move) run next round on 5.0.1 and ran the same turn on 5.0.0; after straight-line guest code spends it (2,050 with 184 left), the next import runs next round on both. Unchanged between the two: `probe-endturn-fuel`'s threshold (`LEFT` 375 loses the next turn, 380 keeps it; the gap is the code before `end_turn`) and every PROBE line of `probe-endturn-fuel`, `-suspend-memory`, `-suspend-channel`, `-fuel`, `-fuel-b` and `-firstturn` | `probe-hostcall-fuel` (`MODE` 0: host call, 1: guest code) |
 | `draft.in_play`, `vision.visible_champions`, `vision.unseen_units` | `probe-enemyinfo` |
 | `vision.unseen_units`: the raw status of every per-champion import on an enemy out of vision (97 `api_not_in_vision`; identity and ability props readable; gold 105, wards 112), and `champion_at` on an empty tile in vision (98) | `probe-unseen-codes` |
 | `vision.visible_champions`, `vision.unseen_units`: a teammate's gold through the raw `sdk_champion_gold`, in vision or out of it (code 0, its exact gold; `gold_count()` refuses non-self only client-side); an enemy's, seen or not, 105 | `probe-ally-gold` (00collision: teammates' 500 reads of Marcella's gold all match her own, 28 out of vision), `probe-ally-gold-b` (both teams meet on a tiny map: 489 reads of enemies in vision, all 105) |

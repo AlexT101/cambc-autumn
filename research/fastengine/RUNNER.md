@@ -336,9 +336,9 @@ addresses, rodata references and jump tables normalised):
 - **Fuel: a host call now ends in a fuel check.** cambc's wasmtime gained a store flag, set by
   `wasm_runtime::Runtime::start` once fuel is configured, and all 295 host trampolines of a bot's store (SDK and
   WASI imports alike, `HostFunc::array_call_trampoline`) now run `libcalls::out_of_gas` right after a host function
-  returns `Ok` if the fuel counter is >= 0. In 5.0.0 a host call that spent the chunk (a host price, or guest work
-  since the last check) let the guest run on to its next check (function entry or loop header), host calls
-  included. Fuel totals are unchanged; what moves is where an out-of-fuel turn stops, and so which actions land in
+  returns `Ok` if the fuel counter is >= 0. In 5.0.0 a host call whose price spent the chunk let the guest run on
+  to its next check (function entry or loop header), host calls included. A host call reached after guest code
+  spent the chunk does not run in that turn on either version (`tools/probes/probe-hostcall-fuel`, MODE 1). Fuel totals are unchanged; what moves is where an out-of-fuel turn stops, and so which actions land in
   it and how the fuel of the next turn reads. With 5.0.0's runner forced onto 5.0.1 (`FASTRUNNER_ANY_CAMBC=1`), 80
   of the 768 games below differ in their replay and 458 in their `.fuel` (2 winners); at a 37k quantum, 22 of 24.
 - The rest is the cambc CLI (account, submissions, map pool, Python packing, `tool_server`), `GuestCtx` growing
