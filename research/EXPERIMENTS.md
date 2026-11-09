@@ -1042,6 +1042,9 @@ source of losses. Rejected: none of these is queued for live.
     - It is about the sum of its parts (+0.52 + 0.20 + 0.17).
     - 27.0% of paired games flip.
     - Queued live at p86 as `live-oc32s-bsk` (ahead of cg-fs-nh), paired against v101 (oc32-cv) and v98.
+  - A second knob step on bsk (`oc32s-bsk-k2`, the same five knobs moved one more sd the same way), against bsk:
+    +0.12 ±0.25 of 25,216 units, NARROWED (ZONE crossed); Fish +0.06, Mite +0.18. The direction stops paying after
+    one step.
 
   t5 is dfp-race-d0 (dfp-pure plus the mirror-race enemy model) on five-pick teams only, the base's draft elsewhere, so it
   gives up pure's plan on 3-4 picks; the race model was already H0 against pure, and the five-pick condition fails the map
