@@ -107,8 +107,20 @@ Results on the new-body dgate (Fl/Mt3, 0.505/0.5075, release, real budget):
 - Queued live at p85 as `live-oc-base32` (tree 7a82c7c28a48), paired against v99 (oc-base31) and v87. Live
   can't resolve a 1-point gain on one pair, so read it next to the pooled average of comparable versions on each
   opponent.
-- Next: oc32-fs-nh (oc-base32 + oc31-fs-nh's fs-enemy and nh-6-3 diff) on dgate against oc-base32. 480 (fuel-only,
-  identical plans) and 481 (chase verdict, +8% OOF) are open ports onto oc-base32.
+- **480 and 481 ported onto oc-base32** (ocean 48ef85fe8 and 569090696, each its own diff; 481's bot_parts.h hunk
+  needed its context fixed by hand, the changed lines identical):
+  - `oc32-e480` = oc-base32 + 480 (fuel-only). Bench at 100M: replays identical 256/256 (128 ladder maps, both sides,
+    against oc-base31) and 52/52 (wide, test drafts), total fuel −0.05%. At the real budget wide 42/52 identical, OOF
+    645 → 655. Read on dgate's draws against oc-base32 (shared runs, 112 seeds): −0.15 ±0.25 of 14,277 units,
+    undecided, low LLR −0.41; OOF −0.7% a game.
+  - `oc32-cv` = oc32-e480 + 481. dgate against oc32-e480: **LIVE BAR H1, +1.53 ±0.43 pts** of 16,384 units (post-screen
+    +2.16); Fish +1.87, Mite +1.19; one-site +1.90, multi +1.31. OOF turns +9.0% a game (13.38 against 12.27).
+  - Queued live at p84 as `live-oc32-cv` (tree 8a0225ceff90), paired against v99, v87 and oc-base32's live version.
+    On top of oc-base32's +1.59, it should be about +3 against v99.
+  - Still open: 483 (chase_aim's fuel gate, which halves 481's OOF cost in ocean).
+- **OOF accounting:** 651 dgate runs (across all gates) record 0 out-of-fuel turns for both bots, with normal win rates.
+  Runs stopped mid-block keep partial `summary.json` files (oc-base32's dvn111-115). OOF tallies here skip both kinds.
+- oc32-fs-nh (oc-base32 + oc31-fs-nh's fs-enemy and nh-6-3 diff) is on dgate against oc-base32.
 
 ## (ocean = oc-base25, 2026-11-09) oc-base31: dfp-pure + ft-k on v87; the parts add up on the new-body dgate
 

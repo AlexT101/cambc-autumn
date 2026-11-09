@@ -3947,3 +3947,17 @@ Results (the A/Bs release, fast runner, `--no-test-draft`):
 `variants/cg-aimgate2` equals bots/ocean (cg-aimgate plus the audit's debug-only fix; release plays the same).
 
 Evidence: EXPERIMENTS "Chase verdict's fuel gate"; research/retreat-2026-11-09/chase-verdict.md "Fuel gate".
+
+## 484: oc32-cv: 480's cheaper escape build and 481's chase verdict on oc-base32 (ocean, 2026-11-09)
+
+`variants/oc32-cv` = `variants/oc-base32` + 480's diff + 481's diff and nothing else; not in bots/ocean.
+- `variants/oc32-e480` is oc-base32 + 480 alone. It is fuel-only: bench replays are identical at 100M (256/256 ladder
+  both sides, 52/52 wide test-draft), and it reads −0.15 ±0.25 on dgate against oc-base32.
+- 481's bot_parts.h declarations were applied by hand, because the context differs on the v87 line.
+
+dgate (new bodies, release, real budget) against oc32-e480: LIVE BAR H1, +1.53 ±0.43 pts of 16,384 units (Fish
++1.87, Mite +1.19). OOF turns +9% a game. 483's fuel gate is not in.
+
+Queued live at p84 as `variants/live-oc32-cv` (frozen copy), paired against v99, v87 and oc-base32.
+
+Evidence: EXPERIMENTS "Escape planner (478) on the v87 line".
