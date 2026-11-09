@@ -3961,3 +3961,17 @@ dgate (new bodies, release, real budget) against oc32-e480: LIVE BAR H1, +1.53 �
 Queued live at p84 as `variants/live-oc32-cv` (frozen copy), paired against v99, v87 and oc-base32.
 
 Evidence: EXPERIMENTS "Escape planner (478) on the v87 line".
+
+## 485: oc32-cg-fs-nh: 483's chase fuel gate, fs-enemy and nh-6-3 on oc32-cv (ocean, 2026-11-09)
+
+`variants/oc32-cg-fs-nh` = `variants/oc32-cv` + three diffs and nothing else; not in bots/ocean. The live copy is
+`variants/live-oc32-cg-fs-nh`, frozen from it.
+- `variants/oc32-cg`: oc32-cv + 483's diff (ba65375a9). Against oc32-cv it reads +0.14 ±0.25 (zone, confidently non-negative), with OOF −4.3%.
+- fs-enemy and nh-6-3: `variants/oc31-fs-nh`'s diff against oc-base31 (safety.cc, abilities.cc, params.h). On
+  oc-base32 they pass the live bar: +1.01 ±0.28.
+
+dgate against oc32-cv: +0.47 ±0.25 pts of 36,992 units, NARROWED in the zone (Fish +0.42, Mite +0.53), with OOF −3.1%.
+fs-nh's share on top of oc32-cg is only +0.08 ±0.39, because it overlaps 481. The coordinator judged the zone. The stack is queued live at
+p85, after oc32-cv (p86) and ahead of oc-base32 (p83).
+
+Evidence: EXPERIMENTS "Escape planner (478) on the v87 line".
