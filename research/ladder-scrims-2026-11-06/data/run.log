@@ -3244,3 +3244,5 @@
 2026-11-09T00:48:57Z finished v93-v1ext-r2-fish-36 01a1bdc3: WLWLW
 2026-11-09T00:49:38Z finished v93-v1ext-r2-mite-36 01a1bdc4: WLWWW
 2026-11-09T00:50:15Z finished v93-v1ext-r2-mite-24x 01a1bdc4: LLWWW
+2026-11-09T01:10:16Z live/selected changed v93/v93 -> v95/v95 (before create): 0 groups in flight marked suspect
+2026-11-09T01:10:17Z created v95-v1core-r2-fish-01 -> 01a1bddb (v95, quota 38/100, pinned 01a1b8b6)

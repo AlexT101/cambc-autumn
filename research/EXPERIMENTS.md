@@ -12254,6 +12254,11 @@ read in play. Details in CHANGES 461. Checks:
     `-24x`. `ladder_scrims.py run` now creates groups only while live == selected and marks groups in flight at any
     switch suspect; the scheduler logs outside versions, pauses on a live version not its own, and activates only the
     version carrying its note.
+- **Submitted (2026-11-09 01:03 UTC) as v95** by the live scheduler from the live queue (p48), after the user cleared
+  overwriting the teammate's v94: `variants/v87-nh-6-3` (oc-base25 + 468's hurt landing floor at 0.6 / x3; held out
+  H1 at alpha 0.01, LLR 4.62), live and pinned since 01:06, 104 r2 groups, paired against v87. v95 is masked
+  (mask_rev 51f3f74deb70, about +28 fuel a turn) while v87 went up uncoded, so most of the pairing is a fuel reroll
+  (v93 repeated only 11 of 512 of its parent's games); the null controls that would have sized it were dropped.
 
 ## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
 
