@@ -37,3 +37,23 @@ Archive extract (all Fish games 11-07..09, per-game summaries): ~/tmp-offload/fi
   burst deaths with a Fish body 1-4 tiles away 4 rounds before 0.57/g vs 1.8; Marcella kills 1.5/g vs 2.7, Vendetta 1.0 vs 1.6.
 - Fish's manual tribute cancel: 0.35%/round unhit, 10%/round in a round it is hit (24-37% under half health).
   A hit Fish big channel completes 9% vs 61% unhit, mostly through our stun (51%).
+- Deny arms parked (coordinator, 2026-11-10). Mechanism check, fx2 vs Flp2, 256 ladder games: Fish's big tributes
+  are cancelled more often (lock 0.15->0.25/g, stun 0.16->0.29), but Fish restarts them, so they complete
+  1.02/g both ways with 182 vs 184 gems.
+
+## Deaths (latest Fish vs us, 544 games)
+- Death hazard within 5 rounds, by foes-mates within 5 and health, is the same for Fish and for us
+  (e.g. foes-mates +2: .105 us vs .108 Fish; at health<.5 and +2: .48 vs .37 for Fish). Fish's
+  reactions when outnumbered match ours too (moves away 38-45%).
+- The gap is how many bodies each side has at contact. Fish's cohesion (same-team bodies within 5, not
+  counting the Cassi/Issac partner) is 1.54 vs our 1.14 (others' 1.31). We are outnumbered at contact
+  more often: 43k vs 37k samples at foes-mates >= 1; Fish is at <= -2 25.7k vs 16.9k.
+  Early (r<=400) 33% of our deaths come outnumbered vs 18.5% of Fish's.
+- Mechanism (FISH_MODEL 11): Fish joins and never partitions (a later co-decider follows the earlier
+  one's group 89-91%). Flp2's cohesion is 1.20, like ocean's 1.21: the body spreads out. This is the
+  likely cause of its kill-pressure gap (sent to diverse).
+- Hidden Fish bodies near a seen one do not raise our hazard, so an "unseen pack" prior in Safety is not supported.
+- Fish leads on earned gold early: +50 at r100, +73 at r200, level by r400, -91 at r600 (vs others
+  it leads +207 at r200 and +693 at r600).
+- Kills before r400: Fish dies to camps 0.42/g (15% of its deaths) vs our 0.19/g. Fish's Marcella makes
+  0.66 kills/g early, HoR 0.48, Vendetta 0.38.
