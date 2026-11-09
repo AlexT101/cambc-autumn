@@ -326,6 +326,42 @@ Analysed 16 runs of oc32-cg-fs-nh against the new bodies (all replays kept). The
 **Stack.** `oc32s-bsk` is oc32-cg-fs-nh plus comms-bagf, sp-y2 and the knob step. The other zone arms read high H0 on
 oc32 (results in EXPERIMENTS).
 
+## Fresh-map gate (2026-11-09 ~22:30, user)
+
+The final tournament plays fresh maps drawn from the ladder's distribution. dgate played only the 128 ladder maps, so
+it couldn't see map overfit, and its bodies looked up Fish's and Mite's picks by exact map hash. Both are replaced in
+`research/ideas-2026-11-09/freshgate-tools/`.
+
+**Fresh pool.** 1,024 maps from `mapgen suite --mix ladder-v2`, seeds 1312001-1312004, in eight 128-map slices under
+`~/tmp-offload/diverse/fresh/pool`.
+- Pick counts: 16/22/63% for 3/4/5 picks, against the ladder's 16/20/63%.
+- Of the 117 draft-lab features (`tools/draftlab/features.mjs`), 116 match the ladder maps within KS 0.13, the 5%
+  critical value at these sizes. fill_edge reads 0.20.
+- The older `ladder` mix is similar and slightly worse on several features.
+
+**Pick model.** `fitgen.py` fits a multinomial logit per opponent and pick count over the comps that opponent drafted
+in our scrims, on the draft-lab map features.
+- Fish's comps don't depend on side or on our picks. Mite's vary within a map (its modal comp is 79% of games), so
+  Mite's model samples from its probabilities, seeded by the noise seed.
+- The features that are expensive to measure (dash_gain to sight_gap) are left out: measuring them pushed the bodies'
+  first draft turn into the cap.
+- Held-out accuracy, leaving one map out:
+
+| Picks | Fish exact comp | Fish champion overlap | Mite exact comp | Mite champion overlap |
+|---|---|---|---|---|
+| 3 | 0.43 | 0.81 | 0.70 | 0.85 |
+| 4 | 0.81 | 0.95 | 0.44 | 0.83 |
+| 5 | 0.83 (modal comp 0.52) | 0.96 | 0.70 (modal comp 0.72) | 0.93 |
+
+- `patch_fm.py` puts the model in the bodies (`spar-dvnK-Flp/-Mt3p`, built from `-Fl/-Mt3`). There is no table, so
+  the bodies play the same on ladder and fresh maps.
+
+**`fgate.py`.** dgate's three-way sequential test.
+- Each noise block plays the ladder maps and one fresh slice, both sides, against both bodies.
+- The decision reads only the fresh units. Ladder, fresh and pooled reads and the ladder − fresh gap are reported.
+- One-site/multi-site comes from features: one altar, or two with altar_centre < 0.06. This rule agrees with the
+  old name list on 123 of the 128 ladder maps.
+
 ## Files
 
 - `bodies.py` builds the bodies; `build.sh [N]` rebuilds them all; `runq.sh` runs the calibration queues.
