@@ -126,6 +126,12 @@ Results on the new-body dgate (Fl/Mt3, 0.505/0.5075, release, real budget):
   H1, +1.01 ±0.28** of 31,109 units (post-screen +1.31); Fish +1.08, Mite +0.94; one-site +0.81, multi +1.12; OOF +0.9%.
   On oc-base31 the same diff read about +0.4-0.5 (diverse agent), so it gains more with escape in. Not queued on its
   own: the live candidate after oc32-cv is the stack `oc32-cg-fs-nh` (oc32-cg + the same diff), gated against oc32-cv.
+- **The stack** `oc32-cg-fs-nh` against oc32-cv: **+0.47 ±0.25** of 36,992 units, NARROWED (ZONE; low H1 at 17,280); Fish
+  +0.42, Mite +0.53; one-site −0.20, multi +0.86; OOF −3.1% a game. Its fs-nh share, read against oc32-cg on the 112
+  seeds both have: +0.08 ±0.39, undecided. On those blocks the stack read +0.22 against oc32-cv, which is 483's +0.14
+  plus that share. So on the chase-verdict line fs-nh adds far less than its +1.01 on oc-base32. 481 and fs-enemy/nh-6-3
+  likely overlap, since both cut losing engagements. Frozen as `live-oc32-cg-fs-nh` (tree a68c392a636e); the
+  coordinator judges the zone.
 
 ## (ocean = oc-base25, 2026-11-09) oc-base31: dfp-pure + ft-k on v87; the parts add up on the new-body dgate
 
