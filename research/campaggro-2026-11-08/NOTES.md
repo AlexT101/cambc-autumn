@@ -75,3 +75,12 @@ round; a team with Cassi and Issac and one more body than the enemy has the last
 The trade per fire is now in our favour (1.2-1.8:1), but at ~5 fires per 100 games, 100-300 hp a fire doesn't move
 games. Kills are what move them, and the escape steps cost tempo and fuel, so each arm nets -0.5 against Fish's and
 Mite's picks. What's left untried (golems and elk, baiting) multiplies the same small per-fire trade.
+
+## Strict gate (user: fire only if we can't directly attack the opponent)
+`v87-ca-strict` (`ca-strict.patch`) = ca-last, but it wakes only when no visible enemy champion is within our basic
+attack's reach this turn (a melee walk and a ready dash counted) and no ready damage or stun cast reaches one. k1's
+gate weighed up to 600 of Monolith fire against one 50-100 blow, so it almost never deferred to the direct attack.
+- Smoke (debug, ca-smoke, 4,096 games): 186 fires (~4.5 per 100 games), the woken group dealt 150k to the enemy and
+  121k to us (1.24:1); the victim dies within 8 rounds in 15% of fires (28% before: the kills came with our own
+  follow-up hits), ally deaths 0.17 a fire. Triggered games paired against the mirror: -8.9 ±15.1 (90 games).
+- dgate (0.505/0.5075): H0, -0.52 ±0.60 pts over 5,248 units (21,504 games). Same as ca-last: closed.

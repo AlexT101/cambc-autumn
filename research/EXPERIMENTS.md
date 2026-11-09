@@ -176,6 +176,9 @@ against a settled enemy acting first next round, a step clear of the woken group
 any awake unclaimed Monolith (`ca-last-all`). The trade per fire improves to 1.2:1 and 1.84:1 (210k vs 115k, enemy deaths
 95 to our 50). dgate H0 on both: -0.49 ±0.60 (21.5k games), -0.53 ±0.61 (22.0k games). Stopped: ~5 fires per 100 games
 of a few hundred hp don't move games, and the steps cost tempo and +4% out-of-fuel turns.
+Strict gate (user: wake only when the waker can't attack or cast at an enemy champion this turn; `ca-strict` on
+ca-last): 4.5 fires per 100 games, 1.24:1, the victim dies in 15% of fires (28% with our own follow-up hits); dgate H0,
+-0.52 ±0.60 (21.5k games).
 
 ## (ocean, 2026-11-08/09) Spread: who holds captures and gets gold; every reweighting and every yield loses or is level
 

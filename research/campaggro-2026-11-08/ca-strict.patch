@@ -1,0 +1,403 @@
+diff -ruN bots/variants/oc-base25/src/bot.cc bots/variants/v87-ca-strict/src/bot.cc
+--- bots/variants/oc-base25/src/bot.cc	2026-11-07 08:45:52.636458329 +0000
++++ bots/variants/v87-ca-strict/src/bot.cc	2026-11-09 00:58:18.353839486 +0000
+@@ -411,6 +411,7 @@
+         return;
+     }
+     if (lock_plan_turn(world, pathing)) return;
++    camp_escape(world, pathing, safety, memory);
+     const bool willow = support_healer(world.me());
+     const bool prism = support_protected(world, world.me());
+     // Healing needs a turn end on spawn; a recall arrives at turn start. Under an awake camp, only
+@@ -472,6 +473,7 @@
+     if (take_capture_handoff(world, pathing, safety, memory)) return;
+     const bool contested = contesting(world);
+     const bool holding = holding_capture(world, pathing) || contested;
++    camp_aggro(world, pathing, safety);
+     const bool attacked = strikes && search_strikes(world, pathing, safety, memory, holding, contested);
+     decision = holding ? Branch::hold : attacked ? Branch::attack : decision;
+     if (!cambc::self().is_alive()) return;
+diff -ruN bots/variants/oc-base25/src/bot_parts.h bots/variants/v87-ca-strict/src/bot_parts.h
+--- bots/variants/oc-base25/src/bot_parts.h	2026-11-08 01:43:46.764349842 +0000
++++ bots/variants/v87-ca-strict/src/bot_parts.h	2026-11-09 00:58:18.352863873 +0000
+@@ -533,6 +533,10 @@
+ bool support_work(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
+ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool leave, bool& mate_eligible);
+ 
++// combat/camp_aggro.cc
++bool camp_aggro(World& world, Pathing& pathing, Safety& safety);
++bool camp_escape(World& world, Pathing& pathing, Safety& safety, const Memory& memory);
++
+ // bot.cc
+ void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, const Trade& t, int target = -1);
+ bool place_ward(const World& world, Memory& memory, bool bushes = true);
+diff -ruN bots/variants/oc-base25/src/combat/camp_aggro.cc bots/variants/v87-ca-strict/src/combat/camp_aggro.cc
+--- bots/variants/oc-base25/src/combat/camp_aggro.cc	1970-01-01 00:00:00.000000000 +0000
++++ bots/variants/v87-ca-strict/src/combat/camp_aggro.cc	2026-11-09 02:28:49.595231470 +0000
+@@ -0,0 +1,313 @@
++// Camp aggro: wake a sleeping Monolith (params::camp_aggro_golem: or Golem) that will fire on an enemy
++// champion rather than on us. A camp attacks the nearest champion of either team within its range,
++// ties to the one acting first in that round (rules camps.attack), so an enemy nearer than any of us,
++// even after everyone's next move, takes its Strength each camp phase. params::camp_last: the waker
++// then acts last in our team (camp_last_round, turn_order.cc), so it moves after the victim, and
++// steps off any tile the group could fire on it from next phase; ties count for us when the other
++// champion acts first next round. params::camp_escape 2: every body of ours steps off an awake
++// Monolith group's fire that no ally claims.
++#include "../bot_parts.h"
++
++namespace aph {
++
++namespace {
++
++bool aggro_type(cambc::camp_type t) {
++    return t == cambc::camp_type::monolith || (params::camp_aggro_golem && t == cambc::camp_type::golem);
++}
++
++// Steps a champion may still take before the next camp phase: none once it has acted (or a channel or
++// stun holds it), else a walk and, for a dasher with the dash ready, its 2 steps.
++int moves_left(const World& world, const ChampionBelief& c) {
++    if (held_this_round(c, world.round)) return 0;
++    const auto& f = c.facts();
++    const int dash = f.slot_of(AbilityKind::dash);
++    return 1 + (dash >= 0 && c.ability_ready(dash, world.round) ? 2 : 0);
++}
++
++// The group we woke, and when; while it stays awake the waker plays last and steps clear.
++int aggro_group = -1, aggro_round = -1;
++constexpr int aggro_watch = 30; // rounds: a cap only, the group sleeps 2 phases after the last champion leaves
++
++bool aggro_watching(const World& world) {
++    if (aggro_group < 0 || world.round - aggro_round > aggro_watch) return false;
++    const auto& c = world.camps[aggro_group];
++    return c.state == CampState::alive && c.awake != Awake::asleep;
++}
++
++// Our slot next round if we act last in our team.
++int last_slot(const World& world) {
++    if constexpr (!params::camp_last) return -1; // ties never ours to win
++    return next_slot(world, true, ally_next_rank(world, world.me(), packed_priority(lowest_raw, world.me().index, 0)));
++}
++
++// Whether another champion than us covers tile q from member m at the next camp phase: nearer m after
++// its worst move (away), or as near, settled, and acting before slot `ours` next round.
++bool covered(const World& world, vec2 q, const CampMember& m, int ours) {
++    const int d = dist(q, m.pos);
++    if (d > m.reach) return true;
++    const int next = world.round + 1;
++    for (const auto& e : world.enemies) {
++        if (!e.alive || !e.visible) continue;
++        const int left = moves_left(world, e), f = dist(e.pos, m.pos) + left;
++        if (f < d || (f == d && left == 0 && enemy_latest_slot(world, e, next) < ours)) return true;
++    }
++    for (const auto& a : world.allies) {
++        if (a.is_self || !a.alive || a.pos.x < 0 || a.age(world.round) > 0) continue;
++        const int left = moves_left(world, a), f = dist(a.pos, m.pos) + left;
++        if (f < d || (f == d && left == 0 && ours >= 0 && next_slot(world, true, ally_next_rank(world, a, packed_priority(lowest_raw, world.me().index, 0))) < ours))
++            return true;
++    }
++    return false;
++}
++
++bool group_covers(const World& world, vec2 q, int g, int ours) {
++    const auto& G = world.map().groups[g];
++    const auto& c = world.camps[g];
++    for (std::size_t i = 0; i < G.members.size(); ++i)
++        if (c.health[i] > 0 && G.members[i].strength > 0 && !c.member_asleep(i) && !covered(world, q, G.members[i], ours)) return false;
++    return true;
++}
++
++struct AggroPlan {
++    int group = -1, member = -1;
++    float value = 0;
++    int victim = -1, theirs = 0, ours = 0, mono = -1; // for the trace
++    float alt = 0;
++};
++
++// The groups holding an aggro_type member, fixed for the match; most maps have none.
++const std::vector<int>& aggro_groups(const World& world) {
++    static std::vector<int> out;
++    static bool listed = false;
++    if (!listed) {
++        listed = true;
++        const auto& groups = world.map().groups;
++        for (int g = 0; g < static_cast<int>(groups.size()); ++g)
++            for (const auto& m : groups[g].members)
++                if (aggro_type(m.type)) {
++                    out.push_back(g);
++                    break;
++                }
++    }
++    return out;
++}
++
++// Worst cases: each enemy flees as far as it can, each ally yet to act walks a step in, we stay put
++// (a ranged hit spends the walk; a melee one may walk after, so a step).
++AggroPlan aggro_plan(const World& world) {
++    AggroPlan best;
++    const auto& map = world.map();
++    const auto& me = world.me();
++    const auto& f = me.facts();
++    const vec2 here = my_position();
++    const int range = f.attack_range();
++    const int self_move = f.ranged ? 0 : 1;
++    const auto& candidates = aggro_groups(world);
++    if (candidates.empty()) return best;
++    bool near = false;
++    for (int g : candidates)
++        for (const auto& m : map.groups[g].members) near = near || dist(here, m.pos) <= range;
++    if (!near) return best;
++    const int ours_next = last_slot(world);
++    // Only when we can strike no enemy champion this turn at all (user): no basic attack after any walk
++    // or ready dash, and no ready enemy-hitting cast; the Monolith's fire is then all we can add.
++    const float alt = 0;
++    {
++        int dash = 0;
++        for (int s = 0; s < 2; ++s)
++            if (f.abilities[s].kind == AbilityKind::dash && me.ability_ready(s, world.round) && my_can_cast()) dash = dash_range;
++        const int walk = my_can_move() ? 1 : 0;
++        const int blow_reach = f.ranged ? range + dash : range + walk + dash;
++        int cast_reach = -1;
++        if (my_can_cast())
++            for (int s = 0; s < 2; ++s) {
++                const auto& a = f.abilities[s];
++                const bool hits = a.kind == AbilityKind::damage || a.kind == AbilityKind::stun || a.lands();
++                if (hits && me.ability_ready(s, world.round)) cast_reach = std::max(cast_reach, a.reach() + (a.excludes_walking ? 0 : walk));
++            }
++        for (const auto& e : world.enemies)
++            if (e.alive && e.visible && (dist(here, e.pos) <= blow_reach || dist(here, e.pos) <= cast_reach)) return best;
++    }
++    for (int g : candidates) {
++        const auto& G = map.groups[g];
++        const auto& c = world.camps[g];
++        if (c.state != CampState::alive || c.awake != Awake::asleep) continue;
++        // Some member we hit now, and the group read asleep this turn.
++        int target = -1;
++        bool striker = false, unread = false;
++        for (int i = 0; i < static_cast<int>(G.members.size()); ++i) {
++            const auto& m = G.members[i];
++            if (c.health[i] <= 0) continue;
++            if (!cambc::vision::has_camp(m.pos)) {
++                unread = true;
++                continue;
++            }
++            if (m.strength > 0 && engine::camp_awake(m.handle) != Awake::asleep) unread = true;
++            striker |= aggro_type(m.type);
++            if (dist(here, m.pos) <= range && (target < 0 || c.health[i] < c.health[target])) target = i;
++        }
++        if (!striker || unread || target < 0) continue;
++        float value = 0;
++        bool safe = true;
++        int vic = -1, vd = 0, od = 0, mi = -1;
++        for (int i = 0; i < static_cast<int>(G.members.size()) && safe; ++i) {
++            const auto& m = G.members[i];
++            if (c.health[i] <= 0 || m.strength <= 0) continue;
++            int ours = 1 << 20, mine = 1 << 20;
++            for (const auto& a : world.allies) {
++                if (!a.alive) continue;
++                const vec2 p = a.is_self ? here : a.pos;
++                // An ally whose place we do not know now could be anywhere near.
++                if (!a.is_self && (p.x < 0 || a.age(world.round) > 1)) {
++                    if (p.x < 0 || dist(p, m.pos) <= m.reach + 2 + a.age(world.round)) safe = false;
++                    continue;
++                }
++                const int step = a.is_self ? self_move : moves_left(world, a) > 0 ? 1 : 0;
++                ours = std::min(ours, dist(p, m.pos) - step);
++                if (a.is_self) mine = dist(p, m.pos) - step;
++            }
++            int theirs = 1 << 20;
++            const ChampionBelief* victim = nullptr;
++            bool tie_first = false; // an enemy at `theirs`, settled, acting before us next round
++            for (const auto& e : world.enemies) {
++                if (!e.alive || !e.visible) continue;
++                const int left = moves_left(world, e), d = dist(e.pos, m.pos) + left;
++                const bool first = left == 0 && ours_next >= 0 && enemy_latest_slot(world, e, world.round + 1) < ours_next;
++                if (d < theirs) theirs = d, victim = &e, tie_first = first;
++                else if (d == theirs && first) tie_first = true, victim = &e;
++            }
++            // Ours ties win only for us acting last, and only against a settled enemy; an ally's never.
++            const bool tie_ok = ours == theirs && ours == mine && tie_first;
++            const bool fires_on_us = ours <= m.reach && ours <= theirs && !tie_ok;
++            if (fires_on_us) safe = false;
++            if (!aggro_type(m.type) || !victim || theirs > m.reach || (theirs >= ours && !tie_ok)) continue;
++            // Healed at its own turn end on spawn, what it takes there is wasted.
++            if (test(map.enemy_spawn, victim->pos)) continue;
++            const int phases = std::clamp(m.reach - theirs + 1, 1, params::camp_aggro_phases);
++            value += m.strength * victim->camp_taken * static_cast<float>(phases);
++            if (vic < 0) vic = static_cast<int>(victim->handle), vd = theirs, od = ours, mi = i;
++        }
++        if (!safe || value <= 0 || value <= 0) continue;
++        if (value > best.value) best = {g, target, value, vic, vd, od, mi, alt};
++    }
++    return best;
++}
++
++// A tile beside us that no visible champion holds and no live camp sits on.
++bool step_free(const World& world, vec2 q) {
++    const auto& map = world.map();
++    if (!in_bounds(q) || !test(map.open_for_us, q) || test(map.enemy_spawn, q) || test(live_camp_tiles(), q)) return false;
++    for (const auto& c : world.enemies)
++        if (c.alive && c.visible && c.pos == q) return false;
++    for (const auto& c : world.allies)
++        if (!c.is_self && c.alive && c.visible && c.pos == q) return false;
++    return true;
++}
++
++bool claimed_by_us(const World& world, const Memory& memory, int g) {
++    if (memory.claim == g) return true;
++    for (const auto& a : world.allies)
++        if (!a.is_self && a.alive && comms::claim_of(world, a.index) == g) return true;
++    return false;
++}
++
++// The awake groups we keep clear of: the one we woke (camp_escape 1), or every awake Monolith group
++// near us no ally claims (2): within reach + 2, a walk and a margin.
++template <class F> void each_watched(const World& world, const Memory& memory, F&& f) {
++    if constexpr (params::camp_escape >= 2) {
++        const vec2 here = my_position();
++        static std::vector<int> monoliths;
++        static bool listed = false;
++        if (!listed) {
++            listed = true;
++            for (int g = 0; g < static_cast<int>(world.map().groups.size()); ++g)
++                if (world.map().groups[g].has_monolith) monoliths.push_back(g);
++        }
++        for (int g : monoliths) {
++            const auto& G = world.map().groups[g];
++            const auto& c = world.camps[g];
++            if (c.state != CampState::alive || c.awake == Awake::asleep) continue;
++            bool near = false;
++            for (const auto& m : G.members) near = near || dist(here, m.pos) <= m.reach + 2;
++            if (near && !claimed_by_us(world, memory, g)) f(g);
++        }
++    } else if (aggro_watching(world)) {
++        f(aggro_group);
++    }
++}
++
++bool camp_aggro(World& world, Pathing& pathing, Safety& safety) {
++    if constexpr (!params::camp_aggro) return false;
++    if (!my_can_attack() || stunned_turn) return false;
++    const auto plan = aggro_plan(world);
++    if (plan.group < 0) return false;
++    if (!attack_camp_target(world, {plan.group, plan.member, 0})) return false;
++    aggro_group = plan.group, aggro_round = world.round;
++    if (params::camp_last) camp_last_round = world.round;
++    debug_block({
++        const auto& map = world.map();
++        const vec2 m = map.groups[plan.group].members[plan.mono].pos;
++        std::printf("CAGG %d %u g%d v%.0f vic %d theirs %d ours %d home %d away %d alt %.0f\n", world.round, my_handle(), plan.group,
++                    static_cast<double>(plan.value), plan.victim, plan.theirs, plan.ours, dist(m, map.ally_spawn_centre),
++                    dist(m, map.enemy_spawn_centre), static_cast<double>(plan.alt));
++    });
++    see_again(world, pathing, safety);
++    return true;
++}
++
++// Before the turn's other work: off a tile a watched group could fire on us from next phase, onto
++// the best free tile beside us (covered first, then the least camp fire, then farthest from it).
++bool camp_escape(World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
++    if constexpr (params::camp_escape == 0) return false;
++    if (!world.me().alive) return false;
++    const vec2 here = my_position();
++    const auto& map = world.map();
++    int watched[8], n = 0;
++    each_watched(world, memory, [&](int g) {
++        if (n < 8) watched[n++] = g;
++    });
++    if (n == 0) return false;
++    if (params::camp_last) {
++        for (int k = 0; k < n; ++k)
++            for (const auto& m : map.groups[watched[k]].members)
++                if (m.strength > 0 && dist(here, m.pos) <= m.reach + 2) camp_last_round = world.round;
++    }
++    if (!my_can_move() || stunned_turn) return false;
++    const int ours = last_slot(world);
++    const auto uncovered = [&](vec2 q) {
++        int bad = 0;
++        for (int k = 0; k < n; ++k) bad += !group_covers(world, q, watched[k], ours);
++        return bad;
++    };
++    const auto reach_left = [&](vec2 q) {
++        int worst = -1 << 20;
++        for (int k = 0; k < n; ++k) {
++            const auto& G = map.groups[watched[k]];
++            for (std::size_t i = 0; i < G.members.size(); ++i)
++                if (world.camps[watched[k]].health[i] > 0 && G.members[i].strength > 0) worst = std::max(worst, G.members[i].reach - dist(q, G.members[i].pos));
++        }
++        return worst;
++    };
++    const int now_bad = uncovered(here);
++    if (now_bad == 0) return false;
++    vec2 best{-1, -1};
++    int best_bad = now_bad, best_left = reach_left(here);
++    float best_fire = safety.camp_damage(here);
++    for (const auto d : directions) {
++        const vec2 q = here + d;
++        if (!step_free(world, q)) continue;
++        const int bad = uncovered(q), left = reach_left(q);
++        const float fire = safety.camp_damage(q);
++        if (bad < best_bad || (bad == best_bad && (fire < best_fire || (fire == best_fire && left < best_left))))
++            best = q, best_bad = bad, best_left = left, best_fire = fire;
++    }
++    if (best.x < 0 || !pathing.try_move(best)) return false;
++    // A plain step, as the work's: no see_again (a whole re-read cost ~13% more out-of-fuel turns).
++    debug_block({ std::printf("CESC %d %u %d,%d bad %d->%d\n", world.round, my_handle(), best.x, best.y, now_bad, best_bad); });
++    return true;
++}
++
++} // namespace
++
++} // namespace aph
+diff -ruN bots/variants/oc-base25/src/model/turn_order.cc bots/variants/v87-ca-strict/src/model/turn_order.cc
+--- bots/variants/oc-base25/src/model/turn_order.cc	2026-11-08 02:06:43.279063296 +0000
++++ bots/variants/v87-ca-strict/src/model/turn_order.cc	2026-11-09 00:58:18.347082786 +0000
+@@ -69,6 +69,7 @@
+ // The latest rank set_turn_order chose: kept when it skips a turn short of fuel.
+ int turn_rank = 0;
+ bool turn_rank_valid = false; // set_turn_order has chosen a rank this match
++int camp_last_round = -1;     // combat/camp_aggro.cc: act last in our team next round, when set this round
+ 
+ // Above the payload, the code relative to raw 0's, then 7 - our index so that equal codes still tie
+ // by id. Never 0 (comms reads 0 as no payload), raw 0 included.
+@@ -697,7 +698,7 @@
+         if (wish.band == kill && wish.target >= 0) follow::posting = {wish.target, world.round, wish.need};
+         return wish.band != none ? wish.priority() : plain_priority(world, safety, self, enemies);
+     }();
+-    turn_rank = rank;
++    turn_rank = params::camp_last && camp_last_round == world.round && world.me().alive ? lowest_raw : rank;
+     turn_rank_valid = true;
+     follow::own = follow::posting;
+ }
+diff -ruN bots/variants/oc-base25/src/params.h bots/variants/v87-ca-strict/src/params.h
+--- bots/variants/oc-base25/src/params.h	2026-11-08 04:18:12.196790803 +0000
++++ bots/variants/v87-ca-strict/src/params.h	2026-11-09 00:58:18.354659697 +0000
+@@ -45,6 +45,18 @@
+ // Test copies only (tools/ab.py): draft a common ladder composition chosen by the map and side
+ // (draft.cc test_compositions) instead of the model or the tables.
+ constexpr bool test_draft = false;
++// combat/camp_aggro.cc: wake a sleeping Monolith (and Golem with camp_aggro_golem) onto an enemy champion
++// strictly nearer it than any of us after every move, when its fire over up to camp_aggro_phases camp
++// phases beats camp_aggro_k times our blow on an enemy now.
++constexpr bool camp_aggro = true;
++constexpr bool camp_aggro_golem = false;
++constexpr float camp_aggro_k = 1.0f;
++constexpr int camp_aggro_phases = 3;
++// camp_aggro.cc: the waker acts last in our team while near the group it woke, wins ties against a settled
++// enemy acting first, and (camp_escape 1) steps off tiles the group could fire on it from; camp_escape 2:
++// every body of ours near an awake Monolith group no ally claims.
++constexpr bool camp_last = true;
++constexpr int camp_escape = 1;
+ // Each ally but the healers posts its own position in turn, in the shared bytes' free bits, for
+ // Willow's follow (support.cc); off on maps where it does not fit (comms.cc).
+ inline constexpr bool comms_ally = true;
+diff -ruN bots/variants/oc-base25/src/unity.cpp bots/variants/v87-ca-strict/src/unity.cpp
+--- bots/variants/oc-base25/src/unity.cpp	2026-11-07 02:51:58.988029109 +0000
++++ bots/variants/v87-ca-strict/src/unity.cpp	2026-11-08 21:01:06.863169834 +0000
+@@ -28,6 +28,7 @@
+ #include "combat/self_abilities.cc"
+ #include "model/turn_order.cc"
+ #include "model/world.cc"
++#include "combat/camp_aggro.cc"
+ #include "economy/comeback.cc"
+ #include "combat/fixc.cc"
+ #include "main.cc"
