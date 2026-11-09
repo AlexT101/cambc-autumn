@@ -100,6 +100,22 @@ live"), and check fidelity on 470. Tools `research/ideas-2026-11-09/oppfidelity-
     `build_seed` calls `newbodies.sh`).
   - The new bodies matter most for altar, lock and tribute arms.
   - Bodies for seeds 1-16 are built.
+- **Follow-up: Mt4 (the close-start cancel fix), not proposed.** `patch_mite.py --v4` also cancels the first turn with
+  a seen enemy within 3 (`mt4.sh`; block 0 plus seeds 1-16).
+  - Fidelity, block 0 plus seeds 1-8: 53-65% of close starts cancelled (live 60%), but 1.50-3.27 manual cancels
+    (live 1.71) and 11.6-15.0 starts (live 11.1). It fixes one statistic by over-feinting.
+  - Readings, Mt4 − Mt3 on paired cells (arm − base): lk-600 all +0.22 ±0.88, one-site **+1.89 ±1.69**
+    (-2.07 → -0.18); soup-k all +0.24 ±0.81, one-site +1.48 ±1.62 (-3.55 → -2.07); nh-6-3 -0.22 ±0.39 and +0.06 ±0.74.
+  - Mt4 pulls the 470 one-site reading back toward the old bodies', against live. dgate stays on Mt3.
+- **Follow-up: soup-k's one-site loss is cast_cost** (each knob alone on oc-base25, `sk1.sh`; against Fl+Mt3, one-site):
+  cast_cost 29.1 -3.37 ±2.13 (old Mite bodies +0.35 ±2.30), fight_weight 0.819 -0.59 ±1.78, trib_min_bag 138
+  -0.12 ±0.97; all three -3.55 ±2.32.
+  - Paired features (`skfeat.py`; soup-k − base, one-site, block 0 plus seeds 1-4, 564 cells a half), new Mite
+    only: Mite tributes 0.8 more times after 600 (+31 gems), dies at an altar 0.69 less often after 600, and has +29
+    gems at 800; we bank 21 fewer gems by 600 and have 31 fewer at 800. Our deaths don't move.
+  - None of these move against the old Mite bodies or either Fish body.
+  - The cheaper casts lose fights against a Mite that cancels its tribute to fight and then restarts it. The old
+    bodies hid this: they never feinted.
 
 ## (ocean = oc-base25, 2026-11-09) Generalised nuke guard (nukeguard2): four forms, all H0 on dgate; lethal steps are trapped retreats
 

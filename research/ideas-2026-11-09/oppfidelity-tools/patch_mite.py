@@ -5,13 +5,15 @@ within 1 of an altar with gems, in place of its recall feint. On the channel's f
 is in contact (59% of first turns with one within 5: 65-80% at 1-4 tiles, ~45% at 5, ~10% at 6), acts, and starts again
 at the turn end (63% of cancels restart within 3 rounds). Later turns of a channel are kept as ocean keeps them.
 Contact is Mite's priority rule: an enemy within 4, or within 6 when either side is ranged. Idempotent.
-    py patch_mite.py BOTDIR [--v3]
+    py patch_mite.py BOTDIR [--v3 | --v4]
 v1 (no flag; bodies -Mt, -Mt2) over-feints: 20-22 starts and 10-12 cancels a one-site game against Mite's 11 and 1.7.
 --v3 (bodies -Mt3): the habit yields to a recall wanted home (Mite recalls at an altar 20-28% of round ends), and
-the first turn cancels in contact only when ocean's own tribute check fails (Mite keeps ~40% of contact turns)."""
+the first turn cancels in contact only when ocean's own tribute check fails (Mite keeps ~40% of contact turns).
+--v4 (bodies -Mt4): v3, and the first turn also cancels with a seen enemy within 3. v3 cancelled 10-22% of its starts
+made within 3 tiles; Mite cancels 60%."""
 import sys
 from pathlib import Path
-bot = Path(sys.argv[1]); src = bot / 'src'; v3 = '--v3' in sys.argv
+bot = Path(sys.argv[1]); src = bot / 'src'; v4 = '--v4' in sys.argv; v3 = v4 or '--v3' in sys.argv
 bank = src / 'economy/bank.cc'; botc = src / 'bot.cc'; parts = src / 'bot_parts.h'
 s = bank.read_text()
 if 'mite_tribute_habit' in s: print('already patched'); sys.exit(0)
@@ -28,6 +30,11 @@ bool mite_contact(const World& world) {
     const bool ranged = world.me().facts().attack_range() > 1;
     for (const auto& e : world.enemies)
         if (e.alive && e.visible && dist(e.pos, my_position()) <= (ranged || e.facts().attack_range() > 1 ? 6 : 4)) return true;
+    return false;
+}
+bool mite_near(const World& world, int d) {
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible && dist(e.pos, my_position()) <= d) return true;
     return false;
 }
 
@@ -47,7 +54,8 @@ s = sub(s, '''    if (tribute_ok(world, safety, memory, my_channel_time())) retu
         return false;
     }
     if (tribute_ok(world, safety, memory, my_channel_time())) return true;
-    // Damage does not interrupt''' % (' && !tribute_ok(world, safety, memory, my_channel_time())' if v3 else ''), bank)
+    // Damage does not interrupt''' % (' && (mite_near(world, 3) || !tribute_ok(world, safety, memory, my_channel_time()))' if v4
+           else ' && !tribute_ok(world, safety, memory, my_channel_time())' if v3 else ''), bank)
 # The habit itself, at the end of the non-anonymous part.
 s = sub(s, '''bool can_tribute_safely(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {''',
         '''// Mite's turn-end channel: a tribute wherever one can start, else the caller's recall feint.

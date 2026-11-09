@@ -6,7 +6,7 @@ sys.path.insert(0, '/home/ubuntu/cambc-autumn/research/ideas-2026-11-08/spar-too
 sys.path.insert(0, '/home/ubuntu/cambc-autumn/research/ideas-2026-11-08/diverse-tools')
 import local
 MC = json.load(open('/home/ubuntu/tmp-offload/handoff/gate/mapclass.json'))
-DIRS = {'sk': 'variants/v87-soupk', 'lk600': 'variants/v87-lk-600', 'c25': 'variants/oc-base25', 'nh63': 'variants/v87-nh-6-3'}
+DIRS = {'skfw': 'variants/v87-sk-fw', 'sktb': 'variants/v87-sk-tb', 'skcc': 'variants/v87-sk-cc', 'sk': 'variants/v87-soupk', 'lk600': 'variants/v87-lk-600', 'c25': 'variants/oc-base25', 'nh63': 'variants/v87-nh-6-3'}
 def cls(m): return MC.get(m.replace('-', '_'), MC.get(m, '?'))
 def run(tag, m):
     if m.startswith('dgate:'):
