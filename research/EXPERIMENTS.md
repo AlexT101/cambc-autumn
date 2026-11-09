@@ -142,6 +142,41 @@ Flp3 and Mt3q are fgate's defaults. What still separates the bodies from live, f
   skill.
 - Mite's softer banking trips, and its mid-altar locks from about r400.
 
+## (ocean, 2026-11-09) Draft first-turn fuel 2 (CHANGES 493): dash-travel flood kept, ward-cast cache dropped
+
+Two leads that 491 left. All headroom figures are from `firstturn.py --need`; identity was checked with dumps of the
+features, team and plans against `variants/ocean-16d6f78`.
+
+**Profile** (PROF prints, the 50 heaviest held-out ocft-1950 drafts)
+- `travel<1>`:
+  - setup 0.15-0.56M (~40 a tile);
+  - Dial loop 0.02-1.64M (~220 a popped tile; about 1 walk push and 1 dash end tried a pop);
+  - output ~0.1M.
+- Wards 0.4-2.1M. A ward cast is ~490 fuel on a 100x100 map, about half of best_ward's ~980 a candidate.
+
+**Kept: SIMD neighbour relaxation and a cheaper `dash_short` index (CHANGES 493)**
+- The loop was 961k -> 756k on gen-huge-195000912002.
+- ocft-1950: max 9.88M -> 9.67M, 25 -> 14 team-drafts over 9M.
+
+**Didn't pay**
+- **Counting `dash_short` after the flood**, as 491 suggested: a vector pass over d and the base, fused with the output
+  loop. It cost +52k on every draft, because wasm counts every local.get and constant, so the 4-lane loop is ~11
+  fuel a tile. It saves only ~25 a pop, so 70% of drafts got dearer by up to 57k; the 768 set's max rose
+  8.83M -> 8.88M.
+- **A padded copy of the base distances** for a division-free index: the fill cost +16-67k (most on maps with many
+  mixed 16-tile blocks), and it saved ~6 a pop more than the division formula.
+- **Ward-cast cache** (lead 2): 9.1% of r6 casts repeat (10,248 of 112,936 on the 50 heaviest drafts; 2-27% a draft).
+  - The bound is the repeats times the cast cost: 50k mean and 191k max a draft, at most ~0.8% of the heaviest
+    turns.
+  - The cache, with casts written straight into raw slots and a per-tile slot table, cost a median +57k a draft (to
+    a max of +208k): +30k for the table's memset on the first site, and +3-4k a site (~90 a candidate) of bookkeeping.
+  - Even an uncached raw cast through the helper cost +25 a candidate.
+  - Dropped.
+
+**Left for later** (not tried): `travel<1>`'s setup (~40 a tile), the rest of its per-pop cost (`leap`, buckets: ~170 a
+pop), best_ward's non-cast half (~490 a candidate), and the open-plan search, attack tiles, candidate floods and
+sight gap as 491 listed.
+
 ## (ocean, 2026-11-09) Draft first-turn fuel (CHANGES 491): 14.4M -> 8.8M at most, level, plans identical
 
 `variants/dfpfuel-a` (= bots/ocean at 491) against `variants/ocean-rm3` (490), own drafts, release, fast runner, on

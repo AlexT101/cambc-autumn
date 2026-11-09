@@ -4135,3 +4135,34 @@ fs-nh's share on top of oc32-cg is only +0.08 ±0.39, because it overlaps 481. T
 p85, after oc32-cv (p86) and ahead of oc-base32 (p83).
 
 Evidence: EXPERIMENTS "Escape planner (478) on the v87 line".
+
+## 493: The dash-travel feature's flood ~20% cheaper; first turn at most 9.67M on ocft-1950, plans identical (ocean, 2026-11-09; fuel-only)
+
+`draft/map_features.cc` `travel_at` (the `dash_short` / `dash_gain` field, 1.0-2.1M on the heaviest held-out drafts),
+on 491. Its Dial loop costs ~220 fuel a popped tile:
+- **Neighbour updates:** the 8 walk relaxations of a popped tile are three 4-lane compares of d, narrowed to one bitmask.
+  The tiles that pass are pushed in bit order. Only the pop order within a bucket changes, and no distance or count
+  depends on it.
+- **`dash_short`'s count:** the base index is `i - 2 pad (i / S) - pad (w + 1)`, one division instead of a division
+  and a remainder; `was >= 0` is implied by `was - v >= 6`.
+- On gen-huge-195000912002 the loop fell from 961k to 756k, and setup and output are unchanged (±3k on maps with few
+  pops).
+
+Exact:
+- the 92 model features (every feature), the team and the 1024-byte plan of every draft round are identical to
+  `variants/ocean-16d6f78` on all 768 team-drafts (ladder + fresh-1940000) and all 10,240 of `merged/ocft-1950`;
+- bench replays at 100M are identical: 52/52 `--set wide` and 16/16 default, each on own drafts and `--test-draft`;
+- a read-only audit found it equivalent in both instantiations and in the SIMD and non-SIMD builds.
+
+`firstturn.py --need`:
+
+| | p50 | p99 | max | over 9M | over 10M |
+|---|---|---|---|---|---|
+| 768, before | 4.08M | 8.11M | 8.83M | 0 | 0 |
+| 768, after | 4.05M | 8.07M | 8.83M | 0 | 0 |
+| ocft-1950, before | 4.16M | 8.38M | 9.88M | 25 | 0 |
+| ocft-1950, after | 4.15M | 8.29M | 9.67M | 14 | 0 |
+
+The saving reaches 437k a draft (the 10 heaviest held-out turns save 0.07-0.32M); the median draft is level (-0.6k).
+The 768 set's max (gen-ladder-194000000044) has few pops, so it is unchanged. The ward-cast cache was dropped
+(EXPERIMENTS "Draft first-turn fuel 2"). Frozen as `variants/df2-a3` (= bots/ocean).

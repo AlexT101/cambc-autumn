@@ -404,6 +404,11 @@ struct Grid {
         static_assert(dash_cost == 4 && tele_cost == 8);
         const auto pool = std::make_unique_for_overwrite<int[]>(static_cast<std::size_t>(B * n));
         int size[B] = {}, pending = 0, gained = 0, popped = 0;
+#if defined(__wasm_simd128__)
+        // A popped tile's 3x3 box as three 4-tile rows; bit k of their compare mask is row k >> 2, column (k & 3) - 1.
+        int box_at[12];
+        for (int k = 0; k < 12; ++k) box_at[k] = ((k >> 2) - 1) * S + (k & 3) - 1;
+#endif
         for (int v = 0; v <= top || pending; ++v) {
             int* const walk_to = &pool[(v + 1) % B * n];
             int* const dash_to = &pool[(v + 4) % B * n];
@@ -441,15 +446,31 @@ struct Grid {
                 for (int i = head[static_cast<std::size_t>(v)]; i >= 0; i = next[i])
                     if (d[i] == v + 1) leap(i, nb[i]);
             int* const bucket = &pool[v % B * n];
+#if defined(__wasm_simd128__)
+            const v128_t walk_d = wasm_i32x4_splat(v + 2);
+#endif
             for (int left = size[v % B]; left;) {
                 const int i = bucket[--left];
                 if (d[i] != v + 1) continue;
                 ++popped;
-                if constexpr (level == 1)
-                    if (const int was = bd[(i / S - pad) * w + i % S - pad]; was >= 0 && was - v >= 6) ++gained;
-                // Low tiles hold d <= 0, so never pass the test.
+                // A map tile i is at row i / S, so its base index is i - 2 pad (i / S) - pad (w + 1); was - v >= 6 implies
+                // was >= 0, as v >= 0.
+                if constexpr (level == 1) gained += bd[i - 2 * pad * (i / S) - pad * (w + 1)] - v >= 6;
+                // Low tiles hold d <= 0, so never pass the test. The order a tile's neighbours are pushed in changes only
+                // the pop order within a bucket, which no distance or count depends on.
+#if defined(__wasm_simd128__)
+                // Lane 3 of each row and the centre (d is v + 1) are not neighbours; the centre never passes.
+                const v128_t up = wasm_i32x4_gt(wasm_v128_load(d + i - S - 1), walk_d), mid_row = wasm_i32x4_gt(wasm_v128_load(d + i - 1), walk_d);
+                const v128_t down = wasm_i32x4_gt(wasm_v128_load(d + i + S - 1), walk_d);
+                const v128_t rows = wasm_i8x16_narrow_i16x8(wasm_i16x8_narrow_i32x4(up, mid_row), wasm_i16x8_narrow_i32x4(down, down));
+                for (std::uint32_t m = wasm_i8x16_bitmask(rows) & 0x777u; m; m &= m - 1) {
+                    const int j = i + box_at[std::countr_zero(m)];
+                    d[j] = v + 2, walk_to[walks++] = j;
+                }
+#else
                 for (int k = 0; k < 8; ++k)
                     if (const int j = i + step[k]; v + 2 < d[j]) d[j] = v + 2, walk_to[walks++] = j;
+#endif
                 leap(i, nb[i]);
             }
             size[v % B] = 0, size[(v + 1) % B] = walks, size[(v + 4) % B] = dashes_n, size[(v + 8) % B] = teles;
