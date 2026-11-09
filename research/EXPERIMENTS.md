@@ -12240,6 +12240,20 @@ read in play. Details in CHANGES 461. Checks:
   It is the first submission built with the priority mask (masked, mask_rev cd68d6ef305c; about +70 fuel a turn),
   so its pairing with the uncoded v91 / v89 mixes the soup-k revert with a fuel reroll. The null controls
   `v87-null-a` / `-b` (p72) reached the queue at 20:29, after this submission, so they follow it.
+- **Live gate (r2): v93 (oc-nosoup).** 104 groups plus one rerun, 512 games, off gate 00:51 UTC 2026-11-09: Fish
+  59.8%, Mite 61.3%. Paired against v91 (its parent, = soup-k's revert plus the mask's fuel reroll): **-5 (80 / 85,
+  z -0.39), level**; Fish -5 (z -0.56), Mite 0. Only 11 of 512 games repeat v91's, so the coded build rerolls almost
+  every game. Mite with only their Heart of Ruin (v91's regression cell): +6 (26 / 20, z +0.88), core +3 / ext +3;
+  Willow Mite -9 (z -1.34), no-Willow Mite +9. Against v89 -15 (z -1.19), v87 -18 (z -1.32), v86 -27 (101 / 74,
+  z -2.04): the drift of the chain v86 -> v93 now reaches |z| 2, with every step level. OOF turns 10.6 -> 11.2 per 1k rounds (the mask's cost); the 38 games whose OOF rose by 10+ flipped -8.
+  - **Outside submission (v94).** A teammate uploaded v94 at 22:15:26 ("ocean 0dd304df + olympus escape-carryout
+    (ladder test, prominence)"); it was selected at once, live from about 22:19, and made inactive at 00:16:45, outside
+    our tools. The platform binds our bot to a group at creation by the *selected* version: `v93-v1ext-r2-mite-24`
+    (created 22:15:40, live 93 / selected 94) played v94 (our priorities plain in all 5 replays; every other v93
+    game shows the mask's coded priorities). It is marked `suspect` (left out of `games()`) and was rerun as
+    `-24x`. `ladder_scrims.py run` now creates groups only while live == selected and marks groups in flight at any
+    switch suspect; the scheduler logs outside versions, pauses on a live version not its own, and activates only the
+    version carrying its note.
 
 ## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
 
