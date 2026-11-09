@@ -899,24 +899,20 @@ const bitboard& StaticMap::make_near_bushes() const {
     return near_bushes_.emplace(std::move(b));
 }
 
-bitboard StaticMap::viewers(vec2 p, int radius) const {
+void StaticMap::viewers_into(vec2 p, int radius, bitboard& out) const {
     // Sight is symmetric for a fixed opaque set, so the tiles that see p are those p would see
     // with each kind of viewer's opaque set. A viewer outside bushes sees through none, and never
     // into one; a viewer in a cluster sees through that cluster only.
     const auto r = static_cast<std::uint16_t>(radius);
     static bitboard opaque{cambc::uninitialized}, seen{cambc::uninitialized}, left{cambc::uninitialized},
         rest{cambc::uninitialized};
-    const auto cast_from_inside = [&](const bitboard& cluster, bitboard& out) {
+    const auto cast_from_inside = [&](const bitboard& cluster, bitboard& to) {
         xor_into(walls_and_bushes, cluster, opaque); // walls_and_bushes & ~cluster
-        opaque.shadow_cast_into(p, r, out);
-        out &= cluster;
+        opaque.shadow_cast_into(p, r, to);
+        to &= cluster;
     };
-    if (test(bushes, p)) {
-        bitboard out{cambc::uninitialized};
-        cast_from_inside(bush_cluster(p).tiles, out);
-        return out;
-    }
-    auto out = walls_and_bushes.shadow_cast(p, r);
+    if (test(bushes, p)) return cast_from_inside(bush_cluster(p).tiles, out);
+    walls_and_bushes.shadow_cast_into(p, r, out);
     // Cast each cluster in reach once.
     left.clear();
     left.draw_chebyshev(p, static_cast<float>(radius));
@@ -928,6 +924,11 @@ bitboard StaticMap::viewers(vec2 p, int radius) const {
         not_into(cluster, rest);
         left &= rest;
     }
+}
+
+bitboard StaticMap::viewers(vec2 p, int radius) const {
+    bitboard out{cambc::uninitialized};
+    viewers_into(p, radius, out);
     return out;
 }
 
@@ -1090,16 +1091,17 @@ const bitboard& StaticMap::open_bushes() const {
     return *open_bushes_;
 }
 
-bitboard StaticMap::sight_off_bushes(vec2 p, int radius) const {
+void StaticMap::sight_off_bushes_into(vec2 p, int radius, bitboard& out) const {
     if (!open_off_bushes_) xor_into(open_for_us, open_bushes(), open_off_bushes_.emplace(cambc::uninitialized));
-    bitboard out{cambc::uninitialized};
     // From a bush, only its own cluster sees it.
-    if (test(bushes, p)) {
-        clear_board(out);
-        return out;
-    }
+    if (test(bushes, p)) return clear_board(out);
     walls_and_bushes.shadow_cast_into(p, static_cast<std::uint16_t>(radius), out);
     and_into(out, *open_off_bushes_, out);
+}
+
+bitboard StaticMap::sight_off_bushes(vec2 p, int radius) const {
+    bitboard out{cambc::uninitialized};
+    sight_off_bushes_into(p, radius, out);
     return out;
 }
 

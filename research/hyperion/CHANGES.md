@@ -4070,3 +4070,52 @@ tribute could start ours again: cancelled and restarted every turn while the end
 `stoppable_winning_tribute` fallback (a ready stun in reach) is unchanged. No new constants; not A/B'd (narrow: only
 while an enemy tribute ends the game before any win of ours). Release and debug builds pass. Frozen as
 `variants/ocean-rm3` (= bots/ocean).
+
+## 491: The draft's first turn 14.4M -> 8.8M at most, plans identical (ocean, 2026-11-09; fuel-only)
+
+The same draft computation, cheaper, on 490. "Finished" is the open plan's local search running all 300 moves after
+its 3 greedy seeds, as it does under `firstturn.py --need`; at the real budget it stops on `fuel_ok(fuel_floor)`, so
+any first turn over 10M at --need was a search cut short.
+- **Open-plan search** (`draft/open_plan.cc`), 2.3x cheaper (755 dumped problems: 2.46G -> 1.06G):
+  - the best plan's run is recorded with a State snapshot before each choose event and the last list index it read. A
+    move changes one body's list from index d, so the candidate resumes at the first event of that body that read
+    d or later, or takes best's value if none did. Groups are copied in lazily;
+  - per-problem tables: walk offsets as floats, worth, home and respawn, the body fields as arrays;
+  - a SIMD argmin of the free times, padded with +inf, first least index as before;
+  - fast paths for a group with one attendee, and no `attended` bookkeeping outside the final run.
+- **Ward scoring** (`best_ward`): the row's at most 3 chunks are read unrolled.
+- **Attack tiles** (`write_attack_tiles`): only range 3 is cast. A cast from a clear tile at radius 1 is the radius 3
+  cast within it (rules: `vision.shadowcast_radius`), so range 1's checks always passed. Casts go into static boards
+  (`viewers_into`, `sight_off_bushes_into`), and bushes are read a word at a time.
+- **Candidate floods** (`make_open_plan`): capped at the horizon plus the bodies' largest attack range. Past that,
+  both a run and the greedy seeds treat a step count the same as unreachable.
+- **Model draft**: `sight_gap`'s per-source BFS runs in two u16x8 vectors (0.96M -> 0.46M median). From step 4, its
+  sources are found by 16-tile bitmasks: up to 170k less on 100x100 maps, up to 20k more on 30x30. `model_draft`
+  reuses `measure()`'s team instead of ranking every team a second time (156k).
+
+Exact:
+- bench replays at 100M identical to `variants/ocean-rm3`: 52/52 `--set wide` and 16/16 default, each on own drafts
+  and `--test-draft`;
+- full 1024-byte draft plans and the open-plan results identical on 768 team-drafts;
+- the 92 model features and the team identical on 768;
+- a read-only audit found every part equivalent.
+
+The only assumption is the shadowcast rule, which is engine-verified.
+
+`firstturn.py --need`, 128 ladder maps + fresh-1940000 (768 team-drafts):
+
+| | p50 | p99 | p99.9 | max | over 10M |
+|---|---|---|---|---|---|
+| before (ocean-rm3) | 6.70M | 12.81M | 14.40M | 14.40M | 82 |
+| after | 4.08M | 8.11M | 8.71M | 8.83M | 0 |
+
+The model draft before the first pick fell from a 4.72M max to 3.85M. On the unseen `merged/ocft-1950` (10,240
+team-drafts) the max went from 14.88M (1,071 over 10M) to 9.88M (0 over, 25 over 9M). 0 unfinished and 0 capped
+throughout.
+
+Against `variants/ocean-rm3` on fresh `merged/ocft-1950`:
+- 50.0% (49.1-51.0) of 10,240, own drafts;
+- DRAFT-CAPPED 0 against 7;
+- OOF turns 124,148 against 123,967.
+
+Frozen as `variants/dfpfuel-a` (= bots/ocean). Evidence: EXPERIMENTS "Draft first-turn fuel".

@@ -907,3 +907,8 @@ In `suites/fresh/fresh-{seed}` (EXPERIMENTS "Draft lab refit on v87 (draft9)"; s
 `--mix ladder-v2`, in `suites/fresh/fresh-{seed}`, symlinked into `merged/` (EXPERIMENTS "dfp-pure, ft-k and
 gap-fix-ender on the removal branch"):
 - `ocrm-1940`: 1940000-1940019, 5,120 maps (CHANGES 487-489's A/B against ocean-rm2; used).
+
+## Draft first-turn fuel (ocean, 2026-11-09)
+
+`--mix ladder-v2`, in `suites/fresh/fresh-{seed}`, symlinked into `merged/` (CHANGES 491):
+- `ocft-1950`: 1950000-1950019, 5,120 maps (CHANGES 491's A/B and held-out --need headroom; used).

@@ -262,8 +262,10 @@ struct StaticMap {
     // Tiles from which p is in sight within Chebyshev `radius`: the engine's shadowcast, with
     // walls and every bush cluster but the viewer's own opaque.
     bitboard viewers(vec2 p, int radius) const;
+    void viewers_into(vec2 p, int radius, bitboard& out) const; // out: not one of viewers' own boards
     // viewers(p, radius) & open_for_us off bushes: one shadowcast, no bush cluster needed.
     bitboard sight_off_bushes(vec2 p, int radius) const;
+    void sight_off_bushes_into(vec2 p, int radius, bitboard& out) const;
     const bitboard& open_bushes() const; // bushes & open_for_us
 
     // Compute derived parts while more than `fuel_floor` fuel remains; true once all are done.

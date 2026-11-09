@@ -468,33 +468,35 @@ void write_dash_steps(const StaticMap& map, Analysis& a, DraftPlan& plan, PlanHe
 // One member's attack tiles; false, writing nothing, if they do not fit or champions could not
 // decode them.
 bool write_attack_tiles(const StaticMap& map, vec2 p, Analysis& a, DraftPlan& plan) {
-    static std::array<bitboard, DraftPlan::attack_ranges.size()> tiles{};
-    static bitboard off{cambc::uninitialized};
-    for (std::size_t k = 0; k < tiles.size(); ++k) {
-        const int r = DraftPlan::attack_ranges[k];
-        tiles[k] = map.viewers(p, r);
-        tiles[k] &= map.open_for_us;
-        copy_into(tiles[k], off);
-        drop(off, map.open_bushes());
-        if (!boards_equal(off, map.sight_off_bushes(p, r))) return false;
-    }
-    // Bits go only over bush_range's square; each range's bush tiles must be those within it.
-    const auto& sent = tiles[0];
-    bool any = false, exact = true;
+    // Only the largest range is cast. A shadowcast from a clear tile at a smaller radius is the larger's within it
+    // (rules: vision.shadowcast_radius), and a cluster out of the smaller range has no tile within it, so each
+    // smaller range's viewers and sight off bushes are the largest's within that range: its checks always pass.
+    static_assert(DraftPlan::attack_ranges.size() == 2 && DraftPlan::attack_ranges[1] < DraftPlan::attack_ranges[0]);
+    static bitboard sent{cambc::uninitialized}, off{cambc::uninitialized}, sight{cambc::uninitialized};
+    const int r = DraftPlan::attack_ranges[0];
+    map.viewers_into(p, r, sent);
+    sent &= map.open_for_us;
+    copy_into(sent, off);
+    drop(off, map.open_bushes());
+    map.sight_off_bushes_into(p, r, sight);
+    if (!boards_equal(off, sight)) return false;
+    // Bits go only over bush_range's square, a tile's in each_in_square's order: by word, low bit first.
+    const std::uint64_t* const seen = sent.ptr();
+    const int stride = static_cast<int>(cambc::detail::layout().chunk_stride);
+    bool any = false;
     int bits = 0;
-    each_in_square(map.open_bushes(), p, DraftPlan::bush_range, [&](vec2 t) {
-        ++bits;
-        const bool in = test(sent, t);
-        any = any || in;
-        for (std::size_t k = 1; k < tiles.size(); ++k)
-            if (dist(t, p) <= DraftPlan::attack_ranges[k]) exact = exact && test(tiles[k], t) == in;
+    each_word_in_square(map.open_bushes(), p, DraftPlan::bush_range, [&](int cx, int cy, std::uint64_t tiles) {
+        bits += __builtin_popcountll(tiles);
+        any = any || (tiles & seen[cy * stride + cx]) != 0;
     });
-    if (!exact) return false;
     PlanWriter w{plan, a.attack_at};
     if (!w.fits(any ? bits : 0)) return false;
     if (any) {
         PlanWriter{plan, a.attack_start + a.attack_index}.put(1, 1);
-        each_in_square(map.open_bushes(), p, DraftPlan::bush_range, [&](vec2 t) { w.put(test(sent, t), 1); });
+        each_word_in_square(map.open_bushes(), p, DraftPlan::bush_range, [&](int cx, int cy, std::uint64_t tiles) {
+            const std::uint64_t in = seen[cy * stride + cx];
+            for (; tiles; tiles &= tiles - 1) w.put(static_cast<std::uint32_t>(in >> __builtin_ctzll(tiles) & 1), 1);
+        });
     }
     a.attack_at = w.at();
     ++a.attack_index;
@@ -579,11 +581,20 @@ std::uint16_t best_ward(const StaticMap& map, int site, const bitboard& reach) {
         int score = 0;
         const int x0 = std::max(0, c.x - r) >> 3, x1 = std::min(layout.width - 1, c.x + r) >> 3;
         const int y0 = std::max(0, c.y - r) >> 3, y1 = std::min(layout.height - 1, c.y + r) >> 3;
-        for (int cy = y0; cy <= y1; ++cy)
-            for (int at = cy * stride + x0, end = cy * stride + x1; at <= end; ++at) {
-                const std::uint64_t w = seen[at];
-                score += 2 * __builtin_popcountll(w & near_w[at]) + __builtin_popcountll(w & far_w[at]);
+        const auto chunk = [&](int at) {
+            const std::uint64_t w = seen[at];
+            return 2 * __builtin_popcountll(w & near_w[at]) + __builtin_popcountll(w & far_w[at]);
+        };
+        // At r 6 a row spans at most 3 chunks, read at fixed offsets: as a loop (vectorised or not) it cost ~2x.
+        if (x1 - x0 <= 2)
+            for (int cy = y0, at = y0 * stride + x0; cy <= y1; ++cy, at += stride) {
+                score += chunk(at);
+                if (x1 > x0) score += chunk(at + 1);
+                if (x1 > x0 + 1) score += chunk(at + 2);
             }
+        else
+            for (int cy = y0; cy <= y1; ++cy)
+                for (int at = cy * stride + x0, end = cy * stride + x1; at <= end; ++at) score += chunk(at);
         if (score > best || (score == best && score > 0 && dist(c, centre) < best_dist))
             best = score, best_dist = dist(c, centre), best_tile = c;
     }
@@ -790,6 +801,12 @@ void make_open_plan(const StaticMap& map, Analysis& a, DraftPlan& plan, std::uin
         return;
     }
     static std::vector<std::pair<float, float>> left;
+    // The walks between candidates. A run and the greedy seeds stop at a group farther than the horizon plus the
+    // body's attack range, so the floods stop there: past it every step count reads unreachable, to the same effect.
+    int reach = 0;
+    for (int b = 0; b < p.bodies; ++b) reach = std::max(reach, facts(a.lead_for[b]).attack_range());
+    static cambc::distance_field walk;
+    static bitboard root{cambc::uninitialized}, visited{cambc::uninitialized};
     for (int c = 0; c < p.cands; ++c) {
         const int g = order[c].second;
         const auto& G = map.groups[g];
@@ -802,8 +819,10 @@ void make_open_plan(const StaticMap& map, Analysis& a, DraftPlan& plan, std::uin
             C.hp[m] += hp, C.strength[m] += hits, C.total += hp, C.total_strength += hits;
             C.members = std::min(C.members + 1, op::max_members);
         }
-        const Field f = uncounted_field(map.blocked_for_us, single(G.centre));
-        for (int d = 0; d < p.cands; ++d) p.steps[c][d] = static_cast<std::uint16_t>(f.at(map.groups[order[d].second].centre));
+        clear_board(root);
+        if (!test(map.blocked_for_us, G.centre)) set_tile(root, G.centre);
+        walk.compute(map.blocked_for_us, root, visited, static_cast<std::uint16_t>(p.horizon + reach));
+        for (int d = 0; d < p.cands; ++d) p.steps[c][d] = static_cast<std::uint16_t>(steps_at(walk, map.groups[order[d].second].centre));
     }
     for (int b = 0; b < p.bodies; ++b) {
         const auto type = a.lead_for[b];
@@ -1535,6 +1554,7 @@ int engine_clearance(const mapfeat::Input& in, const std::uint8_t* walked) {
 struct Measured {
     int picks;
     std::array<double, mapfeat::count> raw;
+    std::vector<int> team; // model_team(raw, picks), with no picks known
 };
 
 // recall_health_fraction and gold_price_scale as linear functions of the map: SPSA oc5's slopes of the score gradient
@@ -1584,7 +1604,7 @@ std::optional<Measured> measure() {
             std::printf("\nFEATFUEL %016llx %llu\n", key, static_cast<unsigned long long>(used));
         });
     }
-    return Measured{picks, raw};
+    return Measured{picks, raw, team};
 }
 
 std::vector<int> ids(const std::vector<cambc::champion_draft>& picks) {
@@ -1623,7 +1643,8 @@ const std::vector<cambc::champion_draft>* model_draft() {
     const auto theirs = draft_model::counters ? model::ids(cambc::draft::current_draft(team::enemy)) : std::vector<int>{};
     const int now = draft_model::counters ? static_cast<int>(ours.size() * 8 + theirs.size()) : 0;
     if (now != known) {
-        const auto team = mapfeat::model_team(measured->raw, measured->picks, draft_model::counters ? ours : std::vector<int>{}, theirs);
+        const bool none = !draft_model::counters || (ours.empty() && theirs.empty());
+        const auto team = none ? measured->team : mapfeat::model_team(measured->raw, measured->picks, ours, theirs);
         if (static_cast<int>(team.size()) != measured->picks) return known < 0 ? nullptr : &chosen;
         // The kept champions stay in their order: the draft analysis's leads are per body in pick order, and a
         // changed order restarts them on draft turns too short to finish (8 points lost on the held-out suites).
