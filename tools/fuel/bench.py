@@ -18,8 +18,10 @@ then every body's turn of round 1, round 2, ... The `all` summary covers turns f
 has a double budget; JSONs before 2026-10-22 included it) with turns over 100k. `SHORTCUT` stdout
 lines (bots' note_shortcut) are counted too, which matters only with the real budget.
 
-Games run on the fast runner (tools/fastengine/runner, Linux x86-64, cambc 4.0.0) when it is built: CAMBC_BIN if it
-names one, else the built launcher in this checkout or the primary one; FASTRUNNER_MODE defaults to native. All games
+Games run on the fast runner (tools/fastengine/runner, Linux x86-64, cambc 5.0.1) when it is built: CAMBC_BIN if it
+names one, else the built launcher in this checkout or the primary one; FASTRUNNER_MODE defaults to native. A built
+launcher that does not answer (another cambc build) is an error, not a silent stock run: FASTRUNNER_ALLOW_STOCK=1 or
+--stock plays stock. All games
 go to one `run-batch` taking a CPU slot per game, each game's draft and winner read from its .camstat (`cambc
 summary`). Bundles, fuel, stdout and so this JSON match stock's (2026-11-03: 200 games, 100M and the real budget), at a
 quarter of the CPU.
@@ -45,7 +47,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 import cambc_env  # noqa: E402
 import cpu_slots  # noqa: E402
-from run_batched import is_fastrunner  # noqa: E402
+from run_batched import FASTRUNNER_DOWN, fastrunner_unanswered, is_fastrunner  # noqa: E402
 DEFAULT_MAPS = ["00ambush", "00lanes", "01hooks", "00corners", "00contest", "00interlock", "00fragment", "00expanse"]
 MAP_SETS = {"wide": [
     "00ambush", "00lanes", "01hooks", "00corners", "00contest", "00interlock", "00fragment", "00expanse", "00swirl",
@@ -123,13 +125,18 @@ def fast_cli():
     the primary checkout (worktrees don't build it)."""
     if os.environ.get("CAMBC_BIN"):
         cli = str(Path(os.environ["CAMBC_BIN"]).resolve())
+        if fastrunner_unanswered(cli):
+            sys.exit(FASTRUNNER_DOWN.format(cli=cli) + " (or --stock)")
         return cli if is_fastrunner(cli) else None
     if sys.platform != "linux" or platform.machine() != "x86_64":
         return None
     for root in (ROOT, cpu_slots.DIR.parent.parent):
         runner = root / "tools" / "fastengine" / "runner"
-        if (runner / "target" / "release" / "libfastrunner.so").is_file() and is_fastrunner(str(runner / "fastrunner")):
-            return str(runner / "fastrunner")
+        if (runner / "target" / "release" / "libfastrunner.so").is_file():
+            if fastrunner_unanswered(str(runner / "fastrunner")):
+                sys.exit(FASTRUNNER_DOWN.format(cli=runner / "fastrunner") + " (or --stock)")
+            if is_fastrunner(str(runner / "fastrunner")):
+                return str(runner / "fastrunner")
     return None
 
 

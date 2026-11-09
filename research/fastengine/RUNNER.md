@@ -338,8 +338,10 @@ addresses, rodata references and jump tables normalised):
   WASI imports alike, `HostFunc::array_call_trampoline`) now run `libcalls::out_of_gas` right after a host function
   returns `Ok` if the fuel counter is >= 0. In 5.0.0 a host call whose price spent the chunk let the guest run on
   to its next check (function entry or loop header), host calls included. A host call reached after guest code
-  spent the chunk does not run in that turn on either version (`tools/probes/probe-hostcall-fuel`, MODE 1). Fuel totals are unchanged; what moves is where an out-of-fuel turn stops, and so which actions land in
-  it and how the fuel of the next turn reads. With 5.0.0's runner forced onto 5.0.1 (`FASTRUNNER_ANY_CAMBC=1`), 80
+  spent the chunk does not run in that turn on either version (`tools/probes/probe-hostcall-fuel`, MODE 1). What
+  moves is where an out-of-fuel turn stops, so which actions land in it, and the bot's next turn pays for the code
+  5.0.0 ran in the (capped) out-of-fuel turn. In a turn of several chunks (the draft's 10M first turn) per-turn fuel
+  can move too: see "Re-check on 5.0.1" below. With 5.0.0's runner forced onto 5.0.1 (`FASTRUNNER_ANY_CAMBC=1`), 80
   of the 768 games below differ in their replay and 458 in their `.fuel` (2 winners); at a 37k quantum, 22 of 24.
 - The rest is the cambc CLI (account, submissions, map pool, Python packing, `tool_server`), `GuestCtx` growing
   (store fields move by 0x20), wasmtime-wasi and component glue re-inlined, `runner::summary::collect` and
@@ -368,6 +370,46 @@ and `.stdout`) and `.camstat` byte-identical, in both modes:
 
 `FASTRUNNER_CHECK_SHADOW=1` on a game: all 37,160 hits matched the original, callers attributed (other 0). CPU a game
 on the loaded 96-core box (load ~90, the 768 games, 24 jobs): stock 2.52 s, exact 0.31 s, native 0.21 s.
+
+
+### Re-check on 5.0.1 (2026-11-09, evening)
+
+The installed library (HEAD 79d9b0197) was the one tested; it needed no fix and was not replaced. `compare.py
+--camstat`, both sides, stock = cambc 5.0.1 on PATH: every bundle member (`replay.repl26a`, both `.fuel`, `.stdout`)
+and `.camstat` byte-identical, every winner equal. The runner's `Out of fuel: A n B n` line was checked against the
+`Turn rollover` records in stock's replays (play turns, per team):
+
+| bots | build | maps | games | identical (native / exact) | out-of-fuel turns, runner = stock replay |
+|---|---|---|---|---|---|
+| oc32s-bsk vs oc-base25 | release | `maps/` + `maps/gen` | 768 | 768 / 768 | 15,761 = 15,761 |
+| oc-escv1-unl vs oc32s-bsk | release | `maps/` + `maps/gen` | 768 | 768 / - | 53,539 = 53,539 |
+| oc-esc-478 vs v87-esc | release | `maps/gen-s1` | 512 | 512 / - | 9,550 = 9,550 |
+| oc32s-bsk vs oc-base25 | debug | 128 of `maps/gen-s1` | 256 | 256 / - | 5,656 = 5,656 |
+| oc-escv1-unl vs oc-esc-478, `--fuel 37000` | release | 24 of `maps/` | 48 | 48 / 48 | 98,942 = 98,942 |
+
+Also checked: `run_batched.py` through the launcher (slot dir, `oof_turns` in results.json); `tools/tune` (SPSA): a
+candidate patched by `patch.py` (s88's values) plays the same 80 bundles (40 ladder maps, both sides, against
+oc-base25) as the runner's own compile of that wasm, native and exact. Two `cambc build --release` runs of one source
+can differ in `try_table` label layout (seen in `plan_strikes` and `break_lock`), so compare games, not wasm bytes.
+
+**Ladder re-runs: 5.0.0 against 5.0.1 per-turn fuel.** 44 ladder games (v95-v100), replayed under both stock versions
+against opponent puppets, differed by ~2-300 fuel on some turns. Every difference before the two re-runs' inputs
+diverge is one of: a turn right after an out-of-fuel turn of the same champion (210: the code between the host call
+that spent the fuel and the next check now runs in that next turn), the draft's first turn (9 games, +21 to +83 on
+5.0.1), or a later turn of a game that already differed in one of those (80: fuel-aware code reacts). None is
+unexplained, and the fast runner gives 5.0.1's values, so it is the engine change, not the runner or the measuring.
+The draft-turn case is the same change in a turn of several chunks (`tools/probes/probe-chunk-read`). The bot's own
+code crosses a 100k chunk boundary and the next import is an unpriced read (`fuel_remaining()`). 5.0.0 left the
+counter overrun: the read reported the chunk as spent to its boundary (9,000,000) and the turn was charged 14 less
+(1,004,112). 5.0.1 runs `out_of_gas` after the read: 8,999,993 and 1,004,126, as the fast runner gives in both modes.
+A one-chunk turn cannot show this, since any overrun ends it. A champion's first turn (2 chunks) can, but none of the
+44 games did.
+
+Tools: `run_batched.py` and `bench.py` now stop with an error when `CAMBC_BIN` (or bench's built launcher) is the fast
+runner but `__fastrunner` does not answer, i.e. under a cambc build it was not ported to. Between 14:44 and 15:19 that
+made every batch play stock: slower, and no out-of-fuel counts for release builds. `FASTRUNNER_ALLOW_STOCK=1` plays
+stock anyway. ab.py, solo.py and dgate.py go through `run_batched.py`; `tools/tune` calls the launcher directly with
+runner-only options (`--slot-dir`, patched bots with no source), so a stock fallback fails there rather than running.
 
 ## Reproducing
 
