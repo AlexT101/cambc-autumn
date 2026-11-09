@@ -46,6 +46,61 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   leave a narrowly lost stand are right to. Recalibrating the model has nothing to correct; the level combat and team
   arms opened opportunities at this boundary, where fighting and declining are worth the same.
 
+## (ocean = oc-base25, 2026-11-09) Opponent tribute fidelity: Mite's tribute habit and both teams' lock policies in the spar bodies
+
+Asked: make the local opponents reproduce the Fish/Mite tribute behaviour local gates miss (section "Why v90-v93 lose
+live"), and check fidelity on 470. Tools `research/ideas-2026-11-09/oppfidelity-tools/`, data `~/tmp-offload/oppfidelity/`.
+- **Only Mite feints; Fish doesn't.** Live r2, one-site maps, rounds ≤ 600 (v86/87/89/95; `episodes.py`, `chanturns.py`):
+  - Mite: 11.1 tribute starts a game, 1.71 manual cancels (3.21 against v91/v93); 90% are cancelled on the channel's
+    first turn and 64% restart within 3 rounds. On a channel's first turn with one of ours seen within 5 it cancels
+    59% (65-80% at 1-4 tiles, ~45% at 5, ~10% at 6); later turns 4-6%.
+  - The events show a turn-end habit: wherever it ends a turn within 1 of an altar with gems, Mite starts a tribute
+    in place of its recall feint. The next turn it cancels to act, then starts again.
+  - Fish: 0.23 cancels a game, 10% of close starts, the spar bodies' rate (0.2-0.4). The "1.9-2.6 cancels" of the
+    forensics were Fish and Mite pooled.
+- **Locks differ too.** Before 600 on one-site maps, Fish places 2.4 locks a game (FISH_MODEL 8.5: lock maps, any
+  unlocked altar within 2), Mite 0.1, the spar bodies 0.8-0.9. Our hits on their locks: 9.6 a game against Fish, 0.1
+  against Mite, 3.2 locally.
+- **Bodies** (`newbodies.sh TAG`, from the spar bodies, gitignored like them):
+  - `spar-*-Fl`: Fish's lock policy (`patch_locks.py fish`, as bots/fish has it).
+  - `spar-*-Mt3`: Mite's habit plus no locks (`patch_mite.py --v3`, `patch_locks.py none`). The habit yields to a
+    recall when the body wants home. The first turn cancels when an enemy is in Mite's contact (within 4, or 6 if
+    either side is ranged) and ocean's own tribute check fails.
+  - The unconditional v1 (`-Mt`, `-Mt2`) over-feinted: 20-23 starts and 10-12 cancels.
+- **Fidelity** (`fid.py`; one-site, rounds ≤ 600, against oc-base25; live: Mite 11.1 / 1.71 / 90% / 64%, Fish
+  2.4 locks):
+  - Mt3: 10.5-12.0 starts, 1.15-1.79 cancels, 81-88% on the first turn, 64-76% restarted, 0 locks.
+  - Fl: 2.5-2.6 locks, 0.24-0.31 cancels.
+  - Not matched: Mt3 cancels 10-22% of its starts made within 3 tiles; Mite cancels 60%.
+- **Calibration** (`calib.py`, `op600.py`; block 0 plus noise seeds 1-16 against oc-base25; old = dgate's bodies on
+  the same draws, games identical to its cache). Arm − base, points:
+
+| Arm | Old, all (9,216) | Old, one-site (3,384) | New, all | New, one-site | Live |
+|---|---|---|---|---|---|
+| v87-lk-600 (470) | -0.02 ±0.97 | +0.59 ±1.54 | -0.38 ±0.97 | **-2.04 ±1.53** | 470 ~-2.7; one-site B−A -6.6 |
+| v87-soupk (471 on v87) | -0.36 ±1.02 | +0.27 ±1.63 | -0.33 ±1.02 | **-2.63 ±1.66** | soup-k ~-1.7, mostly one-site |
+| v87-nh-6-3 | +0.00 ±0.51 | +0.86 ±0.81 | -0.13 ±0.50 | -0.35 ±0.80 | level (v95 +5 net, z 0.57) |
+
+  - On dgate units (17 blocks), lk-600 reads -0.15 old and -0.41 new (LLR -0.73 / -1.03); nh-6-3 +0.07 / -0.13; soupk
+    -0.37 / -0.33. Overall levels barely move: the new bodies move one-site maps, about +1 on the rest.
+  - 470's mechanism, one-site, block 0 plus seeds 1-8, paired (1,880 games): opponent gems at 600 +5.6 ±8.0 on the
+    old bodies, **+15.2 ±8.1** on the new (Mite bodies +3.7 → +18.4); live +28 ±23. Our early locks fall by 2.2
+    on both (live 2.6).
+  - Base level against the new bodies: 69.8% against 70.8% on the old (live v87 ~64%).
+- **Soup-k.** The live data alone can't place it: v90 has 200 cells, and every paired feature is within noise.
+  Against the new bodies it loses on one-site maps, both halves: Fish -1.7, Mite -3.6 (old +1.2). Its mechanism there is not
+  traced (fight emblems and casts, not altar play, are what it changes).
+- **Verdict: both calibrations pass, and the one-site mechanism moves toward live.**
+  - 470 reads ≤ 0: -0.38 overall and -2.04 ±1.53 on one-site maps, where the old bodies read +0.59.
+  - nh-6-3 stays level.
+  - op600 is +15 ±8 against the forensics' ~+25 target (live +28 ±23): partway there.
+  - A 2-point one-site effect needs about the full gate to resolve.
+- **Proposed to the coordinator** (not switched: the base's games must be replayed):
+  - dgate's members become `-Fl`/`-Mt3` (`dgate-newbodies.patch`: a `BODY` map, run names suffixed `2`, and
+    `build_seed` calls `newbodies.sh`).
+  - The new bodies matter most for altar, lock and tribute arms.
+  - Bodies for seeds 1-16 are built.
+
 ## (ocean = oc-base25, 2026-11-09) Generalised nuke guard (nukeguard2): four forms, all H0 on dgate; lethal steps are trapped retreats
 
 The user asked how the nuke guard works (`v87-rv-ngd`: one seen enemy's ready abilities alone, a hard ban, from outside every

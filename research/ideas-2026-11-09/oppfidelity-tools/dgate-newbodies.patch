@@ -1,0 +1,39 @@
+--- research/ideas-2026-11-08/diverse-tools/dgate.py	2026-11-09 01:57:22.100614704 +0000
++++ /tmp/claude-1000/-home-ubuntu-cambc-autumn/3650a530-f591-417e-a0c5-31524a1e3260/scratchpad/dgate.py	2026-11-09 04:56:40.768306325 +0000
+@@ -17,9 +17,12 @@
+ import local, spar_ab, ab  # noqa: E402
+ R = local.R; LOCKS = os.path.expanduser('~/tmp-offload/diverse/locks'); LOGS = os.path.expanduser('~/tmp-offload/diverse/gate-logs')
+ DIRS = {'o25': 'spar-o25', 'o29': 'spar-oc29'}
++# Opponent fidelity (EXPERIMENTS "Opponent tribute fidelity"): Fish's bodies carry Fish's lock policy, Mite's Mite's
++# tribute habit and no locks; run names end in 2 so no run against the old bodies is reused.
++BODY = {'F': 'Fl', 'M': 'Mt3'}; OF = '/home/ubuntu/cambc-autumn/research/ideas-2026-11-09/oppfidelity-tools'
+ 
+ def block(k): return [('o25', 'F'), ('o25', 'M'), ('o29', 'F'), ('o29', 'M')] if k == 0 else [(f'dvn{k}', 'F'), (f'dvn{k}', 'M')]
+-def mdir(b, o): return f'variants/{DIRS.get(b, "spar-" + b)}-{o}'
++def mdir(b, o): return f'variants/{DIRS.get(b, "spar-" + b)}-{BODY[o]}'
+ def done(n): return os.path.exists(f'{R}replays/ab/{n}/summary.json')
+ def release(n): return json.load(open(f'{R}replays/ab/{n}/summary.json')).get('release') is True
+ 
+@@ -27,16 +30,18 @@
+     """The run of (bot vs member): an existing release run under spar_ab's names, else a new name. Runs from before
+     ab.py played release builds (no 'release' key: legacy spar-c25-o29F and the like) are never paired with release ones."""
+     tag = os.path.basename(bot.rstrip('/')).removeprefix('oc-')
+-    names = [f'spar-c{tag}-{b}{o}', f'spar-c{tag.removeprefix("base")}-{b}{o}', f'spar-c{tag}-{b}{o}-rel']
++    names = [f'spar-c{tag}-{b}{o}2', f'spar-c{tag.removeprefix("base")}-{b}{o}2', f'spar-c{tag}-{b}{o}2-rel']
+     for n in names:
+         if done(n) and release(n): return n
+     return names[2] if done(names[0]) else names[0]
+ 
+ def build_seed(k):
+     if all(os.path.isdir(f'{R}bots/{mdir(f"dvn{k}", o)}') for o in 'FM'): return
+-    subprocess.run([sys.executable, f'{T}/bodies.py', f'n{1310000 + k}'], cwd=R, check=True, capture_output=True)
+-    subprocess.run([f'{R}research/ideas-2026-11-08/spar-tools/makespar.sh', f'variants/dvp-n{k}', f'dvn{k}'], cwd=R,
+-                   check=True, capture_output=True)
++    if not all(os.path.isdir(f'{R}bots/variants/spar-dvn{k}-{o}') for o in 'FM'):
++        subprocess.run([sys.executable, f'{T}/bodies.py', f'n{1310000 + k}'], cwd=R, check=True, capture_output=True)
++        subprocess.run([f'{R}research/ideas-2026-11-08/spar-tools/makespar.sh', f'variants/dvp-n{k}', f'dvn{k}'], cwd=R,
++                       check=True, capture_output=True)
++    subprocess.run([f'{OF}/newbodies.sh', f'dvn{k}'], cwd=R, check=True, capture_output=True)
+ 
+ def running_elsewhere(n):
+     ps = subprocess.run(['ps', '-eww', '-o', 'args'], capture_output=True, text=True).stdout
