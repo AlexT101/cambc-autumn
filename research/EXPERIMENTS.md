@@ -291,6 +291,43 @@ Results against oc-base23 (v86), in points (cand − v86):
   ≤ 0, local H1s are a filter, not evidence of a live gain; only live paired results decide merges (TEST-STANDARD
   rule 7).
 
+## (ocean, 2026-11-08/09) Chain ends against v86: the overfit measurement (mirror, panel, spar, dgate, live)
+
+How far each local test reads above live, for the merge chain v86 → v87 → v89 → v91. Bots: v86 `oc-base23`, v87
+`oc-base25`, v89 `oc-base27`, v91 `oc-base29`. Mirror runs are own drafts, release builds, fast runner, on the fresh
+`ch-held` suite (maps/SUITES.md "Chain ends against v86"), with SPRT 0.50/0.5025 from 40,960 games. Panel is
+astraeus-td, proteus-td and the test-draft mirror on `ch-pan`, pooled by `panel_sprt.py`. Spar is `spar_ab.py` with
+release copies (`variants/chain-b*`), 6,656 paired games. Live is r2, paired against v86 on the same 512 games
+(`ladder-scrims-2026-11-06/data/cells-r2.tsv`). Logs: `~/tmp-offload/chain/logs`.
+
+Results against oc-base23 (v86), in points (cand − v86):
+
+| step | mirror (held out) | panel | spar | dgate | live (paired, n 512) |
+|---|---|---|---|---|---|
+| v87 oc-base25 | +0.27 of 167,789, H1 (LLR 2.96) | +0.46, H1 (dir +0.62, ast +0.09, pro +0.68) | +0.78 ±2.9 | (its REF) | **−1.8 ±4.7** (−9, z −0.74) |
+| v89 oc-base27 | — | — | +0.63 ±3.5 | — | **−2.3 ±4.9** (−12, z −0.94) |
+| v91 oc-base29 | **+1.95** of 40,962, H1 (LLR 8.1) | **+2.12**, H1 (LLR 22; dir +2.43, ast +1.96, pro +1.97) | **+4.07 ±3.4** | **+1.81 ±1.03** of 3,200 units (blocks 0-24), LLR +1.06, stopped undecided | **−4.3 ±5.0** (−22, z −1.69) |
+| v93 oc-nosoup (v91 − soup-k + mask) | — | — | — | — | −5.3 (−27, z −2.04) |
+
+- **Local is consistent with itself.** The steps' own mirror gains (CHANGES 465-471, ~+0.2-0.5 each) add to ~+2.1;
+  the end-to-end mirror reads +1.95 and the panel +2.12. Nothing is lost in composition.
+- **Live is consistent with itself too, in the other direction.** Every live step is ≤ 0 (v87 −9, v88 −2, v89 −1,
+  v90 −12 on 200, v91 −3 on 200), none significant; the end of the chain is at z −1.7 (v91) and z −2.0 (v93).
+- **The gap.** v91: mirror +1.95 against live −4.3 is a 6.3-point gap at z ≈ 2.5 (live's SE 2.5 dominates); spar's
+  +4.1 is 8.4 points above live (z ≈ 2.7). For v87 the gap is 2.0 points (z ≈ 0.8). So the overfit grows with the
+  chain: most of it sits in v87 → v91's +1.7 local points (Heart of Ruin 467/468, the altar-deny lock and soup-k's
+  emblems and casts, 470/471), which live reads at about −2.5. The live-like designs (spar, dgate) read the same sign
+  as the mirror: they raise per-map r, not the chain's sign.
+- **dgate calibration.** `dgate.py variants/oc-base29 variants/oc-base23 --stage screen` reads v91 at +1.81
+  ±1.03 after 25 blocks (z ≈ 3.4), where live reads −4.3: **dgate fails its key calibration** and reads the chain
+  like the mirror. Block 0 (v87 and v91 as opponents) read +0.68; the noise seeds drifted up from +0.3 to +1.8. It was
+  stopped at LLR +1.06 because the screen needed about 45 more fresh blocks (~4 h) and the sign was already settled;
+  the runs are cached (`spar-cbase29-dvn*`, `spar-cbase23-dvn*`) if anyone resumes it. A dgate H1 doesn't predict a
+  live gain on this chain.
+- **What it means for gates.** A local +2 on this chain is worth ≤ 0 live. Until a local test reads v86 → v91 at
+  ≤ 0, local H1s are a filter, not evidence of a live gain; only live paired results decide merges (TEST-STANDARD
+  rule 7).
+
 ## (ocean, 2026-11-09) One diverse gate for every stage (dgate.py); v87-nh-6-3 H0 there
 
 [diverse-panel.md "One gate"](ideas-2026-11-08/diverse-panel.md).
