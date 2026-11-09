@@ -211,6 +211,12 @@ Asked (user): "test feint tributes locally in our bot to see if it works, can us
   - rank gaps only blurred (r 0.72);
   - nothing of the payload (claims, support intents, chase);
   - a round a champion didn't publish (ran out of fuel), and a round-mod-4 counter in bits 14-15.
+- **Wins (dgate, stream against the current mask, both on oc-base25 with one throwaway key):** ZONE at 23,936 units
+  (96k games a bot): +0.32 ±0.31 pts, low SPRT H1 at 9,216 units, high H0 (Fish +0.37, Mite +0.28). The opponents
+  don't read our priorities, so this measures the fuel alone: no loss. On oc-base25, +201 a turn at 100M (52/52 same
+  play) and +193 / +190 / +1051 at the real budget. The real-budget p99 tail is not in fights: turns with an enemy
+  within 5 tiles are 7% of turns but 3.3% of those over p99, and their own p99 is +305 (quiet turns +1277).
+  `stream_patch.py` also patches bots from before the chase bit (oc-base25: payload bits 0-10).
 - **Verdict:** ready for the live scheduler at about +200 fuel a turn. Unlike the current mask's +30, it changes
   real-budget play in most games, as any +200 does.
 
