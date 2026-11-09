@@ -13918,3 +13918,41 @@ dgate against oc-base25 (release, real fuel, own drafts, SPRT 0.505/0.5075 on (s
 - **Read:** no conditioned form beats plain chan, whose last old-body read was +0.36 ±0.33.
   - The saved channels are too few to carry +0.2 pts, and chan4, which keeps most of them, reads 0.
   - Whatever chan gains comes from the reordering itself, not from saving channels. Nothing merged.
+
+## Provable fuel cap (v87-nof-final, v87 = oc-base25, 2026-11-09): REJECT, nothing merged
+
+The details are in [fuelcap-2026-11-09/PROOF.md](fuelcap-2026-11-09/PROOF.md).
+
+**What was built.** The candidate has these parts:
+- a deadline mechanism: `checkpoint(need)` throws below a floor, and the turn then runs only its essential end;
+- a `tick<4>()` grid on 503 functions;
+- proven layer bounds for every field, and route caps fitted to the fuel left;
+- resumable rewrites: guarded_altar, map_economy and the attack index;
+- caches whose key is written only once they are filled;
+- floors of 21000 / 18000, and 12000 for the queue.
+
+**Census.** These are release builds on maps-trc, 1280 games against oc-base25. Out-of-fuel play turns fell from 12,608 to 9 of 6.2M. Round-1 turns that ran out fell from 469 to 0.
+
+**Results against oc-base25:**
+
+| gate | win% (CI) of n | SPRT |
+|---|---|---|
+| dgate v87-nof-final | -17.55 pts (±2.29) of 4,096 (896 units) | REJECT (low H0 at -3.18) |
+
+**Bisect.** These are head-to-head against oc-base25 in the census games: 1280 games, about ±2.8.
+
+| build | win% | OOF per 1k | mean turn fuel |
+|---|---|---|---|
+| oc-base25 | 50.0 | 2.02 | 50.5k |
+| v87-nof2: the deadline at 11000 / 8000, 20 checkpoints | 47.0 | 0.074 | 51.3k |
+| v87-nof3g without the grid | 47.8 | 0.51 | 50.7k |
+| v87-nof3g with the grid | 45.0 | 0.026 | 54.6k |
+| floors 16000 / 13000 | 41.4 | 0.009 | |
+| floors 21000 / 18000 | 37.1 | 0.003 | |
+| final: plus the queue floor and the crowd walk | 35.2 | 0.0015 | |
+
+**Reading.**
+- A cut costs far more than running out. A cut abandons the rest of the decision, and it falls on every turn that reaches the floor (about 2.5% of turns at 11000). Base runs out on 0.2% of turns, and that costs little: never running out is worth about +1.4 at most (the 2x budget decomposition above).
+- The grid itself costs about 8% of turn fuel, +4k a turn. That fuel comes out of the gated searches.
+- Higher floors trade wins for OOF, and they lose badly.
+- The abort-safety fixes are behaviour fixes. They matter only under a cut mechanism: `race_left`, `access_fire`, the prey field, `gems_share`, `own_factors`, the `min_camp_damage` slot, the hop list, and `catch_up_walk`'s behind flag.
