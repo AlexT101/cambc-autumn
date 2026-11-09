@@ -286,6 +286,46 @@ rollouts from round 2 or later, and its source has another agent's uncommitted e
 fitting form is a per-team income multiplier on capture shares in run-batch, judged by `spar-tools/fidelity.py`'s
 early-gold rows first, then by per-map r.
 
+## Losses of the oc32 line (2026-11-09)
+
+Analysed 16 runs of oc32-cg-fs-nh against the new bodies (all replays kept). The tools are in
+`research/ideas-2026-11-09/losses-tools/` and the data in `~/tmp-offload/diverse/loss/`.
+
+**The early fights decide the game, with no single cause.**
+- oc32 wins about 72–74% of its games against the bodies.
+- 62% of its losses come in (map, body) cells it wins 30–70% of the time, so the losses are swings in contested
+  cells, not maps it can't win.
+- First blood comes at about round 120. When our unit dies first we win 59% of the time; when theirs does, 84%.
+- Within a cell, a loss is −164 gold by round 150 and 3.3 more of our deaths before round 600.
+- Every death category grows by about the same factor, ~2.3× in losses, so no one kind of death drives them.
+- Fights we start are net positive at every HP gap. Fights they start while we're behind on HP cost about −0.18
+  each.
+
+**Knob regression.** The noise bodies redraw their knobs every 100 rounds as default·exp(0.2·N(0,1)).
+- `variants/dvp-printer` and `variants/dvp-printer300` replay those draws exactly (`draws.py`).
+- `knobreg.py` regresses our win on the body's draws, with the cell means removed. It covers about 5.3M cached
+  games over all candidates.
+- Each value below is our win-rate change in points per +1 sd of the body's draw; ±1 sd = ±0.11.
+
+| Knob | Fish bodies | Mite bodies |
+|---|---|---|
+| fight_weight | −0.19 | −0.43 |
+| pair_hold_share | −0.23 | −0.09 |
+| bush_margin | −0.06 | −0.19 |
+| fight_camp_prior | −0.14 | −0.11 |
+| chip_value | +0.12 | +0.15 |
+| track_horizon | +0.50 | −0.08 |
+
+- These five knobs all point the same way against both opponents.
+- track_horizon is excluded because Fish's and Mite's bodies disagree on its sign.
+- On oc32's games alone (660k) no knob is significant: fight_weight reads −0.13 ±0.22.
+- What it suggests: bodies that weigh fights more and camp them harder beat us more often.
+- What we built from it: `oc32s-knob` moves our own five knobs one sd that way (×1.2214, chip_value ×0.8187).
+- Caveat: soup-k's fight_weight .819 lost to Mite live.
+
+**Stack.** `oc32s-bsk` is oc32-cg-fs-nh plus comms-bagf, sp-y2 and the knob step. The other zone arms read high H0 on
+oc32 (results in EXPERIMENTS).
+
 ## Files
 
 - `bodies.py` builds the bodies; `build.sh [N]` rebuilds them all; `runq.sh` runs the calibration queues.
