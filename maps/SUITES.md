@@ -894,3 +894,21 @@ In `suites/fresh/fresh-{seed}` (EXPERIMENTS "Draft lab refit on v87 (draft9)"; s
 - Made for draft8's old-style gates, never played: `d8-held` 1010200-1010279, `d8-varied` 1010300-1010319
   (`--mix varied`), `d8-panel` 1010400-1010439, `d8-screen` 1010500-1010539 (ladder-v2; symlinked in `merged/`).
 - Free: 1010120-1010199.
+
+## Ocean removals (ocean, 2026-11-09)
+
+`--mix ladder-v2`, in `suites/fresh/fresh-{seed}`, symlinked into `merged/` (CHANGES 485-486):
+- `ocrm-1920`: 1920000-1920079, 20,480 maps (CHANGES 485's A/B).
+- `ocrm-1921`: 1921000-1921079, 20,480 maps (CHANGES 486's A/B and the paired batch-3 arms; EXPERIMENTS "Ocean
+  removal batches 2 and 3").
+
+## Removal branch ports (ocean, 2026-11-09)
+
+`--mix ladder-v2`, in `suites/fresh/fresh-{seed}`, symlinked into `merged/` (EXPERIMENTS "dfp-pure, ft-k and
+gap-fix-ender on the removal branch"):
+- `ocrm-1940`: 1940000-1940019, 5,120 maps (CHANGES 487-489's A/B against ocean-rm2; used).
+
+## Draft first-turn fuel (ocean, 2026-11-09)
+
+`--mix ladder-v2`, in `suites/fresh/fresh-{seed}`, symlinked into `merged/` (CHANGES 491):
+- `ocft-1950`: 1950000-1950019, 5,120 maps (CHANGES 491's A/B and held-out --need headroom; used).

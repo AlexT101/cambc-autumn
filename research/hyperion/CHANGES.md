@@ -3962,7 +3962,167 @@ Queued live at p84 as `variants/live-oc32-cv` (frozen copy), paired against v99,
 
 Evidence: EXPERIMENTS "Escape planner (478) on the v87 line".
 
-## 485: oc32-cg-fs-nh: 483's chase fuel gate, fs-enemy and nh-6-3 on oc32-cv (ocean, 2026-11-09)
+## 485: the changes the live line dropped, and 429's timed lock and deny, removed (ocean, 2026-11-09)
+
+`bots/ocean` without the changes the v87 live line (oc-base30 to oc32-cg, all on oc-base25) rejected or that lost
+live, and without CHANGES 429's timed lock and 100-gem deny. Frozen as `variants/ocean-rm1` (= bots/ocean); the base is
+`variants/ocean-ba65375` (CHANGES 483).
+- **Removed:** 467 (`fight_scale`), 468 (`landing_floor`), 470 (`lock_deny_from`), 471 (soup-k: `fight_weight`
+  0.688, `trib_min_bag` 100, `cast_cost` 40 again), and from 429 the timed lock (`lock_plan_wait`, `lock_plan_turn`,
+  434's per-altar wait bands, `lock_stage_steps`) and `channel_to_deny` (`deny_gems`). 467/468/470/471 are reversed
+  commits; 429's parts were cut by hand.
+- **Kept:** 429's hard-stop route in `stop_game_ender` and the merged altar site; 473; 475/476 (never ported to the
+  live line, not rejected); 469, 472, 474; 478-483.
+- **Why:** 470 about -2.7 and soup-k about -1.7 live (EXPERIMENTS "Why v90-v93 lose live"); 467/468 level live and
+  closed on dgate; 429's lock was level to negative live (v80: net -5 of 512, enemy 100+ tributes not reduced).
+- **Exactness:** before 429's cut (with 473/475/476 also out), bots/ocean replayed byte-identically at 100M to
+  oc32-cg less dfp-pure and ft-k in 119/120 bench games; the one difference (01boss-battle b) is 474's fuel shift
+  (identical 52/52 with 474 reverted too). An audit found no remnants or hybrids.
+
+Own drafts, release, fast runner, against ocean-ba65375 on fresh `merged/ocrm-1920` (ladder-v2): **48.4% (47.9-48.8)
+of 40,960**, OOF turns 457k against 466k (-1.9%), no failed matches or broken drafts. The mirror reads the removed
+changes as gains, as their own mirror tests did; the removal is on live evidence, which this A/B cannot show.
+
+## 486: b1, gf, b5, b3w and c1 removed (ocean, 2026-11-09)
+
+`bots/ocean` = `variants/ocean-rm2`: CHANGES 485 without five of CHANGES 441's pool members, each 50.0 or better
+removed in the pool's leave-one-out.
+- **Removed:** b1 (bank.cc `safer_altar`, `strike_eta`); gf (safety `boost_side` and chase_trade's `boost`, prey's
+  call); b5 (`fixc::bag_big`, `bag_ratio`: guard.cc's pack zone at `hurt_retreat_ratio` again); b3w (altar_guard.cc's
+  escort clearing and `clear_leash`; `escorting()` kept); c1 (plan.cc strike search at 24 nodes and 10 exact queries,
+  astraeus's). bank_gems, carry_bag's wait and chase_trade equal astraeus's; altar_guard.cc equals oc-base9's but for
+  469's helper. An audit found no remnants or hybrids.
+- **Kept:** 466's mid-game gold hump and mapcond-q (put back after the seven-removal arm, below), cbdp's mirror pull,
+  ptw's turn windows.
+
+Own drafts, release, fast runner, against `variants/ocean-rm1` (CHANGES 485) on fresh `merged/ocrm-1921` (ladder-v2):
+**49.2% (48.7-49.7) of 40,960**, OOF 489k against 466k (+5%, mostly c1's larger search). With 466 and mapcond-q also
+removed: 49.0% (48.5-49.5); the two are worth +0.22 ±0.64 paired, n.s. The mirror reads b1, gf, b5, b3w and c1 together
+as about +0.8, more than the pool's leave-one-out did (each 50.0, c1's removal +0.3).
+
+Evidence: EXPERIMENTS "Ocean removal batches 2 and 3".
+
+## 487: dfp-pure's draft farm plan, ported from the live line (ocean, 2026-11-09)
+
+A port of `variants/v87-dfp-pure` (dfp-pure, in CHANGES 479's oc-base31) onto `bots/ocean` (= `variants/ocean-rm2`),
+the same diff as v87-dfp-pure against oc-base25 (v87):
+- the draft's first turn solves an early team farm plan over our half (`draft/open_plan.{h,cc}`, `make_open_plan`,
+  last in the first turn on the fuel left; `DraftCap` bit 32 when it can't start);
+- the plan sits after PlanFacts' outputs (`open_bits`), after mapcond-q's facts; DraftPlan version 17 (11 with the
+  plan off), as on the live line;
+- farm weights each body's next planned group x1.5 while round ≤ 100 (`open_plan_choice`, `params::open_plan`);
+  `Memory::open_step` keeps the step.
+
+The patch applied with offsets only; an audit found the port equal to oc-base31's dfp-pure in every touched file once
+the branch's own differences are subtracted. CHANGES 473's ward-sight work runs just before the plan, so the plan's
+anytime search can stop at a different point on a fuel-bound first turn.
+
+Evidence (the live line, CHANGES 479): v96 (dfp-pure alone) went 66.8% live, +14 against v87; new-body dgate +0.87 ±0.40 against
+oc-base25, +0.74 on oc-base31's blocks. EXPERIMENTS "oc-base31: dfp-pure + ft-k on v87" and "Draft-solved opening
+farm plan (draftfarm)"; research/draftfarm-2026-11-08/README.md.
+0 unfinished drafts in that A/B; 4 games (2 maps) capped the plan out (DRAFT-CAPPED 32). `firstturn.py --need`:
+whole first turn p99.9 14.40M, 82 of 768 team-drafts over 10M (the anytime search under --need; ocean-rm2 max 8.15M).
+With 488 and 489, against `variants/ocean-rm2` on fresh `merged/ocrm-1940` (10,240 games, own drafts, release, fast
+runner): 51.3% (50.3-52.2), OOF +1.2%; EXPERIMENTS "dfp-pure, ft-k and gap-fix-ender on the removal branch".
+
+## 488: ft-k's turn-end feint tribute, ported from the live line (ocean, 2026-11-09)
+
+A port of `variants/v87-ft-k` (ft-k, f4fecfd9a; in CHANGES 479's oc-base31) onto 487, the same diff as v87-ft-k
+against oc-base25: at the turn end, after `place_lock` and before the recall feint, a champion within 1 of an altar
+with gems starts a tribute (`mite_tribute_habit`, bank.cc) unless the altar has a live enemy lock, it retains its gems,
+the channel outlasts the game or `want_home` sends it home; next turn `continue_tribute` keeps or cancels it. Mite's
+contact cancel is left out.
+
+The patch applied with offsets only; an audit found it equal to oc-base31's ft-k, helpers included. With b1's
+`safer_altar` gone, carry_bag's wait stays at the altar it is at, so the habit starts there more often than on v87.
+
+Evidence (the live line): new-body dgate LIVE BAR H1 at +1.01 ±0.28 against oc-base25 (Fish +1.04, Mite +0.99);
++0.77 on oc-base31's blocks. EXPERIMENTS "Feint tributes" and "oc-base31: dfp-pure + ft-k on v87".
+With 487 and 489, against `variants/ocean-rm2` on fresh `merged/ocrm-1940` (10,240 games, own drafts, release, fast
+runner): 51.3% (50.3-52.2), OOF +1.2%; EXPERIMENTS "dfp-pure, ft-k and gap-fix-ender on the removal branch".
+
+## 489: the forced game-ender stop only with a hard stop in hand (ocean, 2026-11-09)
+
+From the removal-gap analysis (`variants/gap-fix-ender`, a diff on `variants/ocean-rm2`), ported onto 488.
+`stop_game_ender`'s forced branch in `decide`, and continue_recall's cancel for it, run only when `holds_hard_stop`
+(fight.cc): the ender is channelling a tribute and we hold a stun ready for our next turn (ender not stun-immune) or a
+lock for its altar. A walking ender, or a channel we can only damage, goes through the normal priced fight play. No
+new constants. continue_tribute's cancel for a channelling ender is unchanged, as in the source, so ft-k's turn-end
+tribute may start ours again on a turn that cancelled it.
+
+The diff applied cleanly (bank.cc at ft-k's offset); `holds_hard_stop` sits above stop_game_ender's comment rather
+than between it and its function (comment-only). An audit found it equal to the source.
+
+Evidence (research/ideas-2026-11-09/removal-gap/REPORT.md section 3, on ocean-rm2): on `merged/gap-1930`, paired
+against ocean-rm2 +0.18 ±0.20 (4.5% of games flip), 50.2% (49.8-50.7) head to head; screen +0.20 ±0.20; pooled
+about +0.19 ±0.14 against ocean-ba65375; OOF +1.8% against ocean-rm2's. Traced: deaths near walking enders 34% ->
+15%, near channels 52% -> 39%; enders land no more often.
+With 487 and 488, against `variants/ocean-rm2` on fresh `merged/ocrm-1940` (10,240 games, own drafts, release, fast
+runner): 51.3% (50.3-52.2), OOF +1.2%; EXPERIMENTS "dfp-pure, ft-k and gap-fix-ender on the removal branch".
+`variants/ocean-rm2-dfp-ft-ender` equals bots/ocean.
+
+## 490: continue_tribute cancels ours for the ender only with a hard stop in hand (ocean, 2026-11-09)
+
+economy/bank.cc `continue_tribute`, on 489: our tribute is cancelled for a channelling game-ender only when
+`holds_hard_stop` holds, the same condition 489 put on the forced stop and on continue_recall's cancel. Before, any
+channelling ender cancelled it, though without a hard stop 489 no longer sends us at the ender, and ft-k's turn-end
+tribute could start ours again: cancelled and restarted every turn while the ender stayed visible. The
+`stoppable_winning_tribute` fallback (a ready stun in reach) is unchanged. No new constants; not A/B'd (narrow: only
+while an enemy tribute ends the game before any win of ours). Release and debug builds pass. Frozen as
+`variants/ocean-rm3` (= bots/ocean).
+
+## 491: The draft's first turn 14.4M -> 8.8M at most, plans identical (ocean, 2026-11-09; fuel-only)
+
+The same draft computation, cheaper, on 490. "Finished" is the open plan's local search running all 300 moves after
+its 3 greedy seeds, as it does under `firstturn.py --need`; at the real budget it stops on `fuel_ok(fuel_floor)`, so
+any first turn over 10M at --need was a search cut short.
+- **Open-plan search** (`draft/open_plan.cc`), 2.3x cheaper (755 dumped problems: 2.46G -> 1.06G):
+  - the best plan's run is recorded with a State snapshot before each choose event and the last list index it read. A
+    move changes one body's list from index d, so the candidate resumes at the first event of that body that read
+    d or later, or takes best's value if none did. Groups are copied in lazily;
+  - per-problem tables: walk offsets as floats, worth, home and respawn, the body fields as arrays;
+  - a SIMD argmin of the free times, padded with +inf, first least index as before;
+  - fast paths for a group with one attendee, and no `attended` bookkeeping outside the final run.
+- **Ward scoring** (`best_ward`): the row's at most 3 chunks are read unrolled.
+- **Attack tiles** (`write_attack_tiles`): only range 3 is cast. A cast from a clear tile at radius 1 is the radius 3
+  cast within it (rules: `vision.shadowcast_radius`), so range 1's checks always passed. Casts go into static boards
+  (`viewers_into`, `sight_off_bushes_into`), and bushes are read a word at a time.
+- **Candidate floods** (`make_open_plan`): capped at the horizon plus the bodies' largest attack range. Past that,
+  both a run and the greedy seeds treat a step count the same as unreachable.
+- **Model draft**: `sight_gap`'s per-source BFS runs in two u16x8 vectors (0.96M -> 0.46M median). From step 4, its
+  sources are found by 16-tile bitmasks: up to 170k less on 100x100 maps, up to 20k more on 30x30. `model_draft`
+  reuses `measure()`'s team instead of ranking every team a second time (156k).
+
+Exact:
+- bench replays at 100M identical to `variants/ocean-rm3`: 52/52 `--set wide` and 16/16 default, each on own drafts
+  and `--test-draft`;
+- full 1024-byte draft plans and the open-plan results identical on 768 team-drafts;
+- the 92 model features and the team identical on 768;
+- a read-only audit found every part equivalent.
+
+The only assumption is the shadowcast rule, which is engine-verified.
+
+`firstturn.py --need`, 128 ladder maps + fresh-1940000 (768 team-drafts):
+
+| | p50 | p99 | p99.9 | max | over 10M |
+|---|---|---|---|---|---|
+| before (ocean-rm3) | 6.70M | 12.81M | 14.40M | 14.40M | 82 |
+| after | 4.08M | 8.11M | 8.71M | 8.83M | 0 |
+
+The model draft before the first pick fell from a 4.72M max to 3.85M. On the unseen `merged/ocft-1950` (10,240
+team-drafts) the max went from 14.88M (1,071 over 10M) to 9.88M (0 over, 25 over 9M). 0 unfinished and 0 capped
+throughout.
+
+Against `variants/ocean-rm3` on fresh `merged/ocft-1950`:
+- 50.0% (49.1-51.0) of 10,240, own drafts;
+- DRAFT-CAPPED 0 against 7;
+- OOF turns 124,148 against 123,967.
+
+Frozen as `variants/dfpfuel-a` (= bots/ocean). Evidence: EXPERIMENTS "Draft first-turn fuel".
+
+## 492: oc32-cg-fs-nh: 483's chase fuel gate, fs-enemy and nh-6-3 on oc32-cv (ocean, 2026-11-09)
+
+Numbered 485 on main until the ocean-removals merge (485-491 are that branch's).
 
 `variants/oc32-cg-fs-nh` = `variants/oc32-cv` + three diffs and nothing else; not in bots/ocean. The live copy is
 `variants/live-oc32-cg-fs-nh`, frozen from it.

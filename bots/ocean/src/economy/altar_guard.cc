@@ -146,36 +146,10 @@ bool guard_turn(const World& world, Pathing& pathing, Safety& safety, Memory& me
     memory.claim = -1;
     memory.farm_group = -1;
     const vec2 alt = world.map().altars[a].pos;
-    // Escorting a winning bag, the guards clear enemies within clear_leash of the altar.
-    constexpr int clear_leash = 8;
-    const bool escort = escorting(world);
-    const int leash = escort ? clear_leash : params::altar_leash;
     bool near = false;
-    for (const auto& e : world.enemies) near |= e.alive && e.visible && dist(e.pos, alt) <= leash;
+    for (const auto& e : world.enemies) near |= e.alive && e.visible && dist(e.pos, alt) <= params::altar_leash;
     if (near) {
         if (chase_with_guard(world, pathing, safety, strike_guard)) return true;
-        // The escort walks at the enemy nearest the altar, priced or not: a long channel there is
-        // cancelled by whoever stays (01boss_battle: Mite stood within 3-7 of every one).
-        if (escort) {
-            const ChampionBelief* target = nullptr;
-            for (const auto& e : world.enemies)
-                if (e.alive && e.visible && dist(e.pos, alt) <= leash && (!target || dist(e.pos, alt) < dist(target->pos, alt))) target = &e;
-            if (target) {
-                decision = Branch::guard_altar;
-                const int range = world.me().facts().attack_range();
-                if (my_can_move() && dist(my_position(), target->pos) > range) {
-                    static bitboard goals{cambc::uninitialized};
-                    goals.clear();
-                    goals.draw_chebyshev(target->pos, static_cast<float>(range));
-                    goals &= world.map().open_for_us;
-                    pathing.set_guard(nullptr);
-                    pathing.step_towards_funded(goals, end_reserve);
-                }
-                cast_at_enemies(world, 0.0f);
-                if (attack_enemy(world)) reset_and_attack_enemy(world);
-                return true;
-            }
-        }
     }
     decision = Branch::guard_altar;
     const int i = rank % static_cast<int>(tiles.size());

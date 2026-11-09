@@ -676,8 +676,33 @@ double sight_gap_of(const Grid& g, const std::vector<std::uint8_t>& play, int pl
     };
     const int step = std::max(1, play_n / 300);
     int seen = 0, far = 0;
+#if defined(__wasm_simd128__)
+    const auto ring = [&](int j) { return static_cast<std::uint16_t>((targets.ring2 >> (7 * j) & 0x7f) << 2); };
+    const v128_t r2a = wasm_u16x8_make(0, 0, ring(0), ring(1), ring(2), ring(3), ring(4), ring(5)), r2b = wasm_u16x8_make(ring(6), 0, 0, 0, 0, 0, 0, 0);
+#endif
+#if defined(__wasm_simd128__)
+    // Every step-th playable tile. From step 4, found 16 tiles a bitmask (play has 16 bytes of 0 slack), as a test a
+    // tile cost ~10 fuel; below, finding a tile among the bits costs more than the tests it saves.
+    const std::uint8_t* const pl = play.data();
+    std::uint32_t at = 0; // the block's playable tiles from ordinal ord on
+    for (int b = -16, k = 0, c = 0, ord = 0, next = 0, i = -1;; next += step) {
+        if (step < 4) {
+            while (++i < g.n && (!pl[i] || k++ % step)) {}
+            if (i >= g.n) break;
+        } else {
+            while (next >= k + c && (b += 16) < g.n) {
+                k += c, ord = k;
+                at = wasm_i8x16_bitmask(wasm_i8x16_ne(wasm_v128_load(pl + b), wasm_i8x16_splat(0)));
+                c = std::popcount(at);
+            }
+            if (b >= g.n) break;
+            for (; ord < next; ++ord) at &= at - 1;
+            i = b + std::countr_zero(at);
+        }
+#else
     for (int i = 0, k = 0; i < g.n; ++i) {
         if (!play[static_cast<std::size_t>(i)] || k++ % step) continue;
+#endif
         const int x0 = i % W, y0 = i / W, s = x0 - R + pad;
         std::uint32_t p[side], o[side];
         for (int r = 0; r < side; ++r) p[r] = take(&pass[static_cast<std::size_t>((y0 + r) * words)], s);
@@ -689,6 +714,36 @@ double sight_gap_of(const Grid& g, const std::vector<std::uint8_t>& play, int pl
         const std::uint64_t need = core(p, 0) & clear;
         if (!need) continue;
         seen += std::popcount(need);
+#if defined(__wasm_simd128__)
+        // The window as two u16x8, lane r row r (rows 8-10 in the second's lanes 0-2): a step is a few vector
+        // instructions instead of ~30 a row. Every row steps (those beyond d of the source stay 0).
+        const auto row = [&](int j) { return static_cast<std::uint16_t>((need >> (7 * j) & 0x7f) << 2); };
+        const v128_t z = wasm_i16x8_splat(0);
+        const v128_t pa = wasm_u16x8_make(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]), pb = wasm_u16x8_make(p[8], p[9], p[10], 0, 0, 0, 0, 0);
+        const v128_t na = wasm_u16x8_make(0, 0, row(0), row(1), row(2), row(3), row(4), row(5)), nb = wasm_u16x8_make(row(6), 0, 0, 0, 0, 0, 0, 0);
+        v128_t ra = wasm_u16x8_make(0, 0, 0, 0, 0, 1u << R, 0, 0), rb = z, w6a = z, w6b = z;
+        static_assert(R == 5);
+        for (int d = 1; d <= 7; ++d) {
+            if (steps) ++*steps;
+            const v128_t ha = wasm_v128_or(ra, wasm_v128_or(wasm_i16x8_shl(ra, 1), wasm_u16x8_shr(ra, 1)));
+            const v128_t hb = wasm_v128_or(rb, wasm_v128_or(wasm_i16x8_shl(rb, 1), wasm_u16x8_shr(rb, 1)));
+            const v128_t ua = wasm_i16x8_shuffle(z, ha, 0, 8, 9, 10, 11, 12, 13, 14), da = wasm_i16x8_shuffle(ha, hb, 1, 2, 3, 4, 5, 6, 7, 8);
+            const v128_t ub = wasm_i16x8_shuffle(ha, hb, 7, 8, 9, 10, 11, 12, 13, 14), db = wasm_i16x8_shuffle(hb, z, 1, 2, 3, 4, 5, 6, 7, 8);
+            const v128_t xa = wasm_v128_and(wasm_v128_or(ha, wasm_v128_or(ua, da)), pa), xb = wasm_v128_and(wasm_v128_or(hb, wasm_v128_or(ub, db)), pb);
+            const bool grew = wasm_v128_any_true(wasm_v128_or(wasm_v128_andnot(xa, ra), wasm_v128_andnot(xb, rb)));
+            ra = wasm_v128_or(ra, xa), rb = wasm_v128_or(rb, xb);
+            if (d == 6) w6a = ra, w6b = rb;
+            if (!grew || !wasm_v128_any_true(wasm_v128_or(wasm_v128_andnot(na, ra), wasm_v128_andnot(nb, rb)))) {
+                if (d < 6) w6a = ra, w6b = rb;
+                break;
+            }
+        }
+        const v128_t missed = wasm_i8x16_add(
+            wasm_i8x16_popcnt(wasm_v128_and(na, wasm_v128_bitselect(wasm_v128_not(w6a), wasm_v128_not(ra), r2a))),
+            wasm_i8x16_popcnt(wasm_v128_and(nb, wasm_v128_bitselect(wasm_v128_not(w6b), wasm_v128_not(rb), r2b))));
+        const v128_t sum = wasm_u32x4_extadd_pairwise_u16x8(wasm_u16x8_extadd_pairwise_u8x16(missed));
+        far += wasm_i32x4_extract_lane(sum, 0) + wasm_i32x4_extract_lane(sum, 1) + wasm_i32x4_extract_lane(sum, 2) + wasm_i32x4_extract_lane(sum, 3);
+#else
         // reach: row r at r + 1, between zero rows; after step d only rows R - d to R + d can be set.
         std::uint32_t reach[side + 2] = {}, grown[side + 2] = {};
         reach[R + 1] = 1u << R;
@@ -711,6 +766,7 @@ double sight_gap_of(const Grid& g, const std::vector<std::uint8_t>& play, int pl
             }
         }
         far += std::popcount(need & targets.ring2 & ~within6) + std::popcount(need & targets.ring3 & ~within7);
+#endif
     }
     return r3(static_cast<double>(far) / std::max(1, seen));
 }
@@ -914,7 +970,7 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
     int play_n = 0;
     if (want & (1u << narrow | 1u << sight_gap)) {
         // walked is openA >= 0 already; byte loops, so they vectorise.
-        play.resize(static_cast<std::size_t>(n));
+        play.resize(static_cast<std::size_t>(n + 16));
         std::uint8_t* const pl = play.data();
         nonneg_mask(openB.data(), pl, n);
         int i = 0;

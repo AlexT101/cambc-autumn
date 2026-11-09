@@ -869,17 +869,14 @@ const ChampionBelief* prey(const World& world, Pathing& pathing, Safety& safety)
         // Enemies who walk to the target in time join the fight.
         const auto late = key == Safety::no_fight ? 0u : safety.late(target.pos, key);
         const std::pair<std::uint64_t, std::uint32_t> fight{std::uint64_t{key} << 32 | delayed, late};
-        // A chase against a carrier plays out with our health x (1 + min(0.3, its bag's value over a life's)):
-        // the bag is worth risking more for. Boosted chases skip the lost-fight memo, which has no boost.
-        const float boost = std::min(0.3f, params::gem_value * static_cast<float>(pair_gems(world, target)) / params::life_value);
-        if (boost <= 0 && std::find(lost.begin(), lost.begin() + n_lost, fight) != lost.begin() + n_lost) continue;
+        if (std::find(lost.begin(), lost.begin() + n_lost, fight) != lost.begin() + n_lost) continue;
         // Its verdict before the fight's, which it spares when the target escapes; the fight still needs its fuel after.
         if (escapes(world, pathing, target)) continue;
         if (!fuel_ok(safety.fight_cost_estimate() + reserve)) {
             note_shortcut("prey-cut-short");
             break;
         }
-        const auto t = safety.chase_trade(key, delayed, cooldowns, cast_available, linked, late, boost);
+        const auto t = safety.chase_trade(key, delayed, cooldowns, cast_available, linked, late);
         debug_block({
             static int traced = 0;
             if (delayed && traced < 64) {
@@ -890,7 +887,7 @@ const ChampionBelief* prey(const World& world, Pathing& pathing, Safety& safety)
         });
         if (!t.lost && !(linked && t.self_falls)) return &target;
         if (!linked && comeback::accept_lost(world, t, target)) return &target;
-        if (boost <= 0) lost[n_lost++] = fight;
+        lost[n_lost++] = fight;
     }
     return nullptr;
 }
@@ -1045,92 +1042,12 @@ const ChampionBelief* game_ender(const World& world) {
     return best;
 }
 
-// Fields to each altar's lock tiles, made once.
-const Field& lock_field(const World& world, Pathing& pathing, int a) {
-    static std::vector<std::optional<Field>> fields;
-    if (fields.size() < world.map().altars.size()) fields.resize(world.map().altars.size());
-    auto& f = fields[static_cast<std::size_t>(a)];
-    if (!f) f.emplace(make_field(pathing.static_walls(), world.map().altars[a].lock_tiles()));
-    return *f;
-}
-
-// A channel we lock on our last turn before it lands: its altar and that round, kept while out of sight of it.
-struct LockPlan {
-    int altar = -1, last = -1;
-};
-LockPlan lock_plan;
-
-// Until the plan's walk must start, we stand 8 to 11 steps from the altar's lock tiles, out of every visible
-// enemy's reach (waiting by the altar, the guards came out for us). False once it is time to go.
-bool lock_plan_wait(const World& world, Pathing& pathing) {
-    constexpr int lo = params::lock_stage_steps, hi = lo + 3, r = hi + 2;
-    auto& me = cambc::self();
-    const int altar = lock_plan.altar;
-    const auto& field = lock_field(world, pathing, altar);
-    const vec2 here = me.position();
-    const int steps = field.at(here);
-    if (steps == unreachable || world.round + steps + 1 >= lock_plan.last) return false;
-    decision = Branch::stop_ender;
-    static bitboard near{cambc::uninitialized}, far{cambc::uninitialized}, goals{cambc::uninitialized};
-    near.clear(), far.clear();
-    for (const auto& x : world.enemies)
-        if (x.alive && x.visible) {
-            const int range = x.facts().attack_range();
-            near.draw_chebyshev(x.pos, static_cast<float>(range + 1));
-            far.draw_chebyshev(x.pos, static_cast<float>(range + 3));
-        }
-    // Within r of the altar, open, at most hi steps from its lock tiles (`all`) and at least lo (`band`): static, so
-    // made once an altar, where testing them a tile at a time cost up to ~60k a turn.
-    struct Bands {
-        bool made = false;
-        bitboard all{cambc::uninitialized}, band{cambc::uninitialized};
-    };
-    static std::vector<Bands> bands;
-    if (bands.size() < world.map().altars.size()) bands.resize(world.map().altars.size());
-    auto& b = bands[static_cast<std::size_t>(altar)];
-    if (!b.made) {
-        b.made = true;
-        clear_board(b.all), clear_board(b.band);
-        const vec2 c = world.map().altars[altar].pos;
-        for (int dx = -r; dx <= r; ++dx)
-            for (int dy = -r; dy <= r; ++dy) {
-                const vec2 p{c.x + dx, c.y + dy};
-                if (!in_bounds(p) || !test(world.map().open_for_us, p)) continue;
-                const int f = field.at(p);
-                if (f == unreachable || f > hi) continue;
-                set_tile(b.all, p);
-                if (f >= lo) set_tile(b.band, p);
-            }
-    }
-    // The band out of every reach plus 2, else plus 1, else every tile up to hi.
-    bool found = false;
-    for (int pass = 0; pass < 3 && !found; ++pass) {
-        if (pass < 2) not_into(pass == 0 ? far : near, goals), goals &= b.band;
-        else copy_into(b.all, goals);
-        found = !board_empty(goals);
-    }
-    if (found && !test(goals, here) && me.can_move()) pathing.step_towards_funded(goals, end_reserve);
-    return true;
-}
-
-// The plan kept out of sight: false once it lapses, our lock is spent or the altar is ours; else the wait, or the
-// walk to its lock tiles in time (the channel in sight again, stop_game_ender places the lock).
-bool lock_plan_turn(const World& world, Pathing& pathing) {
-    if (lock_plan.altar < 0) return false;
-    if (world.round > lock_plan.last || carried_locks() == 0 || world.altars[lock_plan.altar].ally_lock) {
-        lock_plan = {};
-        return false;
-    }
-    if (lock_plan_wait(world, pathing)) return true;
-    decision = Branch::stop_ender;
-    if (lock_field(world, pathing, lock_plan.altar).at(my_position()) > 0 && cambc::self().can_move()) {
-        static bitboard goals{cambc::uninitialized};
-        goals = world.map().altars[lock_plan.altar].lock_tiles();
-        goals &= world.map().open_for_us;
-        pathing.step_towards_funded(goals, end_reserve);
-    }
-    place_lock(world);
-    return true;
+// A stop that cancels the ender's channel: a stun ready for our next turn, or a lock for its altar. Only that stop
+// decides the game before the channel lands; a walking ender, or a channel we can only damage, is fought as priced.
+bool holds_hard_stop(const World& world, const ChampionBelief& e) {
+    if (e.channel != Channel::tribute) return false;
+    if (e.facts().passive != Passive::stun_immune && world.me().ready_stun_reach(world.round + 1) >= 0) return true;
+    return tribute_altar(world, e.pos) >= 0 && carried_locks() > 0;
 }
 
 // Into reach of the enemy whose bag ends the game, whatever the risk: a stun or a lock if it is
@@ -1164,12 +1081,6 @@ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const
     // Holding a hard stop for a tribute, the walk to its tiles comes first, for a ranged attack spends the walk
     // (03homonoliths-a stood at attack range, two steps short of the lock tiles, hitting a 2,000-health channeller).
     const bool hard = tributing && (stun >= 0 || (altar >= 0 && carried_locks() > 0));
-    // A lock placed at once costs the enemy only the turns its channel had run: they break it in a turn or two and
-    // start again. Placed on our last turn before it lands, it costs the whole channel.
-    if (tributing && altar >= 0 && carried_locks() > 0 && !world.altars[altar].ally_lock) {
-        lock_plan = {altar, last_round_before_channel_ends(world, e)};
-        if (lock_plan_wait(world, pathing)) return;
-    }
     if (hard) {
         aim(true);
         const bool there = test(goals, me.position());
@@ -1195,31 +1106,6 @@ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const
     if (!hard && dist(me.position(), e.pos) > range + 1 && !walk_stuns) dash_to_attack(world, pathing, &e);
     if (!test(goals, me.position())) pathing.step_towards_funded(goals, end_reserve);
     act(true);
-}
-
-// A visible enemy tribute of 100 gems or more, which game_ender leaves (it does not end the game), that we stop
-// before it lands (intercept_steps) holding a hard stop: a lock for an altar our team has not locked, or a stun
-// ready by its channel's end. Not when our death would hand over max(40, its bag / 3) or more. The nearest; null if
-// none.
-const ChampionBelief* channel_to_deny(const World& world) {
-    if (!enemy_seen(world)) return nullptr;
-    const auto& self = world.me();
-    const bool lock = carried_locks() > 0;
-    const int at_stake = bag_at_stake(world);
-    const vec2 here = my_position();
-    const ChampionBelief* best = nullptr;
-    int best_steps = unreachable;
-    for (const auto& e : world.enemies) {
-        if (!e.alive || !e.visible || e.channel != Channel::tribute || e.gems < params::deny_gems) continue;
-        if (at_stake >= std::max(40, e.gems / 3)) continue;
-        const int a = tribute_altar(world, e.pos);
-        const bool lockable = lock && a >= 0 && !world.altars[a].ally_lock;
-        const bool stunnable = e.facts().passive != Passive::stun_immune
-                               && self.ready_stun_reach(last_round_before_channel_ends(world, e), true) >= 0;
-        if (!lockable && !stunnable) continue;
-        if (const int steps = intercept_steps(world, e, here); steps < best_steps) best = &e, best_steps = steps;
-    }
-    return best;
 }
 
 // Our health with our shield, which Ren's retaliation drains first, and a basic attack's damage to

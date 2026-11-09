@@ -192,9 +192,9 @@ constexpr int max_unseen = 24;
 constexpr int max_depth = 6;
 constexpr int max_mates = 6;
 // Reach queries per search; past it the rest keep their Strike price.
-constexpr int max_exact_queries = 6;
+constexpr int max_exact_queries = 10;
 // Nodes a search grows, at ~1.1k fuel each; past it the leaves offered so far stand.
-constexpr int max_nodes = 12;
+constexpr int max_nodes = 24;
 // A plan breaking our kill bid (follow.h) loses this, more than any turn's hits and danger.
 constexpr float break_penalty = 1e5f;
 // keep_bid's search: only plans that keep the bid.

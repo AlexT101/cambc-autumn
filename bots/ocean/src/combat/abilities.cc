@@ -18,14 +18,6 @@ namespace {
 // nothing here prices.
 constexpr float min_landing_value = 250;
 
-// Heart of Ruin hurt (under hor_hurt_fraction of max health) needs hor_hurt_landing x min_landing_value: hurt, it
-// dies fighting (research/ideas-2026-11-08/hor-passive.md), though its landing hits harder.
-float landing_floor(const World& world) {
-    if (world.me().facts().passive == Passive::missing_health && my_health() < params::hor_hurt_fraction * my_max_health())
-        return min_landing_value * params::hor_hurt_landing;
-    return min_landing_value;
-}
-
 bool cast_walked(const World& world) { return my_position() != world.turn_start; }
 
 bool castable(const World& world, int slot) {
@@ -417,7 +409,7 @@ Cast enemy_cast(const World& world, float walk, bool lethal_only = false, std::o
                 and_into(*landings, lethal, eligible);
                 landings = &eligible;
             }
-            best.offer(best_landing(s, landing_floor(world), targets, *landings, here, a.radius,
+            best.offer(best_landing(s, min_landing_value, targets, *landings, here, a.radius,
                                     [&](vec2 p) { return !landing_wakes(world, p, a.radius); }));
         } else {
             if (!risk) risk = &wake_risk(world, here, a.reach());

@@ -7,6 +7,8 @@
 #include <cstring>
 #include <type_traits>
 #include <vector>
+#include "../params.h"
+#include "open_plan.h"
 
 namespace aph {
 
@@ -55,7 +57,7 @@ void condition_on_map(const StaticMap& map);
 // A new section decoded at build goes after the steps, with no offset; a lazy one gets an offset.
 struct DraftPlan {
     // Bump when the layout changes: the header's check covers it.
-    static constexpr std::uint32_t current_version = 11;
+    static constexpr std::uint32_t current_version = params::open_plan::on ? 17 : 11;
 
     std::array<std::uint8_t, 1024> bytes{};
 
@@ -108,6 +110,7 @@ struct PlanHeader {
 //    as measuring would). A new fact goes at the end, with current_version bumped.
 //  - output_count_bits of n, then n codes of output_bits: a draft-side model's constants (slot k is constant k
 //    of the bot's list), each lo + (hi - lo) * code / output_max over the constant's range.
+//  - open_bits (with params::open_plan::on): the opening plan, written last in the first turn (write_open).
 // The sections start after them (plan_body_at).
 struct PlanFacts {
     bool done = false;        // the draft's first turn finished its precompute (rewritten each draft turn)
@@ -123,6 +126,11 @@ struct PlanFacts {
     static constexpr std::uint32_t output_max = (1u << output_bits) - 1;
     int outputs = 0;
     std::array<std::uint16_t, max_outputs> output{};
+    // The opening plan (open_plan.h), after the outputs: a made bit, then per body its groups + 1 (0 ends).
+    static constexpr int open_bits = params::open_plan::on ? 1 + open_plan::max_bodies * open_plan::max_steps * open_plan::step_bits : 0;
+    bool open_made = false;
+    std::array<std::array<std::uint8_t, open_plan::max_steps>, open_plan::max_bodies> open{};
+    static void write_open(DraftPlan& plan, const std::array<std::array<std::uint8_t, open_plan::max_steps>, open_plan::max_bodies>& steps);
     static std::uint16_t encode(float v, float lo, float hi) {
         const float t = std::clamp((v - lo) / (hi - lo), 0.0f, 1.0f);
         return static_cast<std::uint16_t>(t * static_cast<float>(output_max) + 0.5f);
@@ -134,7 +142,7 @@ struct PlanFacts {
                && gems < 1 << gem_bits && big_gems >= 0 && big_gems < 1 << gem_bits;
     }
     // The block's length as write() puts it.
-    int bits() const { return 2 + (present && fits() ? fact_bits : 0) + output_count_bits + output_bits * outputs; }
+    int bits() const { return 2 + (present && fits() ? fact_bits : 0) + output_count_bits + output_bits * outputs + open_bits; }
     static void write_done(DraftPlan& plan, bool done);
     void write(DraftPlan& plan) const;
     // Also the block's length into `length`.

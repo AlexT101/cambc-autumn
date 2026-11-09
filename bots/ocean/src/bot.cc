@@ -407,11 +407,10 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     fixc_bush_threatened = false;
     if (!world.me().can_act(world.round)) return;
     fixc_bush_threatened = fixc_bush_threat(world, safety);
-    if (const auto* ender = game_ender(world)) {
+    if (const auto* ender = game_ender(world); ender && holds_hard_stop(world, *ender)) {
         stop_game_ender(world, pathing, memory, *ender);
         return;
     }
-    if (lock_plan_turn(world, pathing)) return;
     const bool willow = support_healer(world.me());
     const bool prism = support_protected(world, world.me());
     // Healing needs a turn end on spawn; a recall arrives at turn start. Under an awake camp, only
@@ -460,10 +459,6 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
             pathing.set_guard(nullptr);
         }
         retreat(world, pathing, safety, memory);
-        return;
-    }
-    if (const auto* deny = channel_to_deny(world)) {
-        stop_game_ender(world, pathing, memory, *deny);
         return;
     }
 
@@ -599,6 +594,7 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     if (!support_owned && !search_priced_end()) shield_if_needed(world, safety, memory.claim);
     end_ward = place_ward(world, memory); // where we end the turn
     place_lock(world);
+    if (!support_owned) mite_tribute_habit(world, pathing, safety, memory);
     if (!support_owned) start_recall(world);
     count_use(world, could_attack);
 }

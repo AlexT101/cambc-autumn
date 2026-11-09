@@ -85,7 +85,6 @@ bool our_side(const StaticMap& map, int a) {
             if (enemy_tribute != (pass == 0)) continue;
             // With no tribute to cancel, only altars on our side, or the one we guard, are worth denying.
             if (!enemy_tribute && !our_side(map, a) && !keep_guard_lock(world, a)) continue;
-            if (!enemy_tribute && world.round < params::lock_deny_from && !keep_guard_lock(world, a)) continue;
             // Placing one cancels every tribute at the altar, ours included: worth it only against a win.
             bool tributing = false, ours_wins = false;
             for (const auto& ally : world.allies)
@@ -1092,52 +1091,6 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
     return false;
 }
 
-// The turns before Safety's credible threats may reach p, cap + 1 past cap.
-int strike_eta(Safety& safety, vec2 p, int cap) {
-    if (!safety.may_reach_within(p, cap)) return cap + 1;
-    int lo = 0, hi = cap;
-    while (lo < hi) {
-        const int mid = (lo + hi) / 2;
-        if (safety.may_reach_within(p, mid)) hi = mid;
-        else lo = mid + 1;
-    }
-    return lo;
-}
-
-// The altar a big bag's long channel is likeliest to finish at, -1 for the usual nearest: by the threats'
-// arrival less the channel and the walk; allies seen by an altar count as cover.
-int safer_altar(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
-    constexpr int safe_bag = 150, safe_min_turns = 10, safe_switch = 4, eta_cap = 120;
-    constexpr float safe_walk_w = 0.5f, safe_cover_w = 4.0f;
-    const auto& altars = world.map().altars;
-    if (altars.size() < 2) return -1;
-    const int bag = static_cast<int>(my_gems());
-    const int turns = tribute_turns(world, bag);
-    if (bag < safe_bag || turns < safe_min_turns) return -1;
-    static int round = -1, kept = -1;
-    static vec2 from{-1, -1};
-    const vec2 here = my_position();
-    if (round == world.round && from == here) return kept;
-    round = world.round, from = here, kept = -1;
-    int nearest = -1, nearest_walk = unreachable, best = -1;
-    float nearest_score = 0, best_score = 0;
-    for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
-        if (a == memory.avoid_altar && world.round < memory.avoid_until) continue;
-        const int steps = altar_steps(world, pathing, here, a);
-        if (steps == unreachable) continue;
-        const int walk = steps + lock_turns(world.altars[a], world.me().facts(), steps);
-        const int eta = strike_eta(safety, altars[a].pos, std::min(eta_cap, walk + turns + 30));
-        int cover = 0;
-        for (const auto& ally : world.allies)
-            cover += !ally.is_self && ally.alive && ally.visible && dist(ally.pos, altars[a].pos) <= 3;
-        const float score = static_cast<float>(eta - turns) - (1.0f + safe_walk_w) * static_cast<float>(walk) + safe_cover_w * static_cast<float>(cover);
-        if (walk < nearest_walk) nearest = a, nearest_walk = walk, nearest_score = score;
-        if (best < 0 || score > best_score) best = a, best_score = score;
-    }
-    if (best < 0 || best == nearest || best_score < nearest_score + static_cast<float>(safe_switch)) return -1;
-    return kept = best;
-}
-
 [[gnu::flatten]] void bank_gems(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool heal_step) {
     if (retaining_gems(world, pathing)) return;
     world.throw_if_stale();
@@ -1163,10 +1116,6 @@ int safer_altar(const World& world, Pathing& pathing, Safety& safety, const Memo
         // left: stop avoiding it rather than stand still. submit_here judges its safety again.
         if (best < 0 && world.round < memory.avoid_until && (!carries_crystal() || hop_route(world, pathing, memory).hop < 0))
             memory.avoid_until = world.round;
-    }
-    if (const int a = safer_altar(world, pathing, safety, memory); a >= 0) {
-        const int steps = altar_steps(world, pathing, here, a);
-        best = a, best_steps = steps + lock_turns(world.altars[a], world.me().facts(), steps);
     }
     // A hit on the aimed altar's lock; it ends the turn of a champion whose attack spends the walk,
     // with a tribute if that hit broke it within reach.
@@ -1250,6 +1199,25 @@ int tribute_altar(const World& world, vec2 p) {
     for (int a = 0; a < static_cast<int>(altars.size()); ++a)
         if (dist(p, altars[a].pos) <= static_cast<int>(cambc::constants::submit_gems_range)) return a;
     return -1;
+}
+
+// A turn-end tribute wherever one can start (Mite's habit), else the caller's recall feint: the turn has acted,
+// so standing in a channel costs nothing, and next turn continue_tribute keeps or cancels it.
+bool mite_tribute_habit(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
+    if (stunned_turn || !world.me().alive || channelling() || my_gems() <= 0) return false;
+    const vec2 here = my_position();
+    if (here.x < 0) return false;
+    const int a = altar_here(world, here);
+    if (a < 0 || enemy_lock_live(world.map().altars[a].pos) || retaining_gems(world, pathing)) return false;
+    if (tribute_turns(world, my_gems()) > rounds_left(world)) return false;
+    if (want_home(world, pathing, safety, memory)) return false;
+    throw_if_stale();
+    try {
+        cambc::self().submit_gems(world.map().altars[a].pos);
+        return true;
+    } catch (const cambc::error&) {
+    }
+    return false;
 }
 
 bool can_tribute_safely(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
@@ -1341,10 +1309,10 @@ bool siege_heal_trip(const World& world, Pathing& pathing, const Memory& memory,
 bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home) {
     auto& me = cambc::self();
     decision = Branch::tribute_kept;
-    // The enemy's winning tribute in reach of a ready stun or a lock is the game: ours waits, unless
-    // ours wins first or, winning later, an ally stops theirs in time.
+    // The enemy's winning tribute, while we hold a hard stop for it (holds_hard_stop) or a ready stun
+    // in reach, is the game: ours waits, unless ours wins first or, winning later, an ally stops theirs in time.
     const auto* ender = game_ender(world);
-    const auto* stop = ender && ender->channel == Channel::tribute ? ender : stoppable_winning_tribute(world);
+    const auto* stop = ender && holds_hard_stop(world, *ender) ? ender : stoppable_winning_tribute(world);
     if (stop && !(winning_bag(world) && ally_stops(world, *stop))) {
         throw_if_stale();
         try {
@@ -1377,7 +1345,7 @@ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memo
 bool continue_recall(World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home, int recall_farm) {
     auto& me = cambc::self();
     decision = Branch::recall_kept;
-    if (game_ender(world)) {
+    if (const auto* ender = game_ender(world); ender && holds_hard_stop(world, *ender)) {
         throw_if_stale();
         try {
             me.cancel_recall();
@@ -1465,8 +1433,7 @@ void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, b
         const vec2 here = my_position();
         const auto& altars = world.map().altars;
         const int at = altar_here(world, here);
-        const int safer = safer_altar(world, pathing, safety, memory);
-        if ((safer < 0 || safer == at) && (at != memory.avoid_altar || world.round >= memory.avoid_until)) {
+        if (at != memory.avoid_altar || world.round >= memory.avoid_until) {
             if (memory.wait_altar != at) memory.wait_altar = at, memory.wait_since = world.round;
             // How long they stay is unknown: wait as many rounds as the walk to the nearest other
             // unlocked altar takes, then walk there.

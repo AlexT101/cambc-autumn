@@ -19,6 +19,7 @@
 #include "bot.cc"
 #include "model/comms.cc"
 #include "draft/draft.cc"
+#include "draft/open_plan.cc"
 #include "draft/map_features.cc"
 #include "model/pathing.cc"
 #include "combat/plan.cc"

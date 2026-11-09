@@ -342,8 +342,7 @@ const ChampionBelief* stoppable_winning_tribute(const World& world);
 bool ally_stops(const World& world, const ChampionBelief& e);
 const ChampionBelief* game_ender(const World& world);
 void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e);
-const ChampionBelief* channel_to_deny(const World& world);
-bool lock_plan_turn(const World& world, Pathing& pathing);
+bool holds_hard_stop(const World& world, const ChampionBelief& e);
 void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory);
 
 // economy/comeback.cc: cooked comebacks.
@@ -394,6 +393,7 @@ bool banks_bag(const World& world, Pathing& pathing);
 bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, int h, const Field* goal = nullptr, bool bold = false);
 void bank_gems(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool heal_step = true);
 bool can_tribute_here(const World& world);
+bool mite_tribute_habit(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
 int carried_locks();
 int tribute_altar(const World& world, vec2 p);
 bool can_tribute_safely(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);

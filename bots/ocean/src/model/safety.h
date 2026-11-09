@@ -375,9 +375,8 @@ public:
     // Optional chase only: the same roster, with unavailable first activations delayed on copies.
     // `late` as late() gives: enemies who walk into the fight. With `falls`, our fall settles it
     // (Trade::lost_known).
-    // `boost`: our side's health x (1 + boost), unmemoised.
     Trade chase_trade(std::uint32_t key, std::uint32_t delayed, const std::array<int, 2>& self_cooldowns, bool can_cast, bool falls = true,
-                      std::uint32_t late = 0, float boost = 0);
+                      std::uint32_t late = 0);
     // Who would fight at p: bit i of the low half for allies[i], of the high half for enemies[i];
     // no_fight if no threat hits p.
     static constexpr std::uint32_t no_fight = ~0u;

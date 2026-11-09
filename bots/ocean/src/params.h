@@ -225,7 +225,7 @@ inline constexpr int altar_farmers_min = 1;
 
 // An emblem's fight value (shop.cc current_emblem): this weight x the share of the damage we take that comes
 // from champions, with fight_camp_prior camp damage as a prior, x the fight power it adds (output x effective health).
-inline constexpr float fight_weight = 0.81891805f;
+inline constexpr float fight_weight = 0.6882139f;
 inline constexpr float fight_camp_prior = 490.12277f;
 // wants_shop: a shopping trip goes when shop_gain_scale x the purchase's saving (plus the heal) beats the trip.
 inline constexpr float shop_gain_scale = 0.75106156f;
@@ -238,13 +238,6 @@ inline constexpr float recall_risk = 0.20703878f;
 inline constexpr float reveal_mass = 0.23420754f;
 inline constexpr float reveal_prior = 1.6499189f;
 
-// The timed lock (fight.cc lock_plan_wait): the nearest a body waits to the altar's lock tiles, in steps (up to 3 more).
-inline constexpr int lock_stage_steps = 8;
-// bank.cc place_lock: before this round, no lock only to deny an altar (cancelling an enemy tribute and the one-altar
-// guard's lock still place one). Early deny locks cost more than they save.
-inline constexpr int lock_deny_from = 600;
-// channel_to_deny: the least visible enemy tribute bag it stops.
-inline constexpr int deny_gems = 112;
 // relative_efficiency: holders and farm's gold weigh (gold efficiency / the team's mean)^efficiency_power.
 inline constexpr float efficiency_power = 1.4653788f;
 
@@ -263,9 +256,6 @@ inline constexpr int pack_radius = 4;
 } // namespace comeback
 // research/ladder-scrims-2026-11-06/fix-combat.md.
 namespace fixc {
-// A bag at stake this big: the pack zone outmatches us at bag_ratio.
-inline constexpr int bag_big = 100;
-inline constexpr float bag_ratio = 2.0f;
 // Path first steps and retreat ties take a hidden bush first; within a visible enemy's ready strike reach +
 // bush_threat, the bush rank goes ahead of pull, aim and steps, and a hidden bush step is let off bush_margin x
 // our health and shield of retreat damage.
@@ -288,13 +278,28 @@ inline constexpr std::uint64_t slack_fuel = 40000; // the slack pass, asked for 
 inline constexpr int willow_fight_until = 250;
 inline constexpr int willow_stand_ally = 2;
 // The reactive Tribute emblem (shop.cc reactive_tribute) prices from a bag of this many gems.
-inline constexpr int trib_min_bag = 138;
+inline constexpr int trib_min_bag = 100;
 // Mid-game gold (research/ideas-2026-11-08/gold-price.md): per_gold x (1 + (mid_gold - 1) h), h a hump on the higher
 // tributed score, 0 -> 1 over [0, mid_gold_rise], 1 to mid_gold_hold, 1 -> 0 by mid_gold_end. Win models of ladder and
 // our own games put gold at ~1.5x per_gold's median there; x1.25 is the A/B's best.
 inline constexpr float mid_gold = 1.25f;
 inline constexpr int mid_gold_rise = 100, mid_gold_hold = 500, mid_gold_end = 700;
-// Heart of Ruin's dash landing on enemies, hurt (combat/abilities.cc landing_floor).
-inline constexpr float hor_hurt_fraction = 0.6f, hor_hurt_landing = 2.0f;
+
+// The draft's opening plan (draft/open_plan.h, research/draftfarm-2026-11-08): solved for the team we expect in the
+// draft's first turn; farm takes each body's next planned group while the round is within the horizon. per_gold: gold
+// against gems in the plan's value, between ocean's own early per_gold (median 0.34) and the live win model's (0.26 at
+// r100). iterations: the local search's most, past its seeds (a Python model gained 97% of 1000's by 300).
+namespace open_plan {
+inline constexpr bool on = true;
+inline constexpr int horizon = 100;
+inline constexpr int iterations = 300;
+inline constexpr float per_gold = 0.3f;
+// A step waits (farm chooses) while a visible enemy champion is this near its group's centre.
+inline constexpr int enemy_near = 8;
+// 0: the planned group is farm's choice outright. Above 0: it is farm's standing choice, its worth times this.
+inline constexpr float weight = 1.5f;
+// Plan steps farm follows (at most open_plan::max_steps).
+inline constexpr int steps = 6;
+} // namespace open_plan
 
 } // namespace aph::params
