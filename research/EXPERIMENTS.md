@@ -46,6 +46,31 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   leave a narrowly lost stand are right to. Recalibrating the model has nothing to correct; the level combat and team
   arms opened opportunities at this boundary, where fighting and declining are worth the same.
 
+## (ocean = oc-base25, 2026-11-09) Draft-solved opening farm plan (draftfarm): following it loses; as a bias it is +0.6 on dgate, under the bar
+
+[draftfarm-2026-11-08/README.md](draftfarm-2026-11-08/README.md) has the design, the forensics and the tools. The
+draft's first turn solves a team route plan over our half (event sim plus anytime local search, horizons 60/100/150);
+farm biases toward the planned group (x1.5).
+- **Screens (old bar 0.50,0.5025), all H0.** Real budget: h60 48.66% of 19,858; h100 48.31% of 16,163; h150 46.85%
+  of 9,201. 2x fuel: 48.92 / 48.94 / 46.82. Spar h100 -3.19 ±3.66. The longer the horizon, the worse.
+- **Forensics.** Debug pairs against the base mirror on 1,000 maps. The plan moves the first walk in nearly every game.
+  At r100 our gold is +5 ±3 and gems +0.3; the enemy's gold is +15 ±3 and gems +3.5 ±0.7. Their middle captures by
+  r150 rise +0.20 a game and ours fall -0.11.
+- **Two causes.** (1) Writing the plan into `memory.farm_group` stole farm's stickiness, so it thrashed: A-B-A target
+  flips 5.6 a game against 1.3. (2) Candidates on our half only, since the sim has no enemy, cede the contested middle.
+- **Fixed arm v87-dfp-pure.** The weight is applied on its own and `farm_group` is untouched. Thrash is gone and the
+  middle concession is smaller. The plan's own value is nil: gold +3.8 ±4.2 and gems +0.1 at r100. Debug smoke 49.7%
+  of 2,000. Against live-pick opponents (2,048 pairs) our gold is +8 at r100 and +16 at r200, and their gems +2.5
+  (the middle is still ceded). dgate (0.505/0.5075): 50.63% (50.26-51.00) over 23,296 units, LLR +0.07. It sits at
+  the bar's midpoint, so I stopped it undecided. Runs are reused: rerunning `dgate.py variants/v87-dfp-pure
+  variants/oc-base25` resumes it.
+- **Carry routing, v87-dfp-carry.** The plan's gold is weighted by relative_efficiency at base stats. Gold by r400
+  in the mirror: Vesper +35, HoR +11. dgate 50.51% (50.03-50.99) over 14,336 units, no better than pure; stopped.
+- **Verdict.** Forcing or following an enemy-free plan cedes the middle. As a bias it is a real, small gain
+  against non-mirror drafts, in rule 0's 50-50.5 zone. Merge read: weak no (~330 lines of draft code; it cedes the
+  middle, which live Fish and Mite contest harder). At most it merits a live pair against v87. The sim's +14-18% at
+  H100-150 was a model artefact (fidelity r ~0.3). The HoR gold gap is not closed by own-half routing.
+
 ## (ocean, 2026-11-07) Rejection audit
 
 Every rejected, level or null verdict was reclassified by power: (a) decided, (b) underpowered, (c) flawed. The table is in [rejection-audit.md](ideas-2026-11-07/rejection-audit.md). Most "level" calls were 1-20k games with upper bounds of +0.5 to +1.3; 36 frozen pairs that still exist and differ only by the idea were rerun to a decision. Every pair ran on both sides' own drafts (all `test_draft` off) under fastrunner.

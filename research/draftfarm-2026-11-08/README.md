@@ -40,3 +40,87 @@ from 1.02 to 1.3 a game, because a plan with no enemy in it leaves the middle to
 pricing and lets its contest logic win, so it is the arm sent to the screens, at all three horizons.
 
 The code is in open-plan-w15h100.patch (diff against oc-base25/src; variants are gitignored).
+
+## Results against oc-base25 (v87)
+
+| arm | gate | win% (CI) of n | SPRT |
+|---|---|---|---|
+| w15h60 | screen, real budget | 48.66 of 19,858 | H0 |
+| w15h60 | screen, 2x fuel | 48.92 of 23,515 | H0 |
+| w15h100 | screen, real budget | 48.31 (47.54-49.08) of 16,163 | H0 |
+| w15h100 | screen, 2x fuel | 48.94 of 24,531 | H0 |
+| w15h150 | screen, real budget | 46.85 of 9,201 | H0 |
+| w15h150 | screen, 2x fuel | 46.82 of 8,779 | H0 |
+| w15h100 | spar (13 bodies x F/M) | -3.19 ±3.66 pts of 6,656 paired | diagnostic |
+| pure (fixed bias) | debug smoke, forensic maps | 49.7 (47.5-51.9) of 2,000 | diagnostic |
+| pure | dgate (0.505/0.5075) | 50.63 (50.26-51.00) over 23,296 units (~93k games a bot), LLR +0.07 | undecided, stopped |
+| carry | debug smoke, forensic maps | 50.3 (48.1-52.5) of 2,000 | diagnostic |
+| carry | dgate (0.505/0.5075) | 50.51 (50.03-50.99) over 14,336 units, LLR -0.49 | undecided, stopped |
+
+The longer the horizon, the more the plan is followed and the more it loses.
+
+## Why it loses (forensics, 2026-11-09)
+Paired debug games on 1,000 screen maps (`maps/suites/merged/dfp-forensic-134`): each w15h100-vs-base game against
+the base mirror on the same map and side (`tools/fx.py`, `fxsum*.py`). The plan moves the first walk in nearly every
+game (median divergence round 1; the base's first group is the plan's 25% of the time, the arm's 73%). Paired deltas,
+arm minus mirror, mean ± s.e. over 2,000 games:
+
+| | ours | theirs |
+|---|---|---|
+| gold earned r100 | +4.9 ±3.3 | +15.0 ±2.9 |
+| gems owned r100 | +0.3 ±0.8 | +3.5 ±0.7 |
+| captures by r150, middle | -0.11 ±0.04 | +0.20 ±0.03 |
+| captures by r150, own half | +0.05 ±0.04 | — |
+| deaths by r150 | -0.02 ±0.02 | +0.03 ±0.02 |
+
+Two mechanisms, neither the plan's routing:
+1. **Thrash (an implementation flaw).** The arm wrote the planned group into `memory.farm_group` every turn, so the
+   plan took farm's stickiness slot: whenever farm's contest logic chose another group, that choice lost its 1.2
+   stickiness next turn and the plan's group took 1.5, and farm switched back. A-B-A target flips within 10 rounds
+   (r<=100): 5.6 a game against the mirror's 1.3. `farm_group` also steers the post-fight walk, the fuel-short walk
+   and the Monolith siege, which all followed the plan.
+2. **Ceding the middle (the model's flaw).** Candidates are our half only (the sim has no enemy), so the plan pulls
+   bodies off the contested middle in the first rounds, where the base goes. The enemy takes +0.20 middle captures a
+   game by r150 and +3.5 gems by r100, three times what we gain.
+Loss flips and gain flips (487 and 456 of 2,000) are mirror images of each other (deaths by r150 0.62 against 0.33
+in losses, 0.36 against 0.63 in gains): reshuffling the opening reshuffles who loses the first fight, with the
+middle tipping it slightly against us.
+
+**Fixed arm, v87-dfp-pure** (`pure-vs-w15h100.patch`: the plan's weight applied on its own, `farm_group`
+untouched). Thrash is gone (A-B-A 1.32 against 1.33), the middle concession shrinks (theirs +0.07 ±0.04, ours
+-0.09 ±0.05) and the win rate is level (49.7% of 2,000 debug games). In the mirror, what remains is the plan's own value, and it
+is nil: our gold +3.8 ±4.2 and gems +0.1 ±1.2 at r100, nothing by r200.
+
+## Against live picks (the gate's opponents) the fixed plan gains a little
+Block 0-2 of the gate replayed with replays kept (`fxs-*`, 2,048 pairs: v87 and v91 with Fish's and Mite's live picks,
+noise seeds 1-2; `tools/fxspar.py`): pure minus base, our gold +8.3 ±3.7 at r100 and +16 ±7 at r200, their gold
+level; their gems +2.5 ±0.9 at r100, with middle captures again given up (ours -0.14, theirs +0.13 a game by r150).
+These opponents' drafts differ from ours, so our half is not mirrored by theirs, and the plan's routing there is
+worth something; the middle is still the cost. Win rate 71.4% against base 70.6% on those 2,048.
+
+## Carry routing (v87-dfp-carry, `carry-vs-pure.patch`)
+The coordinator's fact from the HoR and spread lines is that Mite's HoR earns 357 capture gold by r400 against our
+232, and the gap is team routing. So the plan weighs each body's gold as play does: (gold efficiency at base stats /
+the team mean)^1.47 times its gold bonus (weights, e.g., 2.2 / 1.6 / 0.56). The plan then sends the efficient
+bodies to the gold, and the holder rule picks them. Mirror debug smoke, paired against the base mirror: 50.3% of
+2,000. Gold earned by r400: Vesper +35 ±19, HoR +11 ±9, Marcella +31 ±23, team +28 ±18. Its gold moves the right
+way, but it is far short of the 125 gap.
+
+## Verdict
+- Following an offline plan more (forcing it, longer horizons, the stickiness slot) loses, because the plan, with no
+  enemy in its model, gives up the contested middle, and in the thrash arm farm also fought its own choice.
+- Fixed so that it only biases farm, the plan is level in the mirror. Against the gate's live-pick opponents it is a
+  small, real gain: dgate 50.63% (CI 50.26-51.00), sitting at the bar's midpoint, so the SPRT would not end. That
+  puts it in rule 0's 50-50.5 zone.
+- Its mechanism is visible: own-half gold +8 at r100 and +16 at r200 against those opponents. It still gives up
+  middle gems (+2.5 for them).
+- Weighting the plan's gold by efficiency (carry) moves gold to Vesper and HoR in the right direction (+35 and +11 by
+  r400) but adds nothing on the gate (50.51%). It closes only a fraction of the 125-gold HoR gap, which is not about
+  which own-half group comes first.
+- **Merge read (pure): weak no.** The gain is ~+0.6 pts and is level in the mirror. Its cost is ~330 lines of draft
+  code, 289 bits of draft memory and a first-turn search down to the draft reserve. Its known flaw, ceding the
+  middle, matters most against live Fish and Mite, who contest middles harder than our panel does. If the
+  coordinator wants it anyway, it is a candidate for a live pair against v87, not a merge on local evidence.
+- The idea's better form would need an enemy model in the plan (contest arrival on middle groups) to stop ceding the
+  middle. That is a big build for at most the ~+0.6 pts the middle costs now, so it is not pursued.
+- Gate runs are reused by dir name: `dgate.py variants/v87-dfp-pure variants/oc-base25` resumes where it stopped.
