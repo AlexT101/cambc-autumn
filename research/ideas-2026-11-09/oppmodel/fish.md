@@ -29,3 +29,11 @@ Archive extract (all Fish games 11-07..09, per-game summaries): ~/tmp-offload/fi
 
 ## Exploiter (bots/fishx = variants/ocean-16d6f78 + stub posterior, model/opp_class.{h,cc}, model/fishx.h)
 - fx1-deny: CHANGES 485's removed timed lock + 100-gem deny (channel_to_deny, lock_plan), only while fishx::on. fgate started 23:05.
+- fx1-deny on Flp bodies (fgate, stopped at 3,840 fresh units): -0.28 ±0.59; fresh Fish +0.09, Mite -0.65.
+- fx2-denyc = fx1 + comms deny record (a seen enemy channel >= deny_gems posts altar + last round; a teammate
+  holding a lock that can reach in time adopts the timed lock). Flp (stopped at 1,792): -0.49 ±0.99, Fish -1.31, Mite +0.33.
+- Both restarted on Flp2 (the diverse agent's fidelity body: FISH_MODEL 8.3 banking + Fish emblems).
+- Flp2 vs real: tributes close (Fd10+ 1.64/g vs 2.36). Biggest gap is kill pressure: our deaths 6.5/g vs 9.6 real,
+  burst deaths with a Fish body 1-4 tiles away 4 rounds before 0.57/g vs 1.8; Marcella kills 1.5/g vs 2.7, Vendetta 1.0 vs 1.6.
+- Fish's manual tribute cancel: 0.35%/round unhit, 10%/round in a round it is hit (24-37% under half health).
+  A hit Fish big channel completes 9% vs 61% unhit, mostly through our stun (51%).
