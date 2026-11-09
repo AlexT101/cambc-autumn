@@ -12969,6 +12969,13 @@ read in play. Details in CHANGES 461. Checks:
 - **Submitted (11:51 UTC) as v99**: `variants/live-oc-base31` (the narrow agent's frozen oc-base31 = oc-base25 +
   dfp-pure + ft-k feint tributes; ft-k's new-body dgate LIVE BAR +1.01 +-0.28), stream mask, live 11:58, Fish r2 + Mite r3.
   Reported against v98 on Mite r3 and against v87, v96 and v98 on Fish r2.
+- **Live gate: v99 (oc-base31 = v87 + dfp-pure + ft-k, stream mask).** 104 groups, done 14:22 UTC: Fish (r2) 65.2%,
+  Mite (r3) 62.1%. Against v98 (v87 with the same mask), all 512 games: **+6 (93 / 87, z +0.45), level**; Fish +3
+  (z +0.32), Mite +3 (z +0.31). One-site maps +13 (Fish +7, Mite +6), multi-site -7: the same one-site lean as v96
+  (dfp-pure). Mite games where only Mite has Heart of Ruin +8 (26 / 18, z +1.21). On Fish: v87 +1 (z +0.11), v96 -5
+  (z -0.64). Pooled: Fish 65.2 against v86/87/89/95's 65.1; Mite r3 62.1 against v97/v98's 61.7. ft-k's dgate LIVE
+  BAR (+1.01 +-0.28) doesn't show live on top of dfp-pure; ft-k alone is next (v100).
+- **Submitted (14:22 UTC) as v100**: `variants/live-ft-k` (frozen v87-ft-k: Mite-style feint tributes), stream mask, live 14:29.
 
 ## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
 
