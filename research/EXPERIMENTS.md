@@ -291,43 +291,6 @@ Results against oc-base23 (v86), in points (cand − v86):
   ≤ 0, local H1s are a filter, not evidence of a live gain; only live paired results decide merges (TEST-STANDARD
   rule 7).
 
-## (ocean, 2026-11-08/09) Chain ends against v86: the overfit measurement (mirror, panel, spar, dgate, live)
-
-How far each local test reads above live, for the merge chain v86 → v87 → v89 → v91. Bots: v86 `oc-base23`, v87
-`oc-base25`, v89 `oc-base27`, v91 `oc-base29`. Mirror runs are own drafts, release builds, fast runner, on the fresh
-`ch-held` suite (maps/SUITES.md "Chain ends against v86"), with SPRT 0.50/0.5025 from 40,960 games. Panel is
-astraeus-td, proteus-td and the test-draft mirror on `ch-pan`, pooled by `panel_sprt.py`. Spar is `spar_ab.py` with
-release copies (`variants/chain-b*`), 6,656 paired games. Live is r2, paired against v86 on the same 512 games
-(`ladder-scrims-2026-11-06/data/cells-r2.tsv`). Logs: `~/tmp-offload/chain/logs`.
-
-Results against oc-base23 (v86), in points (cand − v86):
-
-| step | mirror (held out) | panel | spar | dgate | live (paired, n 512) |
-|---|---|---|---|---|---|
-| v87 oc-base25 | +0.27 of 167,789, H1 (LLR 2.96) | +0.46, H1 (dir +0.62, ast +0.09, pro +0.68) | +0.78 ±2.9 | (its REF) | **−1.8 ±4.7** (−9, z −0.74) |
-| v89 oc-base27 | — | — | +0.63 ±3.5 | — | **−2.3 ±4.9** (−12, z −0.94) |
-| v91 oc-base29 | **+1.95** of 40,962, H1 (LLR 8.1) | **+2.12**, H1 (LLR 22; dir +2.43, ast +1.96, pro +1.97) | **+4.07 ±3.4** | **+1.81 ±1.03** of 3,200 units (blocks 0-24), LLR +1.06, stopped undecided | **−4.3 ±5.0** (−22, z −1.69) |
-| v93 oc-nosoup (v91 − soup-k + mask) | — | — | — | — | −5.3 (−27, z −2.04) |
-
-- **Local is consistent with itself.** The steps' own mirror gains (CHANGES 465-471, ~+0.2-0.5 each) add to ~+2.1;
-  the end-to-end mirror reads +1.95 and the panel +2.12. Nothing is lost in composition.
-- **Live is consistent with itself too, in the other direction.** Every live step is ≤ 0 (v87 −9, v88 −2, v89 −1,
-  v90 −12 on 200, v91 −3 on 200), none significant; the end of the chain is at z −1.7 (v91) and z −2.0 (v93).
-- **The gap.** v91: mirror +1.95 against live −4.3 is a 6.3-point gap at z ≈ 2.5 (live's SE 2.5 dominates); spar's
-  +4.1 is 8.4 points above live (z ≈ 2.7). For v87 the gap is 2.0 points (z ≈ 0.8). So the overfit grows with the
-  chain: most of it sits in v87 → v91's +1.7 local points (Heart of Ruin 467/468, the altar-deny lock and soup-k's
-  emblems and casts, 470/471), which live reads at about −2.5. The live-like designs (spar, dgate) read the same sign
-  as the mirror: they raise per-map r, not the chain's sign.
-- **dgate calibration.** `dgate.py variants/oc-base29 variants/oc-base23 --stage screen` reads v91 at +1.81
-  ±1.03 after 25 blocks (z ≈ 3.4), where live reads −4.3: **dgate fails its key calibration** and reads the chain
-  like the mirror. Block 0 (v87 and v91 as opponents) read +0.68; the noise seeds drifted up from +0.3 to +1.8. It was
-  stopped at LLR +1.06 because the screen needed about 45 more fresh blocks (~4 h) and the sign was already settled;
-  the runs are cached (`spar-cbase29-dvn*`, `spar-cbase23-dvn*`) if anyone resumes it. A dgate H1 doesn't predict a
-  live gain on this chain.
-- **What it means for gates.** A local +2 on this chain is worth ≤ 0 live. Until a local test reads v86 → v91 at
-  ≤ 0, local H1s are a filter, not evidence of a live gain; only live paired results decide merges (TEST-STANDARD
-  rule 7).
-
 ## (ocean, 2026-11-09) Why v90-v93 lose live: v86's lucky draw, then a real ~5-point gap on altar/lock play
 
 Tools `research/ideas-2026-11-09/liveforensic-tools/`, data `~/tmp-offload/liveforensic/`. Inputs: the r2 replays of
@@ -361,6 +324,48 @@ spar-oc29-F/M (live picks, 512 games each, `lf-c2[78]-o29[FM]`).
   tiles of us, ~2 cancels per one-site game). Calibrate it on the c27/c28 pair: the gate should read 470 ≤ 0 on one-site
   maps and op600 +25 before it's trusted on altar/lock changes. (3) Cheap live candidate: restore deny locks before
   600 on one-site maps only. Local sees 470's gain only on multi-site maps, so it costs nothing there.
+
+## (ocean = oc-base25, 2026-11-09) v87 ports: lock deny closed (dgate blind to it); badmaps fixes and exact ward sight rejected
+
+Each arm is oc-base25 plus only one post-v87 change (`bots/variants/v87-<arm>`). Old-system screens: mirror SPRT at
+0.50/0.5025 on `v87p-scr` (ladder-v2 1260000-319, 163,840 games max), at the real budget and at 2x (`--fuel 200000`);
+non-negative panel at 0.4975/0.50 (30,720 units); spar panel against v87-ref (6,656 paired games, ±2.4-3.3).
+
+| Arm | Real budget | 2x fuel | Non-neg panel | Spar |
+|---|---|---|---|---|
+| lk-600 (CHANGES 470) | 50.59% of 43,995, H1 | 50.13% of 163,840, level | +0.23, H1 | +1.31 |
+| lk-800 | 50.51% of 53,353, H1 | 50.11% of 163,840, level | | |
+| lk-400 | 50.32% of 100,996, H1 | 50.39% of 72,613, H1 | +0.32, H1 | +0.80 |
+| bm-a (badmaps fix A as bm-cb29) | 49.96% of 122,263, H0 | H0 at 59,245 | -0.26, H0 | +1.49 |
+| bm-a1 (fix A, safe recall line) | 49.5% of 32,291, H0 | H0 at 116,677 | -0.29, H0 | +0.74 |
+| bm-ap (fix A pursuit only) | 49.5% of 30,009, H0 | level (LLR +0.82) | -0.06, level | +0.66 |
+| bm-b (bank_floor, gem-scarce) | 50.0% of 51,350, H0 | H0 at 20,487 | +0.19, H1 | +0.11 |
+| wx (CHANGES 473 exact ward sight) | 50.0% of 163,840, level (LLR -1.71) | H0 at 50,695 | +0.10, level | -1.53 |
+
+**Lock deny on dgate** (rule 0 bar 0.505/0.5075, REF oc-base25). lk-800 not gated: the same plateau as 600 (the
+oc-base25 sweep: 600..never mostly identical games) with a weaker read at both fuels.
+
+| Arm | dgate (against oc-base25) |
+|---|---|
+| v87-lk-600 | +0.05 ±0.43 pts of 48,640 cand games (12,032 units, 94 blocks); **H0** (LLR -2.97) |
+| v87-lk-400 | -0.17 ±0.49 pts of 36,864 cand games (9,088 units, 71 blocks); **H0** (LLR -3.18) |
+
+lk-600 read +2.15 ±3.05 on block 0 (v87/v91) and +0.62 ±0.76 at 31 blocks, then fell to +0.05. **Closed, and the
+dgate reading isn't trusted either way:** the live forensics (section "Why v90-v93 lose live") put 470's rule at about
+-2.7 ±2 live, on one-site maps. Without early locks, Fish and Mite tribute ~28 more gems by round 600. Our local
+opponents rarely cancel and restart tributes, so no local gate sees that cost. Don't retry an early-lock cut without
+an opponent that feints tributes.
+
+**Badmaps closed.** Fix A (camp-bound enemies neither pull a pursuit nor raise the recall line) was built from a few
+bad maps (00fragment's centre clear) but changes ~22% of spar games, so it is a broad fight-policy change, not a
+targeted one: what it gains where tanks stood on a mirrored clear it gives back where a camp-bound enemy is about to
+be free and does fight. Every subform is H0 or level on the mirror at both fuels; only pursuit-only (bm-ap) is not
+negative, and nothing nears 50.5%. Fix B (bank_floor) touches ~5% of maps (gem-scarce); a tiny real effect (+0.19 on
+the panel) cannot clear the all-maps bar, and it is H0 at 2x.
+
+**wx closed.** Exact ward sight only sharpens which tiles a ward reveals; decisions rarely change (mirror 50.0% of
+163,840) and where they do it is slightly worse at 2x (H0) and on the spar (-1.5): the old approximation was not a
+source of losses. Rejected: none of these is queued for live.
 
 ## (ocean, 2026-11-09) One diverse gate for every stage (dgate.py); v87-nh-6-3 H0 there
 
