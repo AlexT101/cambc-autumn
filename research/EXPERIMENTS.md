@@ -1011,6 +1011,38 @@ source of losses. Rejected: none of these is queued for live.
   mp-contact on top of oc31-fs-nh, read directly: -0.06 ±0.37 of 21,969 units, so it was left out of the oc-base32 stack
   (escport's oc32-fs-nh: +1.01 ±0.28 against oc-base32, LIVE BAR H1). The oc31 stacks are for reading parts only.
 
+  **Re-reads on one engine** (cambc 5.0.1; dgate now pairs only runs from the installed engine, c01fe2b11): none
+  changes its outcome. All three stay LIVE BAR H1:
+
+  | Candidate (against) | Single-engine read | Earlier mixed read |
+  |---|---|---|
+  | oc-base32 (oc-base31) | +1.40 ±0.40, Fish +1.60, Mite +1.19 | +1.59 ±0.45 |
+  | oc32-fs-nh (oc-base32) | +1.02 ±0.29 | +1.01 ±0.28 |
+  | oc32-cv (oc32-e480) | +1.53 ±0.43 | the same: all its runs were already on 5.0.1 |
+
+  **Zone arms on oc32-cg-fs-nh** (`oc32s-<arm>`, each = oc32-cg-fs-nh + that arm's diff, against oc32-cg-fs-nh):
+
+  | Arm | Read | Units | Fish | Mite | One-site | Multi-site |
+  |---|---|---|---|---|---|---|
+  | comms-bagf | **+0.52 ±0.25, NARROWED** (low H1) | 20,224 | +0.83 | +0.21 | +0.90 | +0.31 |
+  | sp-y2 | +0.27 ±0.32 (high H0) | 19,840 | +0.62 | −0.08 | +0.07 | +0.39 |
+  | knob step | +0.19 ±0.30 (high H0) | 18,176 | +0.40 | −0.01 | +0.35 | +0.10 |
+  | mp-tank | +0.05 ±0.28 (high H0, stopped) | 16,640 | +0.28 | −0.18 | +0.24 | −0.06 |
+  | ctx-g2 | −0.09 ±0.28 (high H0, stopped) | 17,536 | +0.08 | −0.27 | −0.05 | −0.12 |
+  | mp-contact | −0.15 ±0.41 (high H0, stopped) | 16,640 | −0.11 | −0.18 | −0.14 | −0.15 |
+
+  - The knob step is `oc32s-knob`, from the body-knob regression ([diverse-panel.md "Losses of the oc32
+    line"](ideas-2026-11-08/diverse-panel.md)). It moves fight_weight, fight_camp_prior, pair_hold_share and
+    bush_margin ×1.2214, and chip_value ×0.8187.
+  - Final reads: sp-y2 +0.20 ±0.26 of 30,592 units; the knob step +0.17 ±0.25 (NARROWED, ZONE crossed), with Fish
+    +0.40 and Mite −0.05.
+  - The stack `oc32s-bsk` is bagf + sp-y2 + the knob step on oc32-cg-fs-nh. Against oc32-cg-fs-nh it reads **LIVE
+    BAR H1, +1.00 ±0.28** of 34,176 units; post-screen +0.87.
+    - By opponent: Fish +1.49, Mite +0.51. By map: one-site +0.75, multi-site +1.14.
+    - It is about the sum of its parts (+0.52 + 0.20 + 0.17).
+    - 27.0% of paired games flip.
+    - Queued live at p84 as `live-oc32s-bsk`, paired against live-oc32-cg-fs-nh and v98.
+
   t5 is dfp-race-d0 (dfp-pure plus the mirror-race enemy model) on five-pick teams only, the base's draft elsewhere, so it
   gives up pure's plan on 3-4 picks; the race model was already H0 against pure, and the five-pick condition fails the map
   split. It adds nothing over dfp-pure, and the dfp-race arms were not re-read.
