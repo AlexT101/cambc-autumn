@@ -1358,7 +1358,7 @@ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memo
     // a ring, neither saves the bag from the camps: only the channel's end can.
     if (memory.damage > 0 && sealed_in(world, pathing, my_position())) return true;
     if (memory.damage <= 0 && !*(home = want_home(world, pathing, safety, memory)) && !attack_target(world)
-        && (winning_bag(world) || !prey(world, safety)))
+        && (winning_bag(world) || !prey(world, pathing, safety)))
         return true;
     decision = Branch::tribute_cancelled;
     throw_if_stale();

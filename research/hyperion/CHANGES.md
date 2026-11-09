@@ -3861,3 +3861,37 @@ Exact: bench replays identical against 478 (52/52 at 100M), and plan-hash dumps 
 `variants/oc-esc-merge` equals bots/ocean (as does `variants/fo-lean`).
 
 Evidence: EXPERIMENTS "Escape planner after 478"; research/retreat-2026-11-09/fuel-opt.md.
+
+## 481: Chase verdict: drop chases of targets that walk home clear of every hit (ocean, 2026-11-09)
+
+`model/escape.{h,cc}` and `combat/fight.cc`, on 480. The escape planner, mirrored:
+- **One race, two sides:** `Plan::build` is split into a shared core (`Plan::finish` over a `Race`) and two front ends:
+  `build`, our retreat, and `build_chase`, in which a visible enemy runs to its spawn against this champion and our
+  visible allies as pursuers. The pursuit is over-credited (all of this turn's moves, allies always move first, ranged
+  walk-reset-shoot bursts), so a clean verdict means not even our best pursuit lands a hit.
+- **The rule:** `prey()` and `chase_aim()` drop a target that can walk home with no hit from any of us. Stunned,
+  teleporting and tributing targets are not judged; a pursuer that already strikes the target's tile on its first turn
+  makes it catchable without a build. `chase_plan` keeps up to 4 plans a round.
+- **With no plan** (fuel under `params::escape::min_fuel`, the target on its spawn, cut off or out of sight) the chase
+  goes ahead as before.
+
+Exact for our own plan: bench `--set wide --test-draft` at 100M against oc-esc-merge, identical replays 52/52 after
+the refactor (fuel +0.01%).
+- **Shadow** (1,280 debug games, the verdict logged, not acted on): clean chase turns are ~40.6% of chase turns and
+  kill 4.9% within 10 rounds, against 22.2% for doomed ones.
+- **Screens** on `esc2-dev-s20` (10,240 games each, against oc-esc-merge): cv-fut 50.7, + the strike precheck 50.8,
+  + the audit's fixes (cv-v2) 51.5 (50.5-52.5).
+- Against `variants/oc-esc-merge` on `merged/plan2-dev` (seeds 1702000-1702079, 40,960 games, release, fast runner):
+  **51.7% (51.3-52.2)**, OOF 497,633 against 460,838 (+8.0%).
+- Against `variants/oc-cl2-seat5m` (ocean before the planner) on `merged/esc2-held` (61,440 games): 52.1% (51.7-52.5),
+  OOF 730,764 against 633,845. Paired with oc-esc-merge's run on the same games (51.3%), that is +0.80 ±0.52: about
+  half its gain against the planner-equipped bot, so it gains more against opponents that flee well.
+- **Paired debug metrics,** a team-game: chase turns −88, farm turns +58, kills −0.31, deaths −0.51, gems tributed at
+  round 600 +17.7.
+
+`variants/cv-v2` equals bots/ocean.
+
+Open: the +8% OOF, mostly the ungated build in `chase_aim()` before the strike search, is being worked on
+(`merged/plan3-dev` is reserved for it).
+
+Evidence: EXPERIMENTS "Chase verdict" and "Chase verdict held out"; research/retreat-2026-11-09/chase-verdict.md.

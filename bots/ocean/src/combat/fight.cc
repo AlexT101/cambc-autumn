@@ -653,24 +653,92 @@ const ChampionBelief* team_pressed(const World& world) {
     return out;
 }
 
+// The least hits `target` takes running home from our pursuit (escape::Plan::build_chase), the slack goal
+// counted when the full one has no clean way; -1 when no plan was built.
+int escape_hits(const World& world, Pathing& pathing, const ChampionBelief& target) {
+    auto* plan = escape::chase_plan(world, pathing, target, params::escape::min_fuel);
+    if (!plan || !plan->active()) return -1;
+    int hits = plan->runner_hits(false);
+    if (hits > 0) {
+        plan->want_slack();
+        if (plan->slack_ready()) hits = std::min(hits, plan->runner_hits(true));
+    }
+    return hits;
+}
+
+// A chase pays through its target, and one that can walk home clear of every hit our visible team could
+// land on the way is not caught: the walk after it is futile (research/retreat-2026-11-09/chase-verdict.md).
+// No plan (fuel short, out of sight, on its spawn) reads as catchable, as before the verdict.
+bool escapes(const World& world, Pathing& pathing, const ChampionBelief& target) {
+    // The race's runner walks on its next turn: one held by a stun, a teleport or a tribute it keeps is not judged.
+    if (!target.visible || target.stun_pending || target.teleport_pending() || target.channel == Channel::tribute) return false;
+    // One of us that strikes its tile on our first turns has it hit already, as the plan would say, without a build:
+    // a melee walk and a hit, a ranged shot from where it stands.
+    const auto strikes = [&](const ChampionBelief& a, vec2 from) {
+        const auto& f = a.facts();
+        return dist(from, target.pos) <= f.basic_reach() + (f.ranged ? 0 : 1);
+    };
+    if (strikes(world.me(), world.turn_start)) return false;
+    for (const auto& a : world.allies)
+        if (!a.is_self && a.alive && a.visible && strikes(a, a.pos)) return false;
+    return escape_hits(world, pathing, target) == 0;
+}
+
+// Debug trace: the verdict on a chase we take (built in the block if the rule did not ask, its fuel paused).
+void trace_verdict(const World& world, Pathing& pathing, const ChampionBelief& target, char tag) {
+    debug_block({
+        if (target.visible && target.alive) {
+            auto* plan = escape::chase_plan(world, pathing, target, 0);
+            int full = -1, slack = -1, now = -1;
+            if (plan && plan->active()) {
+                full = plan->runner_hits(false);
+                plan->want_slack();
+                slack = plan->slack_ready() ? plan->runner_hits(true) : -1;
+                now = plan->runner_hit_now() ? 1 : 0;
+            }
+            const vec2 here = my_position();
+            const int g = world.map().group_at(target.pos);
+            const int held = g >= 0 && world.camps[g].state == CampState::cleared ? world.map().groups[g].gems : 0;
+            std::printf("CV %c %d %u %u %d %d %d %d %d %d %d %d %d %d %.3f %d %d %d %d\n", tag, world.round, my_handle(),
+                        static_cast<std::uint32_t>(target.handle), dist(here, target.pos), world.me().facts().attack_range(), full, slack, now,
+                        target.stun_pending ? 1 : 0, own_ground(world, target.pos) ? 1 : 0, held, pair_gems(world, target),
+                        world.map().enemy_spawn_steps(target.pos), target.health / std::max(1.0f, target.max_health), target.pos.x,
+                        target.pos.y, engaged_last_turn(static_cast<std::uint32_t>(target.handle)) ? 1 : 0, static_cast<int>(target.channel));
+        }
+    });
+}
+
 // Where the strike search's walk heads when it strikes nothing: the nearest visible enemy we
 // chased or struck on our previous turn that prey could still take, else {-1, -1}. The search
 // walks first, and chase gets no walk after one.
-vec2 chase_aim(const World& world, Safety& safety) {
+vec2 chase_aim(const World& world, Pathing& pathing, Safety& safety) {
     vec2 aim{-1, -1};
     if (world.me().facts().heals() && !willow_early(world)) return aim;
     const vec2 here = my_position();
     const int range = world.me().facts().attack_range();
-    int best = unreachable, held = 0;
+    int held = 0;
     // A teammate's pressed fight when we have none of our own.
     if (!engaged_before) {
-        if (const auto* t = team_pressed(world); t && preyable(world, safety, *t, here, range, held)) aim = t->pos;
+        if (const auto* t = team_pressed(world); t && preyable(world, safety, *t, here, range, held) && !escapes(world, pathing, *t))
+            aim = t->pos, trace_verdict(world, pathing, *t, 'T');
         return aim;
     }
+    // Nearest first, so a verdict is asked only up to the first that holds.
+    Unwritten<std::pair<int, const ChampionBelief*>, 8> engaged;
+    auto& order = engaged.a;
+    int n = 0;
     for (const auto& e : world.enemies)
-        if (e.alive && e.visible && engaged_last_turn(static_cast<std::uint32_t>(e.handle)) && dist(here, e.pos) < best
-            && preyable(world, safety, e, here, range, held))
-            aim = e.pos, best = dist(here, e.pos);
+        if (n < static_cast<int>(order.size()) && e.alive && e.visible && engaged_last_turn(static_cast<std::uint32_t>(e.handle))
+            && preyable(world, safety, e, here, range, held)) {
+            int i = n++;
+            for (; i > 0 && order[i - 1].first > dist(here, e.pos); --i) order[i] = order[i - 1];
+            order[i] = {dist(here, e.pos), &e};
+        }
+    for (int i = 0; i < n; ++i)
+        if (!escapes(world, pathing, *order[i].second)) {
+            trace_verdict(world, pathing, *order[i].second, 'A');
+            return order[i].second->pos;
+        }
     return aim;
 }
 
@@ -695,7 +763,7 @@ std::uint32_t lost_prey(const World& world, vec2 here) {
 // The visible enemy whose kill pays most a turn to reach and kill it, among those whose local
 // fight we win even when they strike first; never one on or next to its spawn, where it heals.
 // An enemy we were fighting that slipped out of sight counts at its last tile (lost_prey).
-const ChampionBelief* prey(const World& world, Safety& safety) {
+const ChampionBelief* prey(const World& world, Pathing& pathing, Safety& safety) {
     world.throw_if_stale();
     // Willow holds no fight (want_home), but early (willow_stands): a chase walks it into reach only to leave next turn.
     if (world.me().facts().heals() && !willow_early(world)) return nullptr;
@@ -707,12 +775,12 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
     // farm, walking off mid-fight from a hurter enemy, not take us out of danger.
     if (const auto* p = pressed(world)) {
         int held = 0;
-        if (preyable(world, safety, *p, here, range, held)) return p;
+        if (preyable(world, safety, *p, here, range, held) && !escapes(world, pathing, *p)) return p;
     }
     // A teammate's pressed fight is joined as our own.
     if (const auto* p = team_pressed(world)) {
         int held = 0;
-        if (preyable(world, safety, *p, here, range, held)) return p;
+        if (preyable(world, safety, *p, here, range, held) && !escapes(world, pathing, *p)) return p;
     }
     std::optional<float> strength; // read once a candidate needs it
     // Cassi or Issac falling takes the other body and both bags: a won fight that costs us is lost.
@@ -802,6 +870,12 @@ const ChampionBelief* prey(const World& world, Safety& safety) {
         // the bag is worth risking more for. Boosted chases skip the lost-fight memo, which has no boost.
         const float boost = std::min(0.3f, params::gem_value * static_cast<float>(pair_gems(world, target)) / params::life_value);
         if (boost <= 0 && std::find(lost.begin(), lost.begin() + n_lost, fight) != lost.begin() + n_lost) continue;
+        // Its verdict before the fight's, which it spares when the target escapes; the fight still needs its fuel after.
+        if (escapes(world, pathing, target)) continue;
+        if (!fuel_ok(safety.fight_cost_estimate() + reserve)) {
+            note_shortcut("prey-cut-short");
+            break;
+        }
         const auto t = safety.chase_trade(key, delayed, cooldowns, cast_available, linked, late, boost);
         debug_block({
             static int traced = 0;
@@ -822,8 +896,9 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
     // After the strike search, chase only walks: the search priced and passed on its dash and casts,
     // and strike_after makes the hits from where the walk ends.
     if (searched && !my_can_move()) return false;
-    const auto* target = prey(world, safety);
+    const auto* target = prey(world, pathing, safety);
     if (!target) return false;
+    trace_verdict(world, pathing, *target, 'P');
     note_engaged(static_cast<std::uint32_t>(target->handle));
     decision = Branch::chase;
     if constexpr (debug_fights) log_fight("FC", world, safety, target->pos, safety.fight(target->pos), static_cast<int>(target->handle));

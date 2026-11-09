@@ -334,8 +334,8 @@ bool paying_soon(const World& world, Safety& safety, vec2 p, int turns);
 bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
 // want_home's recall line and pack zone (drawn_home) at p, as if we stood there with last round's loss `damage`.
 bool drawn_home_at(const World& world, Pathing& pathing, Safety& safety, vec2 p, float damage);
-const ChampionBelief* prey(const World& world, Safety& safety);
-vec2 chase_aim(const World& world, Safety& safety);
+const ChampionBelief* prey(const World& world, Pathing& pathing, Safety& safety);
+vec2 chase_aim(const World& world, Pathing& pathing, Safety& safety);
 // A successful chase keeps its guard; a failed one restores the work guard.
 bool chase_with_guard(const World& world, Pathing& pathing, Safety& safety, const Pathing::GuardState& guard);
 const ChampionBelief* stoppable_winning_tribute(const World& world);

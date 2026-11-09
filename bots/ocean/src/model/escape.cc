@@ -204,30 +204,17 @@ struct Pursuers {
     Rows start{};
 };
 
-} // namespace
-
-void Plan::build(const World& world, Pathing& pathing, Safety& safety) {
-    const Field& home = pathing.to_ally_spawn();
-    active_ = dash_ = dash_now_ = false;
-    pass_[0].ready = pass_[1].ready = false;
-    const auto& self = world.me();
-    if (!self.alive || fuel() < params::escape::min_fuel || !ready_statics(world)) return;
-    const std::uint64_t start_fuel = fuel();
-    const vec2 here = my_position();
-    const int steps = home.at(here);
-    if (steps == unreachable || steps == 0) return;
-    origin_ = {here.x - radius, here.y - radius};
-    const Span at = span_of(origin_);
-
-    // The pursuers, merged by kind.
-    std::array<Pursuers, 8> kinds;
+struct Kinds {
+    std::array<Pursuers, 8> of;
     int n = 0;
-    const auto add = [&](const ChampionBelief& e, int out) -> Rows* {
-        const auto& f = e.facts();
-        // Its k-th turn from now falls in this round if it has yet to act; unseen, assume it has.
-        const int offset = e.visible && !e.acted ? 1 : 0;
+
+    // The class of a champion whose k-th turn of the plan falls in round `round` + k - `offset` (offset 1: it
+    // has yet to act this round), `out` steps beyond the window; null if it is past the plan. With `resets`, a
+    // ranged champion's attack reset is a burst too: walk, reset, shoot.
+    [[gnu::always_inline]] Rows* add(const ChampionFacts& f, const std::array<int, 2>& ready_round, int round, int offset, int out,
+                                     bool resets = false) {
         const auto ready_turn = [&](int slot) {
-            const int k = std::max(1, e.ready_round[static_cast<std::size_t>(slot)] - world.round + offset);
+            const int k = std::max(1, ready_round[static_cast<std::size_t>(slot)] - round + offset);
             return k > horizon ? 0 : k;
         };
         Pursuers kind{f.ranged, f.basic_reach(), 0, 0, 0, false, out, {}};
@@ -241,32 +228,200 @@ void Plan::build(const World& world, Pathing& pathing, Safety& safety) {
                 if (f.abilities[s].hits_enemies())
                     if (const int k = ready_turn(s); k > 0 && (kind.burst_turn == 0 || k < kind.burst_turn)) kind.burst_turn = k;
         if (kind.burst_turn == 0) kind.burst = 0, kind.blind = false;
+        if (const int slot = resets && f.ranged ? f.slot_of(AbilityKind::attack_reset) : -1; slot >= 0)
+            if (const int k = ready_turn(slot); k > 0 && f.basic_reach() + 1 > kind.burst)
+                kind.burst = f.basic_reach() + 1, kind.burst_turn = k, kind.blind = false;
         for (int i = 0; i < n; ++i) {
-            const auto& o = kinds[i];
+            const auto& o = of[i];
             if (o.ranged == kind.ranged && o.reach == kind.reach && o.dash_turn == kind.dash_turn && o.burst == kind.burst
                 && o.burst_turn == kind.burst_turn && o.blind == kind.blind && o.delay == kind.delay)
-                return &kinds[i].start;
+                return &of[i].start;
         }
-        if (n == static_cast<int>(kinds.size())) return nullptr;
-        kinds[n] = kind;
-        return &kinds[n++].start;
-    };
+        if (n == static_cast<int>(of.size())) return nullptr;
+        of[n] = kind;
+        return &of[n++].start;
+    }
+    // A champion seen on `tile`: its class's start, at the window's edge if beyond it.
+    [[gnu::always_inline]] void add_at(const ChampionFacts& f, const std::array<int, 2>& ready_round, int round, int offset, vec2 tile, vec2 origin,
+                                       bool resets = false) {
+        const int x = std::clamp(tile.x - origin.x, 0, side - 1), y = std::clamp(tile.y - origin.y, 0, side - 1);
+        if (auto* rows = add(f, ready_round, round, offset, std::max(std::abs(tile.x - origin.x - x), std::abs(tile.y - origin.y - y)), resets))
+            put(*rows, y, std::uint32_t{1} << x);
+    }
+};
+
+// The enemy's home field: our walking field from our spawn, to be read at the mirror tile (World::enemy_spawn_steps),
+// padded by 16 before and after for 16-column reads either way.
+std::array<std::uint16_t, 100 * 100 + 32> enemy_home;
+bool enemy_home_ready = false;
+
+} // namespace
+
+// What a race is run on beyond the plan's own members.
+struct Plan::Race {
+    bool ours = true; // we run (from the enemies); else an enemy runs from us
+    Span at;
+    Kinds kinds;
+    int steps = 0;          // the runner's steps home now
+    int moves = horizon;    // its turns left in the plan: the full goal is that many steps nearer
+    // The goal's field, row-major; with `flip_x` its columns are read mirrored, with `flip_y` its rows, as the
+    // map's symmetry takes the field's tiles to the runner's.
+    const std::uint16_t* field = nullptr;
+    bool flip_x = false, flip_y = false;
+};
+
+void Plan::build(const World& world, Pathing& pathing, Safety& safety) {
+    const Field& home = pathing.to_ally_spawn();
+    active_ = dash_ = dash_now_ = false;
+    pass_[0].ready = pass_[1].ready = false;
+    const auto& self = world.me();
+    if (!self.alive || fuel() < params::escape::min_fuel || !ready_statics(world)) return;
+    const std::uint64_t start_fuel = fuel();
+    const vec2 here = my_position();
+    Race race;
+    race.steps = home.at(here);
+    if (race.steps == unreachable || race.steps == 0) return;
+    origin_ = {here.x - radius, here.y - radius};
+    race.at = span_of(origin_);
+
+    // The pursuers, merged by kind.
     for (const auto& e : world.enemies) {
         if (!e.alive) continue;
+        // Its k-th turn from now falls in this round if it has yet to act; unseen, assume it has.
+        const int offset = e.visible && !e.acted ? 1 : 0;
         if (e.visible) {
-            const vec2 o = enemy_reach::origin(e);
-            const int x = std::clamp(o.x - origin_.x, 0, side - 1), y = std::clamp(o.y - origin_.y, 0, side - 1);
-            if (auto* rows = add(e, std::max(std::abs(o.x - origin_.x - x), std::abs(o.y - origin_.y - y))))
-                put(*rows, y, std::uint32_t{1} << x);
+            race.kinds.add_at(e.facts(), e.ready_round, world.round, offset, enemy_reach::origin(e), origin_);
         } else if (e.tracked && e.pos_round >= world.round - params::escape::unseen_rounds && safety.credible_unseen(e)) {
             if (!export_board(e.possible, scratch_packed)) continue;
-            const Rows tiles = rows_of(scratch_packed, at);
+            const Rows tiles = rows_of(scratch_packed, race.at);
             if (none_set(tiles)) continue;
-            if (auto* rows = add(e, 0)) *rows |= tiles;
+            if (auto* rows = race.kinds.add(e.facts(), e.ready_round, world.round, offset, 0)) *rows |= tiles;
         }
     }
-    if (n == 0) return;
+    if (race.kinds.n == 0) return;
 
+    // Our dash: the turn it may first fall in after this one, if within the plan.
+    if (const int slot = self.facts().slot_of(AbilityKind::dash); slot >= 0) {
+        const int cool = my_cooldown(slot);
+        dash_now_ = cool <= 0 && my_can_cast();
+        dash_turn_ = std::max(2, cool + 1);
+        dash_ = dash_turn_ <= horizon;
+    }
+
+    const int which = self.facts().has_dash() ? 1 : 0;
+    if (!home_ready[which]) {
+        try {
+            home.steps.export_linear_buffer({home_steps[which].data(), static_cast<std::size_t>(statics.width * statics.height)});
+        } catch (const cambc::error&) {
+            return;
+        }
+        home_ready[which] = true;
+    }
+    race.field = home_steps[which].data();
+    finish(pathing, race);
+    debug_block({
+        if (active_)
+            std::printf("ESC %d %u kinds %d dash %d/%d fuel %llu\n", world.round, my_handle(), race.kinds.n, dash_ ? dash_turn_ : 0,
+                        dash_now_ ? 1 : 0, static_cast<unsigned long long>(start_fuel - fuel()));
+    });
+}
+
+void Plan::build_chase(const World& world, Pathing& pathing, const ChampionBelief& target) {
+    active_ = dash_ = dash_now_ = false;
+    pass_[0].ready = pass_[1].ready = false;
+    const auto& self = world.me();
+    if (!self.alive || !target.alive || !target.visible || !ready_statics(world)) return;
+    const std::uint64_t start_fuel = fuel();
+    const auto& map = world.map();
+    if (!enemy_home_ready) {
+        try {
+            map.from_ally_spawn().steps.export_linear_buffer({enemy_home.data() + 16, static_cast<std::size_t>(statics.width * statics.height)});
+        } catch (const cambc::error&) {
+            return;
+        }
+        enemy_home_ready = true;
+    }
+    const vec2 here = target.pos;
+    Race race;
+    race.ours = false;
+    race.steps = map.enemy_spawn_steps(here);
+    if (race.steps == unreachable || race.steps == 0) return;
+    origin_ = {here.x - radius, here.y - radius};
+    race.at = span_of(origin_);
+
+    // Its turn 1 has ended: turns 2..horizon are left.
+    race.moves = horizon - 1;
+    // We pursue from the turn's start with all of this turn's moves, whatever the turn has spent, and an
+    // ally's next turn counts as coming before the target's whenever it acts: both only add pursuit. Our
+    // walk-reset-shoot counts too (a pessimism our own plan keeps out, here on the safe side).
+    race.kinds.add_at(self.facts(), self.ready_round, world.round, 1, world.turn_start, origin_, true);
+    for (const auto& a : world.allies)
+        if (!a.is_self && a.alive && a.visible) race.kinds.add_at(a.facts(), a.ready_round, world.round, a.acted ? 0 : 1, a.pos, origin_, true);
+
+    // Its dash: plan turn k >= 2 is its turn in round `next` + k - 2.
+    if (const int slot = target.facts().slot_of(AbilityKind::dash); slot >= 0) {
+        const int next = target.acted ? world.round + 1 : world.round;
+        dash_turn_ = std::max(2, target.ready_round[static_cast<std::size_t>(slot)] - next + 2);
+        dash_ = dash_turn_ <= horizon;
+    }
+
+    race.field = enemy_home.data() + 16;
+    race.flip_x = map.symmetry != cambc::symmetry::vertical;
+    race.flip_y = map.symmetry != cambc::symmetry::horizontal;
+    finish(pathing, race);
+    debug_block({
+        if (active_)
+            std::printf("ESCC %d %u %u kinds %d fuel %llu\n", world.round, my_handle(), static_cast<std::uint32_t>(target.handle), race.kinds.n,
+                        static_cast<unsigned long long>(start_fuel - fuel()));
+    });
+}
+
+namespace {
+
+// The goal rows: the walk tiles whose field reads at most `near` (`slack`). Mirrored (FlipX, FlipY), the field is read at
+// the tile the map's symmetry takes each window tile to.
+template <bool FlipX, bool FlipY>
+[[gnu::always_inline]] inline void goal_rows(const std::uint16_t* field, const Rows& walk_rows, vec2 origin, int near, int slack, Rows& goal,
+                                             Rows& slack_goal) {
+    alignas(16) std::uint16_t walks[16], goals[16] = {}, slacks[16] = {};
+    std::memcpy(walks, &walk_rows, sizeof walks);
+    const int lo = std::max(0, -origin.x); // the window's first column on the map
+    for (int y = 0; y < side; ++y) {
+        const std::uint32_t walk = walks[y];
+        if (!walk) continue;
+        // 16 columns from the window's first on the map: past its row, masked by `walk`. Mirrored, the 16 that end
+        // at that column's mirror, whose bits come out reversed.
+        const int row = FlipY ? statics.height - 1 - (origin.y + y) : origin.y + y;
+        const int col = FlipX ? statics.width - 16 - (origin.x + lo) : origin.x + lo;
+        const std::uint16_t* line = &field[static_cast<std::size_t>(row * statics.width + col)];
+        std::uint32_t near_bits = 0, slack_bits = 0;
+#ifdef __wasm_simd128__
+        const v128_t a = wasm_v128_load(line), b = wasm_v128_load(line + 8);
+        const v128_t n8 = wasm_i16x8_splat(static_cast<std::int16_t>(near)), s8 = wasm_i16x8_splat(static_cast<std::int16_t>(slack));
+        near_bits = wasm_i16x8_bitmask(wasm_u16x8_le(a, n8)) | wasm_i16x8_bitmask(wasm_u16x8_le(b, n8)) << 8;
+        slack_bits = wasm_i16x8_bitmask(wasm_u16x8_le(a, s8)) | wasm_i16x8_bitmask(wasm_u16x8_le(b, s8)) << 8;
+#else
+        for (int x = 0; x < 16; ++x) {
+            near_bits |= std::uint32_t{line[x] <= near} << x;
+            slack_bits |= std::uint32_t{line[x] <= slack} << x;
+        }
+#endif
+        if constexpr (FlipX) {
+            near_bits = __builtin_bitreverse16(static_cast<std::uint16_t>(near_bits));
+            slack_bits = __builtin_bitreverse16(static_cast<std::uint16_t>(slack_bits));
+        }
+        slacks[y] = static_cast<std::uint16_t>(slack_bits << lo & walk);
+        goals[y] = static_cast<std::uint16_t>(near_bits << lo & walk);
+    }
+    std::memcpy(&goal, goals, sizeof goal);
+    std::memcpy(&slack_goal, slacks, sizeof slack_goal);
+}
+
+} // namespace
+
+// The terrain, the hit layers and the goals, then the full pass: active once it ran.
+void Plan::finish(Pathing& pathing, Race& race) {
+    const Span& at = race.at;
     // Terrain in the window. Live camps change rarely: exported again only when they do.
     const auto& camps = pathing.live_camps();
     if (camps_flips != pathing.live_flips() || camps_flips == ~0u) {
@@ -278,9 +433,13 @@ void Plan::build(const World& world, Pathing& pathing, Safety& safety) {
         return meets ? rows_of(p, at, std::max(0, b.y0 - origin_.y), std::min(side, b.y1 - origin_.y + 1)) : Rows{};
     };
     const auto terrain = rows_of<4>({&camps_packed, &statics.passable, &statics.unwalled, &statics.bushes}, at);
-    const Rows bush = terrain[3], spawn = spawn_rows(statics.ally_spawn, statics.ally_box);
+    const Rows bush = terrain[3];
+    // The runner's spawn (its turn ends heal there, and its pursuers may not enter) and the pursuers' (the runner's
+    // may not).
+    const Rows spawn = race.ours ? spawn_rows(statics.ally_spawn, statics.ally_box) : spawn_rows(statics.enemy_spawn, statics.enemy_box);
     const Rows uncamped = ~terrain[0], walkable = terrain[1] & uncamped, crossable = terrain[2] & uncamped;
-    const Rows ours = ~spawn_rows(statics.enemy_spawn, statics.enemy_box), theirs = ~spawn;
+    const Rows ours = ~(race.ours ? spawn_rows(statics.enemy_spawn, statics.enemy_box) : spawn_rows(statics.ally_spawn, statics.ally_box));
+    const Rows theirs = ~spawn;
     walk_ = walkable & ours, path_ = crossable & ours;
     const Rows walk_them = walkable & theirs, path_them = crossable & theirs;
     const bool bushes = !none_set(bush);
@@ -288,8 +447,8 @@ void Plan::build(const World& world, Pathing& pathing, Safety& safety) {
     // Where each turn ends hit.
     for (auto& h : hit_) h = Rows{};
     const Rows open = ~bush;
-    for (int c = 0; c < n; ++c) {
-        const auto& kind = kinds[c];
+    for (int c = 0; c < race.kinds.n; ++c) {
+        const auto& kind = race.kinds.of[c];
         // `near`: grow(from), which the walk reuses.
         const auto strike = [&](int k, const Rows& from, const Rows& near, int reach, bool blind) {
             const Rows reached = widen(near, reach);
@@ -337,57 +496,15 @@ void Plan::build(const World& world, Pathing& pathing, Safety& safety) {
     }
     for (int k = 1; k <= horizon; ++k) hit_[k] &= ~spawn;
 
-    // Our dash: the turn it may first fall in after this one, if within the plan.
-    if (const int slot = self.facts().slot_of(AbilityKind::dash); slot >= 0) {
-        const int cool = my_cooldown(slot);
-        dash_now_ = cool <= 0 && my_can_cast();
-        dash_turn_ = std::max(2, cool + 1);
-        dash_ = dash_turn_ <= horizon;
-    }
-
     // The goals.
-    const int which = self.facts().has_dash() ? 1 : 0;
-    if (!home_ready[which]) {
-        try {
-            home.steps.export_linear_buffer({home_steps[which].data(), static_cast<std::size_t>(statics.width * statics.height)});
-        } catch (const cambc::error&) {
-            return;
-        }
-        home_ready[which] = true;
-    }
-    const int near = std::max(0, steps - horizon), slack = near + params::escape::slack_steps;
-    alignas(16) std::uint16_t walks[16], goals[16] = {}, slacks[16] = {};
-    std::memcpy(walks, &walk_, sizeof walks);
-    const int lo = std::max(0, -origin_.x); // the window's first column on the map
-    for (int y = 0; y < side; ++y) {
-        const std::uint32_t walk = walks[y];
-        if (!walk) continue;
-        // 16 columns from the window's first on the map: past its row, masked by `walk`.
-        const std::uint16_t* line = &home_steps[which][static_cast<std::size_t>((origin_.y + y) * statics.width + origin_.x + lo)];
-        std::uint32_t near_bits = 0, slack_bits = 0;
-#ifdef __wasm_simd128__
-        const v128_t a = wasm_v128_load(line), b = wasm_v128_load(line + 8);
-        const v128_t n8 = wasm_i16x8_splat(static_cast<std::int16_t>(near)), s8 = wasm_i16x8_splat(static_cast<std::int16_t>(slack));
-        near_bits = wasm_i16x8_bitmask(wasm_u16x8_le(a, n8)) | wasm_i16x8_bitmask(wasm_u16x8_le(b, n8)) << 8;
-        slack_bits = wasm_i16x8_bitmask(wasm_u16x8_le(a, s8)) | wasm_i16x8_bitmask(wasm_u16x8_le(b, s8)) << 8;
-#else
-        for (int x = 0; x < 16; ++x) {
-            near_bits |= std::uint32_t{line[x] <= near} << x;
-            slack_bits |= std::uint32_t{line[x] <= slack} << x;
-        }
-#endif
-        slacks[y] = static_cast<std::uint16_t>(slack_bits << lo & walk);
-        goals[y] = static_cast<std::uint16_t>(near_bits << lo & walk);
-    }
+    const int near = std::max(0, race.steps - race.moves), slack = near + params::escape::slack_steps;
     Rows goal;
-    std::memcpy(&goal, goals, sizeof goal);
-    std::memcpy(&slack_goal_, slacks, sizeof slack_goal_);
+    if (!race.flip_x && !race.flip_y) goal_rows<false, false>(race.field, walk_, origin_, near, slack, goal, slack_goal_);
+    else if (!race.flip_y) goal_rows<true, false>(race.field, walk_, origin_, near, slack, goal, slack_goal_);
+    else if (!race.flip_x) goal_rows<false, true>(race.field, walk_, origin_, near, slack, goal, slack_goal_);
+    else goal_rows<true, true>(race.field, walk_, origin_, near, slack, goal, slack_goal_);
     run(goal, pass_[0]);
     active_ = true;
-    debug_block({
-        std::printf("ESC %d %u kinds %d dash %d/%d fuel %llu\n", world.round, my_handle(), n, dash_ ? dash_turn_ : 0, dash_now_ ? 1 : 0,
-                    static_cast<unsigned long long>(start_fuel - fuel()));
-    });
 }
 
 // Backward over the turns: S_H is the goal; a turn k ending on a tile costs a hit there if hit_[k]
@@ -447,6 +564,25 @@ int Plan::after_walk(vec2 p, bool slack) const {
 int Plan::after_dash(vec2 p, bool slack) const { return value(pass(slack).dashed[0], pass(slack).dashed[1], p); }
 
 int Plan::keep_dash(bool slack) const { return value(pass(slack).kept[0], pass(slack).kept[1], at); }
+
+bool Plan::runner_hit_now() const { return get(hit_[1], at.y - origin_.y) >> (at.x - origin_.x) & 1; }
+
+int Plan::runner_hits(bool slack) const { return std::min(many, (runner_hit_now() ? 1 : 0) + after_walk(at, slack)); }
+
+Plan* chase_plan(const World& world, Pathing& pathing, const ChampionBelief& target, std::uint64_t need) {
+    // A turn chases one target or two (its aim, then prey's pick), a few at most.
+    static std::array<Plan, 4> plans;
+    static std::size_t next = 0;
+    const auto h = static_cast<std::uint32_t>(target.handle);
+    for (auto& p : plans)
+        if (p.round == world.round && p.handle == h && p.at == target.pos) return &p;
+    if (!fuel_ok(need)) return nullptr;
+    auto& p = plans[next];
+    next = (next + 1) % plans.size();
+    p.round = world.round, p.handle = h, p.at = target.pos, p.observations = world.observations;
+    p.build_chase(world, pathing, target);
+    return &p;
+}
 
 Plan& plan(const World& world, Pathing& pathing, Safety& safety) {
     static Plan p;

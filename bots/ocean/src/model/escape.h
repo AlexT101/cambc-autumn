@@ -12,6 +12,11 @@
 // A hit is a turn ending in some pursuer's reach. Our spawn is never hit: its turn end heals.
 // Goal: to the tiles on our home field (Pathing::to_ally_spawn) at most `horizon` walking steps nearer than now by the plan's
 // last turn (full), or slack_steps short of that (slack, worked out only when asked).
+//
+// The same race runs with the sides swapped for a chase (build_chase): a visible enemy runs to its own
+// spawn from its tile, where its last turn ended, and our pursuers are this champion and the visible
+// allies. Their intent is ours to know, so the worst case falls on the runner: a clean way home for it
+// means no pursuit of ours, however good, lands a hit before it gets there.
 #pragma once
 #include <array>
 #include <cstdint>
@@ -23,6 +28,7 @@ namespace aph {
 class World;
 class Pathing;
 class Safety;
+struct ChampionBelief;
 
 namespace escape {
 
@@ -57,6 +63,13 @@ public:
     // Built from our tile for this turn: inactive with no pursuer in the window, our home unreachable,
     // or the fuel short.
     void build(const World& world, Pathing& pathing, Safety& safety);
+    // The chase race: `target` (visible) runs home from its tile; we pursue from this turn's start tile with
+    // the turn's moves still ours, as do the visible allies. Turn 1 is the target's last, now ended, so its
+    // pursuers' first turns (ours this one) hit it where it stands. Inactive on its spawn or with it cut off.
+    void build_chase(const World& world, Pathing& pathing, const ChampionBelief& target);
+    // A chase plan's runner: its hits, turns 1..horizon, on its best way to the goal (`many` past one).
+    int runner_hits(bool slack) const;
+    bool runner_hit_now() const; // its tile in reach of our pursuers' first turns
 
     // The cache key: rebuilt when any of these change.
     int round = -1;
@@ -74,6 +87,8 @@ public:
     };
 
 private:
+    struct Race;
+    void finish(Pathing& pathing, Race& race);
     void run(const Rows& goal, Pass& out) const;
     int value(const Rows& none, const Rows& one, vec2 p) const;
     const Pass& pass(bool slack) const { return pass_[slack && pass_[1].ready ? 1 : 0]; }
@@ -88,6 +103,10 @@ private:
 
 // The plan for this turn from our tile, built on first ask and kept while its key holds.
 Plan& plan(const World& world, Pathing& pathing, Safety& safety);
+
+// The chase plan against a visible enemy this round, built on first ask (null if the fuel left is under
+// `need` then) and kept for the round: nothing it reads moves during our turn.
+Plan* chase_plan(const World& world, Pathing& pathing, const ChampionBelief& target, std::uint64_t need);
 
 // A first move's rank, lower first, from its hits on the full and slack goals (this turn's included):
 // a hit weighs hit_steps steps of progress home, and the slack goal costs slack_steps.

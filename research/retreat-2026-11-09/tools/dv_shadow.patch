@@ -1,0 +1,256 @@
+diff --git a/bots/ocean/src/bot.cc b/bots/ocean/src/bot.cc
+index be93019b7..87a610e24 100644
+--- a/bots/ocean/src/bot.cc
++++ b/bots/ocean/src/bot.cc
+@@ -606,9 +606,10 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+ void play_turn(World& world, Pathing& pathing, Memory& memory) {
+     Safety safety{world};
+     pathing.use_safety(&safety);
++    escape::shadow_bind(&world, &pathing, &safety);
+     struct Unuse {
+         Pathing& pathing;
+-        ~Unuse() { pathing.use_safety(nullptr); }
++        ~Unuse() { pathing.use_safety(nullptr), escape::shadow_bind(nullptr, nullptr, nullptr); }
+     } unuse{pathing};
+     const int live_claim = world.me().facts().has_dash() && memory.claim >= 0
+                                && memory.claim < static_cast<int>(world.camps.size())
+diff --git a/bots/ocean/src/combat/abilities.cc b/bots/ocean/src/combat/abilities.cc
+index df4defb43..7db0b7950 100644
+--- a/bots/ocean/src/combat/abilities.cc
++++ b/bots/ocean/src/combat/abilities.cc
+@@ -49,6 +49,7 @@ struct Cast {
+         try {
+             if (champion) return cast_slot_on(slot, *champion);
+             if (camp) return cast_slot_on(slot, static_cast<cambc::handle_camp_t>(*camp));
++            if (dash) escape::shadow_dash('H', my_position(), tile);
+             const bool cast = cast_slot(slot, tile);
+             outside_dashes() += cast && dash;
+             return cast;
+diff --git a/bots/ocean/src/combat/plan.cc b/bots/ocean/src/combat/plan.cc
+index c16d46d37..dbb9bf289 100644
+--- a/bots/ocean/src/combat/plan.cc
++++ b/bots/ocean/src/combat/plan.cc
+@@ -9,6 +9,7 @@
+ #include "abilities.h"
+ #include "../emblems.h"
+ #include "../params.h"
++#include "../model/escape.h"
+ #include "../model/pathing.h"
+ #include "../model/safety.h"
+ #include "self_abilities.h"
+@@ -2283,6 +2284,11 @@ bool strike_possible(const World& world) {
+     std::array<bool, grid_cells> dropped{};
+     const auto concrete = [&](const Tile& t) { return S.concrete(t.c, t.keep, t.entry, t.keep && t.shield > 0); };
+     if (chosen >= 0) seq = concrete(tiles[chosen]), dropped[tiles[chosen].c] = true;
++    if (chosen >= 0 && S.dash_ready && S.can_cast) {
++        bool dashes = false;
++        for (int k = 0; k < seq.n; ++k) dashes |= seq.a[k].op == Op::dash;
++        escape::shadow_dash(dashes ? 'S' : 'N', S.here, S.tile(tiles[chosen].c));
++    }
+     int done = 0;
+     bool failed = false;
+     // Its walk may end on a guarded tile it passes on the way to a landing.
+diff --git a/bots/ocean/src/combat/self_abilities.cc b/bots/ocean/src/combat/self_abilities.cc
+index 88dca14f7..981ae72a8 100644
+--- a/bots/ocean/src/combat/self_abilities.cc
++++ b/bots/ocean/src/combat/self_abilities.cc
+@@ -451,6 +451,7 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief*
+         within(pathing.dash_landings(), at, range + walk),
+         [&](vec2 p) { return Rank{dist(p, at) > range, danger(threats, p), spawn.at(p)}; },
+         [&](vec2 p, const Rank&) { return !landing_harmful(world, p); });
++    if (landings.count > 0) escape::shadow_dash('A', here, landings.tiles[0]);
+     return dash_to_first(dash, pathing, landings);
+ }
+ 
+@@ -459,7 +460,9 @@ bool dash_away(const World& world, Pathing& pathing, Safety& safety, const Field
+     const int dash = ready(world, AbilityKind::dash);
+     if (dash < 0) return false;
+     const vec2 here = my_position();
+-    return dash_to_first(dash, pathing, escape_landings(world, pathing, safety, here, threats_near(world, here, dead), home, dead, plan));
++    const auto landings = escape_landings(world, pathing, safety, here, threats_near(world, here, dead), home, dead, plan);
++    if (landings.count > 0) escape::shadow_dash('E', here, landings.tiles[0]);
++    return dash_to_first(dash, pathing, landings);
+ }
+ 
+ EscapeDashQuote quote_escape_dash(const World& world, Pathing& pathing, Safety& safety, const Field& home, vec2 dead) {
+@@ -483,6 +486,7 @@ EscapeDashQuote quote_escape_dash(const World& world, Pathing& pathing, Safety&
+ bool cast_escape_dash(const World& world, Pathing& pathing, const EscapeDashQuote& quote) {
+     world.throw_if_stale();
+     if (quote.slot < 0 || quote.count == 0 || my_position() != quote.from || ready(world, AbilityKind::dash) != quote.slot) return false;
++    escape::shadow_dash('E', quote.from, quote.tiles[0]);
+     if (cast(quote.slot, quote.tiles[0])) {
+         pathing.invalidate();
+         return true;
+@@ -506,6 +510,7 @@ bool dash_onto(const World& world, Pathing& pathing, const bitboard& tiles) {
+     const auto landings = ranked(
+         tiles, [&](vec2 p) { return int{spawn.at(p)}; },
+         [&](vec2 p, int) { return !landing_harmful(world, p); });
++    if (landings.count > 0) escape::shadow_dash('K', my_position(), landings.tiles[0]);
+     return dash_to_first(dash, pathing, landings);
+ }
+ 
+diff --git a/bots/ocean/src/economy/capture.cc b/bots/ocean/src/economy/capture.cc
+index 713c2bc41..72c009546 100644
+--- a/bots/ocean/src/economy/capture.cc
++++ b/bots/ocean/src/economy/capture.cc
+@@ -508,6 +508,7 @@ bool take_capture_handoff(const World& world, Pathing& pathing, Safety& safety,
+     if (!landing) return false;
+     world.throw_if_stale();
+     bool cast = false;
++    escape::shadow_dash('P', here, *landing);
+     try {
+         cast = cast_slot(dash, *landing);
+     } catch (const cambc::error&) {
+diff --git a/bots/ocean/src/model/escape.cc b/bots/ocean/src/model/escape.cc
+index e67ff2825..e720ac881 100644
+--- a/bots/ocean/src/model/escape.cc
++++ b/bots/ocean/src/model/escape.cc
+@@ -206,12 +206,12 @@ struct Pursuers {
+ 
+ } // namespace
+ 
+-void Plan::build(const World& world, Pathing& pathing, Safety& safety) {
++void Plan::build(const World& world, Pathing& pathing, Safety& safety, bool gated) {
+     const Field& home = pathing.to_ally_spawn();
+     active_ = dash_ = dash_now_ = false;
+     pass_[0].ready = pass_[1].ready = false;
+     const auto& self = world.me();
+-    if (!self.alive || fuel() < params::escape::min_fuel || !ready_statics(world)) return;
++    if (!self.alive || (gated && fuel() < params::escape::min_fuel) || !ready_statics(world)) return;
+     const std::uint64_t start_fuel = fuel();
+     const vec2 here = my_position();
+     const int steps = home.at(here);
+@@ -384,10 +384,12 @@ void Plan::build(const World& world, Pathing& pathing, Safety& safety) {
+     std::memcpy(&slack_goal_, slacks, sizeof slack_goal_);
+     run(goal, pass_[0]);
+     active_ = true;
+-    debug_block({
+-        std::printf("ESC %d %u kinds %d dash %d/%d fuel %llu\n", world.round, my_handle(), n, dash_ ? dash_turn_ : 0, dash_now_ ? 1 : 0,
+-                    static_cast<unsigned long long>(start_fuel - fuel()));
+-    });
++    if (gated) {
++        debug_block({
++            std::printf("ESC %d %u kinds %d dash %d/%d fuel %llu\n", world.round, my_handle(), n, dash_ ? dash_turn_ : 0, dash_now_ ? 1 : 0,
++                        static_cast<unsigned long long>(start_fuel - fuel()));
++        });
++    }
+ }
+ 
+ // Backward over the turns: S_H is the goal; a turn k ending on a tile costs a hit there if hit_[k]
+@@ -444,6 +446,12 @@ int Plan::after_walk(vec2 p, bool slack) const {
+     return value(ps.after[0][d], ps.after[1][d], p);
+ }
+ 
++int Plan::after_turn(vec2 p, bool kept, bool slack) const {
++    const auto& ps = pass(slack);
++    const int d = kept && dash_ ? 1 : 0;
++    return value(ps.after[0][d], ps.after[1][d], p);
++}
++
+ int Plan::after_dash(vec2 p, bool slack) const { return value(pass(slack).dashed[0], pass(slack).dashed[1], p); }
+ 
+ int Plan::keep_dash(bool slack) const { return value(pass(slack).kept[0], pass(slack).kept[1], at); }
+@@ -459,6 +467,49 @@ Plan& plan(const World& world, Pathing& pathing, Safety& safety) {
+     return p;
+ }
+ 
++namespace {
++const World* shadow_world = nullptr;
++Pathing* shadow_pathing = nullptr;
++Safety* shadow_safety = nullptr;
++} // namespace
++
++void shadow_bind(const World* world, Pathing* pathing, Safety* safety) { shadow_world = world, shadow_pathing = pathing, shadow_safety = safety; }
++
++// A plan of its own, built ungated and its fuel refunded, so the bot's plan and fuel are as without it.
++void shadow_dash(char site, vec2 from, vec2 end) {
++#ifdef CAMBC_DEBUG
++    if (!shadow_world || !shadow_pathing || !shadow_safety || my_position() != from) return;
++    const auto& world = *shadow_world;
++    const std::uint64_t f0 = fuel();
++    if (f0 < 30000) {
++        debug_block({ std::printf("EDV %d %u %c %d %d %d %d gated %llu\n", world.round, my_handle(), site, from.x, from.y, end.x, end.y, static_cast<unsigned long long>(f0)); });
++        return;
++    }
++    static Plan sp;
++    sp.build(world, *shadow_pathing, *shadow_safety, false);
++    int kept = many, spent = many, keep = many, walk = many;
++    if (sp.active()) {
++        sp.at = from;
++        kept = sp.after_turn(end, true, false), spent = sp.after_turn(end, false, false), keep = sp.keep_dash(false);
++        const auto& blocked = shadow_pathing->blocked();
++        walk = sp.after_turn(from, true, false);
++        for (auto d : directions) {
++            const vec2 w = from + d;
++            if (in_bounds(w) && !test(blocked, w)) walk = std::min(walk, sp.after_turn(w, true, false));
++        }
++    }
++    const std::uint64_t f1 = fuel();
++    cambc::detail::sdk_fuel_adjust(static_cast<std::int64_t>(f0 - f1)); // positive refunds (probe-fueladjust)
++    debug_block({
++        std::printf("EDV %d %u %c %d %d %d %d act %d %d %d %d %d dn %d fuel %llu gems %d hp %.0f %.0f\n", world.round, my_handle(), site, from.x, from.y,
++                    end.x, end.y, sp.active() ? 1 : 0, kept, spent, keep, walk, sp.dash_now() ? 1 : 0, static_cast<unsigned long long>(f0),
++                    pair_gems(world, world.me()), my_health(), my_max_health());
++    });
++#else
++    (void)site, (void)from, (void)end;
++#endif
++}
++
+ } // namespace escape
+ 
+ } // namespace aph
+diff --git a/bots/ocean/src/model/escape.h b/bots/ocean/src/model/escape.h
+index fffbccd0c..2ffdb08b7 100644
+--- a/bots/ocean/src/model/escape.h
++++ b/bots/ocean/src/model/escape.h
+@@ -45,6 +45,9 @@ public:
+     // Hits on turns 2..horizon after a walk this turn that ends on p, the dash (if the plan has one)
+     // still to come. Off the window: many.
+     int after_walk(vec2 p, bool slack) const;
++    // Hits on turns 2..horizon after this turn ends on p with the dash kept (as after_walk) or spent
++    // this turn. Off the window: many.
++    int after_turn(vec2 p, bool kept, bool slack) const;
+     // A dash now that lands on p, then this turn's walk: hits on turns 1..horizon.
+     int after_dash(vec2 p, bool slack) const;
+     // This turn's walk with the dash kept: hits on turns 1..horizon.
+@@ -56,7 +59,7 @@ public:
+ 
+     // Built from our tile for this turn: inactive with no pursuer in the window, our home unreachable,
+     // or the fuel short.
+-    void build(const World& world, Pathing& pathing, Safety& safety);
++    void build(const World& world, Pathing& pathing, Safety& safety, bool gated = true);
+ 
+     // The cache key: rebuilt when any of these change.
+     int round = -1;
+@@ -89,6 +92,10 @@ private:
+ // The plan for this turn from our tile, built on first ask and kept while its key holds.
+ Plan& plan(const World& world, Pathing& pathing, Safety& safety);
+ 
++// Debug builds: a non-escape dash's escape price, logged without acting (EDV lines).
++void shadow_bind(const World* world, Pathing* pathing, Safety* safety);
++void shadow_dash(char site, vec2 from, vec2 end);
++
+ // A first move's rank, lower first, from its hits on the full and slack goals (this turn's included):
+ // a hit weighs hit_steps steps of progress home, and the slack goal costs slack_steps.
+ inline int rank(int full, int slack) {
+diff --git a/bots/ocean/src/model/pathing.cc b/bots/ocean/src/model/pathing.cc
+index 014c48d36..356ca4064 100644
+--- a/bots/ocean/src/model/pathing.cc
++++ b/bots/ocean/src/model/pathing.cc
+@@ -5,6 +5,7 @@
+ #include "comms.h"
+ #include "dash_turns.h"
+ #include "enemy_reach.h"
++#include "escape.h"
+ #include "safety.h"
+ #include "world.h"
+ #include "../combat/self_abilities.h"
+@@ -1579,6 +1580,7 @@ Pathing::Travel Pathing::take(const TravelDash& td, const Plan& p) {
+ bool Pathing::dash_to(int slot, vec2 land) {
+     throw_if_stale();
+     bool cast = false;
++    escape::shadow_dash('T', my_position(), land);
+     try {
+         cast = cast_slot(slot, land);
+     } catch (const cambc::error&) {

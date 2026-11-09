@@ -220,6 +220,52 @@ Asked (user): "test feint tributes locally in our bot to see if it works, can us
 - **Verdict:** ready for the live scheduler at about +200 fuel a turn. Unlike the current mask's +30, it changes
   real-budget play in most games, as any +200 does.
 
+## (ocean = cv-v2, 2026-11-09) Chase verdict held out against pre-planner ocean: 52.1% on esc2-held, about half its gain over the planner
+
+cv-v2 (CHANGES 481) against `variants/oc-cl2-seat5m` (476, before the escape planner) on `merged/esc2-held`, the same
+61,440 games as CHANGES 480's merge check (release, fast runner, `--no-test-draft`).
+- **52.1% (51.7-52.5)**, OOF 730,764 against 633,845.
+- Paired by game with oc-esc-merge's run on those games (51.3%): **+0.80 ±0.52** for the chase verdict.
+- That is about half its +1.7 against oc-esc-merge on plan2-dev. The verdict gains more against opponents that flee
+  well: a planner-equipped bot walks home clear more often, so more of our chases of it are futile.
+
+## (ocean = oc-esc-merge, 2026-11-09) Chase verdict: the escape planner mirrored; cv-v2 51.7% of 40,960, merged (CHANGES 481)
+
+[retreat-2026-11-09/chase-verdict.md](retreat-2026-11-09/chase-verdict.md).
+- **The idea.** The escape race (`model/escape.cc`), split into a shared core, is run with the sides swapped: a visible
+  enemy runs home, and we and our visible allies are its pursuers, over-credited.
+- **The rule.** `prey()` and `chase_aim()` drop a target that can walk home clear of every hit.
+- **Identity:** our own plan's replays are identical 52/52 at 100M.
+- **Shadow** (1,280 debug games): chase turns called clean were 41% of chase turns and killed 4.9% within 10 rounds;
+  doomed ones killed 22.7%. It holds at equal distance and in every health band.
+- **Screens** on esc2-dev-s20 (10,240 games each):
+  - cv-fut 50.7 (OOF +24.6%);
+  - + a first-turn strike precheck 50.8 (OOF +8.8%);
+  - + audit fixes (stunned, teleporting and tributing targets not judged; the full goal at horizon - 1; ranged
+    walk-reset-shoot pursuit) cv-v2 51.5 (50.5-52.5).
+- **Final:** cv-v2 on plan2-dev **51.7 (51.3-52.2)** of 40,960, OOF 497,633 / 460,838.
+- **Paired metrics** (1,280 debug games), a team-game: chase turns -88, kills -0.31, deaths -0.51 (chasers -0.14),
+  farm turns +58, gems@600 +18, gold@600 +83, captures +1.2.
+- **Unlike b3's race home and b4's chase value,** which lost kills for farm at break-even, this drops only chases
+  that our team's best pursuit cannot touch.
+
+## (ocean = oc-esc-merge, 2026-11-09) A dash's escape value outside retreat: the plan's transition doesn't predict danger; no A/B
+
+[retreat-2026-11-09/dash-value.md](retreat-2026-11-09/dash-value.md); tools `dv_shadow.patch`, `dv_shadow.py`.
+- **Idea** (planner-ideas §1): charge a non-escape dash ending on q when keeping the dash leaves a clean escape and q,
+  dash spent, isn't clean, never by hit counts.
+- **Shadow run:** a debug hook at every dash site built a separate plan (fuel refunded) and logged K and S, the plan's
+  hits after the turn's end tile with the dash kept and spent. 512 team-games against oc-esc-merge, joined to deaths
+  to champions within 10 rounds.
+- **Strike search, 18.2 dashes a game:** the transition (K = 0, S > 0) came 1.23 a game and died 1.1% ±0.8, against
+  2.3% for a kept dash on a clean tile and 4.2% for a dash unclean even with it kept (90% of active-plan strike dashes).
+  The report's criterion (some walk clean with the dash kept) read 3.9% against 3.6%.
+- **Other sites:** travel transitions 0.73 a game at 4.5% against 0.9% clean (~0.03 deaths a game); Heart of Ruin
+  landing transitions 1.2%; chase's dash_to_attack 0.04 a game.
+- **Stopped,** as the brief required: the 0.82 deaths a game within 10 rounds of a strike dash follow saturated (0.51)
+  and fuel-short (0.27) dashes, where the price is zero by construction. Pricing location instead ("phase 2") is
+  untested; its 4.2-4.7% against 2.3% is fight danger, where the kills are too.
+
 ## (ocean = oc-esc-478, 2026-11-09) Escape planner after 478: an exact fuel pass merged (CHANGES 480); model fixes and smarter gates level
 
 Three lines of work from 478, run in parallel. Only the fuel pass changes the bot. All A/Bs are release builds,

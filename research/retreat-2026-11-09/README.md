@@ -102,3 +102,7 @@ Three follow-ups (EXPERIMENTS "Escape planner after 478"):
 - [fuel-opt.md](fuel-opt.md): an exact build 5.6% cheaper, merged as CHANGES 480.
 - [logic-audit.md](logic-audit.md): the plan's hits against the games, and four model fixes, all level or below.
 - [fuel-gate.md](fuel-gate.md): the out-of-fuel hazard by caller, and per-caller reserves, which read level.
+- [dash-value.md](dash-value.md): pricing a non-escape dash's escape value by the plan's clean-to-not-clean
+  transition. Stopped at the shadow run: a strike dash after that transition dies less often than baseline.
+- [chase-verdict.md](chase-verdict.md): the race mirrored, a chase dropped when its target walks home clear of every
+  hit; merged as CHANGES 481.

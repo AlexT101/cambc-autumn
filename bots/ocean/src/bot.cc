@@ -350,7 +350,7 @@ bool search_strikes(World& world, Pathing& pathing, Safety& safety, const Memory
     // the way home or to an altar, where that fire is the search's to price.
     if (memory.claim >= 0 && (memory.siege || memory.claim == memory.mono_group) && memory.camp_fled < 0 && !intent.to_altar)
         intent.own_fire = memory.claim;
-    intent.aim = chase_aim(world, safety);
+    intent.aim = chase_aim(world, pathing, safety);
     struck = searched = true;
     const auto planned = plan_strikes(world, pathing, safety, intent);
     note_search(planned.searched);
