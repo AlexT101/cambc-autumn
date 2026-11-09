@@ -879,3 +879,11 @@ In `suites/fresh/fresh-{seed}`, symlinked into `merged/` (research/combat-lab/PL
 seed block 1280000-1289999, SPRT seeds 1285001-1285099, panel_sprt 1285100):
 - `ch-held`: 1280000-1280639, 163,840 maps (held out: oc-base29 and oc-base25 against oc-base23, own `--sprt-seed` each).
 - `ch-pan`: 1281000-1281079, 20,480 maps (the panel).
+
+## Draft lab draft8/draft9 (ocean, 2026-11-08/09)
+
+In `suites/fresh/fresh-{seed}` (EXPERIMENTS "Draft lab refit on v87 (draft9)"; seed block 1010000-1010539):
+- Lab pool: 1010020-1010119, `--mix ladder-v2` (with the ladder maps, 25,282 lab maps; draft8 and draft9).
+- Made for draft8's old-style gates, never played: `d8-held` 1010200-1010279, `d8-varied` 1010300-1010319
+  (`--mix varied`), `d8-panel` 1010400-1010439, `d8-screen` 1010500-1010539 (ladder-v2; symlinked in `merged/`).
+- Free: 1010120-1010199.

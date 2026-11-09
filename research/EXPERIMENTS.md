@@ -46,6 +46,32 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   leave a narrowly lost stand are right to. Recalibrating the model has nothing to correct; the level combat and team
   arms opened opportunities at this boundary, where fighting and declining are worth the same.
 
+## (ocean = oc-base25, 2026-11-09) Draft lab refit on v87 (draft9): a closer fit, the same wins; not queued
+
+The draft7-f92 model (v87's and v91's draft) was fitted on games played by oc-base10. draft9 refits it with v87
+(oc-base25) as the lab player: 1M lab games (3/4/5 picks 222k/280k/498k; pool `--mix ladder-v2` fresh-1010020..119
+plus the ladder maps; opponents self, astraeus-now-1107 and panel-proteus as in draft7), then the F92 link lab
+(`replays/draftlab/draft9-f92`, draft7-f92's features and penalties, w and dev searched). Candidate `variants/oc-draft9`
+= oc-base25 + the new `draft_model.h` only. An earlier lab with oc-base29 (v91) as the player (draft8) was starved of slots
+and stopped at 67k games; it was dropped, as v91 is the version every local test overrated.
+- Fit: cv log loss 0.5310 → 0.5265 (F92; no-map 0.5518, intercepts 0.5584). On the 160 maps whose keys both team
+  lists share, 87 teams change (18 of 36 ladder maps): Willow 46 → 61%, Tavi 14 → 19%, Ren 27 → 20%, Heart of Ruin 48 → 42%.
+- Checks: native parity 0 team mismatches, 0 C++ failures (ladder maps + fresh-1010500); `firstturn.py --need` on
+  2,874 lab maps: before the first pick p99.9 4.93M, max 5.20M; after analyse() max 8.39M; 0 capped, 0 unfinished.
+
+Results against oc-base25 (v87), dgate (new bodies Fl/Mt3, 0.505/0.5075):
+
+| Gate | Win % (95% CI) | Paired units (cand games) | SPRT |
+|---|---|---|---|
+| dgate, all | 49.94 (49.69-50.19) | 32,384 (130,048) | H0 at 10,112 units; NARROWED, LLR high −10.56, low +0.97 |
+| Fish side | 50.08 | | |
+| Mite side | 49.80 | | |
+| one altar site / multi | 50.26 / 49.75 | | |
+
+Verdict: null. Half the teams change, but the wins don't. The refit's better log loss doesn't turn into wins.
+Not queued live. Only a 2x fuel screen was left out: the play code is identical and the draft turn is checked above.
+Files: `~/tmp-offload/draft9` (lab, f92, dgate.out, firstturn.out, teams-*.txt).
+
 ## (ocean = oc-base25, 2026-11-09) oc-base31: dfp-pure + ft-k on v87; the parts add up on the new-body dgate
 
 oc-base31 = oc-base25 + v87-dfp-pure's diff + v87-ft-k's diff (patches in `~/tmp-offload/narrow/patches/`; clean
