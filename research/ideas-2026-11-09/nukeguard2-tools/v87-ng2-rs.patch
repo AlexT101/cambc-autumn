@@ -1,0 +1,20 @@
+diff -ru oc-base25/src/combat/fight.cc v87-ng2-rs/src/combat/fight.cc
+--- oc-base25/src/combat/fight.cc	2026-11-08 01:43:46.764599765 +0000
++++ v87-ng2-rs/src/combat/fight.cc	2026-11-09 04:21:06.722007686 +0000
+@@ -262,8 +262,15 @@
+     for (int i = 0; i < later; ++i)
+         price(rest[i]);
+     std::stable_sort(rest.begin(), rest.begin() + later, by);
++    // A step where every credible threat and camp together cannot kill us goes first: the bounds
++    // rank by summed upper bounds, which put a lethal step ahead of one that is not (Safety::lethal).
++    const bool weigh = later > 1 && fuel_ok(act_reserve + safety.build_cost_estimate() + 2000 * static_cast<std::uint64_t>(later));
++    std::array<bool, 8> deadly{};
++    if (weigh)
++        for (int i = 0; i < later; ++i)
++            if (!(deadly[i] = safety.lethal(rest[i].p)) && pathing.try_move(rest[i].p)) return;
+     for (int i = 0; i < later; ++i)
+-        if (pathing.try_move(rest[i].p)) return;
++        if ((!weigh || deadly[i]) && pathing.try_move(rest[i].p)) return;
+     pathing.step_towards(home);
+ }
+ 

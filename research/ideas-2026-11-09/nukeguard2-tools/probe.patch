@@ -1,0 +1,312 @@
+diff -ru bots/variants/oc-base25/src/bot.cc bots/variants/ng2-probe/src/bot.cc
+--- bots/variants/oc-base25/src/bot.cc	2026-11-07 08:45:52.636458329 +0000
++++ bots/variants/ng2-probe/src/bot.cc	2026-11-09 04:07:46.901642935 +0000
+@@ -449,6 +449,7 @@
+         if (attacked) reset_and_attack_enemy(world);
+         else mend_hit(world, memory);
+         mend_step(world, pathing, safety, memory);
++        ng_mark('m');
+         return;
+     }
+     if (leave) {
+@@ -456,6 +457,7 @@
+         if (follow::binding(world) && strike_possible(world)) {
+             guard_steps(world, pathing, safety);
+             if (keep_bid(world, pathing, safety).attacked) see_stuns(world, safety), safety.refresh();
++            ng_mark('b');
+             pathing.set_guard(nullptr);
+         }
+         retreat(world, pathing, safety, memory);
+@@ -463,6 +465,7 @@
+     }
+     if (const auto* deny = channel_to_deny(world)) {
+         stop_game_ender(world, pathing, memory, *deny);
++        ng_mark('E');
+         return;
+     }
+ 
+@@ -473,6 +476,7 @@
+     const bool contested = contesting(world);
+     const bool holding = holding_capture(world, pathing) || contested;
+     const bool attacked = strikes && search_strikes(world, pathing, safety, memory, holding, contested);
++    ng_mark('p');
+     decision = holding ? Branch::hold : attacked ? Branch::attack : decision;
+     if (!cambc::self().is_alive()) return;
+     if (!my_can_attack() || !my_can_cast()) pathing.settle_guard(), see_stuns(world, safety), safety.refresh();
+@@ -639,6 +643,7 @@
+     // A failed act still posts the claim, the bag and the health that next turn's damage reads; a
+     // stale turn abandons the rest. Caught here rather than in main's run(), a StaleTurn costs one
+     // personality call and no second unwind (~1k).
++    debug_block({ ng_n = 0, ng_last = world.turn_start; });
+     try {
+         act(world, pathing, safety, memory);
+     } catch (const StaleTurn&) {
+@@ -680,6 +685,15 @@
+     memory.health = world.me().alive ? my_health() : 0;
+     if (world.me().alive) note_income_end(world);
+     upkeep.camp_turns += camp_hits() != camp_hits_before;
++    debug_block({
++        ng_mark('g');
++        if (world.me().alive && my_position() != world.turn_start) {
++            ng_trail[ng_n] = 0;
++            std::printf("NG %d %u %c %s %d %d %d %d %.0f\n", world.round, static_cast<std::uint32_t>(world.me().handle), static_cast<char>(decision),
++                        ng_trail, safety.lethal(world.turn_start) ? 1 : 0, safety.lethal(my_position()) ? 1 : 0,
++                        fixc_nuke_at(world, safety, world.turn_start), fixc_nuke_at(world, safety, my_position()), my_health());
++        }
++    });
+     debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), static_cast<char>(decision), memory.farm_group, memory.claim); });
+ }
+ 
+diff -ru bots/variants/oc-base25/src/bot_parts.h bots/variants/ng2-probe/src/bot_parts.h
+--- bots/variants/oc-base25/src/bot_parts.h	2026-11-08 01:43:46.764349842 +0000
++++ bots/variants/ng2-probe/src/bot_parts.h	2026-11-09 04:07:46.888995398 +0000
+@@ -60,6 +60,19 @@
+     prism_recovery = 'r', // Prism's recovery beside Willow
+ };
+ Branch decision = Branch::none;
++// ng2-probe: which sub-step moved us this turn.
++inline char ng_trail[16];
++inline int ng_n = 0;
++inline vec2 ng_last{-1, -1};
++inline void ng_mark(char c) {
++    debug_block({
++        const vec2 p = my_position();
++        if (p != ng_last) {
++            if (ng_n < 15) ng_trail[ng_n++] = c;
++            ng_last = p;
++        }
++    });
++}
+ bool sieged = false;       // siege() or its heal trip ran this turn: act() keeps the siege
+ bool stunned_turn = false; // stunned at this turn's start
+ bool struck = false;       // the strike search ran this turn
+@@ -308,6 +321,12 @@
+ bool finishing_camp(const World& world, vec2 p); // as if we stood at p
+ 
+ // combat/fixc.cc (research/ladder-scrims-2026-11-06/fix-combat.md)
++float fixc_health_at(const World& world, vec2 p);
++int fixc_nuke_at(const World& world, Safety& safety, vec2 p);
++const bitboard* fixc_step_guard(const World& world, Safety& safety, vec2 here, int radius);
++const bitboard* fixc_step_cover(const World& world, Safety& safety, vec2 here, int radius);
++const bitboard* fixc_work_guard(const World& world, Safety& safety, vec2 here, int radius);
++const bitboard* fixc_work_cover(const World& world, Safety& safety, vec2 here, int radius);
+ int fixc_bush_rank(const World& world, vec2 p);
+ bool fixc_bush_threat(const World& world, Safety& safety);
+ bool fixc_commit(const World& world, Pathing& pathing);
+diff -ru bots/variants/oc-base25/src/combat/fight.cc bots/variants/ng2-probe/src/combat/fight.cc
+--- bots/variants/oc-base25/src/combat/fight.cc	2026-11-08 01:43:46.764599765 +0000
++++ bots/variants/ng2-probe/src/combat/fight.cc	2026-11-09 04:16:22.149021209 +0000
+@@ -178,12 +178,37 @@
+ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
+     if (!my_can_move()) return;
+     const vec2 here = my_position();
++    int rs_path = 0;
++    struct RsPrint {
++        const World& world; Pathing& pathing; Safety& safety; vec2 here; int& path;
++        ~RsPrint() {
++            debug_block({
++                const vec2 p = my_position();
++                if (p != here && path > 0) {
++                    const bool stay = safety.lethal(here), to = safety.lethal(p);
++                    int open = 0, safe = 0, safe_home = 0;
++                    const auto& blocked = pathing.blocked();
++                    const auto& home = pathing.to_ally_spawn();
++                    for (auto d : directions) {
++                        const vec2 q = here + d;
++                        if (!in_bounds(q) || test(blocked, q) || q == p || home.at(q) == unreachable) continue;
++                        ++open;
++                        if (!safety.lethal(q)) ++safe, safe_home += home.at(q) <= home.at(here);
++                    }
++                    std::printf("RS %d %u %d %d %d %d %d %d\n", world.round, static_cast<unsigned>(world.me().handle), path, stay, to, open, safe, safe_home);
++                }
++            });
++        }
++    } rs_print{world, pathing, safety, here, rs_path};
+     if (!safety.avoid_within(here, vision_radius)) {
++        rs_path = 1;
+         pathing.step_towards(home);
+         return;
+     }
+     const auto& avoid = safety.avoid();
++    rs_path = 2;
+     if (!test(avoid, here) && pathing.step_towards(home, &avoid)) return;
++    rs_path = 3;
+     const int steps = home.at(here);
+     const auto& blocked = pathing.blocked();
+     struct Option {
+@@ -258,12 +283,17 @@
+     }
+     std::stable_sort(options.begin(), options.begin() + lead, by);
+     for (int i = 0; i < lead; ++i)
+-        if (pathing.try_move(options[i].p)) return;
++        if (pathing.try_move(options[i].p)) {
++            rs_path = options[i].home ? 4 : 3;
++            return;
++        }
++    rs_path = 5;
+     for (int i = 0; i < later; ++i)
+         price(rest[i]);
+     std::stable_sort(rest.begin(), rest.begin() + later, by);
+     for (int i = 0; i < later; ++i)
+         if (pathing.try_move(rest[i].p)) return;
++    rs_path = 6;
+     pathing.step_towards(home);
+ }
+ 
+@@ -1335,6 +1365,7 @@
+     }
+     // A kill a step or a dash off, where only the victim reaches us; else the homeward step may still land beside it.
+     if (dead.x < 0 && my_can_attack()) dead = step_to_kill(world, pathing, safety, range, melee);
++    ng_mark('k');
+     // A melee kill one step off waits for the step, which may land beside it.
+     const bool held = melee && my_can_attack() && sure_kill(world, here, range + 1);
+     if (melee && !held) attack_enemy(world);
+@@ -1346,9 +1377,11 @@
+                            && my_can_cast() && my_cooldown(escape_slot) == 0;
+     if (keep_dash) {
+         if (dash_retreat_casts(world, pathing, safety, memory, dead)) return;
++        ng_mark('D');
+     } else {
+         // After the walk, a cast that allows walking may still follow (Cassi's stun).
+         if (!escape_walk(world, pathing, safety) || my_can_cast()) cast_at_enemies(world, escape_step_value);
++        ng_mark('w');
+         if (!me.is_alive()) return;
+         if (!my_can_attack() || !my_can_cast()) see_kills(world, pathing, safety);
+         // A tribute survives damage; a recall does not.
+@@ -1357,11 +1390,13 @@
+             return;
+         }
+         dash_away(world, pathing, pathing.to_ally_spawn(), dead);
++        ng_mark('d');
+     }
+     // The escape dash shares the one cast: the reset only after it, from a melee attack or a ranged walk.
+     if (reset_and_attack_enemy(world)) see_kills(world, pathing, safety);
+     else see_stuns(world, safety); // Heart of Ruin's landing
+-    if (!flee_camps(world, pathing, safety, pathing.to_ally_spawn())) retreat_step(world, pathing, safety, pathing.to_ally_spawn());
++    if (!flee_camps(world, pathing, safety, pathing.to_ally_spawn())) ng_mark('f'), retreat_step(world, pathing, safety, pathing.to_ally_spawn());
++    ng_mark('s');
+     // A walk to a hole line's edge can bring a dash out of the camps' reach in reach.
+     if (my_can_cast() && safety.camp_damage(my_position()) > 0 && dash_away(world, pathing, pathing.to_ally_spawn(), dead))
+         see_again(world, pathing, safety);
+diff -ru bots/variants/oc-base25/src/combat/fixc.cc bots/variants/ng2-probe/src/combat/fixc.cc
+--- bots/variants/oc-base25/src/combat/fixc.cc	2026-11-07 01:14:33.642185907 +0000
++++ bots/variants/ng2-probe/src/combat/fixc.cc	2026-11-09 04:07:23.734652425 +0000
+@@ -1,10 +1,117 @@
+-// fix-combat (research/ladder-scrims-2026-11-06/fix-combat.md): hidden bush steps, and a lost retreat fought instead.
++// fix-combat (research/ladder-scrims-2026-11-06/fix-combat.md): hidden bush steps, a lost retreat fought instead,
++// and no step into a nuke zone (one enemy's ready abilities alone kill us there) from outside every zone.
+ #include "../bot_parts.h"
+ 
+ namespace aph {
+ 
+ namespace {
+ 
++// Our health and shield as a blow at p meets them, as Safety::lethal reads them.
++float fixc_health_at(const World& world, vec2 p) {
++    const float shield = world.me().shield_slot >= 0 ? shield_value(world.me().handle) : 0.0f;
++    return (test(world.map().ally_spawn, p) ? my_max_health() : my_health()) + shield;
++}
++
++// Per turn: the seen enemies whose largest blow could reach our health, and their basic-only strikes.
++struct Nukers {
++    int round = -1;
++    std::uint32_t observations = 0;
++    float health = -1;
++    std::uint32_t mask = 0;
++    std::array<Strike, 16> basic;
++    struct Memo {
++        vec2 p{-1, -1};
++        std::int8_t who = -1;
++        std::uint32_t stamp = 0;
++    };
++    std::array<Memo, 32> memo;
++    std::uint32_t stamp = 0;
++};
++Nukers nukers_state;
++
++Nukers& fixc_nukers(const World& world, Safety& safety) {
++    auto& n = nukers_state;
++    const float health = my_health();
++    if (n.round == world.round && n.observations == world.observations && n.health == health) return n;
++    n.round = world.round, n.observations = world.observations, n.health = health, n.mask = 0, ++n.stamp;
++    if (!world.me().alive) return n;
++    const float floor = health / world.me().taken;
++    for (auto left = safety.seen_enemies(); left; left &= left - 1) {
++        const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
++        if (!e.alive || !e.visible || e.index >= 16) continue;
++        const auto& s = safety.strike_of(e);
++        if (s.reach < 0 || s.at(0) < floor) continue;
++        n.basic[static_cast<std::size_t>(e.index)] = strike_with(e, 0u);
++        n.mask |= 1u << e.index;
++    }
++    return n;
++}
++
++// e alone kills us at p before our next turn by its ready abilities (its basic attacks alone would not).
++bool fixc_nuke_kills(const World& world, Safety& safety, const ChampionBelief& e, vec2 p, float health) {
++    const vec2 from = e.teleport_pending() && in_bounds(e.tp_dest) ? e.tp_dest : e.pos;
++    const int d = dist(p, from);
++    const auto& s = safety.strike_of(e);
++    const float taken = world.me().taken;
++    if (d > s.reach || s.at(d) * taken < health) return false;
++    if (safety.blow(e, p).damage * taken < health) return false;
++    const int turns = std::max(1, turns_before_ours(world, e));
++    const float basic = nukers_state.basic[static_cast<std::size_t>(e.index)].at(std::max(0, d - (turns - 1))) * static_cast<float>(turns);
++    return basic * taken < health;
++}
++
++// The visible enemy whose ready abilities alone kill us at p, else -1.
++int fixc_nuke_at(const World& world, Safety& safety, vec2 p) {
++    auto& n = fixc_nukers(world, safety);
++    if (!n.mask || !in_bounds(p)) return -1;
++    auto& m = n.memo[static_cast<std::size_t>((p.x & 7) | (p.y & 3) << 3)];
++    if (m.stamp == n.stamp && m.p == p) return m.who;
++    const float health = fixc_health_at(world, p);
++    int who = -1;
++    for (auto left = n.mask; left && who < 0; left &= left - 1) {
++        const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
++        if (fixc_nuke_kills(world, safety, e, p, health)) who = e.index;
++    }
++    m = {p, static_cast<std::int8_t>(who), n.stamp};
++    return who;
++}
++
++// The guard with the nuke zone's tiles within `radius` added, from a tile outside every zone.
++const bitboard* fixc_add_zone(const World& world, Safety& safety, vec2 here, int radius, const bitboard* base, bitboard& out) {
++    if (!fixc_nukers(world, safety).mask || fixc_nuke_at(world, safety, here) >= 0) return base;
++    const auto& open = world.map().open_for_us;
++    bool copied = false;
++    for (int dy = -radius; dy <= radius; ++dy)
++        for (int dx = -radius; dx <= radius; ++dx) {
++            const vec2 q{here.x + dx, here.y + dy};
++            if ((dx == 0 && dy == 0) || !in_bounds(q) || !test(open, q) || fixc_nuke_at(world, safety, q) < 0) continue;
++            if (!copied) {
++                copied = true;
++                if (base) copy_into(*base, out);
++                else clear_board(out);
++            }
++            set_tile(out, q);
++        }
++    return copied ? &out : base;
++}
++
++const bitboard* fixc_step_guard(const World& world, Safety& safety, vec2 here, int radius) {
++    static bitboard out{cambc::uninitialized};
++    return fixc_add_zone(world, safety, here, radius, step_guard(world, safety, here, radius), out);
++}
++const bitboard* fixc_step_cover(const World& world, Safety& safety, vec2 here, int radius) {
++    static bitboard out{cambc::uninitialized};
++    return fixc_add_zone(world, safety, here, radius, step_guard_cover(world, safety, here, radius), out);
++}
++const bitboard* fixc_work_guard(const World& world, Safety& safety, vec2 here, int radius) {
++    static bitboard out{cambc::uninitialized};
++    return fixc_add_zone(world, safety, here, radius, work_guard(world, safety, here, radius), out);
++}
++const bitboard* fixc_work_cover(const World& world, Safety& safety, vec2 here, int radius) {
++    static bitboard out{cambc::uninitialized};
++    return fixc_add_zone(world, safety, here, radius, work_cover(world, safety, here, radius), out);
++}
++
+ // 0: a bush tile no visible enemy and no enemy ward in sight sees (a bush tile is seen only from its own cluster),
+ // 1: another bush tile, 2: off bushes. An unseen ward is not guessed at.
+ int fixc_bush_rank(const World& world, vec2 p) {

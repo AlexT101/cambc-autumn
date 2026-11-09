@@ -1,0 +1,53 @@
+diff -ru oc-base25/src/combat/plan.cc v87-ng2-pr/src/combat/plan.cc
+--- oc-base25/src/combat/plan.cc	2026-11-07 05:10:49.050348715 +0000
++++ v87-ng2-pr/src/combat/plan.cc	2026-11-09 04:27:08.971578812 +0000
+@@ -196,6 +196,9 @@
+ constexpr int max_exact_queries = 6;
+ // Nodes a search grows, at ~1.1k fuel each; past it the leaves offered so far stand.
+ constexpr int max_nodes = 12;
++// The chance that our champion dies on a tile where the hits it can take add up to its health: of
++// local steps onto such tiles, about 0.4 died before their next turn (nukeguard2 analysis).
++constexpr float lethal_death_chance = 0.4f;
+ // A plan breaking our kill bid (follow.h) loses this, more than any turn's hits and danger.
+ constexpr float break_penalty = 1e5f;
+ // keep_bid's search: only plans that keep the bid.
+@@ -2225,15 +2228,38 @@
+         }
+         float total = top();
+         bool cut = false;
++        Unwritten<std::pair<float, int>, 16> blown; // each hit's full blow, and its striker
++        int nb = 0;
+         for (int m = 0; m < no && !cut; ++m) {
+             const auto& sk = strikers[order[m].second];
+-            const float b = safety_params::hit_given_reach * safety.blow(*sk.e, p).damage;
++            const float blow = safety.blow(*sk.e, p).damage;
++            const float b = safety_params::hit_given_reach * blow;
+             ++queries;
+             // A miss leaves every candidate, and so the total, as it was.
+             if (b == 0) continue;
++            blown.a[nb++] = {blow, order[m].second};
+             total = add_top(sk.e->index, b, sk.hor);
+             cut = total <= best_total;
+         }
++        // Where the camps and the hits no leaf takes away (by a kill or a stun) add up to our health,
++        // the leaf also risks our life, at lethal_death_chance of its worth to the enemy.
++        if (!cut && nb > 0) {
++            const float shield = world.me().shield_slot >= 0 ? shield_value(world.me().handle) : 0.0f;
++            const float health = (test(world.map().ally_spawn, p) ? my_max_health() : my_health()) + shield;
++            const float price = lethal_death_chance * kill_distance(health, std::max(health, my_max_health() + shield),
++                                                                    params::gem_value * static_cast<float>(my_gems()));
++            const float camp = camp_at(p), taken = world.me().taken;
++            bool priced_death = false;
++            for (int j = 0; j < nk; ++j) {
++                float sum = camp;
++                for (int k = 0; k < nb; ++k) {
++                    const auto& sk = strikers[blown.a[k].second];
++                    if (!(cand[j].removed >> sk.e->index & 1)) sum += blown.a[k].first * taken * factor(cand[j].leaf, sk.hor);
++                }
++                if (sum >= health) cand[j].d += price, priced_death = true;
++            }
++            if (priced_death) total = top(), cut = total <= best_total;
++        }
+         if (!cut && kept && sh > 0) {
+             sh = S.shield_at(p);
+             total = top();
