@@ -46,6 +46,15 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   leave a narrowly lost stand are right to. Recalibrating the model has nothing to correct; the level combat and team
   arms opened opportunities at this boundary, where fighting and declining are worth the same.
 
+## (ocean, 2026-11-09) Removing what the live line dropped (CHANGES 485): 48.4% on the mirror
+
+`variants/ocean-rm1` (CHANGES 485: 467, 468, 470, 471 and 429's timed lock and deny removed) against
+`variants/ocean-ba65375` (bots/ocean at CHANGES 483), own drafts, release, fast runner, `merged/ocrm-1920`
+(1920000-1920079, ladder-v2, unused before): **48.4% (47.9-48.8) of 40,960**, OOF 457,432 against 466,124, 0 failed.
+The removed changes' own mirror gains (467 +0.43, 468 +0.23, 470 +0.31, 471 +0.53, 429 +0.65 held out) sum to about
++2.2, so -1.6 is about what the mirror predicts for taking them out. They were removed on live and dgate evidence
+(sections "Why v90-v93 lose live", "v87 ports", "v87 Heart of Ruin"); only a live pair or dgate can judge this.
+
 ## (ocean = oc-base25, 2026-11-09) Draft lab refit on v87 (draft9): a closer fit, the same wins; not queued
 
 The draft7-f92 model (v87's and v91's draft) was fitted on games played by oc-base10. draft9 refits it with v87

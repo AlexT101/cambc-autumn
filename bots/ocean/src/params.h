@@ -238,10 +238,6 @@ inline constexpr float recall_risk = 0.20703878f;
 inline constexpr float reveal_mass = 0.23420754f;
 inline constexpr float reveal_prior = 1.6499189f;
 
-// The timed lock (fight.cc lock_plan_wait): the nearest a body waits to the altar's lock tiles, in steps (up to 3 more).
-inline constexpr int lock_stage_steps = 8;
-// channel_to_deny: the least visible enemy tribute bag it stops.
-inline constexpr int deny_gems = 112;
 // relative_efficiency: holders and farm's gold weigh (gold efficiency / the team's mean)^efficiency_power.
 inline constexpr float efficiency_power = 1.4653788f;
 

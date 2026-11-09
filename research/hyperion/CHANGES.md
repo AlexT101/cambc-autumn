@@ -3961,3 +3961,24 @@ dgate (new bodies, release, real budget) against oc32-e480: LIVE BAR H1, +1.53 Â
 Queued live at p84 as `variants/live-oc32-cv` (frozen copy), paired against v99, v87 and oc-base32.
 
 Evidence: EXPERIMENTS "Escape planner (478) on the v87 line".
+
+## 485: the changes the live line dropped, and 429's timed lock and deny, removed (ocean, 2026-11-09)
+
+`bots/ocean` without the changes the v87 live line (oc-base30 to oc32-cg, all on oc-base25) rejected or that lost
+live, and without CHANGES 429's timed lock and 100-gem deny. Frozen as `variants/ocean-rm1` (= bots/ocean); the base is
+`variants/ocean-ba65375` (CHANGES 483).
+- **Removed:** 467 (`fight_scale`), 468 (`landing_floor`), 470 (`lock_deny_from`), 471 (soup-k: `fight_weight`
+  0.688, `trib_min_bag` 100, `cast_cost` 40 again), and from 429 the timed lock (`lock_plan_wait`, `lock_plan_turn`,
+  434's per-altar wait bands, `lock_stage_steps`) and `channel_to_deny` (`deny_gems`). 467/468/470/471 are reversed
+  commits; 429's parts were cut by hand.
+- **Kept:** 429's hard-stop route in `stop_game_ender` and the merged altar site; 473; 475/476 (never ported to the
+  live line, not rejected); 469, 472, 474; 478-483.
+- **Why:** 470 about -2.7 and soup-k about -1.7 live (EXPERIMENTS "Why v90-v93 lose live"); 467/468 level live and
+  closed on dgate; 429's lock was level to negative live (v80: net -5 of 512, enemy 100+ tributes not reduced).
+- **Exactness:** before 429's cut (with 473/475/476 also out), bots/ocean replayed byte-identically at 100M to
+  oc32-cg less dfp-pure and ft-k in 119/120 bench games; the one difference (01boss-battle b) is 474's fuel shift
+  (identical 52/52 with 474 reverted too). An audit found no remnants or hybrids.
+
+Own drafts, release, fast runner, against ocean-ba65375 on fresh `merged/ocrm-1920` (ladder-v2): **48.4% (47.9-48.8)
+of 40,960**, OOF turns 457k against 466k (-1.9%), no failed matches or broken drafts. The mirror reads the removed
+changes as gains, as their own mirror tests did; the removal is on live evidence, which this A/B cannot show.

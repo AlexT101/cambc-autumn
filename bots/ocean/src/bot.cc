@@ -411,7 +411,6 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         stop_game_ender(world, pathing, memory, *ender);
         return;
     }
-    if (lock_plan_turn(world, pathing)) return;
     const bool willow = support_healer(world.me());
     const bool prism = support_protected(world, world.me());
     // Healing needs a turn end on spawn; a recall arrives at turn start. Under an awake camp, only
@@ -460,10 +459,6 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
             pathing.set_guard(nullptr);
         }
         retreat(world, pathing, safety, memory);
-        return;
-    }
-    if (const auto* deny = channel_to_deny(world)) {
-        stop_game_ender(world, pathing, memory, *deny);
         return;
     }
 
