@@ -902,6 +902,13 @@ In `suites/fresh/fresh-{seed}` (EXPERIMENTS "Draft lab refit on v87 (draft9)"; s
 - `ocrm-1921`: 1921000-1921079, 20,480 maps (CHANGES 486's A/B and the paired batch-3 arms; EXPERIMENTS "Ocean
   removal batches 2 and 3").
 
+## Removal gap (ocean, 2026-11-09)
+
+`--mix ladder-v2`, in `suites/fresh/fresh-{seed}`, symlinked into `merged/` (research/ideas-2026-11-09/removal-gap/):
+- `gap-1930`: 1930000-1930079, 20,480 maps (the fixes' final A/Bs against ocean-ba65375, ocean-rm2 and astraeus).
+- Subsets of ocrm-1920/1921 for reruns with every replay kept (no new maps): `gap-car-2k`, `gap-csub`,
+  `gap-c468flip`, `gap-alt-*`.
+
 ## Removal branch ports (ocean, 2026-11-09)
 
 `--mix ladder-v2`, in `suites/fresh/fresh-{seed}`, symlinked into `merged/` (EXPERIMENTS "dfp-pure, ft-k and
