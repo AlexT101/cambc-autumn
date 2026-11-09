@@ -85,7 +85,6 @@ bool our_side(const StaticMap& map, int a) {
             if (enemy_tribute != (pass == 0)) continue;
             // With no tribute to cancel, only altars on our side, or the one we guard, are worth denying.
             if (!enemy_tribute && !our_side(map, a) && !keep_guard_lock(world, a)) continue;
-            if (!enemy_tribute && world.round < params::lock_deny_from && !keep_guard_lock(world, a)) continue;
             // Placing one cancels every tribute at the altar, ours included: worth it only against a win.
             bool tributing = false, ours_wins = false;
             for (const auto& ally : world.allies)
