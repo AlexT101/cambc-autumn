@@ -272,6 +272,16 @@ inline constexpr float bag_ratio = 2.0f;
 inline constexpr int bush_threat = 2;
 inline constexpr float bush_margin = 0.1f;
 } // namespace fixc
+// Retreat's escape plan (model/escape.h): a hit the pursuit model counts weighs hit_steps steps of progress home,
+// and the slack goal gives up slack_steps of it. Unseen pursuers count while seen within unseen_rounds. No plan
+// below min_fuel at its start (it costs ~10k, up to ~23k): lower gates ran out more and lost (EXPERIMENTS "Escape planner fuel").
+namespace escape {
+inline constexpr int hit_steps = 4;
+inline constexpr int slack_steps = 3;
+inline constexpr int unseen_rounds = 2;
+inline constexpr std::uint64_t min_fuel = 50000;
+inline constexpr std::uint64_t slack_fuel = 40000; // the slack pass, asked for when the full one finds no clean way
+} // namespace escape
 // Willow's early fights (research/ideas-2026-11-07/willow.md, "Early aggression"): before round willow_fight_until,
 // a healthy Willow with an ally within willow_stand_ally stands in an enemy's reach (the fight simulation decides,
 // as for the other types), chases as they do, and after a follow hit takes the reset unless the heal lands.

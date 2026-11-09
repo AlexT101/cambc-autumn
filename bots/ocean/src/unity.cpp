@@ -25,6 +25,7 @@
 #include "model/enemy_reach.cc"
 #include "model/turn_window.cc"
 #include "model/safety.cc"
+#include "model/escape.cc"
 #include "combat/self_abilities.cc"
 #include "model/turn_order.cc"
 #include "model/world.cc"

@@ -8,6 +8,7 @@
 #include "../champions.h"
 #include "../emblems.h"
 #include "../params.h"
+#include "../model/escape.h"
 #include "../model/pathing.h"
 #include "../model/safety.h"
 #include "../model/world.h"
@@ -182,14 +183,52 @@ bool dash_to_first(int dash, Pathing& pathing, const Landings& landings) {
     return false;
 }
 
-// dash_away's landings, best first: less damage from the threats than here, then nearest `home`.
-// None when `here` is out of reach.
-Landings escape_landings(const World& world, Pathing& pathing, vec2 here, const std::vector<Hazard>& threats, const Field& home, vec2 dead) {
+// dash_away's landings, best first. With this turn's walk still to come, the escape plan decides: a landing whose
+// plan ranks before walking with the dash kept, best plan first; none if that walk is already clear of every hit
+// (the dash is the next turn's escape); else, as without a plan, less damage from the threats than here, then
+// nearest `home`, but never a landing the plan ranks after keeping the dash. None when `here` is out of reach.
+Landings escape_landings(const World& world, Pathing& pathing, Safety& safety, vec2 here, const std::vector<Hazard>& threats,
+                         const Field& home, vec2 dead, bool use_plan) {
+    const escape::Plan* plan = nullptr;
+    int stay = 0;      // the plan's rank of keeping the dash
+    bool slack = false; // the slack goal counts only when the full one has no clean way
+    const auto rank_of = [&](vec2 p) { return escape::rank(plan->after_dash(p, false), plan->after_dash(p, slack)); };
+    if (use_plan && my_can_move())
+        if (auto& p = escape::plan(world, pathing, safety); p.active() && p.dash_now()) {
+            const auto& landings = pathing.dash_landings();
+            int best = p.keep_dash(false);
+            for (auto q : Tiles<5 * 5>{landings}) best = std::min(best, p.after_dash(q, false));
+            if (best > 0) p.want_slack(), slack = true;
+            plan = &p;
+            stay = escape::rank(p.keep_dash(false), p.keep_dash(slack));
+            if (stay == 0) {
+                // Spells and turn order are Safety's: keep the dash only for a walk it also prices clear.
+                const auto& blocked = pathing.blocked();
+                bool clean = danger(threats, here) == 0 && p.after_walk(here, false) == 0;
+                for (auto d : directions) {
+                    if (clean) break;
+                    const vec2 w = here + d;
+                    clean = in_bounds(w) && !test(blocked, w) && danger(threats, w) == 0 && p.after_walk(w, false) == 0;
+                }
+                if (clean) return {};
+                stay = params::escape::hit_steps;
+            }
+            struct Planned {
+                int rank = 0;
+                float danger = 0;
+                int steps = 0;
+                auto operator<=>(const Planned&) const = default;
+            };
+            const auto planned = ranked(
+                landings, [&](vec2 q) { return Planned{rank_of(q), danger(threats, q), home.at(q)}; },
+                [&](vec2 q, const Planned& r) { return r.rank < stay && !landing_harmful(world, q, dead); });
+            if (planned.count > 0) return planned;
+        }
     const float here_danger = danger(threats, here);
     if (here_danger == 0) return {};
     return ranked(
         pathing.dash_landings(), [&](vec2 p) { return Rank{.danger = danger(threats, p), .steps = home.at(p)}; },
-        [&](vec2 p, const Rank& r) { return r.danger < here_danger && !landing_harmful(world, p, dead); });
+        [&](vec2 p, const Rank& r) { return r.danger < here_danger && (!plan || rank_of(p) <= stay) && !landing_harmful(world, p, dead); });
 }
 
 // Varg's reset and shield share the turn's one cast, and the shield absorbs more than a hit that
@@ -412,22 +451,22 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* 
     return dash_to_first(dash, pathing, landings);
 }
 
-bool dash_away(const World& world, Pathing& pathing, const Field& home, vec2 dead) {
+bool dash_away(const World& world, Pathing& pathing, Safety& safety, const Field& home, vec2 dead, bool plan) {
     if (!world.me().facts().has_dash()) return false;
     const int dash = ready(world, AbilityKind::dash);
     if (dash < 0) return false;
     const vec2 here = my_position();
-    return dash_to_first(dash, pathing, escape_landings(world, pathing, here, threats_near(world, here, dead), home, dead));
+    return dash_to_first(dash, pathing, escape_landings(world, pathing, safety, here, threats_near(world, here, dead), home, dead, plan));
 }
 
-EscapeDashQuote quote_escape_dash(const World& world, Pathing& pathing, const Field& home, vec2 dead) {
+EscapeDashQuote quote_escape_dash(const World& world, Pathing& pathing, Safety& safety, const Field& home, vec2 dead) {
     EscapeDashQuote quote;
     if (!world.me().facts().has_dash()) return quote;
     const int dash = ready(world, AbilityKind::dash);
     if (dash < 0) return quote;
     const vec2 here = my_position();
     const auto& threats = threats_near(world, here, dead);
-    const auto landings = escape_landings(world, pathing, here, threats, home, dead);
+    const auto landings = escape_landings(world, pathing, safety, here, threats, home, dead, true);
     if (landings.count == 0) return quote;
     static_assert(Landings::tries == std::tuple_size_v<decltype(quote.tiles)>);
     quote.slot = dash;

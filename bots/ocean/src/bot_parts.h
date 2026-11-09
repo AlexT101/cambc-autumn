@@ -18,6 +18,7 @@
 #include "model/comms.h"
 #include "model/crew_work.h"
 #include "model/enemy_reach.h"
+#include "model/escape.h"
 #include "emblems.h"
 #include "params.h"
 #include "model/pathing.h"

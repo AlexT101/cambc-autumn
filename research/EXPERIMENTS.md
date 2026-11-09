@@ -46,6 +46,59 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   leave a narrowly lost stand are right to. Recalibrating the model has nothing to correct; the level combat and team
   arms opened opportunities at this boundary, where fighting and declining are worth the same.
 
+## (ocean, 2026-11-09) Escape planner fuel: the same plans at a quarter of the fuel; 33.9% -> ~51.6% at normal fuel
+
+The retreat planner (`model/escape.cc`, research/retreat-2026-11-09) read 53.1% against `oc-cl2-seat5m` with unlimited
+fuel but 33.9% at normal fuel (`oc-escape-v1`, release, 600,725 OOF turns against 90,034). All A/Bs here: CAND vs
+`variants/oc-cl2-seat5m`, `--no-test-draft`, release, fast runner, `maps/suites/merged/retreat-911000b` (10,240 games).
+
+**Where a retreat turn's fuel went** (debug, 128 ladder games vs astraeus, checkpoints in debug blocks): on turns with a
+plan, world/pre-decide 8.9k, decide up to `retreat()` 18.8k, `retreat()` 46.8k (the plan 26.5k of it), after 9.6k:
+84k of 100k on the turns that finished. The pre-change bot's retreat turns were 59.6k (its `retreat()` 16.3k). The
+planner's own build was p50 ~41k a build at 100M fuel (bench, `--set wide`, 7,964 builds).
+
+**Exact rewrite** (same plans: every plan's rows dumped and compared with oc-escape-v1's over 8,895 builds of 52 bench
+games, no mismatch; bench replays 51/52 identical, the other diverging through the turn-end queue, which fills by fuel spent):
+- Rows as two u16x8 vectors (8 rows a vector) instead of four u32x4, ops written on values (always_inline) so they
+  stay in wasm locals; one mask at the end of a dilation instead of one per step.
+- Static boards combined once a game (open-to-walk, open-to-dash for both teams); a window row's position worked out
+  once per row for all boards; rows gathered into a u16 array and loaded as vectors (no per-lane inserts).
+- `grow_by` by doubling (1, 2, then the rest); the backward pass as a template on the dash, no arrays.
+- Build cost 42.9k -> 10.4k mean (p90 62.0k -> 14.4k, max 108k -> 23k) at 100M. Phases after it: hit layers 5.0k
+  (~2.2k a pursuer class: ~40 wasm ops a dilation, so near the floor for this model), backward pass 1.3k, pursuers 1.3k,
+  goals 1.2k, terrain 1.0k.
+- **A/B `oc-esc-f1`: 51.9% (51.0-52.9), OOF 113,797 against 104,150.** From 33.9%; the unlimited ceiling is 53.1.
+- Reusing the previous turn's dash landings and starting a pursuer's turns at its arrival: 10.4k -> 10.0k (exact).
+- **Gates** (`params::escape`: the build needs `min_fuel` left, the slack pass `slack_fuel`). In a debug batch of f1
+  (128 ladder games vs oc-cl2-seat5m) 16% of builds were skipped by the 50k gate (at p50 42.6k left) and 38% of slack
+  passes by the 40k one; OOF turns were level with the reference (1,683 against 1,666). Lowering the build gate loses:
+  30k/20k (`oc-esc-f2`) 50.5% (49.5-51.5), OOF 161k; 20k/12k (`oc-esc-f3`) 50.0% (49.0-51.0), OOF 178k. The turns
+  the gate skips are ones whose retreat code after the plan (Safety pricing, HomeWalk; `retreat_step` p90 ~50k) would
+  run out. Keeping 50k and lowering only the slack gate to 15k (`oc-esc-f4`, with the 10.0k build): 51.6% (50.6-52.5),
+  level with f1. 40k/15k (`oc-esc-f5`): 50.6% (49.6-51.6).
+- **Headroom** (diagnostic, `oc-esc-fva`/`fvb`: f1 on a 100x quantum, `FASTRUNNER_BOT_FUEL`, every gate reading the 1x
+  budget, as the fuel-ceiling arms; the reference at normal fuel): no OOF, plan paid 53.1% (52.1-54.0); no OOF and the
+  plan's fuel refunded to every later read 54.0% (53.0-55.0). Making the plan cost nothing is worth at most ~+0.9
+  (within the noise of a difference of two runs); the rest of f1's gap to its no-OOF arm is ocean's general OOF cost,
+  which the reference pays too. So the remaining ~10k a build has little left to win.
+- **Cheaper model**: horizon 4 instead of 5 (`oc-esc-f6`, slack gate 15k): 8.6k a build (-14%), 51.8% (50.8-52.8),
+  level with f1. Not taken: the same win rate with less look-ahead.
+- `oc-esc-f9` (= ocean now: f1 plus the 10.0k cut, same gates): 51.3% (50.3-52.3). f1, f4, f6 and f9 make the same or
+  near-same choices at the 50k gate and read 51.9 / 51.6 / 51.8 / 51.3: about 51.6 pooled over 40,960 games, against
+  33.9 before the rewrite and 53.1 with unlimited fuel.
+- Next, if anything: the rest of a retreat turn (decide up to `retreat()` ~17k, `retreat_step`'s own ~8k) is shared with
+  every turn and was mined by the fuel campaigns; a smarter build gate (fuel left against an estimate of what the
+  retreat still runs after the plan) is the one lever the gate arms point at.
+- **The idea itself, at unlimited fuel** (`oc-escape-v1` against `oc-cl2-seat5m`, both bots unlimited,
+  `FASTRUNNER_UNLIMITED_BOTS`): ab.py 53.1% (52.1-54.1) of 10,240 (`replays/ab/retreat-unl-911000b`). dgate on renamed
+  copies (`oc-escv1-unl` against `oc-pre5m-unl`, so no unlimited run enters the shared reference cache; the panel bodies
+  at normal fuel): **ACCEPT** (screen H1) at block 43, +2.18 ±0.70 pts over 5,632 units (23,040 CAND games); Fish picks
+  +3.14, Mite picks +1.22, one-site +2.09, multi-site +2.23. Deaths barely move (first 1,000 A/B games,
+  `tools/replay/fight_metrics.py`: 6.01 against 6.08 a game, to champions 5.74 against 5.84, kills 5.84 against 5.74);
+  gems +4% (795 against 764). The gain is keeping champions in play and earning, not a clear cut in deaths.
+- **Shipped as CHANGES 478** (bots/ocean = f9's plans) by the user's call, without a final normal-fuel dgate; further
+  fuel work is left to a follow-up.
+
 ## (ocean = oc-base25, 2026-11-09) Opponent tribute fidelity: Mite's tribute habit and both teams' lock policies in the spar bodies
 
 Asked: make the local opponents reproduce the Fish/Mite tribute behaviour local gates miss (section "Why v90-v93 lose
@@ -13621,6 +13674,31 @@ dgate at 0.505/0.5075 against oc-base25 (real budget, live picks, CRN-paired), o
   - 465 is worth keeping: removing it lost (H0 at both fuels).
   - bagf's mirror H1 didn't carry to live picks (spar -2.1, dgate +0.16).
 - The 2x screens track the real-budget ones, so none of these ideas is fuel-limited.
+
+## Retreat audit: how ocean dies retreating, and five retreat ideas (ocean, 2026-11-09; no arm)
+
+Debug ocean mirror plus ocean vs astraeus, 128 ladder maps both sides (512 ocean team-games). Every `R` episode
+with a visible enemy in 8 was replayed against a worst-case terrain pursuit race. Method, scripts and the example
+are in [retreat-2026-11-09](retreat-2026-11-09/README.md).
+
+- **63% of deaths to champions** (2,197 of 3,463) come in or within 3 rounds of a retreat. 28% of those start
+  at 95%+ health, and 49% with every visible enemy 4+ away.
+- **Route choice is the pool.** In 26% of retreat deaths, stunned or not, a walk with zero model exposure and at
+  least ocean's progress home existed while ocean's path was exposed. The model is optimistic: no spells beyond
+  basic reach, no body blocks, no late joiners.
+  - Typical failure: flipping between the first steps of a short exposed route and a longer safe one.
+  - The lab's one-step arms can't see this (§3/§6 of the lab's analyst findings).
+- **Dash:** 733 of 1,026 dasher retreat deaths begin with the dash cooling. In 230 a ready dash alone would have
+  escaped; about half of those dashes were spent the round before without hitting a champion.
+  - A dash-only escape against non-dashers alone: 1% of retreat deaths.
+  - Ready but never cast: 86.
+- **Small or already done:**
+  - Hidden bushes: taken 77% of the time when one is adjacent.
+  - Allies: within 4 at the start in 62% of deaths against 71% of exposed survivals.
+  - Waking a camp behind us: an opportunity in 4.6% of deaths.
+- **Next, if pursued:** one multi-turn escape planner, with time-expanded reachability on a local bit-parallel window
+  (design in the README), checked by re-running the audit before any A/B.
+- **Built** (2026-11-09) as `model/escape.cc` and shipped as CHANGES 478: EXPERIMENTS "Escape planner fuel".
 
 ## Mite's turn-order factors, one arm each (v87 = oc-base25, 2026-11-09): all H0, nothing merged
 

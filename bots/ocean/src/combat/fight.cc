@@ -175,6 +175,9 @@ private:
 // next turn. With no homeward step clear, those whose walk onto our spawn survives and heals us
 // (HomeWalk) come first: else a clear step away wins, and an enemy reach that alternates with turn
 // order walks us back.
+// The escape plan (model/escape.h) ranks ahead of all but HomeWalk: this turn's hit (Safety's) and the
+// plan's after it, so a step away round the pursuers, or one hit now to be clear after, wins over a
+// step clear now that the pursuers catch later; a step whose damage now would kill us goes last.
 void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
     if (!my_can_move()) return;
     const vec2 here = my_position();
@@ -195,6 +198,7 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
         Safety::Tally t;
         int bush = 2;
         float eff = 0; // damage less bush_margin's bonus
+        int rank = 0;  // the group it is tried in, after HomeWalk's: the plan's rank, or without a plan, damage now
     };
     Unwritten<Option, 8> scratch;
     auto& options = scratch.a;
@@ -228,12 +232,37 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
             clear |= !reached;
         }
     };
+    auto& plan = escape::plan(world, pathing, safety);
     add(false);
     if (!clear) {
         // Worth it only if the spawn leaves us healthier than the clear step away would.
         HomeWalk w(world, pathing, safety, home);
         for (int i = 0; i < n; ++i) options[i].home = w.walk_from(options[i].p, w.now());
         add(true);
+    } else if (plan.active()) {
+        // A clear step away may be the plan's way round.
+        add(true);
+    }
+    // This turn's hit: with a plan, priced in full, and a heavy one (a third of us) counts twice.
+    float life = -1;
+    if (plan.active()) {
+        life = my_health_and_shield(world);
+        for (int i = 0; i < n; ++i)
+            if (options[i].t.left) price(options[i]);
+    }
+    const auto hit_now = [&](const Option& o) {
+        if (o.t.left || o.damage > 0 || o.stuns) return life > 0 && o.damage * 3 >= life ? 2 : 1;
+        return 0;
+    };
+    bool safe = false;
+    if (plan.active()) {
+        for (int i = 0; i < n && !safe; ++i) safe = hit_now(options[i]) == 0 && plan.after_walk(options[i].p, false) == 0;
+        if (!safe) plan.want_slack();
+    }
+    for (int i = 0; i < n; ++i) {
+        auto& o = options[i];
+        const int now = hit_now(o);
+        o.rank = plan.active() ? escape::rank(now + plan.after_walk(o.p, false), now + plan.after_walk(o.p, !safe)) : o.home ? 0 : now;
     }
     const auto by = [](const Option& a, const Option& b) {
         if (a.home != b.home) return a.home;
@@ -245,25 +274,41 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
         if (a.gap != b.gap) return a.gap > b.gap;
         return a.pull < b.pull;
     };
-    // The options that rank before every one with damage, tried first in the full order; the rest,
-    // priced, only if every one of those fails.
-    Unwritten<Option, 8> rest_scratch;
-    auto& rest = rest_scratch.a;
-    int lead = 0, later = 0;
-    for (int i = 0; i < n; ++i) {
-        auto& o = options[i];
-        if (o.home) price(o);
-        if (o.home || (!o.t.left && o.damage == 0 && !o.stuns)) options[lead++] = o;
-        else rest[later++] = o;
+    // Groups of equal HomeWalk and rank, HomeWalk's first, then by rank; each priced only when
+    // reached, then tried in `by`'s order. Without a plan: HomeWalk's, the clear, then the rest.
+    std::array<std::uint8_t, 8> order, group, last;
+    for (int i = 0; i < n; ++i) order[i] = static_cast<std::uint8_t>(i);
+    std::stable_sort(order.begin(), order.begin() + n, [&](int a, int b) {
+        const auto &x = options[a], &y = options[b];
+        return x.home != y.home ? x.home : x.rank < y.rank;
+    });
+    const auto by_index = [&](int a, int b) { return by(options[a], options[b]); };
+    int lasts = 0;
+    for (int g = 0; g < n;) {
+        const auto& lead = options[order[g]];
+        const bool lead_home = lead.home;
+        const int lead_rank = lead.rank;
+        int e = g, m = 0;
+        for (; e < n && options[order[e]].home == lead_home && options[order[e]].rank == lead_rank; ++e) {
+            auto& o = options[order[e]];
+            if (o.home || o.t.left) price(o);
+            if (plan.active() && !o.home && o.damage > 0) {
+                if (life < 0) life = my_health_and_shield(world);
+                if (o.damage >= life) {
+                    last[lasts++] = order[e];
+                    continue;
+                }
+            }
+            group[m++] = order[e];
+        }
+        std::stable_sort(group.begin(), group.begin() + m, by_index);
+        for (int i = 0; i < m; ++i)
+            if (pathing.try_move(options[group[i]].p)) return;
+        g = e;
     }
-    std::stable_sort(options.begin(), options.begin() + lead, by);
-    for (int i = 0; i < lead; ++i)
-        if (pathing.try_move(options[i].p)) return;
-    for (int i = 0; i < later; ++i)
-        price(rest[i]);
-    std::stable_sort(rest.begin(), rest.begin() + later, by);
-    for (int i = 0; i < later; ++i)
-        if (pathing.try_move(rest[i].p)) return;
+    std::stable_sort(last.begin(), last.begin() + lasts, by_index);
+    for (int i = 0; i < lasts; ++i)
+        if (pathing.try_move(options[last[i]].p)) return;
     pathing.step_towards(home);
 }
 
@@ -1273,7 +1318,7 @@ bool dash_retreat_casts(World& world, Pathing& pathing, Safety& safety, Memory& 
         bank_gems(world, pathing, safety, memory, false);
         return true;
     }
-    const auto quote = quote_escape_dash(world, pathing, pathing.to_ally_spawn(), dead);
+    const auto quote = quote_escape_dash(world, pathing, safety, pathing.to_ally_spawn(), dead);
     // A cast tried and failed may have revealed a hidden blocker, and a dash moved us: either way
     // vision is read again and the quote, which vouches only for its first landing, is dropped.
     bool reusable = true, casted = false;
@@ -1310,9 +1355,9 @@ bool dash_retreat_casts(World& world, Pathing& pathing, Safety& safety, Memory& 
         if (reusable) {
             const bool escaped = cast_escape_dash(world, pathing, quote);
             if (quote.count > 0) see_again(world, pathing, safety);
-            if (!escaped && quote.count > 0 && dash_away(world, pathing, pathing.to_ally_spawn(), dead))
+            if (!escaped && quote.count > 0 && dash_away(world, pathing, safety, pathing.to_ally_spawn(), dead))
                 see_again(world, pathing, safety);
-        } else if (dash_away(world, pathing, pathing.to_ally_spawn(), dead)) {
+        } else if (dash_away(world, pathing, safety, pathing.to_ally_spawn(), dead)) {
             see_again(world, pathing, safety);
         }
     }
@@ -1365,14 +1410,14 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
             bank_gems(world, pathing, safety, memory, false);
             return;
         }
-        dash_away(world, pathing, pathing.to_ally_spawn(), dead);
+        dash_away(world, pathing, safety, pathing.to_ally_spawn(), dead);
     }
     // The escape dash shares the one cast: the reset only after it, from a melee attack or a ranged walk.
     if (reset_and_attack_enemy(world)) see_kills(world, pathing, safety);
     else see_stuns(world, safety); // Heart of Ruin's landing
     if (!flee_camps(world, pathing, safety, pathing.to_ally_spawn())) retreat_step(world, pathing, safety, pathing.to_ally_spawn());
     // A walk to a hole line's edge can bring a dash out of the camps' reach in reach.
-    if (my_can_cast() && safety.camp_damage(my_position()) > 0 && dash_away(world, pathing, pathing.to_ally_spawn(), dead))
+    if (my_can_cast() && safety.camp_damage(my_position()) > 0 && dash_away(world, pathing, safety, pathing.to_ally_spawn(), dead, false))
         see_again(world, pathing, safety);
     // A ranged walk spent the attack; one that failed did not.
     if (attack_enemy(world) && melee) reset_and_attack_enemy(world, true);

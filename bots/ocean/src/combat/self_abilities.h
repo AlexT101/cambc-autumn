@@ -37,9 +37,10 @@ const bitboard* travel_landing_veto(const World& world, vec2 from);
 // Into attack range of `target`, else of a visible enemy we can finish or are beating; attack after it.
 bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* target = nullptr);
 // To less damage from visible enemies and awake camps (a camp's only where it would pick us),
-// tie-broken towards `home`. `dead`: the tile of an enemy we killed this turn, which the beliefs
-// still hold alive.
-bool dash_away(const World& world, Pathing& pathing, const Field& home, vec2 dead = {-1, -1});
+// tie-broken towards `home`; with the walk still to come, where the escape plan (model/escape.h) ranks
+// better than walking with the dash kept (unless `plan` is off). `dead`: the tile of an enemy we killed this
+// turn, which the beliefs still hold alive.
+bool dash_away(const World& world, Pathing& pathing, Safety& safety, const Field& home, vec2 dead = {-1, -1}, bool plan = true);
 // dash_away's choice, quoted without casting: its first landings, best first, from `from`.
 // `clears`: the first lands where no threat reaches us (a camp's only where it would pick us).
 struct EscapeDashQuote {
@@ -48,7 +49,7 @@ struct EscapeDashQuote {
     std::array<vec2, 3> tiles{};
     bool clears = false;
 };
-EscapeDashQuote quote_escape_dash(const World& world, Pathing& pathing, const Field& home, vec2 dead);
+EscapeDashQuote quote_escape_dash(const World& world, Pathing& pathing, Safety& safety, const Field& home, vec2 dead);
 // The quote's first landing only, if we are still where it was made and its slot is ready.
 bool cast_escape_dash(const World& world, Pathing& pathing, const EscapeDashQuote& quote);
 // A ready dash could land out of every visible enemy's reach and every awake camp's that would pick

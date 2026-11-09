@@ -3797,3 +3797,29 @@ Against oc-base25 on dgate (0.505/0.5075): 50.56% (50.23-50.89) of 31,744 at 61 
 Fish picks +1.75, Mite picks +0.48 pts. Queued live, paired against v87.
 
 Evidence: EXPERIMENTS "Narrow changes judged on the games they touch".
+
+## 478: Escape planner: retreat walks and escape dashes ranked by a pursuit race over the next turns (ocean, 2026-11-09)
+
+`model/escape.{h,cc}` (new), on 476. A retreating champion plans 5 turns on a 15×15 window, as SIMD bit rows:
+- **Pursuers:** each one's reach per turn (walk, a dash once ready, a hitting spell's one-turn burst; ranged pursuers
+  shoot only without walking). Bushes hide from unit attacks.
+- **Our side:** a backward pass from the tiles nearer home counts hits (0, 1 or many), with and without our dash.
+- **Retreat walks:** `retreat_step` ranks its walks by this turn's hit (from Safety) plus the plan's later hits, then
+  by its old order.
+- **Escape dashes:** `escape_landings` takes a landing only if the plan ranks it before walking with the dash kept,
+  and keeps the dash when a walk is clear in both the plan and Safety.
+- **One model for several routes:** detours round pursuers, hole lines they must walk round, bush cover, and taking
+  one hit now to be clear after.
+- **Gates:** `params::escape`. A build needs 50k fuel left, the slack pass 40k. A build costs ~10k (p90 ~14k).
+
+Against `variants/oc-cl2-seat5m` (= 476), `merged/retreat-911000b` (10,240 games, release, fast runner):
+- Unlimited fuel for both bots: 53.1% (52.1-54.1). dgate (renamed copies, panel at normal fuel): ACCEPT, +2.18 ±0.70
+  pts of 5,632 units; Fish picks +3.14, Mite +1.22.
+- Normal fuel: the first version (`oc-escape-v1`, ~43k a build) 33.9%. The same plans at ~10k a build read 51.3-51.9:
+  `oc-esc-f9`, which plays as bots/ocean does, 51.3% (50.3-52.3); `oc-esc-f1` 51.9% (51.0-52.9). OOF turns are about
+  level with the reference.
+- Accepted by the user's call without a final normal-fuel dgate.
+
+`variants/oc-esc-478` equals bots/ocean.
+
+Evidence: EXPERIMENTS "Escape planner fuel" and "Retreat audit"; research/retreat-2026-11-09/README.md.
