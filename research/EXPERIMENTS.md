@@ -145,6 +145,51 @@ The H0 stops at about 20k games had very negative LLRs (-9 to -18), so few map p
 
 All null within +0.1 overall except crh, which lost.
 
+## (ocean = oc-base25, 2026-11-09) Generalised nuke guard (nukeguard2): four forms, all H0 on dgate; lethal steps are trapped retreats
+
+The user asked how the nuke guard works (`v87-rv-ngd`: one seen enemy's ready abilities alone, a hard ban, from outside every
+zone) and to test a general form: a price instead of a ban, enemies counted together, and a check on whether we kill first.
+Data first, then four arms. Tools, arm patches and the probe patch: `research/ideas-2026-11-09/nukeguard2-tools/`.
+- **Live data** (4,631 v83-v95 scrims against Fish and Mite; `steps.py`). A step is lethal when the enemies the mover saw,
+  by a wall-free compute_strike bound with cooldowns, add up to its health before its next turn.
+  - Our steps from a safe tile into a lethal one: 0.70 a game against Fish, 0.50 against Mite. About 35% die before their next
+    turn. Fish's steps into ours: 0.87 a game (Mite 1.67), of which 17-28% die.
+  - Most of our deaths come later, on moves already inside lethal zones: 3.9 a game, 54-75% die.
+  - A step into a lethal zone almost never kills (0-2% of them). The kill-first check has nothing to act on.
+- **Local trace** (debug probe, v87 against spar-o25-F/M, 512 games; the probe printed which sub-step moved and Safety::lethal before and after).
+  - Most lethal moves are retreat steps (`retreat_step`): 3.4 a game inside lethal zones, of which 63-68% die. Of the
+    retreat turns judged lethal by the bot's own model, 4.9 a game had every step and staying lethal (trapped).
+    Only 0.5 a game had a non-lethal alternative that the damage-bound ranking passed over.
+  - ngd guarded none of this. Retreats, game-ender stops and the plan search's ends never read its zone. It reached
+    only the goal walks (farm, chase, bank, altar guard) into single-nuke tiles, about 0.1 a game.
+  - Lethal plan-search ends are rare: under 15 in 512 games.
+- **Arms** (oc-base25 + one diff each, `bots/variants/v87-ng2-*`):
+  - `rs`: retreat_step tries the ranked steps that Safety::lethal (every credible threat and camp together) clears before the lethal ones.
+  - `rs2`: rs plus, when every ranked step is lethal, an unranked non-lethal step (sideways or away), or staying if here is not lethal.
+  - `wg`: ngd generalised. The step and work guards ban every Safety::lethal tile, from a tile that is not lethal.
+  - `pr`: the price form. On a plan-search end where the camps and the hits no leaf removes (by a kill or a stun) add up to our
+    health, 0.4 x kill_distance(our health, max, bag) is charged. The 0.4 is the local death rate after such steps.
+- **Mechanism** (1,024 games each against spar-o25-F/M): our deaths a game were base 7.01, rs 7.11, rs2 7.13, wg 7.26, pr 7.11.
+  Death rates inside the zones did not move: a retreat that steps to a non-lethal tile is still caught a turn later.
+- **Fuel:** smoke OOF turns (256 games) were 3,606-3,678 for the arms against 3,652 for the base. At 2x fuel each arm read
+  level on the dgate block-0 opponents (1,024 paired games; rs 49.95, rs2 49.95, wg 50.05, pr 50.05).
+
+Results against oc-base25 (v87), dgate 0.505/0.5075:
+
+| arm | dgate |
+|---|---|
+| v87-ng2-rs | 49.89% (49.43-50.35) of 4,096: H0 |
+| v87-ng2-rs2 | 50.05% (49.64-50.46) of 14,336: H0 |
+| v87-ng2-wg | WG |
+| v87-ng2-pr | 49.53% (48.95-50.11) of 9,728: H0 |
+
+- No form of the guard is a meaningful change. Lethal steps are almost all retreats that are already caught; choosing the
+  step differently, banning entry, or pricing death in the plan does not change who dies.
+- Leads, not built:
+  - Upstream: not getting caught. Want_home's timing and engagement choice decide the 4.9 trapped turns a game.
+  - Punishment: Fish's entries into our zones die 17-28%, ours into theirs about 35%. Unused exclusive spells are the
+    known part (fight-execution.md).
+
 ## (ocean = oc-cl2-base, 2026-11-08/09) Combat lab round 2: chase seats, the chase bit and healed-at-home beliefs; merged as CHANGES 475 and 476
 
 Coordinator log and every arm: [combat-lab/cl2-log.md](combat-lab/cl2-log.md); plan [PLAN2.md](combat-lab/PLAN2.md).

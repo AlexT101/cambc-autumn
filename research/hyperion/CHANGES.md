@@ -3774,3 +3774,26 @@ The 100M wide bench against cl2-seat5 has the same winners, drafts and decision 
 `variants/oc-cl2-seat5m` equals bots/ocean.
 
 Evidence: EXPERIMENTS "Combat lab round 2".
+
+## 477: oc-base30: ctx-g2's map-gated mid_gold, sp-y2's Cassi & Issac yield and dfp-pure's draft farm plan, on v87 (ocean, 2026-11-09)
+
+`variants/oc-base30` = `variants/oc-base25` (v87) plus three diffs and nothing else; not in bots/ocean.
+- ctx-g2 (`variants/v87-rv-ctxg2`): `model/context.h`'s context knobs. The draft records the altar sites (altar tiles
+  within Chebyshev 3 merged) in PlanFacts (version 12), and shop.cc's mid_gold is 1.25 + 0.5 on one-site maps and on
+  multi-site maps with a spawn walk of at most 40 (78 of the 128 ladder maps). The invade-deny knob it carries is zero
+  (compiled out).
+- sp-y2 (`variants/v87-sp-y2`, `params::ci_yield_steps` 2): Cassi or Issac, partner alive, leave a cleared one-holder
+  gold group to a visible, healthy, free ally whose walk to it is at most 2 steps longer (`shy_yields`, capture.cc and
+  farm.cc).
+- dfp-pure (`variants/v87-dfp-pure`, draftfarm): the early farm plan solved in the draft (draft/open_plan.cc) and
+  followed in play (farm.cc), research/draftfarm-2026-11-08/README.md. DraftPlan version 18 (12 with the plan off).
+
+Chosen under the rules page's narrow-change and 50-50.5% judgement guidance. On dgate's own draws, ctx-g2 reads
++0.75 ±0.43 on its maps (+0.56 against Fish's picks, +0.93 against Mite's). sp-y2 reads +0.40 ±0.34 over all games (Cassi &
+Issac are in 95% of them), positive on both pick sets. Left out: nh-6-3, fs-enemy, comms-bagf, y0, ngd, the gold forms
+(level on their subsets or Fish-only); lock deny (470's rule, live loss); soup-k. dfp-pure (+0.62; Mite picks +0.15, no enemy
+model) is in by the user's call; its anytime draft search leaves 0 early losses and 0 capped drafts at the real budget.
+Against oc-base25 on dgate (0.505/0.5075): 50.56% (50.23-50.89) of 31,744 at 61 of 160 blocks, LLR +1.06 (running);
+Fish picks +1.75, Mite picks +0.48 pts. Queued live, paired against v87.
+
+Evidence: EXPERIMENTS "Narrow changes judged on the games they touch".
