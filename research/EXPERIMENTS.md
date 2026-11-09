@@ -773,6 +773,11 @@ source of losses. Rejected: none of these is queued for live.
   | oc-base30 | +0.76 ±0.25 (high LLR 2.11, no ACCEPT) | 53,632 | +0.52 | +1.00 | +0.76 | +0.76 |
   | v87-dfp-pure | +0.65 ±0.22 (screen ACCEPT at 45,696; stopped there, it is in oc-base31) | 61,568 | +0.14 | +1.17 | +0.14 | +0.95 |
   | v87-dfp-race-d0-t5 | +0.52 ±0.25 | 34,304 | +0.41 | +0.64 | +0.76 | +0.39 |
+  | v87-fs-enemy | +0.56 ±0.25 (old bodies: Mite +0.04) | 38,528 | +0.67 | +0.45 | +0.51 | +0.59 |
+  | v87-mp-chan | +0.09 ±0.25 (ZONE crossed; old bodies +0.36 ±0.33) | 46,848 | -0.17 | +0.35 | +0.26 | -0.00 |
+  | v87-mp-tank | +0.16 ±0.25 (ZONE crossed; old bodies +0.27 ±0.31) | 22,528 | +0.21 | +0.10 | +0.72 | -0.17 |
+  | v87-sp-y0 | +0.11 ±0.25 (ZONE crossed; old bodies +0.15 ±0.34) | 28,672 | +0.37 | -0.16 | +0.36 | -0.04 |
+  | oc31-fsenemy (against **oc-base31**) | +0.20 ±0.25 (ZONE crossed; queued live as an informative pair vs v99) | 37,888 | +0.11 | +0.30 | +0.13 | +0.25 |
 
   t5 is dfp-race-d0 (dfp-pure plus the mirror-race enemy model) on five-pick teams only, the base's draft elsewhere, so it
   gives up pure's plan on 3-4 picks; the race model was already H0 against pure, and the five-pick condition fails the map
