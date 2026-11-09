@@ -7,8 +7,10 @@ their own drafts, against Fish's and Mite's live picks (spar tables) played by:
   block 0: v87 (spar-o25-F/M) and v91 (spar-oc29-F/M), deterministic;
   block k: v87 noise seed k (spar-dvnk-F/M: knobs redrawn every 100 rounds, seeded per game), each a fresh draw.
 A unit is a (block, map): 0.5 + CAND's mean minus REF's over the block's games on that map. Blocks are read in order
-with ab.py's LLR at 0.505/0.5075 (rule 0: pass only above 50.5%; or --sprt): H0 at ln(0.05/0.95) ends it; the screen passes at ln(0.95/0.05); the
-live bar (99%) at ln(99) = 4.595, reached by continuing on fresh noise seeds the screen never saw, whose own mean must
+with two of ab.py's SPRTs (bounds ln(0.05/0.95), ln(0.95/0.05)): a low one at 0.4975/0.50 and a high one at
+0.505/0.5075 (rule 0: pass only above 50.5%). REJECT when the low one reaches H0; ACCEPT (screen) when the high one
+reaches H1; ZONE (the coordinator's call) once the low one has reached H1 and the high one H0; else it plays on.
+After ACCEPT it continues to the live bar (99%) at ln(99) = 4.595, reached by continuing on fresh noise seeds the screen never saw, whose own mean must
 not be negative. Runs (spar-c<tag>-<member><F|M>) are reused, so a changed bot needs a new dir; REF's runs serve every
 candidate. Noise seeds past those built are built on demand (seed 1310000 + k)."""
 import argparse, json, math, os, random, re, subprocess, sys, time, numpy as np
@@ -83,29 +85,45 @@ def main():
     ap.add_argument('--stage', choices=['screen', 'live'], default='live'); ap.add_argument('--sprt', default='0.505,0.5075')
     ap.add_argument('--max-seeds', type=int, default=1000); ap.add_argument('--jobs', type=int, default=8)
     ap.add_argument('--ahead', type=int, default=3, help='blocks played ahead of the one read'); ap.add_argument('--seed', type=int, default=0)
-    a = ap.parse_args(); p0, p1 = map(float, a.sprt.split(','))
+    ap.add_argument('--low', default='0.4975,0.50', help='the reject SPRT (three-way decision)')
+    ap.add_argument('--single', action='store_true', help='the old single SPRT at --sprt: its H0 ends the test')
+    ap.add_argument('--no-run', action='store_true', help='decide from cached games only; launch nothing')
+    a = ap.parse_args(); p0, p1 = map(float, a.sprt.split(',')); q0, q1 = map(float, a.low.split(','))
     lo, screen_hi, live_hi = math.log(0.05 / 0.95), math.log(0.95 / 0.05), math.log(99)
     maps = None
     run = Runner(a.jobs); scores, screen_at, outcome, k = [], None, None, 0
+    low_at = high_h0_at = None  # first crossings: the low SPRT's H1, the high SPRT's H0
     while k <= a.max_seeds:
-        for j in range(k, min(k + a.ahead, a.max_seeds) + 1):  # keep the next blocks playing
-            if j: build_seed(j)
-            for b, o in block(j):
-                for bot in (a.ref, a.cand): run.want(bot, b, o)
+        if not a.no_run:
+            for j in range(k, min(k + a.ahead, a.max_seeds) + 1):  # keep the next blocks playing
+                if j: build_seed(j)
+                for b, o in block(j):
+                    for bot in (a.ref, a.cand): run.want(bot, b, o)
         if not all(done(rname(bot, b, o)) for b, o in block(k) for bot in (a.cand, a.ref)):
+            if a.no_run: break
             time.sleep(20); continue
         if maps is None: maps = sorted({m for m, _ in local.cells(rname(a.ref, 'o29', 'F'))})
         order = list(maps); random.Random(a.seed * 1000 + k).shuffle(order)
-        scores += units(a.cand, a.ref, k, order); llr = ab.llr(scores, p0, p1)
+        scores += units(a.cand, a.ref, k, order); hl, ll = ab.llr(scores, p0, p1), ab.llr(scores, q0, q1)
         d = np.array(scores) - 0.5; se = d.std() / math.sqrt(len(d))
         tag = 'v87+v91' if k == 0 else f'noise {k}'
-        print(f'block {k:2d} ({tag}): {len(scores)} units, {100*d.mean():+.2f} pts ±{196*se:.2f}, LLR {llr:+.2f} '
-              f'[{lo:.2f} | screen {screen_hi:.2f} | live {live_hi:.2f}]', flush=True)
-        if llr <= lo: outcome = 'H0'; break
-        if screen_at is None and llr >= screen_hi:
-            screen_at = len(scores); print(f'SCREEN H1 at block {k} ({len(scores)} units)', flush=True)
-            if a.stage == 'screen': outcome = 'screen H1'; break
-        if llr >= live_hi:
+        print(f'block {k:2d} ({tag}): {len(scores)} units, {100*d.mean():+.2f} pts ±{196*se:.2f}, '
+              f'LLR high {hl:+.2f}' + ('' if a.single else f' low {ll:+.2f}') +
+              f' [{lo:.2f} | {screen_hi:.2f} | live {live_hi:.2f}]', flush=True)
+        if a.single:
+            if hl <= lo: outcome = 'H0'; break
+        else:
+            # REJECT: the low SPRT reaches H0. ACCEPT: the high SPRT reaches H1 (then on to the live bar).
+            # ZONE: the low SPRT has reached H1 (not below ~50) and the high one H0 (not above ~50.75).
+            if screen_at is None and ll <= lo: outcome = 'REJECT'; break
+            if low_at is None and ll >= screen_hi: low_at = len(scores)
+            if high_h0_at is None and screen_at is None and hl <= lo: high_h0_at = len(scores)
+            if low_at is not None and high_h0_at is not None:
+                outcome = 'ZONE'; print(f'ZONE at block {k} ({len(scores)} units)', flush=True); break
+        if screen_at is None and high_h0_at is None and hl >= screen_hi:
+            screen_at = len(scores); print(f'ACCEPT (screen H1) at block {k} ({len(scores)} units)', flush=True)
+            if a.stage == 'screen': outcome = 'ACCEPT (screen)'; break
+        if screen_at is not None and hl >= live_hi:
             post = d[screen_at:]
             ok = len(post) == 0 or post.mean() >= 0
             outcome = 'LIVE BAR H1' if ok else 'H1 but the post-screen seeds read negative: not live'
@@ -113,12 +131,17 @@ def main():
         k += 1
     while run.procs: run.poll(); time.sleep(5)
     post = (np.array(scores[screen_at:]) - 0.5) if screen_at is not None else np.array([])
+    if outcome is None: outcome = 'ACCEPT (screen), live bar undecided' if screen_at is not None else 'undecided'
     games = sum(len(block(j)) for j in range(min(k, a.max_seeds) + 1)) * 256
-    res = {'cand': a.cand, 'ref': a.ref, 'outcome': outcome or 'undecided', 'blocks': k + 1, 'units': len(scores),
-           'pts': round(100 * (np.mean(scores) - 0.5), 3), 'llr': round(ab.llr(scores, p0, p1), 3),
-           'screen_at_units': screen_at, 'post_screen_pts': round(100 * post.mean(), 3) if len(post) else None,
-           'cand_games': games}
-    print(json.dumps(res)); json.dump(res, open(f'{LOGS}/dgate-{os.path.basename(a.cand.rstrip("/"))}.json', 'w'))
+    d = np.array(scores) - 0.5
+    res = {'cand': a.cand, 'ref': a.ref, 'outcome': outcome, 'blocks': k + 1 if outcome != 'undecided' else k,
+           'units': len(scores), 'pts': round(100 * d.mean(), 3) if len(d) else None,
+           'ci95': round(196 * d.std() / math.sqrt(len(d)), 3) if len(d) else None,
+           'llr_high': round(ab.llr(scores, p0, p1), 3), 'llr_low': round(ab.llr(scores, q0, q1), 3),
+           'screen_at_units': screen_at, 'low_h1_at_units': low_at, 'high_h0_at_units': high_h0_at,
+           'post_screen_pts': round(100 * post.mean(), 3) if len(post) else None, 'cand_games': len(scores) * 4 + (512 if scores else 0)}
+    print(json.dumps(res))
+    if not a.no_run: json.dump(res, open(f'{LOGS}/dgate-{os.path.basename(a.cand.rstrip("/"))}.json', 'w'))
 
 if __name__ == '__main__':
     main()

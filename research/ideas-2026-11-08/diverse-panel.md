@@ -186,6 +186,17 @@ screen, the held out and the panel.
 - v87-sp-y2 and v87-fs-enemy were still running (`~/tmp-offload/diverse/dgate2-*.out`): +0.47 ±0.70 and +0.40 ±0.74
   at block 36, LLR -0.3.
 
+**Three-way decision (default from 2026-11-09, user).** A single SPRT at 0.505/0.5075 called H0 on any change
+probably below +0.75, so a real +0.25 change read as "failed". dgate now runs two SPRTs on the same units, each with
+ab.py's bounds ±2.94:
+- **REJECT:** the low one (0.4975/0.50) reaches H0, so the change is probably below 50.
+- **ACCEPT:** the high one (0.505/0.5075) reaches H1. The gate then continues to the live bar (4.595) on post-screen
+  seeds.
+- **ZONE:** the low one has reached H1 and the high one H0, both first crossings. The change is probably in about
+  50-50.75, and the coordinator makes the call.
+- Otherwise it plays on. `--single` restores the old rule; `--no-run` decides from cached games only.
+- At f = 0.24 and true +0.25, a ZONE takes ~75k cand games.
+
 **Rule text** (TEST-STANDARD rules 5 and 7, proposed 2026-11-09):
 
 > 5. **Decisions: one gate.** Every A/B is `py research/ideas-2026-11-08/diverse-tools/dgate.py variants/<cand>
