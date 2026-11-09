@@ -124,3 +124,32 @@ way, but it is far short of the 125 gap.
 - The idea's better form would need an enemy model in the plan (contest arrival on middle groups) to stop ceding the
   middle. That is a big build for at most the ~+0.6 pts the middle costs now, so it is not pursued.
 - Gate runs are reused by dir name: `dgate.py variants/v87-dfp-pure variants/oc-base25` resumes where it stopped.
+
+## Enemy model in the plan (v87-dfp-race, `race-vs-pure.patch`; user: "yes you can try model asw")
+Live data (2,295 v86-89 games against Fish and Mite, `side.pkl`): by r150 each side captures about 3 middle groups
+(our 3.1, their 2.0-2.5; value about even). The first middle captures of either side come at r50/72/104 (25/50/75%),
+after each side's own half (r26-28/47-49/76). Holders are mostly alone (1.05-1.2 bodies a share). The middle is a
+symmetric race, so the enemy is modelled as our mirror:
+- Candidates add the middle band (our steps <= 1.353 x theirs, the side >= -0.15 band of the analysis).
+- The enemy timeline is our own team's greedy opening, simulated once. The enemy starts on group g when our greedy
+  starts on mirror(g), and is paid at that clear's end + 6. Our own half's mirrors are theirs, so those stay ours.
+- In the sim, a group the enemy reaches while it is idle is theirs and is back only after their payout + respawn.
+  The greedy seeds skip such groups.
+- A clear we start no later than they arrive is "raced". Paid before they arrive, it is worth its value plus deny x
+  their value (gems are zero-sum). Reached by them first, it is worth contest x its value (0.5, even teams).
+- Two forms: race (deny 1) and race-d0 (deny 0).
+
+Mirror (debug pairs on the forensic maps): the middle concession is gone (middle captures ours -0.03, theirs +0.02,
+against pure's -0.09/+0.07). Planned middle steps go from 16% to 23%. But our own gain goes with it (gold +2 at r150,
+gems -1). Smokes: 49.3% and 48.8% of 2,000.
+
+| arm | gate | result | SPRT |
+|---|---|---|---|
+| race | dgate vs pure (shared runs) | -0.25 ±0.53 pts over 7,808 units | H0 |
+| race-d0 | dgate vs pure | -0.16 ±0.50 pts over 8,960 units | H0 |
+| race | dgate vs oc-base25 | 50.16 (49.55-50.77) over 8,960 units, LLR -1.22 | stopped |
+| race-d0 | dgate vs oc-base25 | 50.26 (49.66-50.86) over 9,472 units, LLR -0.97 | stopped |
+
+Planning the middle offline doesn't beat leaving it to farm, which sees the enemy. The race the model predicts is
+accurate in the mirror, but the plan's middle steps replace live contest decisions that are already about as good,
+and they cost the own-half routing that was pure's gain. Pure stays the form.

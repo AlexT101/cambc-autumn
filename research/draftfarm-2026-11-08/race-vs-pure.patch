@@ -1,0 +1,189 @@
+diff -ru v87-dfp-pure/src/draft/draft.cc v87-dfp-race/src/draft/draft.cc
+--- v87-dfp-pure/src/draft/draft.cc	2026-11-08 21:58:19.461925845 +0000
++++ v87-dfp-race/src/draft/draft.cc	2026-11-09 04:33:04.843992996 +0000
+@@ -755,7 +755,7 @@
+     for (int g = 0; g < static_cast<int>(map.groups.size()); ++g) {
+         const auto& G = map.groups[g];
+         const int us = a.steps[g][0], them = a.steps[g][1];
+-        if (G.has_monolith || G.gems + G.gold == 0 || us == unreachable || us >= them) continue;
++        if (G.has_monolith || G.gems + G.gold == 0 || us == unreachable || static_cast<float>(us) > params::open_plan::mid_ratio * static_cast<float>(them)) continue;
+         order[n++] = {us, g};
+     }
+     std::sort(order.begin(), order.begin() + n);
+@@ -793,6 +793,22 @@
+         const bool by_tile = !a.spawn_steps.empty() && i < static_cast<int>(map.ally_spawn_tiles.size());
+         for (int c = 0; c < p.cands; ++c) B.from_spawn[c] = by_tile ? a.spawn_steps[order[c].second][i] : a.steps[order[c].second][0];
+     }
++    // The enemy: the mirror of our own team's greedy opening (live, Fish's and Mite's first captures in the middle
++    // come at the rounds ours do). A middle group's enemy start is our greedy start at its mirror; our own half's
++    // mirrors are theirs, outside the candidates, so they stay ours.
++    {
++        op::Timeline tl;
++        op::simulate(p, op::greedy_seed(p), nullptr, &tl);
++        std::array<float, op::max_cands> at, paid;
++        at.fill(1e9f), paid.fill(1e9f);
++        for (int c = 0; c < p.cands; ++c) {
++            const int m = map.group_at(map.mirror(map.groups[p.cand[c].group].centre));
++            for (int d = 0; d < p.cands; ++d)
++                if (p.cand[d].group == m && tl.clear[d] < 1e9f) at[c] = tl.arrive[d], paid[c] = tl.clear[d] + 6.0f;
++        }
++        for (int c = 0; c < p.cands; ++c) p.cand[c].enemy_at = at[c], p.cand[c].enemy_paid = paid[c];
++        p.deny = params::open_plan::deny, p.contest = params::open_plan::contest;
++    }
+     float value = 0;
+     int iterations = 0;
+     [[maybe_unused]] const auto fuel_search = cambc::fuel_remaining();
+diff -ru v87-dfp-pure/src/draft/open_plan.cc v87-dfp-race/src/draft/open_plan.cc
+--- v87-dfp-pure/src/draft/open_plan.cc	2026-11-08 22:17:06.203541987 +0000
++++ v87-dfp-race/src/draft/open_plan.cc	2026-11-09 04:33:04.843684581 +0000
+@@ -17,6 +17,8 @@
+     int n = 0;
+     std::array<std::int8_t, max_bodies> att;
+     std::array<float, max_bodies> arr;
++    bool enemy_done = false; // the enemy's one take (Cand::enemy_at) is settled: theirs, or forestalled by us
++    bool raced = false;      // this clear started no later than the enemy's arrival
+ };
+ 
+ // Attendees are kept in arrival order (Sim::choose inserts in place).
+@@ -66,6 +68,7 @@
+     const Problem& p;
+     const Lists& plan;
+     Lists* attended;
++    Timeline* timeline;
+     std::array<float, max_bodies> free{}, damage{};
+     std::array<int, max_bodies> loc{}, k{}, att{}, worked{};
+     std::array<GroupState, max_cands> group;
+@@ -84,8 +87,14 @@
+         int holder = -1;
+         for (int i = 0; i < g.n && !failed; ++i)
+             if (holder < 0 || p.body[g.att[i]].bonus > p.body[g.att[holder]].bonus) holder = i;
+-        if (holder >= 0 && T + capture <= static_cast<float>(p.horizon))
+-            value += C.gems + p.per_gold * C.gold * p.body[g.att[holder]].bonus;
++        if (holder >= 0 && T + capture <= static_cast<float>(p.horizon)) {
++            float v = C.gems + p.per_gold * C.gold * p.body[g.att[holder]].bonus;
++            // Raced: paid before they arrive, it is also gems and gold they don't get; reached by them first, shared.
++            if (g.raced) v = T + capture <= C.enemy_at ? v + p.deny * (C.gems + p.per_gold * C.gold) : v * p.contest;
++            value += v;
++        }
++        if (timeline && !failed && timeline->clear[c] >= never) timeline->clear[c] = T;
++        g.raced = false;
+         if (attended) {
+             debug_block({ std::printf("OPENSIM g%d clear %.0f attendees %d holder %d%s\n", C.group, T, g.n, holder >= 0 ? g.att[holder] : -1, failed ? " failed" : ""); });
+         }
+@@ -112,11 +121,19 @@
+             const float a = t + static_cast<float>(std::max(0, d - p.body[b].range));
+             if (a >= H) break;
+             auto& g = group[c];
+-            const float start = std::max(a, g.back);
++            float start = std::max(a, g.back);
++            // The enemy took it first (an idle group when they come): it is back only after their payout.
++            if (!g.enemy_done && g.n == 0 && start > p.cand[c].enemy_at) {
++                g.enemy_done = true;
++                g.back = std::max(g.back, p.cand[c].enemy_paid + static_cast<float>(p.cand[c].respawn));
++                start = std::max(a, g.back);
++            }
+             if (start - a > static_cast<float>(wait_most) || (g.n > 0 && g.clear <= start)) {
+                 ++k[b];
+                 continue;
+             }
++            if (g.n == 0 && !g.enemy_done) g.enemy_done = true, g.raced = p.cand[c].enemy_at < never;
++            if (g.n == 0 && timeline && timeline->arrive[c] >= never) timeline->arrive[c] = start;
+             int at = g.n++;
+             for (; at > 0 && g.arr[at - 1] > start; --at) g.att[at] = g.att[at - 1], g.arr[at] = g.arr[at - 1];
+             g.att[at] = static_cast<std::int8_t>(b), g.arr[at] = start;
+@@ -178,6 +195,8 @@
+                 if (claimed[c]) continue;
+                 const auto& C = p.cand[c];
+                 const int d = loc[u] < 0 ? p.body[units[u].lead].from_spawn[c] : p.steps[loc[u]][c];
++                // Not one the enemy reaches first (Sim::choose would find it theirs).
++                if (t[u] + static_cast<float>(std::max(0, d - units[u].range)) > C.enemy_at) continue;
+                 const float rounds = static_cast<float>(std::max(0, d - units[u].range)) + C.total / units[u].dps + capture;
+                 const float rate = (C.gems + p.per_gold * C.gold * units[u].bonus) / rounds;
+                 if (t[u] + rounds <= static_cast<float>(p.horizon) + capture && rate > best_rate) best = c, best_rate = rate, best_rounds = rounds;
+@@ -201,13 +220,22 @@
+ 
+ } // namespace
+ 
+-float simulate(const Problem& p, const Lists& plan, Lists* attended) {
++float simulate(const Problem& p, const Lists& plan, Lists* attended, Timeline* timeline) {
+     if (attended)
+         for (auto& l : *attended) l.fill(-1);
+-    Sim s{p, plan, attended};
++    if (timeline) timeline->arrive.fill(never), timeline->clear.fill(never);
++    Sim s{p, plan, attended, timeline};
+     return s.run();
+ }
+ 
++Lists greedy_seed(const Problem& p) {
++    std::array<Unit, max_bodies> units;
++    for (int b = 0; b < p.bodies; ++b) units[b] = Unit{p.body[b].dps, p.body[b].bonus, p.body[b].range, b};
++    Lists seed;
++    greedy(p, units, p.bodies, seed);
++    return seed;
++}
++
+ Lists solve(const Problem& p, std::uint64_t fuel_floor, float& value, int& iterations) {
+     Lists best;
+     for (auto& l : best) l.fill(-1);
+diff -ru v87-dfp-pure/src/draft/open_plan.h v87-dfp-race/src/draft/open_plan.h
+--- v87-dfp-pure/src/draft/open_plan.h	2026-11-08 21:56:39.097734934 +0000
++++ v87-dfp-race/src/draft/open_plan.h	2026-11-09 04:32:50.294915902 +0000
+@@ -10,7 +10,7 @@
+ 
+ namespace aph::open_plan {
+ 
+-inline constexpr int max_bodies = 6, max_steps = 6, max_cands = 24, max_members = 12;
++inline constexpr int max_bodies = 6, max_steps = 6, max_cands = 32, max_members = 12;
+ inline constexpr int step_bits = 8; // group + 1, 0 for none
+ 
+ struct Body {
+@@ -29,12 +29,16 @@
+     int respawn = 0, home = 0; // rounds from payout to return; walking steps to our spawn
+     int members = 0;
+     float total = 0, total_strength = 0;
++    // The enemy's start on it and its payout (the mirror of our own greedy opening, open_plan::enemy_timeline);
++    // 1e9 when they do not come within the horizon.
++    float enemy_at = 1e9f, enemy_paid = 1e9f;
+     std::array<float, max_members> hp{}, strength{}; // deadliest first; the rest merged into the last
+ };
+ 
+ struct Problem {
+     int bodies = 0, cands = 0, horizon = 0;
+     float per_gold = 0.3f;
++    float deny = 0, contest = 0.5f; // value of an enemy capture we forestall; our share of a clear they reach
+     std::array<Body, max_bodies> body;
+     std::array<Cand, max_cands> cand;
+     std::array<std::array<std::uint16_t, max_cands>, max_cands> steps{}; // centre to centre
+@@ -42,8 +46,15 @@
+ 
+ using Lists = std::array<std::array<std::int8_t, max_steps>, max_bodies>; // candidate indices, -1 ends
+ 
++// Per candidate, the first attendee's start and the clear's end (1e9 for none).
++struct Timeline {
++    std::array<float, max_cands> arrive, clear;
++};
++
+ // Value paid by the horizon; `attended`, when given, gets each body's groups it worked, in order (-1 ends).
+-float simulate(const Problem& p, const Lists& plan, Lists* attended = nullptr);
++float simulate(const Problem& p, const Lists& plan, Lists* attended = nullptr, Timeline* timeline = nullptr);
++// Each body's greedy list (best value per round from where it is): the farm-like opening.
++Lists greedy_seed(const Problem& p);
+ // The best plan found within `fuel_floor`; its value into `value`.
+ Lists solve(const Problem& p, std::uint64_t fuel_floor, float& value, int& iterations);
+ 
+diff -ru v87-dfp-pure/src/params.h v87-dfp-race/src/params.h
+--- v87-dfp-pure/src/params.h	2026-11-08 22:20:15.216380665 +0000
++++ v87-dfp-race/src/params.h	2026-11-09 04:33:04.844126437 +0000
+@@ -295,6 +295,12 @@
+ inline constexpr int enemy_near = 8;
+ // 0: the planned group is farm's choice outright. Above 0: it is farm's standing choice, its worth times this.
+ inline constexpr float weight = 1.5f;
++// Candidates: groups no farther from our spawn than mid_ratio x from theirs (the middle band of the live side
++// analysis, side >= -0.15). deny: an enemy middle capture we forestall, against our own (gems are zero-sum);
++// contest: our share of a clear the enemy reaches before its payout (even teams).
++inline constexpr float mid_ratio = 1.353f;
++inline constexpr float deny = 1.0f;
++inline constexpr float contest = 0.5f;
+ // Plan steps farm follows (at most open_plan::max_steps).
+ inline constexpr int steps = 6;
+ } // namespace open_plan

@@ -66,6 +66,11 @@ farm biases toward the planned group (x1.5).
   variants/oc-base25` resumes it.
 - **Carry routing, v87-dfp-carry.** The plan's gold is weighted by relative_efficiency at base stats. Gold by r400
   in the mirror: Vesper +35, HoR +11. dgate 50.51% (50.03-50.99) over 14,336 units, no better than pure; stopped.
+- **Enemy model on pure (v87-dfp-race, 2026-11-09).** The middle is a symmetric race in live data (first middle
+  captures r50/72/104 both sides). So the plan adds middle candidates, an enemy timeline taken from the mirror of our
+  own greedy opening, and raced and contested values. Two forms: deny 1 and deny 0. In the mirror the middle
+  concession is gone, but so is the own-half gain. dgate against pure: H0 for both (-0.25 ±0.53, -0.16 ±0.50). Against
+  oc-base25 at stop: 50.16 and 50.26. Pure stays the form.
 - **Verdict.** Forcing or following an enemy-free plan cedes the middle. As a bias it is a real, small gain
   against non-mirror drafts, in rule 0's 50-50.5 zone. Merge read: weak no (~330 lines of draft code; it cedes the
   middle, which live Fish and Mite contest harder). At most it merits a live pair against v87. The sim's +14-18% at
