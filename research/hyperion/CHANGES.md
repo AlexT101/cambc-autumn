@@ -3823,3 +3823,19 @@ Against `variants/oc-cl2-seat5m` (= 476), `merged/retreat-911000b` (10,240 games
 `variants/oc-esc-478` equals bots/ocean.
 
 Evidence: EXPERIMENTS "Escape planner fuel" and "Retreat audit"; research/retreat-2026-11-09/README.md.
+
+## 479: oc-base31: dfp-pure's draft farm plan and ft-k's feint tributes, on v87 (ocean, 2026-11-09)
+
+`variants/oc-base31` = `variants/oc-base25` (v87) plus two diffs and nothing else; not in bots/ocean. The live copy is
+`variants/live-oc-base31`, frozen from it.
+- dfp-pure (`variants/v87-dfp-pure`): the early farm plan solved in the draft (draft/open_plan.cc) and followed in
+  play (farm.cc); research/draftfarm-2026-11-08/README.md. v96 (dfp-pure alone) went 66.8% live, +14 against v87.
+- ft-k (`variants/v87-ft-k`, f4fecfd9a): Mite's turn-end feint tribute without the contact cancel (bot.cc,
+  bot_parts.h, bank.cc). It passed the new-body dgate's live bar at +1.01 ±0.28 (Fish +1.04, Mite +0.99).
+- ctx-g2 and sp-y2 (in 477's oc-base30) are left out: on the new bodies they read +0.10 and −0.04 (Mite −0.62).
+
+`firstturn.py --need` gives the same reading as dfp-pure alone: ft-k doesn't touch the draft, and the overshoot is the
+plan's anytime search. New-body dgate against oc-base25, 45 blocks: +1.28 ±0.75 pts (Fish +1.10, Mite +1.46);
+the parts on the same blocks were ft-k +0.77 and dfp-pure +0.74 (sum +1.51). Queued live at p79, paired against v87.
+
+Evidence: EXPERIMENTS "oc-base31: dfp-pure + ft-k on v87".
