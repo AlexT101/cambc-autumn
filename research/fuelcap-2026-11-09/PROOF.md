@@ -138,3 +138,31 @@ Segment census (n12p, a debug build at floor 11000, 128M segments): 34.6k D segm
   - the route's layer cap is fitted to the fuel left;
   - turns cut 10k earlier at the raised floors;
   - partial work that resumes on the next turn: guarded altars, map economy, the attack index.
+
+## The gate: REJECT
+
+**Results against oc-base25:**
+
+| gate | win% (CI) of n | SPRT |
+|---|---|---|
+| dgate v87-nof-final, real budget | -17.55 pts (±2.29) of 4,096 (896 units) | REJECT (low H0 at -3.18) |
+
+**The census games, read as head-to-head A/Bs against oc-base25** (1280 games, ±2.8):
+
+| build | win% |
+|---|---|
+| v87-nof2 (the deadline, 20 checkpoints) | 47.0 |
+| v87-nof3g without the grid | 47.8 |
+| v87-nof3g with the grid | 45.0 |
+| floors 16000 | 41.4 |
+| floors 21000 | 37.1 |
+| final | 35.2 |
+
+**Reading.**
+- The proof holds, but it costs the games.
+- Each cut abandons the rest of a decision, and the cuts fall on every turn that reaches the floor. That is ~2.5% of turns at 11000 and more at 21000. In base, OOF falls on 0.2% of turns and costs little.
+- The grid adds ~4k fuel a turn (mean 50.7k to 54.6k), and that fuel comes out of the fuel-gated searches.
+- A version that keeps the games needs three things:
+  - cuts only where a turn would otherwise run out, which means a floor near A + E;
+  - a cheaper grid;
+  - a cheap fallback action when the act is cut.
