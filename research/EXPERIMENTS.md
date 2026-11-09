@@ -14405,3 +14405,12 @@ The provable-cap line was ported onto oc32s-bsk (patches in [fuelcap-2026-11-09]
 - A cut drops the rest of the decision at once.
 - The fewer OOF, the bigger the loss: 8.4 OOF a game costs -1.2, and 2.3 costs -2.6.
 - What stays worth having is behaviour-neutral fuel savings: cheaper heavy parts with the same replays. A deadline is not.
+- **Where base's OOF turns spend their fuel.** The profile is the whole turn, on oc32-nof4-off, which plays as oc32s-bsk, over 8,019 OOF turns in 428 debug games. It is flat:
+  - Safety::struck takes 8.4% and is the top site in 29% of those turns;
+  - no other site reaches 3.1%: groups_near, terrain, the strike search, static_walls, the escape planner and the rest.
+- **The clusters nof5 showed are its own.** util.h:378, abilities.cc:634 and guard.cc:520 are unwinds after an overrun, not base hot paths.
+- **OOF is only weakly predictable from the previous own turn.** By the champion's previous own turn, the chance that a turn runs out is:
+  - 0.09% after a light turn (29% of all OOF);
+  - 0.36% after 75-90k (40% of OOF);
+  - 2.0% after 90k or more;
+  - 10.7% after an OOF turn.
