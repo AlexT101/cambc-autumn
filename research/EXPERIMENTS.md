@@ -12935,6 +12935,12 @@ read in play. Details in CHANGES 461. Checks:
   both on oc-base25: ZONE, +0.32 +-0.31; about +200 fuel a turn. v87-reup was already built with the old mask but not
   live, so it was rebuilt; v97 (v86-reup) keeps the old mask. So v87-reup, oc-base31, ft-k and the later entries all
   carry the same mask, and pairs between them are like with like. Pairs with v87 / v96 on Fish r2 cross masks.
+- **Live gate: v97 (v86-reup, old mask 51f3f74deb70).** 104 groups, done 09:28 UTC: Fish (r2) 63.7%, Mite (r3, new bot)
+  62.5%. On Fish, against v86 (the same source, uncoded): 68 of 256 games rerolled, and v86 had won 46 of those
+  against v97's 40: **-6 (5 / 11, z -1.50)**. Over all Fish games v97 is 163 against v86's 169; the pooled
+  v86/87/89/95 Fish rate is 65.1%. So v86's 66.0% on Fish looks somewhat lucky (by about the reroll noise), not
+  significantly. The Mite half (all fresh draws) pairs against v87-reup's r3 games, live as **v98** since 09:31
+  (stream mask 723dbbb94cc2).
 
 ## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
 
