@@ -444,6 +444,15 @@ tools/fastengine/profile_games.sh OUTDIR "botA botB map"                        
 - `turbo/` (turbo.c, verify.py), `floor/` (wasmtime cache probes), `dlengine/` (cambc's engine loaded as a library):
   earlier routes to speed, kept for reference.
 
+## Live priority mask: tools/livemask
+
+The live scheduler (`~/tmp-offload/handoff/sched/live_sched.py`) runs `stream_patch.py BOT_DIR` on each submission's copy:
+it adds `prio_stream.h` (a per-round xor of our priority payload) keyed from `livemask.key`. To rebuild a live version exactly
+(e.g. to re-run a live game with traces), run the same patch on a copy of its directory.
+- From v106 (2026-11-10) the key is the committed `livemask.key`. v87-v105 used an older key kept outside the repo, in
+  `~/.config/cambc-secret/comms.key`: pass `--key-file` with it to rebuild those.
+- `--zero` compiles the mask out, for identity checks. `mask_patch.py` / `prio_mask.h` are the older per-game mask (v93-v97).
+
 ## Rule probes: tools/probes
 
 Probe bots that settle the rules in `cambc-rules.yaml`: how to run them and which probe checks which rule are in
