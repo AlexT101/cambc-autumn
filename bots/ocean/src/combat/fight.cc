@@ -844,6 +844,17 @@ const ChampionBelief* prey(const World& world, Pathing& pathing, Safety& safety)
     Unwritten<std::pair<std::uint64_t, std::uint32_t>, 8> lost_fights;
     auto& lost = lost_fights.a;
     int n_lost = 0;
+    // The fight is played before the escape verdict, whose chase plan costs about twice as much, and a fight we
+    // would not take needs none. Such a fight joins `lost` only once its target is found not to escape, as it
+    // did when the verdict came first; until then it waits here with its target and result.
+    struct Unasked {
+        std::pair<std::uint64_t, std::uint32_t> fight;
+        const ChampionBelief* target;
+        Trade trade;
+    };
+    Unwritten<Unasked, 8> unasked_fights;
+    auto& unasked = unasked_fights.a;
+    int n_unasked = 0;
     for (int i = 0; i < n; ++i) {
         if (!fuel_ok(safety.fight_cost_estimate() + reserve)) {
             note_shortcut("prey-cut-short");
@@ -876,24 +887,38 @@ const ChampionBelief* prey(const World& world, Pathing& pathing, Safety& safety)
         const auto late = key == Safety::no_fight ? 0u : safety.late(target.pos, key);
         const std::pair<std::uint64_t, std::uint32_t> fight{std::uint64_t{key} << 32 | delayed, late};
         if (std::find(lost.begin(), lost.begin() + n_lost, fight) != lost.begin() + n_lost) continue;
-        // Its verdict before the fight's, which it spares when the target escapes; the fight still needs its fuel after.
-        if (escapes(world, pathing, target)) continue;
-        if (!fuel_ok(safety.fight_cost_estimate() + reserve)) {
-            note_shortcut("prey-cut-short");
-            break;
+        int u = 0;
+        while (u < n_unasked && unasked[u].fight != fight) ++u;
+        if (u < n_unasked && !escapes(world, pathing, *unasked[u].target)) {
+            lost[n_lost++] = fight;
+            unasked[u] = unasked[--n_unasked];
+            continue;
         }
-        const auto t = safety.chase_trade(key, delayed, cooldowns, cast_available, linked, late);
-        debug_block({
-            static int traced = 0;
-            if (delayed && traced < 64) {
-                ++traced;
-                std::printf("CHASE-AVAIL %d %u %u %u %u %d %d %d\n", world.round, my_handle(),
-                            static_cast<std::uint32_t>(target.handle), key, delayed, static_cast<int>(t.lost), t.turns_to_kill_us, t.turns_to_kill_them);
+        Trade t;
+        if (u < n_unasked) {
+            t = unasked[u].trade;
+        } else {
+            if (!fuel_ok(safety.fight_cost_estimate() + reserve)) {
+                note_shortcut("prey-cut-short");
+                break;
             }
-        });
-        if (!t.lost && !(linked && t.self_falls)) return &target;
-        if (!linked && comeback::accept_lost(world, t, target)) return &target;
-        lost[n_lost++] = fight;
+            t = safety.chase_trade(key, delayed, cooldowns, cast_available, linked, late);
+            debug_block({
+                static int traced = 0;
+                if (delayed && traced < 64) {
+                    ++traced;
+                    std::printf("CHASE-AVAIL %d %u %u %u %u %d %d %d\n", world.round, my_handle(),
+                                static_cast<std::uint32_t>(target.handle), key, delayed, static_cast<int>(t.lost), t.turns_to_kill_us, t.turns_to_kill_them);
+                }
+            });
+        }
+        if ((!t.lost && !(linked && t.self_falls)) || (!linked && comeback::accept_lost(world, t, target))) {
+            if (u < n_unasked) unasked[u] = unasked[--n_unasked];
+            if (escapes(world, pathing, target)) continue;
+            return &target;
+        }
+        if (u < n_unasked) unasked[u].target = &target;
+        else unasked[n_unasked++] = {fight, &target, t};
     }
     return nullptr;
 }

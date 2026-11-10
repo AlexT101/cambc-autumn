@@ -1,0 +1,391 @@
+#pragma once
+// Fuel census (debug builds only): per-component fuel of each turn, and the scopes open when a turn ran out.
+// Everything runs inside debug_block, so it costs ~10 fuel a scope. One "CEN" stdout line per turn that ran
+// out, started late or spent at least print_floor; tools/fuel/census/census.py reads them.
+#include <cambc.h>
+#include <algorithm>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+
+namespace aph::census {
+
+inline constexpr std::uint64_t print_floor = 70000;
+inline constexpr int max_labels = 160, max_depth = 48;
+// --trace: the turn's last fuel reads (checks, with what they needed) and scope entries, printed for
+// a turn that ran out as one "CTR" line, so the work after the last passed check can be read.
+inline constexpr int max_events = 4096, max_printed = 200;
+// Each team's stdout is capped at 1 MiB (rules fuel.stdout), shared by its champions' instances (up
+// to 6), each counting only its own: past these bytes printed by this instance, heavy finished turns
+// and then CTR lines stop, so long games keep their late out-of-fuel turns.
+inline constexpr std::uint64_t heavy_budget = 30000, trace_budget = 80000;
+
+struct Event {
+    char kind; // c: check passed, f: check failed, r: raw fuel read, e: scope entered, x: scope left
+    const char* file;
+    int line;
+    std::uint64_t fuel, needed;
+};
+
+struct Frame {
+    const char* label;
+    std::uint64_t start, child;
+    bool dup;    // the label is already open below: not added to inclusive again
+    bool closed; // credited at exhaustion
+};
+
+struct State {
+    bool on = false;
+    std::uint32_t round = 0;
+    std::uint64_t start = 0;
+    bool late = false, ran_out = false;
+    char stack[400]{};
+    Frame frames[max_depth];
+    int depth = 0;
+    const char* labels[max_labels]{};
+    std::uint64_t incl[max_labels]{}, self[max_labels]{};
+    int calls[max_labels]{};
+    int n = 0;
+    int type = -1, enemies = 0, allies = 0, awake = 0, near_enemies = 0;
+    std::uint64_t post = 0; // fuel spent after resuming, until the turn's end
+    std::uint64_t resume_fuel = 0;
+    Event events[max_events];
+    int n_events = 0;     // ever recorded this turn; the ring keeps the last max_events
+    int events_at_oof = -1;
+    // The last passed check, kept past the ring and the printed window; and, for a finished turn, the last
+    // passed before decide ended (decide_end) with the fuel left there.
+    Event last_check{};
+    int last_check_n = -1;
+    Event loop_last{}; // farm's loop check (file "farm_loop"), its last pass or fail
+    bool loop_seen = false;
+    int loop_n = 0;              // farm loop checks this turn
+    std::uint64_t loop_prev = 0; // fuel at the previous one
+    int dear_k[8]{};             // iterations dearer than 5k: their index and cost
+    std::uint64_t dear_cost[8]{};
+    int n_dear = 0;
+    Event decide_check{};
+    const char* first_fail = nullptr; // the turn's first failed fuel check (a gate that fired)
+    bool decided = false;
+    std::uint64_t decide_fuel = 0;
+};
+
+inline State& st() {
+    static State s;
+    return s;
+}
+
+inline std::uint64_t& printed() {
+    static std::uint64_t n = 0;
+    return n;
+}
+
+inline void count(int n) {
+    if (n > 0) printed() += static_cast<std::uint64_t>(n);
+}
+
+inline std::uint64_t now_fuel() { return static_cast<std::uint64_t>(cambc::detail::sdk_fuel_remaining()); }
+
+inline void check_resume();
+
+inline void note(char kind, const char* file, int line, std::uint64_t fuel, std::uint64_t needed) {
+    auto& s = st();
+    if (!s.on) return;
+    check_resume();
+    if (s.ran_out) return;
+    if (kind == 'c') s.last_check = {kind, file, line, fuel, needed}, s.last_check_n = s.n_events;
+    if (kind == 'f' && !s.first_fail && !s.decided) s.first_fail = file;
+    if (file[0] == 'f' && std::strcmp(file, "farm_loop") == 0) {
+        if (s.loop_n > 0 && s.loop_prev > fuel + 5000 && s.n_dear < 8) s.dear_k[s.n_dear] = s.loop_n - 1, s.dear_cost[s.n_dear++] = s.loop_prev - fuel;
+        ++s.loop_n, s.loop_prev = fuel;
+        s.loop_last = {kind, file, line, fuel, needed}, s.loop_seen = true;
+    }
+    s.events[s.n_events++ % max_events] = {kind, file, line, fuel, needed};
+}
+
+// decide returned: the work after its last passed check is measured from here (CLC lines).
+inline void decide_end() {
+    auto& s = st();
+    if (!s.on) return;
+    check_resume();
+    if (s.decided) return;
+    s.decided = true;
+    // Resumed: decide's work after the resume, for the CEN line's "dpost".
+    if (s.ran_out) {
+        s.decide_fuel = now_fuel();
+        return;
+    }
+    s.decide_check = s.last_check_n >= 0 ? s.last_check : Event{'-', "none", 0, s.start, 0};
+    s.decide_fuel = now_fuel();
+}
+
+inline std::uint64_t& clc_printed() {
+    static std::uint64_t n = 0;
+    return n;
+}
+
+inline int slot(const char* label) {
+    auto& s = st();
+    for (int i = 0; i < s.n; ++i)
+        if (s.labels[i] == label || std::strcmp(s.labels[i], label) == 0) return i;
+    if (s.n >= max_labels) return max_labels - 1;
+    s.labels[s.n] = label;
+    return s.n++;
+}
+
+inline void credit(Frame& f, std::uint64_t end) {
+    auto& s = st();
+    const std::uint64_t used = f.start > end ? f.start - end : 0;
+    const int i = slot(f.label);
+    if (!f.dup) s.incl[i] += used;
+    s.self[i] += used > f.child ? used - f.child : 0;
+    ++s.calls[i];
+    f.closed = true;
+    return;
+}
+
+// Credits every open frame as ending at 0 fuel, the first time we see the round has moved on.
+inline void check_resume() {
+    auto& s = st();
+    if (!s.on || s.ran_out || cambc::round_number() == s.round) return;
+    s.ran_out = true;
+    s.events_at_oof = s.n_events;
+    s.resume_fuel = now_fuel();
+    std::size_t len = 0;
+    for (int d = 0; d < s.depth && len + 40 < sizeof s.stack; ++d)
+        len += std::snprintf(s.stack + len, sizeof s.stack - len, "%s%s", d ? "/" : "", s.frames[d].label);
+    for (int d = s.depth - 1; d >= 0; --d) {
+        auto& f = s.frames[d];
+        credit(f, 0);
+        if (d > 0) s.frames[d - 1].child += f.start;
+    }
+}
+
+inline bool watched(const char* l) {
+    static const char* const w[] = {"strike_search", "retreat", "r.step", "wh.stand_lost", "farm.post", "g.farm", "place_ward", "bank_gems", "prey", "goal", "act", "ss.price", "ss.tree", "ss.read", "ss.prep", "g.siege", "g.guard_turn", "walk_on"};
+    for (const char* x : w) if (std::strcmp(x, l) == 0) return true;
+    return false;
+}
+inline void enter(const char* label) {
+    auto& s = st();
+    if (!s.on) return;
+    check_resume();
+    if (s.depth >= max_depth) {
+        ++s.depth;
+        return;
+    }
+    note('e', label, s.depth, now_fuel(), 0);
+    if (watched(label)) std::printf("ENT %u %s %llu\n", cambc::round_number(), label, (unsigned long long)now_fuel());
+    bool dup = false;
+    for (int d = 0; d < s.depth; ++d) dup |= s.frames[d].label == label || std::strcmp(s.frames[d].label, label) == 0;
+    s.frames[s.depth++] = {label, now_fuel(), 0, dup, s.ran_out};
+}
+
+inline void exit() {
+    auto& s = st();
+    if (!s.on || s.depth == 0) return;
+    check_resume();
+    if (s.depth > max_depth) {
+        --s.depth;
+        return;
+    }
+    auto& f = s.frames[--s.depth];
+    note('x', f.label, s.depth, now_fuel(), 0);
+    if (watched(f.label)) std::printf("EXT %u %s %llu %d\n", cambc::round_number(), f.label, (unsigned long long)now_fuel(), (int)s.ran_out);
+    if (f.closed) return; // credited at exhaustion, or opened after resuming
+    const auto end = now_fuel();
+    credit(f, end);
+    if (s.depth > 0) s.frames[s.depth - 1].child += f.start > end ? f.start - end : 0;
+}
+
+inline void begin(bool late) {
+    auto& s = st();
+    s = State{};
+    s.on = true;
+    s.round = cambc::round_number();
+    s.start = now_fuel();
+    s.late = late;
+}
+
+// Budget histograms (budget.py): every turn's inclusive fuel per label, in 1k buckets (100: 100k or more),
+// printed as one CHIST line a label every hist_period rounds (deltas since the last print), so a run gives
+// each component's distribution over all turns, not only heavy ones. CHIST label n sum max bucket:count... A game's last < hist_period rounds are
+// not printed. `@turn` is the whole turn (the census's own `turn` scope is the play_turn meter); an out-of-fuel turn's components count to its exhaustion.
+inline constexpr bool hist_on = true;
+inline constexpr std::uint32_t hist_period = 100;
+inline constexpr int hist_labels = 64, hist_buckets = 101;
+struct Hist {
+    const char* label = nullptr;
+    std::uint32_t n = 0;
+    std::uint64_t max = 0, sum = 0;
+    std::uint32_t b[hist_buckets]{};
+};
+struct Hists {
+    Hist h[hist_labels];
+    int n = 0;
+    std::uint32_t turns = 0, oof = 0, last_print = 0;
+};
+inline Hists& hists() {
+    static Hists h;
+    return h;
+}
+// The labels histogrammed (stdout is 1 MiB a team): the turn's phases and decide's branches.
+inline constexpr const char* hist_wanted[] = {
+    "@turn", "world", "update", "comms receive", "map conditioning", "decide", "channels", "want_home", "wh.stand_lost",
+    "local_support", "support_work", "strike_search", "leave", "carry_bag", "chase", "goal", "farm_tail", "farm.loop",
+    "farm.post", "guard_steps", "guard_work", "act_end", "strike_after", "turn_order", "turn end", "comms send", "queue",
+    "s.new_fight", "s.stand", "route", "field", "track", "observe"};
+inline void hist_add(const char* label, std::uint64_t v) {
+    bool wanted = label[0] == '@';
+    for (const char* w : hist_wanted) wanted |= std::strcmp(w, label) == 0;
+    if (!wanted) return;
+    auto& H = hists();
+    int i = 0;
+    while (i < H.n && H.h[i].label != label && std::strcmp(H.h[i].label, label) != 0) ++i;
+    if (i == H.n) {
+        if (H.n >= hist_labels) return;
+        H.h[H.n++].label = label;
+    }
+    auto& h = H.h[i];
+    ++h.n, h.sum += v, h.max = std::max(h.max, v), ++h.b[std::min<std::uint64_t>(v / 1000, hist_buckets - 1)];
+}
+inline void hist_print(std::uint32_t round) {
+    auto& H = hists();
+    if (round < H.last_print + hist_period) return;
+    H.last_print = round - round % hist_period;
+    count(std::printf("CHT %u %u %u %u\n", round, static_cast<unsigned>(static_cast<cambc::handle_champion_t>(cambc::self())), H.turns, H.oof));
+    for (int i = 0; i < H.n; ++i) {
+        auto& h = H.h[i];
+        if (!h.n) continue;
+        count(std::printf("CHIST %s %u %llu %llu", h.label, h.n, static_cast<unsigned long long>(h.sum), static_cast<unsigned long long>(h.max)));
+        for (int k = 0; k < hist_buckets; ++k)
+            if (h.b[k]) count(std::printf(" %d:%u", k, h.b[k]));
+        count(std::printf("\n"));
+        h.n = 0, h.max = 0, h.sum = 0;
+        std::memset(h.b, 0, sizeof h.b);
+    }
+    H.turns = H.oof = 0;
+}
+
+inline void end() {
+    auto& s = st();
+    if (!s.on) return;
+    check_resume();
+    const std::uint64_t spent = s.ran_out ? s.start : s.start - now_fuel();
+    if (hist_on && !s.late && s.round > 1) {
+        auto& H = hists();
+        ++H.turns, H.oof += s.ran_out;
+        hist_add("@turn", spent);
+        // Gate slack: on a turn a gate cut that still finished, the fuel decide left unspent (the comms
+        // send, ~1.5k, and the queue follow). By the first failing check's file.
+        if (s.first_fail && !s.ran_out && s.decided) {
+            const char* f = s.first_fail;
+            for (const char* q = f; *q; ++q)
+                if (*q == '/') f = q + 1;
+            const char* lab = std::strncmp(f, "farm", 4) == 0 ? "@slack.farm" : std::strncmp(f, "guard", 5) == 0 ? "@slack.guard"
+                            : std::strncmp(f, "fight", 5) == 0 ? "@slack.fight" : std::strncmp(f, "turn_order", 10) == 0 ? "@slack.order"
+                            : std::strncmp(f, "pathing", 7) == 0 ? "@slack.pathing" : "@slack.other";
+            hist_add("@slack", s.decide_fuel);
+            hist_add(lab, s.decide_fuel);
+        }
+        for (int i = 0; i < s.n; ++i)
+            if (s.incl[i]) hist_add(s.labels[i], s.incl[i]);
+        hist_print(s.round);
+    }
+    if (s.ran_out) s.post = s.resume_fuel > now_fuel() ? s.resume_fuel - now_fuel() : 0;
+    s.on = false;
+    // A finished turn's decide: its last passed check, the fuel there, what it needed and what decide spent
+    // after it (only the dear ones, so long games keep them).
+    if (!s.ran_out && s.decided && s.decide_check.fuel > s.decide_fuel + 8000 && clc_printed() < 120000) {
+        const char* f = s.decide_check.file;
+        for (const char* q = f; *q; ++q)
+            if (*q == '/') f = q + 1;
+        const int n = std::printf("CLC %u %u %s:%d %llu %llu %llu\n", s.round,
+                    static_cast<unsigned>(static_cast<cambc::handle_champion_t>(cambc::self())), f, s.decide_check.line,
+                    static_cast<unsigned long long>(s.decide_check.fuel), static_cast<unsigned long long>(s.decide_check.needed),
+                    static_cast<unsigned long long>(s.decide_check.fuel - s.decide_fuel));
+        if (n > 0) clc_printed() += n;
+    }
+    // A finished turn whose farm loop ran: the loop's last check (c passed: it ran out of groups; f: cut),
+    // the fuel there, what it needed, and what decide spent after it.
+    if (!s.ran_out && s.decided && s.loop_seen && s.loop_last.fuel > s.decide_fuel && clc_printed() < 200000) {
+        int n = std::printf("CLF %u %c %llu %llu %llu %d", s.round, s.loop_last.kind,
+                    static_cast<unsigned long long>(s.loop_last.fuel), static_cast<unsigned long long>(s.loop_last.needed),
+                    static_cast<unsigned long long>(s.loop_last.fuel - s.decide_fuel), s.loop_n);
+        for (int i = 0; i < s.n_dear; ++i) n += std::printf(" %d:%llu", s.dear_k[i], static_cast<unsigned long long>(s.dear_cost[i]));
+        n += std::printf("\n");
+        if (n > 0) clc_printed() += n;
+    }
+    if (!s.ran_out && !s.late && (spent < print_floor || printed() >= heavy_budget)) return;
+    count(std::printf("CEN %u %u t%d late%d oof%d start %llu spent %llu post %llu dpost %llu ne %d nn %d na %d aw %d stack %s |",
+                s.round, static_cast<unsigned>(static_cast<cambc::handle_champion_t>(cambc::self())), s.type, s.late,
+                s.ran_out, static_cast<unsigned long long>(s.start), static_cast<unsigned long long>(spent),
+                static_cast<unsigned long long>(s.post),
+                static_cast<unsigned long long>(s.ran_out && s.decided && s.resume_fuel > s.decide_fuel ? s.resume_fuel - s.decide_fuel : 0),
+                s.enemies, s.near_enemies, s.allies, s.awake,
+                s.ran_out ? s.stack : "-"));
+    for (int i = 0; i < s.n; ++i)
+        if (s.incl[i] >= 1000)
+            count(std::printf(" %s=%llu:%llu:%d", s.labels[i], static_cast<unsigned long long>(s.incl[i]),
+                              static_cast<unsigned long long>(s.self[i]), s.calls[i]));
+    count(std::printf("\n"));
+    if (s.events_at_oof > 0 && printed() < trace_budget) {
+        count(std::printf("CTR %u %u", s.round, static_cast<unsigned>(static_cast<cambc::handle_champion_t>(cambc::self()))));
+        // From a few events before the last passed check, at most max_printed.
+        const int oldest = std::max(0, s.events_at_oof - max_events);
+        int from = s.events_at_oof;
+        while (from > oldest && s.events[(from - 1) % max_events].kind != 'c') --from;
+        from = std::max({oldest, from - 8, s.events_at_oof - max_printed});
+        // Before the window: the last passed check if the ring lost it, then the last pass and last fail of each site
+        // (at most 12) in order.
+        const auto put = [](const Event& e) {
+            const char* f = e.file;
+            for (const char* q = f; *q; ++q)
+                if (*q == '/') f = q + 1;
+            count(std::printf(" %c:%s:%d:%llu:%llu", e.kind, f, e.line, static_cast<unsigned long long>(e.fuel),
+                              static_cast<unsigned long long>(e.needed)));
+        };
+        if (s.last_check_n >= 0 && s.last_check_n < oldest) put(s.last_check);
+        int picked[12], np = 0;
+        for (int i = from - 1; i >= oldest && np < 12; --i) {
+            const auto& e = s.events[i % max_events];
+            if (e.kind != 'c' && e.kind != 'f') continue;
+            bool dup = false;
+            for (int j = 0; j < np; ++j) {
+                const auto& o = s.events[picked[j] % max_events];
+                dup |= o.line == e.line && o.file == e.file && o.kind == e.kind;
+            }
+            if (!dup) picked[np++] = i;
+        }
+        for (int j = np - 1; j >= 0; --j) put(s.events[picked[j] % max_events]);
+        if (s.loop_seen) count(std::printf(" p:loop:%d:%llu:0", s.loop_n, static_cast<unsigned long long>(s.loop_last.fuel)));
+        for (int i = 0; i < s.n_dear; ++i) count(std::printf(" p:dear:%d:%llu:0", s.dear_k[i], static_cast<unsigned long long>(s.dear_cost[i])));
+        for (int i = from; i < s.events_at_oof; ++i) {
+            const auto& e = s.events[i % max_events];
+            if (e.kind == 'x') continue;
+            const char* f = e.file;
+            if (e.kind != 'e')
+                for (const char* q = f; *q; ++q)
+                    if (*q == '/') f = q + 1;
+            count(std::printf(" %c:%s:%d:%llu:%llu", e.kind, f, e.line, static_cast<unsigned long long>(e.fuel),
+                              static_cast<unsigned long long>(e.needed)));
+        }
+        count(std::printf("\n"));
+    }
+}
+
+struct Scope {
+    explicit Scope(const char* label) {
+        debug_block({ enter(label); });
+    }
+    ~Scope() {
+        debug_block({ exit(); });
+    }
+    Scope(const Scope&) = delete;
+    Scope& operator=(const Scope&) = delete;
+};
+
+} // namespace aph::census
+
+#define CEN_CAT2(a, b) a##b
+#define CEN_CAT(a, b) CEN_CAT2(a, b)
+#define CENSUS(label) ::aph::census::Scope CEN_CAT(census_scope_, __LINE__){label}

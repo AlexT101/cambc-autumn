@@ -16615,6 +16615,33 @@ reads, generic rank caches and many tiny memo tables repeated earlier failures a
 Results, exactness exceptions and lessons: [fuel fifth pass](fuel-2026-11-10-fifth/README.md).
 
 
+## Ocean fuel sixth pass (2026-11-10, CHANGES 505)
+
+On Ocean 504, `prey()` plays a chase's fight before its escape verdict and asks the verdict only of a fight
+it would take, keeping the order of `lost` and of the returns. Exact at 100M: 95/96 maps-id replays
+byte-identical, and the one difference is the next-turn preparation coupling, which vanishes in noprep
+copies.
+
+- Screen, 1,024 paired real-budget games: shortcuts -9.39% (CI -12.03..-6.49), OOF -3.02% (CI -10.69..+4.62).
+- Fresh dev suite, 4,096 paired games: shortcuts **1,270,245 → 1,140,969 (-10.18%, CI -11.68..-8.78)**,
+  OOF 26,022 → 25,545 (-1.83%, CI -5.30..+1.71, not significant), mean fuel -0.20%.
+- The 10% OOF target was not met.
+
+Calibration (base bot, screen suite, paired):
+- A 102k budget gives OOF -14.2% (CI -21.4..-7.5).
+- A 105k budget gives OOF -24.8% (CI -30.4..-18.7).
+
+So -10% OOF needs about 1.5-2k saved on every heavy turn.
+
+Findings:
+- The census's `dpost` is the stale tail after a resume (median 3.0k, p99 50k), not the miss.
+- Late turns start with a median 97.6k and run out 23% of the time, because heavy situations persist.
+- Only about 4% of OOF turns are doomed when a stage starts.
+- The fuelprof "oof" class is round-1 turns, and its function attribution is unreliable.
+
+Not pursued: stale-tail checks (estimated 3-5% of OOFs) and a strike-search cap (a gameplay change).
+Details: [fuel sixth pass](fuel-2026-11-10-sixth/README.md).
+
 ### Live v110 wakecold versus v107: linked-death rescue, small unresolved score change (2026-11-10)
 
 Completed all104planned groups at19:52:02, unchanged Fishr2/Miter5. Exact intended comparison is archived submitted107 plus only wakecold farm guard: same mask/SDK, no Skirmish/draft10 overlay. All512paired map/side cells match ordered drafts, picks, seed, engine, map and pin context. Fish167vs165/256 (flips +5/−3), Mite169vs169/256 (+2/−2); descriptive map-cluster deltas +0.78±2.17pp and0.00±1.54pp.421/512rawreplays are identical (Fish213,Mite208). This reused deterministic live suite does not establish a strength gain or justify a new promotion; preserve the already-approved local judgment-zone merge. Comparisons to105 retain its mask confound;106/108/109 have different features and are diagnostic only.

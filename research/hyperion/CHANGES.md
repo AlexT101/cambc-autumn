@@ -4420,3 +4420,19 @@ Evidence (own drafts, release, fast runner; against 503 = `variants/ocean-7d8ee4
   gate because it looks good enough").
 
 Frozen as `variants/oc-emb5-504` (= bots/ocean).
+
+## 505: Ask a chase's escape verdict only of a fight it would take (ocean, 2026-11-10)
+
+`prey()` plays the fight before the escape verdict, whose chase plan costs about twice as much, and skips
+the verdict for fights it declines. Declined fights wait until their target is found not to escape, so
+`lost` and the returns keep their order. Fuel only: exact play at 100M.
+
+- **Fresh dev bench:** 4,096 paired real-budget games, shortcuts **1,270,245 → 1,140,969 (-10.18%,
+  CI -11.68..-8.78)**; exhausted turns 26,022 → 25,545 (-1.83%, CI -5.30..+1.71, not significant);
+  mean fuel -0.20%. Screen (1,024 games): shortcuts -9.39%, OOF -3.02%.
+- **100M bench:** 95/96 maps-id replays byte-identical to 504. The exception is the next-turn preparation
+  coupling and vanishes in noprep diagnostic copies.
+
+Results and lessons: [fuel 505](../fuel-2026-11-10-sixth/README.md).
+
+Frozen as `variants/oc-fuel-505` (= bots/ocean).
