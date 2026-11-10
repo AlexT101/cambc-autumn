@@ -15440,3 +15440,38 @@ Results against ocean-16d6f78:
 | fgate --mite-body Mt3k, oi-mk1 (stopped at block 5) | fresh +0.31 ±1.66 pts of 640 units (ladder +1.29, Mite −0.23) | undecided (LLR high −0.11); stopped because the mechanism had no effect |
 
 Verdict: not merged. The flag predicts our deaths well, but the window is small and this response doesn't move them.
+
+## Shop against Mite's and Fish's builds (ocean-16d6f78, 2026-11-10): sm-greed ZONE, sm-nopow null
+
+Question (mite-re): does Mite's kill edge come from its item build, and is our shop leaving kills on the table? Data:
+1,533 real Mite-vs-us games (11-09 12:00+) and 544 Fish-vs-us games (11-08+), with live ocean on the other side;
+big-arm archive 11-08/09 for emblem sequences. Tools: [shopmite-tools/](ideas-2026-11-09/shopmite-tools/).
+
+- **Mite's higher r600 stats are gold, not allocation.** Gold earned by r600, Mite vs us: Marcella 1259 vs 762 (Fish
+  1340 vs 736), Heart of Ruin 716 vs 402. Stat shares per champion are close (Marcella Focus .61 vs .57, Health .35 vs
+  .35). At equal gold spent, stat-shards per shard bought match, except for rich champions: Vesper at 2,400+ spent
+  reads 1.13 for us, 1.20 for Mite and 1.23 for Fish.
+- **Where Marcella's gold comes from:** capture gold to r600 is 651 for Mite and 736 for Fish, against our 377 / 346.
+  Gems shared are similar (191 vs 164) and tribute gold is equal. Ours goes to Tavi and Vendetta instead (Tavi 817 vs
+  Mite's 182). This is capture-share routing, not the shop.
+- **The one shop difference: Power.** Ours buys Power-S on Vesper (1.35-1.41 a game) and Vendetta (0.88-0.93). Fish and
+  Mite buy none; they buy Bruiser instead (Fish Bruiser-S, Mite Bruiser-H), and Mite's Vesper adds Greed-S (0.36-0.45
+  completed). A trace shows why: Vesper's fight term is weighted by fight_share, 0.008-0.03 in local games, so Power-S
+  beats Bruiser-S on clear speed by ~3%. Locally Vesper takes almost no champion damage (35-3.6k against 6-12k from
+  camps); live it is ~50% (archive: ~5k champion, ~4.8k camp).
+- **sm-nopow** (Bruiser in place of Power in best_stat and learned arms; Prism untouched): no Power bought. Vesper at
+  r600 goes S309/H2804 → S295/H2988. Kills and deaths are unchanged (Vesper D 0.46 → 0.47). fgate fresh −0.09 ±0.50
+  after 34 blocks: stopped as null. The bodies rarely fight Vesper, so its Health can't pay here.
+- **sm-greed** (Vesper only, Strength main: Greed when its saving per gold, held from when our gold rate completes it
+  until the gold horizon, beats the best stat emblem's): 0.21 Greed a game. Vesper r600 S304/H2869 → S309/H2954.
+  Team kills 9.98 → 10.01, deaths 6.12 → 6.02 (256 ladder games vs Mt3q).
+
+**Results against ocean-16d6f78** (fgate, Flp4/Mt3q):
+
+| gate | win% (CI) of n | SPRT |
+|---|---|---|
+| fgate sm-greed | fresh +0.21 (±0.25), 4,608 units; ladder +0.29 (±0.21); Fish +0.18, Mite +0.23 | NARROWED (ZONE crossed) |
+| fgate sm-nopow | fresh −0.09 (±0.50), 4,352 units | stopped (null) |
+
+Caveat: the bodies shop like ocean and seldom fight Vesper, so neither gate prices Health on Vesper as live play would.
+Patch: [sm-greed.patch](ideas-2026-11-09/shopmite-tools/sm-greed.patch).
