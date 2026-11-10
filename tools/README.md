@@ -685,3 +685,6 @@ Cancelled component-study launchers: `reserve-tools/run_gate.py`, `skirmish-tool
 
 
 - `research/ideas-2026-11-10/ward504/run_gate.py`: sealed504 full200k camp/campall gates using standard fgate, exact block validation, disabled width stop and three-way decisions; `--check` verifies protocol/source/map/tool seals. Adjacent test_stops.py exercises the actual fgate width condition.
+
+
+- `research/ideas-2026-11-10/draft504/run.py`: one sealed, explicitly authorized504 draft refit, with `--check`, source/prestart-base guards, production-fuel training, F92 export/parity/first-turn validation and audited200k-first evaluation. `fit.py` and `reserve.py` back worker counts with shared CPU slots; `audit.py` checks paired cells; `test_start.py` checks stale-base holds. Queue admission and final review barriers remain coordinator-owned. [Protocol](../research/ideas-2026-11-10/draft504/README.md).
