@@ -1,5 +1,7 @@
 # Skirmish fifth-emblem policy on full Ocean498
 
+**Cancelled by explicit user instruction,2026-11-10:** User paused/cancelled the already-shipped Skirmish498 component gate. Ops owns stopping its process and preserving partial evidence as policy-stopped, without strength inference. Existing original/teammate completed evidence stays unchanged. No replacement or rebased component test.
+
 The teammate's policy has a small positive but unconfirmed lead. It can be tested on full498 without carrying any other old behavior: the original reference's emblem table is byte-identical to full498's. This lane did not merge or promote the port. The same policy was subsequently incorporated by separately user-authorized teammate work as CHANGES499; the frozen498 transfer test remains unchanged and now serves as a component check. CHANGES500 additionally carries wakecold, so this498 test does not claim to measure that combined source.
 
 The original `oc-emb4-f4-skirmish` versus `ocean-b0eeff1` changes only `economy/emblem_table.h`: place Skirmish in the champion's usual stat at ordinal4 (the fifth new emblem), for the37 rows without Skirmish by then. Two other rows already have it. Later duplicate passive-family choices fall back to existing logic. There is no new fitting or ordinal selection in this follow-up.
@@ -31,3 +33,5 @@ A read-only byte-hash audit qualifies map novelty. The30,720 map occurrences con
 Artifacts: `teammate-source-equivalence.json`, `teammate-confirmation-summary.json`, `audit_teammate_novelty.py` and `teammate-novelty.json` under the follow-up artifact directory. The queued normal-fuel Flp4/Mt3q gate remains the next distinct evidence; no merge or live promotion follows from this mirror result. Teammate source files and its ongoing write-up remain untouched.
 
 The already-admitted component gate started16:54:48 as actualfgate4131318 in main86. Independent descendant checks confirm native release runner, fixed Flp4/Mt3q, frozen full498 reference, default100k and seed311; candidate/base seals match. It remains a frozen498 component test, separate from the approved499/500/501 combined current source. No duplicate mirror campaign or new promotion claim.
+
+Historical launcher execution is disabled; --check retains read-only source/protocol inspection. Its read-only watcher was stopped after exact identity verification. User/Claude own draft10 port/tests; no new local draft10 queue or live null/fc13 action from this lane.

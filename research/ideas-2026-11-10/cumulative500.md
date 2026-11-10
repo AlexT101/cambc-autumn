@@ -1,5 +1,7 @@
 # Approved Ocean500 versus494 cumulative validation
 
+**Cancelled by explicit user instruction,2026-11-10:** User explicitly removed the pending cumulative500-v494 gate. It never started; no source/cache replacement or501-versus-itself test is meaningful or authorized. Existing source/protocol audit is historical evidence only.
+
 Requested 2026-11-10 after component testing left the combined approved source unmeasured. This gate measures the whole bundle, including fuel495–497, camp shield498, Skirmish499 and wakecold500. It cannot attribute a gain or loss to an individual feature. No automatic live promotion.
 
 Frozen `variants/oc-wakecold-500` is byte-identical across every source file to approved commit `fd8892b65`'s ocean tree. Its seal is `4a3bacd66ae3b7a6a88118f935b54600644681706f7bf0cf506d4d2b23c984fc`; reference `variants/oc-wdash-494` is `06b0e8949e8cb6a336badb9bb41ca2c1281846c779f0db3c0e6991d740f0ebca`. Working Ocean's provisional501 edits are excluded. Both sources have own drafts. The500 release build/mirror already passed in the approved merge validation; no duplicate smoke games are needed for this unchanged source.
@@ -13,3 +15,5 @@ At16:04 UTC,2028 complete494 reference summaries (507 contiguous blocks,519168 g
 Admission requested after the already-ready wfollow pair and other behavior/validation gates, before draft continuation/training. Ops owns the atomic queue edit. Artifacts, source lists, coverage audit, queue command and read-only watcher live in `~/tmp-offload/cumulative500-2026-11-10/`. Outcomes remain owned by `/root/version_check` alongside ward/reserve/Skirmish.
 
 Admitted16:06:45 UTC by ops under `round.lock`; independent reread verified one exact command after both wfollow conditions and before draft10 continuation. No active job changed. Job ID `cumulative-ocean500-v494-100000`; standard state/log directory under `~/tmp-offload/localq/state/`. Read-only watcher PID2858106.
+
+Historical launcher execution is disabled; --check retains read-only source/protocol inspection. Its read-only watcher was stopped after exact identity verification. User/Claude own draft10 port/tests; no new local draft10 queue or live null/fc13 action from this lane.

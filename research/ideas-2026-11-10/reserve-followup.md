@@ -1,5 +1,7 @@
 # Farm-reserve lead: read-only coverage audit, 2026-11-10
 
+**Cancelled by explicit user instruction,2026-11-10:** User paused/cancelled this programme. Rs8 retains its natural307-block NARROWED result; q1 retains its completed result. The running rs8q1 bundle is policy-stopped by ops, with partial evidence preserved and no interaction inference. No further component strength study, replacement gate, or source rebase is requested.
+
 The v106 Fish lead is worth retaining as an unresolved live lead. It is not already incorporated in Ocean498, and the precise reserve-only change on current498 has not been tested by the records inspected. Existing older tests do cover a closely related bundle extensively, so repeating that old sweep would duplicate work.
 
 ## What v106 actually contains
@@ -75,3 +77,5 @@ Together with the q1-only +0.025±0.249 control, this does not establish either 
 Terminal read-only audit passed2456 summaries/628736 candidate/reference games with exact map/side cells, correct release/engine/body/source/fuel metadata, zero run errors/early losses/handoff failures. Own capped drafts0; opponent3427 per arm retained. Shared reference games are not independent additional evidence. Raw result `results/rs8-100000.json`, audit `rs8-terminal-audit.json`, under `~/tmp-offload/reserve-coverage-2026-11-10/`.
 
 Bundle actualfgate3916322 is verified native/main86, Flp4/Mt3q/full498/default100k; both source seals independently rechecked. Its result and final common-cell factorial contrasts remain pending.
+
+Historical launcher execution is disabled; --check retains read-only source/protocol inspection. Its read-only watcher was stopped after exact identity verification. User/Claude own draft10 port/tests; no new local draft10 queue or live null/fc13 action from this lane.

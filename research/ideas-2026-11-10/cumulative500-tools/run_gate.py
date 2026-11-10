@@ -1,4 +1,4 @@
-"""Check frozen approved500/494 sources, then run the normal-fuel cumulative gate."""
+"""Cancelled historical protocol; --check inspects sources without playing."""
 import argparse
 import hashlib
 import json
@@ -28,7 +28,4 @@ if a.check:
     print(json.dumps({'source_seals': expected, 'argv': cmd, 'fuel': 'default100k',
                       'scope': 'whole approved500 bundle versus494; no individual attribution'}))
     sys.exit(0)
-env = dict(os.environ, CAMBC_BIN=str(R / 'tools/fastengine/runner/fastrunner'),
-           FASTRUNNER_MODE='native')
-os.chdir(R)
-os.execve(sys.executable, cmd, env)
+sys.exit('Cancelled by explicit user instruction; no component-strength games or replacement run.')
