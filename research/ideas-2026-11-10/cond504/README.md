@@ -14,7 +14,7 @@ The user asked to continue local testing after the earlier inconclusive conditio
 
 ## Prospective sample and inference
 
-Both candidate and base play release/native engine5.0.1 at200k, both sides, own drafts, against fixed local Flp4/Mt3q bodies. One shared new1,024-map ladder-v2 pool starts with seeds2414000–03; reserved2414004–07 are used only if exact-content duplicate replacement is needed, before any outcomes. Duplicates are excluded within the pool and against the ladder, old standard gate pool, old conditional-arm pool and draft10 training pool; this explicit scope is not universal historical novelty. Noise blocks1004–2003 are disjoint from the old conditional runs38–404 and tuning's1001–1003. Every block revisits one128-map slice with a new opponent parameter variation:1,000 blocks do **not** mean128,000 distinct maps.
+Both candidate and base play release/native engine5.0.1 at200k, both sides, own drafts, against fixed local Flp4/Mt3qro bodies. One shared new1,024-map ladder-v2 pool starts with seeds2414000–03; reserved2414004–07 are used only if exact-content duplicate replacement is needed, before any outcomes. Duplicates are excluded within the pool and against the ladder, old standard gate pool, old conditional-arm pool and draft10 training pool; this explicit scope is not universal historical novelty. Noise blocks1004–2003 are disjoint from the old conditional runs38–404 and tuning's1001–1003. Every block revisits one128-map slice with a new opponent parameter variation:1,000 blocks do **not** mean128,000 distinct maps.
 
 The reference's matching506 cells are shared between these two tests. Reusing cached cells never adds them twice to a test's units. Existing unrelated506 reference cells are reusable only with the exact same map/side/body/source/fuel/release identity. The128 ladder maps are diagnostic; fresh maps decide.
 
@@ -36,6 +36,14 @@ Release builds and32 release smoke cells (the16 matching baseline cells are cach
 
 `run.py ARM --check` verifies input/source/tool seals and reports preflight without heavy work. Queue jobs use `run.py chanM` and `run.py bagfF`. `smoke.py` owns scheduled mechanism checks, `gate.py` owns complete paired-cell audits and targeted accumulation, and `stats.py` / `test_stats.py` define and check the decision boundaries. Artifacts live in `~/tmp-offload/cond504`; review tokens remain exclusively coordinator-owned.
 
+
+## Mite body amendment before either job starts
+
+The coordinator approved replacing Mt3q with **Mt3qro** in both jobs' Mite half and release/debug smoke fixtures. Mt3q deliberately maps Ocean's order onto Mite-like values, while Mt3qro models the observed quiet-before-ordinary-contact ordering. This distinction directly affects the ending-channel protection question. Flp4, both candidate sources and their classifier, all seeds/samples/stopping rules and the Ocean mirror are unchanged; no additional body-comparison experiment is queued.
+
+The [existing order study](../../EXPERIMENTS.md#predicted-enemy-turn-order-for-mite-opp-order-ocean-opp-2026-11-10-the-stakes-are-large-the-arm-is-not-a-gain-h0-at-the-505-bar-nothing-merged) measured the behavior in historical live games. A bounded read of two already-decoded pinned-r5 `00ambush` games confirms the contact/quiet/channel priority families and 21262 kill values survived into r5. It does not establish whole-formula accuracy or equivalence to today's changed, unpinned Mite. Mt3qro remains an approximation: kill choices come from the Ocean-derived body, contact write timing is simplified, and co-committer offsets are absent. The unchanged classifier does not explicitly recognize 21262 as a Mite token, so runtime posterior and activation checks remain required.
+
+The new patch source is sealed; generated bodies use distinct `Mt3qro` directory/result names. Smoke cache names now include the exact opponent body. Previous Mt3q evidence remains separate. No live opponent was repinned.
 
 ## Mandatory direct Ocean mirror (user amendment)
 

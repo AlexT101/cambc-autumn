@@ -18,7 +18,7 @@
   "drafts": "own",
   "opponents": {
     "F": "Flp4",
-    "M": "Mt3q"
+    "M": "Mt3qro"
   },
   "maps": {
     "mix": "ladder-v2",
@@ -114,5 +114,13 @@
     "inference": "absolute direct H2H winrate; mean both sides per unique map, normal95CI and conservative empirical-Bernstein95CI reported separately",
     "extension": "explicit future review only",
     "debug_mechanism": "8 separate debug games versus Ocean; record posterior and false activation, never require target activation against Ocean"
+  },
+  "body_amendment": {
+    "previous_mite": "Mt3q",
+    "mite": "Mt3qro",
+    "scope": "Both unstarted conditional jobs: Mite main half and release/debug smoke fixtures only. Flp4, candidates, source base, seeds, sample sizes, stops and Ocean mirrors unchanged.",
+    "reason": "Mt3q preserves Ocean contact ordering; Mt3qro models observed Mite contact-late/quiet-first ordering, directly relevant to ending-channel protection.",
+    "evidence": "EXPERIMENTS opponent-order study; two existing pinned-r5 traces confirm priority value families, not full formula accuracy or latest unpinned Mite equivalence.",
+    "limits": "An approximate historical behavior model. Kill decisions still derive from the Ocean-based body; contact write timing is simplified and co-committer priority offsets are not reproduced. No new pin, body-comparison experiment, classifier edit or forced posterior."
   }
 }

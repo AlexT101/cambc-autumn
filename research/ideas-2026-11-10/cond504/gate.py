@@ -42,7 +42,7 @@ def main():
     verify();p=json.loads((D/'protocol.json').read_text());on='M' if a.arm=='chanM' else 'F';off='F' if on=='M' else 'M'
     spec=importlib.util.spec_from_file_location('cond504_fgate',R/'research/ideas-2026-11-09/freshgate-tools/fgate.py')
     fg=importlib.util.module_from_spec(spec);spec.loader.exec_module(fg)
-    first,last=1004,2003;fg.FUEL=200000;fg.BODY['F'],fg.BODY['M']='Flp4','Mt3q'
+    first,last=1004,2003;fg.FUEL=200000;fg.BODY['F'],fg.BODY['M']='Flp4','Mt3qro'
     fg.POOL=[str(D/'pool'/f'x{j}') for j in range(8)]
     fg.slice_of=lambda k:(k-first)%8
     fg.suites=lambda k:[('L','ladder',256),(f'x504f{fg.slice_of(k)}',fg.POOL[fg.slice_of(k)],2*len(list(Path(fg.POOL[fg.slice_of(k)]).glob('*.map26a'))))]

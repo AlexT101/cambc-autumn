@@ -30,7 +30,7 @@ def summaries(name, bot, body, release):
 
 def play(arm,bot,body,label,debug=False):
     scope='shared' if bot==BASE else arm
-    name='exploit504-'+scope+'-'+label+'-200k'
+    name='exploit504-'+scope+'-'+label+'-'+Path(body).name+'-200k'
     argv=[sys.executable,R/'tools/ab.py',bot,body,'--no-test-draft','--fuel','200000','--suites',D/'smoke-maps','--keep-replays','8','--name',name]
     if debug:argv.append('--debug')
     if not (R/'replays/ab'/name/'summary.json').exists():
@@ -105,12 +105,12 @@ def main():
     for row in json.loads((D/'smoke-maps.json').read_text()):
         link=D/'smoke-maps'/Path(row['path']).name
         if not link.exists():link.symlink_to(row['path'])
-    code="import sys;sys.path.insert(0,'research/ideas-2026-11-09/freshgate-tools');import fgate;fgate.build_seed(1004);fgate.build_body(1004,'Flp4');fgate.build_body(1004,'Mt3q')"
+    code="import sys;sys.path.insert(0,'research/ideas-2026-11-09/freshgate-tools');import fgate;fgate.build_seed(1004);fgate.build_body(1004,'Flp4');fgate.build_body(1004,'Mt3qro')"
     pooled([sys.executable,'-c',code],D/a.arm/'body-build.log')
     body_seal(1004)
     for bot in (BASE,CAND[a.arm]):pooled(['cambc','build','--release',R/'bots'/bot],D/a.arm/'release-build.log')
     records={};traces={};trace=trace_copy(a.arm)
-    for o,body in [('F','variants/spar-dvn1004-Flp4'),('M','variants/spar-dvn1004-Mt3q')]:
+    for o,body in [('F','variants/spar-dvn1004-Flp4'),('M','variants/spar-dvn1004-Mt3qro')]:
         base_name,bs,br=play(a.arm,BASE,body,'base-'+o)
         name,cs,cr=play(a.arm,CAND[a.arm],body,'cand-'+o)
         # Draft model is preserved; verify the sampled own ordered picks at runtime too.

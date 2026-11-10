@@ -40,7 +40,7 @@ def verify():
 def body_seal(k):
     directory=D/'bodies';directory.mkdir(exist_ok=True)
     path=directory/f'{k}.json'
-    current={f'variants/spar-dvn{k}-{v}':source(f'variants/spar-dvn{k}-{v}') for v in ('Flp4','Mt3q')}
+    current={f'variants/spar-dvn{k}-{v}':source(f'variants/spar-dvn{k}-{v}') for v in ('Flp4','Mt3qro')}
     assert all(current.values()), 'Missing opponent source'
     if path.exists():assert json.loads(path.read_text())==current, ('Cached opponent source drift',k)
     else:write(path,current)
