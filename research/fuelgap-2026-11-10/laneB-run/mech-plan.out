@@ -1,0 +1,9 @@
+A/B fgb-mech-plan: CAND variants/fgb-plan (dir) vs REF variants/oc-ceil-ref (dir)
+  m640: running, log replays/ab/fgb-mech-plan/m640.log
+CAND 49.4% of 1280 (632-648), 95% CI 46.6-52.1
+  m640  49.4% of 1280 (632-648), 95% CI 46.6-52.1
+Failed matches: 0
+Out-of-fuel turns: CAND 15633 in 1038 games, REF 14831 in 1028 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 1m32s
+Results: replays/ab/fgb-mech-plan/summary.md

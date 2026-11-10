@@ -1,0 +1,472 @@
+diff -ru oc-ceil-ref/src/bot.cc fgc-meas/src/bot.cc
+--- oc-ceil-ref/src/bot.cc	2026-11-10 03:27:12.028629102 +0000
++++ fgc-meas/src/bot.cc	2026-11-10 04:57:23.156897205 +0000
+@@ -365,6 +365,7 @@
+ 
+ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     comeback::cooked(world); // every turn: the cook's hysteresis reads each round's scores
++    FGC_MARK(20);
+     // Last turn's, for continue_recall: kept only while that recall is, else farm sets it again.
+     const int recall_farm = std::exchange(memory.recall_farm, -1);
+     if (!world.me().alive || !banks_bag(world, pathing)) memory.banking = false;
+@@ -392,6 +393,7 @@
+     // A channel refuses a ward, so this is its first chance; its sight counts this turn
+     // (probe-ward-sight). Only a planned one: a bush ward needs its clusters grown (a giant one costs
+     // ~90k), which the turn end does within its fuel.
++    FGC_MARK(21);
+     if (place_ward(world, memory, false)) {
+         see_again(world, pathing, safety);
+         home.reset();
+@@ -401,28 +403,36 @@
+         home.reset();
+     }
+ 
++    FGC_MARK(22);
+     // Shopping, heals and shields do not move us.
+     const bool on_spawn = test(world.map().ally_spawn, my_position());
+     if (shop(world, memory, on_spawn, on_spawn || world.me().facts().passive == Passive::remote_shop)) home.reset();
++    FGC_MARK(23);
+     fixc_bush_threatened = false;
+     if (!world.me().can_act(world.round)) return;
+     fixc_bush_threatened = fixc_bush_threat(world, safety);
++    FGC_MARK(24);
+     if (const auto* ender = game_ender(world); ender && holds_hard_stop(world, *ender)) {
+         stop_game_ender(world, pathing, memory, *ender);
+         return;
+     }
++    FGC_MARK(25);
+     const bool willow = support_healer(world.me());
+     const bool prism = support_protected(world, world.me());
+     // Healing needs a turn end on spawn; a recall arrives at turn start. Under an awake camp, only
+     // while we miss more than it takes a round: else we would mend forever while it stays awake.
+     const float missing = on_spawn ? my_max_health() - my_health() : 0.0f;
+     const bool mend = missing > 0 && missing > (camps_reach_spawn(world) ? safety.camp_damage(my_position()) + 0.01f : 0.0f);
++    FGC_MARK(5);
+     bool leave = !mend && (home ? *home : want_home(world, pathing, safety, memory));
++    FGC_MARK(6);
+     if (leave && fixc_commit(world, pathing)) leave = false;
++    FGC_MARK(28);
+     // Willow at work heals first, and the work goes on without the strike search.
+     const bool willow_free = willow && !mend && !leave;
+     const bool working = willow_free && support_work(world, pathing, safety, memory);
+     const bool strikes = !working && strike_possible(world);
++    FGC_MARK(29);
+     bool mate_eligible = false;
+     if (((prism && !mend) || (willow_free && !working)) && support_endpoint(world, !willow)
+         && local_support(world, pathing, safety, memory, leave, mate_eligible))
+@@ -441,6 +451,7 @@
+         heal_ally(world, safety);
+         if (!strikes || !(reset_may_kill(world) || landing_ready(world))) shield_if_needed(world, safety, memory.claim);
+     }
++    FGC_MARK(30);
+     if (mend) {
+         decision = Branch::mend;
+         const bool attacked = attack_enemy(world);
+@@ -463,12 +474,14 @@
+     }
+ 
+     guard_steps(world, pathing, safety);
++    FGC_MARK(7);
+     if (join_marcella_capture(world, pathing, safety, memory)) return;
+     if (yield_capture(world, pathing, safety, memory)) return;
+     if (take_capture_handoff(world, pathing, safety, memory)) return;
+     const bool contested = contesting(world);
+     const bool holding = holding_capture(world, pathing) || contested;
+     const bool attacked = strikes && search_strikes(world, pathing, safety, memory, holding, contested);
++    FGC_MARK(8);
+     decision = holding ? Branch::hold : attacked ? Branch::attack : decision;
+     if (!cambc::self().is_alive()) return;
+     if (!my_can_attack() || !my_can_cast()) pathing.settle_guard(), see_stuns(world, safety), safety.refresh();
+@@ -488,6 +501,8 @@
+         static const bool near = home_monolith_map(world);
+         guard_work(world, pathing, safety, memory.damage, near ? home_reach_avoid(world, memory) : nullptr);
+     }
++    FGC_MARK(9);
++    FGC_MARK(31);
+     if (banks_bag(world, pathing)) {
+         carry_bag(world, pathing, safety, memory, attacked, strike_guard);
+         return;
+@@ -497,24 +512,31 @@
+     if (wake_ring(world, pathing, safety)) return;
+     // After the search the goal takes only what the search left and could not price: its walk, camp
+     // work, a travel dash (a dash the search plays only before a strike). A ranged attack spent the walk.
++    FGC_MARK(32);
+     if (my_can_move() && wants_shop(world, pathing, safety, memory)) {
+         decision = Branch::shop;
+         memory.claim = -1;
+         step_safely(world, pathing, pathing.to_ally_spawn(), safety);
+         return;
+     }
++    FGC_MARK(33);
+     if (guard_turn(world, pathing, safety, memory, strike_guard)) return;
++    FGC_MARK(34);
+     if (chase_with_guard(world, pathing, safety, strike_guard)) return;
++    FGC_MARK(35);
+     if (contest_capture(world, pathing, memory)) {
+         decision = Branch::contest;
+         return;
+     }
++    FGC_MARK(36);
+     decision = Branch::farm;
+     if ((world.map().shared_gems && kite(world, pathing, memory)) || siege(world, pathing, safety, memory)) {
+         decision = Branch::siege;
+         return;
+     }
++    FGC_MARK(37);
+     if (willow_follow(world, pathing, safety)) return;
++    FGC_MARK(10);
+     farm(world, pathing, safety, memory);
+ }
+ 
+@@ -578,6 +600,7 @@
+ 
+ // The turn's walk, hits and casts, and the free actions that end it.
+ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
++    FGC_MARK(3);
+     const vec2 start = world.me().pos;
+     const bool could_attack = my_can_attack();
+     // The walk to our farm choice is searched out to our tile: from where the turn starts, before
+@@ -585,8 +608,10 @@
+     // undecided: decide may keep it, and the strike search makes the walk only if it reads it (goal_field).
+     if (!channelling())
+         if (const int g = walk_target(world, pathing, memory.farm_group); g >= 0) pathing.approach(g, walk_range(world, g));
++    FGC_MARK(4);
+     const int claim = memory.claim;
+     decide(world, pathing, safety, memory);
++    FGC_MARK(15);
+     if (decision != Branch::wait_altar) memory.wait_altar = -1;
+     // A turn without siege() (a fight, a heal) keeps the siege while our claim stays on it; a chase
+     // or a bag takes us away from it.
+@@ -630,6 +655,7 @@
+     if (!support_owned && (!tight || fuel_ok(posts_cost + recall_cost) || (cut = cut || (alive && !stunned_turn), false))) start_recall(world);
+     count_use(world, could_attack);
+     if (cut) note_shortcut("turn-end-short");
++    FGC_MARK(16);
+ }
+ 
+ void play_turn(World& world, Pathing& pathing, Memory& memory) {
+@@ -709,6 +735,7 @@
+     memory.health = world.me().alive ? my_health() : 0;
+     if (world.me().alive) note_income_end(world);
+     upkeep.camp_turns += camp_hits() != camp_hits_before;
++    debug_block({ fgc().dec = static_cast<char>(decision); });
+     debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), static_cast<char>(decision), memory.farm_group, memory.claim); });
+ }
+ 
+diff -ru oc-ceil-ref/src/economy/farm.cc fgc-meas/src/economy/farm.cc
+--- oc-ceil-ref/src/economy/farm.cc	2026-11-09 22:24:31.473410454 +0000
++++ fgc-meas/src/economy/farm.cc	2026-11-10 04:57:23.201734644 +0000
+@@ -644,9 +644,22 @@
+ template <bool opening, bool banking = false, bool repricing = false> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ [[gnu::noinline]] bool farm_banking(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
++    struct FgcExit {
++        Memory& m;
++        bool on;
++        ~FgcExit() {
++            debug_block({
++                if (on && --fgc().depth == 0) fgc().v[14] = fgc_fuel(), fgc().sc_at_exit = fgc().n_sc, fgc().best = m.farm_group;
++            });
++        }
++    } fgc_exit{memory, !repricing};
++    debug_block({
++        if (!repricing && fgc().depth++ == 0) fgc().v[11] = fgc_fuel(), fgc().prev = memory.farm_group;
++    });
+     world.throw_if_stale();
+     auto& memo = farm_memo();
+     if (!banking && !repricing && pick_up(world, pathing, memory)) return true;
++    debug_block({ if (!repricing && fgc().depth == 1) fgc().v[38] = fgc_fuel(); });
+     const auto& map = world.map();
+     const auto& groups = map.groups;
+     // Before our own facts below: a turn handed to farm_banking reads them there.
+@@ -661,6 +674,7 @@
+     // The opening plan's group for us now; with a weight, it is the choice the loop starts from, weighted.
+     const int planned_now = !banking && !repricing && !banks_bag_of(banking, banking_now, opening) && params::open_plan::weight > 0
+                                 ? open_plan_choice(world, memory) : -1;
++    debug_block({ if (!repricing && fgc().depth == 1) fgc().v[39] = fgc_fuel(); });
+     const int range = world.me().facts().attack_range();
+     const float strength = camp_output(world.me()), soften = camp_hit_factor(), reflect = world.me().retaliation();
+     const float max_health = my_max_health();
+@@ -690,6 +704,7 @@
+             }
+         }
+     }
++    debug_block({ if (!repricing && fgc().depth == 1) fgc().v[40] = fgc_fuel(); });
+     // Strong live groups: a crew can clear them quicker than any solo bound allows, so the prunes
+     // below bound them at the team's output (prune_fastest).
+     // Big groups on shared-gems maps are kite()'s: their claimers cast from out of reach, so they are
+@@ -842,6 +857,7 @@
+         reset_and_attack_camp(world, hit);
+         return true;
+     };
++    debug_block({ if (!repricing && fgc().depth == 1) fgc().v[41] = fgc_fuel(); });
+     if (!repricing && !banks_bag && attack_in_range()) return true;
+     if (world.is_stale()) return true;
+ 
+@@ -871,6 +887,7 @@
+     const bitboard* zone = nullptr;
+     const auto need_zone = [&] { zone = zoned ? pack_zone(world, safety) : nullptr; };
+ 
++    debug_block({ if (!repricing && fgc().depth == 1) fgc().v[42] = fgc_fuel(); });
+     // Beyond our walk: from a pocket the turn-end recall takes us home (continue_recall); from our
+     // walk, the crystal's hop, by way of our spawn to buy one.
+     const bool in_pocket = map.any_group_hop() && !pathing.on_foot(here);
+@@ -938,6 +955,7 @@
+         steps_from = here;
+         centre_steps.assign(groups.size(), -1);
+     }
++    debug_block({ if (!repricing && fgc().depth == 1) fgc().v[43] = fgc_fuel(); });
+     // Per base gold of a group: we are paid it with our bonuses.
+     const float paid = gold_paid(world);
+     float per_gold = prices(world).per_gold * paid * (gold_farmer ? params::gold_farmer_weight : 1.0f);
+@@ -995,6 +1013,7 @@
+         walk_on(g);
+         return true;
+     }
++    debug_block({ if (!repricing && fgc().depth == 1) fgc().v[44] = fgc_fuel(); });
+     // The recall started at this turn's end reaches a group by way of spawn
+     // (FarmRecall), kept by recall_to_farm under the same tests; this turn's walk is spent either
+     // way. Not where the recall would be cancelled or not started, nor out of a pocket (its own way).
+@@ -1023,6 +1042,7 @@
+         healed_home = *trip_home, healed_winning = *winning_trip;
+         healed_home->heal = healed_home->emblem = 0, healed_home->hurt = healed_winning->hurt = 0;
+     }
++    debug_block({ if (!repricing && fgc().depth == 1) fgc().v[45] = fgc_fuel(); });
+     const float bank_now = to_altar && to_altar->at(here) != unreachable ? trip_home->rounds(to_altar->at(here), 0, 0) : 0.0f;
+     float from_altar_value = 0;
+     // Kited groups too costly for us alone (risky) only when nothing else is left: idling is worse.
+@@ -1146,6 +1166,7 @@
+             if (const auto& x = allies->at[allies->claiming[static_cast<std::size_t>(k)]]; x.claim == g) add(*x.a, crew_output(x));
+         return total;
+     };
++    debug_block({ if (!repricing && fgc().depth == 1) fgc().v[46] = fgc_fuel(); });
+     // For the prunes' bounds: an ally in reach with no claim of its own may share a clear.
+     float unclaimed_partner_output = 0;
+     for (const auto& a : world.allies)
+@@ -1303,6 +1324,7 @@
+         }
+         if (first < 0) first = 0;
+     }
++    debug_block({ if (!repricing && fgc().depth == 1) fgc().v[47] = fgc_fuel(); });
+     const int evaluated = n_groups;
+     // Nothing in the loop moves us or changes the fields walk_reserve reads.
+     int reserved_for = -2;
+@@ -1376,6 +1398,8 @@
+     // Nearest to last turn's choice first: a loop cut short has weighed the likeliest groups, and
+     // an early good best prunes the rest sooner. With no choice yet, by index from `first`.
+     const auto* order = memory.farm_group == first ? map.nearest_groups(first) : nullptr;
++    debug_block({ if (!repricing && fgc().depth == 1) fgc().v[26] = fgc_fuel(); });
++    debug_block({ if (!repricing && fgc().depth == 1) fgc().v[27] = fgc_fuel(); });
+     // The prunes' bounds hold but for Ren, whose reflection clears faster than its output, and in a
+     // pocket, whose recall out can beat the Chebyshev distance.
+     const bool tight = reflect <= 0 && !in_pocket;
+@@ -1708,6 +1732,9 @@
+     static std::vector<std::uint8_t> routed;
+     if (static_cast<int>(routed.size()) != n_groups) routed.assign(n_groups, 0);
+     int k = 0;
++    debug_block({
++        if (!repricing && fgc().depth == 1) fgc().v[12] = fgc().pass_fuel = fgc_fuel(), fgc().first = first, fgc().evaluated = evaluated, fgc().passes = 0, fgc().pass_g = -1;
++    });
+     for (; k < evaluated && room(); ++k) {
+         int g = order ? (*order)[k] : (first + k) % n_groups;
+         // best_value moves only with best, from 0.
+@@ -1716,6 +1743,13 @@
+             while (k < evaluated && !is_claimed(g = (*order)[k]) && !held(g) && !(hops && map.may_hop(g)) && (!banks_bag || altar_below(g))) ++k;
+             if (k == evaluated) break;
+         }
++        debug_block({
++            if (auto& f = fgc(); !repricing && f.depth == 1) {
++                const auto now = fgc_fuel();
++                if (f.pass_g >= 0 && f.passes < 48) f.pg[f.passes] = f.pass_g, f.pf[f.passes] = f.pass_fuel - now, ++f.passes;
++                f.pass_g = g, f.pass_fuel = now;
++            }
++        });
+         if ((pre_pruned && barred()) || (pre_banked && best >= 0)) pre_bounds(g);
+         if (pre_pruned && barred() && (pre_upper[g] < bar_lt() || (pre_valued && best >= 0 && pre_value[g] < best_value))) continue;
+         if (pre_claims && is_claimed(g) && (best >= 0 || shared >= 0) && g != farm_group && g != memory.claim && g != memory.mono_group) {
+@@ -2201,6 +2235,13 @@
+         if (banks_bag && walk_out != unreachable) from_altar_value = std::max(from_altar_value, altar_rate(share, clear_rounds, trips));
+     }
+     read_g = -1;
++    debug_block({
++        if (auto& f = fgc(); !repricing && f.depth == 1) {
++            const auto now = fgc_fuel();
++            if (f.pass_g >= 0 && f.passes < 48) f.pg[f.passes] = f.pass_g, f.pf[f.passes] = f.pass_fuel - now, ++f.passes;
++            f.v[13] = now, f.k = k, f.sc_at_loop = f.n_sc;
++        }
++    });
+     if (k < evaluated) note_shortcut("farm-partial-evaluation");
+     need_zone();
+     // An ally's hold that pays more with us on it: the rounds we then hold free the holder, worth
+diff -ru oc-ceil-ref/src/main.cc fgc-meas/src/main.cc
+--- oc-ceil-ref/src/main.cc	2026-11-10 03:27:12.063920145 +0000
++++ fgc-meas/src/main.cc	2026-11-10 04:57:23.205084279 +0000
+@@ -208,7 +208,9 @@
+             && map.find_bush_clusters(here, aph::ward_range() + 1, floor) && aph::in_bounds(memory.ward)
+             && aph::test(map.bushes, memory.ward))
+             (void)map.find_bush_clusters(memory.ward, 0, floor);
++        debug_block({ aph::fgc().qstage = 1; });
+         aph::prepare_next_turn(world, pathing, memory, floor);
++        debug_block({ aph::fgc().qstage = 2; });
+         if (world.is_stale()) return;
+         map.warm_drafted_steps(floor);
+         aph::FuelMeter meter{"warm_up"};
+@@ -218,6 +220,7 @@
+         // The spawn field and group hops first: from the second turn every turn reads them.
+         map_warmed_up = map_warmed_up || map.warm_up(reserve);
+         if (!map_warmed_up) return;
++        debug_block({ aph::fgc().qstage = 3; });
+         // An enemy dasher's walls, for its terrain distance (enemy_reach), else built on first ask.
+         (void)aph::enemy_reach::warm_up(world, reserve);
+         // A dasher's own walk, grown from foot() for a few layers: until made, Pathing::on_foot floods near the spawn.
+@@ -228,6 +231,7 @@
+         }
+         // The map-wide fields before the tables around us: a walk exposes new tiles every step, so
+         // the ring rarely completes, and a decision missing a centre field builds it (~26k).
++        debug_block({ aph::fgc().qstage = 4; });
+         if (!warmed_up) {
+             const bool centres = pathing.warm_centres(reserve, memory.farm_group);
+             warmed_up = centres && pathing.warm_up(me.facts().attack_range(), reserve) && map.find_all_bush_clusters(reserve);
+@@ -237,9 +241,12 @@
+             });
+             if (!warmed_up) return;
+         }
++        debug_block({ aph::fgc().qstage = 5; });
+         if (!clears_warmed && !(clears_warmed = aph::warm_clears(world, floor))) return;
++        debug_block({ aph::fgc().qstage = 6; });
+         if (!warm_drafted_tiles(map, pathing, me.facts().attack_range(), memory.farm_group, floor)) return;
+-        if (me.pos.x >= 0) around(me.pos, me.alive ? own_radius : 2 * own_radius);
++        debug_block({ aph::fgc().qstage = 9; });
++        if (me.pos.x >= 0 && around(me.pos, me.alive ? own_radius : 2 * own_radius)) debug_block({ aph::fgc().qdone = true; });
+     }
+ 
+     // The draft's attack tiles of farmed groups' members, which warm_up leaves to their first read:
+@@ -286,7 +293,13 @@
+     // `late`: the turn before did not finish in its own round, or this is the first (aph::finish_late).
+     [[gnu::flatten]] void play_turn(bool late) {
+         const auto start = aph::fuel();
+-        aph::FuelMeter meter{"turn"};
++        debug_block({
++            auto& f = aph::fgc();
++            for (auto& x : f.v) x = 0;
++            f.k = -1, f.evaluated = 0, f.first = f.best = f.prev = -1, f.n_sc = 0, f.sc_at_loop = f.sc_at_exit = -1, f.depth = 0;
++            f.passes = 0, f.pass_g = -1, f.qdone = false, f.qstage = 0, f.dec = 0, f.round0 = cambc::round_number();
++            f.v[0] = start;
++        });
+         const bool updated = run("world", [&] {
+             // Default-initialised: make_unique's value-initialisation zeroed it first (a fuel a byte,
+             // ~630), and the arena's fresh memory is already zero.
+@@ -306,15 +319,26 @@
+                             m.drafted() ? "ok" : "missing");
+             }
+         });
++        FGC_MARK(1);
++        debug_block({
++            if (world && world->ready() && world->me().alive) {
++                auto& f = aph::fgc();
++                f.ne = 0, f.nd = 99;
++                for (const auto& e : world->enemies)
++                    if (e.alive && e.visible) ++f.ne, f.nd = std::min(f.nd, aph::dist(e.pos, world->me().pos));
++            }
++        });
+         if (!updated || !world->ready() || world->is_stale()) return;
+         run("map conditioning", [&] { aph::condition_on_map(world->map()); });
+ 
+         run("comms receive", [&] { aph::comms::receive(*world); });
++        FGC_MARK(2);
+         aph::finish_late() = late;
+         run("decide", [&] {
+             aph::FuelMeter meter{"decide"};
+             aph::play_turn(*world, *pathing, memory);
+         });
++        FGC_MARK(17);
+         // Decided in its own round, the turn end is abandoned as usual if it runs out.
+         aph::finish_late() = late && world->resumed();
+ 
+@@ -329,8 +353,10 @@
+         run("comms send", [&] { aph::comms::send(*world, moved, refresh); });
+         run("debug", [&] { world->debug_output(); });
+         if (!aph::fuel_ok(late_floor)) return;
++        FGC_MARK(18);
+         if (!world->is_stale())
+             run("queue", [&] { queue.run(*world, *pathing, memory, start); });
++        FGC_MARK(19);
+         aph::print_fuel_log();
+     }
+ };
+@@ -350,8 +376,31 @@
+         const auto round = aph::round_now();
+         if (cambc::is_draft())
+             instance.draft_turn();
+-        else
++        else {
+             instance.play_turn(late);
++            debug_block({
++                auto& f = aph::fgc();
++                const auto now = aph::fgc_fuel();
++                if (f.v[12] && f.depth == 0 && (f.k < f.evaluated || f.round0 % 8 == 0)) {
++                    std::printf("FGC %u %u %u %c k %d/%d first %d prev %d best %d q %d %d prevq %d %llu %d %c sc %d %d %d", f.round0, cambc::round_number(),
++                                static_cast<unsigned>(static_cast<cambc::handle_champion_t>(cambc::self())), f.dec ? f.dec : '?', f.k, f.evaluated, f.first, f.prev, f.best,
++                                f.qstage, f.qdone ? 1 : 0, f.prev_round, static_cast<unsigned long long>(f.prev_left), f.prev_qdone ? 1 : 0, f.prev_decision ? f.prev_decision : '?',
++                                f.n_sc, f.sc_at_loop, f.sc_at_exit);
++                    std::printf(" v");
++                    std::printf(" %d %d", f.ne, f.nd);
++                    for (int i = 0; i < 48; ++i) std::printf(" %llu", static_cast<unsigned long long>(f.v[i]));
++                    std::printf(" end %llu", static_cast<unsigned long long>(now));
++                    std::printf(" scs");
++                    for (int i = 0; i < f.n_sc && i < 8; ++i) std::printf(" %s", f.sc[i]);
++                    if (f.k < f.evaluated) {
++                        std::printf(" passes");
++                        for (int i = 0; i < f.passes; ++i) std::printf(" %d:%llu", f.pg[i], static_cast<unsigned long long>(f.pf[i]));
++                    }
++                    std::printf("\n");
++                }
++                f.prev_round = static_cast<int>(f.round0), f.prev_left = now, f.prev_qdone = f.qdone, f.prev_decision = f.dec;
++            });
++        }
+         const bool finished_late = std::exchange(aph::finish_late(), false);
+         const auto now = aph::round_now();
+         late = now != round;
+diff -ru oc-ceil-ref/src/util.h fgc-meas/src/util.h
+--- oc-ceil-ref/src/util.h	2026-11-10 03:27:12.076307038 +0000
++++ fgc-meas/src/util.h	2026-11-10 04:57:23.119347984 +0000
+@@ -38,10 +38,39 @@
+ // where they disagree: for changes to those early ends; it doubles the fight sims' work.
+ inline constexpr bool check_fight_exits = false;
+ 
++// fgc-meas: fuel marks through one turn, set and printed only inside debug_block.
++struct Fgc {
++    std::uint64_t v[48];
++    int ne = 0, nd = 99;
++    int k = -1, evaluated = 0, first = -1, best = -1, prev = -1, n_sc = 0, sc_at_loop = -1, sc_at_exit = -1, depth = 0;
++    const char* sc[8];
++    int passes = 0;
++    int pg[48];
++    std::uint64_t pf[48];
++    std::uint64_t pass_fuel = 0;
++    int pass_g = -1;
++    bool qdone = false;
++    int qstage = 0;
++    char dec = 0;
++    std::uint32_t round0 = 0;
++    // the turn before, this instance
++    int prev_round = -1;
++    std::uint64_t prev_left = 0;
++    bool prev_qdone = false;
++    char prev_decision = 0;
++};
++inline Fgc& fgc() {
++    static Fgc f;
++    return f;
++}
++inline std::uint64_t fgc_fuel() { return static_cast<std::uint64_t>(cambc::detail::sdk_fuel_remaining()); }
++#define FGC_MARK(i) debug_block({ ::aph::fgc().v[i] = ::aph::fgc_fuel(); })
++
+ // A choice made worse to save fuel: one "SHORTCUT round champion what" stdout line. debug_block
+ // spends no fuel in local (non-release) builds and is compiled out of release ones.
+ inline void note_shortcut(const char* what) {
+     debug_block({
++        if (auto& f = fgc(); f.n_sc < 8) f.sc[f.n_sc++] = what;
+         if (!cambc::is_draft())
+             std::printf("SHORTCUT %d %u %s\n", cambc::round_number(),
+                         static_cast<unsigned>(static_cast<cambc::handle_champion_t>(cambc::self())), what);

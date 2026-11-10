@@ -1,0 +1,50 @@
+diff -ru oc-fz2-dev/src/bot.cc fgc-fzpre/src/bot.cc
+--- oc-fz2-dev/src/bot.cc	2026-11-10 04:28:00.568508355 +0000
++++ fgc-fzpre/src/bot.cc	2026-11-10 04:59:23.306133052 +0000
+@@ -579,6 +579,7 @@
+ 
+ // The turn's walk, hits and casts, and the free actions that end it.
+ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
++    if constexpr (fz_scope == 9) fz_act_start() = fuel_raw();
+     const vec2 start = world.me().pos;
+     const bool could_attack = my_can_attack();
+     // The walk to our farm choice is searched out to our tile: from where the turn starts, before
+diff -ru oc-fz2-dev/src/economy/farm.cc fgc-fzpre/src/economy/farm.cc
+--- oc-fz2-dev/src/economy/farm.cc	2026-11-10 04:28:00.571963430 +0000
++++ fgc-fzpre/src/economy/farm.cc	2026-11-10 04:59:23.306545148 +0000
+@@ -2466,6 +2466,7 @@
+ }
+ 
+ bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
++    fz_prefarm_refund();
+     FreeScope<1> fz_;
+     return world.round == world.first_round ? farm_turn<true>(world, pathing, safety, memory) : farm_turn<false>(world, pathing, safety, memory);
+ }
+diff -ru oc-fz2-dev/src/util.h fgc-fzpre/src/util.h
+--- oc-fz2-dev/src/util.h	2026-11-10 04:28:00.563523340 +0000
++++ fgc-fzpre/src/util.h	2026-11-10 04:59:23.304290668 +0000
+@@ -284,7 +284,7 @@
+ // 8 turn-end queue.
+ inline constexpr int fv_sign = -1;
+ inline constexpr int fv_mult = 100;
+-inline constexpr int fz_scope = 0;
++inline constexpr int fz_scope = 9;
+ // fz_when: 0 every turn, 1 the first turn only, 2 every turn but the first. t1_mult: the first turn's gates read t1_mult x 200k.
+ inline constexpr int fz_when = 0;
+ inline constexpr int t1_mult = 1;
+@@ -322,6 +322,15 @@
+     v = std::min(v, raw);
+     return v;
+ }
++// fz_scope 9: what act() spent before the farm got control, refunded as the farm is entered (once a turn).
++inline std::uint64_t& fz_act_start() {
++    static std::uint64_t a = 0;
++    return a;
++}
++inline void fz_prefarm_refund() {
++    if constexpr (fz_scope == 9)
++        if (fz_on() && fz_act_start() > fuel_raw()) fz_refund() += fz_act_start() - fuel_raw(), fz_act_start() = 0;
++}
+ template <int Scope> struct FreeScope {
+     FreeScope() {
+         if constexpr (Scope == fz_scope)

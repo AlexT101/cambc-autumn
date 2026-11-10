@@ -1,0 +1,9 @@
+A/B fgb-fzloop: CAND variants/fgb-fzloop (dir) vs REF variants/oc-ceil-ref (dir)
+  fceil-2020: running, log replays/ab/fgb-fzloop/fceil-2020.log
+CAND 52.3% of 20480 (10708-9772), 95% CI 51.6-53.0
+  fceil-2020  52.3% of 20480 (10708-9772), 95% CI 51.6-53.0
+Failed matches: 0
+Out-of-fuel turns: CAND 0 in 0 games, REF 202105 in 15885 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 4m09s
+Results: replays/ab/fgb-fzloop/summary.md

@@ -1,0 +1,57 @@
+diff -ru oc-fz2-dev/src/main.cc fgc-fzspare/src/main.cc
+--- oc-fz2-dev/src/main.cc	2026-11-10 04:28:00.568320263 +0000
++++ fgc-fzspare/src/main.cc	2026-11-10 05:04:06.264891999 +0000
+@@ -330,6 +330,12 @@
+         run("comms send", [&] { aph::comms::send(*world, moved, refresh); });
+         run("debug", [&] { world->debug_output(); });
+         if (!aph::fuel_ok(late_floor)) return;
++        {
++            // The 1x view's fuel left here, without this turn's refund.
++            const auto raw = aph::fuel_raw();
++            const auto s = aph::fuel_shift();
++            aph::fz_queue_left() = s >= 0 ? raw + static_cast<std::uint64_t>(s) : raw > static_cast<std::uint64_t>(-s) ? raw - static_cast<std::uint64_t>(-s) : 0;
++        }
+         if (!world->is_stale())
+             run("queue", [&] {
+                 aph::FreeScope<8> fz_;
+@@ -360,6 +366,8 @@
+             if (aph::fv_sign < 0 && !draft && first) aph::fuel_shift() = -base * (aph::fv_mult - aph::t1_mult);
+             if (!draft) aph::fz_first() = first;
+             aph::fz_refund() = 0;
++            aph::fz_spare_on() = aph::fz_queue_left() >= aph::fz_spare;
++            aph::fz_queue_left() = 0;
+             aph::fz_depth() = 0;
+             first = false;
+         }
+diff -ru oc-fz2-dev/src/util.h fgc-fzspare/src/util.h
+--- oc-fz2-dev/src/util.h	2026-11-10 04:28:00.563523340 +0000
++++ fgc-fzspare/src/util.h	2026-11-10 05:04:06.263598382 +0000
+@@ -284,7 +284,7 @@
+ // 8 turn-end queue.
+ inline constexpr int fv_sign = -1;
+ inline constexpr int fv_mult = 100;
+-inline constexpr int fz_scope = 0;
++inline constexpr int fz_scope = 1;
+ // fz_when: 0 every turn, 1 the first turn only, 2 every turn but the first. t1_mult: the first turn's gates read t1_mult x 200k.
+ inline constexpr int fz_when = 0;
+ inline constexpr int t1_mult = 1;
+@@ -292,7 +292,18 @@
+     static bool f = true;
+     return f;
+ }
+-inline bool fz_on() { return fz_when == 0 || (fz_when == 1) == fz_first(); }
++// fgc-fzspare: the farm is free only on turns whose previous turn reached its turn-end queue with at least
++// fz_spare of the 1x budget left (a prefetch's fuel). Set at each turn's start in main.cc.
++inline constexpr std::uint64_t fz_spare = 30000;
++inline bool& fz_spare_on() {
++    static bool on = false;
++    return on;
++}
++inline std::uint64_t& fz_queue_left() {
++    static std::uint64_t left = 0;
++    return left;
++}
++inline bool fz_on() { return fz_spare_on() && (fz_when == 0 || (fz_when == 1) == fz_first()); }
+ inline std::int64_t& fuel_shift() {
+     static std::int64_t shift = 0;
+     return shift;

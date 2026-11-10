@@ -50,6 +50,94 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 - A risk change can win the mirror and nothing else (nuke guard, 2026-11-08): +0.22 held out over 149k, panel -0.02.
   The v84 pattern again: a risk or greed change needs its panel H1 before it ships.
 
+## (ocean = d4f6e68a6, CHANGES 495, 2026-11-10) Fuel ceiling re-measured: 54.2% at 10M; cut work +2.9, out-of-fuel +1.3
+
+The same design as "Fuel ceiling (ocean, 2026-11-08)", on current `bots/ocean`. Copies `variants/oc-ceil-ref`,
+`oc-ceil-10m` (same code) and `oc-ceil-view` (`fuel()` reads the budget less one 1x budget, set per turn in main.cc:
+the 11-08 fv-a patch). The extra fuel goes by name (`FASTRUNNER_BOT_FUEL=oc-ceil-10m:10000000,oc-ceil-view:200000`).
+Both arms play against oc-ceil-ref at the real budget. Fast runner (cambc 5.0.1), release builds, own drafts, the
+same 20,480 games each: `merged/fceil-2020` (ladder-v2, 2020000-2020039). Each run took about 7 minutes.
+
+| arm | win % (CI) | OOF arm / ref |
+|---|---|---|
+| 10M a turn | **54.2 (53.5-54.9)** | 0 / 198,439 |
+| 2x quantum, gates read the 1x budget (view) | 51.3 (50.6-52.0) | 237 / 208,439 |
+| 10M against view, paired by map | **+2.86 ±0.89** | |
+
+- **The ceiling has not fallen since 11-08.** It was 53.4-53.5 on oc-base25 (cambc 5.0.0 semantics) and 56.3 on
+  astraeus 5b66bde.
+- **The cut work is worth the same as before:** +2.9 against 11-08's +2.8 (53.5 - 50.7).
+- **Never running out is worth +1.3, up from +0.7,** although CHANGES 495 cut OOF turns by 13%. One untested reading:
+  under 5.0.1 a turn that runs out stops right after the host call that spent the fuel, which changes ~7% of
+  outcomes.
+- Results, 95% CI and OOF counts: `replays/ab/fceil-{10m,view}/summary.md`.
+
+**Which subsystem's fuel pays** (same games). `variants/oc-fz2-*` = oc-ceil-ref + the 11-08 refund (`fz_scope`: fuel
+spent inside one subsystem is refunded to every later `fuel()` read), on a 10M quantum with every gate reading the
+1x budget. Paired by map against the arm that refunds nothing (`oc-fz2-view`, 51.6%):
+
+| freed | win % | paired diff (95%) | results changed |
+|---|---|---|---|
+| everything (10M arm above) | 54.2 | +2.55 ±0.89 | 46% |
+| world update | 52.8 | **+1.14 ±0.89** | 45% |
+| farm (`farm`, `farm_reprice`) | 52.7 | **+1.11 ±0.89** | 45% |
+| prey | 52.1 | +0.43 ±0.83 | 39% |
+| strike search | 51.8 | +0.20 ±0.79 | 33% |
+| fight trade | 51.6 | -0.03 ±0.81 | 36% |
+| turn-end queue (new) | 51.5 | -0.15 ±0.72 | 29% |
+| step guard | 51.4 | -0.23 ±0.76 | 32% |
+| turn order (new) | 51.4 | -0.27 ±0.60 | 19% |
+| the first turn's gates at 50x (`oc-fz2-t1`, `t1_mult` 50; no refund) | 52.0 | +0.33 ±0.67 | 25% |
+
+- **The prize is the world update and the farm.** Each is worth about +1.1, together most of the +2.55.
+- **The step guard and turn order no longer pay.** On v87 raw fuel in each was worth +1.0 / +1.1; here about 0.
+- **A free queue is worth nothing,** although it then fills its whole list: what it warms now is not what cut turns
+  lack.
+- `replays/ab/fz2-*/summary.md`; the 2x view arm (51.3) reads -0.30 ±0.61 against the 10M one.
+- **The world update's +1.14 is not reachable by reordering** (lane A, research/fuelgap-2026-11-10/laneA.md):
+  - On farm-cut turns it costs 10.2k, but nearly all of its output is read before the turn's first action.
+  - At most ~1.1k could be deferred: far tracking 0.5k, altars and scores 0.6k.
+  - Skipping unchanged entities is already done wherever the engine can prove it.
+  - No candidates were built.
+- **Lane C (around the farm loop) is no-go on all three directions** (research/fuelgap-2026-11-10/laneC.md):
+  - Fuel at farm entry is 57k on cut turns against 83k on uncut ones. The biggest pre-farm parts on cut turns:
+    `chase_with_guard` declining to chase (14.2k) and the feint recall's want_home (9.1k).
+  - Refunding everything spent before the farm (`fgc-fzpre`, the most any reordering could buy) cuts 77% of cut
+    loops, yet reads +0.31 (-0.55 to +1.20).
+  - The whole farm free only after a turn with 30k+ spare (`fgc-fzspare`, the most any prefetch could buy):
+    +0.43 (-0.45 to +1.27).
+  - Post-loop shortcuts fire on ~2% of cut turns.
+  - fzpre against fz2-farm reads -0.81 (-1.71 to +0.04). So the farm's +1.11 may come less from finishing its loop
+    than from what that scope also refunds: `farm_reprice` in continue_recall, and the step guard and route searches
+    the farm calls.
+- **Lane B (inside the farm loop) is no-go** (research/fuelgap-2026-11-10/laneB.md):
+  - Refunding the loop alone (`fgb-fzloop`) reads +0.65 ±0.88. Finishing every cut loop at the cut's own fuel
+    (`fgb-flcut`) reads +0.52 ±0.87. The farm's other ~+0.5 lies outside the loop.
+  - At 10M, 82% of loops that would be cut keep the same pick. The other 18% (~22 a game a team) pick a median 0.63
+    of the full pick's value; the full pick is 1-4 groups past the cut, ~775 fuel a group.
+  - Measured and dropped: fallbacks for a cut with no pick (the full loop has none in 54%; the rest is spread over
+    k..k+9); last turn's values as extra candidates (right 1.3k times, wrong 24.9k); exact crew memos (keys match in 4%
+    of calls).
+  - Candidate `fgb-plan`: reuse a one-round-old crew plan when output, claimers in sight and expect are unchanged.
+    100M identical 96/96, fires 64 times a game, but cut loops are unchanged (144.5 against 144.8 a game): the reusable
+    fuel is in only 16% of cut loops. Not gated.
+- **The farm's +1.11, split** (refund arms, same games, paired against `oc-fz2-view`):
+  - The group loop alone (`fgb-fzloop`): +0.65 ±0.88.
+  - Everything the farm spends outside its loop (`oc-fz2-fout`): +0.77 ±0.89. That is the work before and after the
+    loop and the step guard and route searches it calls; a `PauseScope` stops the refund inside the loop.
+  - `farm_reprice` alone (`oc-fz2-rep`, the repricing bank.cc calls in recalls): -0.16 ±0.57. It is not the missing
+    half.
+  - The whole farm against fout: +0.35 ±0.84.
+  - The parts sum past the whole (1.42 against 1.11) and neither is significant alone. The farm's prize is split
+    about evenly between its loop and its route and field work, with no single piece.
+- **Programme verdict: no lane found a reachable lever.** The +2.55 of cut work is spread out:
+  - the world update needs its output before acting;
+  - reordering and prefetch around the farm are worth at most ~+0.3 to +0.4;
+  - the farm loop is worth ~+0.5, and its misses are near-misses;
+  - the first turn is worth +0.33.
+- **The first turn is small** (+0.33). It spends 146k of its 200k before acting (world build 63k), and its farm is cut
+  almost every game, but freeing its gates buys little. No lane opened.
+
 ## (ocean = oc-wdash-494, 2026-11-10) Ward spread: a bush preference per champion, ward announces in priority, ward sightings shared; all level
 
 The user's idea: give each champion preferred bushes to ward and announce wards, so the team's wards spread and, through

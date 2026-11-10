@@ -1,0 +1,37 @@
+diff -ru oc-ceil-ref/src/main.cc oc-ceil-view/src/main.cc
+--- oc-ceil-ref/src/main.cc	2026-11-10 03:27:12.063920145 +0000
++++ oc-ceil-view/src/main.cc	2026-11-10 04:05:43.567613211 +0000
+@@ -348,6 +348,11 @@
+     aph::capture_draft_memory();
+     while (true) {
+         const auto round = aph::round_now();
++        {
++            static bool first = true;
++            aph::fuel_shift() = cambc::is_draft() ? (first ? 10'000'000 : 100'000) : (first ? 200'000 : 100'000);
++            first = false;
++        }
+         if (cambc::is_draft())
+             instance.draft_turn();
+         else
+diff -ru oc-ceil-ref/src/util.h oc-ceil-view/src/util.h
+--- oc-ceil-ref/src/util.h	2026-11-10 03:27:12.076307038 +0000
++++ oc-ceil-view/src/util.h	2026-11-10 04:05:43.567340088 +0000
+@@ -277,7 +277,17 @@
+     return value;
+ }
+ // The imports read raw: the SDK's wrappers add checks for failures only an ABI mismatch could cause.
+-inline std::uint64_t fuel() { return static_cast<std::uint64_t>(cambc::detail::sdk_fuel_remaining()); }
++// Fuel-ceiling view (measurement only): run on a 2x quantum, fuel() reads the budget less one 1x budget (set per
++// turn in main.cc), so every gate cuts as at 1x and only out-of-fuel turns go away.
++inline std::int64_t& fuel_shift() {
++    static std::int64_t shift = 0;
++    return shift;
++}
++inline std::uint64_t fuel() {
++    const auto raw = static_cast<std::uint64_t>(cambc::detail::sdk_fuel_remaining());
++    const auto s = static_cast<std::uint64_t>(fuel_shift());
++    return raw > s ? raw - s : 0;
++}
+ // cambc::round_number() without check()'s call and a stack slot. A failed read gives 0, which
+ // throw_if_stale takes as a stale turn.
+ inline std::uint32_t round_now() {

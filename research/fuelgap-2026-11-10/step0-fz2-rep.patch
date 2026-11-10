@@ -1,0 +1,76 @@
+diff -ru oc-fz2-dev/src/economy/farm.cc oc-fz2-rep/src/economy/farm.cc
+--- oc-fz2-dev/src/economy/farm.cc	2026-11-10 04:28:00.571963430 +0000
++++ oc-fz2-rep/src/economy/farm.cc	2026-11-10 05:22:42.778289419 +0000
+@@ -1708,6 +1708,8 @@
+     static std::vector<std::uint8_t> routed;
+     if (static_cast<int>(routed.size()) != n_groups) routed.assign(n_groups, 0);
+     int k = 0;
++    {
++    PauseScope<10> pz_;
+     for (; k < evaluated && room(); ++k) {
+         int g = order ? (*order)[k] : (first + k) % n_groups;
+         // best_value moves only with best, from 0.
+@@ -2200,6 +2202,7 @@
+             best = g, best_value = value, best_steps = steps, best_spell = spell, best_priced = priced;
+         if (banks_bag && walk_out != unreachable) from_altar_value = std::max(from_altar_value, altar_rate(share, clear_rounds, trips));
+     }
++    }
+     read_g = -1;
+     if (k < evaluated) note_shortcut("farm-partial-evaluation");
+     need_zone();
+@@ -2462,11 +2465,14 @@
+ 
+ void farm_reprice(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     FreeScope<1> fz_;
++    FreeScope<10> fz10_;
++    FreeScope<11> fz11_;
+     farm_turn<false, false, true>(world, pathing, safety, memory);
+ }
+ 
+ bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     FreeScope<1> fz_;
++    FreeScope<10> fz10_;
+     return world.round == world.first_round ? farm_turn<true>(world, pathing, safety, memory) : farm_turn<false>(world, pathing, safety, memory);
+ }
+ 
+diff -ru oc-fz2-dev/src/util.h oc-fz2-rep/src/util.h
+--- oc-fz2-dev/src/util.h	2026-11-10 04:28:00.563523340 +0000
++++ oc-fz2-rep/src/util.h	2026-11-10 05:22:42.767925152 +0000
+@@ -281,10 +281,10 @@
+ // fv_mult x quantum with gates reading the 1x budget (fuel_shift(), set per turn in main.cc), and fuel spent
+ // inside the fz_scope subsystem (FreeScope) refunded to every read: "what if subsystem X cost nothing".
+ // fz_scope: 0 none, 1 farm, 2 step guard, 3 prey, 4 fight trade, 5 strike search, 6 world update, 7 turn order,
+-// 8 turn-end queue.
++// 8 turn-end queue, 10 the farm outside its group loop, 11 farm_reprice only.
+ inline constexpr int fv_sign = -1;
+ inline constexpr int fv_mult = 100;
+-inline constexpr int fz_scope = 0;
++inline constexpr int fz_scope = 11;
+ // fz_when: 0 every turn, 1 the first turn only, 2 every turn but the first. t1_mult: the first turn's gates read t1_mult x 200k.
+ inline constexpr int fz_when = 0;
+ inline constexpr int t1_mult = 1;
+@@ -337,6 +337,24 @@
+     FreeScope(const FreeScope&) = delete;
+     FreeScope& operator=(const FreeScope&) = delete;
+ };
++template <int Scope> struct PauseScope {
++    // Inside a FreeScope<Scope>: stop refunding until this ends (what is spent here is not refunded).
++    int saved = 0;
++    PauseScope() {
++        if constexpr (Scope == fz_scope)
++            if (fz_on() && fz_depth() > 0) {
++                const auto raw = fuel_raw();
++                if (fz_entry() > raw) fz_refund() += fz_entry() - raw;
++                saved = fz_depth(), fz_depth() = 0;
++            }
++    }
++    ~PauseScope() {
++        if constexpr (Scope == fz_scope)
++            if (saved > 0) fz_depth() = saved, fz_entry() = fuel_raw();
++    }
++    PauseScope(const PauseScope&) = delete;
++    PauseScope& operator=(const PauseScope&) = delete;
++};
+ // cambc::round_number() without check()'s call and a stack slot. A failed read gives 0, which
+ // throw_if_stale takes as a stale turn.
+ inline std::uint32_t round_now() {
