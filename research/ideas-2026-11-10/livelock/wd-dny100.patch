@@ -1,0 +1,69 @@
+diff -ru -x .cambc oc-wdash-494/src/bot.cc wd-dny100/src/bot.cc
+--- oc-wdash-494/src/bot.cc	2026-11-09 22:24:31.469410404 +0000
++++ wd-dny100/src/bot.cc	2026-11-10 01:46:41.280226413 +0000
+@@ -411,6 +411,10 @@
+         stop_game_ender(world, pathing, memory, *ender);
+         return;
+     }
++    if (const auto* deny = tribute_to_deny(world)) {
++        stop_game_ender(world, pathing, memory, *deny);
++        return;
++    }
+     const bool willow = support_healer(world.me());
+     const bool prism = support_protected(world, world.me());
+     // Healing needs a turn end on spawn; a recall arrives at turn start. Under an awake camp, only
+diff -ru -x .cambc oc-wdash-494/src/bot_parts.h wd-dny100/src/bot_parts.h
+--- oc-wdash-494/src/bot_parts.h	2026-11-09 22:24:31.469410404 +0000
++++ wd-dny100/src/bot_parts.h	2026-11-10 01:46:41.279867518 +0000
+@@ -343,6 +343,7 @@
+ const ChampionBelief* game_ender(const World& world);
+ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e);
+ bool holds_hard_stop(const World& world, const ChampionBelief& e);
++const ChampionBelief* tribute_to_deny(const World& world);
+ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ 
+ // economy/comeback.cc: cooked comebacks.
+diff -ru -x .cambc oc-wdash-494/src/combat/fight.cc wd-dny100/src/combat/fight.cc
+--- oc-wdash-494/src/combat/fight.cc	2026-11-10 01:14:19.037691413 +0000
++++ wd-dny100/src/combat/fight.cc	2026-11-10 01:46:41.280101011 +0000
+@@ -1056,6 +1056,26 @@
+     return tribute_altar(world, e.pos) >= 0 && carried_locks() > 0;
+ }
+ 
++// A visible enemy tribute too big to let land though it does not end the game (params::deny_bag, deny_need), that we
++// hold a hard stop for and reach before it lands; none while our death would hand over max(40, its bag / 3). Without
++// it, a body that cannot stand by a channeller (its Focus is the bag's) steps in to bank or farm and back each turn.
++const ChampionBelief* tribute_to_deny(const World& world) {
++    if (!enemy_seen(world)) return nullptr;
++    const int need = static_cast<int>(cambc::constants::winning_gems) - world.score.enemy;
++    const ChampionBelief* best = nullptr;
++    int best_steps = unreachable, ours = -1;
++    for (const auto& e : world.enemies) {
++        if (!e.alive || !e.visible || e.channel != Channel::tribute) continue;
++        const bool big = (params::deny_bag > 0 && e.gems >= params::deny_bag)
++                         || (params::deny_need > 0 && static_cast<float>(e.gems) >= params::deny_need * static_cast<float>(need));
++        if (!big || !holds_hard_stop(world, e)) continue;
++        if (ours < 0) ours = bag_at_stake(world);
++        if (ours >= std::max(40, e.gems / 3)) return nullptr;
++        if (const int steps = intercept_steps(world, e, my_position()); steps < best_steps) best = &e, best_steps = steps;
++    }
++    return best;
++}
++
+ // Into reach of the enemy whose bag ends the game, whatever the risk: a stun or a lock if it is
+ // tributing, else attacks, followed until it stops at an altar.
+ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e) {
+diff -ru -x .cambc oc-wdash-494/src/params.h wd-dny100/src/params.h
+--- oc-wdash-494/src/params.h	2026-11-09 22:24:31.475410479 +0000
++++ wd-dny100/src/params.h	2026-11-10 01:46:41.279591885 +0000
+@@ -130,6 +130,10 @@
+ // A bag this big (a tribute of two turns or more) is worth chasing: it counts as hurt above, and
+ // makes our own ground no refuge from pursuit.
+ inline constexpr int brake_bag = 19;
++// A visible enemy tribute that does not end the game is stopped (lock or stun) from this bag, or from this share of
++// the gems they still need (0: off), by a body whose own bag is under max(40, its bag / 3) (fight.cc tribute_to_deny).
++inline constexpr int deny_bag = 100;
++inline constexpr float deny_need = 0.0f;
+ // In our own half, give way to packs at this ratio: an enemy pack there has come to fight.
+ inline constexpr float home_retreat_ratio = 2.1740904f;
+ // Leave before contact when the visible enemies within this many steps of their reach would win

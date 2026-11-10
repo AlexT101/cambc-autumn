@@ -15508,3 +15508,26 @@ Patch: [sm-greed.patch](ideas-2026-11-09/shopmite-tools/sm-greed.patch).
 - Consistent with opp-intent (da4bfd8a3): pricing the flagged blow did not move deaths either; victims who step out of reach die 3% vs 53%. The gap is the step out, earlier than one window: the truth "escapable at P" may be optimistic (walls, occupancy, enemy moves), or the plan's home-progress goal leaves no lethal-free route. Next: trace retreat_step at P on trap deaths (plan active? options' ranks?) before another arm.
 - Trace at P (bs-rtrace, rtrace.py; 512 games each vs Mt3q/Flp4): on trap deaths, retreat_step runs with the plan active and deadly in ~60%, and every option it holds ranks "many" (no lethal-free route home); the truth's escaping steps point away from home, which retreat_step adds only untouched. ~0.2 a game take another retreat path (escape walk, dash, tribute). Truth corrected for walk-then-cast in a two-turn window: escapable at P still ~25-30% (walls, occupancy and the other enemies' moves ignored).
 - Arm bs-surv (bs-surv.patch): a goal-free survival pass over the dead layers; with a deadly pursuer, away steps join the options when they survive and survivors rank first. Mechanism unchanged: trap kills 1.06 / 0.96 vs base 0.96 / 1.01; deaths 4.93 / 5.00 vs 4.81 / 5.32; win rates 74.6 / 77.9 vs 76.8 / 77.3 (Mt3q / Flp4, 512 each). Not gated. Likely why: the plan's pursuer is the union of every tile it could reach, so with a ready lethal burster within about reach + 2 nothing survives the plan, while the truth's escapes assume the killer holds still. The remaining lever is earlier than P (not standing within reach + 2 of a ready lethal burster before its double turn) or a per-killer pursuit prediction, not the step ranking.
+
+## Livelock by a big enemy tribute (livelock, oc-wdash-494, 2026-11-10): the oscillation is a want_home edge; contesting the channel loses, the ping-pong guard is level
+- Case 1, live 01a1c303 (04pinwheel, v104, reproduced exactly by a puppet re-run, debug build too): from r839 the enemy Prism (7,200 hp, Focus 1,250) channels 699 gems at altar (2,25) for 47 turns (976 if it lands; game_ender needs 723). Our Prism (536 gems, stun ready throughout) alternates bank (B, steps to (8,22)) and retreat (R: `stand_lost_at` at (8,22), a walker the channeller could cancel to become); Vesper and Issac, each carrying a lock, alternate farm/bank and R the same way. Nothing sends a lock or stun holder at a tribute that does not end the game (CHANGES 485 removed 429's deny); the stun was 3 steps out of reach (7 vs 4) behind the same retreat edge; Cassi's stun was across the map.
+- Case 2, live 01a1c2fb (01elk_arena, Ryth r190-194): not the same cause. Ryth steps off and back onto group 23's capture tile each turn while Vesper holds it (on at payout: the 40 gold split two ways). From the replay, `yield_capture` (Vesper is the value holder) against farm's walk back; not confirmed by a trace (the puppet re-run diverges from round 1 with every build we have). Capture-tile episodes are ~6% of all oscillation.
+- Frequency (period-2 tile alternation >= 6 rounds, osc.py): local (oc-wdash-494, 512 games vs Flp4/Mt3q on fresh f0) 38 champion-rounds a game, 87% of games, 1.1 a game during enemy 100+ tributes; live (144 games since 11-09 21:45) 32 a game, 3.1 during big tributes (26 games, 12 won). 72% of local episodes have an enemy in sight: want_home's edge against a goal step.
+- Arms (tools and patches: research/ideas-2026-11-10/livelock/): `dny<K>`/`dnyr<f>`: a visible enemy tribute of K+ gems (or f of what they still need) that we hold a hard stop for goes to stop_game_ender's lock/stun route unless our bag >= max(40, its bag / 3). On the puppet re-run of case 1, Vesper locks at r848 (37 turns left). `pp<N>`: a quiet turn that walks us back to last turn's start keeps the work guard off the tile it left for N rounds: oscillation 38 -> 13 champion-rounds a game (big-tribute 1.1 -> 0.31).
+- Deny loses where it fires (dny100, 47 of 512 games changed): 20 wins against the base's 26, our deaths 451 against 346; the cancelled bodies restart (big tributes started 588 against 471). Safety's retreat was right: the channeller cancels and fights.
+
+**Results against oc-wdash-494** (fgate, Flp4/Mt3q; fresh units = maps):
+
+| gate | fresh (95% CI) of units | ladder | pooled | outcome |
+|---|---|---|---|---|
+| dny50 | −0.20 (±1.94) of 384 | −1.04 | −0.62 | screen, dropped |
+| dny100 | −0.20 (±1.70) of 384 | −1.37 | −0.78 | screen, dropped |
+| dny200 | −0.78 (±1.66) of 384 | −1.30 | −1.04 | screen, dropped |
+| dny400 | −0.91 (±1.53) of 384 | −1.56 | −1.24 | screen, dropped |
+| dnyr50 | −0.72 (±1.60) of 384 | −2.28 | −1.50 | screen, dropped |
+| dnyr75 | −0.78 (±1.58) of 384 | −1.95 | −1.37 | screen, dropped |
+| pp4 | −0.39 (±2.57) of 384 | −0.52 | −0.46 | screen, dropped |
+| pp16 | +0.13 (±2.68) of 384 | +0.59 | +0.36 | screen, dropped |
+| pp8 | −0.38 (±1.16) of 2,048 | −0.05 | −0.21 (±0.80) | stopped at 16 blocks: level |
+
+Verdict: no arm. Every deny threshold reads below the base; the guard turns back-and-forth into standing still at the same edge, which is worth nothing. What would pay is a better goal once the edge holds (another altar or group), not a stop or a pause.
