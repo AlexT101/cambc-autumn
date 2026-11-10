@@ -557,8 +557,8 @@ def cmd_pair(args):
     """Version A against version B on the games both played: same opponent, ref set, map and side."""
     a, b = args.versions
     key = lambda r: (r["opp_id"], r.get("refset"), r["map"], r["side"])
-    ra = {key(r): r for r in games(a)}
-    rb = {key(r): r for r in games(b)}
+    ra = {key(r): r for r in games(a) if r.get("purpose") != "oppcheck"}
+    rb = {key(r): r for r in games(b) if r.get("purpose") != "oppcheck"}
     both = sorted(set(ra) & set(rb))
     print(f"v{a} against v{b}: {len(both)} paired games")
     per = {}

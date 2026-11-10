@@ -31,6 +31,7 @@ R = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(R / 'tools'))
 import ladder_scrims as ls  # noqa: E402
 from ladder_version_check import VersionCheck  # noqa: E402
+from ladder_opp_check import OpponentDetector  # noqa: E402
 
 H = Path(os.environ.get('LIVE_SCHED_DIR', Path.home() / 'tmp-offload/handoff/sched'))
 HAND = H.parent
@@ -38,7 +39,7 @@ Q, QDONE = Path('/home/ubuntu/tmp-offload/live-queue.txt'), Path('/home/ubuntu/t
 STATE, LOG = H / 'state.json', H / 'sched.log'
 BASELINE = 86          # every candidate's gate pairs against v86's r2 games: never cut it
 # 2026-11-10 (user): no v1 probes. Each one drained live testing ~10-15 min an hour to switch the selection to v1.
-# Opponent changes are read from our own live version instead (plan_opp_check / opp_check below).
+# Opponent changes use a rolling observation snapshot, separate from the fixed testing pins.
 VERSION_CHECK = False
 CORE_GROUPS = 32       # r2 core = 16 groups x 2 opponents
 
@@ -84,8 +85,9 @@ def submissions_json():
 def wake(rec):
     (HAND / 'parked').mkdir(exist_ok=True)
     f = HAND / 'parked/live-gate.ready'
-    with f.open('a') as fh:
-        fh.write(json.dumps(rec) + '\n')
+    if rec.get('event_id') and any(e.get('event_id') == rec['event_id'] for e in ls.read_jsonl(f)):
+        return
+    ls.append_jsonl(f, rec)
 
 
 def outside_check(st):
@@ -315,7 +317,7 @@ def hold(why):
     log(f'HOLD: {why}')
     (H / 'HOLD').write_text(why + '\n')
     (HAND / 'parked').mkdir(exist_ok=True)
-    (HAND / 'parked/live-gate.ready').write_text(json.dumps({'hold': why, 'at': now()}) + '\n')
+    wake({'hold': why, 'at': now()})
     return False
 
 
@@ -427,54 +429,11 @@ def runner_alive():
         return False
 
 
-OPP_FIELDS = ('result', 'rounds', 'our_gems', 'opp_gems', 'our_kills', 'opp_kills', 'our_picks', 'opp_picks')
-
-
-def plan_opp_check(v):
-    """One unpinned (current-opponent) copy of each opponent's first pinned core group of live version v. Games are
-    deterministic, so the copy repeats the pinned games exactly unless the opponent's bot changed."""
-    tasks = ls.read_jsonl(ls.DATA / 'tasks.jsonl')
-    ids = {t['id'] for t in tasks}
-    rsets = refsets()
-    for opp in ('fish', 'mite'):
-        oid = ls.TEAMS[opp][0]
-        base = next((t for t in tasks if t['version'] == v and t['purpose'] == 'set' and t['part'] == 'core'
-                     and t['pin'] == 'ref' and t.get('refset') == rsets[opp] and t['opp_id'] == oid), None)
-        if base is None or f"{base['id']}-cur" in ids:
-            continue
-        # purpose oppcheck and no refset: gate() and the paired reports leave these games out.
-        t = dict(base, id=f"{base['id']}-cur", purpose='oppcheck', pin='none', refset=None, is_ref=False,
-                 priority=98, planned=now(), note=f"current {opp} on {base['id']}'s games (pinned {rsets[opp]})")
-        ls.append_jsonl(ls.DATA / 'tasks.jsonl', t)
-        log(f"opp-check: planned {t['id']} (current {opp} vs pinned {rsets[opp]})")
-
-
-def opp_check(st):
-    """Compares each finished unpinned copy with its pinned group, game by game; a difference is an opponent change."""
-    done = st.setdefault('opp_checks', {})
-    rows = {}
-    for r in ls.read_jsonl(ls.DATA / 'games.jsonl'):
-        rows.setdefault(r['task'], {})[(r['map'], r['side'])] = r
-    for tid, cur in rows.items():
-        if not tid.endswith('-cur') or tid in done:
-            continue
-        base = rows.get(tid[:-len('-cur')], {})
-        if len(cur) < 5 or len(base) < 5:
-            continue
-        changed = sorted(f'{m}/{s}' for (m, s), r in cur.items()
-                         if (m, s) not in base or any(r.get(f) != base[(m, s)].get(f) for f in OPP_FIELDS))
-        rec = dict(ev='opp-check', at=now(), task=tid, opponent=next(iter(cur.values()))['opp_name'],
-                   version=next(iter(cur.values()))['version'], changed=bool(changed), maps=changed)
-        done[tid] = rec
-        save(st)
-        log(f"opp-check {rec['opponent']} v{rec['version']}: {'CHANGED on ' + ', '.join(changed) if changed else 'unchanged'}")
-        if changed:
-            wake(rec)
-
 
 def main():
     log(f'scheduler start pid {os.getpid()}')
     version_check = VersionCheck(ls, H, log, wake)
+    opponent_detector = OpponentDetector(ls, save, log, wake, now)
     while not (H / 'STOP').exists():
         try:
             st = load()
@@ -488,8 +447,7 @@ def main():
                 time.sleep(120)
                 continue
             live, _, _ = submissions()
-            plan_opp_check(live)
-            opp_check(st)
+            detector_pending = opponent_detector.tick(st, live, refsets())
             g = gate(live)
             c = prepare(st)
             reached = g['planned'] > 0 and not g['pending'] and g['inflight'] == 0
@@ -512,7 +470,7 @@ def main():
                            entry=next((h for h in st['history'] if h['version'] == live), None))
                 ls.append_jsonl(H / 'gates.jsonl', rec)
                 (HAND / 'parked').mkdir(exist_ok=True)
-                (HAND / 'parked/live-gate.ready').write_text(json.dumps(rec) + '\n')
+                wake(rec)
                 st['reported'].append(live)
                 save(st)
                 log(f'gate v{live} done: {g["done"]} groups')
@@ -521,7 +479,7 @@ def main():
                     log(f"gate v{live} reached, {c['label']} waiting: PAUSE present ({(H / 'PAUSE').read_text().strip()})")
                     st['pause_logged'] = live
                     save(st)
-            elif reached and c and g['any_inflight'] == 0 and not (H / 'HOLD').exists():
+            elif reached and c and g['any_inflight'] == 0 and not detector_pending and not (H / 'HOLD').exists():
                 log(f"submitting {c['label']} after v{live}")
                 if not submit(st, c, live):
                     log('submit did not complete; retrying next loop')

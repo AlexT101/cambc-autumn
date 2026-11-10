@@ -645,7 +645,28 @@ drafts and emblems: [report](../research/fish-2026-11-05/DRAFTS-EMBLEMS.md).
   (fast runner), decodes (`build.py local`), scores (`metrics.py`) and compares (`compare.py`, against `fish` and
   `control-ast37`) into `replays/fish-scorecard/N/scorecard.{md,json}`. `metric_defs.py` defines every metric.
 
-## Hourly live opponent checks
+## Rolling live opponent checks
+
+`ladder_opp_check.py`, called by `live_sched.py`, keeps a detector-only source-group
+snapshot for each opponent in scheduler state. Once per own live version, it compares
+five identical map/side cells against the current opponent and the last observed
+snapshot, using that same own version. If the snapshot still equals the fixed testing
+pin, its existing core group is reused; otherwise one additional explicit-source
+`oppcheck` group supplies the baseline. A complete valid difference advances only the
+detector snapshot and logs/notifies the coordinator. Unchanged observations retain it.
+Neither `refsets.json` nor any repin queue is modified. Detector groups are excluded
+from strength gates and the default paired report.
+
+Migration uses the latest valid saved observation through v112: Fish remains equivalent
+to r2, while Mite starts from its v112 unpinned group. This is an initial observation,
+not evidence of additional uploads between the old checks. Matching requires five
+finished non-suspect cells with consistent own version, opponent, maps, sides, source
+and engine identity. Interrupted planning repairs missing tasks by stable IDs; snapshot
+advancement and a notification outbox are saved together, with event-ID deduplication
+in the append-only wake journal. Invalid comparisons hold their snapshot for review.
+Tests: `python -m unittest discover -s tools/tests -p test_ladder_opp_check.py -v`.
+
+### Retired hourly v1 checks
 
 Off since 2026-11-10 (`live_sched.py`'s `VERSION_CHECK`; its opp-check replaces it, with no draining).
 `ladder_version_check.py` integrates with `live_sched.py`:
