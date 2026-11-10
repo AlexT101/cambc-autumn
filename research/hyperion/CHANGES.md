@@ -4356,3 +4356,17 @@ operations for allies, combat nodes, windows and large camp groups. No fuel budg
 
 Evidence, exactness exceptions, rejected attempts and reproduction: [fuel 501](../fuel-2026-11-10-fourth/README.md).
 Frozen as `variants/oc-fuel-501` (= bots/ocean).
+
+## 502: Draft10's F92 draft model (ocean, 2026-11-10)
+
+Replaces only `src/draft/draft_model.h` with the localq draft10 refit (799,998 lab games on fresh ladder-v2
+maps, Fish/Mite-weighted opponents, F92 features, fitted on `ocean-16d6f78`). Features are unchanged since that
+base: `map_features.cc` differs only by the plans-identical SIMD flood (491, 493).
+
+- **Head-to-head release A/B** against `oc-fuel-501`, own drafts, real fuel, on 29,952 fresh ladder-v2 maps
+  (seeds 5110000–5110116, both sides): **51.2% of 59,904 (95% CI 50.8–51.6)**. No failed games, early losses or
+  broken/capped drafts; exhausted turns level.
+- **First turn** (`firstturn.py --need`, ladder + gen + gen-s1): max 9,385,316 of 10M, none over.
+- Draft10's own fresh gate on its base against the Fish/Mite bodies: 50.70% (50.45–50.95), Fish +0.82, Mite +0.58 points.
+
+Evidence: EXPERIMENTS "Local queue draft10 F92 refit". Frozen as `variants/oc-501-draft10` (= bots/ocean).

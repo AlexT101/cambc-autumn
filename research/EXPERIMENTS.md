@@ -16097,6 +16097,15 @@ not a 99% live-bar pass. `draft10-gate-continue` reuses the same frozen source a
 and source seals: `~/tmp-offload/handoff/codex/queue-ops/draft10-stage1.json` and
 `draft10-continuation-sources.json`; original gate log `~/tmp-offload/localq/draft10/fgate.out`.
 
+**Port to 501 (Claude, 2026-11-10):** `draft10-gate-continue` was cancelled unstarted (the user's 3-day
+compute cut). `lq-draft10`'s `draft_model.h` copied into `bots/ocean` at 48e2771a7 (= `oc-fuel-501`); no other
+file differs (`map_features.cc` changed since `ocean-16d6f78` only by the plans-identical SIMD flood, CHANGES
+491/493). Frozen as `variants/oc-501-draft10`. First turn (`firstturn.py --need`, ladder + gen + gen-s1, both
+sides): p99 8,054,972, max 9,385,316 of 10M, none over. Head-to-head release A/B against `oc-fuel-501`, own
+drafts, real fuel, fast runner, on 29,952 fresh ladder-v2 maps (`suites/d10port`, seeds 5110000-5110116, both
+sides): **51.2% of 59,904 (30,652-29,252), 95% CI 50.8-51.6**. No failed games, no broken or capped drafts;
+out-of-fuel turns CAND 376,705 in 41,034 games, REF 379,597 in 41,711. `replays/ab/d10port-501-60k/`.
+
 ## Safe tribute tile (safetrib, oc-wdash-494, 2026-11-10): bush / far-from-enemy tribute tiles fire but move nothing; nothing merged
 User: "prefer for example tributing from a bush. or perhaps farther away from recently seen enemies ... most conservative probably like just on prism when she has lots of gems and enemies spotted nearby".
 - **Live data** (our tributes vs Fish, 544 games, and Mite, 2,409, since 11-08; `~/tmp-offload/safetrib/tools/ourtrib.py`). Nobody dies while channelling (death 0.00 in every band). Bags of 100+ complete 33-48%. The rest are our own safety cancels (33-43%), stuns (5-16%; Mite more) and locks (7-16%). The bag is kept: it is lost to a death within 15 rounds 2-5% of the time. So a cancel costs time, not gems. The predictor is enemies near at the start: with none within 8 in the previous 10 rounds a 100+ tribute completes 86%, with 3+ only 23-26%. Most 200+ channels are Prism's (her winning bag). Only 5-8% of altars have a bush tribute tile (fresh ladder-v2 bush density matches the ladder, 5%). 100+ tributes started on a bush completed 71-75%, against 41-48% elsewhere (confounded with quiet altars).

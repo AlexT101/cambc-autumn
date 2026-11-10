@@ -953,3 +953,6 @@ re-measured"; used).
 
 **Ocean fuel fourth pass, final release confirmation (2026-11-10):** `--mix ladder-v2`, under `suites/fuel-fourth/final-{seed}`:
 - 1462610–1462617, 2,048 maps: used for independent final 501 release and bench confirmation against frozen 500 (`oc-f4x-currentbase`), after the first suite became development evidence.
+
+**Draft10 port to 501 (2026-11-10):** `--mix ladder-v2`, under `suites/d10port/fresh-{seed}`, symlinked into `merged/d10port`:
+- 5110000–5110116, 29,952 maps: used by the head-to-head A/B `oc-501-draft10` vs `oc-fuel-501` (EXPERIMENTS "Local queue draft10 F92 refit", port to 501).
