@@ -15647,3 +15647,29 @@ The user asked whether, once the classifier knows the team, its priority formula
 | oo-mord-k3 (kill 3x Strength) | −0.30 ±0.88 | 3,072 | +0.13 | −0.21 / −0.39 | screen, undecided |
 
 - Verdict: a more accurate order doesn't win games. The pessimism it removes seems cheap, and its extra misses (Mite acting before us when we predict after) cost about as much. The only lean is c5, which trusts the order only beyond 5 tiles; it is inside noise and not gated (stopped to save usage). Arms: bots/variants/oo-mord{,-c3,-c5,-k3,-r6} (gitignored).
+
+## Safe tribute tile (safetrib, oc-wdash-494, 2026-11-10): bush / far-from-enemy tribute tiles fire but move nothing; nothing merged
+User: "prefer for example tributing from a bush. or perhaps farther away from recently seen enemies ... most conservative probably like just on prism when she has lots of gems and enemies spotted nearby".
+- **Live data** (our tributes vs Fish, 544 games, and Mite, 2,409, since 11-08; `~/tmp-offload/safetrib/tools/ourtrib.py`). Nobody dies while channelling (death 0.00 in every band). Bags of 100+ complete 33-48%. The rest are our own safety cancels (33-43%), stuns (5-16%; Mite more) and locks (7-16%). The bag is kept: it is lost to a death within 15 rounds 2-5% of the time. So a cancel costs time, not gems. The predictor is enemies near at the start: with none within 8 in the previous 10 rounds a 100+ tribute completes 86%, with 3+ only 23-26%. Most 200+ channels are Prism's (her winning bag). Only 5-8% of altars have a bush tribute tile (fresh ladder-v2 bush density matches the ladder, 5%). 100+ tributes started on a bush completed 71-75%, against 41-48% elsewhere (confounded with quiet altars).
+- **Arms** (`bots/variants/st-*` = oc-wdash-494 + `choose_tribute_tile` in economy/bank.cc, knobs `params::st_*`). Within 4 of an altar, carry_bag picks the tribute tile it channels and waits on, at most 2 steps beyond the nearest: an unwatched bush first, then the tile farthest from enemies sighted in the last 10 rounds. submit_here and the turn-end feint channel only there. Fight-path banks are unchanged. Variants:
+  - st-p: Prism only, 100+ gems, an enemy sighted within 8 of the altar;
+  - st-pa: st-p without the enemy condition;
+  - st-b100 / st-b50: every champion, 100+ / 50+ gems, with the enemy condition;
+  - st-far: st-b100 with distance only, no bush;
+  - st-all: every bag, always, bush then distance;
+  - st-bush: every bag, always, bush only.
+- **Mechanism** (paired runs against Flp4 / Mt3q, 512 games each, ladder + fresh f0, `tools/mech2.py`). The arms change 13-75% of games. In st-bush's changed games the bush share of 50-99 bags doubles (0.09 → 0.19 vs Fish), and stun cancels of 100+ bags fall 0.15 → 0.10 vs Fish (0.16 → 0.13 vs Mite). Completion of 100+ bags moves +0.02 to +0.05 and win rates are level. Self-cancels and locks dominate and a tile can't move them: a lock cancels from 2 tiles away unseen, and our Safety prices the walk in, not the sight line.
+
+Results against oc-wdash-494 (fgate, Flp4/Mt3q, fresh units; read ±95% CI in points):
+
+| arm | fresh read | n (fresh units) | outcome |
+|---|---|---|---|
+| st-p | -0.11 ±0.25 | 1,792 | NARROWED, high H0 |
+| st-pa | -0.05 ±0.26 | 2,048 | high H0 (cap 16 blocks) |
+| st-b100 | -0.09 ±0.26 | 2,048 | high H0 |
+| st-b50 | -0.09 ±0.43 | 2,048 | high H0 |
+| st-far | -0.11 ±0.27 | 2,048 | high H0 |
+| st-all | +0.01 ±0.78 | 2,048 | undecided (cap) |
+| st-bush | -0.14 ±0.32 | 5,248 | high H0 (LLR -7.1 at 41 blocks; was +0.15 at 16) |
+
+Verdict: not a gain. The danger at the altar is time lost to cancels, not deaths. Choosing a tile among the altar's 8 neighbours changes neither the locks nor our own safety cancels. Left open: a Safety that credits bush cover (an enemy has to enter the cluster to see us), which none of these arms tried.
