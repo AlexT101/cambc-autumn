@@ -16383,3 +16383,9 @@ operations. Search budgets/reserves and strategic thresholds are unchanged. Froz
   final improvements on 500. Rejected changes include broader direct threat ranges, group-local Reach lists,
   clear-health SIMD, larger walk caches, shared host boards and incremental clear bookkeeping. Their outcomes
   and the ward trace are retained in [fuel 501 evidence](fuel-2026-11-10-fourth/README.md).
+
+## Cleared-camp normal gate unresolved, 2026-11-10 16:26 UTC
+
+Cleared/respawning-camp fallback `oc-wcamp-498` versus full498 completed325blocks/41,600 fresh paired units at normal100k: **NARROWED**, fresh−0.117±0.250pp (Fish+0.036±0.343, Mite−0.270±0.363), ladder−0.008±0.249. LowLLR+0.120/high−11.422; no acceptance, formal rejection or ZONE crossing. No established gain and no promotion. This single-budget result does not resolve the separate alive-camp inclusion or timing hypotheses; doubled cleared-camp and both alive-inclusive conditions retain their own terminal decisions.
+
+The last legacy private-pool controller ended16:26:21. Ops drained and retired its accounting quota before starting alive-inclusive200k in main86 at16:26:48. Independently checked actual fgate3392268 and descendants, exact200k/native/fixed Flp4/Mt3q/base, pool metadata and unchanged source seals. No evidence process restarted. Raw result `~/tmp-offload/warding-2026-11-10/results/camp-100000.json`; start evidence `campall-raised-start-validation.json`. Paired camp-scope analysis waits for both terminal samples and uses only common balanced blocks.

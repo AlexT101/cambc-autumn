@@ -137,3 +137,9 @@ Normal fuel also formally **REJECTED** the bush-only restriction: 216 blocks / 2
 Both normal and doubled fuel reject this arm. Retain planned non-bush wards and close the bush-only branch; no cheaper version is justified by these results. This does not establish which information or action caused the losses, or that the difference between budgets is significant. The separate camp and timing arms continue. Raw terminal copies are `results/bush-100000.json` and `results/bush-200000.json` under the ward artifact directory.
 
 Alive-camp normal has now started as fgate1485551 in main86. Its actual command uses the sealed candidate/full498 reference, fixed Flp4/Mt3q and default normal fuel. Both source seals were rechecked. Cleared-camp normal remains the last private-pool ward controller; no game was restarted.
+
+## Cleared-camp normal gate unresolved, 2026-11-10 16:26 UTC
+
+Cleared/respawning-camp fallback `oc-wcamp-498` versus full498 completed325blocks/41,600 fresh paired units at normal100k: **NARROWED**, fresh−0.117±0.250pp (Fish+0.036±0.343, Mite−0.270±0.363), ladder−0.008±0.249. LowLLR+0.120/high−11.422; no acceptance, formal rejection or ZONE crossing. No established gain and no promotion. This single-budget result does not resolve the separate alive-camp inclusion or timing hypotheses; doubled cleared-camp and both alive-inclusive conditions retain their own terminal decisions.
+
+The last legacy private-pool controller ended16:26:21. Ops drained and retired its accounting quota before starting alive-inclusive200k in main86 at16:26:48. Independently checked actual fgate3392268 and descendants, exact200k/native/fixed Flp4/Mt3q/base, pool metadata and unchanged source seals. No evidence process restarted. Raw result `~/tmp-offload/warding-2026-11-10/results/camp-100000.json`; start evidence `campall-raised-start-validation.json`. Paired camp-scope analysis waits for both terminal samples and uses only common balanced blocks.
