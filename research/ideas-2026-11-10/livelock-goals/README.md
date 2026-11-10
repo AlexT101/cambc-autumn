@@ -11,7 +11,7 @@ Large artifacts, logs and restart state are under `~/tmp-offload/livelock-goals/
 | Yieldroute | −0.080 ±0.250 | 25,216 | NARROWED, unresolved |
 | Farmleave | −0.537 ±0.354 | 16,768 | REJECT |
 | Farmchannel | +0.119 ±0.249 | 11,776 | NARROWED (ZONE crossed), unresolved |
-| Bankviahome | Pending | — | Queue-owned; targeted historical case improved |
+| Bankviahome | −0.206 ±0.250 | 14,080 | NARROWED, unresolved |
 
 No demonstrated overall gain from the completed arms. NARROWED is not statistical rejection. Bankviahome's independent 200k diagnostic is +0.244 ±0.750 pp over 1,024 fresh units, inconclusive. The sections below retain the sequence of hypotheses and historical intermediate reads.
 
@@ -130,3 +130,8 @@ Farmchannel reached **NARROWED (ZONE crossed)** after92blocks/11,776fresh units:
 ## Capture routing gate concluded
 
 Yieldroute reached NARROWED at197blocks/25,216fresh units: fresh−0.080±0.250pp95%, ladder+0.275±0.223, pooled+0.097±0.167. Fresh Fish+0.206±0.336, Mite−0.367±0.366; one-site+0.178±0.449, multi-site−0.173±0.299. LowLLR+0.689, high−10.874. No demonstrated overall gain on fresh maps despite the measured81% reduction in yield-associated oscillation. Unresolved, not statistical rejection. All earlier arms are concluded; Bankviahome remains queue-owned.
+
+
+## Final bankviahome result during paused-goal cleanup
+
+The already-running frozen497 normal gate naturally completed17:10:38, exit0: **NARROWED, −0.206±0.250pp95%**,110blocks/14,080fresh units. Fish−0.135±0.345; Mite−0.277±0.361; ladder−0.044±0.259; pooled−0.125±0.180. Low LLR−1.245, high−12.773; no low rejection or screen pass. This is no demonstrated overall gain, not confident rejection. Exact historical productive departure remains diagnostic evidence; no route change is promoted. The share helper removed its overrides and exited17:10:39. The owner watcher had already stopped for the user pause; ops recorded this natural terminal. No old-base followup is queued and no new work resumes while paused. `fg-bankviahome.log` retains the complete final JSON.
