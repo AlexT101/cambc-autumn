@@ -415,7 +415,7 @@ class FitJob:
 
     def _run(self, lab, search, slots):
         try:
-            held = cpu_slots.acquire(slots, least=min(slots, 16), poll=0.005)
+            held = cpu_slots.acquire(slots, least=min(slots, 8), poll=0.005)
             try:
                 args = ["node", str(HERE / "model.mjs"), "fit", "--lab", str(lab), "--threads", str(len(held))] + (["--search"] if search else [])
                 with open(lab / "fit.log", "a", encoding="utf-8") as f:
@@ -495,7 +495,7 @@ def prepare(lab, b, games, cfg, source, exclude=()):
     bdir.mkdir(parents=True, exist_ok=True)
     extra = ["--exclude", ",".join(str(x / "plan.json") for x in exclude)] if exclude else []
     # The plan's Thompson draws on worker threads, on slots from the pool (the games playing meanwhile hand them over).
-    held = cpu_slots.acquire(cfg["plan_threads"], least=cfg["plan_threads"], poll=0.005)
+    held = cpu_slots.acquire(cfg["plan_threads"], least=min(cfg["plan_threads"], 8), poll=0.005)
     try:
         print(node(HERE / "model.mjs", "plan", "--lab", lab, "--batch", b, "--out", bdir / "plan.json", "--vehicles",
                    cfg["vehicles"], "--games", games, "--mode", mode, "--threads", len(held), *extra))
