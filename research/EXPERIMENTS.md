@@ -14731,3 +14731,77 @@ The provable-cap line was ported onto oc32s-bsk (patches in [fuelcap-2026-11-09]
   - 0.36% after 75-90k (40% of OOF);
   - 2.0% after 90k or more;
   - 10.7% after an OOF turn.
+
+## v94's falls line and walk-then-dash in the escape planner (ocean fc9ae7880, 2026-11-10): both level, nothing merged
+
+Both arms are against `variants/ocean-fc9ae78` (= bots/ocean at fc9ae7880, CHANGES 493) on fresh `merged/wdf-1980`
+(ladder-v2, 10,240 maps). Each played 20,480 games: release builds, fast runner, own drafts (`--no-test-draft`),
+no failed matches.
+
+| arm | what | win % (95% CI) | OOF CAND / REF |
+|---|---|---|---|
+| `oc-falls` | v94's `stand_lost_at` line: `falls` also on `winning_bag(world)` | 50.1 (49.4-50.8) | 245,375 / 244,820 |
+| `oc-wdash` | walk then dash on turn 1, ranked by the escape planner | 50.5 (49.9-51.2) | 250,877 / 244,175 |
+
+- **oc-falls** is v94's one-line change (`bots/baselines/v94`, interrupt-v1's "78 winning-bag deaths" note), ported
+  unchanged. It is level.
+- **oc-wdash.** The 478 planner priced this turn's walk with the dash saved for later turns, and this turn's dash
+  only as dash then walk. So it never chose a walk made so that a dash from its tile clears this turn: v94's
+  moat-crossing case, which v94 handled by a separate heuristic (`quote_walk_dash`) that ignored the plan.
+  - **Planner (`model/escape`):** the backward pass adds `landed` (turn 1 ends on the tile, dash spent), `stood`
+    (dash kept) and `walk_dashed` (the later turns' dash term applied to turn 1: walk tiles from which a dash lands
+    in `landed`).
+  - **Deferral:** `escape_landings` puts the dash off, once a turn, when a walk then dash ranks below every dash-now
+    landing and below keeping the dash. A walk-dash only counts below `stood` of its walk tile, so the dash moves us.
+  - **The walk:** `retreat_step` ranks each walk by the better of its own rank and its walk-dash rank. A
+    walk-dash step is not sent last for damage on its tile.
+  - **The dash:** `dash_away` ranks landings from the walked-to tile by the pre-walk plan (`landed` against `stood`),
+    with no rebuild.
+  - **The cast is held:** no reset and no non-lethal cast spends the dash's cast before the walk.
+  - **Smoke (debug, 128 `maps/gen` maps):** 40 deferrals in 20 of 256 games. 36 walked, 30 of them with a landing
+    ranked better than keeping the dash; 6 walked and kept the dash; 4 never reached the post-walk dash.
+- **Reading:** oc-wdash is +0.5 with the interval touching 50, and OOF up 2.7% (falls: +0.2%). It fires about once
+  in six games, so its effect is mostly diluted.
+
+## One-site conditioning of the removal branch: 429's lock and deny back only where every altar is one site (ocean = removal tip 7862c1b39, 2026-11-09/10): no arm, the live split was noise
+
+**Question.** Live, v102 (the removal branch) was level against v99/v101 overall, but read about -11 on one-site maps and +2 to +13 on multi-site maps (z about ±1.3, and the split was picked after the data was seen). The user asked whether conditioning on a map feature would give "the best of both worlds": keeping removed features on one-site maps and dropping them on multi-site maps.
+
+**Which removed features could act by site.** From 485/486's code, and from the removal-gap mirror arms (rm2 + one feature, ocrm-1921, paired with rm2's mirror), split by site:
+- b1 `safer_altar` returns early with fewer than 2 altars, so it has nothing to do on one-site maps.
+- b3w's escort clearing already runs only on one-site maps (`escorting()` needs `guarded_altar`). Mirror: +0.10 ±0.32 on one-site, ~0 on multi-site.
+- 429's timed lock: +0.84 ±0.47 on one-site, +0.31 ±0.29 on multi-site.
+- 429's deny alone: -0.53 ±0.68 on one-site, -0.05 on multi-site.
+- gf, b5, c1, 467, 468 and 471: no difference by site beyond noise, and no site mechanism. Left out.
+
+**Arms** (bots/variants, all built from 7862c1b39; the REF is `os-rm3`, the tip itself):
+- `os-lk1`: 429's timed lock and 100-gem deny restored only when `one_site(world)`, i.e. `guarded_altar() >= 0`, meaning every altar is linked to the rest within Chebyshev 3. This is the bot's existing site rule, computed in play from the map, with no map identity.
+- `os-lkA`: the same restore on all maps (the unconditioned control).
+- `os-lo1`: one-site, the timed lock only.
+
+Traced in a debug build: on 01boss-battle the lock plan set 1,711 times and the deny fired 247 times; on 00ambush (multi-site) `one_site` read 0.
+
+The bot's rule and fgate's (one altar, or two with altar_centre < 0.06) agree on 1,101 of the 1,152 maps (the 128 ladder maps and the 1,024-map fresh pool). Of the 51 disagreements, 49 are linked off-centre altar pairs, which only the bot's rule counts as one-site.
+
+**Results against os-rm3** (fgate: 128 ladder maps plus fresh ladder-v2 slices against the Flp/Mt3p bodies. 118 blocks, each 1,024 games a bot; fresh = 15,104 units, 60,416 games a bot. Stopped by the coordinator at 118 blocks.)
+
+| gate | fresh, all maps | fresh one-site (fgate rule) | fresh multi-site | pooled one − multi (fgate rule) | SPRT |
+|---|---|---|---|---|---|
+| os-lk1 | 50.09% (49.82-50.36) | -0.06 ±0.59 | +0.15 ±0.31 | -0.38 ±0.45 | high H0 (LLR -6.75); low +2.79 |
+| os-lkA | 50.12% (49.82-50.42) | -0.19 ±0.59 | +0.23 ±0.35 | -0.43 ±0.47 | high H0 (-5.31); low +2.59 |
+| os-lo1 | 50.18% (49.90-50.46) | +0.00 ±0.55 | +0.24 ±0.33 | -0.11 ±0.44 | ZONE (high -5.38, low +3.59) |
+
+By the bot's own site rule, pooled over ladder and fresh, one-site reads:
+- os-lk1: -0.00 ±0.37;
+- os-lkA: +0.04 ±0.37;
+- os-lo1: +0.44 ±0.35.
+
+On the ladder maps the arms read +0.25 / +0.30 / +0.44.
+
+**Reading.**
+- **No one-site advantage.** Restoring 429 on one-site maps reads -0.1 to +0.2 there, with upper bounds of about +0.5. The unconditioned restore is no better on one-site maps than on multi-site maps (one − multi is -0.4 ±0.5). So conditioning on site gains nothing. The live -11/+13 split was noise, as its z and its post-hoc choice suggested.
+- **The restore is level at best everywhere.** It is about +0.1 to +0.2 on fresh maps, with every high SPRT at H0. The mirror's +0.84 one-site read for the timed lock doesn't carry over to the Fish/Mite bodies: it was mostly rm2 exploiting its own hard stop (removal-gap REPORT section 2).
+- **Code that never runs still rerolls games.** os-lk1 doesn't act on multi-site maps, yet 10.5% of its multi-site games came out different from os-rm3's, from the fuel shift alone. Its real one-site behaviour adds only about 5 points of flips there (15.1% against 10.6%). A narrow arm's subset read sits on top of that reroll noise, and its multi-site read (+0.15 ±0.31) is the noise floor.
+- **CHANGES 491** (draft fuel fix, merged as ocean-16d6f78 during the run) only changes the draft's open-plan search. It doesn't touch the tribute-response code, so these reads stand for the new base.
+
+Files: ~/tmp-offload/onesite/ (tools/sitecmp.mjs, tools/armsplit.py, tools/split.py, split-final.txt, fgate logs); runs `fge501-os-{rm3,lk1,lkA,lo1}-dvn{1..118}{F,M}-{L,f0..f7}`.
