@@ -16662,3 +16662,11 @@ All 104 normal pinned groups collected at 21:23:34 UTC; independent proof exclud
 Old local Greed evidence remains unresolved: fresh+0.206±0.250pp, Fish+0.184±0.327/Mite+0.228±0.369, NARROWED/ZONE. No Greed merge/exploiter promotion follows. The already-authorized current-mask105 control was reverified prospectively and should supply full256 Mite r5 cells; actual future submission/context still needs checking. No additional tests or repins. [Full readout, exact replay examples and source checks](ideas-2026-11-10/live-greed111/README.md). Artifacts: `~/tmp-offload/handoff/codex/live-analysis/greed111/`.
 
 The note also preserves a source-coverage correction: current504 contains neither v106's exact8k farm-reserve subtraction nor its global queue_round guard;503's12k non-quiet turn-order reserve is different. The user's canceled attribution programme remains closed; absence does not authorize revival.
+
+## Alive-inclusive camp wards on504: full200k ZONE review (2026-11-10)
+
+`oc504-wcampall` versus frozen `oc-emb5-504` reached its prespecified **ZONE** at303 blocks (38,784 fresh paired noise-map units from the fixed1,024 maps), with CI-width stopping disabled. LowLLR+2.952/high−8.238; no high acceptance. Overall fresh **+0.073±0.254pp**, Fish+0.330±0.343, Mite−0.184±0.372; ladder−0.193±0.258. This is a judgment-zone result, **not a formal rejection or a demonstrated positive gain**. Current decision: no100k follow-on or shipping.
+
+One-site−0.788±0.472 versus multi-site+0.402±0.300 is diagnostic subgroup evidence; no conditional ward candidate follows without a mechanism and prospective validation. Original498 and bounded Fish503 evidence remain separate. The cleared-camp504 gate continues under its own rule.
+
+Independent terminal audit rechecked all303 block records and2,424 summary hashes: complete matched release200k/engine5.0.1, zero errors/early losses/broken handoffs/capped drafts, unchanged source/map/tool manifest87173c…. Shared reference games account for part of the620,544 candidate-plus-reference cached games; these are not new distinct maps. Evidence `~/tmp-offload/ward504-full/{campall-result,campall-terminal-audit}.json`; [protocol and terminal note](ideas-2026-11-10/ward504/README.md).

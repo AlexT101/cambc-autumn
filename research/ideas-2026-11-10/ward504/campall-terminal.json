@@ -1,0 +1,82 @@
+{
+  "result": {
+    "cand": "variants/oc504-wcampall",
+    "ref": "variants/oc-emb5-504",
+    "outcome": "ZONE",
+    "blocks": 303,
+    "cambc": "5.0.1",
+    "fuel": 200000,
+    "bodies": "pick-model (Flp4/Mt3q)",
+    "fresh": [
+      0.073,
+      0.254
+    ],
+    "ladder": [
+      -0.193,
+      0.258
+    ],
+    "pooled": [
+      -0.06,
+      0.181
+    ],
+    "ladder_minus_fresh": [
+      -0.266,
+      0.362
+    ],
+    "fresh_fish": [
+      0.33,
+      0.343
+    ],
+    "fresh_mite": [
+      -0.184,
+      0.372
+    ],
+    "fresh_one_site": [
+      -0.788,
+      0.472
+    ],
+    "fresh_multi_site": [
+      0.402,
+      0.3
+    ],
+    "ladder_fish": [
+      -0.066,
+      0.351
+    ],
+    "ladder_mite": [
+      -0.32,
+      0.379
+    ],
+    "fresh_units": 38784,
+    "llr_high": -8.238,
+    "llr_low": 2.952,
+    "zone_at_units": 38784,
+    "screen_at_units": null,
+    "low_h1_at_units": 38784,
+    "high_h0_at_units": 16512,
+    "validated_blocks": 303,
+    "decision_note": "Judgement review; not automatic rejection or CI proof of positive gain.",
+    "manifest_sha256": "87173c3120ed81bc9ce8a6fdb4567f0b44d93a4bedaea198d40bdb1b6a645673"
+  },
+  "audit": {
+    "blocks": 303,
+    "validated_summaries": 2424,
+    "per_arm_games": 310272,
+    "total_candidate_reference_games": 620544,
+    "fresh_paired_units": 38784,
+    "distinct_primary_maps": 1024,
+    "summary_hashes_match": true,
+    "metadata_complete_release200k_501": true,
+    "counts": {
+      "early_losses:cand": 0,
+      "early_losses:ref": 0,
+      "handoff_failures:cand": 0,
+      "handoff_failures:ref": 0,
+      "capped_drafts:cand": 0,
+      "capped_drafts:ref": 0
+    },
+    "manifest_sha256": "87173c3120ed81bc9ce8a6fdb4567f0b44d93a4bedaea198d40bdb1b6a645673",
+    "result_sha256": "0719d9bcd65824bf44fb5d75ac7ff129d5a2b9b032e831cafb93830524712d02",
+    "interpretation": "ZONE judgment review; no formal rejection, no demonstrated overall gain, no100k or shipping recommendation."
+  }
+}
