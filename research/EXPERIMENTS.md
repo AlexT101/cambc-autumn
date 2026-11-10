@@ -163,14 +163,27 @@ runner, against `variants/ocean-b0eeff1`; ± is the 95% interval.
   owned; `current_emblem` credits it for camp damage only). Its k0-2 cells are worth nothing (50.3% of 61,440 without them);
   its Home, Tribute, Monster and Durability cells are each level. Collectors is already placed about right:
   earlier costs, later or wider is level.
-- **The dense design is blind to that value.** It scores "no table" as level for every draft source and opponent
-  kind, where A/Bs read -2.6 to -4.4 points; and it scores its own selections +2 to +4 points above what they
-  play. Not a fitting bug (a model-free Hajek check agrees with the fit; the candidates buy what their tables say:
-  `emblem_orders.mjs`), not the forecasts (purchase-only builds read the same), not the draft mix. With 35-50% of
-  every build drawn, a decision's arm is measured inside a scrambled build against scrambled teams: effects that
-  need the rest of the build to be the bot's own (a 0.1-point-a-decision, 3-point-a-policy effect) do not show.
-  Round 2's table came out of the same design and did transfer (+2.3 on astraeus): the design is not always
-  wrong, but its cross-fitted number is not evidence by itself.
+- **Why the lab misread tables** (checked afterwards on its own data: `selfheal.py`, `pooled_edits.py`). It
+  measures one cell changed with every other cell of the build as the base has it; a table changes many cells of
+  one champion at once.
+  - **The base heals a single deviation.** A champion drawn away from a passive the base wanted owns it anyway
+    within three more emblems 60% of the time (Prospector 77%, Capture 75%, Collectors 49%): a later table cell, the
+    current logic or a later draw buys it. So the lab scores dropping the late Collectors cells at -0.49 ± 0.24
+    points a team where dropping all 39 plays -1.7, every late cell at -0.06 ± 0.56 against -1.9, and the whole
+    table at +0.25 ± 0.77 against -3.0. A selection's cells are each scored with the purchases they jointly delete
+    still in place: the final selection overwrote 165 of the table's 328 cells, and one arm written into a bucket's
+    consecutive cells falls back to the current logic after its first purchase, which drops the table's arms there.
+  - **Noise, and a noise pick is not neutral.** A fixed policy is resolved to ±0.5-0.8 points by 1.28M games; a
+    selection is the best of 43 candidates in each of 468 cells. A proposal-drawn arm costs about 0.25 points
+    against the base (dense forcing costs a team 3.5 points over ~14 draws), so a selection that is mostly noise
+    and moves 45% of decisions loses points rather than reading level.
+  - **The data is sound for what it measures.** For edits that change one cell a champion, pooled over types and
+    stated beforehand (family F as everyone's k-th emblem), the same sums agree with the A/Bs: over the 19 such
+    edits A/B'd above, correlation +0.42, rms gap 0.51 points (the size of the errors), mean +0.09 against -0.10;
+    Collectors at k8 reads +0.34 ± 0.11 (A/B +0.4), Tribute at k4 -0.46 ± 0.41 (-0.9).
+  - Not a fitting bug (a model-free Hajek check agrees with the fit; the candidates buy what their tables say:
+    `emblem_orders.mjs`), not the forecasts (purchase-only builds read the same), not the draft mix or the opponents
+    (per source and per kind the readings agree).
 - **A cross-fitted +0.15 ± 0.05 with all five folds positive did not replicate** on the next games (-0.02 ± 0.09).
   Require the replication (`select.py --on`) and an A/B of a mid-run candidate before trusting a fit.
 - **The sparse design is honest but far too thin at this size:** three batches gave 200-350 draws an arm at a main

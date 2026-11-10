@@ -66,14 +66,21 @@ What changed from rounds 2-3, whose design the sections below describe:
 
 Numbers and tables: research/EXPERIMENTS.md "Emblem lab round 4 on ocean".
 
-- **The dense per-decision design did not measure ocean correctly.** With 35-50% of every new-emblem decision below
-  k12 drawn, 1.28M games scored "no learned table at all" as level (+0.01 ± 0.03 win points a decision), where a
-  clean A/B reads 47.0% (the table is worth about 3 points, nearly all of it late Collectors), and scored its own
-  selections 2 to 4 points above what they play (47.9-48.4%). The same holds per draft source and per opponent
-  kind. An arm is measured inside a scrambled build against scrambled teams (the lab side wins 58.6% against the
-  Fish body under dense forcing, 62.1% under sparse), so an effect that needs the rest of the build to be the
-  bot's own does not show. Round 2's table came out of this design and did transfer: it is not always wrong, but
-  its number is not evidence by itself.
+- **A table is a joint change; the lab measures single cells.** 1.28M games scored "no learned table at all" as
+  level (+0.25 ± 0.77 points a team) where a clean A/B reads 47.0%, and scored its own selections 2 to 4 points
+  above what they play (47.9-48.4%). Checked on the lab's data (`research/ideas-2026-11-10/emblab4/selfheal.py`,
+  `pooled_edits.py`):
+  - The base heals one deviation: a champion drawn away from a passive the base wanted owns it within three more
+    emblems 60% of the time. Every cell is scored with the rest of the build as the base has it, so a selection's
+    cells are scored with the purchases they jointly delete still in place (Collectors cells: -0.49 ± 0.24 in the
+    lab, -1.7 when all are dropped).
+  - A fixed policy is resolved to ±0.5-0.8 points; a selection is the best of 43 candidates in each of 468 cells,
+    and a noise pick costs (a drawn arm is ~0.25 points worse than the base).
+  - For one changed cell a champion, pooled over types and stated beforehand (family F as everyone's k-th
+    emblem: `pooled_edits.py`), the sums agree with 19 A/Bs: correlation +0.42, rms gap 0.51 points.
+  So: use the data for few, pooled, one-cell-a-champion edits, take the best, A/B it, re-base and repeat; or
+  evaluate whole rows (a fit over what a champion owns at each decision, backed up along its build); or randomise
+  whole rows per champion-game next time.
 - **A cross-fitted gain is not a result until it replicates.** The mid-run fit (720k games) read one arm per
   (type, ordinal bucket) at +0.149 ± 0.050 a decision (`select.py` `tb-z2`; all five map folds positive, per-cell
   selection at zero). The same selection scored on the next 240k games (`select.py --on`): -0.02 ± 0.09.
