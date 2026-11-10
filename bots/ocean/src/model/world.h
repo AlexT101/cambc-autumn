@@ -652,7 +652,11 @@ public:
     const StaticMap& map() const { return *static_; }
     // True if the bot ran out of fuel and resumed in a later round: beliefs are a round old. Never
     // while a decision may finish late (finish_late).
-    bool is_stale() const { return round_now() != static_cast<std::uint32_t>(round) && !finish_late(); }
+    bool is_stale() const {
+        if (round_now() == static_cast<std::uint32_t>(round)) return false;
+        self_acted(); // as aph::throw_if_stale: our record is the new round's
+        return !finish_late();
+    }
     // Resumed in a later round, finishing late or not.
     bool resumed() const { return round_now() != static_cast<std::uint32_t>(round); }
     // Abandons a turn that ran out of fuel at the next costly step (aph::throw_if_stale).
@@ -772,7 +776,7 @@ private:
     void update_altars();
     struct Tributing {
         std::uint32_t mask = 0;     // bit i: enemies[i] is believed to be tributing
-        std::array<int, 16> gems{}; // its bag then
+        std::array<int, 16> gems;   // its bag then: read only under mask
     };
     Tributing tributing_enemies() const;
     void update_scores(const Tributing& tributing);

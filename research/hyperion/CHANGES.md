@@ -4198,3 +4198,30 @@ Evidence (EXPERIMENTS "v94's falls line and walk-then-dash in the escape planner
   for about 2% more out-of-fuel turns. Merged on the user's call.
 
 Frozen as `variants/oc-wdash-494` (= bots/ocean).
+
+## 495: Fuel: the turn-end queue's ring scan, our record read once, and a turn's tail that checks its fuel (ocean, 2026-11-10)
+
+`main.cc`, `util.h`, `bot.cc`, `model/turn_window.cc`, `model/world.h`, `combat/self_abilities.cc` and the action
+sites, on 494. Write-up, probes and tools: [fuel-2026-11-10](../fuel-2026-11-10/README.md).
+- **Ring scan** (exact): the turn-end queue's `around()` makes one pass over a ring's sides and starts a new centre
+  from the rings its neighbours prove done. Its bookkeeping was 3.5% of all fuel.
+- **Our record and gems** (exact): read once between actions (`self_acted()` at every engine call that changes them
+  and at stale checks once the round has moved on; a ward and a priority change neither). `ranks_before` in closed
+  form, an insertion sort in `build_windows`. Campaign 16's `oc16-sc1`, re-done on 494.
+- **The turn's tail** (fuel-aware, identical at 100M): 29% of turns that ran out did so after decide's branch had
+  acted. Under 5k left there, each optional step runs only if the fuel covers its least cost when it does anything
+  plus the turn's end (1.0k); under 0.8k the recall and the stun read give way to the posts. Shortcut
+  `turn-end-short`.
+- **Own ring** radius 8 -> 4 (16 -> 8 while dead): a tile's warm-up costs ~1.9k and decide misses a table on 5% of
+  heavy turns.
+- **Escape landings** (exact): a landing's danger is worked out only if its plan rank can still place it.
+
+Evidence, all against `variants/ocf-base` (= 494), own drafts, fast runner:
+- **100M identity:** 94/96 own drafts and 96/96 test drafts; the two others are identical once neither bot prepares
+  next turn's walk in the queue. Mean -5.7%, turns over 100k -2.8%.
+- **Real budget, 4,096 games** (`fuelcap/p1`, debug builds): out-of-fuel turns 49,337 -> 42,634, **-13.6%** (95%
+  -16.3 to -11.1); mean 51,669 -> 48,278 (-6.5%); p90 85,850 -> 84,966; `SHORTCUT` lines -1.0%.
+- **Release A/B:** 49.6% (48.9-50.3) of 20,480 on `merged/fuel-1995`, out-of-fuel turns -12.8% (223,128 / 255,886).
+  Without the tail's checks 49.4% and -5.2%; with the ring at radius 8 49.7% and -13.2%.
+
+Frozen as `variants/oc-fuel-495` (= bots/ocean).

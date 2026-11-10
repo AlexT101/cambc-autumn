@@ -37,11 +37,14 @@ SlotLayout layout_of(const World& world, bool ally, int r) {
     const bool first = ally == (world.map().team_a == (r % 2 == 1));
     return {others, first};
 }
-// Enemy ranks (0..count-1) whose slot in a layout comes before `slot`: the slots rise with the rank.
+// Enemy ranks (0..count-1) whose slot in a layout comes before `slot`: the slots rise with the rank,
+// so the first rank at or past it, in closed form (a loop here was vectorised, ~0.5k a call).
 int ranks_before(const SlotLayout& l, int count, int slot) {
-    int k = 0;
-    while (k < count && l.of(k) < slot) ++k;
-    return k;
+    const int x = slot - (l.first ? 0 : 1);
+    const int alternating = x <= 0 ? 0 : (x + 1) / 2;
+    if (alternating < std::min(l.others, count)) return alternating;
+    if (count <= l.others) return count;
+    return std::min(count, std::max(l.others, slot - l.others));
 }
 
 [[gnu::noinline]] void build_windows(const World& world) {
@@ -102,10 +105,18 @@ int ranks_before(const SlotLayout& l, int count, int slot) {
         for (int i = 0; i < n; ++i)
             if (const auto& e = world.enemies[static_cast<std::size_t>(i)]; e.alive && !e.visible)
                 u[static_cast<std::size_t>(k++)] = {unseen_distance(e, from), i, e.strength};
-        if (k > w.unseen_after)
-            std::sort(u.begin(), u.begin() + k, [](const Unseen& a, const Unseen& b) {
+        // A strict order, so any sort gives std::sort's result; a few items, so by insertion.
+        if (k > w.unseen_after) {
+            const auto before = [](const Unseen& a, const Unseen& b) {
                 return a.d != b.d ? a.d < b.d : a.strength != b.strength ? a.strength > b.strength : a.i < b.i;
-            });
+            };
+            for (int j = 1; j < k; ++j) {
+                const Unseen x = u[static_cast<std::size_t>(j)];
+                int m = j;
+                for (; m > 0 && before(x, u[static_cast<std::size_t>(m - 1)]); --m) u[static_cast<std::size_t>(m)] = u[static_cast<std::size_t>(m - 1)];
+                u[static_cast<std::size_t>(m)] = x;
+            }
+        }
         for (int j = 0; j < std::min(k, w.unseen_after); ++j) w.after_mask |= static_cast<std::uint16_t>(1u << u[static_cast<std::size_t>(j)].i);
     }
 }

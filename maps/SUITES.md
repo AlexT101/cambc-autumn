@@ -931,3 +931,6 @@ walk-then-dash in the escape planner"):
 **localq (2026-11-10):** `--mix ladder-v2` under `~/tmp-offload/localq/` (never maps/):
 - `maps/dl`: 2310000-2310099, 25,600 maps (draft10's lab training); `maps/tu`: 2320000-2320039, 10,240 maps (tune1's SPSA training).
 - 2400000-2999999 reserved: the queue's self-perpetuating rounds take 1000 seeds each from `seeds.next` (training from the block's start, the round's own gate pool at +900..+903). Don't use these seeds.
+
+**fuel-495 (2026-11-10):** `--mix ladder-v2`, in `suites/fresh/fresh-{seed}`, symlinked into `merged/fuel-1995`:
+1995000-1995039, 10,240 maps (oc-fuel-495, CHANGES 495, and its two decomposition arms against ocf-base; used).

@@ -127,20 +127,25 @@ template <class F> bool run(const char* phase, F&& f) {
 // turn against the real budget, so it fills the same at any budget.
 struct TurnEndQueue {
     static constexpr std::uint64_t tile_reserve = 6000; // a tile's tables on 100x100, with margin
+    // The tiles around us to fill (twice as far while dead): a tile costs ~1.9k and a step uncovers 2r + 1 of them. A
+    // turn's walk and dash end within 3; at 8 the fill took 6.9% of all fuel and saved turns of 95k+ 34 fuel more.
+    static constexpr int own_radius = 4;
     // Filled tiles (or walls) as bits by row and by column, 2 words each: a ring's sides are 4 spans.
     std::vector<std::uint64_t> rows, cols;
     std::vector<std::uint8_t> rings; // by tile: rings around it all done, + 1
     bool map_warmed_up = false, warmed_up = false, foot_warmed = false, clears_warmed = false;
     bool logged_centres = false; // debug_block only
 
-    // The first clear bit in [lo, hi] of a 2-word line, or -1.
-    static int first_clear(const std::uint64_t* line, int lo, int hi) {
+    // f(i) for each clear bit i in [lo, hi] of a 2-word line, lowest first, until one returns false.
+    template <class F> static bool each_clear(const std::uint64_t* line, int lo, int hi, F&& f) {
         for (int w = lo >> 6; w <= hi >> 6; ++w) {
             const int a = std::max(lo, w * 64) - w * 64, b = std::min(hi, w * 64 + 63) - w * 64;
             const std::uint64_t span = (b == 63 ? ~std::uint64_t{0} : (std::uint64_t{2} << b) - 1) & (~std::uint64_t{0} << a);
-            if (const std::uint64_t m = ~line[w] & span) return w * 64 + std::countr_zero(m);
+            // f sets only the bit it is given in this line.
+            for (std::uint64_t m = ~line[w] & span; m; m &= m - 1)
+                if (!f(w * 64 + std::countr_zero(m))) return false;
         }
-        return -1;
+        return true;
     }
 
     // `start`: the fuel left when the turn began.
@@ -166,24 +171,25 @@ struct TurnEndQueue {
         };
         const auto around = [&](aph::vec2 c, int radius) {
             auto& done = rings[static_cast<std::size_t>(c.x + c.y * W)];
+            if (done > radius) return true;
+            // The rings up to r around a tile lie within those up to r + 1 around a tile beside it.
+            for (int dy = -1; dy <= 1; ++dy)
+                for (int dx = -1; dx <= 1; ++dx)
+                    if (const int x = c.x + dx, y = c.y + dy; x >= 0 && y >= 0 && x < W && y < H)
+                        if (const int near = rings[static_cast<std::size_t>(x + y * W)]; near > done + 1) done = static_cast<std::uint8_t>(near - 1);
             for (int r = done; r <= radius; ++r) {
                 const int x0 = std::max(0, c.x - r), x1 = std::min(W - 1, c.x + r);
                 const int y0 = std::max(0, c.y - r + 1), y1 = std::min(H - 1, c.y + r - 1);
-                while (true) {
-                    int x = -1, y = -1;
-                    for (const int row : {c.y - r, c.y + r})
-                        if (x < 0 && row >= 0 && row < H) {
-                            x = first_clear(&rows[static_cast<std::size_t>(2 * row)], x0, x1);
-                            y = row;
-                        }
+                // The two rows, then the two columns between them, each from its low end.
+                for (const int row : {c.y - r, c.y + r})
+                    if (row >= 0 && row < H
+                        && !each_clear(&rows[static_cast<std::size_t>(2 * row)], x0, x1, [&](int x) { return fill(x, row); }))
+                        return false;
+                if (y0 <= y1)
                     for (const int col : {c.x - r, c.x + r})
-                        if (x < 0 && col >= 0 && col < W && y0 <= y1) {
-                            y = first_clear(&cols[static_cast<std::size_t>(2 * col)], y0, y1);
-                            x = y < 0 ? -1 : col;
-                        }
-                    if (x < 0) break;
-                    if (!fill(x, y)) return false;
-                }
+                        if (col >= 0 && col < W
+                            && !each_clear(&cols[static_cast<std::size_t>(2 * col)], y0, y1, [&](int y) { return fill(col, y); }))
+                            return false;
                 done = static_cast<std::uint8_t>(r + 1);
             }
             return true;
@@ -233,7 +239,7 @@ struct TurnEndQueue {
         }
         if (!clears_warmed && !(clears_warmed = aph::warm_clears(world, floor))) return;
         if (!warm_drafted_tiles(map, pathing, me.facts().attack_range(), memory.farm_group, floor)) return;
-        if (me.pos.x >= 0) around(me.pos, me.alive ? aph::vision_radius : 20);
+        if (me.pos.x >= 0) around(me.pos, me.alive ? own_radius : 2 * own_radius);
     }
 
     // The draft's attack tiles of farmed groups' members, which warm_up leaves to their first read:
@@ -286,6 +292,7 @@ struct Instance {
             // ~630), and the arena's fresh memory is already zero.
             if (!world) world = std::unique_ptr<aph::World>(new aph::World);
             const bool first = !world->ready();
+            aph::self_acted(); // the turn before, others acted
             world->update();
             // Until it is made, heal trips are priced by a crow-flies bound (home_gap), and which turn
             // made it hung on what each turn's reads cost: made once, first.

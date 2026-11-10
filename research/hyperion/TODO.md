@@ -20,6 +20,11 @@ CHANGES 455 reduces out-of-fuel turns by 3.5% on standard and fresh suites; the 
 open**. [Campaign 13](fuel-campaign-13/NOTES.md) records the exact changes, rejected experiments, profiles and
 cache-readiness divergences. Start from the applied bundle and its matching draft7 baseline; do not repeat the
 level cache/sort/loop experiments without a new mechanism.
+
+CHANGES 495 (2026-11-10) takes a further 13%, most of it from the turn's tail checking its fuel
+([fuel-2026-11-10](../fuel-2026-11-10/README.md)). Open there: tail steps that act with 2-8k left (the second strike
+search, the tribute habit's `want_home`), the turn order's `offer_heal` and `plain_priority` tails past its 10k gate,
+and the ~1.9k a tile the turn-end queue's warm-up costs.
 - **A fuel gate for the chase build** (CHANGES 481): +8% out-of-fuel turns, mostly the verdict `chase_aim()` builds
   before the strike search with no gate of its own. Gate it on the fuel the search still needs, or reuse a teammate's
   verdict. Being worked on; judge on `merged/plan3-dev`, reserved for it.

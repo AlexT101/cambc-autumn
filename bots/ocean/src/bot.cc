@@ -528,7 +528,7 @@ void start_recall(const World& world) {
     if (here.x < 0 || test(world.map().ally_spawn, here)) return;
     throw_if_stale();
     try {
-        cambc::self().recall();
+        self_acted(), cambc::self().recall();
         recall_feint = true;
     } catch (const cambc::error&) {
     }
@@ -564,6 +564,18 @@ void count_use(const World& world, bool could_attack) {
     use.attacks += std::max(0, (could_attack && !my_can_attack()) + resets - walked);
 }
 
+// The turn's end after act()'s optional steps on its cheap path (the recall, the stun read, the kept turn
+// order, the posts): 0.77k median, 1.0k at p99 (3.7k turns short of fuel, 96 games at the real budget).
+// Each optional step's least cost when it does anything (below it, it only looks): 30k such turns.
+inline constexpr std::uint64_t turn_end_cost = 1000;
+inline constexpr std::uint64_t reveal_least = 1700, strike_least = 1400, cast_least = 350, ward_least = 400, habit_least = 850;
+// Above this at the steps' start, the steps that only look (2.1k together at p99) leave the costliest one room: none is checked.
+inline constexpr std::uint64_t turn_end_tight = turn_end_cost + reveal_least + 2300;
+// Of the turn's end: the kept turn order, the intent and the posts (0.47k median, 0.59k at p99); the recall; the stun read.
+inline constexpr std::uint64_t posts_cost = 600, recall_cost = 200, stuns_cost = 200;
+// act() found the fuel short of its last steps (turn_end_tight): the turn's end checks its own.
+bool end_tight = false;
+
 // The turn's walk, hits and casts, and the free actions that end it.
 void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const vec2 start = world.me().pos;
@@ -582,21 +594,42 @@ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         memory.siege = false;
         memory.staged_since = -1;
     }
-    if (world.me().alive && see_revealed(world, pathing, safety)) search.chose = false;
-    if (!support_owned && strike_after(world, pathing, safety).searched) note_search(true);
+    // Nearly out of fuel, a step below runs only if it could act and still leave the turn's end its
+    // fuel: else it is idle or runs the turn out, which loses the steps after it, the posts, and the
+    // next turn's start (29% of turns that ran out did so here, a third of them from under 2k).
+    const bool tight = end_tight = !fuel_ok(turn_end_tight);
+    // A skipped step that could have acted (`live`: its cheap tests) is the shortcut.
+    bool cut = false;
+    const auto room = [&](std::uint64_t least, auto&& live) __attribute__((always_inline)) {
+        if (!tight || fuel_ok(turn_end_cost + least)) return true;
+        cut = cut || live();
+        return false;
+    };
+    const bool alive = world.me().alive;
+    const auto strikes = [&] { return alive && (my_can_attack() || my_can_cast()); };
+    if (room(reveal_least, strikes) && alive && see_revealed(world, pathing, safety)) search.chose = false;
+    if (!support_owned && room(strike_least, strikes) && strike_after(world, pathing, safety).searched) note_search(true);
     pathing.set_guard(nullptr);
     if constexpr (debug_fights)
         if (world.me().alive && !test(world.map().ally_spawn, start) && fuel_ok(end_reserve + 15000))
             if (const auto t = safety.fight(start); t.enemies > 0) log_fight("FF", world, safety, start, t);
     // Nothing else takes the cast now. The search values a heal at what could hit the ally before
     // the slot is back, so a plan may leave one worth casting.
-    if (!support_owned) heal_ally(world, safety); // allies in reach after walking
-    if (!support_owned && !search_priced_end()) shield_if_needed(world, safety, memory.claim);
-    end_ward = place_ward(world, memory); // where we end the turn
-    place_lock(world);
-    if (!support_owned) mite_tribute_habit(world, pathing, safety, memory);
-    if (!support_owned) start_recall(world);
+    if (!support_owned && room(cast_least, [&] { return alive && world.me().facts().heals() && my_can_cast(); }))
+        heal_ally(world, safety); // allies in reach after walking
+    if (!support_owned && !search_priced_end()
+        && room(cast_least, [&] { return alive && world.me().facts().slot_of(AbilityKind::shield) >= 0 && my_can_cast(); }))
+        shield_if_needed(world, safety, memory.claim);
+    // where we end the turn
+    end_ward = room(ward_least, [&] { return alive && !stunned_turn && world.round >= warded_round + static_cast<int>(cambc::constants::ward_cooldown); })
+               && place_ward(world, memory);
+    if (room(ward_least, [&] { return alive && !stunned_turn && carried_locks() > 0; })) place_lock(world);
+    if (!support_owned && room(habit_least, [&] { return alive && !stunned_turn && my_gems() > 0; }))
+        mite_tribute_habit(world, pathing, safety, memory);
+    // The posts come before the recall: an ally reads our claim and bag, and next turn our health.
+    if (!support_owned && (!tight || fuel_ok(posts_cost + recall_cost) || (cut = cut || (alive && !stunned_turn), false))) start_recall(world);
     count_use(world, could_attack);
+    if (cut) note_shortcut("turn-end-short");
 }
 
 void play_turn(World& world, Pathing& pathing, Memory& memory) {
@@ -620,7 +653,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     sieged = false;
     search.chose = false;
     struck = searched = false;
-    support_owned = support_requested = support_offered = support_retreat = end_ward = false;
+    support_owned = support_requested = support_offered = support_retreat = end_ward = end_tight = false;
     comms::support_intent(world.round, false);
     siege_group() = -1;
     turn_acts = {};
@@ -640,7 +673,8 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
         std::printf("r%u act error: %s\n", cambc::round_number(), e.what());
     }
     try {
-        if (!world.is_stale()) see_stuns(world, safety);
+        // Only the turn order reads this turn's stuns, and this short it keeps its last rank.
+        if (!world.is_stale() && (!end_tight || fuel_ok(posts_cost + stuns_cost))) see_stuns(world, safety);
         chase_role = {decision == Branch::retreat, decision == Branch::chase, engaged};
         set_turn_order(world, safety);
     } catch (const StaleTurn&) {

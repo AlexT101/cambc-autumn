@@ -87,8 +87,12 @@ inline int& siege_group() {
 }
 
 // Our own champion, read raw. The SDK's accessors build and copy a whole record for each field
-// (position() ~85 fuel, item_count() ~225); a raw read into static storage costs ~25. Each call
-// reads the engine again, as the SDK's do.
+// (position() ~85 fuel, item_count() ~225); a raw read into static storage costs ~25.
+// Our record and gems change within a turn only through our own actions: read once a turn, and again
+// after self_acted(), which every action calls first (so one that throws still clears them), as does
+// every stale check once the round has moved on. A ward and a priority change neither.
+inline bool self_fresh = false, gems_fresh = false;
+[[gnu::always_inline]] inline void self_acted() { self_fresh = gems_fresh = false; }
 
 // Initialised after cambc::detail::cached_self, which cambc.h defines first; 0 in the draft.
 inline const std::uint32_t my_handle_value =
@@ -96,7 +100,10 @@ inline const std::uint32_t my_handle_value =
 inline std::uint32_t my_handle() { return my_handle_value; }
 [[gnu::always_inline]] inline const cambc::detail::champion_info& my_record() {
     static cambc::detail::champion_info record;
-    ok(cambc::detail::sdk_champion(my_handle(), &record));
+    if (!self_fresh) {
+        ok(cambc::detail::sdk_champion(my_handle(), &record));
+        self_fresh = true;
+    }
     return record;
 }
 [[gnu::always_inline]] inline vec2 my_position() {
@@ -112,7 +119,10 @@ inline std::uint32_t my_handle() { return my_handle_value; }
 [[gnu::always_inline]] inline bool my_can_cast() { return my_state().contains(cambc::champion_state::can_cast); }
 [[gnu::always_inline]] inline std::uint32_t my_gems() {
     static std::uint32_t gems;
-    ok(cambc::detail::sdk_champion_gems(my_handle(), &gems));
+    if (!gems_fresh) {
+        ok(cambc::detail::sdk_champion_gems(my_handle(), &gems));
+        gems_fresh = true;
+    }
     return gems;
 }
 [[gnu::always_inline]] inline std::uint32_t my_gold() {
@@ -295,7 +305,10 @@ inline bool& finish_late() {
 // the resumed tail runs on last round's beliefs, and the fresh turn after it plans as if nothing
 // had acted (a second recall start or an exclusive cast after a walk is an engine error).
 inline void throw_if_stale() {
-    if (round_now() != turn_round() && !finish_late()) throw StaleTurn{};
+    if (round_now() != turn_round()) {
+        self_acted();
+        if (!finish_late()) throw StaleTurn{};
+    }
 }
 // This turn's casts per slot and walk (count_use): a kill readies Vendetta's slots, so the cooldowns
 // at the turn's end can miss a cast, and a dash hides whether we walked.
@@ -317,12 +330,14 @@ inline bool count_cast(int slot, std::int32_t cast) {
 // ability.use(): at `tile`, or {-1, -1} for none. False for a newly revealed hidden blocker.
 inline bool cast_slot(int slot, vec2 tile = {-1, -1}) {
     throw_if_stale();
+    self_acted();
     static std::int32_t cast;
     ok(cambc::detail::sdk_cast(static_cast<std::uint32_t>(slot), 0, 0, tile.x, tile.y, &cast));
     return count_cast(slot, cast);
 }
 inline bool cast_slot_on(int slot, cambc::handle_champion_t target) {
     throw_if_stale();
+    self_acted();
     static std::int32_t cast;
     ok(cambc::detail::sdk_cast(static_cast<std::uint32_t>(slot), static_cast<std::uint32_t>(cambc::detail::entity_kind::champion),
                                static_cast<std::uint32_t>(target), -1, -1, &cast));
@@ -331,6 +346,7 @@ inline bool cast_slot_on(int slot, cambc::handle_champion_t target) {
 }
 inline bool cast_slot_on(int slot, cambc::handle_camp_t target) {
     throw_if_stale();
+    self_acted();
     static std::int32_t cast;
     ok(cambc::detail::sdk_cast(static_cast<std::uint32_t>(slot), static_cast<std::uint32_t>(cambc::detail::entity_kind::camp),
                                static_cast<std::uint32_t>(target), -1, -1, &cast));
@@ -339,6 +355,7 @@ inline bool cast_slot_on(int slot, cambc::handle_camp_t target) {
 // cambc::self().attack(c), without building c.
 inline void attack_champion(cambc::handle_champion_t target) {
     throw_if_stale();
+    self_acted();
     ok(cambc::detail::sdk_attack(static_cast<std::uint32_t>(cambc::detail::entity_kind::champion), static_cast<std::uint32_t>(target)));
     note_engaged(static_cast<std::uint32_t>(target));
 }

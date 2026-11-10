@@ -75,7 +75,7 @@ template <class Allowed> CampAttackTargets camp_attack_targets(const World& worl
 bool attack_camp_target(const World& world, const CampAttackTarget& target) {
     throw_if_stale();
     try {
-        cambc::self().attack(world.map().groups[target.group].camp(target.member));
+        self_acted(), cambc::self().attack(world.map().groups[target.group].camp(target.member));
         ++camp_hits();
         return true;
     } catch (const cambc::error&) {

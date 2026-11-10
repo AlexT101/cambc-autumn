@@ -15686,3 +15686,27 @@ Results against oc-wdash-494 (fgate, Flp4/Mt3q, fresh units; read ±95% CI in po
 | st-bush | -0.14 ±0.32 | 5,248 | high H0 (LLR -7.1 at 41 blocks; was +0.15 at 16) |
 
 Verdict: not a gain. The danger at the altar is time lost to cancels, not deaths. Choosing a tile among the altar's 8 neighbours changes neither the locks nor our own safety cancels. Left open: a Safety that credits bush cover (an enemy has to enter the cluster to see us), which none of these arms tried.
+
+## Ocean's fuel: ring scan, own record, the turn's tail (ocean = oc-fuel-495, 2026-11-10; CHANGES 495)
+
+Write-up, tools and the patch: [fuel-2026-11-10](fuel-2026-11-10/README.md). Base `variants/ocf-base` (= 494).
+- **Where the fuel was.** The per-site profile is flat on every turn class (new: fuelprof by all turns, turns of 88k+
+  and out-of-fuel episodes). What stood out was outside decide: the turn-end queue's ring bookkeeping (3.5% of all
+  fuel), its tile warm-up (6.9%, ~1.9k a tile, against a table missed in decide on 5% of heavy turns), and the turn's
+  tail: 29% of first out-of-fuel turns ran out after decide's branch had acted, 13% of all entering it with under 2k.
+- **Kept** (CHANGES 495): one-pass ring scan, our record and gems read once between actions, the tail's fuel checks,
+  own ring radius 4, lazy danger in `escape_landings`.
+- **Dropped:** a memo of `rank_turns`' inputs (+165 fuel a turn: the compare costs more than the rare repeat saves);
+  no own ring (-6.6% mean, heavy turns +157 fuel, 4 of 96 games differ at 100M).
+- **Measuring out-of-fuel turns:** equivalent bots differ by ±5% on 1,280 real-budget games and ±2.5% on 4,096, since
+  games diverge. Turns over 100k on identical 100M games (`heavy.py`) is the paired proxy: -1% of heavy-turn fuel is
+  about -4.5% of them.
+
+**Results against ocf-base:**
+
+| gate | win% (CI) of n | out-of-fuel turns |
+|---|---|---|
+| bench, real budget, 4,096 games (`fuelcap/p1`) | mirror | 49,337 -> 42,634, -13.6% (95% -16.3 to -11.1); mean fuel -6.5% |
+| ab.py oc-fuel-495 (`merged/fuel-1995`) | 49.6 (48.9-50.3) of 20,480 | -12.8% |
+| ab.py, without the tail's fuel checks | 49.4 (48.7-50.1) of 20,480 | -5.2% |
+| ab.py, own ring at radius 8 | 49.7 (49.0-50.4) of 20,480 | -13.2% |

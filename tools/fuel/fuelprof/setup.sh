@@ -9,6 +9,11 @@
 # Each process writes DIR/prof-<pid>-<lib>.bin at exit (counts per site for every bot it ran); symbolise.py keeps the
 # files whose code matches BOTDIR's bot-injected.wasm. Inline frames stop at real calls, so totals are per line, not per
 # call tree. Host calls are counted at their call site; deltas outside (0, 1M) (turn boundaries, refunds) are dropped.
+# By turn class too (release builds: a debug_block refund reads as a turn boundary): with DIR/heavy and DIR/oof made
+# first, each gets the same file for turns that finished on 88k+ (FASTRUNNER_FUELPROF_HEAVY sets the bound) and for
+# out-of-fuel episodes (the turn that ran out with the turns up to the next one that ended in its own round), each
+# instance's first two turns left out; DIR/counts-*.txt holds turns and fuel, heavy turns and fuel, episodes and fuel.
+# Symbolise each directory on its own. research/fuel-2026-11-10/tools/byfn.py sums a profile by source function.
 set -e
 cd "$(dirname "$0")/../../fastengine"
 mkdir -p runner-prof

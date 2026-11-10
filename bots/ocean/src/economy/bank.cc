@@ -98,7 +98,7 @@ bool our_side(const StaticMap& map, int a) {
             };
             throw_if_stale();
             try {
-                if (lock.use(p)) return note_own_lock();
+                if (self_acted(), lock.use(p)) return note_own_lock();
             } catch (const cambc::error& e) {
                 if (e.code() == cambc::error_code::invalid_action_altar_lock_already_locked) note_own_lock();
             }
@@ -113,7 +113,7 @@ bool break_lock(const World& world, int altar) {
         if (lock.is_enemy() && lock.position() == p) {
             throw_if_stale();
             try {
-                me.attack(lock);
+                self_acted(), me.attack(lock);
                 return true;
             } catch (const cambc::error&) {
                 return false;
@@ -816,7 +816,7 @@ bool submit_here(const World& world, Safety& safety, Memory& memory) {
         place_ward(world, memory); // first: no ward goes down while channelling
         throw_if_stale();
         try {
-            me.submit_gems(altars[a].pos);
+            self_acted(), me.submit_gems(altars[a].pos);
             const int bag = static_cast<int>(my_gems());
             const auto cut = [](int g) { return tribute_turns(g, false) - tribute_turns(g, true); };
             // A restart of a cancelled channel (no tribute of its size since) counts only the gems it adds.
@@ -937,7 +937,7 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
         if (best.x < 0) return false;
         throw_if_stale();
         try {
-            if (cambc::self().consumables()[cambc::consumable_type::tp_crystal].use(best)) return true;
+            if (self_acted(), cambc::self().consumables()[cambc::consumable_type::tp_crystal].use(best)) return true;
         } catch (const cambc::error&) {
         }
     }
@@ -1034,7 +1034,7 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
                     tried_attack = true;
                     throw_if_stale();
                     try {
-                        cambc::self().attack(map.groups[m.g].camp(m.i));
+                        self_acted(), cambc::self().attack(map.groups[m.g].camp(m.i));
                         ++camp_hits();
                         return true;
                     } catch (const cambc::error&) {
@@ -1213,7 +1213,7 @@ bool mite_tribute_habit(const World& world, Pathing& pathing, Safety& safety, co
     if (want_home(world, pathing, safety, memory)) return false;
     throw_if_stale();
     try {
-        cambc::self().submit_gems(world.map().altars[a].pos);
+        self_acted(), cambc::self().submit_gems(world.map().altars[a].pos);
         return true;
     } catch (const cambc::error&) {
     }
@@ -1316,7 +1316,7 @@ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memo
     if (stop && !(winning_bag(world) && ally_stops(world, *stop))) {
         throw_if_stale();
         try {
-            me.cancel_submit_gems();
+            self_acted(), me.cancel_submit_gems();
         } catch (const std::exception&) {
         }
         if (!me.is_submitting_gems()) return false;
@@ -1331,7 +1331,7 @@ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memo
     decision = Branch::tribute_cancelled;
     throw_if_stale();
     try {
-        me.cancel_submit_gems();
+        self_acted(), me.cancel_submit_gems();
     } catch (const std::exception&) {
         return true;
     }
@@ -1348,7 +1348,7 @@ bool continue_recall(World& world, Pathing& pathing, Safety& safety, Memory& mem
     if (const auto* ender = game_ender(world); ender && holds_hard_stop(world, *ender)) {
         throw_if_stale();
         try {
-            me.cancel_recall();
+            self_acted(), me.cancel_recall();
         } catch (const std::exception&) {
             return true;
         }
@@ -1404,7 +1404,7 @@ bool continue_recall(World& world, Pathing& pathing, Safety& safety, Memory& mem
     }
     throw_if_stale();
     try {
-        me.cancel_recall();
+        self_acted(), me.cancel_recall();
     } catch (const std::exception&) {
         return true;
     }

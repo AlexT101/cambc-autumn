@@ -49,7 +49,7 @@ bool buy(cambc::item_type shard, unsigned count) {
     throw_if_stale();
     try {
         ++items_bought;
-        me.buy(shard, count);
+        self_acted(), me.buy(shard, count);
         income.spent += shard_price * count;
         return true;
     } catch (const cambc::error&) {
@@ -60,7 +60,7 @@ bool buy(cambc::item_type shard, unsigned count) {
 void buy_consumable(cambc::consumable_type type) {
     auto& me = cambc::self();
     try {
-        if (me.can_buy(type)) throw_if_stale(), me.buy(type), income.spent += type.cost();
+        if (me.can_buy(type)) throw_if_stale(), self_acted(), me.buy(type), income.spent += type.cost();
     } catch (const cambc::error&) {
     }
 }

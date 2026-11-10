@@ -152,6 +152,26 @@ template <class Score, class Keep> Landings ranked(const bitboard& landings, Sco
     return out;
 }
 
+// ranked() for a score led by an int `first` (lower first) with `limit` above every kept landing's: the rest of the
+// score (`rest(p, first)`) and `keep` are worked out only for a landing whose `first` could still place it.
+template <class First, class Rest, class Keep> Landings ranked_by_first(const bitboard& landings, int limit, First first, Rest rest, Keep keep) {
+    using S = decltype(rest(vec2{}, 0));
+    Landings out;
+    std::array<S, Landings::tries> scores{};
+    for (auto p : Tiles<5 * 5>{landings}) {
+        const int f = first(p);
+        // Past the limit keep() refuses it; past the last kept one's `first`, with all kept, it sorts after them.
+        if (!(f < limit) || (out.count == Landings::tries && f > scores[Landings::tries - 1].rank)) continue;
+        const S s = rest(p, f);
+        if (!keep(p)) continue;
+        int i = out.count < Landings::tries ? out.count++ : Landings::tries;
+        for (; i > 0 && scores[i - 1] > s; --i)
+            if (i < Landings::tries) out.tiles[i] = out.tiles[i - 1], scores[i] = scores[i - 1];
+        if (i < Landings::tries) out.tiles[i] = p, scores[i] = s;
+    }
+    return out;
+}
+
 // Our landing hits enemies within `radius`, unseen ones too, and Ren strikes back even while dying.
 bool landing_suicidal(const World& world, vec2 p, int radius, vec2 dead) {
     float health = -1; // read on first need: most enemies never strike back
@@ -243,10 +263,10 @@ Landings escape_landings(const World& world, Pathing& pathing, Safety& safety, v
         if (const auto* p = escape::built(world); p && p->at == walk_dash.from && here != walk_dash.from) {
             const bool s = p->slack_ready();
             const int keep = escape::rank(p->stood(here, false), p->stood(here, s));
-            const auto planned = ranked(
-                pathing.dash_landings(),
-                [&](vec2 q) { return Planned{escape::rank(p->landed(q, false), p->landed(q, s)), danger(threats, q), home.at(q)}; },
-                [&](vec2 q, const Planned& r) { return r.rank < keep && !landing_harmful(world, q, dead); });
+            const auto planned = ranked_by_first(
+                pathing.dash_landings(), keep, [&](vec2 q) { return escape::rank(p->landed(q, false), p->landed(q, s)); },
+                [&](vec2 q, int rank) { return Planned{rank, danger(threats, q), home.at(q)}; },
+                [&](vec2 q) { return !landing_harmful(world, q, dead); });
             debug_block({
                 std::printf("WALKDASH %d %u from=%d,%d at=%d,%d keep=%d landings=%d\n", world.round, my_handle(), walk_dash.from.x,
                             walk_dash.from.y, here.x, here.y, keep, planned.count);
@@ -277,9 +297,9 @@ Landings escape_landings(const World& world, Pathing& pathing, Safety& safety, v
                 if (clean) return {};
                 stay = params::escape::hit_steps;
             }
-            const auto planned = ranked(
-                landings, [&](vec2 q) { return Planned{rank_of(q), danger(threats, q), home.at(q)}; },
-                [&](vec2 q, const Planned& r) { return r.rank < stay && !landing_harmful(world, q, dead); });
+            const auto planned = ranked_by_first(
+                landings, stay, rank_of, [&](vec2 q, int rank) { return Planned{rank, danger(threats, q), home.at(q)}; },
+                [&](vec2 q) { return !landing_harmful(world, q, dead); });
             if (planned.count > 0) return defer(rank_of(planned.tiles[0])) ? Landings{} : planned;
         }
     const float here_danger = danger(threats, here);
@@ -435,7 +455,7 @@ bool reset_and_attack_camp(const World& world, int group) {
     if (!refunded && engagement_near(world, here, f.basic_reach() + (f.ranged ? 0 : 1))) return false;
     if (!cast(reset)) return false;
     try {
-        cambc::self().attack(*best);
+        self_acted(), cambc::self().attack(*best);
     } catch (const cambc::error&) {
     }
     ++camp_hits();

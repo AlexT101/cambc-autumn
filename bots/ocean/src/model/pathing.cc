@@ -1199,7 +1199,7 @@ bool Pathing::move_to(vec2 tile, bool* refused) {
     if (refused) *refused = true;
     throw_if_stale();
     try {
-        if (cambc::self().move_absolute(tile)) {
+        if (self_acted(), cambc::self().move_absolute(tile)) {
             turn_acts.walked = true;
             invalidate();
             return true;
