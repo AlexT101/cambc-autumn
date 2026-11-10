@@ -15819,6 +15819,27 @@ Results against `ocean-16d6f78` (release, real fuel, own drafts, Flp4/Mt3qro):
 No merge. Full result: `~/tmp-offload/diverse/gate-logs/fgate-oo-mord-c5--ocean-16d6f78p4qro.json`.
 
 
+
+## Cumulative fuel495–497 fresh gate versus494 (2026-11-10, Codex)
+
+Results against `oc-wdash-494` (release, real fuel, own drafts, Flp4/Mt3q):
+
+| Candidate | Fresh win-equivalent (95% CI) | Fresh paired units | Ladder delta | Fish / Mite fresh delta | Outcome |
+|---|---|---:|---|---|---|
+| oc-coord-fuel497-f8a064fba6 | 50.408% (50.158–50.658) | 39,552 | -0.101±0.254 points | +0.412±0.342 / +0.405±0.363 points | NARROWED (ZONE crossed),309blocks |
+
+Low SPRT LLR+8.215, high-3.338; ZONE crossed at35,200 units. One-site fresh+0.298±0.463,
+multi-site+0.449±0.296, pooled+0.154±0.178. The fresh read supports retaining the already-incorporated
+fuel bundle, with no clear ladder regression. This is a judgement-zone result, not a99% live-bar pass.
+It tests exactly495–497 against494; the subsequently merged camp shield498 is absent from both sides.
+No extra source merge or live promotion follows automatically. The teammate's fuel497 source/docs remain
+its uncommitted work; this record does not capture them.
+
+Immutable snapshot provenance: `~/tmp-offload/handoff/codex/fuel497-gate.json`. Authoritative final result:
+`~/tmp-offload/diverse/gate-logs/fgate-oc-coord-fuel497-f8a064fba6--oc-wdash-494p4q.json`, also preserved in
+`codex/queue-ops/fuel497-final.json`. Existing game caches were reused, including497's runs against the
+same bodies from livelock gates; no deterministic games were repeated for extra evidence.
+
 ## Local queue draft10 F92 refit (2026-11-10, Codex)
 
 799,998 training games on fresh ladder-v2 maps, with Fish/Mite-weighted opponents, on frozen
