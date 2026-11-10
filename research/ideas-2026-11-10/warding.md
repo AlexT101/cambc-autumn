@@ -123,3 +123,9 @@ A secondary matched comparison uses the common first 32 complete blocks, balanci
 Actual fgate/ab.py descendants were verified at both starts, including `--fuel 200000`, fixed bodies, own drafts and native private-pool settings. All eight first raised-block summaries (arm/base × opponent × ladder/fresh) report 200k, 256 games each, 0 errors; source seals still match. Raw results: artifact `results/tile-{100000,200000}.json`; secondary comparison `paired-fuel.json`; startup evidence `tile-raised-start-validation.json` and `gate-process-check.json`.
 
 Parent-prioritized wakeheal2 normal/raised work follows tile200k in the queue; the remaining ward/reserve conditions and source seals are retained.
+
+## Bush-only doubled fuel rejected, 2026-11-10 14:46 UTC
+
+`oc-wbush-498` at200k versus full498 crossed the low rejection boundary after130blocks/16,640 fresh paired units: **REJECT**, fresh−0.625±0.391 percentage points, lowLLR−3.141/high−7.852. Fish+0.066±0.528, Mite−1.316±0.574; ladder−0.014±0.381. This arm preserves immediate reveal but forbids non-bush planned wards. Ad Astra's observed all-bush placement does not justify this restriction in Ocean at the tested doubled budget. No promotion. Normal100k remains running and gets its own terminal decision; do not transfer this result to that condition or infer the mechanism from subgroup means alone.
+
+Raw copy: `~/tmp-offload/warding-2026-11-10/results/bush-200000.json`. The released controller slot started cleared-camp200k using the newly reviewed main86 pool; actual fgate790343 has fixed Flp4/Mt3q, full498 and --fuel200000. Existing private bush100k/camp100k processes remain unchanged; the private reservation remains until they drain.
