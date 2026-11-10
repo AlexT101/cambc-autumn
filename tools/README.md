@@ -324,6 +324,9 @@ pitfalls, in [emblab/RUNBOOK.md](emblab/RUNBOOK.md).
 ```
 py tools/emblab/lab.py init --lab NAME [--source REF]        # freeze REF's bot (config "bot", default ocean), the map table, the prior
 py tools/emblab/lab.py run --lab NAME --games 80000 --hours 3   # resumable; `touch <lab>/stop` ends it; status: lab.py status --lab NAME
+py tools/emblab/edits.py build --base bots/variants/BOT --out LAB/edits.json [--r4] [--structural]   # round 5: the edit library (table / list: a candidate bot, the registry)
+py tools/emblab/elab.py init|drafts|run|status|check --lab LAB   # round 5, the edit lab: whole-policy edits per team-game, release vehicles
+py tools/emblab/efit.py fit --lab LAB [--gate] [--by opp]     # its estimates (Bradley-Terry over edits); `step`: the screen's allocation
 py tools/emblab/slot_keeper.py job-<lab.py pid> 35 <pid>      # repairs a legacy process whose slot membership was lost before the atomic-publication fix
 node tools/emblab/dfit.mjs --labs r4,r4b [--dr | --mapdr] [--fitall]   # per-decision fit, DR / map-keyed selections; streams decisions/*.zst
 py tools/emblab/with_slots.py 64 node tools/emblab/dfit.mjs ... --threads '{slots}'   # the fit on CPU slots taken from the pool

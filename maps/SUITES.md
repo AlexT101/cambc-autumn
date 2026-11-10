@@ -948,6 +948,15 @@ re-measured"; used).
 - 3120000-3120119, 30,720 maps, symlinked into `merged/emb4-c1`, `-c2`, `-c3`: the Skirmish table's confirmation
   against current ocean (used).
 
+**Emblem lab round 5 (ocean, 2026-11-10):** `--mix ladder-v2`, in `suites/fresh/fresh-{seed}` (tools/emblab/PLAN-round5.md):
+- 3130000-3130399, 102,400 maps: the edit lab's pool (`replays/emblab/r5`; used).
+- 3140000-3140119, 30,720 maps, held out from the lab, symlinked into `merged/emb5-h1` (3140000-39), `emb5-h2`
+  (3140040-79) and `emb5-h3` (3140080-119): all three used (anchors, the Prism edit, the combined candidate; EXPERIMENTS "Emblem
+  lab round 5").
+- 3150000-3150119, 30,720 maps, symlinked into `merged/emb5-c1`, `-c2`, `-c3`: the Prism edit against 501 and the
+  combined candidate against it (used).
+- 3160000-3160119, 30,720 maps, symlinked into `merged/emb5-v1`, `-v2`, `-v3`: three candidates against ocean 503 (used).
+
 **Ocean fuel fourth pass (2026-11-10):** `--mix ladder-v2`, under `suites/fuel-fourth/confirm-{seed}`:
 - 1462510–1462517, 2,048 maps: used for confirmation against `oc-fuel4-base` (CHANGES 498), then development of the final 501 bundle on 500.
 

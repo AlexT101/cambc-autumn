@@ -54,6 +54,108 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 - A risk change can win the mirror and nothing else (nuke guard, 2026-11-08): +0.22 held out over 149k, panel -0.02.
   The v84 pattern again: a risk or greed change needs its panel H1 before it ships.
 
+## Emblem lab round 5 on ocean (2026-11-10, tools/emblab `elab.py`; nothing merged yet): an edit lab that agrees with A/Bs; one typed edit and three near-misses win on 501, and only the three carry over to 503's new draft
+
+The plan and the audit of round 4: [tools/emblab/PLAN-round5.md](../tools/emblab/PLAN-round5.md); how the lab works:
+tools/emblab/README.md "Round 5". Base `variants/oc-fuel-501` (CHANGES 501); own drafts, release builds, fast runner.
+Lab `replays/emblab/r5` (3,680,000 games: calibration 320k, screen 2.40M, replication 960k) and `r5p` (160k, placebos
+only); pool fresh-3130000..399, held out `merged/emb5-h1..h3`, `-c1..c3`, `-v1..v3` (maps/SUITES.md). Scripts and
+checks: `research/ideas-2026-11-10/emblab5/`. A/Bs are 20,480 games a suite, plain bots.
+
+**Design.** A lab team plays the base plus up to 3 non-conflicting edits from a library of 330, fixed and hashed before
+play (`9488128508c514c3`): 12 anchors, 16 placebos, 127 pooled (a passive family as everyone's k-th emblem, overwriting
+or inserted), 13 typed rows, 126 typed cells (84 ranked by round 4's sums, 42 random controls), 36 structural (flags in
+`shop.cc`). Opponents 50% a second lab team, 25% the Fish body, 25% the Mite body (`spar-dvn952/953-Flp4`, `-Mt3qro`).
+Estimates: a Bradley-Terry logistic on edit indicators. Typed edits go only to teams drafting the pick (the draft
+sees neither opponent nor edits: 0 drafts off the plan in over 20,000 checked teams). The screen is rank halving in six steps on
+cumulative estimates, then the 20 survivors on new games only.
+
+**Before any estimate (hour 0).**
+
+| check | result |
+|---|---|
+| vehicle against plain bots at 100M fuel, 64 maps, unedited and with 5 edit sets (flags: 48 maps, 9 sets) | identical on every map |
+| the same at the real budget | 32 of 64 identical: fuel timing of the vehicle's one-time lookup |
+| zero-edit vehicle against 501 | 49.98% of 20,480; out-of-fuel turns +1.3% |
+| anchors on 501 (`emb5-h1`): no table / no late Collectors / Collectors at k1 | 47.2% / 48.6% / 47.9% |
+| audit 1: round 4's final selection (`dense-tb-z2`) in every cell, as round 4 deployed it | 48.2% (round 4: 48.4%) |
+| audit 1: the same selection once per bucket, the policy the fit scored | 49.8%: level, so the fit was misapplied and held no gain |
+| audit 5 (`forcemask.py`, round 4's 1.28M dense games): a single Collectors cell forced / all of a row's several forced | -0.01 ± 0.10 / -0.46 ± 0.14 points: self-healing is real |
+
+**Calibration (28 edits, 320k games).** Lab against A/B: no table -2.68 ± 0.33 / -2.81; no late Collectors -1.22 /
+-1.44; Collectors at k1 -1.06 ± 0.31 / -2.14 ± 0.35 (a miss of the plan's 0.8: mirror games read -1.34, the bodies
+-0.1 and -0.5, and the A/B is mirror only). Slope of lab on A/B over 16 anchors 0.85; rms gap 0.48, what the two
+noises predict. An anchor alone against with co-edits: all within 2 se. Placebos: mean +0.08 ± 0.12, but one at z 3.5.
+That placebo kept reading high on new games (+0.62 ± 0.21 over the next 69k team-games) and then fell to -0.01 ± 0.13
+in the replication; a placebo is an exact no-op in the vehicle (96 of 96 maps, alone and beside real edits), and in
+the placebo-only lab all 12 read within z 2.3. Chance, and a warning: a 3.5 se reading can persist for 100k team-games.
+
+**Screen (330 -> 20 in 2.40M games).** Cuts at -0.73, -0.24, -0.03, +0.11, +0.14, +0.27 points. What it found bad:
+
+| edit | points |
+|---|---|
+| ordinals 0-2 in Health / in the main stat | -9.6 / -4.0 |
+| Greed as the stat sink from ordinal 6 / 8 / 10 / 12 | -8.5 / -5.4 / -3.2 / -2.2 |
+| Hunter, Tribute, Skirmish, Home, Monster, Treasure as the 2nd emblem | -1.9 to -3.7 |
+| no table | -2.9 |
+| Tavi's or Vesper Vale's rows to the current logic | -2.0, -1.9 |
+
+By tier, on all screen games: ranked typed cells mean -0.14 (48% above zero, as placebos: -0.05, 50%), their random
+controls -0.34 (19%), pooled -0.65 (19%), structural -1.28 (25%). Round 4's ranking picks harmless edits, not gains.
+Two placebos reached the final 20 (+0.41, +0.27) and two more missed by 0.04: a cumulative +0.3 to +0.6 after the
+screen is what a no-op reaches.
+
+**Replication (the 20 on 960k new games, ±0.13 each).** The 18 real edits average +0.09 ± 0.03.
+
+| edit | screen | replication | mirror / Fish / Mite |
+|---|---|---|---|
+| Prism's rows to the current logic (`row-off-prism`) | +0.59 | **+0.87** (z 6.8) | +0.67 / +1.67 / +1.21 |
+| Issac: Durability-Health as its 1st emblem | +0.47 | +0.29 (z 2.3) | +0.13 / +0.48 / +0.83 |
+| Vesper Vale: Collectors-Health at k7 | +0.28 | +0.27 (z 2.1) | +0.22 / +0.56 / +0.16 |
+| Collectors at k8, overwriting (`collectors-k8-ow`) | +0.49 | +0.25 (z 2.0) | +0.13 / +0.73 / +0.30 |
+| the two placebos | +0.41, +0.27 | -0.01, +0.09 | |
+| Collectors priced for champion damage (x1) | +0.56 | +0.05 | |
+| Monster at k8 | +0.45 | -0.06 | |
+| the other 12 | +0.28 to +0.46 | -0.29 to +0.18 | |
+
+One edit passes the bar (+0.25 at z 2.5), so no factorial was played.
+
+**A/Bs of plain bots.**
+
+| candidate against reference | suites | result |
+|---|---|---|
+| Prism's rows off against 501 | `emb5-h2` | 50.9% of 20,480 |
+| Prism's rows off against 501 | `emb5-c1..c3`, untouched | **50.99% of 61,440** (50.6-51.4): 50.6 / 51.2 / 51.2 |
+| Prism's rows off + the three near-misses against Prism's rows off | `emb5-h1`, `-h3` | 50.5% of 40,960 |
+| the same | `emb5-c1..c3` | **50.85% of 61,440** (50.5-51.2): 50.8 / 50.9 / 50.8 |
+| Prism's rows off against **503** (`variants/ocean-7d8ee42`) | `emb5-v1..v3`, new | 50.11% of 61,440 (49.7-50.5): level |
+| Prism's rows off + the three against 503 | `emb5-v1..v3` | **50.63% of 61,440** (50.2-51.0): 50.9 / 50.6 / 50.4 |
+| the three alone against 503 | `emb5-v1..v3` | 50.51% of 61,440 (50.1-50.9): 50.6 / 50.8 / 50.1 |
+
+- On 501 the Prism edit is worth +1.0 and the three near-misses +0.7 more (50.70% of 102,400 over both looks).
+- Ocean moved to 503 during the run (CHANGES 502: draft10's draft model). Prism is still on 78% of teams (80% under
+  draft7), but only 38% of teams are the same, and the Prism edit's gain is gone (+0.11 ± 0.20 against +0.99 ± 0.20).
+  The three near-misses carry over (+0.5). An emblem edit is a statement about the teams the draft fields.
+- Fresh gate (Flp4 / Mt3qro), Prism's rows off against 501, stopped at 47 blocks when the base moved: fresh +1.01
+  ± 0.55, ladder +0.09, pooled +0.55; SPRT at 50.5 / 50.75 undecided (LLR +1.25). The gate of the combined candidate
+  against 503 (seed 5502) is in `replays/emblab/r5/fgate-503-prism-plus3.out`.
+- Candidate bots: `variants/oc503-prism-plus3`, `variants/oc503-plus3` (tables in their `emblem_table.h`). Not
+  merged: merging and a live pair are the user's calls.
+
+**What the method showed.**
+- 80,000 games in ~4 minutes at slot weight 35 (1.2M an hour; round 4's logging vehicles 0.7M). From the first game to the end of the
+  replication: three hours.
+- The lab beats the bodies 76-79% of the time, so a body game carries about a third of a mirror game's information;
+  an appearance is worth 0.78 of a team-game at 50%. Effects against the bodies were larger than in mirror games for
+  the edits that replicated.
+- About 2% of map cells are not reproducible between teams carrying different numbers of edit ids (1% flip the
+  winner): the ids cost a few instructions on the turn of the first emblem choice. Noise, no direction.
+- Not used: a fit with map effects (the map and side fix 18% of a mirror game's outcome variance and ~30% of a body
+  game's: about +17% information), and confidence-bound elimination (in simulation it cost more games than rank
+  halving at equal power; six rank cuts cost 22% fewer appearances than the plan's three).
+- Next time: freeze the lab on the bot that will ship, draft included, or rerun the replication round (960k games,
+  45 minutes) on the new base before any A/B.
+
 ## Fuel after 496 (ocean, 2026-11-10; CHANGES 497)
 
 [Campaign, manifests, oracles and rejected experiments](fuel-2026-11-10-third/README.md). Worked alone.

@@ -225,3 +225,181 @@ def make_body(source, name):
     quiet(blobs)
     changed = [rel for rel, data in sorted(blobs.items()) if vehicle.write_if_changed(target / rel, data)]
     return target, bool(changed)
+
+
+# ---------- round 5: the edit design (elab.py, edits.py) ----------
+# Lab flags: (name, default), read by FLAG_PATCHES' hooks in shop.cc; an edit sets some for the game.
+FLAGS = [("greed_from", 1000), ("coll_at", 1000), ("diversify", 0), ("stat_b0", 0), ("stat_b1", 0), ("stat_b2", 0), ("stat_b3", 0),
+         ("fight_w", 1), ("m_skirmish", 1), ("m_treasure", 1), ("m_prospector", 1), ("m_capture", 1), ("m_hunter", 1), ("m_tribute", 1),
+         ("coll_priced", 0)]
+FLAG_HOOKS = r"""
+// Emblem lab flags (tools/emblab/structural.py); at their defaults every hook leaves the choice as it was.
+Emblem lab_pinned(const World& world, const Build& bought, const cambc::enum_map<cambc::item_type>* items, int family, int stat) {
+    pin_family = family, pin_stat = stat;
+    const Emblem e = current_emblem(world, bought, items);
+    pin_family = -1;
+    return e;
+}
+// A new emblem the flags force, or -1: Collectors once coll_at distinct families are owned; Greed in the main stat
+// from ordinal greed_from on.
+int lab_forced(const World& world, const cambc::enum_map<cambc::item_type>& owned, int ordinal) {
+    if (lab_flag[1] < 100 && !has_family(owned, collectors)) {
+        int n = 0;
+        for (int family = monster; family <= collectors; ++family) n += has_family(owned, family);
+        if (static_cast<float>(n) >= lab_flag[1]) return collectors * 3 + main_stat(world);
+    }
+    if (static_cast<float>(ordinal) >= lab_flag[0]) return greed * 3 + main_stat(world);
+    return -1;
+}
+// diversify: with Collectors owned, a family already owned gives way to the first one not owned. stat_bN: the
+// emblems of ordinals 3N..3N+2 in Health (1) or the main stat (2).
+Emblem lab_adjust(const World& world, const Build& bought, const cambc::enum_map<cambc::item_type>* items,
+                  const cambc::enum_map<cambc::item_type>& owned, int ordinal, const Emblem& e) {
+    int family = e.family, stat = e.stat;
+    if (lab_flag[2] > 0 && has_family(owned, collectors) && has_family(owned, family))
+        for (const int f : {skirmish, durability, monster, jungle, prospector, capture, treasure, hunter, home, tribute, power, bruiser})
+            if (!has_family(owned, f)) {
+                family = f;
+                break;
+            }
+    if (ordinal < 12) {
+        const float s = lab_flag[3 + ordinal / 3];
+        if (s == 1) stat = health_stat;
+        else if (s == 2) stat = main_stat(world);
+    }
+    return family == e.family && stat == e.stat ? e : lab_pinned(world, bought, items, family, stat);
+}
+
+"""
+PASSIVE = "float passive_saved(const World& world, const IncomeRates& rates, const cambc::enum_map<cambc::item_type>& owned, int family, float per_gold) {\n"
+PASSIVE_HOOK = r"""float passive_saved_raw(const World& world, const IncomeRates& rates, const cambc::enum_map<cambc::item_type>& owned, int family, float per_gold);
+// Emblem lab: a passive's price x its flag; coll_priced prices Collectors' champion damage (x the flag) as Skirmish's.
+float passive_saved(const World& world, const IncomeRates& rates, const cambc::enum_map<cambc::item_type>& owned, int family, float per_gold) {
+    float m = 1;
+    switch (family) {
+    case skirmish: m = lab_flag[8]; break;
+    case treasure: m = lab_flag[9]; break;
+    case prospector: m = lab_flag[10]; break;
+    case capture: m = lab_flag[11]; break;
+    case hunter: m = lab_flag[12]; break;
+    case tribute: m = lab_flag[13]; break;
+    case collectors: {
+        if (lab_flag[14] <= 0 || has_family(owned, collectors)) return 0;
+        int n = 1;
+        for (int f = monster; f < collectors; ++f) n += has_family(owned, f);
+        return lab_flag[14] * params::fight_weight * lab_flag[7] * fight_share() * (1.0f - 1.0f / (1.0f + 0.01f * static_cast<float>(n)));
+    }
+    default: break;
+    }
+    return m * passive_saved_raw(world, rates, owned, family, per_gold);
+}
+float passive_saved_raw(const World& world, const IncomeRates& rates, const cambc::enum_map<cambc::item_type>& owned, int family, float per_gold) {
+"""
+OR_PASSIVE = "                best = {family, shards.stat, saved, emblem_price, saved - shards.saved};\n        return best;\n"
+OR_PASSIVE_HOOK = OR_PASSIVE.replace("        return best;\n", r"""        if (lab_flag[14] > 0 && !has_family(owned, collectors)) {
+            Emblem c = value(collectors, a);
+            if (const auto e = value(collectors, b); e.saved > c.saved) c = e;
+            const float passive = passive_saved(world, rates, owned, collectors, gold_saves);
+            if (c.saved + passive > best.saved) best = {collectors, c.stat, c.saved + passive, emblem_price, passive};
+        }
+        return best;
+""")
+BEST_DOC = "// The current logic's emblem, except that a new one is the learned one (tools/emblab) for our pick count, type and\n"
+PAST = "    if (ordinal >= std::size(learned_arm[0][0])) return reactive_over(world, bought, current_emblem(world, bought, items), items);\n"
+OWNED = ("    if (arm == 255 || (family != power && family != bruiser && has_family(owned, family)))\n"
+         "        return reactive_over(world, bought, current_emblem(world, bought, items), items);\n")
+LAST = "    return reactive_over(world, bought, e, items);\n}\n\n// True if any shard was bought.\n"
+ADJ = "lab_adjust(world, bought, items, owned, static_cast<int>(ordinal), {})"
+FLAG_PATCHES = [
+    [(PASSIVE, PASSIVE_HOOK)],
+    [("    case skirmish: return params::fight_weight * fight_share()", "    case skirmish: return params::fight_weight * lab_flag[7] * fight_share()")],
+    [("    const float fight_scale = params::fight_weight * fight_share();\n", "    const float fight_scale = params::fight_weight * lab_flag[7] * fight_share();\n")],
+    [(OR_PASSIVE, OR_PASSIVE_HOOK)],
+    [(BEST_DOC, FLAG_HOOKS.lstrip("\n") + BEST_DOC)],
+    [(PAST, "    if (const int forced = lab_forced(world, owned, static_cast<int>(ordinal)); forced >= 0)\n"
+            "        return reactive_over(world, bought, lab_pinned(world, bought, items, forced / 3, forced % 3), items);\n"
+            + PAST.replace("current_emblem(world, bought, items)", ADJ.format("current_emblem(world, bought, items)")))],
+    [(OWNED, OWNED.replace("current_emblem(world, bought, items)", ADJ.format("current_emblem(world, bought, items)")))],
+    [(LAST, LAST.replace("reactive_over(world, bought, e, items)", "reactive_over(world, bought, " + ADJ.format("e") + ", items)"))],
+]
+
+EDIT_WRAPPER = r'''
+// Emblem lab, edit design (tools/emblab/elab.py): this map and side's edits (trainer_table.h: Entry.force, as edit
+// ids) patch a copy of learned_arm and the lab flags at the first emblem choice.
+std::uint8_t lab_arm[3][13][12];
+float lab_flag[] = {FLAG_DEFAULTS};
+bool lab_ready = false;
+void lab_init() {
+    lab_ready = true;
+    std::memcpy(lab_arm, learned_arm, sizeof lab_arm);
+    const auto* entry = trainer::find();
+    if (!entry) return;
+    std::uint8_t* flat = &lab_arm[0][0][0];
+    for (const unsigned id : entry->force) {
+        if (id == 0 || id > static_cast<unsigned>(trainer::edit_count)) continue;
+        for (auto i = trainer::edit_first[id]; i < trainer::edit_first[id + 1]; ++i) flat[trainer::edit_cells[i].at] = trainer::edit_cells[i].arm;
+        for (auto i = trainer::edit_flag_first[id]; i < trainer::edit_flag_first[id + 1]; ++i)
+            lab_flag[trainer::edit_flags[i].flag] = trainer::edit_flags[i].value;
+    }
+}
+
+'''
+BEST = "Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::enum_map<cambc::item_type>* items = nullptr) {\n"
+BEGUN = "// An emblem with shards owned short of it, which best_emblem finishes before any other.\nstruct Begun {"
+
+
+def edit_patches(baked=None):
+    """shop.cc's patches for an edit vehicle; baked: {flag: value} for a candidate bot, which has no trainer table
+    (its flags are constants and its table is the edited emblem_table.h)."""
+    defaults = ", ".join(f"{float((baked or {}).get(n, d))!r}f" for n, d in FLAGS) or "0.0f"
+    if baked is not None:
+        return [[(BEGUN, f"float lab_flag[] = {{{defaults}}};\n" + BEGUN)]] + FLAG_PATCHES
+    return [
+        [('#include "emblem_table.h"\n', '#include "emblem_table.h"\n#include "../draft/trainer.h"\n#include "../draft/edit_defs.h"\n#include <cstring>\n')],
+        [(BEGUN, EDIT_WRAPPER.lstrip("\n").replace("FLAG_DEFAULTS", defaults) + BEGUN)],
+        [(BEST, BEST + "    if (!lab_ready) lab_init();\n")],
+        [("    const int arm = learned_arm[picks - 3][type][ordinal], family = arm / 3;\n",
+          "    const int arm = lab_arm[picks - 3][type][ordinal], family = arm / 3;\n")],
+    ] + FLAG_PATCHES
+
+
+def patch_text(text, edits, rel):
+    for alternatives in edits:
+        old, new = next(((o, n) for o, n in alternatives if o in text), alternatives[0])
+        assert text.count(old) == 1, f"{rel} patch point not found once: {old[:70]!r}"
+        text = text.replace(old, new)
+    return text
+
+
+def edit_table_header(entries):
+    """entries: [(key hex, team 0/1, [edit ids, at most 6])]. n = 0: the draft is the bot's own."""
+    rows = sorted((int(k, 16), t, tuple(ids)) for k, t, ids in entries)
+    for a, b in zip(rows, rows[1:]):
+        assert a[:2] != b[:2], f"duplicate entry {a[:2]}"
+    lines = [f"    {{0x{k:016x}ull, {t}, 0, 0, {{0, 0, 0, 0, 0}}, 0u, {{{', '.join(map(str, ids + (0,) * (6 - len(ids))))}}}}}," for k, t, ids in rows]
+    lines.append("    {0xffffffffffffffffull, 255, 0, 0, {0, 0, 0, 0, 0}, 0u, {0, 0, 0, 0, 0, 0}},")
+    return ("#pragma once\n// Generated by tools/emblab/evehicle.py: (map key, team, -, -, -, -, edit ids), sorted.\n"
+            "namespace aph::trainer {\ninline constexpr Entry entries[] = {\n" + "\n".join(lines) + "\n};\n}\n")
+
+
+def make_edit(source, name, entries, defs):
+    """An edit vehicle: the source with shop.cc reading its table and flags through this game's edits. Only shop.cc
+    changes (the draft is untouched). defs: edits.defs_header's text."""
+    source, target = Path(source), vehicle.VARIANTS / name
+    blobs = {p.relative_to(source).as_posix(): p.read_bytes() for p in (source / "src").rglob("*") if p.is_file()}
+    blobs[SHOP] = patch_text(blobs[SHOP].decode(), edit_patches(), SHOP).encode()
+    blobs["src/draft/trainer.h"] = (HERE / "trainer.h").read_bytes()
+    blobs["src/draft/trainer_table.h"] = edit_table_header(entries).encode()
+    blobs["src/draft/edit_defs.h"] = defs.encode()
+    changed = [rel for rel, data in sorted(blobs.items()) if vehicle.write_if_changed(target / rel, data)]
+    for path in sorted((target / "src").rglob("*"), reverse=True):
+        if path.is_file() and path.relative_to(target).as_posix() not in blobs:
+            path.unlink()
+            changed.append(path.name)
+    return target, bool(changed)
+
+
+def bake_flags(bot, values):
+    """A candidate bot directory's shop.cc with the flag hooks and these flag values as constants."""
+    p = Path(bot) / SHOP
+    p.write_text(patch_text(p.read_text(), edit_patches(values), SHOP))

@@ -5,7 +5,7 @@ draft, from games whose drafts and emblem choices are randomised. The target is 
 tributed + carried at the end, if cross-validation on wins says it helps), so combat value counts as fully as
 farming. Python 3 and Node 22+, no other dependencies. It reuses the draft lab's vehicles, batch runner and outcomes
 (tools/draftlab/README.md). [RUNBOOK.md](RUNBOOK.md) is the step-by-step for a run;
-[PLAN-round5.md](PLAN-round5.md) is the audit of round 4 and the plan for the next one (not started).
+[PLAN-round5.md](PLAN-round5.md) is the audit of round 4 and the plan round 5 follows ("Round 5" below).
 
 ```
 py tools/emblab/lab.py init --lab NAME [--source REF]   # freeze REF's bot (config "bot", default ocean), the map table, the prior
@@ -36,6 +36,53 @@ the ladder, `fall-custom`, `gen`, `gen-s1` and `fresh-4003` to `fresh-4120`. Rou
 Rounds: round 1 (`pilot`, `main`, 172k games, 1c0d627) forced uniformly random arms at k < 8 from a pre-drawn table
 and was fitted whole-game (fit.mjs); its table shipped as CHANGES 232. Round 2 (`r2`, from 8fad72c) draws arms in
 the game and is fitted per decision (dfit.mjs); PLAN.md has the reasoning.
+
+## Round 5: the edit lab (ocean, 2026-11-10)
+
+Many policy-level A/Bs in one run ([PLAN-round5.md](PLAN-round5.md) sections 3-7; results in research/EXPERIMENTS.md
+"Emblem lab round 5"). Rounds 1-4 randomised single decisions inside a shared build; round 5 randomises whole
+policies per team-game, so what it scores is what a candidate bot plays.
+
+```
+py tools/emblab/edits.py build --base bots/variants/BOT --out replays/emblab/LAB/edits.json [--r4] [--structural]   # the library; prints its hash
+py tools/emblab/edits.py table --registry edits.json --base bots/variants/BOT --out bots/variants/NAME EDIT...   # a candidate bot with those edits
+py tools/emblab/elab.py init | drafts | run | status | check --lab LAB    # the lab (config.json first)
+py tools/emblab/efit.py fit --lab LAB [--gate] [--by opp|picks] [--from B --to B]   # estimates; --gate: the calibration report
+py tools/emblab/efit.py step --lab LAB                                    # the screen's allocation (elab.py run calls it when config has "auto": [])
+```
+
+- **Edit** (`edits.py`): a list of `learned_arm` cells, lab flags (`structural.py`; hooks in `evehicle.py FLAG_PATCHES`),
+  or nothing (a placebo). Tiers: anchors (changes an A/B has measured), placebos, pooled (a passive family as
+  everyone's k-th emblem, overwriting or inserted), typed rows and typed cells (`typed_r4.py`: per type, round 4's
+  best-ranked and random controls), structural. Two edits conflict when they touch one cell or flag. The registry is
+  append-only and hashed.
+- **Vehicle** (`evehicle.make_edit`): the base bot with only `shop.cc` patched. At the first emblem choice it copies
+  `learned_arm`, applies this map and side's edit ids (`trainer_table.h`, `Entry.force`) and sets the flags. Release
+  builds, no logging. The draft is the bot's own and sees neither the opponent nor the edits, so `elab.py drafts`
+  plays a draft-only game a map and the plan knows every team beforehand: a typed edit goes only to teams that draft
+  its pick. `elab.py check --fuel 100000000` shows the vehicle playing exactly as plain bots do (unedited, and with
+  the edits written into the table); at the real budget about half the games differ, by fuel timing alone (the
+  zero-edit vehicle against the base: 49.98% of 20,480).
+- **Games** (`elab.py`): a lab team is the base plus up to 3 non-conflicting edits (`none_share` none, `solo_share`
+  one). Opponents: `self` (a second lab team with its own edits) or a sparring body. The outcome is the result
+  line; replays are deleted as games end, but for the first `check_drafts` of a batch, which confirm the drafts.
+- **Estimates** (`efit.py`): a Bradley-Terry logistic over games on edit indicators, with intercepts per opponent
+  kind, pick count, lab side, body and drafted pick. Points = 25 beta. A typed edit's `pts` is its effect on
+  carrying teams x the share of teams drafting the pick; `n_eff = (50 / se)^2` is the screen's unit.
+- **Screen** (`efit.py step`, `stage.json`): successive halving on cumulative estimates, six steps (n_eff 6k / 12k /
+  20k / 32k / 48k / 80k an edit; 250 / 180 / 120 / 75 / 45 / 20 of 330 stay). Each batch's quotas bring every edit
+  alive to the stage's target, counting what is planned and not merged.
+
+What round 5 measured about the method:
+
+- **Throughput:** 80,000 games in ~4 minutes at slot weight 35 (1.2M an hour; round 4's logging vehicles: 0.7M).
+- **Information a game:** 3.8 edit appearances a game in the screen, 0.78 n_eff an appearance: the lab beats the
+  bodies 76-79% of the time, so a body game carries about a third of a mirror game's information.
+- **Blocking (not used):** the map and side fix 18% of a mirror game's outcome variance and about 30% of a body
+  game's, so a fit with map effects would gain roughly 17%.
+- **Rank halving beats confidence bounds:** dropping edits whose upper bound falls under the 20th best's lower
+  bound cost more games than the plan's halving at equal power; six rank cuts on cumulative estimates cost 22% fewer
+  appearances than the plan's three (`research/ideas-2026-11-10/emblab5/simsched2.py`).
 
 ## Round 4 (ocean, 2026-11-10)
 

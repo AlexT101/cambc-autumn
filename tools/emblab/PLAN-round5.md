@@ -1,4 +1,10 @@
-# Emblem lab round 5: plan and handoff (written 2026-11-10, not started)
+# Emblem lab round 5: plan and handoff (written 2026-11-10; carried out the same day)
+
+**Carried out:** results in research/EXPERIMENTS.md "Emblem lab round 5 on ocean"; the tools in [README.md](README.md)
+"Round 5". Departures from this plan: the base was ocean 501; the vehicle matches plain bots only at 100M fuel (fuel
+timing at the real budget); typed edits went only to teams drafting the pick; the screen was six rank cuts on
+cumulative estimates in place of rounds A-C; the gate's two strict misses (Collectors at k1, one placebo at z 3.5) were
+overridden; one survivor, so no round E.
 
 For an agent picking this up cold. Read first: `AGENTS.md`, `cambc-rules.yaml` (`economy.emblems`, `economy.shards`),
 [README.md](README.md) ("Round 4", "What round 4 found"), [RUNBOOK.md](RUNBOOK.md) (section 9: what went wrong),
