@@ -4223,5 +4223,6 @@ Evidence, all against `variants/ocf-base` (= 494), own drafts, fast runner:
   -16.3 to -11.1); mean 51,669 -> 48,278 (-6.5%); p90 85,850 -> 84,966; `SHORTCUT` lines -1.0%.
 - **Release A/B:** 49.6% (48.9-50.3) of 20,480 on `merged/fuel-1995`, out-of-fuel turns -12.8% (223,128 / 255,886).
   Without the tail's checks 49.4% and -5.2%; with the ring at radius 8 49.7% and -13.2%.
+  Held out: 50.1% (49.7-50.6) of 40,960 on `merged/fuel-1996`, out-of-fuel turns -12.9% (429,719 / 493,257).
 
 Frozen as `variants/oc-fuel-495` (= bots/ocean).

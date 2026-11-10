@@ -15708,5 +15708,6 @@ Write-up, tools and the patch: [fuel-2026-11-10](fuel-2026-11-10/README.md). Bas
 |---|---|---|
 | bench, real budget, 4,096 games (`fuelcap/p1`) | mirror | 49,337 -> 42,634, -13.6% (95% -16.3 to -11.1); mean fuel -6.5% |
 | ab.py oc-fuel-495 (`merged/fuel-1995`) | 49.6 (48.9-50.3) of 20,480 | -12.8% |
+| ab.py oc-fuel-495, held out (`merged/fuel-1996`) | 50.1 (49.7-50.6) of 40,960 | -12.9% |
 | ab.py, without the tail's fuel checks | 49.4 (48.7-50.1) of 20,480 | -5.2% |
 | ab.py, own ring at radius 8 | 49.7 (49.0-50.4) of 20,480 | -13.2% |

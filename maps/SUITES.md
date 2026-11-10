@@ -934,3 +934,4 @@ walk-then-dash in the escape planner"):
 
 **fuel-495 (2026-11-10):** `--mix ladder-v2`, in `suites/fresh/fresh-{seed}`, symlinked into `merged/fuel-1995`:
 1995000-1995039, 10,240 maps (oc-fuel-495, CHANGES 495, and its two decomposition arms against ocf-base; used).
+- `fuel-1996`: 1996000-1996079, 20,480 maps (oc-fuel-495 held out against ocf-base; used).

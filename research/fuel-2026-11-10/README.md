@@ -22,6 +22,7 @@ All against ocf-base in mirror games, own drafts, fast runner.
 | gate | win% (CI) of n | out-of-fuel turns, arm / base |
 |---|---|---|
 | ab.py oc-fuel-495 | 49.6 (48.9-50.3) of 20,480 | 223,128 / 255,886 (-12.8%) |
+| ab.py oc-fuel-495, held out (`merged/fuel-1996`) | 50.1 (49.7-50.6) of 40,960 | 429,719 / 493,257 (-12.9%) |
 | ab.py oc-fuel-495 without the tail's fuel checks (change 3) | 49.4 (48.7-50.1) of 20,480 | 241,666 / 255,011 (-5.2%) |
 | ab.py oc-fuel-495 with the own ring at radius 8 (change 4 undone) | 49.7 (49.0-50.4) of 20,480 | 222,092 / 255,878 (-13.2%) |
 
