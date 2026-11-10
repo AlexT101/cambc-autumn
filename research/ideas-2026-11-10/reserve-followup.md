@@ -65,3 +65,13 @@ Admission verified at 12:20 UTC: ops inserted all three IDs exactly once under `
 `oc-q1-498` versus frozen full498 completed normally at 46 blocks / 5,888 fresh paired units: **NARROWED (ZONE crossed)**. Fresh +0.025±0.249 percentage points; Fish +0.110±0.355, Mite −0.059±0.355. Ladder −0.132±0.262. Final high LLR −9.258 / low +2.324; no acceptance screen or live bar. ZONE was reached at block44, then the fixed width target ended sampling. This is unresolved near neutral, not a win or a formal low-SPRT rejection. No standalone guard promotion.
 
 The reserve-only arm remains running and the combined arm remains pending; the full factorial is incomplete. A neutral guard-alone result does not settle the guard's interaction with reserve slack. Authoritative copied result: `~/tmp-offload/reserve-coverage-2026-11-10/results/q1-100000.json`. Ops dispatched rs8 and q1 into spare main86 capacity at14:26, preserving source/body/budget commands and disabling their local queue entries under lock. No game was restarted. Current read-only watcher PID604267 reads ordinary and externally dispatched jobs plus per-job pool metadata.
+
+## Reserve-only control terminal, 2026-11-10 16:56 UTC
+
+`oc-rs8-498` versus frozen full498, normal100k release5.0.1/own drafts/Flp4/Mt3q, finished307blocks/39,296 fresh paired units: **NARROWED (ZONE crossed)**, fresh+0.138±0.250pp. Fish+0.305±0.340, Mite−0.029±0.364; ladder+0.420±0.253, pooled+0.279±0.178. LowLLR+4.049/high−7.496; no acceptance screen, formal rejection or established fresh-map gain. The stronger ladder/pooled read does not establish a fresh-map improvement.
+
+Together with the q1-only +0.025±0.249 control, this does not establish either component alone as useful, nor rule out their interaction. The already-admitted bundle gate remains running with its original full498 sources and normal budget; no new run, merge or live claim. Submitted106's old mask/bundle confounds remain separate. Neither this old-base component result nor the old live lead establishes performance on current501.
+
+Terminal read-only audit passed2456 summaries/628736 candidate/reference games with exact map/side cells, correct release/engine/body/source/fuel metadata, zero run errors/early losses/handoff failures. Own capped drafts0; opponent3427 per arm retained. Shared reference games are not independent additional evidence. Raw result `results/rs8-100000.json`, audit `rs8-terminal-audit.json`, under `~/tmp-offload/reserve-coverage-2026-11-10/`.
+
+Bundle actualfgate3916322 is verified native/main86, Flp4/Mt3q/full498/default100k; both source seals independently rechecked. Its result and final common-cell factorial contrasts remain pending.

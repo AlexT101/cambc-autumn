@@ -16432,3 +16432,13 @@ Retained opponent findings: Ad Astra's observed ward placements are consistently
 There is **no additional ready ward variant supported by this programme**. A concrete remaining diagnostic question is which lost non-bush observation causes the bush-only arm's fresh-map losses; those formal losses support examining existing paired trajectories, not another speculative placement restriction. Likewise, a new retained-camp-information arm would first need an exact replay showing that missing camp state causes a wrong Ocean decision and that a feasible ward supplies it. Placement counts and opponent correlation alone do not meet that bar. No further ward runs are launched or queued from these questions.
 
 The earlier full parallel budget design is superseded by the user's200k-first behavioral screening policy. Sources/caches/complete results and policy-stopped partials remain intact. The now-idle read-only ward watcher3973959 was stopped after exact identity verification; no evidence process changed. Existing reserve, Skirmish and cumulative outcome ownership continues separately.
+
+## Reserve-only control terminal, 2026-11-10 16:56 UTC
+
+`oc-rs8-498` versus frozen full498, normal100k release5.0.1/own drafts/Flp4/Mt3q, finished307blocks/39,296 fresh paired units: **NARROWED (ZONE crossed)**, fresh+0.138±0.250pp. Fish+0.305±0.340, Mite−0.029±0.364; ladder+0.420±0.253, pooled+0.279±0.178. LowLLR+4.049/high−7.496; no acceptance screen, formal rejection or established fresh-map gain. The stronger ladder/pooled read does not establish a fresh-map improvement.
+
+Together with the q1-only +0.025±0.249 control, this does not establish either component alone as useful, nor rule out their interaction. The already-admitted bundle gate remains running with its original full498 sources and normal budget; no new run, merge or live claim. Submitted106's old mask/bundle confounds remain separate. Neither this old-base component result nor the old live lead establishes performance on current501.
+
+Terminal read-only audit passed2456 summaries/628736 candidate/reference games with exact map/side cells, correct release/engine/body/source/fuel metadata, zero run errors/early losses/handoff failures. Own capped drafts0; opponent3427 per arm retained. Shared reference games are not independent additional evidence. Raw result `results/rs8-100000.json`, audit `rs8-terminal-audit.json`, under `~/tmp-offload/reserve-coverage-2026-11-10/`.
+
+Bundle actualfgate3916322 is verified native/main86, Flp4/Mt3q/full498/default100k; both source seals independently rechecked. Its result and final common-cell factorial contrasts remain pending.
