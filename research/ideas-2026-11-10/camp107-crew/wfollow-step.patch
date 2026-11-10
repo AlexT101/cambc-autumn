@@ -1,0 +1,12 @@
+--- a/src/combat/support.cc
++++ b/src/combat/support.cc
+@@ -405,7 +405,8 @@
+     const bitboard goals = within(world.map().open_for_us, at, follow_dist);
+     if (board_empty(goals)) return false;
+     world.throw_if_stale();
+-    if (!pathing.step_towards(goals)) return false;
++    // Following a teammate earns no clear damage to offset taking the camp's hits.
++    if (!pathing.step_towards(goals, &safety.camp_area())) return false;
+     see_revealed(world, pathing, safety);
+     heal_ally(world, safety);
+     decision = Branch::willow_support;
