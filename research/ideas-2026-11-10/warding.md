@@ -61,7 +61,7 @@ All new arms derive from **`variants/oc-campsh-498`**, the full frozen working49
 - **`variants/oc-wbush-498`** disables only planned wards on non-bush tiles and falls back to Ocean's existing bush policy. Bush planned wards and combat reveal wards stay unchanged. This Ad Astra-inspired ablation asks whether non-bush planned wards are useful relative to conserving/reusing the ward for bushes; it is not a reconstruction of Ad Astra's whole policy.
 - **`variants/oc-wcamp-498`** adds a fallback only when no planned ward applies and the existing bush policy placed nothing. It looks only at camp tiles within radius 2, requires a known cleared/respawning group, and keeps an existing ward within 8 tiles. Its fixed local board scan avoids the older whole-map camp scan. A 7,000-fuel floor bounds attempts. This tests a cheap form of Mite-style retained camp information; it intentionally does not copy every camp placement.
 
-`warding-tools/prepare.py` reproduces these source changes and refuses to overwrite existing arms. `warding-tools/sources.json` records the sealed source fingerprints; the artifact `source-manifest.json` lists every source file hash, with exact patches beside it. The frozen base source fingerprint must equal the queue's known full498 fingerprint `d0a0755075bf4010dc1ac96e7b209aafd3791ba1a8bc1c3b625d56e55f38a23e`.
+`warding-tools/prepare.py` reproduces these source changes and refuses to overwrite existing arms. `warding-tools/sources.json` records the sealed source fingerprints; the artifact `source-manifest.json` lists every source file hash, with exact patches beside it. The frozen base source fingerprint must equal the queue's known full 498 fingerprint `d0a0755075bf4010dc1ac96e7b209aafd3791ba1a8bc1c3b625d56e55f38a23e`.
 
 ## Alive-camp follow-up
 
@@ -71,7 +71,7 @@ Accordingly **`variants/oc-wcampall-498`** adds a matched ablation of the dead-g
 
 ## Planned-ward timing ablation
 
-Ocean already places its routine end ward after movement, strike search, healing and shielding. Its early planned-work ward call and early reveal call are the distinct cases. The five ward helpers are byte-identical between frozen v105 and full498 (`ward-helper-identity.json`), so the live timing sample is relevant to the current policy. At least 379/4,086 Ocean placements (9.3%) are observably early: a move, attack or cast follows. Of those, 179 are non-bush and therefore planned-work wards; 200 bush placements can be planned or reveal. Ad Astra has only 14/4,030 such cases in the archive sample and 1/4,017 today. Placements with no later action do not reveal which internal phase placed them.
+Ocean already places its routine end ward after movement, strike search, healing and shielding. Its early planned-work ward call and early reveal call are the distinct cases. The five ward helpers are byte-identical between frozen v105 and full 498 (`ward-helper-identity.json`), so the live timing sample is relevant to the current policy. At least 379/4,086 Ocean placements (9.3%) are observably early: a move, attack or cast follows. Of those, 179 are non-bush and therefore planned-work wards; 200 bush placements can be planned or reveal. Ad Astra has only 14/4,030 such cases in the archive sample and 1/4,017 today. Placements with no later action do not reveal which internal phase placed them.
 
 **`variants/oc-wlate-498`** removes only the pre-decision `place_ward(world, memory, false)` call and its immediate re-observation. Planned wards remain enabled at turn end, from the chosen end position and updated work; early reveal stays enabled. This differs from the bush-only arm because non-bush planned wards remain available. Deferral also avoids the early check's fuel cost and can let reveal use the ward first; the resulting effect is not a pure isolated clock-time intervention. It is a narrow implementation ablation of that early planned call.
 
@@ -107,10 +107,19 @@ Normal-budget candidate out-of-fuel turns across the eight games are base34, til
 
 The alive-camp follow-up adds 16 successful release smoke games, all with matching drafts and passing hard replay validation. It produces 422/410 camp wards at normal/doubled fuel versus 301/274 for the dead-camp arm on the same eight cells. Its out-of-fuel counts are 26 and 1, respectively; these are trajectory-dependent smoke counts, not a fuel benchmark. Its validation is separate in artifact `verified-campall-smokes.json`, while `mechanism.json` now covers all 80 games.
 
-## Exact tile ranking: normal-fuel gate completed (12:41 UTC)
+## Exact tile ranking: completed fuel gates
 
-`oc-wtile-498` versus full `oc-campsh-498` stopped at 52 blocks, 6,656 fresh paired units, **NARROWED (ZONE crossed)**. Fresh delta **+0.101±0.249 points**; Fish +0.060±0.339, Mite +0.143±0.361. Ladder −0.394±0.295. High LLR −8.133, low +3.517; no acceptance screen. The interval spans no change: no established fresh gain and no promotion. This is a narrowed result, not a formal low-SPRT rejection.
+Both gates finished successfully against the same sealed full 498 reference, fixed Flp4/Mt3q, own drafts, native release 5.0.1. Deltas and interval half-widths below are percentage points from the configured fresh gate.
 
-The doubled-fuel condition started at 12:41:33. Actual fgate/ab.py descendants carry `--fuel 200000`, fixed Flp4/Mt3q, own drafts and native runner in the private 30-slot pool. All eight first-block summaries (arm/base × opponents × ladder/fresh) report fuel 200000, 256 games each, zero errors; both source seals still match. No doubled-fuel outcome yet. Its comparison remains a whole-game budget interaction.
+| Play budget | Blocks / fresh paired units | Fresh | Fresh Fish | Fresh Mite | Ladder | Stop |
+|---|---:|---:|---:|---:|---:|---|
+| 100k | 52 / 6,656 | +0.101±0.249 | +0.060±0.339 | +0.143±0.361 | −0.394±0.295 | NARROWED (ZONE crossed) |
+| 200k | 34 / 4,352 | −0.270±0.247 | −0.322±0.326 | −0.218±0.367 | −0.195±0.297 | NARROWED |
 
-Raw normal result is copied to artifact `results/tile-100000.json`; raised startup checks are `tile-raised-start-validation.json` and `gate-process-check.json`. Parent-prioritized wakeheal100k/200k work follows tile200k in the queue; remaining ward/reserve conditions and source seals are retained.
+There is no established normal-fuel gain; the raised-budget interval is just below zero. Neither arm reached the acceptance screen. Raised low LLR −2.286 did not cross the formal rejection threshold, so its label remains NARROWED. **Do not promote this tile variant or pursue a cheaper version on the theory that extra fuel rescues it.** The independent bush, camp and timing experiments remain pending.
+
+A secondary matched comparison uses the common first 32 complete blocks, balancing all eight fresh slices and averaging repeated noise observations within each of 1,024 maps: normal +0.232±0.317, raised −0.238±0.257, raised-minus-normal−0.470±0.428. These are conditional descriptive map-level intervals, not additional sequential gate decisions. This balanced subset differs from each full terminal sample. Both teams receive the larger budget, including larger initial allowances, so the interaction is about the whole game and cannot isolate ward-search cost.
+
+Actual fgate/ab.py descendants were verified at both starts, including `--fuel 200000`, fixed bodies, own drafts and native private-pool settings. All eight first raised-block summaries (arm/base × opponent × ladder/fresh) report 200k, 256 games each, 0 errors; source seals still match. Raw results: artifact `results/tile-{100000,200000}.json`; secondary comparison `paired-fuel.json`; startup evidence `tile-raised-start-validation.json` and `gate-process-check.json`.
+
+Parent-prioritized wakeheal2 normal/raised work follows tile200k in the queue; the remaining ward/reserve conditions and source seals are retained.

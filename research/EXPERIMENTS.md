@@ -16144,3 +16144,7 @@ Authorized three independent normal-fuel arms against frozen oc-campsh-498: oc-r
 ### Ward exact-tile gate at normal fuel (2026-11-10 12:41 UTC)
 
 Sealed oc-wtile-498 vs full498, fixed Flp4/Mt3q, release/native 5.0.1, own drafts: 52 blocks/6,656 fresh paired units, NARROWED (ZONE crossed). Fresh +0.101±0.249 points (Fish +0.060±0.339; Mite +0.143±0.361); ladder −0.394±0.295. No established fresh gain, acceptance screen or promotion; this is not a formal low-SPRT rejection. Doubled-fuel condition started with verified 200k summary metadata and unchanged source seals. Full evidence and budget caveat: [warding study](ideas-2026-11-10/warding.md).
+
+### Ward exact-tile fuel comparison completed (2026-11-10 13:06 UTC)
+
+The 200k gate stopped NARROWED at 34 blocks/4,352 fresh paired units: −0.270±0.247 points (Fish −0.322±0.326; Mite −0.218±0.367), ladder −0.195±0.297. No acceptance screen; low LLR −2.286 did not cross formal rejection. Normal 100k was +0.101±0.249. Neither supports promotion. Balanced common 32-block/1,024-map secondary contrast is raised-minus-normal−0.470±0.428 conditional descriptive points; both teams' budgets change. Close the tile-ranking branch without the conditional cheaper-tile follow-up. Remaining bush/camp/timing gates are independent. [Full evidence](ideas-2026-11-10/warding.md).
