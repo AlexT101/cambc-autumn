@@ -9,10 +9,11 @@ import {
   Engine, compileEngine, engineInfo, engineVersions, replayEngine, wasmPath, ENGINE_DIR, STEP_KINDS, CHAMPIONS, DRAFT_CHAMPIONS, ITEMS, CONSUMABLES,
   ABILITY_TYPES, BUFFS, CAMPS, CHANNELS, GROUP_STATES, mirror,
 } from './engine.mjs';
+import { buildMap } from './map.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 let OUT_ROOT = isMainThread ? path.join(ROOT, 'replays', '.analysis') : workerData.out;
-export const EXTRACTOR_VERSION = 2;
+export const EXTRACTOR_VERSION = 3;
 const NONE = 0xFFFFFFFF;
 const K = Object.fromEntries(STEP_KINDS.map((n, i) => [n, i]));
 const ACTIONS = new Set([K.Move, K.Attack, K['Cast ability'], K.Recall, K['Submit gems'], K.Shop, K['Place ward'], K.Consumable, K['Cancel channel'], K['Place altar lock'], K['Teleport channel'], K['Sell item'], K['Movement blocked']]);
@@ -67,38 +68,9 @@ function sideResults(match) {
 }
 
 function mapKey(map) {
-  return sha256(JSON.stringify([map.width, map.height, map.symmetry, map.spawnA, map.walls, map.holes, map.bushes, map.altars, map.camps, map.groups])).slice(0, 16);
+  return sha256(JSON.stringify([EXTRACTOR_VERSION, map.width, map.height, map.symmetry, map.spawnA, map.walls, map.holes, map.bushes, map.altars, map.camps, map.groups])).slice(0, 16);
 }
 
-function buildMap(map, camps0) {
-  // The engine's spawn max is exclusive.
-  const a = { minX: map.spawnA.minX, minY: map.spawnA.minY, maxX: map.spawnA.maxX - 1, maxY: map.spawnA.maxY - 1 };
-  const spawn = [a];
-  const [bx0, by0] = mirror(map, a.minX, a.minY), [bx1, by1] = mirror(map, a.maxX, a.maxY);
-  spawn.push({ minX: Math.min(bx0, bx1), minY: Math.min(by0, by1), maxX: Math.max(bx0, bx1), maxY: Math.max(by0, by1) });
-  const centre = s => [(s.minX + s.maxX) / 2, (s.minY + s.maxY) / 2];
-  const cheb = (a, b) => Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]));
-  const groups = [];
-  camps0.forEach((c, i) => {
-    const g = c.group;
-    groups[g] ??= { id: g, camps: [], tiles: [] };
-    groups[g].camps.push(i);
-    groups[g].tiles.push([c.x, c.y]);
-  });
-  for (const g of groups) {
-    const src = map.groups.find(q => q.camps.includes(g.camps[0] >> 1));
-    Object.assign(g, { types: g.camps.map(i => CAMPS[camps0[i].type]), gems: src.gems, gold: src.gold, respawn: src.respawn, mirror: camps0[g.camps[0] ^ 1]?.group });
-    const c = g.tiles.reduce((a, t) => [a[0] + t[0] / g.tiles.length, a[1] + t[1] / g.tiles.length], [0, 0]);
-    const d = spawn.map(s => cheb(c, centre(s)));
-    g.side = d[0] < d[1] ? 0 : d[1] < d[0] ? 1 : -1;
-  }
-  return {
-    width: map.width, height: map.height, symmetry: map.symmetry, champsPerTeam: map.champsPerTeam, spawn,
-    walls: map.walls, holes: map.holes, bushes: map.bushes, altars: map.altars,
-    camps: camps0.map((c, i) => ({ id: i, type: CAMPS[c.type], x: c.x, y: c.y, group: c.group, hp: c.maxHp })),
-    groups,
-  };
-}
 
 function pairs(arr) { const r = []; arr.forEach((v, i) => { if (v) r.push(i, v); }); return r; }
 function diffCounts(a, b, names) { const r = {}; b.forEach((v, i) => { if (v !== a[i]) r[names[i]] = v - a[i]; }); return r; }

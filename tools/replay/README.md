@@ -8,6 +8,10 @@ node tools/replay/extract.mjs <dirs or .repl26a files...> [--threads N] [--force
 node tools/replay/extract.mjs --update-engine
 ```
 
+Schema 3 (2026-11-10) joins canonical and runtime camps by coordinates. Earlier schemas assumed every camp had a distinct mirrored partner; on maps with camps on the symmetry axis this could corrupt group gems, gold, respawn and mirror labels. Events, actual capture shares and engine results were unaffected. The internal map-cache hash includes the schema version, preserving the `maps/<map-hash>.json` convention while retaining old map blobs. To preserve a sealed dataset, extract into a new `--out DIR` and switch its consumer explicitly after validation. Running against an existing output root still refreshes the requested older-schema game entries, as version invalidation always did; it is not a dataset migration command. Historical impact and validation: [camp metadata audit](../../research/ideas-2026-11-10/replay-camp-metadata.md).
+
+`node --test tools/replay/test_map.mjs` checks symmetry-axis camps, ordinary pairs, reordered runtime entries and missing correspondences.
+
 For drafts alone, `drafts.mjs` steps through the draft phase only (~250 games a second a process, against ~1 for a full extraction).
 
 - `--out DIR` writes the cache (and its `index.json`, `enums.json`, `maps/`) under DIR instead of `replays/.analysis/`.
