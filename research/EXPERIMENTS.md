@@ -46,6 +46,48 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   leave a narrowly lost stand are right to. Recalibrating the model has nothing to correct; the level combat and team
   arms opened opportunities at this boundary, where fighting and declining are worth the same.
 
+## (ocean = ocean-16d6f78, 2026-11-09) Camp health weight: farm already prices live health; abandonments come from other branches
+
+Idea (user): weigh a camp's live health, preferring to finish low-health camps. Tools and patches:
+[ideas-2026-11-09/camphp-tools/](ideas-2026-11-09/camphp-tools/).
+
+- **Today's bot.** Camps never regenerate. Farm's rate already uses each member's last-seen health (`clear_health`,
+  `fastest_clear`, `min_camp_damage`), so a part-cleared group is priced by the clear it has left; there is no
+  separate health weight. Camp health is personal (vision is per champion, comms carries no camp health).
+- **Ladder (11-08 on, 4,299 extracted games; abandonment = a gap of >= 10 rounds in a group's damage while members
+  live).** All three teams leave 7-11% of the groups they damage; afterwards the same team resumes ~80% (median
+  22-27 rounds), the enemy captures ~11%. The enemy captures 18-26% of groups left under half health, 4-5% of
+  groups left above 3/4. Against each other, Fish/Mite steal ~1.0-1.1 groups a game from us (~28-33 gems) and we
+  steal 1.0-1.3 from them: no deficit. The difference: we leave groups we could finish in < 3 rounds of our
+  recent damage 1.04 times a game, Fish 0.45 and Mite 0.55.
+- **Why (local debug traces, base vs spar-dvn1-Flp, 128 ladder maps both sides).** The same 1.0/game locally. Of
+  near-finished abandonments: retreat while still targeting the group 0.25/game (31% then stolen), incidental hits
+  (never our target) 0.19, a farm switch 0.15-0.19, chase 0.13, still targeted but unhit 0.11. The farm switches are
+  mostly the claimed path's `health_left <= 0`: an ally claiming the group is expected (Chebyshev arrival, optimistic)
+  to finish the last few hundred health before we arrive, so we leave; the claimer is usually farming it from far
+  off (20 of 40) or in Willow support, banking, chasing or recalling, and the group waits 10-40 rounds. Over all
+  damage levels, 29 gems a game of ours are stolen locally; retreats with an enemy within 6 tiles are 8.3 of them,
+  the claimed deferral 0.8, value-based farm switches 2.5.
+- **Arms** (farm weight on live groups seen part-cleared: 1 at 90% health left, rising linearly to 1 + c at 50%
+  and below; boosted groups are never pruned): c = 0.15 (the ladder's steal-probability gap, the denial value) and
+  c = 0.5. Smoke, 256 games each against spar-dvn1-Flp: near-finished abandonments 1.00 base, 0.90 (c 0.15), 1.09
+  (c 0.5); stolen and stealing unchanged; ~25% of winners flip, as a reroll does.
+
+Results against ocean-16d6f78 (fgate, fresh ladder-v2 maps decide; bodies Flp2/Mt3p, the defaults when started; units
+are maps, points of win rate, 95% CI):
+
+| arm | fresh | ladder | Fish / Mite (fresh) | outcome |
+|---|---|---|---|---|
+| camphp-w15 (c 0.15) | -0.27 ±0.54 of 8,960 | +0.36 | -0.39 / -0.15 | high SPRT H0 (LLR -2.98) at block 70; stopped |
+| camphp-w50 (c 0.5) | -0.11 ±0.50 of 11,648 | +0.22 | -0.37 / +0.15 | high LLR -2.88 at block 91; stopped |
+
+Level: no meaningful change. The weight moves no behaviour it aims at, because farm already prices the clear left and
+the groups we leave are left by retreat, chase and the claimed deferral, not by farm's pick. What the data points
+at instead: (1) the claimed path's `health_left <= 0` (crew_work's Chebyshev, optimistic claimer arrival) on groups
+we could finish in a hit or two; small (~0.2 abandonments, ~1 gem a game). (2) Retreats with an enemy near leave
+part-cleared groups that the enemy takes (8 of 29 stolen gems a game): a fight decision, not a farm weight; finishing
+first mostly hands the enemy a cleared group to hold.
+
 ## (ocean line, 2026-11-09) Fresh-map gate: the line holds off the ladder maps; the oc32 parts are being re-read
 
 The final tournament plays fresh maps from the ladder's distribution. dgate's bodies looked up Fish's and Mite's picks

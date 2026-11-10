@@ -1,0 +1,64 @@
+--- ocean-16d6f78/src/economy/farm.cc	2026-11-09 22:23:50.000000000 +0000
++++ camphp-w50/src/economy/farm.cc	2026-11-09 23:14:41.730164184 +0000
+@@ -7,6 +7,10 @@
+ namespace {
+ 
+ constexpr float stickiness = 1.2f;
++// A live group seen part-cleared weighs up to 1 + damaged_boost (fully from damaged_full of its
++// health left, from none at damaged_from): camps never regenerate, and on the ladder a group left
++// half-cleared is finished by the enemy three times as often as a fresh one.
++constexpr float damaged_boost = 0.5f, damaged_from = 0.9f, damaged_full = 0.5f;
+ // pack_zone's cost with a bag at stake: p50 0.7k, p99 3.3k, at most ~10k (wa maps, real budget).
+ constexpr std::uint64_t pack_zone_cost_bound = 3500;
+ 
+@@ -1229,7 +1233,15 @@
+     // capture's bounds take the fastest at the team's output (prune_fastest). Except for our claim
+     // or Monolith operation, and for Ren, whose plain prunes are no bound.
+     const auto held = [&](int g) __attribute__((always_inline)) { return (g == memory.claim || g == memory.mono_group) && strong(g); };
+-    const auto prunable = [&](int g) __attribute__((always_inline)) { return !strong(g) || (reflect <= 0 && !held(g)); };
++    // The prunes' bounds take weights of at most 1 off our last choice: boosted groups are never pruned.
++    const auto damaged = [&](int g) __attribute__((always_inline)) {
++        const auto& c = world.camps[static_cast<std::size_t>(g)];
++        if (c.state != CampState::alive) return 1.0f;
++        const float full = groups[g].health, left = world.clear_health[static_cast<std::size_t>(g)];
++        if (!(left > 0) || left >= damaged_from * full) return 1.0f;
++        return 1.0f + damaged_boost * std::min(1.0f, (damaged_from - left / full) / (damaged_from - damaged_full));
++    };
++    const auto prunable = [&](int g) __attribute__((always_inline)) { return (!strong(g) || (reflect <= 0 && !held(g))) && damaged(g) <= 1.0f; };
+     float crew_scale = -1;
+     const auto team_scale = [&]() __attribute__((always_inline)) {
+         if (crew_scale < 0) {
+@@ -1665,6 +1677,8 @@
+                 if (const int h = lo + std::countr_zero(bits); h < n_groups) unpruned(h);
+         for (const int h : pre_kept)
+             if ((h & ~3) == lo) unpruned(h);
++        for (int h = lo; h < lo + 4 && h < n_groups; ++h)
++            if (damaged(h) > 1.0f) unpruned(h);
+     };
+     // An upper bound on the claimed branch's `most` before the group's facts: its part S r / health of
+     // the worth (as PreUpper's, weighted) over the trip and r rounds, r at most health / S, from
+@@ -1713,12 +1727,12 @@
+         // best_value moves only with best, from 0.
+         if (can_bound && !pull.on && threshold() != tested_value) tested_value = threshold(), stop = stop_from(k);
+         if (k >= stop) {
+-            while (k < evaluated && !is_claimed(g = (*order)[k]) && !held(g) && !(hops && map.may_hop(g)) && (!banks_bag || altar_below(g))) ++k;
++            while (k < evaluated && !is_claimed(g = (*order)[k]) && !held(g) && !(hops && map.may_hop(g)) && (!banks_bag || altar_below(g)) && damaged(g) <= 1.0f) ++k;
+             if (k == evaluated) break;
+         }
+         if ((pre_pruned && barred()) || (pre_banked && best >= 0)) pre_bounds(g);
+         if (pre_pruned && barred() && (pre_upper[g] < bar_lt() || (pre_valued && best >= 0 && pre_value[g] < best_value))) continue;
+-        if (pre_claims && is_claimed(g) && (best >= 0 || shared >= 0) && g != farm_group && g != memory.claim && g != memory.mono_group) {
++        if (pre_claims && is_claimed(g) && (best >= 0 || shared >= 0) && g != farm_group && g != memory.claim && g != memory.mono_group && damaged(g) <= 1.0f) {
+             const float most = claim_most(g);
+             if ((best >= 0 && most < best_value) || (shared >= 0 && most < shared_value)) continue;
+         }
+@@ -1963,7 +1977,8 @@
+         // A capture's gold that completes an emblem shortens the trip home (HomeTrip::rounds) though worth
+         // counts it too: floored, so a chain never costs less than nothing and every filter below agrees.
+         const float trip = std::max(0.0f, (by_spawn ? via : pulled_walk(steps) + static_cast<float>(wait)) - bank_now + bank);
+-        const float gems = known.gems * exposed, gold = known.gold * exposed, fastest = known.fastest;
++        const float boost = damaged(g);
++        const float gems = known.gems * exposed * boost, gold = known.gold * exposed * boost, fastest = known.fastest;
+         // Skip the costly clearing estimate for groups that cannot beat the best even with no
+         // clearing. A crew's share can.
+         if (!claimed && barred() && prunable(g)
