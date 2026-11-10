@@ -1,5 +1,7 @@
 # Warding: Mite r5, Ad Astra, and ocean498 (2026-11-10)
 
+**Status16:56UTC:** closed for these tested ideas; no ward change promoted. Bush-only rejects; tile/camp arms have no established gain; bounded late200k screen holds with no100k resume/extension. The final conclusion below supersedes the earlier parallel-gate plan.
+
 The observed policies justify targeted tests, not a conclusion that Ocean needs more wards. Ad Astra's sampled wards are exclusively in bushes. Mite places substantially more wards and often leaves one on a camp without gaining immediate information. Ocean has at least as much observed ward-only basic-attack use in these descriptive samples.
 
 ## Evidence and limitations
@@ -163,3 +165,23 @@ A queue race had started late-ward100k16:39:18 as cleared-camp200k ended. Ops st
 `warding-tools/late_screen.py` is a read-only terminal evaluator. It requires correct source/body/fuel/engine metadata, complete exact map/side cells for both arms/opponents, zero run errors, and agreement between recomputed paired fresh estimate and terminal output. The fresh paired95% lower bound must exceed0pp. It preserves all early-loss/capped outcomes. A positive screen makes100k eligible for **explicit** coordinator admission; completion, NARROWED, a positive point estimate, or a cap without a positive interval does not. Otherwise hold without calling rejection, and do not extend to chase a gain.
 
 The normal late-ward wrapper refuses without `--screen-admission` pointing to an explicit coordinator record that hashes the valid positive proof and matches the frozen sources. It never creates admission itself. Three focused tests cover early-stop/cap validity, interval boundary and rejected admission conditions, all passing. Only the read-only ward watcher restarted to reflect policy-stopped/held states (now3973959); no evidence job was restarted. Artifacts `late-screen-protocol.json`, `late-screen-start.json`, and per-job `policy-stopped.json` retain the transition.
+
+## Programme conclusion: tested warding ideas closed, 2026-11-10 16:56 UTC
+
+No tested ward change supports promotion; retain Ocean's existing ward policy. The Ad Astra and Mite observations motivated useful tests but do not show that their ward choices cause their strength or transfer directly to Ocean.
+
+| Frozen full498 change | Normal100k fresh delta | Doubled200k fresh delta | Conclusion |
+|---|---:|---:|---|
+| Exact tile ranking inside chosen bush cluster | +0.101±0.249pp, NARROWED(ZONE) | −0.270±0.247pp, NARROWED | No established gain; no cheaper variant justified by a fuel-rescue theory. |
+| Bush-only planned wards, keeping early reveals | −0.427±0.307pp, REJECT | −0.625±0.391pp, REJECT | Reject this restriction; retain non-bush planned wards. |
+| Cleared/respawning-camp fallback | −0.117±0.250pp, NARROWED | +0.143±0.250pp, NARROWED(ZONE) | No established gain; close current implementation. |
+| Camp fallback including alive groups | +0.080±0.250pp, NARROWED(ZONE) | Policy-stopped partial; no inference | No established normal gain or supported cheaper follow-up; close current implementation. |
+| Defer early planned wards until turn end | Policy-stopped partial; no inference | Bounded8-block screen−0.439±0.777pp, HOLD | No demonstrated screen gain; no100k admission/resume and no extension. |
+
+The late screen completed1024 fresh paired units at its cap. Its independently recomputed lower95% bound is−1.216pp; all64 summaries have complete exact paired cells, matching source/body/fuel/engine/release metadata and zero run errors. The screen's raw fgate outcome is undecided; HOLD is the programme decision, not formal rejection. `late-screen-proof.json` retains every summary/results hash and draft counters; `results/late-200000.json` preserves the terminal output. The stopped normal partial is not counted as a confirmatory test.
+
+Retained opponent findings: Ad Astra's observed ward placements are consistently in bushes and almost always after movement, with almost no subsequent action; Mite often wards camp tiles, including alive groups, and keeps later camp transitions in owner sight. Ocean already has useful non-bush planned wards and routine post-action placement. Replay-observed sight is not evidence that a bot read or used that information, and public Ad Astra metadata does not prove a single exact build. Fixed local Flp4/Mt3q bodies are useful controls but do not reproduce every latest-live policy.200k changes both teams and initial allowances, so it cannot isolate only our ward computation cost.
+
+There is **no additional ready ward variant supported by this programme**. A concrete remaining diagnostic question is which lost non-bush observation causes the bush-only arm's fresh-map losses; those formal losses support examining existing paired trajectories, not another speculative placement restriction. Likewise, a new retained-camp-information arm would first need an exact replay showing that missing camp state causes a wrong Ocean decision and that a feasible ward supplies it. Placement counts and opponent correlation alone do not meet that bar. No further ward runs are launched or queued from these questions.
+
+The earlier full parallel budget design is superseded by the user's200k-first behavioral screening policy. Sources/caches/complete results and policy-stopped partials remain intact. The now-idle read-only ward watcher3973959 was stopped after exact identity verification; no evidence process changed. Existing reserve, Skirmish and cumulative outcome ownership continues separately.
