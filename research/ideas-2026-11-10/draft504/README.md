@@ -1,51 +1,46 @@
-# One draft refit for Ocean 506
+# Draft17: one Ocean 506 refit and two opponent-preference ablations
 
-Rebased before any heavy work on 2026-11-10 to frozen Ocean 506, including the shipped 505/506 fuel savings. Seeds, sample sizes, statistical rules, review barriers and job IDs are unchanged. The `draft504` directory name is retained for queue compatibility.
+The user explicitly authorized one draft lab followed by tuning, then requested recent Fish/Mite-informed nudges and a separate overall pick-rate ablation. This remains **one 800,000-game collection**. Preparation is held until independent review; no automatic lab refill, merge or live submission follows.
 
-The user explicitly requested one draft lab, followed sequentially by one tuning run on 2026-11-10. This is **draft17**, a new decision; canceled automatic rounds draft11–16 stay canceled. Both running ward504 gates finish first. Queue operations admits draft17 as an exclusive, low-priority stage, then keeps tuning behind `draft17-reviewdone`, a coordinator-owned decision barrier.
+The frozen base is `variants/oc-dfuel-506`, commit `183a1295c335a83d03679f93fcb11cdbde5617b2`. Before first heavy work, both committed Ocean and the queue's base policy must match it. A started experiment stays frozen. The directory name `draft504` is historical.
 
-The scientific reason is that draft10 learned the play of `ocean-16d6f78`, while current506 has different Prism, Issac and Vesper emblem policies, plus fuel and camp changes. These can change relative champion value. The lab isolates that change in play; it does not refresh the opponent model, repin live opponents, or rerun draft10's canceled gate.
+## Collection and three approaches
 
-## Sealed design
+Collection keeps the previous approved design: 100k fuel, native release cambc 5.0.1, 799k–800k games within 18 hours; F25-guided exploration; exact shipped draft10 F92 sampler; no champion locks. Local opponent shares remain Fish Flp4 .3, Mite Mt3q .3, Ocean mirror .2, frozen astraeus/proteus .1 each. The historical top-eight composition prior is unchanged, so changing our own preference is not confounded with changing the opponent distribution. No old training games are pooled.
 
-- Source: `variants/oc-dfuel-506`, commit `183a1295c335a83d03679f93fcb11cdbde5617b2`.
-- Current-team sampler: a frozen copy of draft10-F92. Regenerating its header reproduces506's model byte-for-byte after provenance comments. There are no required or banned champions.
-- Composition prior: draft10's top-eight ranked-team prior, generated Nov10 01:26 from Nov6–10, with48-hour decay. This is deliberately a controlled historical distribution, **not latest-meta data**. Its archive engine label3.0.0 is provenance, not the local simulation version. Current Mite's difference from pinr5 does not silently change this prior or the fixed local bodies.
-- Training: one800,000-game collection (batch rounding allowed down to799,000), maximum18hours; 100,000 fuel, native release engine5.0.1. Production fuel teaches composition values for the actual game. No previous training games are pooled.
-- New training seeds2412000–2412099, ladder-v2, up to25,600 maps. Held-out seeds2412900–2412903, up to1,024 maps. Exact byte duplicates are excluded within both pools and against the128 ladder maps, standard1,024-map gate pool and old draft10 training pool. This stated scope is not universal historical novelty. Map artifacts are preserved, while selected pools omit duplicates.
-- Opponent shares: local FishFlp4 .3, MiteMt3q .3, mirror .2, frozen astraeus/proteus .1 each. This retains the preceding successful training design and some opponent diversity.
-- Model: F25 guides collection; one finalF92 refit uses draft10-F92 penalties as its starting point, searching only existing `w,dev` groups once. No feature sweep, repeat collection, or best-of-many lab selection.
-- Resources: shared86-slot pool, at most64 game workers; fits24, planning12, outcome readers8. The lab's internal stages use shared CPU slots; raw first-turn diagnostics reserve their actual worker count. Other local queue experiments cannot overlap this exclusive stage. Before its first heavy phase, the wrapper checks both the approved base policy and committed Ocean source against sealed506. A newer base holds for coordinator review before any map generation or training; a genuinely started experiment stays frozen through later main changes.
+The control is the original F92 refit with one search of `w,dev` penalties. Two fixed directions augment that refit:
 
-## Evaluation and review
+- **Flat:** one overall champion-inclusion vector, across all maps **and pick counts**. The same intercept direction applies to 3, 4 and 5 picks; all map coefficients are zero.
+- **Conditional:** three pick-count offsets plus shared slopes on the existing first 25 F92 features. Strong ridge values 16/64/256 are compared on five map-grouped folds of archive drafts only; a tie chooses the strongest ridge. No game outcome selects this prior.
 
-Only the exported `draft/draft_model.h` may differ from506. Require a release build, native key/team parity, and first-turn measurements with no missing, unfinished, capped or over10M team-drafts. Tiny native floating-point feature differences are reported; team/key mismatches fail.
+[The preference protocol](preference-proposal.md) specifies provenance, weighting, calibration and limits. All arms share the collection; there is no grid of behavior strengths. Zero slopes alias control, and identical exported headers share one candidate and its games.
 
-The first strength evaluation uses200k fuel on both teams against fixedFlp4/Mt3q, own drafts, both sides, the separate held-out map pool and the128 diagnostic ladder maps. Fresh units alone decide. Source identities, exact map/side coverage and engine/fuel/release metadata are audited before each block enters the existing sequential statistic. The precision-only stop is disabled. A standard ZONE stops for judgement; acceptance/rejection keep their meanings; the1,000-block cap stays unresolved.
+## Fixed evaluation
 
-The pipeline writes `review-required.json` after the200k gate. It **never** creates `draft17-reviewdone`, queues a normal-fuel run, promotes the candidate, submits it live or refills the lab. The coordinator must review the outcome and authorize any100k gate only after evidence of a200k gain. Tuning waits until that evaluation and the draft disposition are complete, then uses the deliberately selected base. A small local improvement does not automatically deserve a noisy live gate.
+All fixed panels contain exactly 1,024 fresh maps after byte deduplication. Training uses seeds 2412000–2412099 (at least 24,000 retained maps). All panels are disjoint from training, one another, the 128 ladder maps, the standard fresh-gate pool and old draft10 training maps. Predetermined replacement seeds fill collisions before outcomes exist; exhaustion holds for review.
+
+| Stage | Fuel | Primary seeds | Replacement seeds | Noise blocks | Maximum fresh games |
+|---|---:|---|---|---|---:|
+| Selection: 3 approaches + 506 | 200k | 2412910–13 | 2412914–19 | 1–64 | 131,072 |
+| Confirmation: selected + control + 506 | 200k | 2412920–23 | 2412924–29 | 65–192 | 196,608 |
+| Separately admitted normal confirmation | 100k | 2412900–03 | 2412904–09 | 193–320 | 196,608 |
+
+Every map plays both sides against fixed Flp4/Mt3q. Repeated noise realizations are averaged **within each map**, together with sides and opponents. The interval uses map-level sample standard deviation (`ddof=1`), divided by sqrt(1,024), and z=1.96. Opponent and pick-count readouts are descriptive. No interim outcome stops or decisions occur.
+
+Selection makes two one-sided comparisons against control, Bonferroni family alpha .05. A nudge qualifies only if its lower bound is positive. Choose the qualifying arm with the greatest mean; an exact tie favors flat. If neither qualifies, retain control. Confirmation then tests the frozen choice against 506 and, for a nudge, against unnudged control, on untouched maps and new noise blocks. Every required lower bound must be positive; control alone retains conservative z=1.96. Selection evidence is never pooled into confirmation.
+
+The 128 ladder maps are diagnostic only. Run them once at 200k (noise 1) for all distinct approaches and 506, then reuse those cells for the confirmation report. A normal-fuel run uses new 100k diagnostic cells at noise 193. Archive priors already saw these ladder maps, so they cannot establish generalization.
+
+After 200k confirmation, write `review-required.json`. A normal run requires a coordinator admission binding the manifest, positive confirmation result, selected arm and its source hash. It uses the exact frozen winner. Only the coordinator may eventually create `draft17-reviewdone`; tune8 remains behind that decision.
+
+## Source, fuel and resources
+
+Each candidate changes only `draft/draft_model.h`. Require native key/team parity, a release build, and first-turn measurements without missing, unfinished, capped or over-10M drafts before games. Audit exact map/side coverage, source identity, release/engine/fuel metadata and body sources before each evaluated block. Recheck candidate sources before publishing a stage result. Failed or incomplete child processes fail closed for recovery review.
+
+The shared pool has 86 slots: training games at most 64 workers, F92/OOF fitting 24, planning 12, readers 8. Fixed evaluation uses four AB controllers sharing the same aggregate 86-slot pool. Prior fits, scalar calibration, source generation and release builds reserve their CPU slots; builds explicitly use serial compiler settings. Each evaluation phase uses the standard compile-ahead helper with 16 process workers/eight future blocks; no warm games. It drains on phase exit. `CAMBC_COMPILE_AHEAD=0` disables it. Training and preference fitting do not start that helper.
 
 ## Commands and artifacts
 
-Preparation check (no games or map generation):
+`python3 research/ideas-2026-11-10/draft504/run.py --check` performs sealed preparation checks only. The same command without `--check` requires localq admission. A normal confirmation additionally requires `--normal-admission /absolute/path/to/admission.json`.
 
-```
-python3 research/ideas-2026-11-10/draft504/run.py --check
-```
-
-Queue command, after root admission and both ward gates:
-
-```
-python3 research/ideas-2026-11-10/draft504/run.py
-```
-
-A separately admitted normal-fuel evaluation, if justified:
-
-```
-python3 research/ideas-2026-11-10/draft504/run.py --normal-admission /absolute/path/to/coordinator-admission.json
-```
-
-Artifacts: `~/tmp-offload/localq/rounds/draft17/{protocol,config,manifest}.json`, input snapshots, generated/selected maps, lab/F92 data, first-turn reports, per-block audits, gate results and review marker. No heavy phase runs during preparation. Both original source and tool inputs are sealed; a changed input fails for review rather than silently mixing versions.
-
-
-Resource default: only the final candidate gate phase uses `tools/gate_compile_ahead.py`,16 process-isolated compile workers/eightfutureblocks in the shared86 pool. Existing noise bodies are frozen/built under the normal cache locks; no warm/scored games or statistical changes. Its context stops dispatch and drains compiles as soon as the actual gate phase ends, even though the lab wrapper PID can live longer. `CAMBC_COMPILE_AHEAD=0` disables the optimization. Training/fit phases do not spawn this helper.
+Artifacts live in `~/tmp-offload/localq/rounds/draft17/`: sealed protocol/config/manifest and inputs; selected maps; training/F92 data; five-fold OOF provenance; preference directions and calibrated slopes; distinct candidate sources; first-turn/parity checks; block audits; `selection.json`, `confirmation.json`, optional `normal.json`, and the review marker. Original preparation artifacts remain under `preference-amendment-before/`.
