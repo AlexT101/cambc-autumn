@@ -4,7 +4,8 @@ Learns which emblems our bot should buy (ocean from round 4; astraeus before), a
 draft, from games whose drafts and emblem choices are randomised. The target is winning (and the wealth margin,
 tributed + carried at the end, if cross-validation on wins says it helps), so combat value counts as fully as
 farming. Python 3 and Node 22+, no other dependencies. It reuses the draft lab's vehicles, batch runner and outcomes
-(tools/draftlab/README.md). [RUNBOOK.md](RUNBOOK.md) is the step-by-step for a run.
+(tools/draftlab/README.md). [RUNBOOK.md](RUNBOOK.md) is the step-by-step for a run;
+[PLAN-round5.md](PLAN-round5.md) is the audit of round 4 and the plan for the next one (not started).
 
 ```
 py tools/emblab/lab.py init --lab NAME [--source REF]   # freeze REF's bot (config "bot", default ocean), the map table, the prior
