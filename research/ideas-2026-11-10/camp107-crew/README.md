@@ -1,6 +1,6 @@
 # Camp crew initiation before the tank arrives
 
-Two frozen candidates are under test against full `oc-campsh-498`. The approved camp-partner shield stays in place. Queue ops owns launches; the livelock owner owns interpretation. No candidate has been merged.
+Two frozen candidates completed their gates against full `oc-campsh-498`. The approved camp-partner shield stays in place. Queue ops owns launches; the livelock owner owns interpretation. No candidate has been merged.
 
 | Candidate | Real budget | 200k diagnostic |
 |---|---|---|
@@ -82,3 +82,13 @@ The expanded content audit checked 733,239 distinct existing files: all discover
 [seal_heldout.py](seal_heldout.py) records maps, assignments, all source seals and launcher hash under `~/tmp-offload/camp107-mechanism/heldout/`. [heldout.py](heldout.py) validates those seals, exact cell coverage, matching build/fuel/engine metadata, source paths and zero draft handoff failures. Its independent fixed-sample report uses fgate's paired-map estimator and 95% interval, with Fish/Mite separate; it does not make interim stopping decisions. Early-loss/capped-draft counts remain visible for validity review. Queue ops owns launch after selection is sealed. The manifest was updated before selection or play to incorporate independent runtime-review checks; the previous pre-review manifest is retained.
 
 Final pre-play manifest: `1e4ea8bdac601ca61351906b4a67f11c193678ffe21d904240f76621fc4bd8fa`; `selection.json` chooses wakeheal2 against full498. Source/map/selection/launcher checks passed before queue admission. The frozen launcher reports `result.json` only after all 32,768 games and exact coverage checks. Intermediate pre-audit suites/manifests remain preserved and were never played.
+
+The first launcher stopped after 25 complete batches (25,600 games, zero run errors) because its added zero-handoff assertion was too strict. On block 6, both opponent bodies fail their draft guard on both sides of `gen-classic-6367180801025`, identically against full498 and wakeheal2; our own handoff counts are zero. The preserved pruned stdout flags and round-one results establish ordinary opponent early losses, which standard ab.py counts. They are not corrupt games and their matched paired contribution is zero.
+
+Before any aggregate strength read, the coordinator approved [heldout_resume.py](heldout_resume.py): a separately sealed launcher that removes only the overstrict assertion and exposes handoff counts alongside early losses/capped drafts. It reuses all 25 completed summaries and plays exactly the seven unplayed batches, retaining all original cells, maps, sources, selection, seeds, estimator and fixed sample. Original launcher/error/manifests remain intact. Resume manifest `22305d00c5908d37c3beb9c76a34d784948fc4753a3eb406c41ec8e535056ac0`; `paired-handoff-diagnosis.json` records the cause. No bad-map exclusions or candidate reselection.
+
+## Fixed confirmation result
+
+Wakeheal2's independent 4,096-map / 32,768-game confirmation completed at 13:57:31 UTC: **−0.104 ±0.241 pp** (95% equivalent 49.656–50.137%), Fish **−0.330 ±0.339**, Mite **+0.122 ±0.348**. The shared-pool small gain did not confirm on this unused map sample. This is unresolved overall rather than confident rejection; recommendation is no merge now, while preserving the exact-case rescue and known limits. No extra samples were appended or selected.
+
+Final coverage is complete with zero run errors. Own base and candidate handoff/early losses are zero; opponent handoff/early losses are eight against each arm (16 total), on identical cells of two maps, and contribute exactly zero paired difference. All remain in the fixed estimate. Opponent capped drafts total 564 across both arms; own capped drafts are zero. `result.json`, `complete-validity.json`, `units.json`, original/resume admissions and immutable manifests retain the complete result. Sources/maps/selection were checked again at completion.

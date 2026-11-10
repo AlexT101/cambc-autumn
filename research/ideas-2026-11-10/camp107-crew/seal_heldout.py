@@ -79,4 +79,4 @@ manifest = {'created_utc': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
             'sources': sources, 'blocks': blocks, 'maps': maps}
 (D / 'manifest.json').write_text(json.dumps(manifest, indent=1) + '\n')
 print(json.dumps({'maps': len(files), 'manifest_sha256': sha(D / 'manifest.json'),
-                  'prior_maps_checked': len(known), 'source_count': len(sources)}))
+                  'prior_maps_checked': audit['unique_inodes'], 'source_count': len(sources)}))
