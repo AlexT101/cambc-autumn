@@ -1,0 +1,13 @@
+{
+  "base": "variants/oc-emb5-504",
+  "base_commit": "08f4be1ce0e8ae1485f389abddc0508af971cd42",
+  "arms": {"chanM": {"candidate": "variants/oc504-chanM", "target": "M"}, "bagfF": {"candidate": "variants/oc504-bagfF", "target": "F"}},
+  "engine": "5.0.1", "fuel": 200000, "release": true, "runner": "native", "drafts": "own",
+  "opponents": {"F": "Flp4", "M": "Mt3q"},
+  "maps": {"mix": "ladder-v2", "initial_seeds": [2414000,2414001,2414002,2414003], "duplicate_replacement_only_seeds": [2414004,2414005,2414006,2414007], "unique_maps": 1024, "slices": 8, "noise_first": 1004, "noise_last": 2003, "ladder_maps_diagnostic": 128},
+  "statistics": {"primary": "target opponent fresh paired-map mean over both sides", "gain": [0.5,0.5025], "target_harm": [0.4975,0.5], "offtarget_harm": [0.4975,0.5], "bound": "ln(19)", "gain_H0_absorbing": true, "target_harm_H1_absorbing_for_formal_test": true, "later_harm_alarm": "descriptive regression review", "joint_gain_H0_harm_H1": "SMALL/UNRESOLVED judgement review; remembered first crossings", "harm_review_precedes_gain": true, "broad_target_diagnostic": [0.505,0.5075], "width_stop": false, "max_blocks": 1000, "cap_result": "UNRESOLVED", "intervals": "descriptive repeated noise/map units; not distinct new maps each block"},
+  "stages": ["first-start approved policy and committed Ocean source check", "shared novel maps", "release validity and separate debug activation smoke", "complete full200k paired gate", "coordinator review barrier"],
+  "resources": {"exclusive_queue": true, "shared_slots": 86, "slot_weight": 1, "batch_process_limit": 4, "ahead_blocks": 0},
+  "actions": {"automatic_100k": false, "automatic_merge": false, "automatic_live": false, "automatic_repin": false, "automatic_lab_refill": false, "wrapper_creates_reviewdone": false},
+  "review_required": "Positive target does not prove off-target safety. Review both halves and uncertainty before any normal-fuel admission or shipping. Changed future base holds before heavy work; started experiment stays frozen."
+}

@@ -16670,3 +16670,12 @@ The note also preserves a source-coverage correction: current504 contains neithe
 One-site−0.788±0.472 versus multi-site+0.402±0.300 is diagnostic subgroup evidence; no conditional ward candidate follows without a mechanism and prospective validation. Original498 and bounded Fish503 evidence remain separate. The cleared-camp504 gate continues under its own rule.
 
 Independent terminal audit rechecked all303 block records and2,424 summary hashes: complete matched release200k/engine5.0.1, zero errors/early losses/broken handoffs/capped drafts, unchanged source/map/tool manifest87173c…. Shared reference games account for part of the620,544 candidate-plus-reference cached games; these are not new distinct maps. Evidence `~/tmp-offload/ward504-full/{campall-result,campall-terminal-audit}.json`; [protocol and terminal note](ideas-2026-11-10/ward504/README.md).
+
+
+## Current504 conditional exploiters: full targeted continuation queued (2026-11-10)
+
+The user requested more local games for the inconclusive Fish/Mite conditional exploiters. Exact `ca-chan-M` and `ca-bagf-F` minus `ocean-16d6f78` patches were applied cleanly to frozen504, preserving all fuel/draft/emblem changes and the original runtime classifier (negative stubs). These are new504 experiments; old-base results remain separate. Mite channel runs first, then explicit review, then Fish carry-follow and review, ahead of the requested labs. No main bot change or automatic promotion.
+
+The full200k release/native programme uses a new shared1,024-map ladder-v2 pool (reserved2414000–07), noise1004–2003, Flp4/Mt3q and own drafts. Target-opponent fresh paired-map units decide under gain50.0/50.25 SPRT, distinct harm49.75/50.0 and off-target harm review. First-cross latches prevent reopening a closed gain test; joint gain-H0/harm-H1 is SMALL/UNRESOLVED review, not a positive result. No width/eight-block stop;1,000-block cap unresolved. Other-opponent effects remain shipping constraints, including classifier overhead/mistakes.
+
+Eight lightweight decision checks, source review and final independent seal review passed. Builds, release smoke, debug runtime activation and all strength games are scheduled phases, not completed validation. Manifest86a82e8a2bf37b1ea6602c34391af77d5755fbc611d55024c9a0eebb9d6ece89 in `~/tmp-offload/cond504`; [prospective protocol](ideas-2026-11-10/cond504/README.md). A changed approved/committed base holds before heavy work; frozen experiments may resume. No automatic100k, repin, live test or review token.

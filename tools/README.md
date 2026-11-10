@@ -688,3 +688,6 @@ Cancelled component-study launchers: `reserve-tools/run_gate.py`, `skirmish-tool
 
 
 - `research/ideas-2026-11-10/draft504/run.py`: one sealed, explicitly authorized504 draft refit, with `--check`, source/prestart-base guards, production-fuel training, F92 export/parity/first-turn validation and audited200k-first evaluation. `fit.py` and `reserve.py` back worker counts with shared CPU slots; `audit.py` checks paired cells; `test_start.py` checks stale-base holds. Queue admission and final review barriers remain coordinator-owned. [Protocol](../research/ideas-2026-11-10/draft504/README.md).
+
+
+- `research/ideas-2026-11-10/cond504/run.py chanM|bagfF`: sealed exclusive queue wrappers for full200k current504 conditional exploiters; `--check` verifies inputs and preflight without games. `smoke.py` schedules release validity and separate runtime-classifier debug fixtures; `gate.py` validates complete paired cells and targeted/off-target evidence. `stats.py` and eight tests fix prospective first-cross decisions, with no width stop. `seal.py` refuses resealing started tests. [Protocol](../research/ideas-2026-11-10/cond504/README.md).
