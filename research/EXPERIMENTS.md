@@ -16506,3 +16506,12 @@ keys must include non-alive camp health: those states can retain unseen positive
 reads, generic rank caches and many tiny memo tables repeated earlier failures and were rejected.
 
 Results, exactness exceptions and lessons: [fuel fifth pass](fuel-2026-11-10-fifth/README.md).
+
+
+### Live v110 wakecold versus v107: linked-death rescue, small unresolved score change (2026-11-10)
+
+Completed all104planned groups at19:52:02, unchanged Fishr2/Miter5. Exact intended comparison is archived submitted107 plus only wakecold farm guard: same mask/SDK, no Skirmish/draft10 overlay. All512paired map/side cells match ordered drafts, picks, seed, engine, map and pin context. Fish167vs165/256 (flips +5/−3), Mite169vs169/256 (+2/−2); descriptive map-cluster deltas +0.78±2.17pp and0.00±1.54pp.421/512rawreplays are identical (Fish213,Mite208). This reused deterministic live suite does not establish a strength gain or justify a new promotion; preserve the already-approved local judgment-zone merge. Comparisons to105 retain its mask confound;106/108/109 have different features and are diagnostic only.
+
+The original concrete camp-death case is fixed in the actual live110 replay: Fishr2,03honeycomb sideA, match01a1c6dc-ad2e-7f41-b8ce-0693109e9ea2. Issac retreats at r28 step6567 instead of107's Elk attack; Issac200HP/Cassi600HP survive r32, then Issac recalls and heals900 at r33. Independent one-cell review matches the sealed mechanism through1,785inputs; later enemy Vesper ward input diverges at r51, so this is not a whole-replay identity claim. No new games, downloads or death census were added.
+
+Evidence: `~/tmp-offload/handoff/codex/live-analysis/v110-readout.json`, `pair110.py`, and `wakecold110/{README.md,verification.json,sealed-compare.json}`. Same-version unpinned checks separately show currentMite differs from pinnedr5 on all5fixedcells; Fish5/5replayidentical tor2, with matched full engine/seed/map context and no suspect flags. Checks are excluded from gate statistics, already notified, no repin; therefore the gate estimates behavior against those fixed snapshots, not necessarily currentMite.
