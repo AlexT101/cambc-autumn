@@ -87,24 +87,45 @@ class CambcError(RuntimeError):
     pass
 
 
-def cambc(*args, timeout=300, retries=4):
-    """Runs the CLI, honouring its "retry after N seconds" rate-limit replies."""
-    for attempt in range(retries + 1):
+_CALL, _LAST_CALL, CALL_GAP = threading.Lock(), [0.0], 1.0
+
+
+def _space_calls():
+    # `run`'s collector and main loop share the API's burst limit: start calls at least CALL_GAP apart.
+    with _CALL:
+        wait = _LAST_CALL[0] + CALL_GAP - time.monotonic()
+        if wait > 0:
+            time.sleep(wait)
+        _LAST_CALL[0] = time.monotonic()
+
+
+def cambc(*args, timeout=300, retries=4, limited_retries=8):
+    """Runs the CLI, honouring its "retry after N seconds" rate-limit replies (with growing waits: the reply's own
+    N is often too short to clear the burst window)."""
+    attempt = limited = 0
+    while True:
+        _space_calls()
         try:
             r = subprocess.run(["cambc", *args], capture_output=True, text=True, encoding="utf-8", errors="replace",
                                timeout=timeout)
         except subprocess.TimeoutExpired:
             if attempt == retries:
                 raise CambcError(f"cambc {' '.join(args[:3])}: timed out")
+            attempt += 1
             time.sleep(30)
             continue
         out = r.stdout + r.stderr
         wait = re.search(r"retry after (\d+) seconds", out)
         if r.returncode == 0:
             return r.stdout
+        if wait and limited < limited_retries:
+            limited += 1
+            time.sleep(min(60, (int(wait.group(1)) + 2) * 2 ** (limited - 1)))
+            continue
         if attempt == retries:
             raise CambcError(f"cambc {' '.join(args[:3])}: {out.strip()[-400:]}")
-        time.sleep(int(wait.group(1)) + 2 if wait else 15 * (attempt + 1))
+        attempt += 1
+        time.sleep(15 * attempt)
 
 
 def quota():
