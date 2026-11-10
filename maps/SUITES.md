@@ -945,3 +945,5 @@ re-measured"; used).
 - 3110000-3110119, 30,720 maps, held out from the lab, symlinked into `merged/emb4-h1` (3110000-39), `emb4-h2`
   (3110040-79) and `emb4-h3` (3110080-119), 10,240 maps each: the candidates' and the table's A/Bs (EXPERIMENTS
   "Emblem lab round 4 on ocean"; all three used).
+- 3120000-3120119, 30,720 maps, symlinked into `merged/emb4-c1`, `-c2`, `-c3`: the Skirmish table's confirmation
+  against current ocean (used).

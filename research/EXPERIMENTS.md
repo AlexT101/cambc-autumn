@@ -156,6 +156,21 @@ runner, against `variants/ocean-b0eeff1`; ± is the 95% interval.
 | Skirmish at k 4 and no table at k0-2 | 50.4%, 50.8% (h2), 50.2% (h3): 50.46% of 61,440 | |
 | Skirmish at k 4, fresh gate (Flp4 / Mt3qro) | 32 blocks, 4,096 fresh units: fresh **+0.59 ± 0.61**, ladder +0.43 ± 0.59, pooled +0.51 ± 0.42; Fish +0.54, Mite +0.65; SPRT undecided (LLR -0.09 at 50.5 / 50.75) | |
 
+**Greedy pooled edits on the same data (2026-11-10, afternoon; `rank_edits.py`, `scripts/abwave.sh`).** The lab's
+sums rank 636 pre-stated edits (family x stat x ordinal for every type, and columns back to the current logic); the
+best is taken, A/B'd on the three holdouts (61,440 games, ±0.4) and made the base.
+- **Step 1, Skirmish as the fifth emblem** (from the A/B screen; the lab reads it +0.08 ± 0.41). On fresh maps
+  (fresh-3120000..3120119, `merged/emb4-c1..c3`) against current ocean (9da520279): **50.3% of 61,440** (49.9-50.7;
+  50.1 / 50.4 / 50.4). With the two repeat holdouts (50.5% of 40,960) and the gate (+0.51 ± 0.42), the looks that
+  did not choose it average +0.4 ± 0.13 points: real, small, under the 50.5 bar.
+- **Step 2, the lab's next five on top of it,** each against the Skirmish table: Prospector as the 3rd emblem (lab
+  +0.55 ± 0.29) 50.0%, Collectors 6th (+0.70 ± 0.30) 50.1%, Monster 9th (+0.16 ± 0.07) 50.1%, Durability 10th
+  (+0.30 ± 0.13) 49.9%, Home 12th (+0.13 ± 0.08) 50.0%, all five 50.1%. Nothing to add: the loop stops.
+- **The data holds no more single edits.** Between its two halves (720k and 560k games) the edits' z scores
+  correlate +0.02 per type at k >= 3 (1,253 edits, sd of z 1.04: noise; the 41 with z >= 2 in the first half
+  average +0.07 in the second), +0.18 pooled over types at k >= 3, +0.42 pooled at k < 3 (the bad early arms). One
+  swapped emblem is worth at most ~0.5 points, and 1.28M games resolve ±0.3 pooled and ±1 per type.
+
 **Findings.**
 - **Nothing to ship.** No selection from 1.28M dense games beats ocean: the mid-run and final candidates lose 1.6
   to 2.1 points, their early-ordinal parts are level.
