@@ -15616,3 +15616,34 @@ fgate's `--seed` only shuffles units; it never changes the games.
 - bagf-F repeats its earlier Fish lean (+0.3) without separating from 0.
 
 Files: ~/tmp-offload/condarms/ (gates/, all-final-lines.txt split scan, tools/splits.py); runs `fge501-{ca-bagf-F,ca-chan-M,ocean-16d6f78}-dvn{38..117}{Fp4,Mq}-{L,g0..g7}`.
+
+## Predicted enemy turn order for Mite (opp-order, ocean-opp, 2026-11-10): the stakes are large, the arm is not a gain (H0 at the 50.5 bar), nothing merged
+The user asked whether, once the classifier knows the team, its priority formula makes turn_window.cc's order more accurate. Today an enemy's next-round rank is exact only once it is visible and has acted this round; otherwise it is [0, n-1], and the slots before our next turn go to the nearest unsettled enemies. Tools and data: ~/tmp-offload/opporder/ (tools/stakes.py, pred.py, mclass.py, mtrans.py, fcls.py). Our vision is approximated from the extractor's round-end `sees` lists.
+- **Stakes** (real games vs us: 2,409 Mite games since 11-09 05:00, 544 Fish games since 11-08 16:00):
+  - Mite: in 51% of our turns with a Mite champion within 8, the enemies put before our next turn are not the true set. Of the Mite champions within 8, 27% are assumed to act before us when they don't, and 3.5% the other way. A Mite in contact writes 100-d, so it acts after every quiet teammate.
+  - Fish: 45% of such turns differ; 22% and 4.7%.
+- **Mite's classes** (11-09 12:00+, oracle state):
+  - quiet out of sight 98.6% exact, dead 99.4%, channel ending 98.9%.
+  - Sight decides alert/contact: once it sees one of ours, BACK (0..199) 70%, front 14%, quiet 17%; unseen, quiet 95.5%.
+  - The front values (+2000 retreat; kill 21262-104k; 3095, 5095) need an enemy within 5. Retreat fires 55% when it carries 10+ gems or is at <= 40% health, and the kill flag 64% when our hp is below its Strength. A 4% base rate fires unexplained.
+- **Fish:** a Fish 1-2 from us is in contact (first or last by the round's starter) only 80% of the time, otherwise quiet or late, so an interval can't tighten its rank. No Fish arm.
+- **Predictor** (model/turn_window.cc mite_next, posterior Mite >= 0.8): each unsettled Mite's next priority as a class interval:
+  - dead 1050, channel ending 18965;
+  - an ally within 5 with health <= 1.5x its Strength: kill;
+  - within 5 and carrying 10+ gems or at <= 40%: retreat;
+  - it sees us (visible within 8 with us off a bush, or tracked within 4): BACK;
+  - otherwise quiet by health.
+  - Rank windows follow from interval overlap; enemy_next_rank uses the same bound.
+  - On real games: wrong sets −30%, false "before us" 27% → 15%, misses 3.5% → 6.0% (within 5 tiles: 0% → 5.4%). The cost is ~+0 fuel (5 enemies, once per update).
+- **Body:** Mt3q maps ocean's order onto Mite's values, so its contact acts first. Mt3qro (research/ideas-2026-11-10/opporder/patch_prio_ro.py on Mt3p, in fgate VERSIONS) writes Mite's formula. On Mt3qro the predictor behaves as on real games: false "before us" 27.7% → 13.7%, misses 6.0%. oo-mord beats it 77.7% of 256 on f0.
+- Results against ocean-16d6f78 (fgate, Flp4/Mt3qro; the arm is off against Fish, so F is the classifier's cost):
+
+| arm | fresh | units | ladder | Fish / Mite fresh | outcome |
+| --- | --- | ---: | --- | --- | --- |
+| oo-mord (K 1.5, near 5) | −0.42 ±0.43 | 12,928 | −0.31 | −0.32 / −0.53 | high H0 (LLR −5.53); stopped at 101 blocks |
+| oo-mord-c5 (worst case kept within 5) | +0.31 ±0.88 | 3,072 | +0.03 | −0.18 / +0.80 | screen, undecided |
+| oo-mord-r6 (flag radius 6) | −0.04 ±0.87 | 3,072 | −0.41 | −0.21 / +0.13 | screen, undecided |
+| oo-mord-c3 (worst case within 3) | −0.23 ±0.89 | 3,072 | −0.48 | −0.21 / −0.24 | screen, undecided |
+| oo-mord-k3 (kill 3x Strength) | −0.30 ±0.88 | 3,072 | +0.13 | −0.21 / −0.39 | screen, undecided |
+
+- Verdict: a more accurate order doesn't win games. The pessimism it removes seems cheap, and its extra misses (Mite acting before us when we predict after) cost about as much. The only lean is c5, which trusts the order only beyond 5 tiles; it is inside noise and not gated (stopped to save usage). Arms: bots/variants/oo-mord{,-c3,-c5,-k3,-r6} (gitignored).
