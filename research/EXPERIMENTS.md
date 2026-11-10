@@ -88,6 +88,71 @@ we could finish in a hit or two; small (~0.2 abandonments, ~1 gem a game). (2) R
 part-cleared groups that the enemy takes (8 of 29 stolen gems a game): a fight decision, not a farm weight; finishing
 first mostly hands the enemy a cleared group to hold.
 
+## (ocean, 2026-11-10) Prism's bag: a recall line and health buying as functions of its gems; both level or lost
+
+The user's idea: Prism's recall health threshold, and its health items, as functions of the gems it carries (and of
+game state and map features). Arms on `variants/ocean-16d6f78`. Tools and the a2/bt patches are in [ideas-2026-11-10/prismhp-tools](ideas-2026-11-10/prismhp-tools/); data in `~/tmp-offload/prismhp/`
+(`tools/pdeaths.py`, `traj.py`, `hazard.py`, `fit.py`, `pair.py`).
+
+**Data**
+- Live, our Prism against Fish since 11-08 (411 games, fish-re's decoded captures):
+  - It dies before r600 in 41% of games. We win 80% when it survives and 34% when it dies; 24% when it dies with 200+
+    gems.
+  - On the new base locally (824 Prism games against the dvn1 Fish/Mite bodies, fresh slices f0/f1): 26%, with a win
+    of 83% against 53%. The stake holds, and it is larger live.
+- How it dies:
+  - Rarely a one-shot. With 50+ gems, 7-8% die from >=80% HP in the last round, and 75% spend 2+ turns below 45% HP
+    before dying.
+  - Its death episodes start from >=80% HP 56-66% of the time and last a median 4 rounds.
+  - Typical traces show a 100-300-gem Prism at ~50% HP that keeps casting at enemies 4-5 tiles away, then dies to an
+    885-1540 burst.
+- Hazard fit: P(killed within 6 rounds | an enemy within 6), 64k live rounds, logistic:
+  `logit p = -0.418 - 3.70 h + 0.039 ln(1+g) - 0.298 h ln(1+g) + 0.776 n_e - 0.368 n_a`.
+  - h is the health share, g the gems carried, n_e and n_a the enemies and allies within 5.
+  - Holding the share and the round fixed, max health is worth logit -0.66 per 1000 HP.
+- Shop:
+  - Our Prism already puts ~2/3 of its shard stats into Health (13.7 Health, 6.4 Focus, 2.1 Strength shards'
+    worth at r600).
+  - With 200+ gems it holds a median 100 gold, and 150+ 35% of the time.
+  - Its kill death rate falls with the bag: 0.0021 a round at 1-29 gems, 0.00059 at 200+.
+
+**Arm A: the recall line as a function of the bag** (`combat/fight.cc` `bag_line`, Prism only, threatened line only)
+- Retreat when p x stake exceeds the heal trip.
+- The line is anchored to the tuned (map-conditioned) line for an empty bag, which prices the trip.
+- A bag scales the stake from a death's respawn and walk out by `gem_stake` rounds a gem.
+- The line solves the fit at that price, clamped to [tuned line, 0.8].
+- It is a function of gems, health share, enemies and allies near, spawn distance and the map's tuned line.
+- At a tuned line of 0.315 with one enemy near: 0.42 at 20 gems, 0.51 at 50, 0.60 at 100 and 0.69 at 200
+  (`gem_stake` 2.3, `prismhp-a`); 4.6 (`prismhp-a2`, the swing of a kill's gems) reaches 0.8 at 200.
+
+**Arm B: health as a function of the bag** (`economy/shop.cc`)
+- `upkeep_cost` adds the bag at risk: death rate(g) x (respawn + walk out + 2.3 g) x exp(-0.00066 x max health
+  added). The same price drives the stat choice and the trip home.
+- `prismhp-b` also lets a learned arm's stat move to Health. `prismhp-bq` refits the odds to b's observed effect
+  (0.000135). `prismhp-bt` has no stat switch.
+
+**Smokes** (1024 games, vs dvn1-Flp/-Mt3p on fresh f0/f1, paired on the same games; base 72.75%)
+- a 71.6, a2 72.5, b 70.9, bq 72.5, bt 73.0.
+- Mechanism in Prism games, against the base:
+  - a2: Prism deaths -18%, gems lost -25%, tributed -0.8.
+  - b: max health +40%, deaths -11%, tributed -22: it overbuys Health.
+  - bt: max health +29%, deaths -11%, tributed -21. bq's max health still rose by 534.
+
+**Results against ocean-16d6f78** (fgate; fresh read in points, 95% CI; stopped by the coordinator)
+
+| gate | fresh | units | ladder | Fish / Mite (fresh) | outcome |
+| --- | --- | --- | --- | --- | --- |
+| prismhp-a2 (Flp2 Fish body) | -0.40 ±0.33 | 11,648 | -0.38 | +0.00 / -0.81 | high H0 (LLR -9.05), low -2.44: reject |
+| prismhp-bt (Flp3 Fish body) | -0.09 ±0.77 | 3,584 | -0.34 | +0.17 / -0.35 | high LLR -1.14: stopped, level at best |
+
+- Fewer Prism deaths and gems lost don't turn into wins. Retreating earlier with a big bag takes the strongest caster
+  out of the fights it would have won (Mite -0.81). More Health costs the Focus that farms; the base's mix of ~2/3
+  Health is already about right.
+- The fit's hazard is what the base's own play produces. Lowering it by retreating costs more than the deaths it
+  avoids, so a fitted stake does not give a better line.
+- Not tried: the same line for all carriers; a burst-aware stand (Marcella's ready 2x-Focus spell in reach), which
+  fish-re's lane (Fish threat reads) covers.
+
 ## (ocean line, 2026-11-09) Fresh-map gate: the line holds off the ladder maps; the oc32 parts are being re-read
 
 The final tournament plays fresh maps from the ladder's distribution. dgate's bodies looked up Fish's and Mite's picks

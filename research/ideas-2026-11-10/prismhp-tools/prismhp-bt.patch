@@ -1,0 +1,127 @@
+diff -ru ocean-16d6f78/src/economy/shop.cc prismhp-bt/src/economy/shop.cc
+--- ocean-16d6f78/src/economy/shop.cc	2026-11-09 22:23:50.000000000 +0000
++++ prismhp-bt/src/economy/shop.cc	2026-11-09 23:24:37.453923747 +0000
+@@ -2,6 +2,7 @@
+ // to buy.
+ #include "../bot_parts.h"
+ #include "emblem_table.h"
++#include <cmath>
+ 
+ namespace aph {
+ 
+@@ -227,7 +228,19 @@
+ struct UpkeepBasis {
+     const ChampionFacts* facts;
+     float others, now_dealt, steps, camp_turn, champ_turn, now_camp_taken, now_taken, clearing;
++    float risk = 0, now_health = 0;
+ };
++
++// Prism's bag at stake (research/ideas-2026-11-09/prismhp.md), in rounds lost a round alive: its death rate with this
++// bag, times a death's respawn, walk out and the bag's gems at bag::gem_stake rounds each. Max health above ours
++// cuts it by exp(-bag::health_odds x the health added), the odds a share-and-time-controlled fit gives it.
++float bag_risk(const World& world, float steps) {
++    if (world.me().facts().passive != Passive::gem_focus) return 0;
++    const float g = static_cast<float>(my_gems());
++    if (g <= 0) return 0;
++    const float rate = params::bag::death_rate / (1.0f + g / params::bag::death_gems);
++    return rate * (static_cast<float>(cambc::constants::respawn_time) + steps + params::bag::gem_stake * g);
++}
+ UpkeepBasis upkeep_basis(const World& world, const Upkeep& upkeep, float others, const Build& now) {
+     const auto& f = world.me().facts();
+     const float turns = static_cast<float>(std::max(1, upkeep.turns));
+@@ -235,14 +248,15 @@
+     // saving) is still worth farming.
+     return {&f, others, others + std::max(1.0f, f.raw_output(now.strength, now.focus)) * now.camp_dealt, mean_spawn_steps(upkeep),
+             upkeep.camp_taken / turns, upkeep.champ_taken / turns, now.camp_taken, now.taken,
+-            static_cast<float>(upkeep.camp_turns + 1) / static_cast<float>(upkeep.turns + 1)};
++            static_cast<float>(upkeep.camp_turns + 1) / static_cast<float>(upkeep.turns + 1), bag_risk(world, mean_spawn_steps(upkeep)), now.max_health};
+ }
+ float upkeep_cost(const UpkeepBasis& u, const Build& b) {
+     const float clear = u.now_dealt / (u.others + std::max(1.0f, u.facts->raw_output(b.strength, b.focus)) * b.camp_dealt);
+     const float camp = u.camp_turn * clear * b.camp_taken / u.now_camp_taken;
+     const float taken = (camp + u.champ_turn) * b.taken / u.now_taken;
+     const float usable = b.max_health * (1.0f - params::recall_health_fraction);
+-    return u.clearing * clear + taken * heal_trip(b.recall, u.steps, u.steps) / usable;
++    const float bag = u.risk > 0 ? u.risk * std::exp(-params::bag::health_odds * (b.max_health - u.now_health)) : 0.0f;
++    return u.clearing * clear + taken * heal_trip(b.recall, u.steps, u.steps) / usable + bag;
+ }
+ float upkeep_cost(const World& world, const Upkeep& upkeep, float others, const Build& now, const Build& b) {
+     return upkeep_cost(upkeep_basis(world, upkeep, others, now), b);
+@@ -475,12 +489,13 @@
+     const int arm = learned_arm[picks - 3][type][ordinal], family = arm / 3;
+     if (arm == 255 || (family != power && family != bruiser && has_family(owned, family)))
+         return reactive_over(world, bought, current_emblem(world, bought, items), items);
++    struct Pin {
++        Pin(int family, int stat) { pin_family = family, pin_stat = stat; }
++        ~Pin() { pin_family = -1; }
++    };
+     Emblem e;
+     {
+-        struct Pin {
+-            Pin(int family, int stat) { pin_family = family, pin_stat = stat; }
+-            ~Pin() { pin_family = -1; }
+-        } pin{family, arm % 3};
++        Pin pin{family, arm % 3};
+         e = current_emblem(world, bought, items);
+     }
+     return reactive_over(world, bought, e, items);
+@@ -521,6 +536,9 @@
+     return gold_rate(a.facts(), owned);
+ }
+ 
++// Prism's bag in tens, for the price caches: bag_risk follows it.
++unsigned risk_key(const World& world) { return world.me().facts().passive == Passive::gem_focus ? my_gems() / 10 : 0; }
++
+ // The bag reactive_tribute and reactive_over price, 0 below the size they need.
+ unsigned reactive_bag() {
+     const unsigned bag = my_gems();
+@@ -533,6 +551,7 @@
+         unsigned bag;
+         int main;
+         bool home, monster;
++        unsigned risk;
+         bool operator==(const Key&) const = default;
+     };
+     static Key last{-1};
+@@ -544,7 +563,7 @@
+     // tenth (as affordable_prefix keeps its own), the prices follow it.
+     if (const Key now{self.strength, self.focus, self.max_health, reactive_bag(), main_stat(world),
+                       self.facts().passive == Passive::gem_focus && has_family(my_items(), home),
+-                      self.facts().passive == Passive::gem_focus && has_family(my_items(), monster)};
++                      self.facts().passive == Passive::gem_focus && has_family(my_items(), monster), risk_key(world)};
+         !(now == last) || !(std::abs(share - chosen_at) <= 0.1f * chosen_at)) {
+         last = now;
+         chosen_at = share;
+@@ -575,11 +594,12 @@
+         float strength, focus, max_health;
+         unsigned bag;
+         int main;
++        unsigned risk;
+         bool operator==(const Key&) const = default;
+     };
+     static Key last{~0u};
+     static PurchaseQuote kept;
+-    const Key key{budget / shard_price, self.strength, self.focus, self.max_health, reactive_bag(), main_stat(world)};
++    const Key key{budget / shard_price, self.strength, self.focus, self.max_health, reactive_bag(), main_stat(world), risk_key(world)};
+     const float rounds = gems_share(world) * rounds_per_gem;
+     if (key == last) return {kept.next, kept.count, kept.gain * rounds};
+     last = key;
+diff -ru ocean-16d6f78/src/params.h prismhp-bt/src/params.h
+--- ocean-16d6f78/src/params.h	2026-11-09 22:23:50.000000000 +0000
++++ prismhp-bt/src/params.h	2026-11-09 23:12:44.961840232 +0000
+@@ -61,6 +61,15 @@
+ // This is the line while an enemy threatens us (fight.cc recall_line); safe_recall_health_fraction otherwise.
+ // Set per map on a champion's first turn (draft.cc condition_on_map); this is the value without map features.
+ inline float recall_health_fraction = 0.31549114f;
++// Prism's bag at stake in the shop (economy/shop.cc bag_risk): our live Prism's death rate by bag (against Fish, 11-08/09:
++// 0.0021 a round at 1-29 gems, 0.0019 at 30-99, 0.00088 at 100-199, 0.00059 at 200+) as death_rate / (1 + g / death_gems),
++// a gem's rounds at stake (rounds_per_gem: our loss alone), and the death odds per max health added at a fixed health
++// share and round (logit -0.66 per 1000).
++namespace bag {
++inline constexpr float death_rate = 0.0024f, death_gems = 110;
++inline constexpr float gem_stake = 2.3f;
++inline constexpr float health_odds = 0.00066f;
++} // namespace bag
+ // The recall line while no enemy can credibly reach us within threat_radius steps.
+ inline constexpr float safe_recall_health_fraction = 0.10935836f;
+ // recall_line: steps past an enemy's reach within which it threatens us.
