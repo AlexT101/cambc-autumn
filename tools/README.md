@@ -289,9 +289,18 @@ py tools/version_record.py 50                        # our version 50's record p
 - **scrim_ladder.py spends the team's unranked quota** (`cambc match-groups quota`; each group frees about an hour after it was queued): dry-run first. We are side A unless `--sides alt`; `--avoid` takes earlier run folders, so repeated maps go to the side not yet played. Replays go to `replays/scrims/<timestamp>/`.
 - **ladder_scrims.py** is the long-running scrim job behind `research/ladder-scrims-2026-11-06/` (README, SET.md):
   `plan --version N --sets core,ext --opps fish,mite` appends five-game tasks of the frozen set, `run` (setsid nohup)
-  queues them while version N is live within the rolling 50-groups-an-hour quota (keeping `--reserve` 12 free),
+  queues them while version N is live within the rolling 100-groups-an-hour quota (keeping `--reserve` free; `live_restart_runner.sh` restarts it with reserve 10),
   pins each opponent to its first group's bot (`--source-group`), and downloads every game's bundle and summary;
   `status`, `report --by side,map` and `pair OLD NEW` (paired flips between our versions) read the jsonl data.
+- **live_sched.py** is the unattended live-gate scheduler (one at a time: `setsid nohup py tools/live_sched.py >> ~/tmp-offload/handoff/sched/sched.out 2>&1 < /dev/null &`).
+  While the live version's gate plays, it builds and smoke-tests the next candidate (the newest `oc-baseNN` ocean
+  commit, else the top `~/tmp-offload/live-queue.txt` line) with `livemask/stream_patch.py`; once the gate's groups
+  finish it submits, activates and plans the candidate's core and ext sets. Each live version also gets one unpinned
+  copy of each opponent's first pinned core group: a difference from the pinned games means that opponent's bot
+  changed (logged as `opp-check`, wakes the coordinator; it never repins). It pauses when a version we did not submit
+  is live or selected, and restarts a dead runner with `live_restart_runner.sh`. Its state dir (`LIVE_SCHED_DIR`,
+  default `~/tmp-offload/handoff/sched`) holds `state.json`, `sched.log`, `gates.jsonl`, `refsets.json` (the ref set
+  per opponent new gates use; read each loop), `build/`, and the `STOP` / `PAUSE` / `HOLD` files.
 - **version_record.py** needs the website cookie (`%APPDATA%/cambc/web-cookie.txt`, as fetch_replays.py): the API shows submission versions only with it. `--kind`, `--json FILE` for per-game rows.
 
 ## Draft lab: tools/draftlab
@@ -455,7 +464,7 @@ tools/fastengine/profile_games.sh OUTDIR "botA botB map"                        
 
 ## Live priority mask: tools/livemask
 
-The live scheduler (`~/tmp-offload/handoff/sched/live_sched.py`) runs `stream_patch.py BOT_DIR` on each submission's copy:
+The live scheduler (`live_sched.py`) runs `stream_patch.py BOT_DIR` on each submission's copy:
 it adds `prio_stream.h` (a per-round xor of our priority payload) keyed from `livemask.key`. To rebuild a live version exactly
 (e.g. to re-run a live game with traces), run the same patch on a copy of its directory.
 - From v106 (2026-11-10) the key is the committed `livemask.key`. v87-v105 used an older key kept outside the repo, in
@@ -471,8 +480,8 @@ Probe bots that settle the rules in `cambc-rules.yaml`: how to run them and whic
 
 What our ladder replays show other teams. Replays record priorities but not the shared or draft bytes
 (`cambc-rules.yaml` memory.replay). From v93, live builds code ocean's priorities per game: the live scheduler patches
-`prio_mask.h` into its build copy (`~/tmp-offload/handoff/sched/prio_mask/`, the key in `~/.config/cambc-secret/`; neither
-is in git). The code keeps the order of ranks and allies decode it exactly, so play is identical at 100M; at the real
+the mask into its build copy (`tools/livemask/`; from v106 with the committed key, earlier with the key in
+`~/.config/cambc-secret/`). The code keeps the order of ranks and allies decode it exactly, so play is identical at 100M; at the real
 budget its fuel changes some games, as any fuel change does. Bots in the repo are uncoded, so local games are unchanged;
 our live replays from v93 on show coded values (any resubmission of the v86 control, `variants/oc-base23`, goes up uncoded).
 
@@ -638,7 +647,8 @@ drafts and emblems: [report](../research/fish-2026-11-05/DRAFTS-EMBLEMS.md).
 
 ## Hourly live opponent checks
 
-`ladder_version_check.py` integrates with `~/tmp-offload/handoff/sched/live_sched.py`:
+Off since 2026-11-10 (`live_sched.py`'s `VERSION_CHECK`; its opp-check replaces it, with no draining).
+`ladder_version_check.py` integrates with `live_sched.py`:
 it drains ordinary live scrims, temporarily activates platform v1, queues one
 unpinned five-map group each against current Mite and Fish, restores the previous
 selection mode, and compares saved deterministic game summaries. The first cycle
