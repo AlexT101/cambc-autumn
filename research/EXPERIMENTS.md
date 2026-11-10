@@ -50,6 +50,27 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 - A risk change can win the mirror and nothing else (nuke guard, 2026-11-08): +0.22 held out over 149k, panel -0.02.
   The v84 pattern again: a risk or greed change needs its panel H1 before it ships.
 
+## Fuel after 495 (ocean, 2026-11-10; CHANGES 496)
+
+[Full campaign](fuel-2026-11-10-next/README.md), with manifests, compact results, arithmetic/support oracles
+and the rejected variants. Fresh 4,096-game bench: **OOF -19.3%, shortcuts -4.9%, mean fuel -0.54%**.
+Fresh release A/B: 50.8% (49.2–52.3), OOF -16.3%. The requested further 10% OOF reduction is met.
+
+The largest gain came from following support's callers: they need a threat boolean or `safe()`, while the
+nine-tile station builder calculated full damage and stun bounds. Only the independent heal step needs those
+bounds. Precomputed champion output coefficients and explicit-mask strike caching add smaller exact savings.
+
+Dropped: two-spell closed forms (dearer than strike caching), extra wake-cache buckets (+1 mean fuel),
+gold/cooldown/item caches (+55 mean/+74 heavy), earlier stale checks (no real-budget OOF gain), lazy station
+entries (small gain, more cache complexity), ground-centre special cases and retreat/reach loop changes
+(only 1–4 mean fuel). Don't repeat them unchanged. High-budget differences in the kept bundle all disappear
+when both sides omit next-turn walk preparation: the existing cache-readiness coupling, not different risk
+answers. Forced Stellar/Willow teams and 352-member camp groups cover cases absent from the normal suite.
+
+Measurement lesson: bench.py's `out_of_fuel` field and stdout recovery lines undercount actual engine OOF.
+The campaign comparison tool uses runner totals and excludes OOF from shortcut counts. On fresh games the
+improvement remains -19.1% OOF and -4.6% shortcuts after normalising for the number of play turns.
+
 ## (ocean = d4f6e68a6, CHANGES 495, 2026-11-10) Fuel ceiling re-measured: 54.2% at 10M; cut work +2.9, out-of-fuel +1.3
 
 The same design as "Fuel ceiling (ocean, 2026-11-08)", on current `bots/ocean`. Copies `variants/oc-ceil-ref`,

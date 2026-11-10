@@ -962,12 +962,8 @@ union StrikeMemos {
     std::array<std::array<StrikeMemo, 4>, 16> by_champion;
 };
 
-StrikeMemo& strike_memo(const ChampionBelief& c, int turn_round) {
-    // By champion and slots ready: cooldowns run out and come back.
+StrikeMemo& strike_slots(const ChampionBelief& c, unsigned slots) {
     static StrikeMemos memo;
-    const bool uncertain = c.cooldowns_uncertain();
-    const unsigned slots =
-        (uncertain || c.ability_ready(0, turn_round) ? 1u : 0u) | (uncertain || c.ability_ready(1, turn_round) ? 2u : 0u);
     const float hs = hit_strength(c), hf = hit_focus(c);
     const auto s = std::bit_cast<std::uint32_t>(hs), focus = std::bit_cast<std::uint32_t>(hf);
     auto& m = memo.by_champion[(c.side == team::enemy ? 8u : 0u) + (static_cast<unsigned>(c.index) & 7u)][slots];
@@ -983,11 +979,18 @@ StrikeMemo& strike_memo(const ChampionBelief& c, int turn_round) {
     return m;
 }
 
+StrikeMemo& strike_memo(const ChampionBelief& c, int turn_round) {
+    const bool uncertain = c.cooldowns_uncertain();
+    const unsigned slots =
+        (uncertain || c.ability_ready(0, turn_round) ? 1u : 0u) | (uncertain || c.ability_ready(1, turn_round) ? 2u : 0u);
+    return strike_slots(c, slots);
+}
+
 } // namespace
 
 const Strike& strike(const ChampionBelief& c, int turn_round) { return strike_memo(c, turn_round).value; }
 
-Strike strike_with(const ChampionBelief& c, unsigned slots) { return compute_strike(c.facts(), hit_strength(c), hit_focus(c), slots); }
+const Strike& strike_with(const ChampionBelief& c, unsigned slots) { return strike_slots(c, slots).value; }
 
 int turns_before_ours(const World& world, const ChampionBelief& c) {
     // An enemy's order is a window (turn_window.h): unseen, it may still act this round while an

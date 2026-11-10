@@ -81,7 +81,7 @@ template <int S> [[gnu::always_inline]] inline Rows spread_by(const Rows& h) { r
     for (int c = 7; c < r; ++c) h = spread_raw(sideways(h, 1));
     return {{h.v[0] & full, h.v[1] & last}};
 }
-inline Rows grow_by(const Rows& a, int r) { return r <= 0 ? a : widen(spread_raw(sideways(a, 1)), r); }
+inline Rows grow_by(const Rows& a, int r) { return r <= 0 ? a : r == 1 ? grow(a) : widen(spread_raw(sideways(a, 1)), r); }
 
 // A board's tiles packed a bit each in row-major order (export_linear_buffer), read a window row at a time.
 struct Packed {
@@ -458,7 +458,7 @@ void Plan::finish(Pathing& pathing, Race& race) {
         const auto& kind = race.kinds.of[c];
         // `near`: grow(from), which the walk reuses.
         const auto strike = [&](int k, const Rows& from, const Rows& near, int reach, bool blind) {
-            const Rows reached = widen(near, reach);
+            const Rows reached = reach == 1 ? near : widen(near, reach);
             if (!bushes || blind) {
                 hit_[k] |= reached;
                 return;

@@ -1,0 +1,6 @@
+1024 paired games; OOF 11964 -> 9680; shortcuts 361835 -> 346803; turns 4802825 -> 4757387
+OOF turns                -19.09% (95% CI -25.32 .. -13.17)
+shortcuts excluding OOF  -4.15% (95% CI -7.01 .. -1.13)
+mean fuel                -0.32% (95% CI -0.81 .. +0.17)
+OOF per turn             -18.32% (95% CI -24.19 .. -12.68)
+shortcuts per turn       -3.24% (95% CI -5.73 .. -0.25)

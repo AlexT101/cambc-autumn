@@ -71,12 +71,10 @@ bool support_owned = false;
 // one safely (offered). support_retreat: the support code hands the turn to retreat().
 bool support_requested = false, support_offered = false, support_retreat = false;
 
-// A tile's risk to the support pair. imminent: Safety::bound's damage with enemies yet to act
-// counted twice. enemy: an enemy is likely to hit it; camp: a live or returning camp member
-// reaches it; stun: an enemy may stun there.
+// A tile's risk to the support pair: a likely enemy hit, or a live/returning camp member in reach.
+// camp is needed only without an enemy threat; the independent heal step asks for full damage.
 struct SupportExposure {
-    float imminent = 0;
-    bool enemy = false, camp = false, stun = false;
+    bool enemy = false, camp = false;
     bool safe() const { return !enemy && !camp; }
 };
 

@@ -11,35 +11,28 @@ Stations& stations_cache() {
     return s;
 }
 
-// Each camp member whose strike reaches p, as f(group, member index, member), in groups_near order;
-// stops at the first f that returns false.
-template <class F>
-bool each_camp_striker(const World& world, vec2 p, F&& f) {
+// Asleep members and ones a nearer ally draws count too: the group can wake, and the ally leave.
+bool camp_may_hit(const World& world, vec2 p) {
     for (const int g : world.map().groups_near(p, world.map().max_camp_reach)) {
-        const auto& members = world.map().groups[g].members;
-        for (std::size_t i = 0; i < members.size(); ++i)
-            if (members[i].strength > 0 && dist(p, members[i].pos) <= members[i].reach && !f(g, i, members[i])) return false;
+        const auto& group = world.map().groups[g];
+        if (group.strength <= 0) continue;
+        const auto& c = world.camps[g];
+        const bool returning = c.state == CampState::respawning && c.respawn_round <= world.round + 1;
+        if (!returning && c.state != CampState::alive) continue;
+        for (std::size_t i = 0; i < group.members.size(); ++i) {
+            const auto& m = group.members[i];
+            if (m.strength > 0 && (returning || c.health[i] > 0) && dist(p, m.pos) <= m.reach) return true;
+        }
     }
-    return true;
+    return false;
 }
 
 // Willow holds no fight: a tile an enemy is likely to hit (want_home's test) or any camp member may
 // hit is unsafe. `enemies`: false when no enemy can hit p, which spares their search.
 SupportExposure exposure_at(const World& world, Safety& safety, vec2 p, bool enemies = true) {
     SupportExposure risk;
-    if (enemies) {
-        const auto b = safety.bound(p, world.me().taken);
-        risk.imminent = b.doubled, risk.enemy = b.threat, risk.stun = b.stuns;
-    } else {
-        risk.imminent = safety.camp_damage(p, true, true);
-    }
-    each_camp_striker(world, p, [&](int g, std::size_t i, const CampMember&) {
-        const auto& c = world.camps[g];
-        const bool returning = c.state == CampState::respawning && c.respawn_round <= world.round + 1;
-        // Asleep members and ones a nearer ally draws count too: the group can wake, and the ally leave.
-        risk.camp = returning || (c.state == CampState::alive && c.health[i] > 0);
-        return !risk.camp;
-    });
+    risk.enemy = enemies && safety.threat_at(p);
+    risk.camp = !risk.enemy && camp_may_hit(world, p);
     return risk;
 }
 
@@ -330,8 +323,10 @@ bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety
     float amount = 0;
     if (!heal_ready(world, world.me(), amount)) return false;
     guard_steps(world, pathing, safety);
-    const auto quiet = [](const SupportExposure& risk) {
-        return risk.safe() && !risk.stun && risk.imminent == 0;
+    const auto quiet = [&](const SupportExposure& risk, vec2 p) {
+        if (!risk.safe()) return false;
+        const auto b = safety.bound(p, world.me().taken);
+        return !b.stuns && b.doubled == 0;
     };
     std::array<HealView, 8> views;
     int n = heal_views(world, safety, here, amount, views);
@@ -346,8 +341,8 @@ bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety
     n = static_cast<int>(std::remove_if(views.begin(), views.begin() + n,
                                         [&](const HealView& v) { return !(v.target.gain > forgone * basic); }) - views.begin());
     if (n == 0 || immediate_camp_finish(world, here, basic, reset_ready, farm_group)) return false;
-    if (!quiet(stations(world, safety, here).tiles[0].risk)) return false;
-    const vec2 best = heal_station(world, pathing, safety, here, views, n, [&](const Station& tile) { return quiet(tile.risk); },
+    if (!quiet(stations(world, safety, here).tiles[0].risk, here)) return false;
+    const vec2 best = heal_station(world, pathing, safety, here, views, n, [&](const Station& tile) { return quiet(tile.risk, tile.p); },
                                    [](const Station&) { return 0; });
     world.throw_if_stale();
     if (best == here) return false;

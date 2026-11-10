@@ -90,6 +90,14 @@ struct ChampionFacts {
     Passive passive;
     std::array<AbilityFacts, 2> abilities; // one successful cast a turn across both (rules: turn.cast)
 
+    // The cooldown is a power of two: scaling its multiplier preserves the two additions' order.
+    std::array<float, 2> output_scale{
+        abilities[0].kind == AbilityKind::attack_reset ? 1.0f / ability_cooldown
+        : abilities[0].kind == AbilityKind::damage || abilities[0].lands() ? abilities[0].multiplier / ability_cooldown : 0.0f,
+        abilities[1].kind == AbilityKind::attack_reset ? 1.0f / ability_cooldown
+        : abilities[1].kind == AbilityKind::damage || abilities[1].lands() ? abilities[1].multiplier / ability_cooldown : 0.0f};
+    std::array<bool, 2> output_strength{abilities[0].kind == AbilityKind::attack_reset, abilities[1].kind == AbilityKind::attack_reset};
+
     constexpr int attack_range() const { return ranged ? ranged_range : melee_range; }
     // Farthest enemy a basic attack damages: Varg's splash hits around its target.
     constexpr int basic_reach() const { return attack_range() + (passive == Passive::splash_attack ? splash_radius : 0); }
@@ -135,12 +143,8 @@ struct ChampionFacts {
 
     // Damage a turn, spells (and dash landings) spread over their cooldown.
     constexpr float raw_output(float strength, float focus) const {
-        float damage = strength;
-        for (const auto& a : abilities) {
-            if (a.kind == AbilityKind::damage || a.lands()) damage += a.multiplier * focus / static_cast<float>(ability_cooldown);
-            if (a.kind == AbilityKind::attack_reset) damage += strength / static_cast<float>(ability_cooldown);
-        }
-        return damage;
+        const float first = strength + output_scale[0] * (output_strength[0] ? strength : focus);
+        return first + output_scale[1] * (output_strength[1] ? strength : focus);
     }
 
     constexpr float tribute_gold_per_gem() const {

@@ -4226,3 +4226,25 @@ Evidence, all against `variants/ocf-base` (= 494), own drafts, fast runner:
   Held out: 50.1% (49.7-50.6) of 40,960 on `merged/fuel-1996`, out-of-fuel turns -12.9% (429,719 / 493,257).
 
 Frozen as `variants/oc-fuel-495` (= bots/ocean).
+
+## 496: Fuel: support queries only the risk its callers need, output coefficients and strike reuse (ocean, 2026-11-10)
+
+On 495. Evidence and rejected experiments: [fuel-2026-11-10-next](../fuel-2026-11-10-next/README.md).
+
+- Support's nine station tiles use `Safety::threat_at` and a boolean camp check. Only the independent heal
+  step needs the full damage/stun bound, and computes it after its cheaper tests. Harmless/dead camp groups
+  are rejected before scanning members; sleeping and soon-respawning monsters still count.
+- Champion metadata precomputes `raw_output`'s two coefficients, keeping the float addition order.
+- `strike_with` reuses the existing champion/stat/slot-mask cache; radius-one escape dilation uses `grow()`.
+
+Against `variants/oc-fuel-495`, fast runner 5.0.1, matched drafts:
+- **100M bench:** 90/96 own-draft, 96/96 test-draft and 94/108 forced Stellar/Willow/large-group replays
+  byte-identical. All differing maps become identical (12/12 and 22/22) with both bots' fuel-limited
+  next-turn walk preparation omitted: the existing cache-readiness coupling from 495. A same-state support
+  oracle passes at least 397,312 checks; output arithmetic passes 1.3M bitwise checks across all 13 bodies.
+- **Fresh real-budget bench, 4,096 games:** OOF 47,536 → 38,362 (**-19.3%**, 95% -21.6 to -16.8);
+  shortcuts 1,449,627 → 1,378,828 (**-4.9%**); mean fuel -0.54%. Normalised per turn: OOF -19.1%, shortcuts -4.6%.
+- **Release A/B:** standard 1,280 games, 49.2% (46.5–52.0), OOF -13.6%. Fresh ladder-v2 seeds 1460242–1460249,
+  4,096 games, **50.8% (49.2–52.3)**, OOF 43,109 → 36,087 (**-16.3%**). No failed games or broken/capped drafts.
+
+Frozen as `variants/oc-fuel-496` (= bots/ocean).

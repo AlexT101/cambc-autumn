@@ -25,6 +25,12 @@ CHANGES 495 (2026-11-10) takes a further 13%, most of it from the turn's tail ch
 ([fuel-2026-11-10](../fuel-2026-11-10/README.md)). Open there: tail steps that act with 2-8k left (the second strike
 search, the tribute habit's `want_home`), the turn order's `offer_heal` and `plain_priority` tails past its 10k gate,
 and the ~1.9k a tile the turn-end queue's warm-up costs.
+
+CHANGES 496 (2026-11-10) meets the new **10% fewer OOF turns versus 495** target: -19.3% in a fresh 4,096-game
+bench and -16.3% in release, with shortcuts -4.9%. It removes unused full damage bounds from support station
+checks, precomputes output coefficients and reuses explicit-mask strikes. The remaining tail work above is
+still open; details and failed experiments are in [fuel-2026-11-10-next](../fuel-2026-11-10-next/README.md).
+
 - **A fuel gate for the chase build** (CHANGES 481): +8% out-of-fuel turns, mostly the verdict `chase_aim()` builds
   before the strike search with no gate of its own. Gate it on the fuel the search still needs, or reuse a teammate's
   verdict. Being worked on; judge on `merged/plan3-dev`, reserved for it.

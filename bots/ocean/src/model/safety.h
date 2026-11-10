@@ -212,7 +212,7 @@ int board_chunks_across(const StaticMap& map);
 // From its facts, last-read Strength and Focus and the cooldowns projected to `turn_round`.
 const Strike& strike(const ChampionBelief& c, int turn_round);
 // strike() with only the abilities of `slots` (bit i: slot i) ready, as our live cooldowns read.
-Strike strike_with(const ChampionBelief& c, unsigned slots);
+const Strike& strike_with(const ChampionBelief& c, unsigned slots);
 // An enemy in sight loses its next turn to a stun (rules: abilities.stun).
 bool turn_lost(const ChampionBelief& c);
 // The round of the enemy's next turn: later this round if it acts after us, else next round; one
