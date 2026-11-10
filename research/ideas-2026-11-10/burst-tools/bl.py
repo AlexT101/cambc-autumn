@@ -66,6 +66,10 @@ def one_turn(name, S, F, d, ready, scale=1.0):
 def window_burst(name, S, F, d, ready, turns, scale=1.0):
     if turns <= 0: return 0.0, 0.0
     t, sp = one_turn(name, S, F, d, ready, scale)
+    if turns >= 2 and d >= 1:
+        # Two turns: a walk on the first, then anything from a tile nearer (a spell's reach one longer).
+        t2, sp2 = one_turn(name, S, F, d - 1, ready, scale)
+        if t2 > t: t, sp = t2, sp2
     if turns >= 2:
         ranged, _ = K[name]
         basic = 3 if ranged else 1
