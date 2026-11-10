@@ -15818,6 +15818,26 @@ Results against `ocean-16d6f78` (release, real fuel, own drafts, Flp4/Mt3qro):
 
 No merge. Full result: `~/tmp-offload/diverse/gate-logs/fgate-oo-mord-c5--ocean-16d6f78p4qro.json`.
 
+
+## Local queue draft10 F92 refit (2026-11-10, Codex)
+
+799,998 training games on fresh ladder-v2 maps, with Fish/Mite-weighted opponents, on frozen
+`ocean-16d6f78`. F92 searched CV log loss 0.5419. Native parity: 384 maps, no team mismatch or C++ failure;
+tested first-turn maximum 9,807,453 of 10M, zero over-budget drafts. Candidate `lq-draft10` changes only the
+compiled draft model. It has not been merged or ported to current ocean.
+
+Results against `ocean-16d6f78` (release, real fuel, own drafts, Flp4/Mt3q):
+
+| Candidate | Fresh win-equivalent (95% CI) | Fresh paired units | Ladder delta | Fish / Mite fresh delta | Outcome |
+|---|---|---:|---|---|---|
+| lq-draft10 | 50.699% (50.449–50.949) | 34,560 | +0.001 points | +0.815 / +0.583 points | NARROWED at block270; high LLR+1.136, low+12.687 |
+
+The default CI-width stop fired before a sequential acceptance/zone decision. This is a promising gain,
+not a 99% live-bar pass. `draft10-gate-continue` reuses the same frozen source and all270 blocks with
+`--ci 0 --zone-stop`, queued after ready behavior experiments and before new training. First-stage JSON
+and source seals: `~/tmp-offload/handoff/codex/queue-ops/draft10-stage1.json` and
+`draft10-continuation-sources.json`; original gate log `~/tmp-offload/localq/draft10/fgate.out`.
+
 ## Safe tribute tile (safetrib, oc-wdash-494, 2026-11-10): bush / far-from-enemy tribute tiles fire but move nothing; nothing merged
 User: "prefer for example tributing from a bush. or perhaps farther away from recently seen enemies ... most conservative probably like just on prism when she has lots of gems and enemies spotted nearby".
 - **Live data** (our tributes vs Fish, 544 games, and Mite, 2,409, since 11-08; `~/tmp-offload/safetrib/tools/ourtrib.py`). Nobody dies while channelling (death 0.00 in every band). Bags of 100+ complete 33-48%. The rest are our own safety cancels (33-43%), stuns (5-16%; Mite more) and locks (7-16%). The bag is kept: it is lost to a death within 15 rounds 2-5% of the time. So a cancel costs time, not gems. The predictor is enemies near at the start: with none within 8 in the previous 10 rounds a 100+ tribute completes 86%, with 3+ only 23-26%. Most 200+ channels are Prism's (her winning bag). Only 5-8% of altars have a bush tribute tile (fresh ladder-v2 bush density matches the ladder, 5%). 100+ tributes started on a bush completed 71-75%, against 41-48% elsewhere (confounded with quiet altars).
