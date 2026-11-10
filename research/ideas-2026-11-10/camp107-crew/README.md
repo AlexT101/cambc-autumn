@@ -200,3 +200,17 @@ Minimal existing-case validation, not a strength campaign: three correct platfor
 All owner polling watchers are stopped. The already-running original497 bankviahome gate remains untouched under explicit coordinator instruction; no old-base followup was queued. The owner finishes the paused turn after this handoff. Preparation/build/source records are `wfollow501-preparation.json`, `wfollow501-independent-port-review.json`, and `wfollow-paused-watchers-stopped.json`.
 
 The retained bankviahome gate then naturally finished17:10:38 during final cleanup: NARROWED after110blocks/14,080fresh units, −0.206±0.250pp95%. No demonstrated gain, no statistical rejection and no promotion. Its allocation helper also exited. This terminal is recorded only; no followup starts during pause.
+
+
+## Shipping decision: both501 Willow screens closed
+
+After the user resumed, ops released only the two sealed501200k screens at17:19:01; both started17:19:18 and naturally finished17:35:53/55 at the prespecified eight-block cap. No extension, new labs, replay studies or old livelock followups ran. Both terminal outcomes are **undecided**, not statistical rejection.
+
+| Candidate vs frozen501 | Fresh paired gain (pp) |95% CI (pp)|Fresh units|Shipping decision|
+|---|---:|---:|---:|---|
+|c501-wfollow-hurt|−0.195|[−0.990,+0.600]|1,024|No ship; no further test|
+|c501-wfollow-blind|+0.049|[−0.553,+0.650]|1,024|No ship; no further test|
+
+Neither valid fresh interval is wholly above zero, so neither qualifies for100k under the predeclared screen rule. The coordinator accepted closing both programmes under the shipping cutoff: no100k authorization, sample extension or refinement. The broad arm's Fish/Mite gains are+0.293/−0.684pp; narrow+0.098/0.000pp, individually uncertain. Historical exact-case rescues and the removed support gap remain mechanism diagnostics, not shipping evidence or proof of overall strength. These results do not prove either change harmful or worthless.
+
+Independent final validation checked all source seals and own-draft settings, release200k/engine5.0.1, exactFlp4/Mt3q body paths, and complete unique map/side cells in every candidate/reference summary. Each comparison includes16,384 checked game cells across ladder/fresh, with the baseline shared between comparisons; these are not32,768 independent new games. Zero run errors, early losses, handoff failures or capped drafts in either comparison. Fresh effects and population-standard-error intervals were recomputed unrounded from the paired cells and match fgate. `review_wfollow501_screens.py` and `wfollow-{hurt,blind}501-screen-review.json` retain the per-summary hashes, validity, estimates and explicit `eligible_100k:false` decisions. No100k permit files were created. Ops was asked to close the held companions; root/ops own only remaining actionable coordination. This owner's investigation ends here.
