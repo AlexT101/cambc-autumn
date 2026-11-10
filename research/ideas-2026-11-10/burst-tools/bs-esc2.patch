@@ -1,0 +1,247 @@
+diff -ru ocean-16d6f78/src/combat/fight.cc bs-esc/src/combat/fight.cc
+--- ocean-16d6f78/src/combat/fight.cc	2026-11-09 22:23:50.000000000 +0000
++++ bs-esc/src/combat/fight.cc	2026-11-10 01:10:03.753940955 +0000
+@@ -181,12 +181,16 @@
+ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
+     if (!my_can_move()) return;
+     const vec2 here = my_position();
+-    if (!safety.avoid_within(here, vision_radius)) {
++    // A pursuer that cannot act before our next turn is in no avoid board, yet its turns after it may
++    // kill us wherever this step leaves us: then the escape plan ranks the step.
++    auto& plan = escape::plan(world, pathing, safety);
++    const bool deadly = plan.active() && plan.deadly();
++    if (!deadly && !safety.avoid_within(here, vision_radius)) {
+         pathing.step_towards(home);
+         return;
+     }
+     const auto& avoid = safety.avoid();
+-    if (!test(avoid, here) && pathing.step_towards(home, &avoid)) return;
++    if (!deadly && !test(avoid, here) && pathing.step_towards(home, &avoid)) return;
+     const int steps = home.at(here);
+     const auto& blocked = pathing.blocked();
+     struct Option {
+@@ -232,7 +236,6 @@
+             clear |= !reached;
+         }
+     };
+-    auto& plan = escape::plan(world, pathing, safety);
+     add(false);
+     if (!clear) {
+         // Worth it only if the spawn leaves us healthier than the clear step away would.
+diff -ru ocean-16d6f78/src/model/escape.cc bs-esc/src/model/escape.cc
+--- ocean-16d6f78/src/model/escape.cc	2026-11-09 22:23:50.000000000 +0000
++++ bs-esc/src/model/escape.cc	2026-11-10 01:10:12.775891106 +0000
+@@ -201,6 +201,8 @@
+     int burst_turn = 0; // first of its turns its burst is ready, 0: not within the plan
+     bool blind = false; // the burst ignores bushes
+     int delay = 0;      // its turns before it stands on `start`: one beyond the window enters at its edge
++    // Its burst, or any hit of its, alone kills us (our own race): a turn ending in that reach is a death, not a hit.
++    bool lethal_burst = false, lethal_hit = false;
+     Rows start{};
+ };
+ 
+@@ -212,7 +214,7 @@
+     // has yet to act this round), `out` steps beyond the window; null if it is past the plan. With `resets`, a
+     // ranged champion's attack reset is a burst too: walk, reset, shoot.
+     [[gnu::always_inline]] Rows* add(const ChampionFacts& f, const std::array<int, 2>& ready_round, int round, int offset, int out,
+-                                     bool resets = false) {
++                                     bool resets = false, bool lethal_burst = false, bool lethal_hit = false) {
+         const auto ready_turn = [&](int slot) {
+             const int k = std::max(1, ready_round[static_cast<std::size_t>(slot)] - round + offset);
+             return k > horizon ? 0 : k;
+@@ -228,13 +230,16 @@
+                 if (f.abilities[s].hits_enemies())
+                     if (const int k = ready_turn(s); k > 0 && (kind.burst_turn == 0 || k < kind.burst_turn)) kind.burst_turn = k;
+         if (kind.burst_turn == 0) kind.burst = 0, kind.blind = false;
++        kind.lethal_burst = lethal_burst && kind.burst > 0;
++        kind.lethal_hit = lethal_hit;
+         if (const int slot = resets && f.ranged ? f.slot_of(AbilityKind::attack_reset) : -1; slot >= 0)
+             if (const int k = ready_turn(slot); k > 0 && f.basic_reach() + 1 > kind.burst)
+                 kind.burst = f.basic_reach() + 1, kind.burst_turn = k, kind.blind = false;
+         for (int i = 0; i < n; ++i) {
+             const auto& o = of[i];
+             if (o.ranged == kind.ranged && o.reach == kind.reach && o.dash_turn == kind.dash_turn && o.burst == kind.burst
+-                && o.burst_turn == kind.burst_turn && o.blind == kind.blind && o.delay == kind.delay)
++                && o.burst_turn == kind.burst_turn && o.blind == kind.blind && o.delay == kind.delay
++                && o.lethal_burst == kind.lethal_burst && o.lethal_hit == kind.lethal_hit)
+                 return &of[i].start;
+         }
+         if (n == static_cast<int>(of.size())) return nullptr;
+@@ -243,9 +248,10 @@
+     }
+     // A champion seen on `tile`: its class's start, at the window's edge if beyond it.
+     [[gnu::always_inline]] void add_at(const ChampionFacts& f, const std::array<int, 2>& ready_round, int round, int offset, vec2 tile, vec2 origin,
+-                                       bool resets = false) {
++                                       bool resets = false, bool lethal_burst = false, bool lethal_hit = false) {
+         const int x = std::clamp(tile.x - origin.x, 0, side - 1), y = std::clamp(tile.y - origin.y, 0, side - 1);
+-        if (auto* rows = add(f, ready_round, round, offset, std::max(std::abs(tile.x - origin.x - x), std::abs(tile.y - origin.y - y)), resets))
++        if (auto* rows = add(f, ready_round, round, offset, std::max(std::abs(tile.x - origin.x - x), std::abs(tile.y - origin.y - y)), resets,
++                             lethal_burst, lethal_hit))
+             put(*rows, y, std::uint32_t{1} << x);
+     }
+ };
+@@ -286,17 +292,26 @@
+     race.at = span_of(origin_);
+ 
+     // The pursuers, merged by kind.
++    const float life = my_health_and_shield(world), taken = self.taken;
+     for (const auto& e : world.enemies) {
+         if (!e.alive) continue;
+         // Its k-th turn from now falls in this round if it has yet to act; unseen, assume it has.
+         const int offset = e.visible && !e.acted ? 1 : 0;
++        // What one of its turns can do to us alone (Strength and Focus as read, with its emblems and Heart of
++        // Ruin's passive, and our Durability): its spell, and its basic attack, twice with a reset.
++        const auto& f = e.facts();
++        float spell = 0;
++        for (const auto& a : f.abilities)
++            if (a.hits_enemies() && (a.kind == AbilityKind::damage || a.lands())) spell = std::max(spell, a.multiplier * e.focus);
++        const float blow = e.strength * (f.slot_of(AbilityKind::attack_reset) >= 0 ? 2.0f : 1.0f);
++        const bool lethal_burst = spell * e.scale * taken >= life, lethal_hit = blow * e.scale * taken >= life;
+         if (e.visible) {
+-            race.kinds.add_at(e.facts(), e.ready_round, world.round, offset, enemy_reach::origin(e), origin_);
++            race.kinds.add_at(f, e.ready_round, world.round, offset, enemy_reach::origin(e), origin_, false, lethal_burst, lethal_hit);
+         } else if (e.tracked && e.pos_round >= world.round - params::escape::unseen_rounds && safety.credible_unseen(e)) {
+             if (!export_board(e.possible, scratch_packed)) continue;
+             const Rows tiles = rows_of(scratch_packed, race.at);
+             if (none_set(tiles)) continue;
+-            if (auto* rows = race.kinds.add(e.facts(), e.ready_round, world.round, offset, 0)) *rows |= tiles;
++            if (auto* rows = race.kinds.add(f, e.ready_round, world.round, offset, 0, false, lethal_burst, lethal_hit)) *rows |= tiles;
+         }
+     }
+     if (race.kinds.n == 0) return;
+@@ -453,19 +468,23 @@
+ 
+     // Where each turn ends hit.
+     for (auto& h : hit_) h = Rows{};
++    for (auto& h : dead_) h = Rows{};
+     const Rows open = ~bush;
+     for (int c = 0; c < race.kinds.n; ++c) {
+         const auto& kind = race.kinds.of[c];
+-        // `near`: grow(from), which the walk reuses.
+-        const auto strike = [&](int k, const Rows& from, const Rows& near, int reach, bool blind) {
++        // `near`: grow(from), which the walk reuses. `kills`: the hit alone kills us.
++        const auto strike = [&](int k, const Rows& from, const Rows& near, int reach, bool blind, bool kills = false) {
+             const Rows reached = widen(near, reach);
++            Rows got;
+             if (!bushes || blind) {
+-                hit_[k] |= reached;
+-                return;
++                got = reached;
++            } else {
++                // Off bushes from anywhere it stands; a bush tile only from a bush tile.
++                got = reached & open;
++                if (const Rows hidden = from & bush; !none_set(hidden)) got |= grow_by(hidden, reach) & bush;
+             }
+-            // Off bushes from anywhere it stands; a bush tile only from a bush tile.
+-            hit_[k] |= reached & open;
+-            if (const Rows hidden = from & bush; !none_set(hidden)) hit_[k] |= grow_by(hidden, reach) & bush;
++            hit_[k] |= got;
++            if (kills) dead_[k] |= got;
+         };
+         // `moved`: where it may stand, dash spent or not; `walked`: dash unspent. They are equal until its
+         // first dash turn, and from then on its dash landings hold `walked`, so a ranged pursuer's dash
+@@ -478,15 +497,17 @@
+             if (k == kind.delay + 1) walked |= kind.start, moved |= kind.start;
+             if (!known) near_moved = grow(moved);
+             if (!split) near_walked = near_moved;
+-            // A spell is cast once, but on whichever turn suits it: its first two ready turns count.
+-            if (kind.burst > 0 && (k == kind.burst_turn || k == kind.burst_turn + 1)) strike(k, moved, near_moved, kind.burst, kind.blind);
++            // A spell is cast once, but on whichever turn suits it: its first two ready turns count. One that
++            // kills us stays ready until cast, so its reach is a death on every turn from then on.
++            if (kind.burst > 0 && (k == kind.burst_turn || k == kind.burst_turn + 1)) strike(k, moved, near_moved, kind.burst, kind.blind, kind.lethal_burst);
++            else if (kind.lethal_burst && k > kind.burst_turn) strike(k, moved, near_moved, kind.burst, kind.blind, true);
+             // A ranged pursuer shoots from where it stood, or after a dash from an undashed tile.
+             if (kind.ranged) {
+                 if (dash && !split) {
+                     const Rows shooters = moved | dash_landings(near_walked, path_them, walk_them);
+-                    strike(k, shooters, grow(shooters), kind.reach, false);
++                    strike(k, shooters, grow(shooters), kind.reach, false, kind.lethal_hit);
+                 } else {
+-                    strike(k, moved, near_moved, kind.reach, false);
++                    strike(k, moved, near_moved, kind.reach, false, kind.lethal_hit);
+                 }
+             }
+             walked = near_walked & walk_them, moved = near_moved & walk_them;
+@@ -497,11 +518,11 @@
+             known = !kind.ranged;
+             if (known) {
+                 near_moved = grow(moved);
+-                strike(k, moved, near_moved, kind.reach, false);
++                strike(k, moved, near_moved, kind.reach, false, kind.lethal_hit);
+             }
+         }
+     }
+-    for (int k = 1; k <= horizon; ++k) hit_[k] &= ~spawn;
++    for (int k = 1; k <= horizon; ++k) hit_[k] &= ~spawn, dead_[k] &= ~spawn;
+ 
+     // The goals.
+     const int near = std::max(0, race.steps - race.moves), slack = near + params::escape::slack_steps;
+@@ -518,12 +539,13 @@
+ // holds it; S_{k-1} is where a turn-k move (a walk, and with the dash kept and ready, a dash before
+ // or after it: approximated as a walk then a dash) reaches T_k, the tiles S_k leaves room for.
+ // s<j><d>: by hits allowed j and dash kept d (with Dash only; else d reads as 0).
++// A turn ending on a `dead` tile is no way at all, not a hit.
+ template <bool Dash>
+ [[gnu::always_inline]] inline void run_pass(const Rows& goal, const Rows& walk, const Rows& path, const std::array<Rows, horizon + 1>& hits,
+-                                            int dash_turn, Plan::Pass& out) {
++                                            const std::array<Rows, horizon + 1>& dead, int dash_turn, Plan::Pass& out) {
+     Rows s00 = goal, s10 = goal, s01 = goal, s11 = goal; // the goal holds walk tiles only
+     for (int k = horizon; k >= 2; --k) {
+-        const Rows hit = hits[k], clear = ~hit;
++        const Rows hit = hits[k] & ~dead[k], clear = ~hits[k];
+         const Rows g0 = grow(s00 & clear), g1 = grow((s10 & clear) | (s00 & hit));
+         if constexpr (Dash) {
+             Rows k0 = s01 & clear, k1 = (s11 & clear) | (s01 & hit);
+@@ -538,7 +560,7 @@
+     }
+     if constexpr (!Dash) s01 = s00, s11 = s10;
+     out.after[0][0] = s00, out.after[1][0] = s10, out.after[0][1] = s01, out.after[1][1] = s11;
+-    const Rows hit = hits[1], clear = ~hit;
++    const Rows hit = hits[1] & ~dead[1], clear = ~hits[1];
+     out.dashed[0] = grow(s00 & clear) & walk;
+     out.dashed[1] = grow((s10 & clear) | (s00 & hit)) & walk;
+     out.kept[0] = grow(s01 & clear) & walk;
+@@ -547,8 +569,8 @@
+ }
+ 
+ void Plan::run(const Rows& goal, Pass& out) const {
+-    if (dash_) run_pass<true>(goal, walk_, path_, hit_, dash_turn_, out);
+-    else run_pass<false>(goal, walk_, path_, hit_, dash_turn_, out);
++    if (dash_) run_pass<true>(goal, walk_, path_, hit_, dead_, dash_turn_, out);
++    else run_pass<false>(goal, walk_, path_, hit_, dead_, dash_turn_, out);
+ }
+ 
+ void Plan::want_slack() {
+@@ -568,6 +590,12 @@
+     return value(ps.after[0][d], ps.after[1][d], p);
+ }
+ 
++bool Plan::deadly() const {
++    for (int k = 2; k <= horizon; ++k)
++        if (!none_set(dead_[k])) return true;
++    return false;
++}
++
+ int Plan::after_dash(vec2 p, bool slack) const { return value(pass(slack).dashed[0], pass(slack).dashed[1], p); }
+ 
+ int Plan::keep_dash(bool slack) const { return value(pass(slack).kept[0], pass(slack).kept[1], at); }
+diff -ru ocean-16d6f78/src/model/escape.h bs-esc/src/model/escape.h
+--- ocean-16d6f78/src/model/escape.h	2026-11-09 22:23:50.000000000 +0000
++++ bs-esc/src/model/escape.h	2026-11-10 01:10:12.775658022 +0000
+@@ -56,6 +56,8 @@
+     // This turn's walk with the dash kept: hits on turns 1..horizon.
+     int keep_dash(bool slack) const;
+     bool dash_now() const { return dash_now_; } // a dash of ours can be cast this turn
++    // Some pursuer's hit alone would kill us on a later turn of the plan.
++    bool deadly() const;
+     // The slack pass, worked out on first ask; until then the slack values read as the full ones.
+     void want_slack();
+     bool slack_ready() const { return pass_[1].ready; }
+@@ -98,6 +100,7 @@
+     vec2 origin_{0, 0}; // the window's tile (0, 0)
+     Rows walk_{}, path_{}, slack_goal_{}; // our walk and landing tiles, the tiles a dash path of ours crosses
+     std::array<Rows, horizon + 1> hit_{}; // [k]: tiles where a turn k ending there is hit
++    std::array<Rows, horizon + 1> dead_{}; // [k]: the hit_ tiles where one pursuer's hit alone would kill us (our own race only)
+     Pass pass_[2];
+ };
+ 
