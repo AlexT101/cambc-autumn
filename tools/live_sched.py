@@ -42,6 +42,8 @@ BASELINE = 86          # every candidate's gate pairs against v86's r2 games: ne
 # Opponent changes use a rolling observation snapshot, separate from the fixed testing pins.
 VERSION_CHECK = False
 CORE_GROUPS = 32       # r2 core = 16 groups x 2 opponents
+NULL_A_REFS = {'fish': 'r2', 'mite': 'r3'}
+NULL_A_MITE_SOURCE = '01a1bf36-e601-756a-8b37-a90ad3d84ae0'
 
 
 def now():
@@ -120,6 +122,26 @@ def refsets():
     """Opponent -> ref set new gates play (refsets.json here; read each time, so a repin needs no restart)."""
     f = H / 'refsets.json'
     return json.loads(f.read_text()) if f.exists() else {'fish': 'r2', 'mite': 'r2'}
+
+
+def gate_refsets(candidate):
+    """Null-a pairs with historical v98; ordinary arms keep the global testing pins."""
+    if candidate.get('kind') == 'queue' and candidate.get('label') == 'v87-null-a':
+        _, _, finished, _, refs = ls.state()
+        for opp, refset in NULL_A_REFS.items():
+            source = refs.get((refset, ls.TEAMS[opp][0]))
+            if source not in finished or (opp == 'mite' and source != NULL_A_MITE_SOURCE):
+                raise ValueError(f'null-a requires the existing completed {opp} {refset} source; no repin or fallback')
+        return dict(NULL_A_REFS)
+    return dict(refsets())
+
+
+def plan_gate(version, rsets):
+    for part, prio in (('core', 99), ('ext', 90)):
+        for opp in ('fish', 'mite'):
+            rc, out = sh([sys.executable, 'tools/ladder_scrims.py', 'plan', '--version', str(version), '--sets', part,
+                          '--opps', opp, '--refset', rsets[opp], '--priority', str(prio)], cwd=R)
+            log(f'plan v{version} {part} {opp} {rsets[opp]}: rc {rc} {out.strip()[-120:]}')
 
 
 def gate(v):
@@ -327,6 +349,7 @@ def submit(st, c, base_live):
         st['prepared'] = None
         save(st)
         return False
+    rsets = gate_refsets(c)  # Validate the historical override before any upload or activation.
     c['note'] = c['note'].strip()  # the platform strips notes
     rc, out = sh(['cambc', 'submit', 'ocean', '-n', c['note']], cwd=c['workspace'], timeout=600)
     log(f'submit rc {rc}: {out.strip()[-200:]}')
@@ -371,12 +394,7 @@ def submit(st, c, base_live):
         time.sleep(60)
     if live != v:
         return hold(f'v{v} uploaded but not live after 10 activations')
-    rsets = refsets()
-    for part, prio in (('core', 99), ('ext', 90)):
-        for opp in ('fish', 'mite'):
-            rc, out = sh([sys.executable, 'tools/ladder_scrims.py', 'plan', '--version', str(v), '--sets', part,
-                          '--opps', opp, '--refset', rsets[opp], '--priority', str(prio)], cwd=R)
-            log(f'plan v{v} {part} {opp} {rsets[opp]}: rc {rc} {out.strip()[-120:]}')
+    plan_gate(v, rsets)
     base_version = BASELINE
     if c['kind'] == 'queue':
         base_version = base_of(st, c['base'])
@@ -387,7 +405,7 @@ def submit(st, c, base_live):
     st['history'].append(dict(version=v, label=c['label'], kind=c['kind'], dir=c['dir'], commit=c.get('commit'),
                               base=c.get('base'), base_version=base_version, note=c['note'], live_at=now(),
                               smoke=c['smoke'], workspace=c['workspace'], note_td=c.get('note_td'), masked=c.get('masked'),
-                              mask_rev=c.get('mask_rev')))
+                              mask_rev=c.get('mask_rev'), testing_refsets=rsets))
     st['prepared'] = None
     save(st)
     return True

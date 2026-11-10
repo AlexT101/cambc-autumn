@@ -118,6 +118,49 @@ class DetectorTests(unittest.TestCase):
         ids = [t['id'] for t in self.fake.tasks]
         self.assertEqual(len(ids), len(set(ids))); self.assertEqual(len(ids), 4)
 
+    def test_historical_arm_core_does_not_reset_rolling_snapshot(self):
+        self.first_change()
+        snapshot = copy.deepcopy(self.st['opp_detector']['snapshots']['mite'])
+        self.fake.refs['r3', 'M'] = 'historical-r3'
+        self.fake.finished['historical-r3'] = {}
+        self.fake.core(2)
+        core = next(t for t in self.fake.tasks if t['id'] == 'v2-mite-01')
+        core['refset'] = 'r3'
+        self.tick(2)  # Global defaults still say r5.
+        run = self.st['opp_detector']['runs']['2-mite']
+        self.assertEqual(run['testing_refset'], 'r3')
+        self.assertEqual(run['testing_source'], 'historical-r3')
+        self.assertEqual(run['snapshot_group'], snapshot['source_group'])
+        self.assertEqual(run['baseline_task'], 'v2-mite-01-observed')
+        self.assertEqual(run['task_specs'][0]['pin'], snapshot['source_group'])
+        self.assertTrue(all(t['purpose'] == 'oppcheck' and t['refset'] is None for t in run['task_specs']))
+        self.fake.complete(run['baseline_task'], 700)
+        self.fake.complete(run['current_task'], 700)
+        self.tick(2)
+        self.assertEqual(self.st['opp_detector']['snapshots']['mite'], snapshot)
+        self.assertEqual(self.rsets['mite'], 'r5')
+        self.assertEqual(core['refset'], 'r3')
+
+    def test_ambiguous_core_refs_hold_and_dropped_cores_are_excluded(self):
+        for dropped in (False, True):
+            with self.subTest(dropped=dropped):
+                self.setUp(); self.fake.core(1)
+                old = next(t for t in self.fake.tasks if t['id'] == 'v1-mite-01')
+                self.fake.tasks.append(dict(old, id='v1-mite-r3-01', refset='r3'))
+                self.fake.refs['r3', 'M'] = 'historical-r3'; self.fake.finished['historical-r3'] = {}
+                if dropped: self.fake.dropped.add(old['id'])
+                self.tick(1)
+                run = self.st['opp_detector']['runs']['1-mite']
+                if dropped:
+                    self.assertEqual(run['status'], 'pending')
+                    self.assertEqual(run['testing_refset'], 'r3')
+                else:
+                    self.assertEqual(run['status'], 'held')
+                    self.assertEqual(run['refsets'], ['r3', 'r5'])
+                    self.assertFalse(any(t['purpose'] == 'oppcheck' and t['opp_id'] == 'M' for t in self.fake.tasks))
+                    self.fake.complete('v1-fish-01'); self.fake.complete('v1-fish-01-cur')
+                    self.assertTrue(self.tick(1))  # Keep the scheduler from switching away from the held comparison.
+
     def test_invalid_context_never_advances(self):
         for mode in ('suspect', 'engine', 'source', 'version', 'side', 'metric', 'duplicate', 'duplicate-match', 'seed', 'missing-seed', 'failed'):
             with self.subTest(mode=mode):

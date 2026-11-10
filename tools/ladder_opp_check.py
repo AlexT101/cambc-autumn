@@ -179,12 +179,23 @@ class OpponentDetector:
                 continue
             oid = self.ls.TEAMS[opp][0]
             bases = sorted((t for t in evidence.tasks.values() if t['version'] == live and t.get('purpose') == 'set'
-                            and t.get('part') == 'core' and t.get('pin') == 'ref' and t.get('refset') == rsets[opp]
-                            and t['opp_id'] == oid), key=lambda t: (t.get('order', 0), t['id']))
-            test_source = evidence.refs.get((rsets[opp], oid))
-            if not bases or not test_source or test_source not in evidence.finished:
+                            and t.get('part') == 'core' and t.get('pin') == 'ref' and t.get('refset')
+                            and t['opp_id'] == oid and t['id'] not in evidence.dropped), key=lambda t: (t.get('order', 0), t['id']))
+            if not bases:
                 continue
-            base = bases[0]; snapshot = d['snapshots'].get(opp); source = snapshot['source_group'] if snapshot else test_source
+            planned_refs = sorted({t['refset'] for t in bases})
+            if len(planned_refs) != 1:
+                d['runs'][key] = {'status': 'held', 'opponent': opp, 'version': live,
+                                 'reason': 'ambiguous active core reference sets', 'refsets': planned_refs}
+                self.save(st)
+                self.log(f'opp-check held {key}: ambiguous active core reference sets {planned_refs}; review required')
+                continue
+            # An arm may deliberately use a historical pin; global defaults are not its comparison context.
+            base = bases[0]
+            test_source = evidence.refs.get((base['refset'], oid))
+            if not test_source or test_source not in evidence.finished:
+                continue
+            snapshot = d['snapshots'].get(opp); source = snapshot['source_group'] if snapshot else test_source
             specs = []
             if source == test_source:
                 baseline_task = base['id']
@@ -196,7 +207,7 @@ class OpponentDetector:
             specs.append(dict(base, id=current_task, purpose='oppcheck', pin='none', refset=None, is_ref=False,
                               priority=98, planned=self.now(), note='Current opponent versus rolling detector snapshot'))
             d['runs'][key] = {'status': 'pending', 'opponent': opp, 'version': live, 'snapshot_group': source,
-                             'testing_source': test_source, 'baseline_task': baseline_task,
+                             'testing_source': test_source, 'testing_refset': base['refset'], 'baseline_task': baseline_task,
                              'current_task': current_task, 'task_specs': specs, 'planned_at': self.now()}
             self.save(st)  # Persist intended pair before appending either task; the next tick repairs partial planning.
         for key, run in d['runs'].items():
@@ -225,4 +236,4 @@ class OpponentDetector:
                 self.wake(event['record'])  # Stable event_id lets the append-only wake journal deduplicate recovery.
                 event['delivered'] = True
                 self.save(st)
-        return any(r['status'] == 'pending' and r['version'] == live for r in st['opp_detector']['runs'].values())
+        return any(r['status'] in ('pending', 'held') and r['version'] == live for r in st['opp_detector']['runs'].values())

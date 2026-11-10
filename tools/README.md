@@ -295,9 +295,11 @@ py tools/version_record.py 50                        # our version 50's record p
 - **live_sched.py** is the unattended live-gate scheduler (one at a time: `setsid nohup py tools/live_sched.py >> ~/tmp-offload/handoff/sched/sched.out 2>&1 < /dev/null &`).
   While the live version's gate plays, it builds and smoke-tests the next candidate (the newest `oc-baseNN` ocean
   commit, else the top `~/tmp-offload/live-queue.txt` line) with `livemask/stream_patch.py`; once the gate's groups
-  finish it submits, activates and plans the candidate's core and ext sets. Each live version also gets one unpinned
-  copy of each opponent's first pinned core group: a difference from the pinned games means that opponent's bot
-  changed (logged as `opp-check`, wakes the coordinator; it never repins). It pauses when a version we did not submit
+  finish it submits, activates and plans the candidate's core and ext sets. The `v87-null-a` queue arm alone uses
+  historical Fish r2/Mite r3 to pair with v98; the existing r3 source is validated before upload, with no fallback
+  or repin. Other arms use the global defaults. Null-a measures the combined burn plus current-mask reroll,
+  not isolated burn with an identical mask. Each live version also compares current opponents with separate
+  rolling observation snapshots (see `ladder_opp_check.py` below), logging changes without repinning. It pauses when a version we did not submit
   is live or selected, and restarts a dead runner with `live_restart_runner.sh`. Its state dir (`LIVE_SCHED_DIR`,
   default `~/tmp-offload/handoff/sched`) holds `state.json`, `sched.log`, `gates.jsonl`, `refsets.json` (the ref set
   per opponent new gates use; read each loop), `build/`, and the `STOP` / `PAUSE` / `HOLD` files.
@@ -650,8 +652,9 @@ drafts and emblems: [report](../research/fish-2026-11-05/DRAFTS-EMBLEMS.md).
 `ladder_opp_check.py`, called by `live_sched.py`, keeps a detector-only source-group
 snapshot for each opponent in scheduler state. Once per own live version, it compares
 five identical map/side cells against the current opponent and the last observed
-snapshot, using that same own version. If the snapshot still equals the fixed testing
-pin, its existing core group is reused; otherwise one additional explicit-source
+snapshot, using that same own version. The testing context comes from that arm's actual
+first core task, including historical overrides, rather than the global defaults.
+If the snapshot still equals that testing pin, its existing core group is reused; otherwise one additional explicit-source
 `oppcheck` group supplies the baseline. A complete valid difference advances only the
 detector snapshot and logs/notifies the coordinator. Unchanged observations retain it.
 Neither `refsets.json` nor any repin queue is modified. Detector groups are excluded
