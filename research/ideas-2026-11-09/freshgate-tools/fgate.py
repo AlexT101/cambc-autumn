@@ -143,7 +143,7 @@ def main():
     ap.add_argument('--ahead', type=int, default=2); ap.add_argument('--seed', type=int, default=0)
     ap.add_argument('--fuel', type=int, help='matched fuel per turn for both teams; separate run/cache namespace')
     ap.add_argument('--no-run', action='store_true'); ap.add_argument('--zone-stop', action='store_true')
-    ap.add_argument('--ci', type=float, default=0.25, help='NARROWED once the fresh 95%% CI half-width is this many points')
+    ap.add_argument('--ci', type=float, default=0.25, help='NARROWED once the fresh 95%% CI half-width is this many points; 0 disables this stop')
     ap.add_argument('--fish-body', default='Flp4', choices=['Flp'] + FISH_PATCHES, help='Fish body version (Flp4 from 2026-11-10 ~01:00, Flp3 from ~00:30, Flp2 from 2026-11-09 23:40, Flp before)')
     ap.add_argument('--mite-body', default='Mt3q', choices=['Mt3p'] + MITE_PATCHES, help='Mite body version (Mt3q from 2026-11-10 ~00:30, Mt3p before)')
     ap.add_argument('--min-blocks', type=int, default=8, help='blocks before NARROWED can stop (every fresh slice played once)')
@@ -179,7 +179,7 @@ def main():
         if zone_at is None and low_at is not None and high_h0_at is not None:
             zone_at = len(sc); print(f'ZONE at block {k}', flush=True)
             if a.zone_stop: outcome = 'ZONE'; break
-        if screen_at is None and k >= a.min_blocks and 196 * se <= a.ci:
+        if a.ci > 0 and screen_at is None and k >= a.min_blocks and 196 * se <= a.ci:
             outcome = 'NARROWED' + (' (ZONE crossed)' if zone_at else ''); break
         if screen_at is None and high_h0_at is None and hl >= screen_hi:
             screen_at = len(sc); print(f'ACCEPT (screen H1) at block {k}', flush=True)

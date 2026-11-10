@@ -1,0 +1,39 @@
+--- a/src/bot.cc
++++ b/src/bot.cc
+@@ -126,6 +126,27 @@
+     return false;
+ }
+ 
++// A cleared camp near our feet can retain information after we leave; avoid a map-wide scan.
++bool ward_camp(const World& world, Memory& memory) {
++    const auto& map = world.map();
++    const vec2 here = my_position();
++    if (!in_bounds(here) || !fuel_ok(end_reserve / 2 + 2000)) return false;
++    if (in_bounds(memory.ward) && dist(here, memory.ward) < 8) return false;
++    static bitboard tiles{cambc::uninitialized}, allied{cambc::uninitialized};
++    tiles.clear();
++    tiles.draw_chebyshev(here, cambc::constants::ward_placement_radius);
++    tiles &= map.camp_tiles;
++    drop(tiles, map.blocked_for_us);
++    cambc::vision::ward_tiles_into(team::ally, allied);
++    drop(tiles, allied);
++    for (auto p : Tiles<25>{tiles}) {
++        if (!fuel_ok(end_reserve / 2 + 2000)) break;
++        const int group = map.group_at(p);
++        if (group >= 0 && world.camps[group].state != CampState::alive && try_ward(p, memory)) return true;
++    }
++    return false;
++}
++
+ // The draft's ward tile for our work (claimed group, else waited-at altar): placed once in range,
+ // then kept while that work lasts. Null without one.
+ std::optional<bool> ward_planned(const World& world, Memory& memory) {
+@@ -261,7 +282,7 @@
+     // A stun refuses every ward, and the thrown error costs ~3.9k fuel.
+     if (stunned_turn || !world.me().alive || channelling() || cambc::self().ward_cooldown() > 0) return false;
+     const auto planned = ward_planned(world, memory);
+-    const bool placed = planned ? *planned : bushes && ward_bushes(world, memory);
++    const bool placed = planned ? *planned : bushes && (ward_bushes(world, memory) || ward_camp(world, memory));
+     if (placed) warded_round = world.round;
+     return placed;
+ }

@@ -682,3 +682,6 @@ Cancelled component-study launchers: `reserve-tools/run_gate.py`, `skirmish-tool
 
 
 - `research/ideas-2026-11-10/ward-fish503/run_screen.py`: sealed, fixed512-map Fish-only ward screen on frozen503 at200k (2048games); `--check` verifies seals, `--report` validates completed paired results. No automatic extension/100k. Protocol and tests in the adjacent README/test_screen.py.
+
+
+- `research/ideas-2026-11-10/ward504/run_gate.py`: sealed504 full200k camp/campall gates using standard fgate, exact block validation, disabled width stop and three-way decisions; `--check` verifies protocol/source/map/tool seals. Adjacent test_stops.py exercises the actual fgate width condition.
