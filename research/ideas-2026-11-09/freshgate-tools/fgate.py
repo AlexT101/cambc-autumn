@@ -163,7 +163,7 @@ def main():
                         for bot in (a.ref, a.cand): run.want(bot, j, o, s, suite, games)
         if not all(done(rname(bot, k, o, s), g) for o in 'FM' for s, _, g in suites(k) for bot in (a.cand, a.ref)):
             if a.no_run: break
-            time.sleep(20); continue
+            time.sleep(1); continue
         for key, g in block_units(a.cand, a.ref, k, random.Random(a.seed * 1000 + k)).items():
             for gg, u in g.items(): U[key].setdefault(gg, []).extend(u)
         sc = U['fresh']['all']; hl, ll = ab.llr(sc, p0, p1), ab.llr(sc, q0, q1)
