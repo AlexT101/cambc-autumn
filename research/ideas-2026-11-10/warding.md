@@ -32,6 +32,12 @@ A second pass over the same 120 cohort views separates current-turn reveal from 
 
 Thus Ad Astra's higher frequency of placements near visible enemies does not establish an aggressive early-reveal policy. In these games, its observed attack use is entirely later-turn information. Ocean's current early reveal mechanism has measurable immediate use and remains enabled in all experimental arms. Spells and non-attack information value remain unmeasured; this timing comparison inherits the cohort confounds above.
 
+## Current Ad Astra cross-check
+
+A separate 40-game sample from eight completed ranked groups on **November 10, 09:27–10:40 UTC** confirms the placement/timing pattern: **4,017/4,017 wards are in bushes** (18 also overlap a camp tile), 3,546 follow movement, none are followed by movement or a cast, and only one is followed by a basic attack in the same actor-turn. All 334 confirmed ward-only basic attacks use an older ward; zero immediate ward-only attacks are observed. The ward rate is 2.69 per 100 alive champion-rounds. Combined with the dated archive sample, all 8,047 observed Ad Astra placements are bush placements, but neither the groups nor placements should be treated as independent strength trials.
+
+This is a separate current-policy cross-check, not a matched extension of the earlier cohort comparison: it faces eight different opponents, five games each. Public group metadata withholds submission versions, so the result confirms observed behavior, not an unchanged build identity. Existing local folders had metadata but no replay bodies; forty existing ranked replays were downloaded through the supported replay/CLI path, with no new scrim groups or submission changes. All forty decoded games pass hard validation. Exact group selection, match IDs and analysis are in artifact `current-group-selection.json`, `current-adastra-jobs.json`, `current-adastra-timing.json` and `current-adastra.log`; the reproducible analysis is `warding-tools/current_adastra.py`.
+
 ## Potential camp information
 
 `warding-tools/camp_information.py` counts clear/capture/respawn transitions for which the owner's ward sees a group member while the owner's personal sight sees none. These are **potential first-hand observations**, not proof that the bot read or acted on them, and not necessarily new team knowledge: a teammate could already know and communicate the state. Each owner/transition pair counts separately. The ward remains active while its owner is dead, which is reported separately.
