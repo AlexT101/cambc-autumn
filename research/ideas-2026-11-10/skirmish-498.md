@@ -1,6 +1,6 @@
 # Skirmish fifth-emblem policy on full Ocean498
 
-The teammate's policy has a small positive but unconfirmed lead. It can be tested on full498 without carrying any other old behavior: the original reference's emblem table is byte-identical to full498's. Nothing is merged or promoted.
+The teammate's policy has a small positive but unconfirmed lead. It can be tested on full498 without carrying any other old behavior: the original reference's emblem table is byte-identical to full498's. This lane did not merge or promote the port. The same policy was subsequently incorporated by separately user-authorized teammate work as CHANGES499; the frozen498 transfer test remains unchanged and now serves as a component check. CHANGES500 additionally carries wakecold, so this498 test does not claim to measure that combined source.
 
 The original `oc-emb4-f4-skirmish` versus `ocean-b0eeff1` changes only `economy/emblem_table.h`: place Skirmish in the champion's usual stat at ordinal4 (the fifth new emblem), for the37 rows without Skirmish by then. Two other rows already have it. Later duplicate passive-family choices fall back to existing logic. There is no new fitting or ordinal selection in this follow-up.
 
