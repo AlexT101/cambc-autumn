@@ -15403,3 +15403,40 @@ Patches and analysers are in [fuelcap-2026-11-09](fuelcap-2026-11-09/) (`oc16-q1
 - **Fuel itself is valuable,** about +0.45 points per 1k a turn. The gain comes from gated work that grows with fuel, not from fewer OOF turns: farm-partial-evaluation fires 69k times in 428 games.
 - **So the lever is cheaper code with the same decisions:** the strike search's pricing, the farm loop and the stand sims. Scope cut on short turns is not.
 - q1 is harmless and kept as a stacking candidate. ss1 is not merged.
+
+## Opponent intent from priorities (opp-intent, ocean-16d6f78, 2026-11-10): one signal with lift, no arm merged
+
+What Fish's and Mite's priorities predict about their next turn, beyond state.
+- Data: real games from 11-09 12:00 for Mite (1,714 decoded) and from 11-08 16:00 for Fish (988).
+- Lift: a gradient-boosted model on state alone (health, gems, cooldowns, stats, distances, counts), against the same with the priority classes, split by game.
+- Data and tools are in `~/tmp-offload/oppintent/` (`ext*.py`, `lift*.py`, `mechck.py`).
+- Decode caveat: in `rounds.json` the priority at index i is the one written in round R[i] (it applies in R[i]+1). The `turn` field is **not** the turn slot: use event `t`, or rebuild the order from prio[i-1].
+
+| signal | predicts | lift over state |
+|---|---|---|
+| Mite 21262 − 104k (new kill commit; k = co-committer order; 3085-3100 is a weak, different state) | our nearest champion dies next round 48%; the flagger kills 40-52%; the flagger dies within 3 rounds 0.8% | our death next round: AP 0.64 → 0.72, log-loss −13%; risk ×2-10 in every state-risk bucket; precedes 63% of our deaths near Mite |
+| Mite's own priority → its next action | hit, step away, tribute | hit log-loss −5%, away −1.6%, tribute −3.7%, its death 0 |
+| Fish's level (contact ±j, late, early, band) | — | our death next round AP 0.68 → 0.72 (−7%); Fish hit −3.5%, away −0.6%, death and tribute ~0 |
+
+- **Fish:** its levels are functions of what it sees (FISH_MODEL 5.3). They carry no group-fight or tribute intent beyond state.
+- **Mite's kill flag lands too late:**
+  - 25% of flags follow a stun on the victim, which dies 79%.
+  - Of the rest, the victim reads the flag in time (it acts after the flagger's write) in 4.2k flags (~2.5 a game) and dies 32%.
+  - Stepping out of reach works: from 4 to 5 tiles, 3% die against 53% for victims that stay; from 3 to 4, 18% against 55%.
+  - An ally's stun on the flagger in the window stops the kill (0% against 41%), but that window is only ~0.3 a game.
+- **Arm `variants/oi-mk1`** (ocean-opp + `model/mite_flag.h`):
+  - Rule: with Mite at a posterior of 0.8 or more, `plan_strikes` prices a flagged committer's blow at hit chance 1 (not 0.234) for its likely victim, the lowest-health champion of ours within 5.
+  - Body: diverse's Mt3k (Mt3q with its kill band written as 21262). Its flag means the same as real Mite's (the flagger kills 52% next round; real 40-52%).
+  - **Mechanism check** (debug, 256 ladder games each, against spar-dvn1-Mt3k):
+    - The rule fires 0.46 times a game, but the victims don't move differently.
+    - Victims that read the flag die 29.2% of 243, against the base's 27.9% of 233, with the same end-distance spread.
+    - Win rates are 75.0% against 70.3% for the base (noise at 256 games).
+  - Their moves aren't decided in `plan_strikes`'s priced tiles, or they can't get away. A working response would need the escape planner or fight branch to take the flag.
+
+Results against ocean-16d6f78:
+
+| gate | win% (CI) of n | SPRT |
+|---|---|---|
+| fgate --mite-body Mt3k, oi-mk1 (stopped at block 5) | fresh +0.31 ±1.66 pts of 640 units (ladder +1.29, Mite −0.23) | undecided (LLR high −0.11); stopped because the mechanism had no effect |
+
+Verdict: not merged. The flag predicts our deaths well, but the window is small and this response doesn't move them.
