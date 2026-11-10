@@ -1,0 +1,254 @@
+diff -ru bots/variants/oc-wdash-494/src/bot.cc bots/variants/wp-dev/src/bot.cc
+--- bots/variants/oc-wdash-494/src/bot.cc	2026-11-09 22:24:31.469410404 +0000
++++ bots/variants/wp-dev/src/bot.cc	2026-11-10 02:17:36.005525076 +0000
+@@ -97,17 +97,56 @@
+                       : memory.wait_altar >= 0 ? map.altars[memory.wait_altar].pos
+                                                : vec2{-1, -1};
+     // An ability reaches farther than any basic attack.
+-    const auto score = [&](const bitboard& tiles) __attribute__((always_inline)) {
++    const auto count = [&](const bitboard& tiles) __attribute__((always_inline)) {
+         const int n = static_cast<int>(count_within(tiles, here, ability_range));
+         return in_bounds(work) ? n + static_cast<int>(count_within(tiles, work, ability_range)) : n;
+     };
++    static bitboard pref{cambc::uninitialized}, ally_zone{cambc::uninitialized}, part{cambc::uninitialized};
++    if constexpr (params::wardpref::pref_weight > 0) {
++        static bool built = false;
++        if (!built) {
++            built = true;
++            pref.clear();
++            const int n = std::max(1, static_cast<int>(world.allies.size())), mine = world.me().index % n, B = params::wardpref::pref_block;
++            for (int by = 0; by * B < map.height; ++by)
++                for (int bx = 0; bx * B < map.width; ++bx)
++                    if ((bx + 2 * by) % n == mine) pref.draw_chebyshev({bx * B + B / 2, by * B + B / 2}, static_cast<float>(B / 2));
++        }
++    }
++    bool zone = false;
++    if constexpr (params::wardpref::dedup > 0) {
++        ally_zone.clear();
++        for (const auto& a : world.allies)
++            if (comms::ally_ward_code(world, a) == 2) ally_zone.draw_chebyshev(a.pos, 3.0f), zone = true;
++    }
++    const auto score = [&](const bitboard& tiles) __attribute__((always_inline)) {
++        float s = static_cast<float>(count(tiles));
++        if constexpr (params::wardpref::pref_weight > 0) {
++            part.clear();
++            part |= tiles;
++            part &= pref;
++            s += params::wardpref::pref_weight * static_cast<float>(count(part));
++        }
++        return s;
++    };
+     inner.clear();
+     inner.draw_chebyshev(here, 1.0f);
+     bool found = false;
+-    int best_score = warded ? score(warded->tiles) : 0;
++    float best_score = warded ? score(warded->tiles) : 0;
+     while (!candidates.is_empty()) {
+         const auto& c = map.bush_cluster(first_tile(candidates));
+-        if (const int s = score(c.tiles); s > best_score) {
++        float s = score(c.tiles);
++        if constexpr (params::wardpref::dedup > 0)
++            if (zone) {
++                part.clear();
++                part |= c.tiles;
++                part &= ally_zone;
++                if (!part.is_empty()) {
++                    s *= 1.0f - params::wardpref::dedup;
++                    debug_block({ std::printf("WDD %d\n", world.round); });
++                }
++            }
++        if (s > best_score) {
+             best.clear();
+             best |= c.tiles;
+             best &= candidates; // the cluster's tiles we may ward
+@@ -122,7 +161,10 @@
+     if (!found) return false;
+     // A teammate's ward unseen in the bush blocks its tile, and allies pick the same tile first.
+     for (auto p : Tiles<3>{best})
+-        if (try_ward(p, memory)) return true;
++        if (try_ward(p, memory)) {
++            debug_block({ std::printf("WB %d %d %d %.1f\n", world.round, p.x, p.y, best_score); });
++            return true;
++        }
+     return false;
+ }
+ 
+@@ -669,6 +711,12 @@
+     comms::claim(memory.claim);
+     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);
+     comms::chasing(world.round, world.me().alive && decision == Branch::chase);
++    if constexpr (params::wardpref::prio_ward)
++        if (world.me().alive) {
++            const vec2 me = my_position();
++            const bool near = in_bounds(memory.ward) && me.x >= 0 && dist(memory.ward, me) <= 3;
++            comms::ward_announce(world.round, near ? (test(world.map().bushes, memory.ward) ? 2 : 3) : 0);
++        }
+     if (!world.is_stale()) publish_turn_order(world, comms::priority_payload(world));
+     memory.live_claim = live_claim;
+     memory.round = world.round;
+diff -ru bots/variants/oc-wdash-494/src/model/comms.cc bots/variants/wp-dev/src/model/comms.cc
+--- bots/variants/oc-wdash-494/src/model/comms.cc	2026-11-09 16:17:48.308547015 +0000
++++ bots/variants/wp-dev/src/model/comms.cc	2026-11-10 02:21:08.320054958 +0000
+@@ -50,6 +50,10 @@
+     BitField ally;
+     std::uint64_t ally_bits = 0;
+     int cell = 1, cells_y = 1;
++    bool ws_on = false; // the ward sighting record (params::wardpref::share): 1 + cell * 4 enemies + 4 enemy + round mod 4
++    BitField ws;
++    std::uint64_t ws_bits = 0;
++    int ws_cell = 1, ws_cells_y = 1;
+     int period(int g) const { return camp_offset[g + 1] - camp_offset[g]; }
+ };
+ 
+@@ -80,7 +84,9 @@
+     const int camp_width = static_cast<int>(std::bit_width(static_cast<std::uint64_t>(L.camp_offset.back())));
+     L.camp_on = shift + camp_width <= 64;
+     if (L.camp_on) L.camp = field(camp_width);
+-    if (params::comms_ally && L.camp_on)
++    // The ally record posts only while a healer lives: without one drafted, the ward sighting takes its bits.
++    const bool healer = std::any_of(world.allies.begin(), world.allies.end(), [](const ChampionBelief& a) { return a.facts().heals(); });
++    if (params::comms_ally && L.camp_on && (healer || !params::wardpref::share))
+         for (const int c : {1, 3, 5}) {
+             const auto cells = static_cast<std::uint64_t>((map.width + c - 1) / c) * static_cast<std::uint64_t>((map.height + c - 1) / c);
+             const int width = width_of(cells * 4 * static_cast<std::uint64_t>(L.team) + 1);
+@@ -90,6 +96,17 @@
+             L.ally_on = true;
+             break;
+         }
++    if (params::wardpref::share && L.camp_on)
++        for (const int c : {1, 3, 5, 7}) {
++            const auto cells = static_cast<std::uint64_t>((map.width + c - 1) / c) * static_cast<std::uint64_t>((map.height + c - 1) / c);
++            const int width = width_of(cells * 4 * static_cast<std::uint64_t>(std::max<std::size_t>(1, world.enemies.size())) + 1);
++            if (shift + width > 64) continue;
++            L.ws_cell = c, L.ws_cells_y = (map.height + c - 1) / c;
++            L.ws = field(width);
++            L.ws_on = true;
++            break;
++        }
++    L.ws_bits = L.ws.mask;
+     L.ally_bits = L.ally.mask;
+     L.bag_bits = L.bag.mask;
+     L.camp_bits = L.camp.mask;
+@@ -128,6 +145,9 @@
+ // Above the claim (0-7) and support mailbox (8-10): the chase bit, then its posting round mod 4.
+ constexpr int chase_shift = 11;
+ static_assert(support_mailbox::payload_shift + 3 <= chase_shift && chase_shift + 3 <= priority_payload_bits);
++constexpr int ward_shift = chase_shift + 3;
++static_assert(ward_shift + 2 <= priority_payload_bits);
++int ward_round = -1, ward_code_value = 0;
+ 
+ static_assert(support_mailbox::protected_mate == 0 && support_mailbox::healer == 1); // support_pair's order
+ 
+@@ -163,7 +183,7 @@
+ std::uint64_t changes(const Layout& L, std::uint64_t bits) {
+     const auto x = bits ^ state.last;
+     const auto whole = [x](std::uint64_t mask) { return (x & mask) ? mask : 0; };
+-    return whole(L.bag_bits) | whole(L.camp_bits) | whole(L.ally_bits);
++    return whole(L.bag_bits) | whole(L.camp_bits) | whole(L.ally_bits) | whole(L.ws_bits);
+ }
+ 
+ // A nonzero capture record's group, and the respawn round it encodes: the first from our previous
+@@ -200,6 +220,15 @@
+                                                             std::min(cell % L.cells_y * L.cell + h, world.map().height - 1)},
+                                                            round - ((round - kind) & 3)};
+     }
++    if (const auto v = L.ws.get(bits); L.ws_on && (state.fresh & L.ws_bits) && v != 0) {
++        const auto code = v - 1, kinds = 4 * static_cast<std::uint64_t>(world.enemies.size());
++        const int kind = static_cast<int>(code % kinds), cell = static_cast<int>(code / kinds), h = L.ws_cell / 2;
++        const int e = kind >> 2;
++        const vec2 at{std::min(cell / L.ws_cells_y * L.ws_cell + h, world.map().width - 1), std::min(cell % L.ws_cells_y * L.ws_cell + h, world.map().height - 1)};
++        const auto& b = world.enemies[static_cast<std::size_t>(e)];
++        debug_block({ std::printf("WSR %d %d %d %d %d %d\n", round, e, b.visible ? 1 : 0, b.pos_round, at.x, at.y); });
++        world.note_sighting(e, at, round - ((round - kind) & 3), b.max_health > 0 ? b.health / b.max_health : 1.0f);
++    }
+     if (const auto record = L.camp.get(bits); (state.fresh & L.camp_bits) && record != 0) {
+         const auto [g, respawn] = decode_capture(L, record);
+         world.note_capture(g, respawn);
+@@ -269,6 +298,30 @@
+         }
+     }
+ 
++    // One record for the team: a teammate's posted this round stands.
++    if (L.ws_on && world.me().alive && !((state.fresh & L.ws_bits) && L.ws.get(bits) != 0 && static_cast<int>((L.ws.get(bits) - 1) & 3) == (round & 3))) {
++        const vec2 me = my_position();
++        const auto& bushes = world.map().bushes;
++        const bool me_bush = test(bushes, me);
++        int best = params::wardpref::share_reach + 1, pick = -1;
++        for (const auto& e : world.enemies) {
++            if (!e.alive || !e.visible) continue;
++            if (dist(me, e.pos) <= 8 && !(test(bushes, e.pos) && !me_bush)) continue; // maybe in our own sight
++            for (const auto& a : world.allies) {
++                if (a.is_self || !a.alive || !in_bounds(a.pos) || a.pos_round < round - 10) continue;
++                if (a.visible && dist(a.pos, e.pos) <= 4) continue; // likely sees it
++                if (const int d = dist(a.pos, e.pos); d < best) best = d, pick = e.index;
++            }
++        }
++        if (pick >= 0) {
++            const vec2 p = world.enemies[static_cast<std::size_t>(pick)].pos;
++            const auto v = 1 + static_cast<std::uint64_t>(p.x / L.ws_cell * L.ws_cells_y + p.y / L.ws_cell) * 4 * static_cast<std::uint64_t>(world.enemies.size())
++                           + static_cast<std::uint64_t>(4 * pick + (round & 3));
++            if (v != L.ws.get(bits)) L.ws.set(bits, v), dirty = true;
++            debug_block({ std::printf("WSP %d %d %d\n", round, pick, best); });
++        }
++    }
++
+     // Bags change at captures, kills, deaths and tributes. A bag not yet read at our previous turn
+     // may not have reached every teammate: ours waits. Turn order changes every round, so a
+     // teammate can miss a bag overwritten before its next turn: each in turn re-posts its own.
+@@ -316,8 +369,17 @@
+     return ((world.round - static_cast<int>(p >> (chase_shift + 1) & 3)) & 3) <= 1;
+ }
+ 
++void ward_announce(int round, int code) { ward_round = round, ward_code_value = code & 3; }
++
++int ally_ward_code(const World& world, const ChampionBelief& a) {
++    if (a.is_self || !a.alive) return 0;
++    const auto p = payload_of(world, a);
++    return p < 0 ? 0 : static_cast<int>(p >> ward_shift & 3);
++}
++
+ std::uint32_t priority_payload(const World& world) {
+     auto payload = static_cast<std::uint32_t>(detail::posts.mine + 1);
++    if (params::wardpref::prio_ward && ward_round == world.round) payload |= static_cast<std::uint32_t>(ward_code_value) << ward_shift;
+     const auto pair = support_pair(world);
+     if (pair[0] && pair[1] && (pair[0]->is_self || pair[1]->is_self))
+         payload |= support_mailbox::encode(world.round, support_mailbox::publish_value(world.round, support_intent_round, support_intent_value,
+diff -ru bots/variants/oc-wdash-494/src/model/comms.h bots/variants/wp-dev/src/model/comms.h
+--- bots/variants/oc-wdash-494/src/model/comms.h	2026-11-09 16:17:48.308611206 +0000
++++ bots/variants/wp-dev/src/model/comms.h	2026-11-10 02:09:19.069289740 +0000
+@@ -45,6 +45,10 @@
+ // this round or last.
+ void chasing(int round, bool chasing);
+ bool ally_chasing(const World& world, const ChampionBelief& a);
++// Our ward announce (params::wardpref::prio_ward) for this round's payload, and an ally in sight's as read
++// this turn (0 if none or unread).
++void ward_announce(int round, int code);
++int ally_ward_code(const World& world, const ChampionBelief& a);
+ // Our priority payload: the claim, support intents and chase bit posted this turn.
+ std::uint32_t priority_payload(const World& world);
+ // The group an ally (by index) claims, -1 for none or while it is dead.
+diff -ru bots/variants/oc-wdash-494/src/params.h bots/variants/wp-dev/src/params.h
+--- bots/variants/oc-wdash-494/src/params.h	2026-11-09 22:24:31.475410479 +0000
++++ bots/variants/wp-dev/src/params.h	2026-11-10 02:15:28.829318599 +0000
+@@ -302,4 +302,21 @@
+ inline constexpr int steps = 6;
+ } // namespace open_plan
+ 
++// Ward spread (research/wardpref-2026-11-10): all off = oc-wdash-494.
++namespace wardpref {
++// Bush tiles in our lattice colour ((x / block + 2 (y / block)) mod bodies == our index mod bodies) count
++// 1 + pref_weight in ward_bushes' score: neighbouring blocks differ in colour, so nearby allies lean to different bushes.
++inline constexpr float pref_weight = 0.0f;
++inline constexpr int pref_block = 3;
++// Priority payload bits 14-15: 2 = our ward is in a bush within 3 of us, 3 = off bushes within 3, 0 otherwise.
++inline constexpr bool prio_ward = false;
++// A new cluster with a tile within 3 of an ally in sight announcing a bush ward near it scores x (1 - dedup).
++inline constexpr float dedup = 0.0f;
++// Free shared bits (after the ally record), where they fit: a visible enemy we see only through our ward
++// (beyond our sight radius, or on a bush while we stand off bushes), nearest a teammate within share_reach,
++// fixes the teammates' belief (World::note_sighting).
++inline constexpr bool share = false;
++inline constexpr int share_reach = 12;
++} // namespace wardpref
++
+ } // namespace aph::params

@@ -15531,3 +15531,43 @@ Patch: [sm-greed.patch](ideas-2026-11-09/shopmite-tools/sm-greed.patch).
 | pp8 | −0.38 (±1.16) of 2,048 | −0.05 | −0.21 (±0.80) | stopped at 16 blocks: level |
 
 Verdict: no arm. Every deny threshold reads below the base; the guard turns back-and-forth into standing still at the same edge, which is worth nothing. What would pay is a better goal once the edge holds (another altar or group), not a stop or a pause.
+## (ocean = oc-wdash-494, 2026-11-10) Ward spread: a bush preference per champion, ward announces in priority, ward sightings shared; all level
+
+The user's idea: give each champion preferred bushes to ward and announce wards, so the team's wards spread and, through
+shared enemy sightings, see more enemies in aggregate. Arms `variants/wp-*` (dev copy `wp-dev`, knobs
+`params::wardpref`, all off: bench wide 52/52 identical at 100M). Script and wp-dev's diff: `research/wardpref-2026-11-10/`.
+
+- **The premise is wrong:** ocean posts no enemy sightings in either channel. The shared bytes carry claims, bag, camp
+  respawns and, while a healer lives, ally positions (CHANGES 465). `World::note_sighting` has no caller. Vision is
+  personal, so without sharing a spread ward changes only its owner's own vision. Sharing sightings had already lost
+  three times (CHANGES 236, macro-4/river, cm-sight1-3 in "Position comms").
+- **Measured** (512 games of oc-wdash-494 against Flp4/Mt3q on fresh f0, replay vision, rough line of sight):
+  - the team sees 31% of enemy-rounds, 2.0 of ours per seen enemy, and 28.5% of what it sees only through wards;
+  - 15.9% of pairs of our wards share a bush cluster;
+  - an enemy unseen in a bush within 8 of one of ours is ~1.1% of enemy-rounds, 88% of those in clusters we have not
+    warded;
+  - a ward sighting that an ally within 8 lacks: ~154 enemy-rounds a game.
+- **Arms:**
+  - `wp-pref1`: bush tiles of our colour on a 3x3-block lattice, (bx + 2 by) mod bodies, count double in
+    `ward_bushes`. It needs no table: no DraftPlan bits.
+  - `wp-pw9`: priority payload bits 14-15, the only free ones, announce "my ward is in a bush within 3 of me"; a new
+    cluster near a visible announcing ally scores x0.1.
+  - `wp-sh`: the visible enemy we see only through our ward, nearest a teammate within 12, goes in a new shared record
+    (the ally record's bits when no healer is drafted) and fixes readers' beliefs. It fits in 49% of games.
+  - `wp-pref05` and `wp-pw5` were stopped after the trace: the stronger settings already moved nothing.
+- **Trace** (256 debug games each): the dedup discount fired ~58 times a game. Pairs sharing a cluster stayed 15.9-16.0%
+  for every arm, and pairs within 3 stayed 15.2-15.5%. The ward choice is mostly forced: few clusters lie within
+  placement range, and planned wards come first.
+
+Results against oc-wdash-494 (fgate, Flp4/Mt3q, 16 blocks, 16,384 games each, 8,192 of them fresh; win %):
+
+| arm | fresh | pooled | ladder | outcome |
+|---|---|---|---|---|
+| wp-pref1 | 50.0 (49.2-50.8) | 49.7 (49.1-50.4) | 49.5 | undecided (LLR high -0.84, low +0.19) |
+| wp-pw9 | 49.9 (49.2-50.7) | 49.9 (49.4-50.5) | 50.0 | undecided (LLR high -1.18, low +0.07) |
+| wp-sh | 49.5 (48.7-50.3) | 49.7 (49.1-50.3) | 49.9 | undecided (LLR high -1.54, low -0.51) |
+
+Dropped. Preference and dedup don't change where wards go. Shared ward sightings are the only arm with aggregate vision,
+and they read -0.5, as sharing sightings has before. Open: priority bits 14-15 are also the round tag of the
+`prio_stream` mask (not live), so a later ward or comms arm in them would conflict with it.
+
