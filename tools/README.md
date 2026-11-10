@@ -647,4 +647,4 @@ The wrapper verifies frozen source hashes before using `freshgate-tools/fgate.py
 Its `--fuel N` option gives both teams that budget and separates run, lock and
 result names; cached summaries must have matching fuel metadata. Normal-budget
 names stay unchanged. `test_fuel_namespace.py` checks that separation. Evidence,
-limits and the eight-condition design are in [warding.md](../research/ideas-2026-11-10/warding.md).
+limits and the ten-condition design are in [warding.md](../research/ideas-2026-11-10/warding.md).

@@ -69,13 +69,31 @@ The event-level camp-state audit (`warding-tools/camp_timing.py`, artifact `camp
 
 Accordingly **`variants/oc-wcampall-498`** adds a matched ablation of the dead-group restriction: it copies the sealed cheap camp arm and removes only that condition. Its radius-2 scan, nearby-old-ward retention, fuel floor and priority below planned/bush wards are unchanged. The original dead-camp arm is retained unchanged, so their separate gates can show whether alive-camp information is worth including. Both get normal and doubled fuel gates. This follows the observed Mite policy more closely without reviving the previous expensive whole-map scan.
 
+## Planned-ward timing ablation
+
+Ocean already places its routine end ward after movement, strike search, healing and shielding. Its early planned-work ward call and early reveal call are the distinct cases. The five ward helpers are byte-identical between frozen v105 and full498 (`ward-helper-identity.json`), so the live timing sample is relevant to the current policy. At least 379/4,086 Ocean placements (9.3%) are observably early: a move, attack or cast follows. Of those, 179 are non-bush and therefore planned-work wards; 200 bush placements can be planned or reveal. Ad Astra has only 14/4,030 such cases in the archive sample and 1/4,017 today. Placements with no later action do not reveal which internal phase placed them.
+
+**`variants/oc-wlate-498`** removes only the pre-decision `place_ward(world, memory, false)` call and its immediate re-observation. Planned wards remain enabled at turn end, from the chosen end position and updated work; early reveal stays enabled. This differs from the bush-only arm because non-bush planned wards remain available. Deferral also avoids the early check's fuel cost and can let reveal use the ward first; the resulting effect is not a pure isolated clock-time intervention. It is a narrow implementation ablation of that early planned call.
+
+Sixteen additional release smoke games pass error, draft-handoff and hard replay checks; all sixteen ordered drafts match the base. On the same eight cells per budget:
+
+| Mechanism | Base normal | Late planned normal | Base doubled | Late planned doubled |
+|---|---:|---:|---:|---:|
+| Total placements | 1,171 | 1,149 | 1,120 | 1,076 |
+| Followed by movement/attack/cast | 132 | 16 | 140 | 17 |
+| Of those, non-bush | 90 | 0 | 96 | 0 |
+| All non-bush placements | 448 | 451 | 425 | 410 |
+| Immediate ward-only basic attacks | 8 | 7 | 3 | 3 |
+
+Thus planned non-bush placement remains, while all remaining observably early placements are bush reveals. Immediate ward use still occurs. These trajectory-dependent smoke counts establish mechanism, not strength; the new arm's normal/doubled out-of-fuel counts are 38/0. Artifacts `late-timing.json`, `late-draft-checks.json`, `verified-late-smokes.json`, and `warding-tools/late_timing.py` reproduce the checks. Two further gates keep budgets separate and the original eight gate commands and sources unchanged.
+
 ## Matched fuel gates
 
 Each arm gets separate normal-budget and `--fuel 200000` fresh gates against the same frozen base. Both candidate and reference face the same Flp4/Mt3q bodies, noise blocks, maps and sides within each fuel condition. Both teams receive the selected budget; this scales the engine's first-turn/draft allowance too, so the raised-budget comparison measures the whole game under that budget. Do not pool the two budgets or interpret their difference as a clean estimate of only our ward-search cost.
 
 `fgate.py --fuel` passes the value to ab.py and appends `-fuel200000` to game, lock, log and final result names. Cache acceptance also requires matching summary fuel metadata; normal-budget names remain unchanged. Three tests check unchanged normal names, all nine selected/cached budget combinations, and the actual launched command. Raised-budget `--no-run` reads zero normal-budget cells.
 
-The queue should run these eight behavior gates before pending draft/tuning rounds, without interrupting active jobs. They share reference results only within a matching budget and retain the normal sequential gate interpretation: high-H0 alone is not rejection, and narrow results require judgment. There is no strength conclusion or promotion at preparation time.
+The queue should run these ten behavior gates before pending draft/tuning rounds, without interrupting active jobs. They share reference results only within a matching budget and retain the normal sequential gate interpretation: high-H0 alone is not rejection, and narrow results require judgment. There is no strength conclusion or promotion at preparation time.
 
 ## Preparation validation
 
@@ -85,6 +103,6 @@ All 64 extracted replays pass hard validation. The smoke confirms actual mechani
 
 Normal-budget candidate out-of-fuel turns across the eight games are base34, tile33, camp37, bush45. All are zero at doubled fuel (both teams). These are a mechanism smoke, not a cost benchmark or a win-rate estimate: altered trajectories change both game length and workload. Fresh gates determine usefulness.
 
-`queue-commands.json` in the artifact directory names the eight wrapper commands; queue operations owns admission and ongoing execution. The wrapper checks the sealed base/arm hashes on every start. Neither opponent pinning nor live submission selection is part of these experiments.
+`queue-commands.json` in the artifact directory names the ten wrapper commands; queue operations owns admission and ongoing execution. The wrapper checks the sealed base/arm hashes on every start. Neither opponent pinning nor live submission selection is part of these experiments.
 
 The alive-camp follow-up adds 16 successful release smoke games, all with matching drafts and passing hard replay validation. It produces 422/410 camp wards at normal/doubled fuel versus 301/274 for the dead-camp arm on the same eight cells. Its out-of-fuel counts are 26 and 1, respectively; these are trajectory-dependent smoke counts, not a fuel benchmark. Its validation is separate in artifact `verified-campall-smokes.json`, while `mechanism.json` now covers all 80 games.

@@ -69,3 +69,13 @@ s = p.read_text().replace('// A cleared camp near our feet can retain informatio
 old = 'group >= 0 && world.camps[group].state != CampState::alive && try_ward(p, memory)'
 assert s.count(old) == 1
 p.write_text(s.replace(old, 'group >= 0 && try_ward(p, memory)'))
+
+# Planned placement follows the chosen end position/work; early reveal stays enabled.
+arm('oc-wlate-498', '''    // A channel refuses a ward, so this is its first chance; its sight counts this turn
+    // (probe-ward-sight). Only a planned one: a bush ward needs its clusters grown (a giant one costs
+    // ~90k), which the turn end does within its fuel.
+    if (place_ward(world, memory, false)) {
+        see_again(world, pathing, safety);
+        home.reset();
+    }
+''', '')
