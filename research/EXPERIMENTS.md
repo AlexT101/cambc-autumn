@@ -15841,3 +15841,27 @@ Write-up, tools and the patch: [fuel-2026-11-10](fuel-2026-11-10/README.md). Bas
 | ab.py oc-fuel-495, held out (`merged/fuel-1996`) | 50.1 (49.7-50.6) of 40,960 | -12.9% |
 | ab.py, without the tail's fuel checks | 49.4 (48.7-50.1) of 20,480 | -5.2% |
 | ab.py, own ring at radius 8 | 49.7 (49.0-50.4) of 20,480 | -13.2% |
+
+## Farm-loop reserve sweep on ocean-16d6f78 + q1 (2026-11-10): all level, a larger loop slack leans positive
+
+Each arm lowers farm.cc's after-loop reserve (`after_loop`) by `loop_slack` on top of oc16-q1. The re arms also lower `end_reserve`, which `act_reserve` and `search_reserve` derive from. Patch: [oc16-rs.patch](fuelcap-2026-11-09/oc16-rs.patch); the other arms change only these constants (bots/variants/oc16-r*).
+
+**Why the reserve.** On cut farm loops, about 146 a game, decide spends at least 11.6k less than the reserve after the loop 9 times in 10. The median cut-loop turn ends with 14k unused (`clf.py` on a loop-traced 5.0.1 census).
+
+**Results against ocean-16d6f78** (fgate, Flp4/Mt3q bodies):
+
+| arm | loop_slack | end_reserve | fresh (CI) | ladder | blocks | outcome |
+|---|---|---|---|---|---|---|
+| oc16-rs2 | 2k | 10k | -0.27 (±0.25) | +0.18 | 267 | NARROWED |
+| oc16-rs | 4k | 10k | -0.04 (±0.25) | +0.50 | 300 | NARROWED |
+| oc16-rs6 | 6k | 10k | -0.03 (±0.25) | +0.21 | 312 | NARROWED |
+| oc16-rs8 | 8k | 10k | +0.15 (±0.25) | +0.55 | 317 | NARROWED (zone crossed) |
+| oc16-rs12 | 12k | 10k | +0.21 (±0.25) | +0.47 | 322 | NARROWED (zone crossed) |
+| oc16-re8 | 4k | 8k | +0.13 (±0.25) | +0.38 | 323 | NARROWED (zone crossed) |
+| oc16-re6 | 4k | 6k | -0.20 (±0.25) | +0.28 | 331 | NARROWED |
+
+**Reading.**
+- No arm clears the +0.5 accept bar on fresh maps.
+- Fresh reads rise with loop_slack from 2k to 12k. Every ladder read is positive.
+- Lowering end_reserve does not add to that.
+- The leader, oc16-rs12, is at most a small gain. If it is tried further, a larger slack is the next step.
