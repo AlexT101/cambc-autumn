@@ -4314,3 +4314,22 @@ Evidence (own drafts, release, fast runner):
   Merged on the user's instruction ("can we apply the skirmish table to current ocean and commit + push").
 
 Frozen as `variants/oc-skirm-499` (= bots/ocean).
+
+## 500: Heal before an unsafe first camp attack (ocean, 2026-11-10)
+
+`economy/farm.cc`: before waking a sleeping non-Monolith crew target, including after movement, retreat to heal
+when both estimated solo-clear damage and walking escape exposure exceed current health/shield. Skip own spawn
+and targets outside attack reach. A conservative static damage bound avoids most scans; only the rare scan is
+outlined. This prevents the reproduced v107 honeycomb Issac initiation that killed linked Cassi at round 32.
+
+- Fixed prospective confirmation versus full `oc-campsh-498`: 12,288 previously unused maps / 98,304 release
+  games, own drafts, 100k, fixed Flp4/Mt3q, **+0.175 pp, 95% CI [+0.047,+0.303]**. Fish +0.114, Mite +0.236.
+  Zero run/coverage/source errors and own early losses; 24 opponent early losses per arm occur in identical cells
+  and remain counted. No interim stopping or candidate selection.
+- Coordinator-approved judgment-zone merge, **not a 50.5% or live-bar pass**. The 52-game 100M benchmark is
+  replay-identical to wakeheal2 with 0.03% less fuel; this behavior change is not a fuel-only optimization.
+- Applied only the frozen wakecold-minus-498 farm diff. Preserved independently user-authorized Skirmish499;
+  that combined interaction was not part of the fixed confirmation. Combined release/mirror smoke passed.
+  Evidence and remaining ally-initiated wake limitation: `research/ideas-2026-11-10/camp107-crew/README.md`.
+
+Frozen as `variants/oc-wakecold-500` (= bots/ocean).

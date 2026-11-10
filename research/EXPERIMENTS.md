@@ -16325,3 +16325,27 @@ Under the standing user authorization for filler controls, prepared frozen `vari
 A fresh platform-SDK workspace was patched with the current submitted mask, built release, and passed the scheduler's own-draft03twisty mirror smoke at round1336 with zero faults. Compared to archived submitted105, **the sole source-file change is `model/prio_stream.h`, and its sole content change is key material**. Its hash8dd29a82… matches submitted106–109; C++ SDK files are unchanged from105, and no local SDK shim is present. Seals, full hashes and scratch provenance are retained under `~/tmp-offload/handoff/codex/v105-control/`.
 
 Queued as priority75 filler, below ready greed85.15/stack385.1 and above old v87 nulls70/69. Full104 groups on unchanged Fish r2/Mite r5; scheduler alone submits after drain. This supplies a full same-mask paired baseline, not a claimed winner. Compare it with105 only as mask/build calibration; keep future feature comparisons on exact shared contexts. Reverify the recorded current-mask seal when the scheduler prepares it. No repin/refset change or additional strength gate.
+
+### 2026-11-10: wakecold judgment merge and isolated v107 live port
+
+Coordinator explicitly approved wakecold after its fixed 12,288-map / 98,304-game confirmation against full498:
++0.175 pp (95% CI +0.047 to +0.303), Fish +0.114 / Mite +0.236, zero run/coverage/source errors and zero own
+handoff failures. All 24 opponent early losses per arm were retained on identical paired cells. This is a
+judgment-zone decision with exact linked-death rescue, not a 50.5%/live-bar claim. Original result and novelty
+protocol remain under `~/tmp-offload/camp107-mechanism/heldout-cold/`; research interpretation is unchanged.
+
+CHANGES500 applies only `c107-wakecold - oc-campsh-498` in farm.cc. Teammate's concurrent, explicitly user-authorized
+Skirmish499 was preserved (commit b3f6e05c0); its interaction with wakecold was not tested by this confirmation.
+The resulting frozen `oc-wakecold-500` source seal is
+`4a3bacd66ae3b7a6a88118f935b54600644681706f7bf0cf506d4d2b23c984fc`. Release build and mirror smoke passed with zero
+faults. Pre-edit working source is frozen as `oc-pre-wakecold-500`; no teammate hunks or active gate bases changed.
+
+The separate informative live arm `live-v107-wakecold` starts from archived submitted107, independently verified
+by reversing only the mask transformation to `live-wd-campsh-gen`. Its only raw-source change is the same farm.cc
+patch; it excludes Skirmish and the old replay diagnostic's debug-only C107D line. Current platform SDK/mask
+build and mirror smoke passed, and the actual pure live port reproduces all 16,590 inputs / 569 round hashes of
+the successful historical counterfactual. Original107 baseline reproduced 21,011 inputs / 681 round hashes.
+Mask header and SDK are identical to submitted107; comparisons to105 still carry the known mask-key confound.
+This arm is queued as an informative judgment test explicitly against **v107**, on unchanged Fish r2 / Mite r5,
+after the current active test. Scheduler alone submits after drain. No repin or automatic strength verdict.
+Merge/build/source/queue evidence: `~/tmp-offload/handoff/codex/wakecold-merge/`.
