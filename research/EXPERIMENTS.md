@@ -15571,3 +15571,48 @@ Patch: [sm-greed.patch](ideas-2026-11-09/shopmite-tools/sm-greed.patch).
 | pp8 | −0.38 (±1.16) of 2,048 | −0.05 | −0.21 (±0.80) | stopped at 16 blocks: level |
 
 Verdict: no arm. Every deny threshold reads below the base; the guard turns back-and-forth into standing still at the same edge, which is worth nothing. What would pay is a better goal once the edge holds (another altar or group), not a stop or a pause.
+
+## Per-opponent switches for neutral arms (condarms, 2026-11-10): the two leaders read positive on their half but undecided; nothing merged
+
+**Question.** Arms that read level overall may help against Fish or Mite alone. ocean-opp's classifier (`opp::posterior`) can turn such an arm on only against that opponent.
+
+**The splits are mostly noise.** I scanned the Fish − Mite split of every gate log with both halves (103 reads). On the paired per-map units, F and M are independent (r ≈ 0.01). So the split's SE is about twice the overall SE.
+- **fgate (fresh maps):** no arm's split exceeds what chance gives across ~25 arms. The largest, prismhp-a2 (F +0.00, M −0.81, z 2.4), has no positive half.
+- **Pure-noise splits:** fc1 is off against Mite by design, yet its Mite half reads −0.48 ±0.92. A fuel-only change, e480, reads z 2.55 on dgate.
+- **Splits wander:** the knob step read F −0.11 / M −1.06 at block 21 and F +0.01 / M −0.16 at block 54.
+- **dgate (ladder maps, hash-table bodies):** the larger splits (sp-y2, bsk/bk, mp-contact, bagf) all lean Fish, and shrink or vanish on fresh maps.
+
+**Dropped by mechanism.**
+- oc-base31: dgate's split has the opposite sign.
+- sp-y2: its gain is on two maps.
+- mp-contact: on the escape-planner line it reads −0.06 to −0.15, and the base's `seat_priority` now comes before its order.
+- lo1-M (os-lo1's timed lock on one-site maps, Mite only): it acts in only 13.5% of games and fires in ~5% of those. os-lo1's one-site Mite cell (+0.63 ±0.75) is too small to resolve.
+- rv-ngd: it reaches ~0.2 moves a game.
+
+**Arms** (on ocean-opp, switched by `model/oppx.h` at posterior ≥ 0.8; stubs `opp_fish_stub` / `opp_mite_stub`):
+- `ca-bagf-F`: comms-bagf (Willow's follow counts a carry's bag/40, up to 3) against Fish only.
+- `ca-chan-M`: mp-chan (a channelling champion always takes our first turn slot) against Mite only.
+
+Smoke checks:
+- chan-M against the Fish body: all 48 replays are identical to ocean-opp's. Against the Mite body: all 48 differ.
+- bagf-F changes 22 of 48 games against Fish, and 10 against Mite (fuel reroll only).
+
+**Gate.** `research/ideas-2026-11-10/condarms/cgate.py`: fgate's runs and SPRTs against ocean-16d6f78 (Flp4 / Mt3q), with three changes:
+- a new 1,024-map ladder-v2 pool (seeds 1510001-1510004) that no gate had played;
+- noise blocks 38-117, unused on these bodies;
+- the decision reads only the half the arm acts in.
+
+fgate's `--seed` only shuffles units; it never changes the games.
+
+**Results against ocean-16d6f78** (80 blocks; fresh pts ±95% CI):
+
+| arm | on-half fresh (units) | SPRT (on-half) | off-half fresh | fresh all | ladder all (F / M) |
+|---|---|---|---|---|---|
+| ca-bagf-F | Fish +0.32 ±0.63 (10,240) | undecided: high −0.74, low +1.10 | Mite +0.13 ±0.58 | +0.23 ±0.43 | −0.08 (−0.21 / +0.05) |
+| ca-chan-M | Mite +0.61 ±0.72 (10,240) | undecided: high −0.03, low +1.36 | Fish −0.09 ±0.58 | +0.26 ±0.46 | −0.12 (−0.65 / +0.41) |
+
+**Verdict.** Both read positive on their half, with CIs that include 0. Off halves are level. Not merged: the run was stopped at the cap during the usage wind-down.
+- chan-M is the better lead: Mite +0.61 here and +0.35 on dgate's v87 line. It is narrow and cheap, and needs ~2-3x more units to decide.
+- bagf-F repeats its earlier Fish lean (+0.3) without separating from 0.
+
+Files: ~/tmp-offload/condarms/ (gates/, all-final-lines.txt split scan, tools/splits.py); runs `fge501-{ca-bagf-F,ca-chan-M,ocean-16d6f78}-dvn{38..117}{Fp4,Mq}-{L,g0..g7}`.
