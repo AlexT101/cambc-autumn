@@ -85,7 +85,7 @@ without a clear win-rate gain; those reserve reductions are not included. Its qu
 this bundle and screened on 1,024 games, gives OOF 8,671 → 8,772 (+1.16%, within noise), shortcuts +0.84%
 and mean fuel +0.28%; dropped. Details and the preserved handoff are in this campaign's notes.
 
-## Emblem lab round 4 on ocean (2026-11-10, tools/emblab; nothing shipped): 1.84M games, no table beats ocean's, and the dense per-decision design cannot see what the A/Bs see
+## Emblem lab round 4 on ocean (2026-11-10, tools/emblab; CHANGES 499 from its A/B screen): 1.84M games, no table from the fit beats ocean's, and the dense per-decision design cannot see what the A/Bs see
 
 Run by [RUNBOOK.md](../tools/emblab/RUNBOOK.md) (written from this run) on ocean b0eeff17e (= CHANGES 496).
 Tools and tables: `tools/emblab/` (README "Round 4"), `research/ideas-2026-11-10/emblab4/`; data in
@@ -209,7 +209,8 @@ best is taken, A/B'd on the three holdouts (61,440 games, ±0.4) and made the ba
   in patch 4.0.0, after the table was learned (9 of its cells hold it); it was the only one of ten passive families to read
   above level in this slot (ten looks: the first reading alone was a 1-in-4 chance, the two repeats and the gate
   are the evidence). The fresh gate reads the same against the bodies, +0.51 ± 0.42 pooled over 32 blocks, and its
-  SPRT stays undecided: about half a point, at the 50.5 bar rather than over it. Not merged.
+  SPRT stays undecided: about half a point, at the 50.5 bar rather than over it. Merged afterwards on the user's
+  instruction as CHANGES 499 (see the greedy step above for its fresh-map confirmation).
 - **What measured correctly tonight was the clean A/B of a policy-level change** (20,480 games, ±0.7, ~10 minutes
   beside other jobs). The next emblem work should randomise whole tables or build orders per team-game, not
   single decisions inside a shared build.

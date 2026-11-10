@@ -182,11 +182,9 @@ Each needs an A/B (check EXPERIMENTS first). Bundle removals and keep them if le
     points to ocean and nearly all of that is its late Collectors cells; its k0-2 cells are worth nothing. The
     current logic underprices Collectors (`current_emblem` credits it for camp damage only): price its champion
     damage and the table may no longer be needed for it.
-  - **Skirmish as everyone's fifth emblem** reads 50.55% of 61,440 held-out mirror games
-    (`research/ideas-2026-11-10/emblab4/tables/emblem_table-skirmish4.h`). Skirmish has been x1.10 since patch
-    4.0.0, after the table was learned (9 of its cells hold it); `passive_saved` prices it at `fight_weight x
-    fight_share x (1 - 1 / 1.1)` and rarely picks it. Not merged: take it to the gate's live bar, or raise the
-    pricing instead.
+  - **Skirmish as everyone's fifth emblem** is in (CHANGES 499, about +0.4 points locally, no live pair yet).
+    `passive_saved` prices Skirmish at `fight_weight x fight_share x (1 - 1 / 1.1)` and rarely picks it: raising the
+    pricing would make the table cell unnecessary.
   - **The lab's design:** drawing 35-50% of every decision scrambles builds and hides effects of this size. Next
     time randomise whole tables or build orders per team-game (tools/emblab/README.md "What round 4 found").
   - **CPU-slot registration race fixed (2026-11-10):** Python and fastrunner lock and write a temporary file

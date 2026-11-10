@@ -4294,3 +4294,23 @@ and `combat/self_abilities.cc`. The existing fuel changes are preserved.
   not new causal proof of the original fix.
 
 Frozen as `variants/oc-campsh-498` (= bots/ocean at merge; includes the working fuel-497 source).
+
+## 499: Skirmish as every champion's fifth emblem (ocean, 2026-11-10)
+
+`economy/emblem_table.h`: Skirmish, in the type's usual stat, at ordinal 4 of the 37 (pick count, type) rows whose
+table has none by then (`research/ideas-2026-11-10/emblab4/collectors.py --family skirmish --at 4`). Skirmish has
+been x1.10 since patch 4.0.0, after the table was learned (round 2 of the emblem lab, CHANGES 233). It came out of
+round 4's A/B screen of ten passive families in that slot, the only one above level (EXPERIMENTS "Emblem lab round
+4 on ocean").
+
+Evidence (own drafts, release, fast runner):
+- **Fresh maps, against current ocean** (`variants/ocean-686a2d5` = bots/ocean before this): 50.3% (49.9-50.7) of
+  61,440 on `merged/emb4-c1..c3` (50.1 / 50.4 / 50.4); out-of-fuel turns +0.5% (479,404 / 476,940).
+- **Against 496** (`variants/ocean-b0eeff1`) on the lab's held-out `merged/emb4-h1..h3`: 50.55% of 61,440
+  (50.7 / 50.5 / 50.5; h1 is the look that chose it).
+- **Fresh gate** (Flp4 / Mt3qro), 32 blocks: fresh +0.59 ± 0.61, ladder +0.43 ± 0.59, pooled +0.51 ± 0.42; the
+  SPRT at 50.5 / 50.75 is undecided.
+- The looks that did not choose it average +0.4 ± 0.13 points: real, under the 50.5 bar, and with no live pair.
+  Merged on the user's instruction ("can we apply the skirmish table to current ocean and commit + push").
+
+Frozen as `variants/oc-skirm-499` (= bots/ocean).
