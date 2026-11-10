@@ -16703,3 +16703,14 @@ release, real fuel, fast runner, on the same 29,952 maps as "Ocean main against 
 At the user's request, both still-unstarted current504 conditional jobs were held and amended with a mandatory direct Ocean mirror after their targeted gate, including early statistical terminals. Each arm plays frozen504 on8,192 unique new ladder-v2 maps×both sides=16,384 release/native200k games. The mirror has no opponent-noise repeats or outcome-based stopping; identical deterministic cells count once. Reserved map seeds2415000–31 (+32–35 solely for duplicate replacement) are distinct from the main conditional pool and the separate504-v86 benchmark.
 
 Report absolute head-to-head win rate and map-paired95% normal/empirical-Bernstein intervals separately from Fish/Mite replica deltas. Crossing50% is not proof of safety; target, off-target and mirror results jointly require coordinator review before100k or shipping. Extra debug Ocean fixtures record real classifier posteriors/activation without forced stubs. Primary completion markers explicitly remain incomplete until the mirror finishes. Twelve lightweight scoring/boundary tests pass; runtime checks remain queued. Explicit mapgen `--jobs1` now matches its one acquired shared slot. [Amended protocol](ideas-2026-11-10/cond504/README.md).
+
+## Ocean main against pre-removal ocean-ba65375 (2026-11-10)
+
+Current main `bots/ocean` against `variants/ocean-ba65375` (CHANGES 483, the removal branch's base, before 485's and
+486's removals; checked identical to `bots/ocean` at ba65375a9), own drafts, release, real fuel, fast runner, on the
+same 29,952 maps as "Ocean main against ocean-16d6f78" (`merged/oc-16d6`, both sides): **52.8% of 59,904
+(31,650-28,254), 95% CI 52.4-53.2**. No failed games, no broken or capped drafts; out-of-fuel turns CAND 344,427 in
+39,906 games, REF 615,384 in 45,808. Paired with the 16d6f78 run (same CAND, same games), 27,174 of 59,890 games
+change winner: CAND wins 13,891 only against 16d6f78 and 13,283 only against ba65375 (608 net, z ~3.7). Against
+current ocean the pre-removal base scores about 1.0 point better than the post-removal 16d6f78.
+`replays/ab/ocean-vs-ba65375-60k/`.
