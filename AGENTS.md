@@ -11,7 +11,8 @@ Always read `cambc-rules.yaml` if you haven't already. Your next message should 
 
 C++ only.
 - **ocean** is our main bot: a stable version holding only changes we are committed to keeping. Try ideas in copies (`bots/variants/`) and commit to `bots/ocean` only what has passed its gate. Each shipped change is in [CHANGES.md](research/hyperion/CHANGES.md), tagged with its bot and date, with its evidence in [EXPERIMENTS.md](research/EXPERIMENTS.md); open work is in [TODO.md](research/hyperion/TODO.md). Frozen copies for A/Bs live in `bots/variants/`; the latest CHANGES entry for a bot names the copy that equals it.
-- The other bots (astraeus, the main bot before ocean, among them) are older experiments and baselines, kept for reference.
+- **astraeus** is our secondary bot and ocean's ancestor; changes sometimes move between the two.
+- The other bots are older experiments and baselines, kept for reference.
 - Their `src/`: `bot.cc` is the turn (`decide`); its branches are in `economy/` and `combat/`, sharing `bot_parts.h`; `model/` is the world, pathing and safety; `draft/` the draft. `unity.cpp` includes every `.cc`: a new one goes there.
 - `ab.py`'s git refs build `bots/hyperion` (the main bot before astraeus). To A/B astraeus or ocean, pass bot directories: the working one and a frozen copy of a commit's, e.g. `./copybot -r <sha> astraeus variants/astraeus-<sha7>`.
 - Drafts are compiled in. ocean drafts from draft10's F92 model (CHANGES 502); astraeus stays on draft5. With `params::test_draft` on, a bot plays ladder compositions (`tools/draftlab/test_comps.py`) in place of its own draft; every bot directory's is off.
@@ -31,14 +32,20 @@ Comment only counterintuitive behaviour or reasoning, concisely.
 - **Match the drafts:** both bots on test drafts, or both on their own drafts, never one of each. `ab.py` turns `test_draft` on in the copies it builds from git refs but leaves a bot directory's `params.h` alone (every bot directory's is off). Check the directory's `test_draft`, and pass `--no-test-draft` when it is off. The exception is a deliberate one: our own draft against a `test_draft` opponent, to measure play against ladder compositions.
 - **Confirm a gain** on a suite no A/B has used: `node tools/mapgen/mapgen.mjs suite --out DIR --seed S`, then `--suites DIR` (at most ~30k maps per mapgen command; larger runs can exhaust memory). Add `--mix varied` to test robustness on stress maps.
 - **`--mix ladder-v2`** matches the ladder better than `ladder` (gem balls, group shapes) and is preferred for new programmes; `ladder` stays the default, and the two don't share win rates.
+- **Labs** fit the draft (`tools/draftlab`), constants (`tools/tune`) and emblem choices (`tools/emblab`) from many games. Run them sparingly, each as a deliberate decision: they risk overfit and only help when the bot has changed significantly since the last fit.
 - **Record** results in [research/EXPERIMENTS.md](research/EXPERIMENTS.md), which also lists what already won or lost.
 - `cambc run --map NAME` finds only maps directly under `maps/`, by full name (`00interlock`); pass `maps/gen/<file>.map26a` for generated ones.
+
+## Overfit
+
+- **Arbitrary changes risk overfit**: a tweak that wins on our suites and opponents can lose on the ladder. Make changes robust and logical, each tied to a strategy or a game mechanic you can state. Avoid magic numbers, special cases that patch one map or matchup, and workarounds for a symptom you haven't explained. Prefer constants derived from the rules or a measured quantity over hand-picked values.
+- **Live tests are small samples.** The scrim quota allows about 500 games for a live gate, against tens of thousands for a local A/B, so a live result carries several points of noise. Live-testing many small changes works like rerolling: the ones that pass are partly the ones that got lucky, and they regress to the mean in later tests. Keep live tests for large changes or batches of smaller related changes, run only when a local A/B can't answer the question.
 
 ## Fuel
 
 Each turn has 100k fuel (the first 200k); running out loses the rest of the turn.
 - **Fuel-aware code is allowed when it wins by A/B win rate**: budgets per subsystem, anytime searches on the fuel left, dynamic reserves, a cheaper method on a short turn. Exact savings are still checked by `bench.py` identity at 100M; out-of-fuel recovery stays as the crash guard ([FUEL-GATES.md](research/hyperion/FUEL-GATES.md)).
-- **Fuel cuts need no strength gate** (no win-rate A/B, fresh gate or live test): saving fuel is a strict improvement. Fuel-only changes must leave `tools/fuel/bench.py`'s replays byte-identical.
+- **Fuel cuts need no fresh gate or live test**: saving fuel is a strict improvement. An A/B can still help, to check for regressions and that out-of-fuel turns went down. Fuel-only changes must leave `tools/fuel/bench.py`'s replays byte-identical.
 - **Draft precompute** must finish in the draft's first turn (10M). Local builds find `sdk/cpp/cambc_local.h`; the platform's SDK has none. A bot with the guard resigns locally on an unfinished draft or an unusable plan (`DRAFT-UNFINISHED`, `PLAN-CHECK`), which ab.py, run_batched, bench, tune.py and the lab flag as early losses. `DRAFT-CAPPED` marks a first turn whose last-resort cap cut sections. Check headroom with `tools/draftlab/firstturn.py --need` ([draft-features.md](research/ideas-2026-11-06/draft-features.md)).
 - **Tracing:** wrap output in `debug_block({ ... });` and build without `--release` (plain printf changes the game). Output is in the replay zip as `team-a.stdout` / `team-b.stdout`. It is not free: a block costs ~8 fuel beyond the SDK's refund and debug codegen differs, so fuel-gated decisions can change ([EXPERIMENTS.md](research/EXPERIMENTS.md#fuel)). For a fuel-exact trace of a real game, use the replay harness ([tools/replay/harness](tools/replay/harness/README.md)).
 - **Costs:** ~1 fuel per WASM instruction and per memset/memcpy byte; an allocation ~130 plus ~290 to free; a thrown and caught `cambc::error` ~3.9k; `std::cout` ~11k of static initialisation (use printf).
