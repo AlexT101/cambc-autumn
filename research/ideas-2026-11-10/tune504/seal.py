@@ -33,7 +33,7 @@ def main():
            'research/ideas-2026-11-09/oppfidelity-tools']:
   paths.update(x for x in (R/d).iterdir() if x.is_file() and x.suffix in ('.py','.sh','.mjs','.h'))
  paths.update(R/x for x in ['copybot','tools/ab.py','tools/run_batched.py','tools/cambc_env.py','tools/cpu_slots.py',
-              'tools/pooled.py','tools/fuel/bench.py','sdk/cpp/cambc.h','sdk/cpp/cambc_local.h',
+              'tools/pooled.py','tools/gate_compile_ahead.py','tools/fuel/bench.py','sdk/cpp/cambc.h','sdk/cpp/cambc_local.h',
               'research/ideas-2026-11-09/fishfid/patch_fish2.py','research/ideas-2026-11-09/fishfid/patch_prio.py',
               'research/ideas-2026-11-09/fishfid/patch_coh.py'])
  paths.update(Path('/home/ubuntu/tmp-offload/diverse/fresh')/x for x in ('feat-ladder.jsonl','feat-v2.jsonl'))

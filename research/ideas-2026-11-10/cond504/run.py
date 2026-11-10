@@ -2,6 +2,7 @@
 import argparse
 import fcntl
 import hashlib
+import importlib.util
 import io
 import json
 import os
@@ -109,6 +110,50 @@ def phase(arm,name,fn):
     verify();fn();verify();done.write_text(time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime())+'\n')
 
 
+def gate_phase(arm):
+    """The helper belongs only to this gate child; drain it before mandatory mirror work."""
+    helper_path=R/'tools/gate_compile_ahead.py'
+    spec=importlib.util.spec_from_file_location('conditional_compile_ahead',helper_path)
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    directory=D/arm/'compile-ahead';directory.mkdir(exist_ok=True)
+    stop=directory/'stop';assert not stop.exists(),'Completed/stopped helper requires explicit recovery review'
+    helper=None;status={'helper_started':False};rc=None
+    with (D/arm/'gate.log').open('a') as gate_log, (directory/'helper.log').open('a') as helper_log:
+        gate=subprocess.Popen([sys.executable,T/'gate.py',arm],cwd=R,stdout=gate_log,stderr=subprocess.STDOUT)
+        try:
+            try:
+                owner=module.identity(gate.pid)
+                if owner is not None and gate.poll() is None and os.environ.get('CAMBC_COMPILE_AHEAD','1')!='0':
+                    plan={'owner':owner,'directory':str(directory),'stop_file':str(stop),'manifest':str(D/'manifest.json'),
+                          'manifest_sha256':sha(D/'manifest.json'),'blocks':str(D/arm/'blocks'),
+                          'gate_source':str(R/'research/ideas-2026-11-09/freshgate-tools/fgate.py'),
+                          'first':1004,'last':2003,'bodies':['Flp4','Mt3qro'],'workers':16,'lookahead':8,'group':'exploit506-'+arm+'-compile'}
+                    write(directory/'plan.json',plan)
+                    helper=subprocess.Popen([sys.executable,helper_path,'--plan',directory/'plan.json'],cwd=R,stdout=helper_log,stderr=subprocess.STDOUT)
+                    status.update(helper_started=True,helper_pid=helper.pid,gate_pid=gate.pid)
+            except Exception as exc:
+                status['helper_setup_error']=repr(exc)  # Optional acceleration cannot orphan or restart the scored gate.
+            try:
+                rc=gate.wait()
+            except KeyboardInterrupt:
+                status['interrupted']=True
+                owner=module.identity(gate.pid)
+                if owner is not None and gate.poll() is None:
+                    status['interrupted_tree']=module.interrupt_owned_tree(owner)
+                module.wait_drained(gate)
+                raise
+        finally:
+            try:
+                stop.write_text('stop dispatch; drain existing compiles\n')
+            except OSError as exc:
+                status['stop_marker_error']=repr(exc)  # Exact gate-owner exit is also a dispatch stop.
+            finally:
+                if helper is not None:status['helper_exit']=module.wait_drained(helper)
+            status.update(gate_exit=gate.poll(),gate_still_running=gate.poll() is None)
+            write(directory/'lifecycle.json',status)
+    if rc:raise subprocess.CalledProcessError(rc,[sys.executable,T/'gate.py',arm])
+
+
 def main():
     ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('arm',choices=CAND);ap.add_argument('--check',action='store_true');a=ap.parse_args()
     verify()
@@ -128,7 +173,7 @@ def main():
             check.update(pid=os.getpid(),manifest_sha256=sha(D/'manifest.json'));write(p/'first-heavy-start.json',check)
         phase(a.arm,'maps',prepare_maps)
         phase(a.arm,'smoke',lambda:command([sys.executable,T/'smoke.py',a.arm],p/'smoke.log'))
-        phase(a.arm,'gate200k',lambda:command([sys.executable,T/'gate.py',a.arm],p/'gate.log'))
+        phase(a.arm,'gate200k',lambda:gate_phase(a.arm))
         phase(a.arm,'mirror200k',lambda:command([sys.executable,T/'mirror.py',a.arm],p/'mirror.log'))
         write(p/'review-required.json',{'stage':'target gate and mandatory mirror complete','complete':True,
               'result_sha256':sha(p/'result-200000.json'),'mirror_result_sha256':sha(p/'mirror-result-200000.json'),

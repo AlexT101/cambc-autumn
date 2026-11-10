@@ -127,5 +127,20 @@
     "from": "variants/oc-emb5-504",
     "to": "variants/oc-dfuel-506",
     "reason": "Explicit coordinator rebase before first heavy phase; same27parameter hypothesis, seeds and endpoint."
+  },
+  "compile_ahead": {
+    "phase": "final candidate gate only; never training/fit",
+    "workers": 16,
+    "lookahead": 8,
+    "shared_pool": 86,
+    "bodies": [
+      "Flp4",
+      "Mt3q"
+    ],
+    "first": 1,
+    "last": 1000,
+    "compile_only": true,
+    "cleanup": "context finally stops dispatch and drains compiles before leaving actual gate phase",
+    "disable_override": "CAMBC_COMPILE_AHEAD=0"
   }
 }

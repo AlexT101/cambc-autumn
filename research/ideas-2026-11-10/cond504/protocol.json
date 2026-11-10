@@ -82,7 +82,27 @@
     "shared_slots": 86,
     "slot_weight": 1,
     "batch_process_limit": 4,
-    "ahead_blocks": 0
+    "ahead_blocks": 0,
+    "compile_ahead": {
+      "helper": "tools/gate_compile_ahead.py",
+      "owner": "gate.py child PID/start/command only",
+      "workers": 16,
+      "shared_slots_per_worker": 1,
+      "current_and_future_noise_blocks": 9,
+      "lookahead": 8,
+      "first": 1004,
+      "last": 2003,
+      "bodies": [
+        "Flp4",
+        "Mt3qro"
+      ],
+      "compile_only": true,
+      "warm_games": 0,
+      "scored_games": 0,
+      "cleanup": "finally stop new dispatch and drain existing locked compiles before mandatory mirror",
+      "disable_override": "CAMBC_COMPILE_AHEAD=0",
+      "on_helper_setup_failure": "record failure; never restart scored gate"
+    }
   },
   "actions": {
     "automatic_100k": false,

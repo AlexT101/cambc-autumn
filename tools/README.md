@@ -700,3 +700,9 @@ Cancelled component-study launchers: `reserve-tools/run_gate.py`, `skirmish-tool
 
 
 - `research/ideas-2026-11-10/ward-compile-ahead/{ahead,test_ahead}.py`: audited snapshot of the owner-bound external ward compile helper; four shared-slot workers prepare existing opponent builds only, without changing or launching tests. [Design and timing](../research/ideas-2026-11-10/ward-compile-ahead/README.md).
+
+### Fresh-gate compilation defaults
+
+`fgate.py CAND REF` forwards the existing noise-based fresh-gate game/statistical options unchanged and prepares opponent compilation ahead of demand. Its default is 16 process workers and the current plus eight future noise blocks; every worker holds one shared CPU slot and uses the normal generated-source and frozen-build locks. `--compile-workers N`, `--compile-lookahead N`, and `--no-compile-ahead` control this resource optimization; `CAMBC_COMPILE_AHEAD=0` also disables scoped integration in queued gates. No extra scored games or warm-up games are played. Ordinary `ab.py` comparisons continue to build their two fixed bots normally.
+
+`gate_compile_ahead.py --plan PLAN [--check]` implements the owner-bound helper and a gate-phase scope. Exact process identity, source/tool seals, a stop marker, and draining outstanding compiles bound its lifetime. Queued conditional, draft, and tuning final gates use this scope; training and mandatory mirror phases do not. The historical research gate stays unchanged for active sealed experiments. Lightweight checks: `tools/tests/test_{gate_compile_ahead,fgate_entrypoint}.py` and conditional lifecycle tests.

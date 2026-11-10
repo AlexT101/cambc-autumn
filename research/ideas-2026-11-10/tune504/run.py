@@ -200,7 +200,10 @@ def gate():
         return original(cand,ref,k,rng)
     fg.block_units = audited
     sys.argv = argv
-    fg.main()
+    sys.path.insert(0,str(R/'tools'))
+    from gate_compile_ahead import scope
+    with scope(D / 'compile-ahead-gate',D/'manifest.json',audits,Path(fg.__file__),['Flp4','Mt3q']):
+        fg.main()
     result = json.loads((Path(fg.LOGS) / f'fgate-{Path(CAND).name}--{Path(BASE).name}p4q-fuel200000.json').read_text())
     assert result['blocks'] == len(list(audits.glob('*.json')))
     result.update(note='Coordinator review only. ZONE is not rejection or proof of a positive95%interval; cap unresolved. No automatic100k test, merge, live submission, or next tune.',

@@ -243,7 +243,10 @@ def gate(fuel):
         return original(cand, ref, k, rng)
     fg.block_units = audited
     sys.argv = argv
-    fg.main()
+    sys.path.insert(0,str(R/'tools'))
+    from gate_compile_ahead import scope
+    with scope(D / f'compile-ahead-{fuel}',D/'manifest.json',audits,Path(fg.__file__),['Flp4','Mt3q']):
+        fg.main()
     result_file = Path(fg.LOGS) / f'fgate-{Path(CAND).name}--{Path(BASE).name}p4q-fuel{fuel}.json'
     result = json.loads(result_file.read_text())
     assert result['blocks'] == len(list(audits.glob('*.json')))

@@ -46,3 +46,6 @@ python3 research/ideas-2026-11-10/draft504/run.py --normal-admission /absolute/p
 ```
 
 Artifacts: `~/tmp-offload/localq/rounds/draft17/{protocol,config,manifest}.json`, input snapshots, generated/selected maps, lab/F92 data, first-turn reports, per-block audits, gate results and review marker. No heavy phase runs during preparation. Both original source and tool inputs are sealed; a changed input fails for review rather than silently mixing versions.
+
+
+Resource default: only the final candidate gate phase uses `tools/gate_compile_ahead.py`,16 process-isolated compile workers/eightfutureblocks in the shared86 pool. Existing noise bodies are frozen/built under the normal cache locks; no warm/scored games or statistical changes. Its context stops dispatch and drains compiles as soon as the actual gate phase ends, even though the lab wrapper PID can live longer. `CAMBC_COMPILE_AHEAD=0` disables the optimization. Training/fit phases do not spawn this helper.
