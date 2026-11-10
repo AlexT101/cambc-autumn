@@ -1,0 +1,31 @@
+diff -ru ocean-16d6f78/src/combat/plan.cc oc16-ss1/src/combat/plan.cc
+--- ocean-16d6f78/src/combat/plan.cc	2026-11-09 22:23:50.000000000 +0000
++++ oc16-ss1/src/combat/plan.cc	2026-11-10 00:45:42.582233406 +0000
+@@ -195,6 +195,9 @@
+ constexpr int max_exact_queries = 10;
+ // Nodes a search grows, at ~1.1k fuel each; past it the leaves offered so far stand.
+ constexpr int max_nodes = 24;
++// Below it the search grows and prices no further (as past max_nodes or max_exact_queries). Of the turns
++// that ran out after a search, ~4 in 5 fell short by less than the search spent below it.
++constexpr std::uint64_t search_floor = 25000;
+ // A plan breaking our kill bid (follow.h) loses this, more than any turn's hits and danger.
+ constexpr float break_penalty = 1e5f;
+ // keep_bid's search: only plans that keep the bid.
+@@ -1688,7 +1691,7 @@
+ 
+ void Search::grow(const Node& s) {
+     throw_if_stale();
+-    if (nodes >= max_nodes) return;
++    if (nodes >= max_nodes || (nodes > 0 && fuel() < search_floor)) return;
+     ++nodes;
+     settle(s);
+     if (s.depth == max_depth || walked_attack(s)) return;
+@@ -2125,7 +2128,7 @@
+             tiles[i].done = true;
+             continue;
+         }
+-        if (queries >= max_exact_queries) {
++        if (queries >= max_exact_queries || (priced > 0 && fuel() < search_floor)) {
+             capped = true;
+             break;
+         }
