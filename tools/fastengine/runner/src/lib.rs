@@ -359,12 +359,17 @@ impl Slots {
         };
         let members = s.dir.join("members");
         let _ = std::fs::create_dir_all(&members);
-        let name = format!("{}-{:08x}", std::process::id(), s.rng as u32);
-        if let Ok(f) = std::fs::OpenOptions::new().read(true).write(true).create(true).truncate(true).open(members.join(name)) {
-            if flock(&f, libc::LOCK_EX) {
+        let nonce = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
+        let name = format!("{}-{nonce:x}", std::process::id());
+        let tmp = s.dir.join(format!("member-{name}.tmp"));
+        if let Ok(mut f) = std::fs::OpenOptions::new().read(true).write(true).create_new(true).open(&tmp) {
+            use std::io::Write;
+            // Scanners unlink unlocked members: publish only after the lifetime lock and record exist.
+            let line = format!("{}\t{}\t0\n", s.group, s.weight);
+            if flock(&f, libc::LOCK_EX) && f.write_all(line.as_bytes()).is_ok() && std::fs::rename(&tmp, members.join(name)).is_ok() {
                 s.member = Some(f);
-                s.write_member();
             }
+            let _ = std::fs::remove_file(&tmp);
         }
         s
     }
@@ -888,5 +893,47 @@ fn real_main() -> Result<i32> {
             eprintln!("usage: fastrunner run|run-batch ...");
             Ok(2)
         }
+    }
+}
+
+#[cfg(test)]
+mod slot_registration_tests {
+    use super::*;
+    use std::os::unix::fs::MetadataExt;
+    use std::sync::{Arc, atomic::{AtomicBool, AtomicUsize, Ordering}};
+
+    #[test]
+    fn published_members_survive_concurrent_reclamation() {
+        let nonce = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
+        let dir = std::env::temp_dir().join(format!("fastrunner-members-{}-{nonce}", std::process::id()));
+        std::fs::create_dir_all(dir.join("members")).unwrap();
+        let stop = Arc::new(AtomicBool::new(false));
+        let scans = Arc::new(AtomicUsize::new(0));
+        let worker = {
+            let dir = dir.clone(); let stop = stop.clone(); let scans = scans.clone();
+            std::thread::spawn(move || {
+                while !stop.load(Ordering::Relaxed) {
+                    for entry in std::fs::read_dir(dir.join("members")).unwrap().flatten() {
+                        let Ok(f) = std::fs::File::open(entry.path()) else { continue };
+                        if flock(&f, libc::LOCK_SH | libc::LOCK_NB) {
+                            let _ = std::fs::remove_file(entry.path());
+                        }
+                    }
+                    scans.fetch_add(1, Ordering::Relaxed);
+                }
+            })
+        };
+        while scans.load(Ordering::Relaxed) == 0 { std::thread::yield_now(); }
+        for _ in 0..2000 {
+            let s = Slots::new(&dir, 2);
+            let f = s.member.as_ref().expect("member registration failed");
+            assert_eq!(f.metadata().unwrap().nlink(), 1, "scanner unlinked live registration");
+            std::thread::yield_now();
+            assert_eq!(f.metadata().unwrap().nlink(), 1, "published member lost its lifetime lock");
+        }
+        stop.store(true, Ordering::Relaxed);
+        worker.join().unwrap();
+        assert!(scans.load(Ordering::Relaxed) > 0);
+        std::fs::remove_dir_all(dir).unwrap();
     }
 }

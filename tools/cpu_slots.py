@@ -23,6 +23,7 @@ import random
 import subprocess
 import sys
 import threading
+import tempfile
 import time
 from pathlib import Path
 
@@ -115,9 +116,19 @@ def _set_waiting(delta):
         if _member is None:
             members = DIR / "members"
             members.mkdir(exist_ok=True)
-            _member = open(members / f"{os.getpid()}-{random.getrandbits(32):08x}", "w+b")
-            fcntl.flock(_member.fileno(), fcntl.LOCK_EX)
-            _write_member()
+            fd, tmp = tempfile.mkstemp(prefix=f"member-{os.getpid()}-", dir=DIR)
+            f = os.fdopen(fd, "w+b")
+            try:
+                fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+                f.write(f"{GROUP}\t{_weight()}\t{1 if _waiting else 0}\n".encode())
+                f.flush()
+                # Scanners unlink unlocked members: publish only after the lifetime lock and record exist.
+                os.rename(tmp, members / Path(tmp).name)
+            except BaseException:
+                f.close()
+                Path(tmp).unlink(missing_ok=True)
+                raise
+            _member = f
         was = _waiting > 0
         _waiting += delta
         if was != (_waiting > 0):

@@ -189,9 +189,10 @@ Each needs an A/B (check EXPERIMENTS first). Bundle removals and keep them if le
     pricing instead.
   - **The lab's design:** drawing 35-50% of every decision scrambles builds and hides effects of this size. Next
     time randomise whole tables or build orders per team-game (tools/emblab/README.md "What round 4 found").
-  - **`tools/cpu_slots.py` and fastrunner's `Slots::new`** create a member file and then lock it; another job's scan
-    in between unlinks it and the group counts at weight 1 from then on. Lock a temporary file and rename it into
-    `members/` (as `tools/emblab/slot_keeper.py` does); fastrunner needs a rebuild for it.
+  - **CPU-slot registration race fixed (2026-11-10):** Python and fastrunner lock and write a temporary file
+    outside `members/` before renaming it into view. Forced Python interleaving and Rust concurrent cleanup
+    reproduce the old lost-weight failure and pass with the fix; dead-member cleanup remains intact.
+    Existing long-lived Python processes keep their imported code until they finish; do not restart evidence jobs.
 
 ## Fuel
 
