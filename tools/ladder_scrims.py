@@ -27,8 +27,10 @@ import math
 import os
 from pathlib import Path
 import re
+import queue
 import subprocess
 import sys
+import threading
 import time
 from datetime import datetime, timezone
 
@@ -72,9 +74,12 @@ def read_jsonl(path):
     return out
 
 
+_APPEND = threading.Lock()  # `run` appends from its collector thread too
+
+
 def append_jsonl(path, row):
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as f:
+    with _APPEND, path.open("a", encoding="utf-8") as f:
         f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
@@ -314,6 +319,28 @@ def cmd_run(args):
     errors, last_create, polled = 0, 0.0, {}
     waiting_note = None
     seen_ls, last_ls = None, 0.0
+    # A finished group's ten rate-limited downloads take ~40 s; done inline they halved the create rate. One collector
+    # thread keeps them serial (the rate limit) and writes the finished event after the games, as before, so the
+    # scheduler still sees a group in flight until its games are recorded.
+    to_collect, collecting = queue.Queue(), set()
+    collecting_lock = threading.Lock()
+
+    def collector():
+        while True:
+            task, ev, d = to_collect.get()
+            try:
+                rows = collect(task, ev, d)
+                res = "".join((r["result"] or "?")[0].upper() for r in rows)
+                append_jsonl(DATA / "events.jsonl", {"ev": "finished", "group": ev["group"], "task": ev["task"],
+                                                     "at": now(), "results": res})
+                log(f"finished {ev['task']} {ev['group'][:8]}: {res}")
+            except Exception as e:  # re-polled and collected again (collect skips files it already has)
+                log(f"warning: collect {ev['task']} {ev['group'][:8]}: {e}")
+            finally:
+                with collecting_lock:
+                    collecting.discard(ev["group"])
+
+    threading.Thread(target=collector, daemon=True).start()
 
     def check_live(inflight, why):
         # Another submission or activation while groups are in flight: those games may have played it.
@@ -337,7 +364,10 @@ def cmd_run(args):
         try:
             tasks, created, finished, dropped, refs = state()
             by_id = {t["id"]: t for t in tasks}
-            inflight = [e for e in created.values() if e["group"] not in finished]
+            with collecting_lock:
+                busy = set(collecting)
+            # Groups waiting for the collector have finished playing: not in flight for the cap or a live switch.
+            inflight = [e for e in created.values() if e["group"] not in finished and e["group"] not in busy]
             # Poll in-flight groups, each at most every `poll` seconds.
             for ev in inflight:
                 if time.monotonic() - polled.get(ev["group"], 0) < args.poll:
@@ -345,21 +375,21 @@ def cmd_run(args):
                 polled[ev["group"]] = time.monotonic()
                 d = group_detail(ev["group"])
                 if group_done(d):
-                    rows = collect(by_id[ev["task"]], ev, d)
-                    res = "".join((r["result"] or "?")[0].upper() for r in rows)
-                    append_jsonl(DATA / "events.jsonl", {"ev": "finished", "group": ev["group"], "task": ev["task"],
-                                                         "at": now(), "results": res})
-                    log(f"finished {ev['task']} {ev['group'][:8]}: {res}")
+                    with collecting_lock:
+                        collecting.add(ev["group"])
+                    to_collect.put((by_id[ev["task"]], ev, d))
                     inflight = [e for e in inflight if e["group"] != ev["group"]]
                 time.sleep(1)
             if inflight and time.monotonic() - last_ls >= 60:
                 check_live(inflight, "poll")
             pend = pending_tasks(tasks, created, dropped)
             if not pend and not inflight:
-                if args.exit_when_done:
+                with collecting_lock:
+                    drained = not collecting
+                if args.exit_when_done and drained:
                     log("all tasks done: exiting")
                     return
-                time.sleep(args.idle)
+                time.sleep(args.idle if drained else args.tick)
                 errors = 0
                 continue
             if pend and not probe_active(DATA) and len(inflight) < args.inflight and time.monotonic() - last_create >= args.pace:
