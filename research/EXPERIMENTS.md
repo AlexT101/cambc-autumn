@@ -16467,3 +16467,8 @@ Complete cached live gate against unchanged Fish r2/Mite r5: Fish176/256, Mite16
 Same-mask diagnostics against106/107/108 yield Fish176vs184/165/174 and Mite161vs153/169/157 (256 cells per comparison). Different-feature arms are not isolated controls:106 includes both reserve8k and q1 guard;107shield;108chanM. The nominally inactive Mite half is not replay-identical:38/256 raw replays match107,0/256 match108; classifier hooks/false activation and fuel effects remain possible. No promotion or repin from this reused deterministic suite. Await the already-queued exact105 current-mask own-bot control for cleaner attribution. No additional scrims were launched for analysis.
 
 Evidence: `~/tmp-offload/handoff/codex/live-analysis/v109-readout.json` (all matched cells/context/provenance) and `pair109.py`. All104planned groups completed by17:40:52; the hourly probe then proceeded before the next arm's scheduler switch.
+
+
+### Frozen502 tribute Safety audit (2026-11-10; read-only)
+
+[Audit and exact live cases](ideas-2026-11-10/tribute-safety-audit502.md): immediate Safety hits already model bush visibility; future walk-in arrival remains conservative. The attractive Prism carrying 784 cancel/restart case instead enabled 2830.3 damage against an approaching enemy that could enter the bush within the 11-turn window. Hidden wards, ground-target spells, walk-in, locks and sampled visibility prevent calling it a proven false cancel. Prior C1’s 48.8% and 65% increase in later bag deaths also argue against blanket relaxation. **No justified candidate or test admission; no implementation or games.**
