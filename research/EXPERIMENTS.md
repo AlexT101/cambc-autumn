@@ -15880,3 +15880,24 @@ Each arm lowers farm.cc's after-loop reserve (`after_loop`) by `loop_slack` on t
 - Fresh reads rise with loop_slack from 2k to 12k. Every ladder read is positive.
 - Lowering end_reserve does not add to that.
 - The leader, oc16-rs12, is at most a small gain. If it is tried further, a larger slack is the next step.
+
+
+### Hourly opponent-version check calibration (2026-11-10)
+
+Scheduler-owned original-v1 probe enabled at the user's request: drain ordinary
+scrims, activate platform v1, play one unpinned fixed-five-map group against each
+of current Mite and Fish, restore the exact prior selection, then resume pending
+tests. No opponent pins or repin queues are changed. Initial groups were Mite
+`01a1c49a-343a-7429-b549-d5a979c53cd6` and Fish
+`01a1c49a-70b6-7738-96b9-3e90e2c95ac0`: all ten games completed in 412–2000 rounds,
+zero bot faults on both sides. This establishes the baseline; it is not a detected
+new opponent version. v106 was restored active/selected/pinned at 08:39:15 UTC and
+normal v106 scrims resumed at 08:39:27. Fish r2/Mite r5 pins stayed unchanged.
+
+First-cycle drain-to-restoration pause: **9m25s** (08:29:50–08:39:15), including
+platform preparation of both selections. Exactly two scrim groups were spent;
+future switching overhead is not established. Hourly cadence remains enabled,
+next due 09:36:58 UTC. Fourteen coordination/recovery tests pass. Later changed
+summary trajectories are logged and relayed to the user as behaviour/version-change
+evidence, with engine/seed/nondeterminism caveats, never as an automatic repin.
+[Implementation, evidence paths and recovery](ladder-scrims-2026-11-06/VERSION-CHECK.md).

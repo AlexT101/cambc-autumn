@@ -626,3 +626,15 @@ drafts and emblems: [report](../research/fish-2026-11-05/DRAFTS-EMBLEMS.md).
   `py tools/fish/scorecard/run.py BOT [--name N]` plays BOT against `variants/astraeus-37e1eb6` on the 128 ladder maps
   (fast runner), decodes (`build.py local`), scores (`metrics.py`) and compares (`compare.py`, against `fish` and
   `control-ast37`) into `replays/fish-scorecard/N/scorecard.{md,json}`. `metric_defs.py` defines every metric.
+
+## Hourly live opponent checks
+
+`ladder_version_check.py` integrates with `~/tmp-offload/handoff/sched/live_sched.py`:
+it drains ordinary live scrims, temporarily activates platform v1, queues one
+unpinned five-map group each against current Mite and Fish, restores the previous
+selection mode, and compares saved deterministic game summaries. The first cycle
+calibrates; later changes are logged and wake the coordinator. It never repins or
+queues a repin. `ladder_coordination.py` shares a creation/switch lock with
+`ladder_scrims.py`. Operational state, evidence and recovery instructions are in
+[the operator guide](../research/ladder-scrims-2026-11-06/VERSION-CHECK.md). Tests:
+`python -m unittest discover -s tools/tests -p test_ladder_version_check.py -v`.

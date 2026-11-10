@@ -20,6 +20,7 @@ when either changes (someone else's submission or activation) it logs a `live_ch
 flight `suspect`; games() leaves suspect groups out (a game may have played the other version)."""
 
 import argparse
+from ladder_coordination import live_lock, probe_active
 import fcntl
 import json
 import math
@@ -280,12 +281,12 @@ def group_done(detail):
 
 # ---------------------------------------------------------------- run
 
-def create(task, source):
+def create(task, source, retries=2):
     args = ["match-groups", "create", task["opp_id"], "--maps", ",".join(g["map_id"] for g in task["games"]),
             "--sides", ",".join(g["side"] for g in task["games"]), "--json"]
     if source:
         args += ["--source-group", source]
-    out = cambc(*args, retries=2)
+    out = cambc(*args, retries=retries)
     try:
         d = json.loads(out)
     except ValueError:
@@ -361,68 +362,72 @@ def cmd_run(args):
                 time.sleep(args.idle)
                 errors = 0
                 continue
-            if pend and len(inflight) < args.inflight and time.monotonic() - last_create >= args.pace:
-                live, selected = check_live(inflight, "before create")
-                ready = []
-                for t in pend:
-                    if t["version"] != live or selected != live:
+            if pend and not probe_active(DATA) and len(inflight) < args.inflight and time.monotonic() - last_create >= args.pace:
+                with live_lock(DATA):
+                    if probe_active(DATA):
+                        time.sleep(args.tick)
                         continue
-                    source = None
-                    if t["pin"] == "ref":
-                        ref = refs.get((t["refset"], t["opp_id"]))
-                        if ref is None:
-                            # The first group against this opponent becomes its ref, unless one is already pending.
-                            if any(e.get("is_ref") and e["opp_id"] == t["opp_id"] and e["refset"] == t["refset"]
-                                   for e in inflight):
+                    live, selected = check_live(inflight, "before create")
+                    ready = []
+                    for t in pend:
+                        if t["version"] != live or selected != live:
+                            continue
+                        source = None
+                        if t["pin"] == "ref":
+                            ref = refs.get((t["refset"], t["opp_id"]))
+                            if ref is None:
+                                # The first group against this opponent becomes its ref, unless one is already pending.
+                                if any(e.get("is_ref") and e["opp_id"] == t["opp_id"] and e["refset"] == t["refset"]
+                                       for e in inflight):
+                                    continue
+                            elif ref not in finished:
                                 continue
-                        elif ref not in finished:
-                            continue
-                        else:
-                            source = ref
-                    elif t["pin"] not in ("none", None):
-                        source = t["pin"]
-                    ready.append((t, source))
-                ready.sort(key=lambda ts: -ts[0]["priority"])
-                if not ready:
-                    note = f"nothing runnable: live v{live}, selected v{selected}, pending versions {sorted({t['version'] for t in pend})}"
-                    if note != waiting_note:
-                        log(note)
-                        waiting_note = note
-                else:
-                    t, source = ready[0]
-                    q = quota()
-                    qq = q.get("quota") or {}
-                    used, limit = qq.get("used", 0), qq.get("limit") or 100
-                    room = limit - used - (0 if t["priority"] >= 100 else args.reserve)
-                    if not q.get("ready", True):
-                        log("quota not ready (no live submission?)")
-                    elif room > 0:
-                        is_ref = t["pin"] == "ref" and refs.get((t["refset"], t["opp_id"])) is None
-                        try:
-                            gid, out = create(t, source)
-                        except CambcError as e:
-                            if "HTTP 400" not in str(e):
-                                raise
-                            append_jsonl(DATA / "events.jsonl", {"ev": "dropped", "task": t["id"], "at": now(),
-                                                                 "why": str(e)[-300:]})
-                            log(f"dropped {t['id']}: {e}")
-                            last_create = time.monotonic()
-                            continue
-                        last_create = time.monotonic()
-                        ev = {"ev": "created", "task": t["id"], "group": gid, "at": now(), "live": live,
-                              "selected": selected, "source_group": source, "opp_id": t["opp_id"],
-                              "refset": t.get("refset"), "is_ref": is_ref, "quota_used": used + 1}
-                        append_jsonl(DATA / "events.jsonl", ev)
-                        polled[gid] = time.monotonic()
-                        check_live(inflight + [ev], "after create")
-                        log(f"created {t['id']} -> {gid[:8]} (v{live}, quota {used + 1}/{limit}"
-                            f"{', ref' if is_ref else ''}{', pinned ' + source[:8] if source else ''})")
-                        waiting_note = None
-                    else:
-                        note = f"quota {used}/{limit}, reserve {args.reserve}: waiting (resets {qq.get('resetsAt')})"
+                            else:
+                                source = ref
+                        elif t["pin"] not in ("none", None):
+                            source = t["pin"]
+                        ready.append((t, source))
+                    ready.sort(key=lambda ts: -ts[0]["priority"])
+                    if not ready:
+                        note = f"nothing runnable: live v{live}, selected v{selected}, pending versions {sorted({t['version'] for t in pend})}"
                         if note != waiting_note:
                             log(note)
                             waiting_note = note
+                    else:
+                        t, source = ready[0]
+                        q = quota()
+                        qq = q.get("quota") or {}
+                        used, limit = qq.get("used", 0), qq.get("limit") or 100
+                        room = limit - used - (0 if t["priority"] >= 100 else args.reserve)
+                        if not q.get("ready", True):
+                            log("quota not ready (no live submission?)")
+                        elif room > 0:
+                            is_ref = t["pin"] == "ref" and refs.get((t["refset"], t["opp_id"])) is None
+                            try:
+                                gid, out = create(t, source)
+                            except CambcError as e:
+                                if "HTTP 400" not in str(e):
+                                    raise
+                                append_jsonl(DATA / "events.jsonl", {"ev": "dropped", "task": t["id"], "at": now(),
+                                                                     "why": str(e)[-300:]})
+                                log(f"dropped {t['id']}: {e}")
+                                last_create = time.monotonic()
+                                continue
+                            last_create = time.monotonic()
+                            ev = {"ev": "created", "task": t["id"], "group": gid, "at": now(), "live": live,
+                                  "selected": selected, "source_group": source, "opp_id": t["opp_id"],
+                                  "refset": t.get("refset"), "is_ref": is_ref, "quota_used": used + 1}
+                            append_jsonl(DATA / "events.jsonl", ev)
+                            polled[gid] = time.monotonic()
+                            check_live(inflight + [ev], "after create")
+                            log(f"created {t['id']} -> {gid[:8]} (v{live}, quota {used + 1}/{limit}"
+                                f"{', ref' if is_ref else ''}{', pinned ' + source[:8] if source else ''})")
+                            waiting_note = None
+                        else:
+                            note = f"quota {used}/{limit}, reserve {args.reserve}: waiting (resets {qq.get('resetsAt')})"
+                            if note != waiting_note:
+                                log(note)
+                                waiting_note = note
             errors = 0
         except (CambcError, OSError, ValueError, KeyError) as e:
             errors += 1
