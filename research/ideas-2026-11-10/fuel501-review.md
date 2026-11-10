@@ -1,8 +1,10 @@
-# Independent fuel501 review and fixed-body strength gate
+# Independent fuel501 review; strength gate cancelled
+
+**Superseded by explicit user instruction:** remove the unstarted501-v500 strength gate and do not create future strength gates for fuel-only cuts when the implementer concludes behavior is unchanged, including incidental identity exceptions.501 remains approved for training. The source/evidence review below is retained; its recommendation for a separate strength gate is withdrawn. Existing cumulative500 and behavior/component tests are unrelated and remain unchanged.
 
 Reviewed 2026-11-10, exactly the nine-file501-minus500 source diff. Frozen `oc-fuel-501` equals commit48e2771a7's Ocean source; frozen `oc-wakecold-500` equals fd8892b65. Skirmish499 and wakecold500 are preserved. No source edits or duplicate game campaign by this reviewer.
 
-**Conclusion:** no concrete correctness blocker found within the published <=100x100 map domain. The final evidence supports fewer exhausted turns; it does not establish a win-rate improvement or universal replay identity. Recommend moving only unstarted training to this completed current source after coordinator approval, retaining every started/sealed experiment and its original base. The new fixed-body gate remains a separate strength check, with no automatic live promotion or repin.
+**Conclusion:** no concrete correctness blocker found within the published <=100x100 map domain. The final evidence supports fewer exhausted turns; it does not establish a win-rate improvement or universal replay identity. The coordinator approved moving only unstarted training to this completed current source, retaining every started/sealed experiment and its original base. The proposed strength gate was subsequently cancelled by explicit user instruction; no replacement is required.
 
 ## Correctness checks
 
@@ -21,10 +23,14 @@ The widened original-Reach oracle reports at least82427 bitwise damage/hit/stun 
 
 Final held-out release4096games:2095wins,51.15%[49.62,52.68], exhausted30156→26749(−11.30%). Standard1280games:638wins,49.84%, exhausted9663→8506(−11.97%). No run errors, early losses, handoff failures or capped drafts. Real-budget debug bench4096games: exhausted32202→27799(−13.67%), shortcuts1313304→1230497(−6.31%). Debug and release measures remain separate; paired-game intervals do not account for two sides sharing a map. Full original evidence: [teammate report](../fuel-2026-11-10-fourth/README.md).
 
-## Prospective fixed-body check
+## Cancelled fixed-body proposal (historical record)
 
 No equivalent queued gate or501 fgate cache existed at preparation. Run `python3 research/ideas-2026-11-10/fuel501-tools/run_gate.py oc-fuel-501 --jobs 4`; `--check` verifies seals without playing. It uses standard fgate release/native5.0.1, own drafts, normal100k, Flp4/Mt3q, seed323 and unchanged default stops. Source seals:501 `0d16cf180efac144337354a929772d36783777f5aa6d3cf6f609cc72a04664c9`,500 `4a3bacd66ae3b7a6a88118f935b54600644681706f7bf0cf506d4d2b23c984fc`.
 
 Existing500 runs from the separately admitted cumulative500-v494 programme can be reused unchanged by their source/body/fuel names when available. Neither gate changes the other's evidence or stopping rules. This programme uses the standard reused map pool, not a new unused-map confirmation. Queue placement requested after all ready behavior/validation, including cumulative500 and blind-follow pair, before dependent training. Outcome owner `/root/version_check`; ops owns atomic admission. Artifacts under `~/tmp-offload/fuel501-review-2026-11-10/`.
 
 Coordinator accepted the training recommendation; ops admitted the gate16:24:26 UTC and updated only unstarted training/policy in the same locked transaction. Independent queue reread confirmed one exact command after cumulative500 and both blind-follow conditions, before draft10 continuation. Existing tests and live submissions are unchanged. Job ID `fuel501-v500-100000`; read-only watcher3306343.
+
+The501 gate never acquired state or played games. Its idle read-only watcher3306343 was stopped after exact process-command verification; ops owns removal of the single pending queue entry. No replacement501 strength test, cache regeneration or live action.
+
+Ops removed the only pending501 gate16:34:44 under `round.lock`; independent reread confirms no other command changed and no state directory exists. The preserved launcher now refuses execution (while --check retains source/protocol inspection), preventing accidental resubmission.

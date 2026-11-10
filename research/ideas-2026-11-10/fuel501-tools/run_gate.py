@@ -28,7 +28,4 @@ if a.check:
     print(json.dumps({'source_seals': expected, 'argv': cmd, 'fuel': 'default100k',
                       'scope': 'fuel501 versus500, with explicit identity exceptions; no automatic live promotion'}))
     sys.exit(0)
-env = dict(os.environ, CAMBC_BIN=str(R / 'tools/fastengine/runner/fastrunner'),
-           FASTRUNNER_MODE='native')
-os.chdir(R)
-os.execve(sys.executable, cmd, env)
+sys.exit('Cancelled by explicit user policy: no501 strength gate; no games launched.')
