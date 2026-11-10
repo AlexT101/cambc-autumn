@@ -1,8 +1,6 @@
-diff --git a/bots/variants/oc-emb5-504/src/bot_parts.h b/bots/variants/oc504-tune8-vehicle/src/bot_parts.h
-index 994906237..ecd7924aa 100644
---- a/bots/variants/oc-emb5-504/src/bot_parts.h
-+++ b/bots/variants/oc504-tune8-vehicle/src/bot_parts.h
-@@ -156,10 +156,10 @@ bool altar_walk_pending = false;
+--- a/src/bot_parts.h
++++ b/src/bot_parts.h
+@@ -156,10 +156,10 @@
  // rate()'s horizon: a farm cycle's worth a round falls faster than 1 / rounds for long cycles, as
  // gems taken sooner turn into shards sooner, and a long clear is more often contested or cut short.
  // Scaled up by the map's larger side over 50, since on a large map every walk is long.
@@ -15,11 +13,9 @@ index 994906237..ecd7924aa 100644
  
  // Our upkeep so far, over the turns we were alive: turns spent damaging camps, damage taken from
  // camps and from champions, and steps from spawn (the walk back out after a heal).
-diff --git a/bots/variants/oc-emb5-504/src/economy/capture.cc b/bots/variants/oc504-tune8-vehicle/src/economy/capture.cc
-index 713c2bc41..3295e61a9 100644
---- a/bots/variants/oc-emb5-504/src/economy/capture.cc
-+++ b/bots/variants/oc504-tune8-vehicle/src/economy/capture.cc
-@@ -70,7 +70,7 @@ vec2 position_of(const ChampionBelief& a) { return a.is_self ? my_position() : a
+--- a/src/economy/capture.cc
++++ b/src/economy/capture.cc
+@@ -70,7 +70,7 @@
  // Gems a gold is worth when allies compare their holds (value_holder): one number for all, so that
  // every ally names the same holder. Between gold bonuses and Marcella's tribute gold it cancels
  // out, the gems being common to both; it weighs a Prospector emblem's extra gems and the holders' gold efficiencies.
@@ -28,11 +24,9 @@ index 713c2bc41..3295e61a9 100644
  
  // An ally's gold bonuses: its items read only while it is in sight now (error 97 once our move
  // lost it), else its passive's alone.
-diff --git a/bots/variants/oc-emb5-504/src/economy/farm.cc b/bots/variants/oc504-tune8-vehicle/src/economy/farm.cc
-index 877e8731d..d5d9e0d47 100644
---- a/bots/variants/oc-emb5-504/src/economy/farm.cc
-+++ b/bots/variants/oc504-tune8-vehicle/src/economy/farm.cc
-@@ -6,7 +6,7 @@ namespace aph {
+--- a/src/economy/farm.cc
++++ b/src/economy/farm.cc
+@@ -6,7 +6,7 @@
  
  namespace {
  
@@ -41,11 +35,9 @@ index 877e8731d..d5d9e0d47 100644
  // pack_zone's cost with a bag at stake: p50 0.7k, p99 3.3k, at most ~10k (wa maps, real budget).
  constexpr std::uint64_t pack_zone_cost_bound = 3500;
  
-diff --git a/bots/variants/oc-emb5-504/src/economy/shop.cc b/bots/variants/oc504-tune8-vehicle/src/economy/shop.cc
-index a01583426..49e6f00a8 100644
---- a/bots/variants/oc-emb5-504/src/economy/shop.cc
-+++ b/bots/variants/oc504-tune8-vehicle/src/economy/shop.cc
-@@ -270,10 +270,10 @@ float heal_rounds_now(const World& world) {
+--- a/src/economy/shop.cc
++++ b/src/economy/shop.cc
+@@ -270,10 +270,10 @@
  // Income's prior, worth income_prior_gems gems of our own: this map's capture income per gem (every
  // group but Monoliths, all where only Monoliths pay, each captured alone), and measured rates
  // (rounds alive per gem collected, kills per gem, Tribute's cut turn ends per gem).
@@ -60,10 +52,8 @@ index a01583426..49e6f00a8 100644
  struct IncomePrior {
      float holds = 0, prospected_gems = 0, prospected_gold = 0, gold = 0;
  };
-diff --git a/bots/variants/oc-emb5-504/src/params.h b/bots/variants/oc504-tune8-vehicle/src/params.h
-index 947124ef9..6421c2e40 100644
---- a/bots/variants/oc-emb5-504/src/params.h
-+++ b/bots/variants/oc504-tune8-vehicle/src/params.h
+--- a/src/params.h
++++ b/src/params.h
 @@ -1,5 +1,6 @@
  #pragma once
  #include <cambc.h>
@@ -71,7 +61,7 @@ index 947124ef9..6421c2e40 100644
  
  namespace aph::params {
  
-@@ -60,9 +61,9 @@ inline constexpr int track_horizon = 3;
+@@ -60,9 +61,9 @@
  // Below this share of max health a champion goes home; camps may cost only the health above it.
  // This is the line while an enemy threatens us (fight.cc recall_line); safe_recall_health_fraction otherwise.
  // Set per map on a champion's first turn (draft.cc condition_on_map); this is the value without map features.
@@ -83,7 +73,7 @@ index 947124ef9..6421c2e40 100644
  // recall_line: steps past an enemy's reach within which it threatens us.
  inline constexpr int threat_radius = 8;
  // The draft's fixed recall line for usable health (draft.cc type_facts).
-@@ -71,11 +72,11 @@ inline constexpr float draft_recall_health_fraction = 0.22716701f;
+@@ -71,11 +72,11 @@
  // packs, no longer count their own ground as safe from pursuit, and are healed for any gain.
  inline constexpr float hurt_health_fraction = 0.4532513f;
  // Below the recall line, stay to finish a camp whose remaining damage is under this share of our health.
@@ -98,7 +88,7 @@ index 947124ef9..6421c2e40 100644
  // An ally this near with no claim of its own can partner on a group too costly for us alone.
  inline constexpr int partner_radius = 13;
  // Crews on strong groups (economy/crew.cc): allies in sight this near a group's centre, free or on
-@@ -84,14 +85,14 @@ inline constexpr int partner_radius = 13;
+@@ -84,14 +85,14 @@
  inline constexpr int crew_available_radius = 11;
  inline constexpr int crew_near_radius = 9;
  inline constexpr int crew_cap = 5;
@@ -117,7 +107,7 @@ index 947124ef9..6421c2e40 100644
  // An operation fails when, this many rounds after its proposer came within reach, no ally claims
  // it or stands in reach; it is then not proposed again for crew_ban_rounds.
  inline constexpr int crew_wait_rounds = 4;
-@@ -102,10 +103,10 @@ inline constexpr int crew_enemy_radius = 12;
+@@ -102,10 +103,10 @@
  inline constexpr int crew_ban_rounds = 26;
  // Monoliths off Monolith-only maps are farm's crew operations (farm.cc, crew.cc). Members wait just
  // out of reach of a sleeping one until this share of the crew's output has come, at most this long.
@@ -130,7 +120,7 @@ index 947124ef9..6421c2e40 100644
  // Help a struggling teammate clear its damaging group within this many steps.
  inline constexpr int help_radius = 6;
  // farm's pick_up: take over a group cleared this turn within this many tiles of its nearest member.
-@@ -119,7 +120,7 @@ inline constexpr int min_bank = 25;
+@@ -119,7 +120,7 @@
  
  // Cassi's or Issac's hold is worth this share of another ally's in the holder choice
  // (economy/capture.cc hold_shy): the pair hands captures to the rest of the team.
@@ -139,7 +129,7 @@ index 947124ef9..6421c2e40 100644
  
  // Early retreat (combat/guard.cc outmatched): enemies within two steps of their reach against
  // allies this near. When hurt (under hurt_health_fraction, or carrying brake_bag gems or more),
-@@ -137,7 +138,7 @@ inline constexpr float home_retreat_ratio = 2.1740904f;
+@@ -137,7 +138,7 @@
  inline constexpr int pursuit_steps = 2;
  // Below this share of max health a sieger out of the besieged group's reach goes home to heal,
  // and a caster stops staging at spell range.
@@ -148,7 +138,7 @@ index 947124ef9..6421c2e40 100644
  // Turns ahead a tribute's safety is judged over, each turn of the channel.
  inline constexpr int tribute_window = 11;
  // Most rounds to wait at a camp for it to return. Also bounds the wait after a recall out to farm.
-@@ -148,7 +149,7 @@ inline constexpr float gold_farmer_weight = 3.8296325f;
+@@ -148,7 +149,7 @@
  // Gold's price in farm choices (prices().per_gold), scaled: we earn less gold than top teams. The learned
  // emblems (economy/emblem_table.h) were learned at 1.5.
  // Set per map on a champion's first turn (draft.cc condition_on_map); this is the value without map features.
@@ -157,7 +147,7 @@ index 947124ef9..6421c2e40 100644
  // condition_on_map: the share of oc5's fitted map-feature shifts taken (EXPERIMENTS "oc-mapcond2").
  inline constexpr double mapcond_shrink = 0.25;
  
-@@ -225,10 +226,10 @@ inline constexpr int altar_farmers_min = 1;
+@@ -225,10 +226,10 @@
  
  // An emblem's fight value (shop.cc current_emblem): this weight x the share of the damage we take that comes
  // from champions, with fight_camp_prior camp damage as a prior, x the fight power it adds (output x effective health).
@@ -171,7 +161,7 @@ index 947124ef9..6421c2e40 100644
  // safety_params::hit_given_reach and recall_risk (model/safety.h), tunable here.
  inline constexpr float hit_given_reach = 0.2338928f;
  inline constexpr float recall_risk = 0.20703878f;
-@@ -239,7 +240,7 @@ inline constexpr float reveal_mass = 0.23420754f;
+@@ -239,7 +240,7 @@
  inline constexpr float reveal_prior = 1.6499189f;
  
  // relative_efficiency: holders and farm's gold weigh (gold efficiency / the team's mean)^efficiency_power.
@@ -180,7 +170,7 @@ index 947124ef9..6421c2e40 100644
  
  // Cooked comebacks (economy/comeback.cc, research/ideas-2026-11-05/comeback.md): while the enemy has at least
  // enemy_min tributed and leads by gap (cooked until the lead falls below gap_off), farm's mirror pull counts a
-@@ -282,7 +283,7 @@ inline constexpr int trib_min_bag = 100;
+@@ -282,7 +283,7 @@
  // Mid-game gold (research/ideas-2026-11-08/gold-price.md): per_gold x (1 + (mid_gold - 1) h), h a hump on the higher
  // tributed score, 0 -> 1 over [0, mid_gold_rise], 1 to mid_gold_hold, 1 -> 0 by mid_gold_end. Win models of ladder and
  // our own games put gold at ~1.5x per_gold's median there; x1.25 is the A/B's best.
@@ -189,11 +179,8 @@ index 947124ef9..6421c2e40 100644
  inline constexpr int mid_gold_rise = 100, mid_gold_hold = 500, mid_gold_end = 700;
  
  // The draft's opening plan (draft/open_plan.h, research/draftfarm-2026-11-08): solved for the team we expect in the
-diff --git a/bots/variants/oc504-tune8-vehicle/src/tune.h b/bots/variants/oc504-tune8-vehicle/src/tune.h
-new file mode 100644
-index 000000000..9ce6116fc
---- /dev/null
-+++ b/bots/variants/oc504-tune8-vehicle/src/tune.h
+--- a/src/tune.h
++++ b/src/tune.h
 @@ -0,0 +1,6 @@
 +#pragma once
 +// This block is patched only in isolated training copies.
@@ -201,11 +188,8 @@ index 000000000..9ce6116fc
 +extern "C" {
 +[[gnu::used, gnu::visibility("default")]] inline DianaTune diana_tune = {"DIANA-TUNE-BLK1", {1.3209832906723022f, 1.25f, 0.6882138848304749f, 490.1227722167969f, 0.7510615587234497f, 30.0f, 4.5f, 0.004999999888241291f, 0.014999999664723873f, 0.30000001192092896f, 1.465378761291504f, 0.5498022437095642f, 2.299999952316284f, 100.0f, 1.8913636207580566f, 0.4571676552295685f, 0.3203241527080536f, 0.795274019241333f, 1.411271095275879f, 0.9008550643920898f, 0.6263829469680786f, 1.6830472946166992f, 1.2000000476837158f, 0.3154911398887634f, 0.10935836285352707f, 0.68817138671875f, 0.5362846255302429f}, {0}};
 +}
-diff --git a/bots/variants/oc504-tune8-vehicle/src/tune.json b/bots/variants/oc504-tune8-vehicle/src/tune.json
-new file mode 100644
-index 000000000..fd4b58470
---- /dev/null
-+++ b/bots/variants/oc504-tune8-vehicle/src/tune.json
+--- a/src/tune.json
++++ b/src/tune.json
 @@ -0,0 +1,114 @@
 +{
 + "magic": "DIANA-TUNE-BLK1",

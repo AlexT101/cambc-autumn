@@ -63,7 +63,7 @@ def main():
     ap.add_argument('left')
     ap.add_argument('right')
     a = ap.parse_args()
-    opponent = 'variants/oc-emb5-504'
+    opponent = 'variants/oc-dfuel-506'
     for bot in dict.fromkeys([a.left, a.right, opponent]):
         command([sys.executable, R / 'tools/pooled.py', '1', '--', 'cambc', 'build', R / 'bots' / bot, '--release'])
     records = {}

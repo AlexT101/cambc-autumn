@@ -13,7 +13,7 @@ from types import SimpleNamespace
 
 R = Path('/home/ubuntu/cambc-autumn')
 D = Path('/home/ubuntu/tmp-offload/localq/rounds/tune8')
-RUN = 'oc504-tune8'
+RUN = 'oc506-tune8'
 spec = importlib.util.spec_from_file_location('tune8_engine', R / 'tools/tune/tune.py')
 tune = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(tune)

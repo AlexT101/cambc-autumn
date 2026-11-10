@@ -1,4 +1,4 @@
-"""One explicitly authorized Ocean504 draft refit; queue operations owns admission."""
+"""One explicitly authorized Ocean506 draft refit; queue operations owns admission."""
 import argparse
 import fcntl
 import hashlib
@@ -19,8 +19,8 @@ R = Path('/home/ubuntu/cambc-autumn')
 D = Path('/home/ubuntu/tmp-offload/localq/rounds/draft17')
 T = Path(__file__).resolve().parent
 LAB = 'lq-draft17'
-BASE = 'variants/oc-emb5-504'
-CAND = 'variants/lq-draft17-504'
+BASE = 'variants/oc-dfuel-506'
+CAND = 'variants/lq-draft17-506'
 
 
 def sha(p):
@@ -203,7 +203,7 @@ def candidate():
     assert lines and '0 key mismatches' in lines[-1] and '0 team mismatches, 0 C++ failures' in lines[-1], 'Native draft parity failed'
     command(['cambc', 'build', '--release', R / 'bots' / CAND], 'candidate.log')
     for label, bot in (('base', BASE), ('candidate', CAND)):
-        name = 'draft17-504-' + label
+        name = 'draft17-506-' + label
         command([sys.executable, T / 'reserve.py', '8', sys.executable, 'tools/draftlab/firstturn.py',
                  '--sample', D / 'lab/maps.jsonl', '--need', '--bot', 'bots/' + bot, '--jobs', '{n}',
                  '--name', name], 'firstturn-' + label + '.log')

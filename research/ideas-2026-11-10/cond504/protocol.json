@@ -1,13 +1,13 @@
 {
-  "base": "variants/oc-emb5-504",
-  "base_commit": "08f4be1ce0e8ae1485f389abddc0508af971cd42",
+  "base": "variants/oc-dfuel-506",
+  "base_commit": "183a1295c335a83d03679f93fcb11cdbde5617b2",
   "arms": {
     "chanM": {
-      "candidate": "variants/oc504-chanM",
+      "candidate": "variants/oc506-chanM",
       "target": "M"
     },
     "bagfF": {
-      "candidate": "variants/oc504-bagfF",
+      "candidate": "variants/oc506-bagfF",
       "target": "F"
     }
   },
@@ -95,7 +95,7 @@
   },
   "review_required": "Positive target does not prove off-target safety. Review both halves and uncertainty before any normal-fuel admission or shipping. Changed future base holds before heavy work; started experiment stays frozen.",
   "mirror": {
-    "opponent": "variants/oc-emb5-504",
+    "opponent": "variants/oc-dfuel-506",
     "fuel": 200000,
     "maps": 8192,
     "games": 16384,

@@ -1,6 +1,68 @@
 {
- "scope": "All 60 frozen source files; declaration candidates include derived/runtime constants and learned arrays, manually classified in INVENTORY.md. Not an exhaustive semantic extraction of every numeric expression.",
+ "scope": "Original full504 source rescan retained explicitly; current506 file hashes and review of the five changed files below. Original declaration line numbers refer to504. The approved27parameter sites are unchanged in506.",
  "files": {
+  "bot.cc": "c60dcf2da4e9593a573c18144f552811632fa9392d215f42aece7438e43050f7",
+  "bot.h": "d37b44e3165a3028465f371ee73392ef9111802b75c0b837af35834f50324ba1",
+  "bot_parts.h": "2d045d55b28c564554875c1013158f0748fa9e6faaa5c343d0468e99f26c2c23",
+  "champions.h": "790600f3d536608f3987fbb57df098e7b6d29da2f31845b84f47802c4c5cb9c9",
+  "combat/abilities.cc": "c64cb5828e73e03828c74a0319430976d3b5e75eff5244f9e12e49f0815bea55",
+  "combat/abilities.h": "565f309f54099579b6d8d85e7f72b1bba60297630a0ef85b354e6194a71bce6b",
+  "combat/fight.cc": "1bf9978aa8862ae850c50be509c6ce1623ab14e0f470b325b5964403c5f2f586",
+  "combat/fixc.cc": "e8ccebb97169463b12e4d3816c0b9bbc572da74dad56a63bb07526abe190b08f",
+  "combat/guard.cc": "025a6cd3da805130edc54f6aff6af11408b0765848fecf0e4ae1bbd16fec5e6d",
+  "combat/plan.cc": "71f7998f3d33bc055e6d5477afd91993f125f51de6205456f7391551d35f5489",
+  "combat/plan.h": "967290465c0f42b2e5b0161ab29fd0a1e8f336c22b344ac9d82addec639bfeef",
+  "combat/self_abilities.cc": "deca4812f2275466a51532810592b484c23c06ad13a7365411ef111139a1af17",
+  "combat/self_abilities.h": "009f6244cdce7a1502b12f97f717934c05a5301b699f2f14fec217047e301a9f",
+  "combat/support.cc": "2d7c6ab0dbd65825d43dc23c718f6570d9becc1977a03d64665a7cfbb8d31d85",
+  "draft/draft.cc": "4dfbb779dcb9875e96c22d734eace8fbeb6634ae9f987c854ce7b950c3b42b8e",
+  "draft/draft.h": "6ed47c02cb676ddb6f20198b7d21b02cfa9e4052e3a1e4dc91c1687b3be481e7",
+  "draft/draft_model.h": "d63140255e3aa37fa5a364a87b2f95bb87c88f731f6680018305dbb62e6f58f0",
+  "draft/map_economy.h": "b935cf069377d9d1ebc41c24a622e135a40076f89c3a7c0aee932109e6e0c4c4",
+  "draft/map_features.cc": "94bbcc4cddae126df616ac5556600c383be1f3b77fc8b770d36799474d1b4c4c",
+  "draft/map_features.h": "694042a8a3ba2483ff5ebd16ed739598af796a13544ee8bb31864653917c194f",
+  "draft/open_plan.cc": "83d3bc1260595ba2fbfeb08b02caf063479ced12dbf4f6f68ef97267122fbc23",
+  "draft/open_plan.h": "53469488a3f316094921bc8de3133bcd1c28056ee7985ea03c18d01222ca8da6",
+  "economy/altar_guard.cc": "9a4cda77ca9d9bfff7ac90edf5b080d1a8fca336df101cc296b716ac2d880b0a",
+  "economy/bank.cc": "c940a386ce540af06ebc0b1fd3704414771922063e74736236b06f37fe15359a",
+  "economy/camps.cc": "a97dfd9cc569e4cec91b31138b2f3db8d280b81ff51502c82ac67c1be2345d9f",
+  "economy/capture.cc": "949389521b106f35325d4b67b118a3817f3af4a4161d5adda5f775e75f035c1e",
+  "economy/comeback.cc": "321c45e559a17da01cbdb12b82b8f11148eb8a096432fe9dade1a27260d5d435",
+  "economy/crew.cc": "740fe1f6c22b8154ed44cd56ce8eefb17882c2376ffc1b28b728b9ca58ef878e",
+  "economy/emblem_table.h": "0c840924652366abefbb48cda67dbfe6e93a69d757dfbc5c3edf5cd41e2f9fb1",
+  "economy/farm.cc": "dca3f312a3babb86fc5182cacae3437fc7e6d89155f12c1a5ee1f430c9422cf8",
+  "economy/home.cc": "46e761e00d15526de9d312752219ca4846d9f8aeb46c375394f491546c730a97",
+  "economy/shop.cc": "e40d1f868dc739048f2793ffb72f2d9d9c5eee3d0372e65114700aceed0b3e03",
+  "economy/siege.cc": "fee181de41efa71427eb97e3b5332cc1d364580a907b0fee3e71ad0a3bf363ac",
+  "emblems.h": "ecce44537c26cc997a61b65b26259451a02890397890f4c0b65e351cbaa9168a",
+  "main.cc": "50f2eb037bde345cb04789024473e733c2508c8d0dc044531024b66e16263f04",
+  "model/comms.cc": "4ee740fddd6ea11a56c8826cdb1479e2901cb2c8d4e1fdbea9ff5681a553daea",
+  "model/comms.h": "438300bbb156d017287ca22f482e9c6fd483a0a6ff5c205293cfe7dcbd3616f8",
+  "model/crew_work.h": "a17e78b63ee7633c8f3caefb2fa5e274d19c9bf05e25a3457239ab29a104ce75",
+  "model/dash_turns.h": "ea43cdabd492a616e685aa7864488be8fc2cc30cad1fd3134a71294bd9bf5ca8",
+  "model/enemy_reach.cc": "927018bcb9bbc7de23513f0edf099c757e9418a56ae66206d78c8b5088f1d622",
+  "model/enemy_reach.h": "7339006e6d20fa9691fa6a2b941f5f0b8d2917d73c71545eb1f1512acec410de",
+  "model/escape.cc": "420629a1ce30e352684b91a3241768059912ca2875535e82c24bba35ac8668ff",
+  "model/escape.h": "ae813dbae23a155b233075d79236a6bd9cc0b4c8634e3430b38d814b04d4fc8a",
+  "model/follow.h": "f12d03a16204dc6ebb8e603ca121393316d967699e87fd20dab50cbe37ee8f1e",
+  "model/idle_priority.h": "9d4876272a4ac780c2655d2419cb35e43e15f6dc3dba26c1b9abaf876dc8b061",
+  "model/pathing.cc": "65b14d209ba9ef9c4012d7884c64c3733e8406cac228bd978d1814876d6b92f5",
+  "model/pathing.h": "0e9a4a978a1b6c4386c7807a7a2271fdeaac43e249ecc6d0108496385c3bb5d3",
+  "model/safety.cc": "47835962e599201de750229241d646919e58690b1d272a04749847526b518b44",
+  "model/safety.h": "5db48c146da89e85aa1a6f2330a3d0061602c8c0168352ffdd89f71726f96914",
+  "model/support_mailbox.h": "01e219d7afc61b21cca9a7b99854298c978f274b68b4f8328853c19ab79722ae",
+  "model/turn_order.cc": "545fff0ec07ff468877f37ead156f35fd8e504d65a67fcd3f0656518f2e8b7ea",
+  "model/turn_order.h": "f76a815c1a5e39bc50198267ea9c6ec49bf8e66b46b86e80180389a69d393fa0",
+  "model/turn_window.cc": "042dbb093d5d01987a89df1a3f6ea0856fbd5f915aedcf3eb52a889db5854200",
+  "model/turn_window.h": "f342df2084ed986afa6e26254aa791d93ed9d3d4d1ff638f05278e43937f964a",
+  "model/world.cc": "92352bdd591bf9798c23353007b0c786cc98769c4a3203780ad0427477691269",
+  "model/world.h": "17ddb4402f1b58017357b7003a01463702a5a04de1f4c239e469b5cdec03c884",
+  "params.h": "fb52f125710fb602b9471ccd3127dd9268914f9fb9e8774449b30498f49833e8",
+  "sdk_skip.cpp": "60bcf1581b13db31f3802ff71b90b8180ce3a800fbc6e8464e354b6ac87e120b",
+  "unity.cpp": "9db4c64ed12369450ec3fc8e94fb7e6bdacb17f15fa7510a309e7bf73071e49a",
+  "util.h": "8a23a0541f2186d168012042f0754919d7308c080c1f83f6a74c0d5a1291c62f"
+ },
+ "original_504_files": {
   "bot.cc": "c60dcf2da4e9593a573c18144f552811632fa9392d215f42aece7438e43050f7",
   "bot.h": "d37b44e3165a3028465f371ee73392ef9111802b75c0b837af35834f50324ba1",
   "bot_parts.h": "2d045d55b28c564554875c1013158f0748fa9e6faaa5c343d0468e99f26c2c23",
@@ -62,7 +124,7 @@
   "unity.cpp": "9db4c64ed12369450ec3fc8e94fb7e6bdacb17f15fa7510a309e7bf73071e49a",
   "util.h": "8a23a0541f2186d168012042f0754919d7308c080c1f83f6a74c0d5a1291c62f"
  },
- "declarations": [
+ "original_504_declarations": [
   {
    "file": "bot.cc",
    "line": 23,
@@ -12603,5 +12665,36 @@
    "line": 686,
    "text": "inline void draw_line(vec2 a, vec2 b, std::uint32_t rgb) {"
   }
- ]
+ ],
+ "rebase_review": {
+  "commit": "183a1295c335a83d03679f93fcb11cdbde5617b2",
+  "changed_files": {
+   "combat/fight.cc": {
+    "before_sha256": "b3ad74253d45d202fac893e5446dbabc93dd6ba8f08f60ce4c56e8a707110d59",
+    "after_sha256": "1bf9978aa8862ae850c50be509c6ce1623ab14e0f470b325b5964403c5f2f586",
+    "disposition": "Fuel implementation only; no new strategic tuning dimensions. Existing selected sites preserved."
+   },
+   "draft/draft.cc": {
+    "before_sha256": "9942dc27dbc93fcbec1318518f313f4d7dd7100d56a5175938e0971ec3baf416",
+    "after_sha256": "4dfbb779dcb9875e96c22d734eace8fbeb6634ae9f987c854ce7b950c3b42b8e",
+    "disposition": "Fuel implementation only; no new strategic tuning dimensions. Existing selected sites preserved."
+   },
+   "draft/map_features.cc": {
+    "before_sha256": "c9aeb403756ee800ed8a65d5f02402902369772b6d7a3f8272ee2b40cd22e946",
+    "after_sha256": "94bbcc4cddae126df616ac5556600c383be1f3b77fc8b770d36799474d1b4c4c",
+    "disposition": "Fuel implementation only; no new strategic tuning dimensions. Existing selected sites preserved."
+   },
+   "draft/open_plan.cc": {
+    "before_sha256": "39d4ba665dbf134881b1035dd544a55a4c97ec7f3e3af6662505e2596e11ccc1",
+    "after_sha256": "83d3bc1260595ba2fbfeb08b02caf063479ced12dbf4f6f68ef97267122fbc23",
+    "disposition": "Fuel implementation only; no new strategic tuning dimensions. Existing selected sites preserved."
+   },
+   "draft/open_plan.h": {
+    "before_sha256": "ce6344997043413926e44bf49f21c0789e3bc1c048aacb65975a5821d8a4ceb2",
+    "after_sha256": "53469488a3f316094921bc8de3133bcd1c28056ee7985ea03c18d01222ca8da6",
+    "disposition": "Fuel implementation only; no new strategic tuning dimensions. Existing selected sites preserved."
+   }
+  },
+  "selected_parameter_sites_unchanged": true
+ }
 }

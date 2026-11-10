@@ -1,10 +1,10 @@
 {
-  "status": "ROOT_AND_INDEPENDENT_CODE_REVIEW_APPROVED_READY_FOR_ADMISSION",
+  "status": "REBASED_506_PENDING_INDEPENDENT_REVIEW",
   "job": "tune8",
-  "run": "oc504-tune8",
-  "base": "variants/oc-emb5-504",
-  "vehicle": "variants/oc504-tune8-vehicle",
-  "candidate": "variants/oc504-tune8-export",
+  "run": "oc506-tune8",
+  "base": "variants/oc-dfuel-506",
+  "vehicle": "variants/oc506-tune8-vehicle",
+  "candidate": "variants/oc506-tune8-export",
   "dependencies": [
     "draft17",
     "draft17-reviewdone"
@@ -109,7 +109,7 @@
     2413902,
     2413903
   ],
-  "start_barrier": "Before first heavy phase: both committed Ocean source and ops base-policy must equal sealed504, and explicit draft17-reviewdone token must exist. Otherwise HOLD for root review/reseal. After first heavy start preserve frozen source even if main changes.",
+  "start_barrier": "Before first heavy phase: both committed Ocean source and ops base-policy must equal sealed506, and explicit draft17-reviewdone token must exist. Otherwise HOLD for root review/reseal. After first heavy start preserve frozen source even if main changes.",
   "validity": "Before training: default vehicle vs plain base16+52 byte-identical100M benchmark; report vehicle fuel overhead. After training: all600iterations complete1152non-null scores, sealed config/source/maps unchanged; applied vehicle vs exported plain constants16+52 identity. Candidate default release build/draft validity, then sole200k gate with complete paired cells/errors zero and transparent early-loss accounting. Any failed invariant stops for review; no automatic parameter deletion or shorter accepted run.",
   "no_automatic_actions": [
     "rebase",
@@ -121,5 +121,11 @@
   ],
   "vehicle_overhead_guard": "Report standard16+52 release100M identity and play-fuel overhead; >1% overhead on either set holds for review before training. This is a conservative vehicle check, not strength evidence.",
   "train_map_replacements": "Only if exact content overlaps validation or earlier training selection: at most4 additional prospective seeds2413040\u201343, before games, to fill10240 unique maps. Otherwise HOLD.",
-  "resource_policy": "Exclusive local job after draft17 + explicit draft17-reviewdone. Builds each acquire1 shared slot; game runner uses main86 fair slots; metadata parsing acquires actual fair capacity up to32 and caps workers accordingly. No private pool or parallel lab."
+  "resource_policy": "Exclusive local job after draft17 + explicit draft17-reviewdone. Builds each acquire1 shared slot; game runner uses main86 fair slots; metadata parsing acquires actual fair capacity up to32 and caps workers accordingly. No private pool or parallel lab.",
+  "base_commit": "183a1295c335a83d03679f93fcb11cdbde5617b2",
+  "rebase": {
+    "from": "variants/oc-emb5-504",
+    "to": "variants/oc-dfuel-506",
+    "reason": "Explicit coordinator rebase before first heavy phase; same27parameter hypothesis, seeds and endpoint."
+  }
 }

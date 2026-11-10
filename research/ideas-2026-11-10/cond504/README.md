@@ -1,10 +1,12 @@
-# Current504 conditional exploiters: more local evidence
+# Current506 conditional exploiters: more local evidence
 
-The user asked to continue local testing after the earlier inconclusive conditional-arm results: “well you can just run more games lol”. This is a new504 experiment, preserving the old16d6f78 results separately. Queue order is both existing ward gates, Mite channel, its coordinator review, Fish carry-follow, its coordinator review, then the requested draft and tuning labs. Jobs are exclusive. No builds, map generation or games happen during preparation.
+Rebased before any heavy work on 2026-11-10 to frozen Ocean 506, including the shipped 505/506 fuel savings. Seeds, sample sizes, statistical rules, review barriers and job IDs are unchanged. The `cond504` directory name is retained for queue compatibility.
+
+The user asked to continue local testing after the earlier inconclusive conditional-arm results: “well you can just run more games lol”. This is a new506 experiment, preserving the old16d6f78 results separately. Queue order is both existing ward gates, Mite channel, its coordinator review, Fish carry-follow, its coordinator review, then the requested draft and tuning labs. Jobs are exclusive. No builds, map generation or games happen during preparation.
 
 ## Exact ports
 
-`variants/oc504-chanM` and `variants/oc504-bagfF` contain only their original `ca-chan-M` / `ca-bagf-F` minus `ocean-16d6f78` changes, applied cleanly to frozen `variants/oc-emb5-504` (commit08f4be1ce). All504 fuel, draft, emblem and wakecold changes remain. Each adds the same five classifier files, World observation/priority hooks, unity include and negative test stubs; its policy changes only turn_order.cc or support.cc. No main bot file is edited.
+`variants/oc506-chanM` and `variants/oc506-bagfF` contain only their original `ca-chan-M` / `ca-bagf-F` minus `ocean-16d6f78` changes, applied cleanly to frozen `variants/oc-dfuel-506` (commit183a1295c). All506 fuel, draft, emblem and wakecold changes remain. Each adds the same five classifier files, World observation/priority hooks, unity include and negative test stubs; its policy changes only turn_order.cc or support.cc. No main bot file is edited.
 
 - **Mite channel:** on an ending channel, after the existing camp-damage and stun-immunity guards, inferred Mite posterior≥.8 offers the protect turn-order bid without requiring a visible cancel threat. This is not literally every turn of every channel, nor a guarantee of the first final slot.
 - **Fish carry-follow:** Willow's existing follow target score gains `min(known bag,120)/40` when inferred Fish posterior≥.8. Existing eligibility, ally-location and movement logic remains.
@@ -14,7 +16,7 @@ The user asked to continue local testing after the earlier inconclusive conditio
 
 Both candidate and base play release/native engine5.0.1 at200k, both sides, own drafts, against fixed local Flp4/Mt3q bodies. One shared new1,024-map ladder-v2 pool starts with seeds2414000–03; reserved2414004–07 are used only if exact-content duplicate replacement is needed, before any outcomes. Duplicates are excluded within the pool and against the ladder, old standard gate pool, old conditional-arm pool and draft10 training pool; this explicit scope is not universal historical novelty. Noise blocks1004–2003 are disjoint from the old conditional runs38–404 and tuning's1001–1003. Every block revisits one128-map slice with a new opponent parameter variation:1,000 blocks do **not** mean128,000 distinct maps.
 
-The reference's matching504 cells are shared between these two tests. Reusing cached cells never adds them twice to a test's units. Existing unrelated504 reference cells are reusable only with the exact same map/side/body/source/fuel/release identity. The128 ladder maps are diagnostic; fresh maps decide.
+The reference's matching506 cells are shared between these two tests. Reusing cached cells never adds them twice to a test's units. Existing unrelated506 reference cells are reusable only with the exact same map/side/body/source/fuel/release identity. The128 ladder maps are diagnostic; fresh maps decide.
 
 The policy targets one identifiable opponent, so the standing narrow-change rule applies. Each primary paired unit averages the two sides on one map against that target opponent; Fish and Mite are not pooled to dilute the effect.
 
@@ -37,7 +39,7 @@ Release builds and32 release smoke cells (the16 matching baseline cells are cach
 
 ## Mandatory direct Ocean mirror (user amendment)
 
-Both jobs also play the release candidate directly against frozen504 at200k after the targeted gate, even if that gate stops early. This fixed mirror sample contains8,192 new distinct ladder-v2 maps, both sides:16,384 games per candidate, in eight sequential1,024-map chunks. Seeds2415000–31 supply the initial pool;2415032–35 are reserved solely for duplicate replacement before mirror outcomes. The pool excludes exact bytes in the stated historical roots and the main conditional pool. Both arms share maps, but each arm counts every map/side only once. Frozen Ocean has no noise variants; repeated deterministic cells add no evidence and are never scheduled.
+Both jobs also play the release candidate directly against frozen506 at200k after the targeted gate, even if that gate stops early. This fixed mirror sample contains8,192 new distinct ladder-v2 maps, both sides:16,384 games per candidate, in eight sequential1,024-map chunks. Seeds2415000–31 supply the initial pool;2415032–35 are reserved solely for duplicate replacement before mirror outcomes. The pool excludes exact bytes in the stated historical roots and the main conditional pool. Both arms share maps, but each arm counts every map/side only once. Frozen Ocean has no noise variants; repeated deterministic cells add no evidence and are never scheduled.
 
 Mirror results are **absolute direct head-to-head wins**, separate from the performance delta against Fish/Mite replicas. The paired score averages both sides on a map. Report the mean, normal95% map-paired interval, pair counts and a conservative bounded empirical-Bernstein95% interval, which remains nondegenerate if every pair splits1–1. Intervals describe the sampled generator distribution; neither crossing50% nor nonsignificance proves safety. A negative normal interval flags harm for review. There are no interim result-based stops, automatic extensions, merges or100k follow-ups. Exact cell/source audits and error, early-loss, handoff and capped-draft counts are retained. Execution validity failures hold the job.
 

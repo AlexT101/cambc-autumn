@@ -12,7 +12,7 @@ import tarfile
 import time
 
 R=Path('/home/ubuntu/cambc-autumn');D=Path('/home/ubuntu/tmp-offload/cond504');T=Path(__file__).resolve().parent
-BASE='variants/oc-emb5-504';CAND={'chanM':'variants/oc504-chanM','bagfF':'variants/oc504-bagfF'}
+BASE='variants/oc-dfuel-506';CAND={'chanM':'variants/oc506-chanM','bagfF':'variants/oc506-bagfF'}
 
 
 def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()

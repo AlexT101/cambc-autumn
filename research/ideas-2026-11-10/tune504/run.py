@@ -1,4 +1,4 @@
-"""One reviewed, exclusive tune8 job: fixed504 training and sole200k candidate evaluation."""
+"""One reviewed, exclusive tune8 job: fixed506 training and sole200k candidate evaluation."""
 import argparse
 import fcntl
 import hashlib
@@ -16,11 +16,11 @@ import time
 R = Path('/home/ubuntu/cambc-autumn')
 D = Path('/home/ubuntu/tmp-offload/localq/rounds/tune8')
 T = Path(__file__).resolve().parent
-BASE = 'variants/oc-emb5-504'
-VEHICLE = 'variants/oc504-tune8-vehicle'
-CAND = 'variants/oc504-tune8-export'
-APPLIED = 'variants/oc504-tune8-applied'
-RUN = 'oc504-tune8'
+BASE = 'variants/oc-dfuel-506'
+VEHICLE = 'variants/oc506-tune8-vehicle'
+CAND = 'variants/oc506-tune8-export'
+APPLIED = 'variants/oc506-tune8-applied'
+RUN = 'oc506-tune8'
 
 
 def sha(p):
@@ -118,7 +118,7 @@ def prepare_maps():
     def generate(seed):
         directory = D / 'maps' / f'fresh-{seed}'
         assert not directory.exists(), 'Partial map preparation requires review'
-        pooled(1, ['node', 'tools/mapgen/mapgen.mjs', 'suite', '--mix', 'ladder-v2', '--seed', str(seed), '--out', directory], 'maps.log')
+        pooled(1, ['node', 'tools/mapgen/mapgen.mjs', 'suite', '--jobs', '1', '--mix', 'ladder-v2', '--seed', str(seed), '--out', directory], 'maps.log')
         generated.append(seed)
         for p in sorted(directory.glob('*.map26a')):
             h = sha(p)

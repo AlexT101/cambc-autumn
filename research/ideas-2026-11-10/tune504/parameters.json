@@ -1,8 +1,8 @@
 {
-  "base": "variants/oc-emb5-504",
-  "base_commit": "08f4be1ce0e8ae1485f389abddc0508af971cd42",
-  "vehicle": "variants/oc504-tune8-vehicle",
-  "candidate": "variants/oc504-tune8-export",
+  "base": "variants/oc-dfuel-506",
+  "base_commit": "183a1295c335a83d03679f93fcb11cdbde5617b2",
+  "vehicle": "variants/oc506-tune8-vehicle",
+  "candidate": "variants/oc506-tune8-export",
   "parameters": [
     {
       "name": "gold_price_scale",
