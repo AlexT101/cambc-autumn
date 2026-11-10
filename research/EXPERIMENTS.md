@@ -15418,6 +15418,14 @@ Patches and analysers are in [fuelcap-2026-11-09](fuelcap-2026-11-09/) (`oc16-q1
 - **So the lever is cheaper code with the same decisions:** the strike search's pricing, the farm loop and the stand sims. Scope cut on short turns is not.
 - q1 is harmless and kept as a stacking candidate. ss1 is not merged.
 
+## Farm loop fuel by exit and part (lane B, ocean-16d6f78 + q1, 2026-11-10): no large exact lever in farm/pathing/bank
+
+Tools in [fuelcap-2026-11-09/laneB-tools](fuelcap-2026-11-09/laneB-tools/): `inst_loop2.py` instruments a copy's farm loop (fuel per iteration by its exit line, and sub-meters on its calls; `inst_an.py` reads them), `q.py` queries a fuelprof profile by line range, caller and inline chain (`symbolise_fn.py` keeps function names, but the outermost names it reports are unreliable: lines are right).
+- Profile, 32 OOF-heavy release games at the real budget: farm.cc 11.8% of all fuel, pathing.cc 9.8%, bank.cc 4.9%; the farm loop (inlined parts) 6.8%. No line over 1.3% (pathing.cc:1050, the route search's field call).
+- The loop on heavy loops (>= 15k, 25k of 57k loops, mean 23k, 1 in 6 cut): 25% in groups priced to the end (2.7k each), 20% in claimed groups' shares (10k each), the rest in prunes of 200-1,200 each. By part: crew_work 10% (its work_arrival 8%, 1.1k a call), live_steps 8% (280 a call, every group), the claimed plan_crew 5% (3.2k a call), min_camp_damage 2.6%.
+- oc16-fb1 ([patch](fuelcap-2026-11-09/oc16-fb1.patch)): work_arrival reads its group's live members from a list kept per group and belief version, with their distance to our spawn box. bench 100M (maps-id, 64 games vs ocean-16d6f78): 64/64 identical; -13 fuel a turn (0.03%), -84 on turns of 85k+ (0.09%). Keying its cache on the live members instead of the version, or on the dash's readiness clamped to the first turn, saved nothing: 62% of its misses are claimers that moved.
+- Not gated: ~0.1% on heavy turns is ~+0.04 points by the +0.45 a 1k estimate. Kept for stacking only.
+
 ## Opponent intent from priorities (opp-intent, ocean-16d6f78, 2026-11-10): one signal with lift, no arm merged
 
 What Fish's and Mite's priorities predict about their next turn, beyond state.

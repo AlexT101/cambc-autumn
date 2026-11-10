@@ -1,0 +1,89 @@
+--- ocean-16d6f78-q1/src/economy/farm.cc	2026-11-09 22:23:50.000000000 +0000
++++ oc16-fb1/src/economy/farm.cc	2026-11-10 01:23:22.823416504 +0000
+@@ -599,6 +599,18 @@
+     int dash_ready, recall_delay, first_turn, earliest;
+ };
+ std::array<std::array<KeptArrival, 8>, 256> kept_arrival;
++// work_arrival's members: those it reads (the group's live members, all of them unless it lives), by
++// group and belief version, and their nearest Chebyshev distance to a box. Groups past 63 members
++// or the table read the belief instead.
++struct LiveMembers {
++    bool known;
++    std::uint32_t version;
++    std::int32_t box_distance; // to box_lo..box_hi, unreachable with no member
++    std::int32_t n;
++    std::array<std::int16_t, 63> x, y;
++    std::array<std::uint8_t, 63> index;
++};
++std::array<LiveMembers, 256> live_members;
+ 
+ // This turn's mirror pull and denial (params::comeback), on while cooked.
+ struct MirrorPull {
+@@ -1096,12 +1108,39 @@
+             else if (ability.lands()) arrival.reach = std::max(arrival.reach, ability.radius);
+         const bool alive = belief.state == CampState::alive;
+         const int n = static_cast<int>(group.members.size());
++        const auto box_distance = [&](vec2 p) __attribute__((always_inline)) {
++            const int dx = std::max({spawn_lo.x - p.x, 0, p.x - spawn_hi.x});
++            const int dy = std::max({spawn_lo.y - p.y, 0, p.y - spawn_hi.y});
++            return std::max(dx, dy);
++        };
++        LiveMembers* live = nullptr;
++        if (n <= 63 && static_cast<std::size_t>(g) < live_members.size()) {
++            live = &live_members[static_cast<std::size_t>(g)];
++            if (!live->known || live->version != belief.version) {
++                live->known = true, live->version = belief.version, live->n = 0, live->box_distance = unreachable;
++                for (int i = 0; i < n; ++i) {
++                    if (alive && belief.health[i] <= 0) continue;
++                    const vec2 p = group.members[i].pos;
++                    const int j = live->n++;
++                    live->x[j] = static_cast<std::int16_t>(p.x), live->y[j] = static_cast<std::int16_t>(p.y), live->index[j] = static_cast<std::uint8_t>(i);
++                    live->box_distance = std::min(live->box_distance, box_distance(p));
++                }
++            }
++        }
+         // Only `earliest` is read: a member in reach makes it 0 whatever the rest.
+-        for (int i = 0; i < n; ++i) {
+-            if (alive && belief.health[i] <= 0) continue;
+-            if (const int d = dist(a.pos, group.members[i].pos); d < arrival.distance) {
+-                arrival.distance = d, arrival.member = i;
+-                if (d <= arrival.reach) break;
++        if (live) {
++            for (int j = 0; j < live->n; ++j)
++                if (const int d = std::max(std::abs(a.pos.x - live->x[j]), std::abs(a.pos.y - live->y[j])); d < arrival.distance) {
++                    arrival.distance = d, arrival.member = live->index[j];
++                    if (d <= arrival.reach) break;
++                }
++        } else {
++            for (int i = 0; i < n; ++i) {
++                if (alive && belief.health[i] <= 0) continue;
++                if (const int d = dist(a.pos, group.members[i].pos); d < arrival.distance) {
++                    arrival.distance = d, arrival.member = i;
++                    if (d <= arrival.reach) break;
++                }
+             }
+         }
+         if (arrival.member < 0) return WorkArrival{};
+@@ -1110,14 +1149,14 @@
+         arrival.direct = earliest_work_delay(arrival.distance - arrival.reach, first_turn, arrival.dash_ready, dash_steps,
+                                             ability_cooldown, dash_maybe_ready);
+         // By way of spawn takes at least the recall: only then can it beat the walk.
+-        if (arrival.direct > arrival.recall_delay && !map.ally_spawn_tiles.empty())
+-            for (int i = 0; i < n; ++i) {
+-                if (alive && belief.health[i] <= 0) continue;
+-                const auto p = group.members[i].pos;
+-                const int dx = std::max({spawn_lo.x - p.x, 0, p.x - spawn_hi.x});
+-                const int dy = std::max({spawn_lo.y - p.y, 0, p.y - spawn_hi.y});
+-                arrival.spawn_distance = std::min(arrival.spawn_distance, std::max(dx, dy));
+-            }
++        if (arrival.direct > arrival.recall_delay && !map.ally_spawn_tiles.empty()) {
++            if (live) arrival.spawn_distance = live->box_distance;
++            else
++                for (int i = 0; i < n; ++i) {
++                    if (alive && belief.health[i] <= 0) continue;
++                    arrival.spawn_distance = std::min(arrival.spawn_distance, box_distance(group.members[i].pos));
++                }
++        }
+         arrival.recall_route = arrival.spawn_distance == unreachable ? unreachable
+                                    : arrival.recall_delay + earliest_work_delay(arrival.spawn_distance - arrival.reach, 0, 0, dash_steps,
+                                                                                ability_cooldown, dash_maybe_ready);
