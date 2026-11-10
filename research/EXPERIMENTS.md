@@ -15840,6 +15840,41 @@ Immutable snapshot provenance: `~/tmp-offload/handoff/codex/fuel497-gate.json`. 
 `codex/queue-ops/fuel497-final.json`. Existing game caches were reused, including497's runs against the
 same bodies from livelock gates; no deterministic games were repeated for extra evidence.
 
+## Live v107 camp-shield read against v105 (2026-11-10, Codex)
+
+The authorized informative live arm `live-wd-campsh-gen` adds only the `cl-shz-gen` versus `oc-wdash-494`
+patch to v105 `live-wd-fsnh`. The priority-mask key also changes versus v105, so these are combined-arm
+observations, not an isolated shield effect. Fish r2 and Mite r5 pins stayed unchanged. The separate
+old-base local sequential shield continuation is not pooled into this readout.
+
+v107 completed 512 games: Fish 165/256 and Mite 169/256. On the available matched map/side/pin cells,
+Fish is 165 versus 164 wins in 256, flips +13/-12; Mite is 45 versus 42 in 80, flips +6/-3. All 336 cells
+match ordered drafts, seed, engine hash and map ID. Mite r4 cells are excluded. Neither matched result
+establishes a strength gain; opposite sides of a map may correlate. v106 is not a single-change control:
+its verified submission includes the 8k reserve reduction and q1 queue-round/fuel recovery guard/wrapper.
+
+Downloaded replays do **not** show the early camp-death problem solved. In rounds 1-50, Fish has three
+primary camp-death incidents, four allied bodies and three affected games in both versions; Mite has
+two incidents/bodies in two games in both versions. Every matched cell's camp-death events are identical.
+The surviving linked-pair failure is Fish `03honeycomb`, side A, round 32: Issac at 20 HP dies to camp 50,
+killing Cassi at 600 HP with him. v105 match `01a1c3d9-c275-7026-8145-96913dcd6c0c`; v107 match
+`01a1c508-acce-73ac-ad07-55e9090bca53`. Other unchanged early cases are Willow on `00great_wall` A round41
+against both opponents, Ren on `01corridors` B round28 against Fish, and Ryth on `02treasure_box` B round27
+against Mite. Extending to round60 adds the same Fish Vendetta camp death on `01shortcut` A round52 in both.
+
+Primary incidents exclude linked secondary bodies; body counts include them. No early death has unknown
+attribution. Across all causes, allied bodies through round50 are Fish30->32 and Mite14->12, which must
+not be interpreted as a causal shield effect. The earlier historical replay rescue remains a separate
+mechanism example and does not imply this broader failure class is fixed.
+
+Validation: schema3 extraction succeeded on all 672 paired replays using four machine-wide CPU slots;
+engine death totals, ordered drafts, winners, gems and platform completed-round counts were checked.
+The extractor produced 659 soft gold/damage accounting notes, none about deaths, and no hard failures.
+Artifacts: `~/tmp-offload/handoff/codex/live-analysis/v107-v105.json` and
+`~/tmp-offload/handoff/codex/live-analysis/camp107/{manifest,counts}.json`; source replay hashes and exact
+match IDs are retained. Reproducers are `queue-ops/analyze_live107_{prepare,counts}.py` beside the live-analysis
+directory. No new scrims, repins or source changes were made for this analysis.
+
 ## Local queue draft10 F92 refit (2026-11-10, Codex)
 
 799,998 training games on fresh ladder-v2 maps, with Fish/Mite-weighted opponents, on frozen
