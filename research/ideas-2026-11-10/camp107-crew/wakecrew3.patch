@@ -1,0 +1,148 @@
+--- a/src/bot_parts.h
++++ b/src/bot_parts.h
+@@ -280,6 +280,7 @@
+ 
+ // economy/camps.cc
+ template <class Allowed> CampAttackTargets camp_attack_targets(const World& world, Allowed allowed, CampAttackTargets* resources = nullptr);
++bool wake_endangers_ally(const World& world, int group, int hit_member, float damage, bool stun);
+ bool attack_camp_target(const World& world, const CampAttackTarget& target);
+ int attack_camp_targets(const World& world, const CampAttackTargets& targets);
+ template <class Allowed> int attack_camp(const World& world, Allowed allowed);
+--- a/src/economy/camps.cc
++++ b/src/economy/camps.cc
+@@ -72,7 +72,48 @@
+     return targets;
+ }
+ 
++bool wake_endangers_ally(const World& world, int group, int hit_member, float damage, bool stun) {
++    const auto& c = world.camps[group];
++    if (c.state != CampState::alive || c.awake != Awake::asleep) return false;
++    const auto& G = world.map().groups[group];
++    if (G.strength <= 0 || G.has_monolith) return false;
++    int striker = -1;
++    for (int i = 0; i < static_cast<int>(G.members.size()); ++i)
++        if (c.health[i] > 0 && G.members[i].strength > 0) {
++            if (striker >= 0) return false;
++            striker = i;
++        }
++    if (striker < 0 || (hit_member == striker && damage >= c.health[striker])) return false;
++    const auto& m = G.members[striker];
++    const ChampionBelief* nearest = nullptr;
++    int near = m.reach + 1, slot = 999;
++    const auto consider = [&](const ChampionBelief& a) {
++        if (!a.alive || (!a.is_self && !a.visible)) return;
++        const int d = dist(a.is_self ? my_position() : a.pos, m.pos);
++        const int order = world.slot(a, world.round + 1);
++        if (d <= m.reach && (d < near || (d == near && order < slot))) nearest = &a, near = d, slot = order;
++    };
++    for (const auto& a : world.allies) consider(a);
++    for (const auto& a : world.enemies) consider(a);
++    if (!nearest || nearest->is_self) return false;
++    bool allied = false;
++    for (const auto& a : world.allies) allied |= &a == nearest;
++    if (!allied || test(world.map().ally_spawn, nearest->pos)) return false;
++    const int phases = std::max(0, m.reach - near + 1 - (hit_member == striker && stun));
++    const float exposure = m.strength * nearest->camp_taken * static_cast<float>(phases);
++    if (exposure < nearest->health + nearest->shield) return false;
++    // A prior action may already have woken it; never withhold damage from an ongoing fight.
++    std::uint32_t state = 0;
++    if (cambc::detail::sdk_camp_state(m.handle, &state) != 0 || state != 2) return false;
++    debug_block({ std::printf("CREW WAKE WAIT %d %u g%d ally%d damage%.0f hp%.0f\n", world.round, my_handle(), group, nearest->index, exposure, nearest->health); });
++    return true;
++}
++
+ bool attack_camp_target(const World& world, const CampAttackTarget& target) {
++    if (world.camps[target.group].awake == Awake::asleep) {
++        const float damage = my_strength() * damage_scale(world.me().facts().passive, my_health(), my_max_health()) * camp_dealt_factor();
++        if (wake_endangers_ally(world, target.group, target.member, damage, false)) return false;
++    }
+     throw_if_stale();
+     try {
+         self_acted(), cambc::self().attack(world.map().groups[target.group].camp(target.member));
+--- a/src/combat/abilities.cc
++++ b/src/combat/abilities.cc
+@@ -603,8 +603,20 @@
+     return best;
+ }
+ 
+-bool execute_camp_cast(const World& world, const Cast& selected) {
++bool execute_camp_cast(const World& world, const Cast& selected, int group) {
+     world.throw_if_stale();
++    if (selected.slot >= 0 && world.camps[group].awake == Awake::asleep && world.map().groups[group].strength > 0) {
++        const auto& G = world.map().groups[group];
++        const auto& a = world.me().facts().abilities[selected.slot];
++        int hit = -1;
++        for (int i = 0; i < static_cast<int>(G.members.size()); ++i) {
++            const auto& m = G.members[i];
++            if (m.strength <= 0 || world.camps[group].health[i] <= 0) continue;
++            if (selected.camp ? static_cast<cambc::handle_camp_t>(*selected.camp) == static_cast<cambc::handle_camp_t>(m.handle)
++                              : dist(selected.tile, m.pos) <= a.radius) hit = i;
++        }
++        if (wake_endangers_ally(world, group, hit, raw_damage(selected.slot) * camp_dealt_factor(), a.stuns)) return false;
++    }
+     const bool cast = selected.execute();
+     world.throw_if_stale();
+     camp_hits() += cast;
+@@ -649,7 +661,7 @@
+ bool cast_at_camp(const World& world, int group, bool attackers_only, bool any_value) {
+     world.throw_if_stale();
+     try {
+-        return execute_camp_cast(world, camp_cast(world, group, attackers_only, any_value));
++        return execute_camp_cast(world, camp_cast(world, group, attackers_only, any_value), group);
+     } catch (const cambc::error&) {
+         return false;
+     }
+@@ -683,7 +695,7 @@
+                 return false;
+     }
+     try {
+-        return execute_camp_cast(world, camp_cast(world, group, false, false, true));
++        return execute_camp_cast(world, camp_cast(world, group, false, false, true), group);
+     } catch (const cambc::error&) {
+         return false;
+     }
+--- a/src/economy/farm.cc
++++ b/src/economy/farm.cc
+@@ -2308,6 +2308,34 @@
+     }
+     if constexpr (repricing) return true;
+     if (map.any_group_hop() && beyond_walk(world, pathing, best) && (in_pocket || cross(best))) return true;
++    const auto heal_before_waking = [&]() {
++        if (!(memory.crew || chosen.expected > 0) || world.camps[best].state != CampState::alive
++            || world.camps[best].awake != Awake::asleep || groups[best].has_monolith) return false;
++        const auto& G = groups[best];
++        const auto& c = world.camps[best];
++        const vec2 at = my_position();
++        if (test(map.ally_spawn, at) || steps_to(G, at) > range) return false;
++        float fire = 0;
++        int phases = 0;
++        for (std::size_t i = 0; i < G.members.size(); ++i) {
++            if (c.health[i] <= 0 || G.members[i].strength <= 0) continue;
++            const int out = std::max(0, G.members[i].reach - dist(at, G.members[i].pos) + 1);
++            fire += G.members[i].strength * static_cast<float>(out);
++            phases = std::max(phases, out);
++        }
++        const float escape = shielded_clear(soften * fire, static_cast<float>(phases), shield, shield_ready_in);
++        if (escape < my_health_and_shield(world)) return false;
++        float clear_rounds = 0;
++        const float clear_damage = soften * min_camp_damage(world, best, strength, &clear_rounds, reflect);
++        if (shielded_clear(clear_damage, clear_rounds, shield, shield_ready_in) < my_health_and_shield(world)) return false;
++        // The crew's future healing trip must precede a first hit we cannot walk away from.
++        debug_block({ std::printf("CREW PREHEAL %d %u g%d escape %.0f hp %.0f\n", round, my_handle(), best, escape, my_health()); });
++        memory.claim = -1;
++        memory.camp_fled = my_health();
++        retreat(world, pathing, safety, memory);
++        return true;
++    };
++    if (heal_before_waking()) return true;
+     // A sleeping Monolith: wait just out of its reach for the crew (mono_engage).
+     if (memory.mono_group == best && world.camps[best].state == CampState::alive) {
+         if (!mono_engage(best, memory.mono_output)) {
+@@ -2450,6 +2478,7 @@
+     if (walked) {
+         // A hit on a champion is worth its damage; on a camp, the gems it brings closer.
+         see_revealed(world, pathing, safety);
++        if (heal_before_waking()) return true;
+         if (!strike_enemy(world)) attack_camp(world, passing);
+         cast_at_camp(world, best); // only casts that allow walking remain
+         reset_and_attack_camp(world, best);

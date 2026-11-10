@@ -1,0 +1,48 @@
+--- a/src/bot.cc
++++ b/src/bot.cc
+@@ -576,6 +576,37 @@
+ // act() found the fuel short of its last steps (turn_end_tight): the turn's end checks its own.
+ bool end_tight = false;
+ 
++// A bank step immediately walked back by retreat has made no progress. Try another altar
++// for the time its walk takes, as carry_bag already does after waiting beside a blocked altar.
++void bank_reversal(const World& world, Pathing& pathing, Memory& memory, vec2 start) {
++    static vec2 previous_start{-1, -1};
++    static int previous_round = -1;
++    static Branch previous_branch = Branch::farm;
++    const vec2 here = my_position();
++    const bool reversed = previous_round == world.round - 1 && previous_branch == Branch::bank
++                          && decision == Branch::retreat && here == previous_start && here != start;
++    previous_start = start, previous_round = world.round, previous_branch = decision;
++    const auto& altars = world.map().altars;
++    if (!reversed || altars.size() < 2 || my_gems() == 0 || memory.damage > 0 || engaged || engaged_before
++        || !fuel_ok(end_reserve + full_field_cost_estimate())) return;
++    int aimed = -1, nearest = unreachable;
++    for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
++        if (a == memory.avoid_altar && world.round < memory.avoid_until) continue;
++        const int steps = altar_steps(world, pathing, start, a);
++        const int total = steps + lock_turns(world.altars[a], world.me().facts(), steps);
++        if (steps != unreachable && total < nearest) aimed = a, nearest = total;
++    }
++    if (aimed < 0 || pathing.to_altar(aimed).at(here) <= pathing.to_altar(aimed).at(start)) return;
++    int other = unreachable;
++    for (int a = 0; a < static_cast<int>(altars.size()); ++a)
++        if (a != aimed) other = std::min(other, altar_steps(world, pathing, here, a));
++    if (other == unreachable) return;
++    memory.avoid_altar = aimed;
++    memory.avoid_until = world.round + other;
++    memory.wait_altar = -1;
++    debug_block({ std::printf("BANK-REVERSE %d %u altar %d other %d\n", world.round, my_handle(), aimed, other); });
++}
++
+ // The turn's walk, hits and casts, and the free actions that end it.
+ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     const vec2 start = world.me().pos;
+@@ -587,6 +618,7 @@
+         if (const int g = walk_target(world, pathing, memory.farm_group); g >= 0) pathing.approach(g, walk_range(world, g));
+     const int claim = memory.claim;
+     decide(world, pathing, safety, memory);
++    bank_reversal(world, pathing, memory, start);
+     if (decision != Branch::wait_altar) memory.wait_altar = -1;
+     // A turn without siege() (a fight, a heal) keeps the siege while our claim stays on it; a chase
+     // or a bag takes us away from it.

@@ -1,0 +1,61 @@
+--- a/src/bot.h
++++ b/src/bot.h
+@@ -11,6 +11,7 @@
+     float health = 0;  // at its end
+     float damage = 0;  // taken since, as of this turn's start (net of heals)
+     bool banking = false; // our bag headed for an altar rather than another capture last turn
++    bool bank_fled = false; // a bank approach that retreat undid: finish the trip home
+     int farm_group = -1;  // farm's latest choice: kept when near tied, walked to on short fuel
+     int open_step = 0;    // our next step of the draft's opening plan (farm open_plan_choice)
+     int recall_farm = -1; // farm_group, while a recall reaches it sooner by way of spawn (recall_to_farm)
+--- a/src/bot.cc
++++ b/src/bot.cc
+@@ -364,6 +364,7 @@
+ }
+ 
+ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
++    if (!world.me().alive || test(world.map().ally_spawn, my_position())) memory.bank_fled = false;
+     comeback::cooked(world); // every turn: the cook's hysteresis reads each round's scores
+     // Last turn's, for continue_recall: kept only while that recall is, else farm sets it again.
+     const int recall_farm = std::exchange(memory.recall_farm, -1);
+@@ -576,6 +577,22 @@
+ // act() found the fuel short of its last steps (turn_end_tight): the turn's end checks its own.
+ bool end_tight = false;
+ 
++// A quiet bank approach that retreat immediately undoes needs a different destination.
++// Keep retreating to spawn rather than retrying the same approach next turn.
++void bank_reversal_home(const World& world, Memory& memory, vec2 start) {
++    static vec2 previous_start{-1, -1};
++    static int previous_round = -1;
++    static bool previous_banking = false;
++    const vec2 here = my_position();
++    const bool reversed = previous_round == world.round - 1 && previous_banking
++                          && decision == Branch::retreat && here == previous_start && here != start;
++    previous_start = start, previous_round = world.round;
++    previous_banking = decision == Branch::bank && memory.banking;
++    if (!reversed || my_gems() == 0 || memory.damage > 0 || engaged || engaged_before) return;
++    memory.bank_fled = true;
++    debug_block({ std::printf("BANK-HOME %d %u\n", world.round, my_handle()); });
++}
++
+ // The turn's walk, hits and casts, and the free actions that end it.
+ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     const vec2 start = world.me().pos;
+@@ -587,6 +604,7 @@
+         if (const int g = walk_target(world, pathing, memory.farm_group); g >= 0) pathing.approach(g, walk_range(world, g));
+     const int claim = memory.claim;
+     decide(world, pathing, safety, memory);
++    bank_reversal_home(world, memory, start);
+     if (decision != Branch::wait_altar) memory.wait_altar = -1;
+     // A turn without siege() (a fight, a heal) keeps the siege while our claim stays on it; a chase
+     // or a bag takes us away from it.
+--- a/src/combat/fight.cc
++++ b/src/combat/fight.cc
+@@ -499,6 +499,7 @@
+     world.throw_if_stale();
+     const vec2 here = my_position();
+     if (test(world.map().ally_spawn, here)) return false;
++    if (memory.bank_fled) return true;
+     const float health = my_health();
+     HoldAt hold(world, pathing, here, memory.damage);
+     if (drawn_home(world, safety, hold)) return true;

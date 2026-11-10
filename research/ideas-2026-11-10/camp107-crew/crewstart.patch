@@ -1,0 +1,34 @@
+--- bots/variants/oc-campsh-498/src/economy/farm.cc	2026-11-09 22:24:31.473410454 +0000
++++ bots/variants/c107-crewstart/src/economy/farm.cc	2026-11-10 12:33:16.487927423 +0000
+@@ -2308,6 +2308,31 @@
+     }
+     if constexpr (repricing) return true;
+     if (map.any_group_hop() && beyond_walk(world, pathing, best) && (in_pocket || cross(best))) return true;
++    // A priced trip home cannot rescue a first arrival that cannot get out alive.
++    if ((memory.crew || chosen.expected > 0) && world.camps[best].state == CampState::alive
++        && world.camps[best].awake == Awake::asleep && !groups[best].has_monolith) {
++        const auto& G = groups[best];
++        const auto& c = world.camps[best];
++        float least = 1e9f;
++        int phases = 0;
++        for (std::size_t i = 0; i < G.members.size(); ++i) {
++            if (c.health[i] <= 0) continue;
++            const int out = std::max(0, G.members[i].reach - range + 1);
++            const float hit = G.members[i].strength * static_cast<float>(out);
++            if (hit < least) least = hit, phases = out;
++        }
++        const float escape = shielded_clear(soften * least, static_cast<float>(phases), shield, shield_ready_in);
++        if (escape >= my_health_and_shield(world)) {
++            float clear_rounds = 0;
++            const float clear_damage = soften * min_camp_damage(world, best, strength, &clear_rounds, reflect);
++            if (shielded_clear(clear_damage, clear_rounds, shield, shield_ready_in) >= my_health_and_shield(world)) {
++                debug_block({ std::printf("CREW PREHEAL %d %u g%d escape %.0f hp %.0f\n", round, my_handle(), best, escape, my_health()); });
++                memory.claim = -1;
++                retreat(world, pathing, safety, memory);
++                return true;
++            }
++        }
++    }
+     // A sleeping Monolith: wait just out of its reach for the crew (mono_engage).
+     if (memory.mono_group == best && world.camps[best].state == CampState::alive) {
+         if (!mono_engage(best, memory.mono_output)) {

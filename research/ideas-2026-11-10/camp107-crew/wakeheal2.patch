@@ -1,0 +1,45 @@
+--- bots/variants/oc-campsh-498/src/economy/farm.cc	2026-11-09 22:24:31.473410454 +0000
++++ bots/variants/c107-wakeheal2/src/economy/farm.cc	2026-11-10 12:45:14.360529807 +0000
+@@ -2308,6 +2308,34 @@
+     }
+     if constexpr (repricing) return true;
+     if (map.any_group_hop() && beyond_walk(world, pathing, best) && (in_pocket || cross(best))) return true;
++    const auto heal_before_waking = [&]() {
++        if (!(memory.crew || chosen.expected > 0) || world.camps[best].state != CampState::alive
++            || world.camps[best].awake != Awake::asleep || groups[best].has_monolith) return false;
++        const auto& G = groups[best];
++        const auto& c = world.camps[best];
++        const vec2 at = my_position();
++        if (test(map.ally_spawn, at) || steps_to(G, at) > range) return false;
++        float fire = 0;
++        int phases = 0;
++        for (std::size_t i = 0; i < G.members.size(); ++i) {
++            if (c.health[i] <= 0 || G.members[i].strength <= 0) continue;
++            const int out = std::max(0, G.members[i].reach - dist(at, G.members[i].pos) + 1);
++            fire += G.members[i].strength * static_cast<float>(out);
++            phases = std::max(phases, out);
++        }
++        const float escape = shielded_clear(soften * fire, static_cast<float>(phases), shield, shield_ready_in);
++        if (escape < my_health_and_shield(world)) return false;
++        float clear_rounds = 0;
++        const float clear_damage = soften * min_camp_damage(world, best, strength, &clear_rounds, reflect);
++        if (shielded_clear(clear_damage, clear_rounds, shield, shield_ready_in) < my_health_and_shield(world)) return false;
++        // The crew's future healing trip must precede a first hit we cannot walk away from.
++        debug_block({ std::printf("CREW PREHEAL %d %u g%d escape %.0f hp %.0f\n", round, my_handle(), best, escape, my_health()); });
++        memory.claim = -1;
++        memory.camp_fled = my_health();
++        retreat(world, pathing, safety, memory);
++        return true;
++    };
++    if (heal_before_waking()) return true;
+     // A sleeping Monolith: wait just out of its reach for the crew (mono_engage).
+     if (memory.mono_group == best && world.camps[best].state == CampState::alive) {
+         if (!mono_engage(best, memory.mono_output)) {
+@@ -2450,6 +2478,7 @@
+     if (walked) {
+         // A hit on a champion is worth its damage; on a camp, the gems it brings closer.
+         see_revealed(world, pathing, safety);
++        if (heal_before_waking()) return true;
+         if (!strike_enemy(world)) attack_camp(world, passing);
+         cast_at_camp(world, best); // only casts that allow walking remain
+         reset_and_attack_camp(world, best);
