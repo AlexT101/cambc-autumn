@@ -106,3 +106,11 @@ Normal-budget candidate out-of-fuel turns across the eight games are base34, til
 `queue-commands.json` in the artifact directory names the ten wrapper commands; queue operations owns admission and ongoing execution. The wrapper checks the sealed base/arm hashes on every start. Neither opponent pinning nor live submission selection is part of these experiments.
 
 The alive-camp follow-up adds 16 successful release smoke games, all with matching drafts and passing hard replay validation. It produces 422/410 camp wards at normal/doubled fuel versus 301/274 for the dead-camp arm on the same eight cells. Its out-of-fuel counts are 26 and 1, respectively; these are trajectory-dependent smoke counts, not a fuel benchmark. Its validation is separate in artifact `verified-campall-smokes.json`, while `mechanism.json` now covers all 80 games.
+
+## Exact tile ranking: normal-fuel gate completed (12:41 UTC)
+
+`oc-wtile-498` versus full `oc-campsh-498` stopped at 52 blocks, 6,656 fresh paired units, **NARROWED (ZONE crossed)**. Fresh delta **+0.101±0.249 points**; Fish +0.060±0.339, Mite +0.143±0.361. Ladder −0.394±0.295. High LLR −8.133, low +3.517; no acceptance screen. The interval spans no change: no established fresh gain and no promotion. This is a narrowed result, not a formal low-SPRT rejection.
+
+The doubled-fuel condition started at 12:41:33. Actual fgate/ab.py descendants carry `--fuel 200000`, fixed Flp4/Mt3q, own drafts and native runner in the private 30-slot pool. All eight first-block summaries (arm/base × opponents × ladder/fresh) report fuel 200000, 256 games each, zero errors; both source seals still match. No doubled-fuel outcome yet. Its comparison remains a whole-game budget interaction.
+
+Raw normal result is copied to artifact `results/tile-100000.json`; raised startup checks are `tile-raised-start-validation.json` and `gate-process-check.json`. Parent-prioritized wakeheal100k/200k work follows tile200k in the queue; remaining ward/reserve conditions and source seals are retained.
