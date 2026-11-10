@@ -654,3 +654,5 @@ Its `--fuel N` option gives both teams that budget and separates run, lock and
 result names; cached summaries must have matching fuel metadata. Normal-budget
 names stay unchanged. `test_fuel_namespace.py` checks that separation. Evidence,
 limits and the ten-condition design are in [warding.md](../research/ideas-2026-11-10/warding.md).
+
+`research/ideas-2026-11-10/reserve-tools/` contains source-sealed normal-fuel gates for the current498 farm-reserve/queue-guard factorial. `run_gate.py ARM --jobs 4` verifies the unchanged base and arm, then uses fixed Flp4/Mt3q and native release games. `slack8k.patch` and `queueguard.patch` reconstruct the three arms; `sources.json` records their seals. Provenance, prior evidence, smoke validation and the distinction from the live106 bundle are in [reserve-followup.md](../research/ideas-2026-11-10/reserve-followup.md).
