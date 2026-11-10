@@ -15982,6 +15982,24 @@ Artifacts: `~/tmp-offload/handoff/codex/live-analysis/v107-v105.json` and
 match IDs are retained. Reproducers are `queue-ops/analyze_live107_{prepare,counts}.py` beside the live-analysis
 directory. No new scrims, repins or source changes were made for this analysis.
 
+## ChanM conditional gate continuation (2026-11-10, Codex)
+
+`variants/ca-chan-M` versus frozen `ocean-16d6f78` reached its configured low-H1 stop after blocks38–404
+(367 blocks, 46,976 Mite fresh-map units). This continues the original first-block38 sample and reuses its
+first240 blocks; no deterministic games were counted twice. Bodies remain Flp4/Mt3q and maps the independent
+conditional-arm ladder-v2 pool1510001–1510004, slicesg0–g7.
+
+Mite fresh delta **+0.227±0.338 points**, equivalent50.227%(49.889–50.565); lowLLR2.957, high−3.349.
+The script labels this `above 50% on its half (low H1)`, but its low hypotheses are49.75% versus50%: it
+favors the non-inferiority alternative over49.75%, not an interval wholly above50% or acceptance of the
+50.5/50.75 high test. Fresh all+0.063±0.217, Fish−0.101±0.271; ladder−0.183±0.222 (Fish−0.502±0.284,
+Mite+0.137±0.339). No automatic source merge or live promotion follows; the already-authorized v108 live
+arm remains a separate comparison with its mask/base caveats.
+
+Terminal evidence: `~/tmp-offload/localq/state/chanM-continue/out.log` and
+`~/tmp-offload/handoff/codex/queue-ops/chanM-final.json`. The queue finished this sequence normally and
+started the independently validated `c107-wakecrew3` normal-fuel gate in its freed slot.
+
 ## Local queue tune1 terminal gate (2026-11-10, Codex)
 
 The 19-parameter SPSA on frozen `ocean-16d6f78` finished 703 iterations against its nine-opponent panel
