@@ -110,7 +110,7 @@ def step(name, fn):
 def prepare_maps():
     p = json.loads((D / 'protocol.json').read_text())
     for kind, seeds in (('train', p['train_seeds']), ('gate', p['gate_seeds'])):
-        pooled(1, ['node', 'tools/mapgen/mapgen.mjs', 'suite', '--mix', 'ladder-v2', '--seed', seeds,
+        pooled(1, ['node', 'tools/mapgen/mapgen.mjs', 'suite', '--jobs', '1', '--mix', 'ladder-v2', '--seed', seeds,
                    '--out', str(D / 'maps' / kind / 'fresh-{seed}')], 'maps.log')
     # New seed ranges are necessary, but duplicate generated geometry is possible.
     history = [R / 'maps', Path('/home/ubuntu/tmp-offload/diverse/fresh/pool'),

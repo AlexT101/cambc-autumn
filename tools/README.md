@@ -691,3 +691,6 @@ Cancelled component-study launchers: `reserve-tools/run_gate.py`, `skirmish-tool
 
 
 - `research/ideas-2026-11-10/cond504/run.py chanM|bagfF`: sealed exclusive queue wrappers for full200k current504 conditional exploiters; `--check` verifies inputs and preflight without games. `smoke.py` schedules release validity and separate runtime-classifier debug fixtures; `gate.py` validates complete paired cells and targeted/off-target evidence. `stats.py` and eight tests fix prospective first-cross decisions, with no width stop. `seal.py` refuses resealing started tests. [Protocol](../research/ideas-2026-11-10/cond504/README.md).
+
+
+- `research/ideas-2026-11-10/cond504/mirror.py`: mandatory fixed direct candidate-vs-frozen504 mirror after either conditional gate terminal;8,192 unique maps, both sides,200k, exact-cell audits and map-paired intervals. No repeated noise cells or automatic extensions; `test_mirror.py` validates pairing and duplicate/missing-cell rejection.

@@ -76,8 +76,8 @@ def main():
             'gain_h0_crossed':gain_h0,'harm_h1_crossed':harm_h1,'manifest_sha256':sha(D/'manifest.json'),
             'note':'Target gain vs zero is primary; off-target effect remains a shipping constraint. No automatic100k, merge, live test or repeated run. Intervals are descriptive on repeated noise/map units; not distinct new maps each block.'}
     verify();write(D/a.arm/'result-200000.json',result)
-    write(D/a.arm/'review-required.json',{'stage':'200k complete','result_sha256':sha(D/a.arm/'result-200000.json'),
-          'decision':'Coordinator must review target and off-target evidence, any normal-fuel admission and final disposition before releasing next job.'})
+    write(D/a.arm/'review-required.json',{'stage':'target200k complete; mandatory Ocean mirror still pending','complete':False,'result_sha256':sha(D/a.arm/'result-200000.json'),
+          'decision':'Do not release next job: mandatory mirror must finish, then coordinator reviews all evidence.'})
     print(json.dumps(result),flush=True)
 
 if __name__=='__main__':main()

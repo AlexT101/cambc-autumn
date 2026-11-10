@@ -13,6 +13,7 @@ def main():
     files={p for p in T.iterdir() if p.is_file() and p.suffix in ('.py','.md','.json')}
     files.update(D/x for x in ('protocol.json','port-proof.json','smoke-maps.json','chanM.patch','bagfF.patch'))
     files.add(Path('/home/ubuntu/tmp-offload/localq/reservations/exploit504/seeds.json'))
+    files.add(Path('/home/ubuntu/tmp-offload/localq/reservations/exploit504-mirror/seeds.json'))
     for d in ('tools/mapgen','research/ideas-2026-11-09/freshgate-tools','research/ideas-2026-11-08/diverse-tools','research/ideas-2026-11-08/spar-tools','research/ideas-2026-11-09/oppfidelity-tools'):
         files.update(p for p in (R/d).iterdir() if p.is_file() and p.suffix in ('.py','.sh','.mjs','.h'))
     files.update(R/p for p in ('copybot','tools/ab.py','tools/run_batched.py','tools/cambc_env.py','tools/cpu_slots.py','tools/pooled.py','sdk/cpp/cambc.h','sdk/cpp/cambc_local.h','tools/draftlab/features.mjs','tools/replay/drafts.mjs','tools/replay/engine.mjs','tools/replay/engine/version.json','tools/fastengine/runner/fastrunner','tools/fastengine/runner/target/release/libfastrunner.so','research/ideas-2026-11-08/spar-tools/hashes.json','research/ideas-2026-11-09/fishfid/patch_fish2.py','research/ideas-2026-11-09/fishfid/patch_prio.py','research/ideas-2026-11-09/fishfid/patch_coh.py'))

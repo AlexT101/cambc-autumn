@@ -118,6 +118,8 @@ def main():
         records[o]={'base_run':base_name,'candidate_run':name,'base_summary':bs,'candidate_summary':cs,'ordered_drafts_match':True}
         tn,ts,_=play(a.arm,trace,body,'trace-'+o,debug=True)
         traces[o]=trace_stats(tn)
+    ocean_name,_,_=play(a.arm,trace,BASE,'trace-Ocean',debug=True)
+    traces['Ocean']=trace_stats(ocean_name)
     target='M' if a.arm=='chanM' else 'F'
     count=sum(len(g['activation_events']) for g in traces[target])
     write(D/a.arm/'smoke-proof.json',{'release':records,'trace':traces,'target':target,'target_activation_events':count,

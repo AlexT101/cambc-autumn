@@ -16696,3 +16696,10 @@ release, real fuel, fast runner, on the same 29,952 maps as "Ocean main against 
 53.5-54.3**. No failed games or broken drafts; REF capped 28 drafts (DRAFT-CAPPED), CAND none. Out-of-fuel turns CAND
 342,412 in 39,429 games, REF 657,169 in 46,788. Paired with the 16d6f78 run, 937 of 59,892 games change winner,
 477 to CAND here and 460 there (sign test p ~0.6): 16d6f78 and 7862c1b play alike. `replays/ab/ocean-vs-7862c1b-60k/`.
+
+
+## Conditional exploiters also require Ocean mirror (2026-11-10)
+
+At the user's request, both still-unstarted current504 conditional jobs were held and amended with a mandatory direct Ocean mirror after their targeted gate, including early statistical terminals. Each arm plays frozen504 on8,192 unique new ladder-v2 maps×both sides=16,384 release/native200k games. The mirror has no opponent-noise repeats or outcome-based stopping; identical deterministic cells count once. Reserved map seeds2415000–31 (+32–35 solely for duplicate replacement) are distinct from the main conditional pool and the separate504-v86 benchmark.
+
+Report absolute head-to-head win rate and map-paired95% normal/empirical-Bernstein intervals separately from Fish/Mite replica deltas. Crossing50% is not proof of safety; target, off-target and mirror results jointly require coordinator review before100k or shipping. Extra debug Ocean fixtures record real classifier posteriors/activation without forced stubs. Primary completion markers explicitly remain incomplete until the mirror finishes. Twelve lightweight scoring/boundary tests pass; runtime checks remain queued. Explicit mapgen `--jobs1` now matches its one acquired shared slot. [Amended protocol](ideas-2026-11-10/cond504/README.md).

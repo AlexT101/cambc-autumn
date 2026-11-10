@@ -31,6 +31,9 @@ def verify():
         for p,h in json.loads((D/'maps-seal.json').read_text()).items():assert sha(p)==h,p
     if (D/'maps.json').exists():
         for row in json.loads((D/'maps.json').read_text())['selected']:assert sha(row['path'])==row['sha256'],row['path']
+    if (D/'mirror/maps-seal.json').exists():
+        for path,h in json.loads((D/'mirror/maps-seal.json').read_text()).items():assert sha(path)==h,path
+        for row in json.loads((D/'mirror/maps.json').read_text())['selected']:assert sha(row['path'])==row['sha256'],row['path']
     return m
 
 
@@ -84,7 +87,7 @@ def prepare_maps():
         if len(selected)==1024:break
         out=D/'generated'/f'fresh-{seed}'
         assert not out.exists(),'Partial map generation needs review'
-        pooled(['node','tools/mapgen/mapgen.mjs','suite','--mix','ladder-v2','--seed',str(seed),'--out',out],D/'maps.log')
+        pooled(['node','tools/mapgen/mapgen.mjs','suite','--jobs','1','--mix','ladder-v2','--seed',str(seed),'--out',out],D/'maps.log')
         generated.append(seed)
         for p in sorted(out.glob('*.map26a')):
             h=sha(p)
@@ -126,5 +129,9 @@ def main():
         phase(a.arm,'maps',prepare_maps)
         phase(a.arm,'smoke',lambda:command([sys.executable,T/'smoke.py',a.arm],p/'smoke.log'))
         phase(a.arm,'gate200k',lambda:command([sys.executable,T/'gate.py',a.arm],p/'gate.log'))
+        phase(a.arm,'mirror200k',lambda:command([sys.executable,T/'mirror.py',a.arm],p/'mirror.log'))
+        write(p/'review-required.json',{'stage':'target gate and mandatory mirror complete','complete':True,
+              'result_sha256':sha(p/'result-200000.json'),'mirror_result_sha256':sha(p/'mirror-result-200000.json'),
+              'decision':'Review target, off-target and direct Ocean mirror jointly before any normal-fuel admission or release of next job.'})
 
 if __name__=='__main__':main()
