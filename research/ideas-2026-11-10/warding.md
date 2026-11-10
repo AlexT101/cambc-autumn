@@ -26,6 +26,12 @@ A ward's new tiles are exact shadowcast sight minus the actor's current personal
 
 Mite's camp wards add only 2.13 immediate tiles on average; 769/1,088 add none. This supports an information-retention hypothesis, not an immediate-reveal hypothesis. The geometric maximum-new-bush candidate score is descriptive only: it ignores hidden blockers and allied-ward occupancy. It also is not necessarily the opponent's objective. Ocean already achieves that geometric maximum more often than the others in the whole sample.
 
+## Placement timing
+
+A second pass over the same 120 cohort views separates current-turn reveal from retained information (`warding-tools/timing.py`, artifacts `timing.json` and `timing.log`). Ad Astra moves before 3,551/4,030 placements (88.1%); no observed placement is followed by movement or a cast by that actor in the same turn, and only 14 are followed by a basic attack. None of its 278 confirmed ward-only champion attacks uses a ward placed in that same turn. Mite has 19 immediate ward-only attacks enabled by 12 placements, versus 325 later attacks; Ocean has 23 immediate attacks enabled by 21 placements, versus 366 later attacks.
+
+Thus Ad Astra's higher frequency of placements near visible enemies does not establish an aggressive early-reveal policy. In these games, its observed attack use is entirely later-turn information. Ocean's current early reveal mechanism has measurable immediate use and remains enabled in all three experimental arms. Spells and non-attack information value remain unmeasured; this timing comparison inherits the cohort confounds above.
+
 ## Prior null results and new experimental questions
 
 The [earlier Mite study](../ideas-2026-11-08/mite-wards.md) tested extra fresh-bush wards, broad camp wards and removing the reveal-ward combat gate on the older oc-base25. Their large samples were approximately level. Broad camp scanning increased out-of-fuel turns by 36%. These variants therefore do not blindly repeat those implementations. CHANGES473 already made planned-ward site scores and ward sight masks exact, but explicitly deferred exact turn-end bush tile ranking for fuel risk.
