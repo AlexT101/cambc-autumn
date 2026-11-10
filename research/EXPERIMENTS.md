@@ -15806,6 +15806,18 @@ The user asked whether, once the classifier knows the team, its priority formula
 
 - Verdict: a more accurate order doesn't win games. The pessimism it removes seems cheap, and its extra misses (Mite acting before us when we predict after) cost about as much. The only lean is c5, which trusts the order only beyond 5 tiles; it is inside noise and not gated (stopped to save usage). Arms: bots/variants/oo-mord{,-c3,-c5,-k3,-r6} (gitignored).
 
+
+- Local-queue completion, 2026-11-10 09:26 UTC: c5 was continued on the original frozen source and reaches a
+  genuine low-SPRT rejection at block 187 (LLR -2.973), not merely high-H0 or a width stop.
+
+Results against `ocean-16d6f78` (release, real fuel, own drafts, Flp4/Mt3qro):
+
+| arm | Fresh win-equivalent (95% CI) | Fresh paired units | Ladder delta | Fish / Mite fresh delta | Decision |
+|---|---|---:|---|---|---|
+| oo-mord-c5 | 49.58% (49.27–49.89) | 23,936 | -0.319 points | -0.489 / -0.357 points | REJECT; low LLR -2.973 |
+
+No merge. Full result: `~/tmp-offload/diverse/gate-logs/fgate-oo-mord-c5--ocean-16d6f78p4qro.json`.
+
 ## Safe tribute tile (safetrib, oc-wdash-494, 2026-11-10): bush / far-from-enemy tribute tiles fire but move nothing; nothing merged
 User: "prefer for example tributing from a bush. or perhaps farther away from recently seen enemies ... most conservative probably like just on prism when she has lots of gems and enemies spotted nearby".
 - **Live data** (our tributes vs Fish, 544 games, and Mite, 2,409, since 11-08; `~/tmp-offload/safetrib/tools/ourtrib.py`). Nobody dies while channelling (death 0.00 in every band). Bags of 100+ complete 33-48%. The rest are our own safety cancels (33-43%), stuns (5-16%; Mite more) and locks (7-16%). The bag is kept: it is lost to a death within 15 rounds 2-5% of the time. So a cancel costs time, not gems. The predictor is enemies near at the start: with none within 8 in the previous 10 rounds a 100+ tribute completes 86%, with 3+ only 23-26%. Most 200+ channels are Prism's (her winning bag). Only 5-8% of altars have a bush tribute tile (fresh ladder-v2 bush density matches the ladder, 5%). 100+ tributes started on a bush completed 71-75%, against 41-48% elsewhere (confounded with quiet altars).
