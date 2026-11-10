@@ -16458,3 +16458,12 @@ Together with the q1-only +0.025±0.249 control, this does not establish either 
 Terminal read-only audit passed2456 summaries/628736 candidate/reference games with exact map/side cells, correct release/engine/body/source/fuel metadata, zero run errors/early losses/handoff failures. Own capped drafts0; opponent3427 per arm retained. Shared reference games are not independent additional evidence. Raw result `results/rs8-100000.json`, audit `rs8-terminal-audit.json`, under `~/tmp-offload/reserve-coverage-2026-11-10/`.
 
 Bundle actualfgate3916322 is verified native/main86, Flp4/Mt3q/full498/default100k; both source seals independently rechecked. Its result and final common-cell factorial contrasts remain pending.
+
+
+### Live v109 bagfF paired readout (2026-11-10)
+
+Complete cached live gate against unchanged Fish r2/Mite r5: Fish176/256, Mite161/256. Against intended v105, exact shared map/side/pin cells give Fish176vs164/256 (flips +42/−30) and Mite43vs42/80 (+9/−8). Ordered drafts, picks, seed, engine and map context match every paired cell. The mask changed between105and106+, so these differences cannot isolate bagfF. Descriptive map-cluster differences are Fish+4.69±7.08pp and Mite+1.25±10.81pp; neither establishes a gain.
+
+Same-mask diagnostics against106/107/108 yield Fish176vs184/165/174 and Mite161vs153/169/157 (256 cells per comparison). Different-feature arms are not isolated controls:106 includes both reserve8k and q1 guard;107shield;108chanM. The nominally inactive Mite half is not replay-identical:38/256 raw replays match107,0/256 match108; classifier hooks/false activation and fuel effects remain possible. No promotion or repin from this reused deterministic suite. Await the already-queued exact105 current-mask own-bot control for cleaner attribution. No additional scrims were launched for analysis.
+
+Evidence: `~/tmp-offload/handoff/codex/live-analysis/v109-readout.json` (all matched cells/context/provenance) and `pair109.py`. All104planned groups completed by17:40:52; the hourly probe then proceeded before the next arm's scheduler switch.
