@@ -14870,3 +14870,39 @@ On the ladder maps the arms read +0.25 / +0.30 / +0.44.
 - **CHANGES 491** (draft fuel fix, merged as ocean-16d6f78 during the run) only changes the draft's open-plan search. It doesn't touch the tribute-response code, so these reads stand for the new base.
 
 Files: ~/tmp-offload/onesite/ (tools/sitecmp.mjs, tools/armsplit.py, tools/split.py, split-final.txt, fgate logs); runs `fge501-os-{rm3,lk1,lkA,lo1}-dvn{1..118}{F,M}-{L,f0..f7}`.
+
+## Mite exploiters on ocean-16d6f78 (mite-re, 2026-11-09/10): both lock arms REJECT, the fight arm not gated, nothing merged
+
+**Question.** Can a Mite-specific mode, switched on by the opponent classifier's posterior (a forced-on stub here), beat ocean against Mite while staying sound if the classifier is wrong? The arms came from reverse-engineering 1,533 real Mite games against us (11-09 12:00 onwards, Mite's current version) plus Mite's games against other teams. The findings are in research/ideas-2026-11-09/oppmodel/mite.md.
+
+**What Mite does that an exploiter could use.**
+- Mite hits our lock only while it carries gems, and it never tributes at a locked altar. With our lock up on one-site maps, it scores ~0. The base already exploits this: our lock is up 53% of rounds, and our relock gap is a median 35 rounds.
+- Mite wins long games (53-61% at 1200+ rounds) and loses short ones (20% under 600), and it takes mid camps late.
+- From 12:00, Mite places 0.5-0.7 locks a game against us. Most go on mid altars, from round ~400.
+
+**Arms** (bots/variants; `opp::mite` stub forced on):
+- `mx-rl1`: a relock errand on one-site maps. From r30, the nearest ally carrying a lock walks to relock the site.
+- `mx-lk2`: from r30, lock every altar passed, Mite's side included.
+
+**Results against ocean-16d6f78.**
+
+| gate | arm | read | n | verdict |
+|---|---|---|---|---|
+| smoke, 120 one-site fresh maps vs dvn1-Mt3p | mx-rl1 | 57.1% vs base 76.7% | 240 | REJECT |
+| smoke, 200 multi-site fresh maps vs dvn1-Mt3p | mx-lk2 | 73.2% vs base 71.8% | 400 | noise |
+| fgate seed 11, 4 blocks | mx-lk2 | fresh -0.59 ±1.08 (Mite -0.49 ±1.59, Fish -0.68 ±1.28); ladder +0.24 ±0.93 | 512 fresh units | REJECT (no gain) |
+
+rl1 raised lock uptime from 58% to 64%, but cost 106 captured gems and 1.7 deaths a game.
+
+**Body fidelity.** These tables went to the diverse agent, which tried the Mt3p2/Mt3p3/Mt3q* patches.
+- Mt3p reproduces Mite's lock dynamics. First hit on our lock: median 33 rounds against real 36. Relock gap: 35 against 35. So fgate judges lock changes fairly.
+- On ladder maps matched to real games, Mite's deaths match (9.8 against 9.4), but ours do not: 6.0 against real 9.1.
+- Real Mite takes 22% more capture gold, and 9-12% more gold per share. Our own gold per share is only +1-3% in the same games, so the difference is Mite's.
+- In multi-site games, real Mite kills ours with abilities 2.8 times a game, against 0.8 for the body. Its champions carry more Focus and Health: Marcella's Focus is 318 against 220 at r600.
+- Bodies with Mite's emblem order, cohesion (mates within 5: 1.12 → 1.38, real 1.50) or banking moved their own statistics but not our deaths or the win rate. Mt3q stays the default; bodies are ~10 points easier than live.
+
+**Fight exploit, mechanism check (not gated).** Real Mite's Marcella kills 3.1 of ours with her ability a game, in the games where Mite has her. Of those, 2.69 are on victims whose health at round start was within her 2x Focus nuke. Our champions spend 50.5 rounds a game within 5 of her at such health, and die to her ability within 2 rounds in 9.4% of them.
+
+Against Mt3q, that exposure is only 15 rounds a game, because its Marcella has less Focus. So a gate there would see about a quarter of the live effect, which is under a point and inside fgate's noise. ocean's Safety already prices enemy casts by Focus and reach (`compute_strike`), so a Mite-only avoidance would just be a margin knob. A lead for the main bot, against all opponents: why Safety accepts that two-round risk from nuke-killable positions.
+
+Data: 4,700 Mite replays are in ~/tmp-offload/oppre/replays/mite; the tools are in ~/tmp-offload/miteRE/tools/.
