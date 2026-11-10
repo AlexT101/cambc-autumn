@@ -927,3 +927,7 @@ walk-then-dash in the escape planner"):
 - `wdf-1980`: 1980000-1980039, 10,240 maps (oc-falls and oc-wdash against ocean-fc9ae78; used).
 - `wd2-1981`: 1981000-1981039, 10,240 maps (oc-wdash held out; used).
 - `wd3-1982`: 1982000-1982039, 10,240 maps (oc-wdash-494, CHANGES 494 as merged; used).
+
+**localq (2026-11-10):** `--mix ladder-v2` under `~/tmp-offload/localq/` (never maps/):
+- `maps/dl`: 2310000-2310099, 25,600 maps (draft10's lab training); `maps/tu`: 2320000-2320039, 10,240 maps (tune1's SPSA training).
+- 2400000-2999999 reserved: the queue's self-perpetuating rounds take 1000 seeds each from `seeds.next` (training from the block's start, the round's own gate pool at +900..+903). Don't use these seeds.
