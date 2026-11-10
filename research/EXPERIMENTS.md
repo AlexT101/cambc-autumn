@@ -16687,3 +16687,12 @@ identical to `bots/ocean` at 16d6f7803), own drafts, release builds, real fuel, 
 ladder-v2 maps (`suites/oc-16d6`, seeds 5200000-5200116, both sides): **53.9% of 59,904 (32,260-27,644), 95% CI
 53.5-54.3**. No failed games, no broken or capped drafts; out-of-fuel turns CAND 342,900 in 39,416 games, REF 657,470
 in 46,785. `replays/ab/ocean-vs-16d6f78-60k/`.
+
+## Ocean main against ocean-7862c1b (2026-11-10)
+
+Current main `bots/ocean` against `variants/ocean-7862c1b` (CHANGES 490 on the removal branch: after 485/486's
+removals, before 491's plans-identical draft fuel cut; checked identical to `bots/ocean` at 7862c1b39), own drafts,
+release, real fuel, fast runner, on the same 29,952 maps as "Ocean main against ocean-16d6f78" (`merged/oc-16d6`, both sides): **53.9% of 59,904 (32,277-27,627), 95% CI
+53.5-54.3**. No failed games or broken drafts; REF capped 28 drafts (DRAFT-CAPPED), CAND none. Out-of-fuel turns CAND
+342,412 in 39,429 games, REF 657,169 in 46,788. Paired with the 16d6f78 run, 937 of 59,892 games change winner,
+477 to CAND here and 460 there (sign test p ~0.6): 16d6f78 and 7862c1b play alike. `replays/ab/ocean-vs-7862c1b-60k/`.
