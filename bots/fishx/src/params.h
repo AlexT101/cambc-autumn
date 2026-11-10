@@ -48,6 +48,14 @@ constexpr bool test_draft = false;
 // fishx::on's Fish share in place of the classifier's (model/opp_class.cc), for tests that force the exploiter on (1)
 // or off (0); negative uses the classifier.
 inline constexpr float opp_fish_stub = -1.0f;
+// fishx: CHANGES 485's timed lock and 100-gem deny, with the comms deny record (parked: no gain on the Fish bodies).
+inline constexpr bool fishx_deny = false;
+// Cohesion (farm.cc, research/ideas-2026-11-09/oppmodel/cohesion.md): 0 off, 1 while fishx::on, 2 always. A group
+// farther than coh_near from every live ally's anchor (its claimed group's centre, else its seen or told tile) is
+// worth less, linearly down to coh_floor of itself at coh_far and beyond.
+inline constexpr int coh_mode = 1;
+inline constexpr int coh_near = 6, coh_far = 14;
+inline constexpr float coh_floor = 0.75f;
 // Each ally but the healers posts its own position in turn, in the shared bytes' free bits, for
 // Willow's follow (support.cc); off on maps where it does not fit (comms.cc).
 inline constexpr bool comms_ally = true;

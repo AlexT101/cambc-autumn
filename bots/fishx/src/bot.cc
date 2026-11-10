@@ -405,15 +405,15 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const bool on_spawn = test(world.map().ally_spawn, my_position());
     if (shop(world, memory, on_spawn, on_spawn || world.me().facts().passive == Passive::remote_shop)) home.reset();
     fixc_bush_threatened = false;
-    if (fishx::on(world)) post_denial(world);
+    if (params::fishx_deny && fishx::on(world)) post_denial(world);
     if (!world.me().can_act(world.round)) return;
     fixc_bush_threatened = fixc_bush_threat(world, safety);
     if (const auto* ender = game_ender(world); ender && holds_hard_stop(world, *ender)) {
         stop_game_ender(world, pathing, memory, *ender);
         return;
     }
-    if (fishx::on(world)) adopt_told_deny(world, pathing);
-    if (fishx::on(world) && lock_plan_turn(world, pathing)) return;
+    if (params::fishx_deny && fishx::on(world)) adopt_told_deny(world, pathing);
+    if (params::fishx_deny && fishx::on(world) && lock_plan_turn(world, pathing)) return;
     const bool willow = support_healer(world.me());
     const bool prism = support_protected(world, world.me());
     // Healing needs a turn end on spawn; a recall arrives at turn start. Under an awake camp, only
@@ -464,7 +464,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         retreat(world, pathing, safety, memory);
         return;
     }
-    if (const auto* deny = fishx::on(world) ? channel_to_deny(world) : nullptr) {
+    if (const auto* deny = params::fishx_deny && fishx::on(world) ? channel_to_deny(world) : nullptr) {
         stop_game_ender(world, pathing, memory, *deny);
         return;
     }

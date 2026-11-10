@@ -1290,6 +1290,28 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
         if (e < 0) e = exposure_of(g);
         return e;
     };
+    // Cohesion (params::coh_mode): Fish's champions join each other's groups, so a lone farmer meets its pack
+    // outnumbered. Only ever a discount, so every bound above stays one.
+    std::array<vec2, 8> anchors;
+    int n_anchors = 0;
+    if (!opening && (params::coh_mode == 2 || (params::coh_mode == 1 && fishx::on(world))))
+        for (const auto& a : world.allies) {
+            if (a.is_self || !a.alive || n_anchors >= 8) continue;
+            vec2 at{-1, -1};
+            int told = -1;
+            if (const int c = comms::claim_of(world, a.index); c >= 0 && c < n_groups) at = groups[c].centre;
+            else if (a.visible || (a.pos_round >= world.round - 2 && a.pos.x >= 0)) at = a.pos;
+            else if (!(params::comms_ally && comms::told_ally(a.index, at, told) && told >= world.round - 6 && told > a.pos_round)) continue;
+            anchors[static_cast<std::size_t>(n_anchors++)] = at;
+        }
+    const auto cohesion = [&](int g) __attribute__((always_inline)) {
+        if (n_anchors == 0) return 1.0f;
+        int d = unreachable;
+        for (int k = 0; k < n_anchors; ++k) d = std::min(d, dist(anchors[static_cast<std::size_t>(k)], groups[g].centre));
+        if (d <= params::coh_near) return 1.0f;
+        if (d >= params::coh_far) return params::coh_floor;
+        return 1.0f - (1.0f - params::coh_floor) * static_cast<float>(d - params::coh_near) / static_cast<float>(params::coh_far - params::coh_near);
+    };
     // First readings of each group (clears, fields) can cost several times the estimate: stop with
     // enough left for the walk after it, and read last turn's choice first so that a cut-short loop
     // still weighs it. Without one, the nearest group worth farming as the crow flies.
@@ -1821,7 +1843,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
         if (known.version != belief.version || known.fastest_strength != strength)
             known.version = belief.version, known.fastest_strength = strength, known.fastest = fastest_clear(world, g, strength);
         // Ren's for the rated prunes; its plain ones keep the fastest.
-        const float exposed = exposure(g) * (pull.on && home_side(map, g, opening) < 0.5f ? pull.deny_scale : 1.0f);
+        const float exposed = exposure(g) * (pull.on && home_side(map, g, opening) < 0.5f ? pull.deny_scale : 1.0f) * cohesion(g);
         const float quickest = rated && reflect > 0 ? reflected_clear(world, g, strength, reflect) : known.fastest;
         const int walk = known.walk;
         // From the altar after the tribute, the cycle may go out by way of spawn.

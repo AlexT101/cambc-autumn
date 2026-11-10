@@ -46,6 +46,38 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   leave a narrowly lost stand are right to. Recalibrating the model has nothing to correct; the level combat and team
   arms opened opportunities at this boundary, where fighting and declining are worth the same.
 
+## (fishx = ocean-16d6f78 + classifier, 2026-11-10) Cohesion exploiter: packing near allies moves cohesion a little and wins nothing
+
+Idea (fish-re, [oppmodel/fish.md](ideas-2026-11-09/oppmodel/fish.md) "Deaths"): Fish is no better at equal numbers but
+packs (1.54 mates within 5 vs our 1.14), so we meet it outnumbered. Notes and data:
+[oppmodel/cohesion.md](ideas-2026-11-09/oppmodel/cohesion.md); tools ~/tmp-offload/fishcoh/tools.
+
+- **Live (544 latest-Fish games, r20-400).** Nearest teammate within 2: Fish 52%, us 39%. Early deaths level (1,530 vs
+  1,579), nearest ally at death about as near; foes - mates >= 2 at 38% of our deaths vs 27% of Fish's. Our contact
+  samples at Fish's foes-mates mix and our hazard: about 13% fewer deaths in contact, the ceiling of this lever.
+- **Arm.** farm.cc: a group's value x 1 within 6 of the nearest live ally's anchor (its claimed group's centre, else its
+  seen or told tile), falling linearly to 0.75 at 14 and beyond (a discount, so the prune bounds hold).
+  fc1-coh75 = while fishx::on (classifier Fish >= 0.8), fc2-coh75 = always. bots/fishx: params::coh_mode, and
+  params::fishx_deny = false turns the parked deny arms off.
+- **Mechanism.** Ours within 5: 1.17-1.20 -> 1.27-1.31 (Fish 1.54). Against Flp4 (packs like live Fish), fresh
+  slice f0: our deaths 5.4 -> 5.1 a game, the body's 10.1 -> 9.4, gold level. Against Flp3 (spreads), ladder: our
+  deaths 5.8 -> 6.7, gold -5% at r400, the extra deaths healthy ones in fights where we have the numbers. Floor 0.5
+  read no better on 256-game smokes (Flp4 79.3% vs 80.9%, Mt3q 69.9% vs 73.8%). Head to head against the base
+  (ladder, 256): fc1 53.1%, fc2 48.8%.
+
+Results against ocean-16d6f78 (fgate, bodies Flp4/Mt3q, fresh ladder-v2 maps decide; points of win rate, 95% CI):
+
+| arm | fresh | ladder | Fish / Mite (fresh) | outcome |
+|---|---|---|---|---|
+| fc1-coh75 (Fish only) | -0.22 ±0.70 of 4,352 units | +0.56 | +0.03 / -0.48 | high LLR -1.68 at block 34; stopped |
+| fc2-coh75 (always) | -0.76 ±0.82 of 4,352 units | +0.38 | -0.69 / -0.84 | high LLR -2.00, low -0.92 at block 34; stopped |
+
+Level for Fish, below zero unconditioned. The two 256-game Flp4 smokes (+5 and +2.7 points) were lucky draws. The
+farm discount moves only a third of the cohesion gap, and the deaths it saves against a packing team (~0.3 a game)
+are paid back in farm or in fights taken with the numbers. Being outnumbered at contact is not the general weakness
+it looked like: a stronger form would need a different mechanism than farm's pick (travel together, or decline
+contact against a seen pack), not a heavier discount.
+
 ## (ocean = ocean-16d6f78, 2026-11-09) Camp health weight: farm already prices live health; abandonments come from other branches
 
 Idea (user): weigh a camp's live health, preferring to finish low-health camps. Tools and patches:
