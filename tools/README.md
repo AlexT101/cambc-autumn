@@ -661,7 +661,7 @@ Migration uses the latest valid saved observation through v112: Fish remains equ
 to r2, while Mite starts from its v112 unpinned group. This is an initial observation,
 not evidence of additional uploads between the old checks. Matching requires five
 finished non-suspect cells with consistent own version, opponent, maps, sides, source
-and engine identity. Interrupted planning repairs missing tasks by stable IDs; snapshot
+and engine/seed identity. Interrupted planning repairs missing tasks by stable IDs; snapshot
 advancement and a notification outbox are saved together, with event-ID deduplication
 in the append-only wake journal. Invalid comparisons hold their snapshot for review.
 Tests: `python -m unittest discover -s tools/tests -p test_ladder_opp_check.py -v`.

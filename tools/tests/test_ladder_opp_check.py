@@ -47,7 +47,7 @@ class Fake:
             self.rows.append(dict(g, task=tid, group=group, version=t['version'], opp_id=t['opp_id'], opp_name=t['opp_name'],
                 purpose=t['purpose'], refset=t['refset'], pin=t['pin'], source_group=source, position=i,
                 match=f'{group}-{i}', status='finished', result='win', rounds=200, our_gems=score, opp_gems=50,
-                our_kills=1, opp_kills=0, our_picks=['Ryth'], opp_picks=['Prism'], engine='3.0.0', engine_hash=engine))
+                our_kills=1, opp_kills=0, our_picks=['Ryth'], opp_picks=['Prism'], engine='3.0.0', engine_hash=engine, seed=f'seed-{i}'))
         return group
 
 
@@ -119,7 +119,7 @@ class DetectorTests(unittest.TestCase):
         self.assertEqual(len(ids), len(set(ids))); self.assertEqual(len(ids), 4)
 
     def test_invalid_context_never_advances(self):
-        for mode in ('suspect', 'engine', 'source', 'version', 'side', 'metric', 'duplicate', 'duplicate-match', 'failed'):
+        for mode in ('suspect', 'engine', 'source', 'version', 'side', 'metric', 'duplicate', 'duplicate-match', 'seed', 'missing-seed', 'failed'):
             with self.subTest(mode=mode):
                 self.setUp(); self.fake.core(1); self.tick(1)
                 self.fake.complete('v1-mite-01'); group = self.fake.complete('v1-mite-01-cur', 999)
@@ -132,6 +132,8 @@ class DetectorTests(unittest.TestCase):
                 if mode == 'metric': row.pop('rounds')
                 if mode == 'duplicate': self.fake.rows.append(dict(row, our_gems=42))
                 if mode == 'duplicate-match': self.fake.rows.append(dict(row, match='another-match'))
+                if mode == 'seed': row['seed'] = 'different-seed'
+                if mode == 'missing-seed': row.pop('seed')
                 if mode == 'failed': row['status'] = 'failed'
                 self.tick(1)
                 self.assertEqual(self.st['opp_detector']['runs']['1-mite']['status'], 'invalid')

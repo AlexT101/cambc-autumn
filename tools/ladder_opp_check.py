@@ -56,9 +56,11 @@ class Evidence:
                 raise InvalidComparison('row/source provenance differs from created task')
             if any(row.get(f) is None for f in FIELDS) or not row.get('engine') or not row.get('engine_hash'):
                 raise InvalidComparison('missing comparison metrics or engine identity')
+            if row.get('seed') is None:
+                raise InvalidComparison('missing deterministic game seed')
             if not row.get('match') or not row['our_picks'] or not row['opp_picks']:
                 raise InvalidComparison('missing ordered drafts')
-            normalized = {f: row[f] for f in (*FIELDS, 'engine', 'engine_hash', 'match')}
+            normalized = {f: row[f] for f in (*FIELDS, 'engine', 'engine_hash', 'seed', 'match')}
             if key in cells and cells[key] != normalized:
                 raise InvalidComparison('conflicting duplicate cell')
             cells[key] = normalized
@@ -78,6 +80,8 @@ def compare(base, current):
         old = base['cells'][key]
         if (row['engine'], row['engine_hash']) != (old['engine'], old['engine_hash']):
             raise InvalidComparison('comparison crosses engine builds')
+        if row['seed'] != old['seed']:
+            raise InvalidComparison('comparison crosses deterministic game seeds')
         if any(row[f] != old[f] for f in FIELDS):
             changed.append(f'{key[2]}/{key[3]}')
     return sorted(changed)
