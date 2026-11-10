@@ -970,3 +970,6 @@ re-measured"; used).
 
 
 - `63704100–63704102` (2026-11-10, ladder-v2): bounded Fish-only camp-ward screen;768 generated,512 selected before play after old1024ward-pool/registered-ladder hash exclusions. Artifacts `~/tmp-offload/ward-fish502-screen/generated`, 503 suite resealed before play after two Food-confirmation collisions were replaced. No other experiment may reuse as fresh confirmation.
+
+**Ocean vs 16d6f78 (2026-11-10):** `--mix ladder-v2`, under `suites/oc-16d6/fresh-{seed}`, symlinked into `merged/oc-16d6`:
+- 5200000–5200116, 29,952 maps: current main `bots/ocean` against `variants/ocean-16d6f78` (both own drafts), `replays/ab/ocean-vs-16d6f78-60k/` (used).

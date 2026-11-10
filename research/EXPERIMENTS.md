@@ -16679,3 +16679,11 @@ The user requested more local games for the inconclusive Fish/Mite conditional e
 The full200k release/native programme uses a new shared1,024-map ladder-v2 pool (reserved2414000–07), noise1004–2003, Flp4/Mt3q and own drafts. Target-opponent fresh paired-map units decide under gain50.0/50.25 SPRT, distinct harm49.75/50.0 and off-target harm review. First-cross latches prevent reopening a closed gain test; joint gain-H0/harm-H1 is SMALL/UNRESOLVED review, not a positive result. No width/eight-block stop;1,000-block cap unresolved. Other-opponent effects remain shipping constraints, including classifier overhead/mistakes.
 
 Eight lightweight decision checks, source review and final independent seal review passed. Builds, release smoke, debug runtime activation and all strength games are scheduled phases, not completed validation. Manifest86a82e8a2bf37b1ea6602c34391af77d5755fbc611d55024c9a0eebb9d6ece89 in `~/tmp-offload/cond504`; [prospective protocol](ideas-2026-11-10/cond504/README.md). A changed approved/committed base holds before heavy work; frozen experiments may resume. No automatic100k, repin, live test or review token.
+
+## Ocean main against ocean-16d6f78 (2026-11-10)
+
+Current main `bots/ocean` (after CHANGES 504) against `variants/ocean-16d6f78` (the 485-491 removals base, checked
+identical to `bots/ocean` at 16d6f7803), own drafts, release builds, real fuel, fast runner, on 29,952 fresh
+ladder-v2 maps (`suites/oc-16d6`, seeds 5200000-5200116, both sides): **53.9% of 59,904 (32,260-27,644), 95% CI
+53.5-54.3**. No failed games, no broken or capped drafts; out-of-fuel turns CAND 342,900 in 39,416 games, REF 657,470
+in 46,785. `replays/ab/ocean-vs-16d6f78-60k/`.
