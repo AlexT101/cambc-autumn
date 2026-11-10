@@ -14079,6 +14079,19 @@ read in play. Details in CHANGES 461. Checks:
   Level locally against ocean-16d6f78: 49.5% (46.7-52.2) of 1,280, fresh ladder-v2 f0 48.4% of 256 (the first, +280
   fuel version read 47.0% of 1,280 and was not queued). It is the new base's first live read and the classifier's live
   check (our stdout from big-arm's capture).
+- **Live gate: v104 (ocean-16d6f78 + classifier trace; stream mask).** 104 groups on Fish r2 / Mite r3, done 03:40 UTC
+  (plus 16 core groups on Mite r4, below): Fish 169 / 256, Mite 165 / 256, 334 / 512 = 65.2%. Paired: against v103 +11
+  (z +0.84; Fish +13, z +1.41; Mite -2), against v102 +6 (z +0.45), against v98 +14 (z +1.00; Mite +9, z +0.90). **Level
+  with all**; the new base is at least as good live as the oc32 line.
+- **Mite repinned to r4 (user, 02:30 UTC).** The user's match group 01a1c337 (02:09) played a newer Mite: rerun with v104
+  against r3-pinned Mite on the same 5 maps and sides (01a1c33b), every game diverges at rounds 1-3 on Mite's moves
+  (same picks, same priority encoding: the classifier reads Mite 1.0000). r4 is seeded to that group (events.jsonl
+  `r4-seed-mite`); refsets.json mite = r4 from v105 on. **v104 against r4 against r3 on the 80 core games: 37 / 80 vs
+  52 / 80, flips 12 for r4 against 27 (z -2.40): the new Mite beats us more.**
+- **Classifier live (v104, 249 captured games with our OPPL trace, 1,328 instance-games).** Accuracy of the argmax per
+  instance at r1 / r50 / r100 / r300: Fish 92.3 / 96.9 / 97.7 / 98.1%, Mite 92.6 / 94.8 / 97.2 / 99.8%, other (11 teams)
+  94.1 / 98.4 / 99.5 / 99.8%. **No confident (>0.9) misread at r100 or r300.** Bot against offline on its own view: 99.45%
+  of 11,212 lines within 0.002; the misses are round-1 draft terms in a few games (offline roster order).
 
 **Follow-up: scr250 run to a decision, a cheaper version, and the confirmation (2026-11-08).**
 - Fuel by part (300 Willow maps, real budget, OOF turns in rounds 1-250 against base): stand alone +16%, chase alone
