@@ -153,6 +153,77 @@ game state and map features). Arms on `variants/ocean-16d6f78`. Tools and the a2
 - Not tried: the same line for all carriers; a burst-aware stand (Marcella's ready 2x-Focus spell in reach), which
   fish-re's lane (Fish threat reads) covers.
 
+## (ocean, 2026-11-10) Farm economy against live Fish and Mite: no gold left in aggregate; the backyard discount is denial
+
+Question: does ocean's camp choice leave gold on the table, given that real Fish and Mite earn more gold a capture
+than our bodies? Data: decoded live games from 11-08 on (544 Fish vs us, 2,409 Mite vs us), local ocean against the
+bodies, and fgate. Scripts are in `~/tmp-offload/farmecon/`: caprows, agg, decomp, idle, idle2, pergroup, elk,
+perchamp, both, vesp, budget and mech.py.
+
+**Live, our capture economy matches theirs.** Capture gold a game, us against them:
+
+| | r100 | r200 | r400 | r600 |
+|---|---|---|---|---|
+| vs Fish | 370 / 379 | 831 / 835 | 1931 / 1806 | 3090 / 2788 |
+| vs Mite | 379 / 409 | 857 / 898 | 1920 / 1912 | 3147 / 3077 |
+
+- We capture more gems: 79 against 69 by r100 and 177 against 153 by r200 against Fish; +13 against Mite by r200.
+- Fish's earned-gold lead (+50 at r100, +73 at r200) is kill gold (+21/+26) and Marcella's tribute gold (+20/+43).
+  Captures add only +9/+4.
+- Our lower gold a capture is composition: 33% of our captures are gem clusters, against Fish's 19%.
+- Local ocean earns as live ocean does (375 capture gold by r100). The bodies are the ones short: our code with Fish's and
+  Mite's drafts, 350 / 410 / 442 a 100-round bucket against real Fish's 379 / 456 / 478. The bodies' economic gap is
+  theirs, not ocean's.
+
+**Where the allocation differs** (same champion type on both sides of a game, by r300):
+- Their Vesper Vale takes more shares: Fish's 7.3 against our 6.8 (1007 gold against 875); Mite's 8.0 against 6.5
+  (981 against 846, 100 gems against 74).
+  - Vesper's share of the team's base gold is 0.41 for us, against 0.53 for Fish and 0.49 for Mite.
+  - Our Vesper hits camps as many rounds as theirs (86-87 against 83-88). It joins fewer crew clears; when it hits a
+    group, it holds it 87% of the time.
+  - Our Cassi and Issac take the extra shares (Cassi 60% gem clusters).
+- Own-half Elk is cleared later and by smaller crews:
+  - first clear at a median r64 against Fish's r48 (r52 against Mite's r45);
+  - second at r184 against r154;
+  - 3.45 hitters against 4.7, and 22% solo against 3%.
+  - Own Golem first clears: r242 against r150.
+- The deep backyard (our walk share < 0.3) is under-farmed, live and local alike:
+  - own Elk 12-20 walks away is never captured by r300 in 28% of our games, against 10-11% for Fish and Mite;
+  - at walk 30+, 63% against 12% for Mite;
+  - against Mite it holds for every group type.
+  - We take more of the middle instead. Farm's middle band (`mid_exposure` 1.36 for `home_side` 0.254-0.683) prices the
+    backyard 26% below the front yard.
+
+**`variants/fe-yard` (`own_ground_share` 1.1: no own-side cap on the band, so the backyard is priced like the front
+yard) is REJECTED.** fgate (Flp4/Mt3q, 30 blocks, 3,840 fresh units):
+- fresh **-2.58 ±0.89** (Fish -2.21, Mite -2.94);
+- ladder -2.38;
+- one-site -1.97, multi-site -2.78.
+
+Mechanism, paired on 1,024 fresh games (f0 and f1, both bodies; fe-yard minus base, the range over the four runs):
+
+| | r200 | r400 | r600 |
+|---|---|---|---|
+| backyard captures | +1.0 | +2.0 | +3.0 |
+| middle captures | -0.5 | -1.0 | -2.0 |
+| our capture gold | +10 to +31 | +33 to +45 | -65 to +32 |
+| body's capture gold | +4 to +49 | +47 to +136 | +100 to +150 |
+| body's tributed gems | +4 to +8 | +10 to +25 | +17 to +36 |
+| our kills | -0.25 to +0.07 | -0.35 to 0 | -1.1 to 0 |
+
+The backyard's gold is real, but smaller than the middle's denial. Every middle group we leave feeds the enemy, and we
+meet them less, so we kill less. The middle premium prices that denial; SPSA found its height for this reason.
+
+The same reading explains live: Fish and Mite farm their backyards and lose the middle to us.
+
+No narrower arm: the cost is leaving the middle, not anything in the backyard. Early-only is the one form left, and
+there both effects are small (+10 capture gold by r100, middle -0.1).
+
+Leads for others, not tested:
+- Vesper's share of crew clears (crews and packing, not farm pricing);
+- own-half Elk crews.
+Earlier packing arms (pair-pack, pos-crew, open-pack) moved Elk/Golem gold but not wins.
+
 ## (ocean line, 2026-11-09) Fresh-map gate: the line holds off the ladder maps; the oc32 parts are being re-read
 
 The final tournament plays fresh maps from the ladder's distribution. dgate's bodies looked up Fish's and Mite's picks
