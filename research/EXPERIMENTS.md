@@ -15691,6 +15691,11 @@ Patch: [sm-greed.patch](ideas-2026-11-09/shopmite-tools/sm-greed.patch).
 | cl-sh-gr-s05 / gr-full / gr-m25 | -1.30 / -1.11 / -1.43 pts (±2.3) of 384 | | screen, level with genrev's -1.30 at the same block |
 
 Verdict: the fix is right on the case and fires rarely; every arm reads ~0.25 points below the base, about what its +0.6-0.9% fuel a turn would cost. Not kept; a version would need to cost no fuel (skip the pass unless an ally that has acted is in a member's range).
+- Zero-fuel version (mkshield2.py; user asked to test it): the fuel was not in the shield pass but in fixed per-call checks (bench split: Safety +0.34%, dash hazards +0.03%; camp_damage, called on many tiles a turn, was two thirds of it). The work now runs only for a group within reach of an ally done acting whose health the group's whole strength could take; shields ride in Safety's members_ after the members, and the dooms after the dash hazards, each as two hits that cancel where we take the hit instead (camp_damage and danger() run the base's loops unchanged). Bench (100M wide, identical games): gen +0.09% (51/52 identical replays), genrev +0.14% (not gated). On the live re-run both remove the r36 deaths.
+
+| gate | fresh (95% CI) of units | ladder | outcome |
+|---|---|---|---|
+| cl-shz-gen | 49.91% (49.66-50.16) of 12,672 | 50.07% | NARROWED, level (Fish +0.19, Mite -0.37) |
 
 ## Livelock by a big enemy tribute (livelock, oc-wdash-494, 2026-11-10): the oscillation is a want_home edge; contesting the channel loses, the ping-pong guard is level
 - Case 1, live 01a1c303 (04pinwheel, v104, reproduced exactly by a puppet re-run, debug build too): from r839 the enemy Prism (7,200 hp, Focus 1,250) channels 699 gems at altar (2,25) for 47 turns (976 if it lands; game_ender needs 723). Our Prism (536 gems, stun ready throughout) alternates bank (B, steps to (8,22)) and retreat (R: `stand_lost_at` at (8,22), a walker the channeller could cancel to become); Vesper and Issac, each carrying a lock, alternate farm/bank and R the same way. Nothing sends a lock or stun holder at a tribute that does not end the game (CHANGES 485 removed 429's deny); the stun was 3 steps out of reach (7 vs 4) behind the same retreat edge; Cassi's stun was across the map.
