@@ -129,3 +129,11 @@ Parent-prioritized wakeheal2 normal/raised work follows tile200k in the queue; t
 `oc-wbush-498` at200k versus full498 crossed the low rejection boundary after130blocks/16,640 fresh paired units: **REJECT**, fresh−0.625±0.391 percentage points, lowLLR−3.141/high−7.852. Fish+0.066±0.528, Mite−1.316±0.574; ladder−0.014±0.381. This arm preserves immediate reveal but forbids non-bush planned wards. Ad Astra's observed all-bush placement does not justify this restriction in Ocean at the tested doubled budget. No promotion. Normal100k remains running and gets its own terminal decision; do not transfer this result to that condition or infer the mechanism from subgroup means alone.
 
 Raw copy: `~/tmp-offload/warding-2026-11-10/results/bush-200000.json`. The released controller slot started cleared-camp200k using the newly reviewed main86 pool; actual fgate790343 has fixed Flp4/Mt3q, full498 and --fuel200000. Existing private bush100k/camp100k processes remain unchanged; the private reservation remains until they drain.
+
+## Bush-only branch closed, 2026-11-10 15:16 UTC
+
+Normal fuel also formally **REJECTED** the bush-only restriction: 216 blocks / 27,648 fresh paired units, fresh **−0.427±0.307 percentage points**, low LLR −3.070 / high −10.701. Fish −0.148±0.419, Mite −0.705±0.446. The old ladder maps read +0.716±0.300, while fresh maps lose; the pooled +0.145±0.215 is therefore not evidence for promotion.
+
+Both normal and doubled fuel reject this arm. Retain planned non-bush wards and close the bush-only branch; no cheaper version is justified by these results. This does not establish which information or action caused the losses, or that the difference between budgets is significant. The separate camp and timing arms continue. Raw terminal copies are `results/bush-100000.json` and `results/bush-200000.json` under the ward artifact directory.
+
+Alive-camp normal has now started as fgate1485551 in main86. Its actual command uses the sealed candidate/full498 reference, fixed Flp4/Mt3q and default normal fuel. Both source seals were rechecked. Cleared-camp normal remains the last private-pool ward controller; no game was restarted.
