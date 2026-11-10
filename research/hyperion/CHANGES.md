@@ -4333,3 +4333,26 @@ outlined. This prevents the reproduced v107 honeycomb Issac initiation that kill
   Evidence and remaining ally-initiated wake limitation: `research/ideas-2026-11-10/camp107-crew/README.md`.
 
 Frozen as `variants/oc-wakecold-500` (= bots/ocean).
+
+## 501: Defer settled threat geometry and reuse camp occupancy (ocean, 2026-11-10)
+
+Fuel optimization on full 500, preserving 499's Skirmish table and 500's camp pre-heal guard.
+Answer threat queries directly when the enemy origin settles every attack pattern; otherwise build
+movement geometry on demand. Cache camp occupancy separately from health, share a wide member index,
+index bounded enemy walks directly, check cached clear ordering in linear time, and use small SIMD
+operations for allies, combat nodes, windows and large camp groups. No fuel budget or strategy threshold changes.
+
+- **Independent release:** 4,096 games on 2,048 fresh ladder-v2 maps, seeds 1462610–1462617:
+  exhausted turns **30,156 → 26,749 (-11.30%)**; wins 51.15% (49.62–52.68).
+- **Standard release:** 1,280 games, exhausted turns **9,663 → 8,506 (-11.97%)**; wins 49.84%.
+  No failed games, early losses or broken/capped drafts across either suite.
+- **Fresh real-budget bench:** exhausted turns **32,202 → 27,799 (-13.67%)**; shortcuts
+  **1,313,304 → 1,230,497 (-6.31%)**; mean fuel -0.37%. Runner counts include consecutive exhaustion.
+- **100M bench:** 95/96 own-draft and 106/108 forced-composition replays byte-identical, covering all
+  13 champion bodies and groups up to 352 members. The three exceptions are traced next-turn/ward
+  cache-timing quirks and the fix for Reach's old 8-bit member-index truncation. Diagnostic cache
+  normalization restores identity for timing cases; 82,427 same-state Reach oracle checks pass.
+  Final per-group/SIMD additions alone are 96/96 byte-identical.
+
+Evidence, exactness exceptions, rejected attempts and reproduction: [fuel 501](../fuel-2026-11-10-fourth/README.md).
+Frozen as `variants/oc-fuel-501` (= bots/ocean).

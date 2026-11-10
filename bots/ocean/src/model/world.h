@@ -239,6 +239,19 @@ struct StaticMap {
 
     // Group whose camp tile this is, or -1.
     int group_at(vec2 p) const { return static_cast<int>(group_lookup_[tile_index(p)]) - 1; }
+    // Member on a camp tile, or -1; the first lookup indexes its whole group.
+    int camp_member_at(vec2 p) const {
+        static std::array<std::uint16_t, 100 * 100> members;
+        auto& found = members[tile_index(p)];
+        if (!found) {
+            const int g = group_at(p);
+            if (g < 0) return -1;
+            const auto& group = groups[g];
+            for (std::size_t i = 0; i < group.members.size(); ++i)
+                members[tile_index(group.members[i].pos)] = static_cast<std::uint16_t>(i + 1);
+        }
+        return found - 1;
+    }
     // Altar on this tile, or -1.
     int altar_at(vec2 p) const { return in_bounds(p) ? static_cast<int>(altar_lookup_[tile_index(p)]) - 1 : -1; }
     // Groups with a camp tile within `radius`, seen or not; a scratch vector, valid until the next call.
@@ -595,6 +608,7 @@ struct CampBelief {
     int cleared_by_us = -1; // the round our own turn killed its last member while we stood on it
     // Changes whenever `state` or `health` does: results computed from them keep while it holds.
     std::uint32_t version = 0;
+    std::uint32_t geometry_version = 0; // living member set, including respawns
     // camp_settled's last settling: its round, version and update_camps' camp-view count then, and
     // the members in view; the rest is read only once settled_round is set.
     int settled_round = -1;
@@ -700,6 +714,7 @@ public:
     int self_index = 0;
 
     std::vector<CampBelief, UnwrittenAllocator<CampBelief>> camps; // parallel to map().groups; written whole by init_beliefs
+    std::uint32_t camp_geometry_version = 0; // only camp tiles becoming occupied or empty
     std::uint32_t camps_version = 0; // changes whenever any group's version does
     // Bit g: group g's version moved since Pathing::live_camps last cleared it.
     mutable std::vector<std::uint64_t> camps_dirty;

@@ -16353,3 +16353,27 @@ Mask header and SDK are identical to submitted107; comparisons to105 still carry
 This arm is queued as an informative judgment test explicitly against **v107**, on unchanged Fish r2 / Mite r5,
 after the current active test. Scheduler alone submits after drain. No repin or automatic strength verdict.
 Merge/build/source/queue evidence: `~/tmp-offload/handoff/codex/wakecold-merge/`.
+
+## Ocean fuel 501: deferred threat geometry and camp occupancy (2026-11-10)
+
+Worked alone; studied prior fuel campaigns and measured actual exhausted turns rather than recovery markers.
+Final patch on full 500 preserves Skirmish 499 and the camp pre-heal guard. It avoids building threat movement
+geometry when the origin settles the answer, separates occupancy from health invalidation, shares wide camp
+member indices, directly indexes bounded static walks, checks clear ordering in linear time, and uses small SIMD
+operations. Search budgets/reserves and strategic thresholds are unchanged. Frozen as `variants/oc-fuel-501`.
+
+- Independent release confirmation, 2,048 new ladder-v2 maps (seeds 1462610–1462617), both sides/4,096 games:
+  **OOF 30,156→26,749 (-11.30%)**, wins 51.15% (49.62–52.68). Standard 1,280: **9,663→8,506 (-11.97%)**,
+  wins 49.84%. Zero errors, early losses, broken or capped drafts. Own drafts, cambc 5.0.1/native, release.
+- Same fresh maps, real-budget debug bench: **OOF 32,202→27,799 (-13.67%)**, shortcuts excluding OOF
+  **1,313,304→1,230,497 (-6.31%)**. Paired-game bootstrap 95% intervals: OOF [-16.72,-10.75]%,
+  shortcuts [-7.86,-4.81]%; these do not cluster the two sides of a map. Mean fuel -0.37%; play turns -0.10%.
+- 100M bench: **95/96** own-draft and **106/108** forced-composition replays byte-identical. All 13 champion
+  bodies, 3/4/5 picks, and 112/208/352-member groups on 40/64/100 maps. Exceptions are traced existing
+  next-turn/ward cache-timing quirks and corrected Reach member truncation above 254; timing normalization
+  restores identity in diagnostic copies. Same-state widened old/new Reach oracle: at least 82,427 exact checks,
+  zero mismatches. Final per-group occupancy/SIMD additions alone 96/96 byte-identical. No universal identity claim.
+- Initial work against 498 and the first fresh suite 1462510–1462517 became development evidence after selecting
+  final improvements on 500. Rejected changes include broader direct threat ranges, group-local Reach lists,
+  clear-health SIMD, larger walk caches, shared host boards and incremental clear bookkeeping. Their outcomes
+  and the ward trace are retained in [fuel 501 evidence](fuel-2026-11-10-fourth/README.md).

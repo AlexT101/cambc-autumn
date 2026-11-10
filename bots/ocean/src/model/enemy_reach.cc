@@ -29,40 +29,25 @@ struct Walk {
     bool dasher = false;
     std::uint32_t made = 0;    // bit s: steps[s] is this walk's
     std::uint32_t counted = 0; // bit s: count[s] is steps[s]'s
-    std::uint32_t used = 0;
     std::array<std::uint16_t, max_steps> count{};
     std::array<std::optional<bitboard>, max_steps> steps;
 };
-// Kept across turns, as the terrain is static: an enemy standing still costs nothing more. More
-// slots than enemies, so that a teleport's landing or a live tile seldom evicts a standing one's.
-std::array<Walk, 24> walks;
-std::uint32_t uses = 0;
-// Slot + 1 of the walk last found for a key hashing here: scanning the slots cost ~470 fuel a
-// call. A slot matches only once made, and two never match the same key, so checking one first
-// finds what the scan would.
-std::array<std::uint8_t, 64> last_slot{};
+// Terrain is static. Index by origin and movement kind; a FIFO bounds the stored boards.
+std::array<Walk, 256> walks;
+std::array<std::uint16_t, 2 * 100 * 100> walk_slot{};
+unsigned next_walk = 0;
 
 Walk& walk_from(vec2 from, bool dasher) {
-    auto& hint = last_slot[static_cast<std::size_t>((from.x * 7 + from.y * 13 + dasher * 29) & 63)];
-    if (hint) {
-        auto& w = walks[hint - 1u];
-        if (w.from == from && w.dasher == dasher && w.made) {
-            w.used = ++uses;
-            return w;
-        }
-    }
-    Walk* oldest = &walks[0];
-    for (auto& w : walks) {
-        if (w.from == from && w.dasher == dasher && w.made) {
-            w.used = ++uses;
-            hint = static_cast<std::uint8_t>(&w - walks.data() + 1);
-            return w;
-        }
-        if (w.used < oldest->used) oldest = &w;
-    }
-    oldest->from = from, oldest->dasher = dasher, oldest->made = oldest->counted = 0, oldest->used = ++uses;
-    hint = static_cast<std::uint8_t>(oldest - walks.data() + 1);
-    return *oldest;
+    const auto key = [dasher](vec2 p) { return static_cast<std::size_t>(p.x + 100 * p.y + 10000 * dasher); };
+    const bool inside = from.x >= 0 && from.x < 100 && from.y >= 0 && from.y < 100;
+    if (inside && walk_slot[key(from)]) return walks[walk_slot[key(from)] - 1u];
+    auto& w = walks[next_walk];
+    if (w.from.x >= 0 && w.from.x < 100 && w.from.y >= 0 && w.from.y < 100)
+        walk_slot[static_cast<std::size_t>(w.from.x + 100 * w.from.y + 10000 * w.dasher)] = 0;
+    if (inside) walk_slot[key(from)] = static_cast<std::uint16_t>(next_walk + 1);
+    next_walk = (next_walk + 1) % walks.size();
+    w.from = from, w.dasher = dasher, w.made = w.counted = 0;
+    return w;
 }
 
 const bitboard& steps(const StaticMap& map, Walk& w, int s) {

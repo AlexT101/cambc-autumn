@@ -8,13 +8,6 @@ namespace aph {
 
 namespace {
 
-// The member of group G on tile p, or -1.
-int member_at(const CampGroup& G, vec2 p) {
-    for (int i = 0; i < static_cast<int>(G.members.size()); ++i)
-        if (G.members[i].pos == p) return i;
-    return -1;
-}
-
 // A member on a live tile: full health while our belief still holds it dead (it respawned unseen).
 float live_health(const World& world, int g, int i) {
     const float hp = world.camps[g].health[i];
@@ -48,7 +41,7 @@ template <class Allowed> CampAttackTargets camp_attack_targets(const World& worl
         const bool resource = resources && !map.groups[g].has_monolith && map.groups[g].strength <= 0;
         if (!ordinary && !resource) continue;
         const auto& members = map.groups[g].members;
-        const int i = member_at(map.groups[g], p);
+        const int i = map.camp_member_at(p);
         if (i < 0) continue;
         float score = members[i].strength / std::max(1.0f, live_health(world, g, i));
         if (splash) {
@@ -60,7 +53,7 @@ template <class Allowed> CampAttackTargets camp_attack_targets(const World& worl
                     if ((dx == 0 && dy == 0) || !in_bounds(q)) continue;
                     const int h = map.group_at(q);
                     if (h < 0 || (h != g && (world.camps[h].state != CampState::alive || !world.camps[h].fully_awake()))) continue;
-                    const int j = member_at(map.groups[h], q);
+                    const int j = map.camp_member_at(q);
                     if (j < 0) continue;
                     const float hp = world.camps[h].health[j];
                     if (hp > 0) score += map.groups[h].members[j].strength * std::min(1.0f, hp / std::max(1.0f, hit)) / std::max(1.0f, hp);
@@ -115,7 +108,7 @@ bool breach(const World& world, const Field& field) {
         if (!test(live, p)) return false; // something else holds this way on
         const int g = map.group_at(p);
         if (g < 0 || map.groups[g].has_monolith) return false;
-        const int i = member_at(map.groups[g], p);
+        const int i = map.camp_member_at(p);
         if (i < 0) continue;
         const float hp = live_health(world, g, i);
         if (group < 0 || hp < weakest) group = g, member = i, weakest = hp;
@@ -458,40 +451,26 @@ void clear_fire(const StaticMap& map, int g, CampLeft* left, int n, int range) {
     }
 }
 
-// Whether `sorted`, a build's clear order of `n` living members, is what a build now would give, its
-// health then updated: the same members live and, for each member whose health moved, every comparison
-// of clear_fire's sort with it has the same outcome (the fire tie-break reads only the living set).
-// std::sort's permutation is a function of its comparisons' outcomes and its input order (member order),
-// and the fire passes read only the order and the living set.
+// With the same living set, checking neighbouring keys settles whether the old order still
+// sorts. A new tie is rebuilt so its geometry tie-break is applied; an existing tie stays ordered.
 [[gnu::noinline]] bool order_holds(const CampGroup& group, const CampBelief& belief, bool fresh, CampLeft* sorted, int n) {
     int living = 0;
     for (std::size_t i = 0; i < group.members.size(); ++i)
         living += (fresh ? group.members[i].max_health : belief.health[i]) > 0;
     if (living != n) return false;
-    constexpr int most = 8; // more moved members: a sort is about as cheap
-    std::array<int, most> at;
-    std::array<float, most> now;
-    int moved = 0;
-    for (int p = 0; p < n; ++p) {
-        const int m = sorted[p].member;
-        const float hp = fresh ? group.members[m].max_health : belief.health[m];
-        if (hp == sorted[p].health) continue;
-        if (!(hp > 0) || moved == most) return false;
-        at[moved] = p, now[moved++] = hp;
-    }
-    const auto order = [](float sa, float ha, float sb, float hb) {
-        const float x = sa * hb, y = sb * ha;
-        return x > y ? 1 : x < y ? -1 : 0;
-    };
-    for (int k = 0; k < moved; ++k) {
-        const float s = sorted[at[k]].strength, before = sorted[at[k]].health, after = now[k];
-        for (int q = 0, j = 0; q < n; ++q) {
-            float h = sorted[q].health, h_now = h;
-            if (j < moved && at[j] == q) h_now = now[j++];
-            if (q != at[k] && order(s, before, sorted[q].strength, h) != order(s, after, sorted[q].strength, h_now)) return false;
+    float previous_old = 0;
+    for (int i = 0; i < n; ++i) {
+        auto& c = sorted[i];
+        const float hp = fresh ? group.members[c.member].max_health : belief.health[c.member];
+        if (!(hp > 0)) return false;
+        if (i > 0) {
+            const auto& p = sorted[i - 1];
+            const float x = p.strength * hp, y = c.strength * p.health;
+            if (x < y || (x == y && p.strength * c.health != c.strength * previous_old)) return false;
         }
+        previous_old = c.health;
+        c.health = hp;
     }
-    for (int k = 0; k < moved; ++k) sorted[at[k]].health = now[k];
     return true;
 }
 

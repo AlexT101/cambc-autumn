@@ -1,0 +1,84 @@
+{
+  "name": "oc-fourth-six-screen",
+  "started": "20261110-160107",
+  "wall_seconds": 144.4,
+  "threads": 28,
+  "fuel": null,
+  "release": true,
+  "cand": {
+    "spec": "variants/oc-f4x-release6",
+    "kind": "dir",
+    "path": "bots/variants/oc-f4x-release6"
+  },
+  "ref": {
+    "spec": "variants/oc-f4x-current-ref-release",
+    "kind": "dir",
+    "path": "bots/variants/oc-f4x-current-ref-release"
+  },
+  "games": 4096,
+  "cand_wins": 2075,
+  "cand_win_pct": 50.66,
+  "ci95": [
+    49.13,
+    52.19
+  ],
+  "errors": 0,
+  "oof": {
+    "cand": [
+      28183,
+      2849
+    ],
+    "ref": [
+      32037,
+      2940
+    ]
+  },
+  "early_losses": {
+    "cand": 0,
+    "ref": 0
+  },
+  "handoff_failures": {
+    "cand": 0,
+    "ref": 0
+  },
+  "capped_drafts": {
+    "cand": 0,
+    "ref": 0
+  },
+  "notes": [],
+  "suites": [
+    {
+      "suite": "confirm-all",
+      "batch": "replays/batch-20261110-160107-ab-oc-fourth-six-screen-confirm-all",
+      "log": "replays/ab/oc-fourth-six-screen/confirm-all.log",
+      "exit": 0,
+      "games": 4096,
+      "wins": 2075,
+      "errors": 0,
+      "failed": [],
+      "oof": {
+        "cand": [
+          28183,
+          2849
+        ],
+        "ref": [
+          32037,
+          2940
+        ]
+      },
+      "early": {
+        "cand": 0,
+        "ref": 0
+      },
+      "handoff": {
+        "cand": 0,
+        "ref": 0
+      },
+      "capped": {
+        "cand": 0,
+        "ref": 0
+      }
+    }
+  ],
+  "cambc": "5.0.1"
+}

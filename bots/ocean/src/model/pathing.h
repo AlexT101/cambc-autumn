@@ -506,8 +506,8 @@ private:
     std::vector<int> centre_caps_;
     std::vector<std::vector<std::unique_ptr<Approach>>> approach_fields_; // by range, then group
     bitboard live_camps_;
-    std::uint32_t live_camps_version_ = ~0u; // the World::camps_version it was built for
-    std::vector<std::uint32_t> live_versions_; // per group: the CampBelief::version written
+    std::uint32_t live_camps_version_ = ~0u; // the World::camp_geometry_version it was built for
+    std::vector<std::uint32_t> live_versions_; // per group: the CampBelief::geometry_version written
     std::vector<std::uint64_t> live_members_;  // per group: bit i, member i written alive
     std::uint32_t live_flips_ = 0;
     void draw_all_camps();

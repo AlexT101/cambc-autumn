@@ -947,3 +947,9 @@ re-measured"; used).
   "Emblem lab round 4 on ocean"; all three used).
 - 3120000-3120119, 30,720 maps, symlinked into `merged/emb4-c1`, `-c2`, `-c3`: the Skirmish table's confirmation
   against current ocean (used).
+
+**Ocean fuel fourth pass (2026-11-10):** `--mix ladder-v2`, under `suites/fuel-fourth/confirm-{seed}`:
+- 1462510–1462517, 2,048 maps: used for confirmation against `oc-fuel4-base` (CHANGES 498), then development of the final 501 bundle on 500.
+
+**Ocean fuel fourth pass, final release confirmation (2026-11-10):** `--mix ladder-v2`, under `suites/fuel-fourth/final-{seed}`:
+- 1462610–1462617, 2,048 maps: used for independent final 501 release and bench confirmation against frozen 500 (`oc-f4x-currentbase`), after the first suite became development evidence.

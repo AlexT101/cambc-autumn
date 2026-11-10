@@ -785,11 +785,23 @@ std::uint32_t fighting_allies(const World& world, vec2 p) {
         }
     }
     std::uint32_t out = self;
+#if defined(__wasm_simd128__)
+    const v128_t x = wasm_i32x4_splat(p.x), y = wasm_i32x4_splat(p.y);
+    for (unsigned left = seen; left;) {
+        const int i = std::countr_zero(left) & ~3;
+        left &= ~(15u << i);
+        const v128_t widths = wasm_v128_load(&side[i]);
+        const v128_t in = wasm_v128_and(wasm_u32x4_le(wasm_i32x4_sub(x, wasm_v128_load(&x0[i])), widths),
+                                        wasm_u32x4_le(wasm_i32x4_sub(y, wasm_v128_load(&y0[i])), widths));
+        out |= (static_cast<unsigned>(wasm_i32x4_bitmask(in)) << i) & seen;
+    }
+#else
     for (unsigned left = seen; left; left &= left - 1) {
         const auto i = static_cast<std::size_t>(std::countr_zero(left));
         const bool in = static_cast<unsigned>(p.x - x0[i]) <= side[i];
         if (in & (static_cast<unsigned>(p.y - y0[i]) <= side[i])) out |= 1u << i;
     }
+#endif
     return out;
 }
 
@@ -1426,29 +1438,6 @@ const std::array<int, 4>& member_box(const StaticMap& map, int g) {
     return b;
 }
 
-// By tile, once looked up: its camp group (-1 if none) and the index of the member on it.
-struct CampTile {
-    std::int16_t group;
-    std::uint8_t member;
-    bool known;
-};
-std::array<CampTile, 100 * 100> camp_tiles;
-
-const CampTile& camp_tile(const World& world, vec2 p) {
-    auto& t = camp_tiles[static_cast<std::size_t>(p.x + p.y * world.map().width)];
-    if (!t.known) {
-        t.known = true;
-        t.group = static_cast<std::int16_t>(world.map().group_at(p));
-        t.member = 255;
-        if (t.group >= 0) {
-            const auto& members = world.map().groups[t.group].members;
-            for (std::size_t i = 0; i < members.size() && i < 255 && t.member == 255; ++i)
-                if (members[i].pos == p) t.member = static_cast<std::uint8_t>(i);
-        }
-    }
-    return t;
-}
-
 bool live_member(const World& world, int group, int member) {
     const auto& c = world.camps[static_cast<std::size_t>(group)];
     return c.state == CampState::alive && c.health[static_cast<std::size_t>(member)] > 0;
@@ -1752,6 +1741,28 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
         twice ? std::array<bool, 2>{ready[0] || e.ability_ready(0, turn_round + 1), ready[1] || e.ability_ready(1, turn_round + 1)} : ready;
     const int dash_slot = f.slot_of(AbilityKind::dash);
     const bool dash = dash_slot >= 0 && ready2[static_cast<std::size_t>(dash_slot)];
+    enemy_ = &e;
+    turn_round_ = turn_round;
+    dash_ = dash;
+    geometry_ready_ = false;
+    build_ways(e, ready, ready2, twice);
+}
+
+void Reach::build_geometry() {
+    geometry_ready_ = true;
+    const auto& world = *world_;
+    const auto& e = *enemy_;
+    const auto& f = e.facts();
+    const int turn_round = turn_round_;
+    const bool twice = twice_, dash = dash_;
+    splash_ = f.passive == Passive::splash_attack;
+    const int sets_radius = splash_ ? win_r : (twice ? 1 : 0) + (dash ? (f.ranged ? 2 : 3) : 1);
+    if (ways_->stationary && !splash_) {
+        tiles_[here] = win_bit(win_r, win_r);
+        extent_[here] = 0;
+        set_bounds();
+        return;
+    }
     // Our champions around it, which block its walks and landings; they stay put through our turn.
     // Its next turn is worked out on first need: an ally's belief and the ranks change only at the
     // round's update (observe skips allies read this round).
@@ -1777,7 +1788,7 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
               last_slot = dash ? enemy_latest_slot(world, e, last_round) : 0;
     Window occupied, fixed, in_bushes;
     for (int i = 0; i < ally_count; ++i)
-        if (const vec2 p = allies[i].pos; dist(p, origin_) <= win_r) {
+        if (const vec2 p = allies[i].pos; dist(p, origin_) <= sets_radius) {
             const Window bit = win_bit(p.x - origin_.x + win_r, p.y - origin_.y + win_r);
             occupied |= bit;
             if (!dash) continue;
@@ -1789,16 +1800,17 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
             if (ally.round > last_round || (ally.round == last_round && ally.slot > last_slot)) fixed |= bit;
             if (terrain(world.map()).bush(p)) in_bushes |= bit;
         }
-    splash_ = f.passive == Passive::splash_attack;
     units_ = occupied;
     splash_known_ = 0;
     const auto kind = static_cast<std::uint8_t>(twice | dash << 1);
-    if (sets_reusable_ && sets_origin_ == origin_ && sets_kind_ == kind && sets_occupied_.lo == occupied.lo
-        && sets_occupied_.hi == occupied.hi && sets_fixed_.lo == fixed.lo && sets_fixed_.hi == fixed.hi) {
-        build_ways(e, ready, ready2, twice);
+    if ((sets_reusable_ || (!splash_ && sets_built_ && sets_camps_version_ == world.camp_geometry_version))
+        && sets_origin_ == origin_ && sets_kind_ == kind && sets_occupied_.lo == occupied.lo && sets_occupied_.hi == occupied.hi
+        && sets_fixed_.lo == fixed.lo && sets_fixed_.hi == fixed.hi) {
         set_bounds();
         return;
     }
+    sets_built_ = true;
+    sets_camps_version_ = world.camp_geometry_version;
     sets_origin_ = origin_;
     sets_kind_ = kind;
     sets_occupied_ = occupied;
@@ -1808,7 +1820,6 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
     Window pass = st.pass & ~(fixed & ~in_bushes), land = st.land & ~occupied;
     // The sets read the terrain only this far out (each walk or dash step one more), but Varg's
     // splash reads every live member.
-    const int sets_radius = splash_ ? win_r : (twice ? 1 : 0) + (dash ? (f.ranged ? 2 : 3) : 1);
     const Window camps = st.camps & tables.square[static_cast<std::size_t>(sets_radius)];
     sets_reusable_ = !camps;
     if (camps) {
@@ -1819,8 +1830,8 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
             for (std::uint64_t bits = word ? camps.hi : camps.lo; bits; bits &= bits - 1) {
                 const int i = 64 * word + std::countr_zero(bits);
                 const vec2 p{origin_.x - win_r + i % win_n, origin_.y - win_r + i / win_n};
-                const auto& c = camp_tile(world, p);
-                if (c.group < 0 || c.member == 255 || !live_member(world, c.group, c.member)) continue;
+                const int group = world.map().group_at(p), member = world.map().camp_member_at(p);
+                if (group < 0 || member < 0 || !live_member(world, group, member)) continue;
                 live |= tables.bits[static_cast<std::size_t>(i)];
                 if (dash && !t.bush(p)) solid |= tables.bits[static_cast<std::size_t>(i)];
             }
@@ -1847,7 +1858,6 @@ void Reach::build(const World& world, const ChampionBelief& e, int turn_round, b
         extent_[dashed] = extent(tiles_[dashed]);
         if (twice) tiles_[dashed_walked] = walk(tiles_[dashed]), extent_[dashed_walked] = extent(tiles_[dashed_walked]);
     }
-    build_ways(e, ready, ready2, twice);
     set_bounds();
 }
 
@@ -1872,7 +1882,8 @@ void Reach::build_ways(const ChampionBelief& e, std::array<bool, 2> ready, std::
     struct Pattern {
         std::array<Term, 14> terms{};
         int count = 0, basic = -1;
-        bool stuns = false;
+        bool stuns = false, stationary = true;
+        int from_here_range = win_r;
     };
     static constexpr auto patterns = [] {
         std::array<std::array<Pattern, 18>, champion_table.size()> table{};
@@ -1892,6 +1903,8 @@ void Reach::build_ways(const ChampionBelief& e, std::array<bool, 2> ready, std::
                         out.terms[j].way = {0, from, static_cast<std::int8_t>(range), key, sight, stuns, walked};
                         ++out.count;
                     }
+                    out.stationary &= from == here;
+                    out.from_here_range = std::min(out.from_here_range, range);
                     auto& t = out.terms[j];
                     t.way.stuns |= stuns;
                     out.stuns |= stuns;
@@ -1942,16 +1955,32 @@ void Reach::build_ways(const ChampionBelief& e, std::array<bool, 2> ready, std::
             }
         return table;
     }();
+    static_assert([] {
+        for (const auto& kit : patterns)
+            for (const auto& pattern : kit)
+                for (int i = 0; i < pattern.count; ++i)
+                    if (pattern.terms[i].way.range < 1) return false;
+        return true;
+    }());
     const auto& pattern = patterns[&f - champion_table.data()][ready[0] + ready2[0] + 3 * (ready[1] + ready2[1]) + 9 * twice];
     ws.count = pattern.count;
     ws.basic = pattern.basic;
     ws.stuns = pattern.stuns;
+    ws.from_here_range = pattern.from_here_range;
+    ws.stationary = pattern.stationary;
     for (int i = 0; i < ws.count; ++i) {
         const auto& term = pattern.terms[i];
         auto& w = ws.way[i];
         w = term.way;
         w.damage = std::max(term.basic * s, std::max(term.pure * focus, term.combined > 0 ? term.combined * focus + s : 0.0f));
     }
+    float single = -1, walked = -1;
+    for (int i = 0; i < ws.count; ++i) {
+        const auto& w = ws.way[i];
+        if (w.walked) walked = std::max(walked, w.damage);
+        else single = std::max(single, w.damage);
+    }
+    ws.from_here = {std::max({0.0f, walked, single < 0 ? 0.0f : single + (twice ? s : 0.0f)}), true, ws.stuns};
     // Largest damage first: a query stops at the first way that reaches it.
     for (int i = 1; i < ws.count; ++i)
         for (int j = i; j > 0 && ws.way[static_cast<std::size_t>(j)].damage > ws.way[static_cast<std::size_t>(j - 1)].damage; --j) {
@@ -1962,6 +1991,7 @@ void Reach::build_ways(const ChampionBelief& e, std::array<bool, 2> ready, std::
 }
 
 int Reach::reach() const {
+    if (!geometry_ready_) const_cast<Reach*>(this)->build_geometry();
     int reach = -1;
     for (int i = 0; i < ways_->count; ++i) reach = std::max(reach, bound(ways_->way[static_cast<std::size_t>(i)]));
     return reach;
@@ -2007,6 +2037,13 @@ Blow Reach::at(vec2 p) const {
         bool basic = false;
         const int d = std::max(std::abs(dx), std::abs(dy));
         const auto& ws = *ways_;
+        // Every movement set contains the origin. Seeing the target from there settles every way within this range.
+        if (d <= ws.from_here_range
+            && ((d <= 1 && !t.bush(p)) || (sight(*world_, p, d > 1) & win_bit(win_r - dx, win_r - dy)))) {
+            memo = {p, ws.from_here, stamp_};
+            return ws.from_here;
+        }
+        if (!geometry_ready_) const_cast<Reach*>(this)->build_geometry();
         int ward = -1;
         const auto seen = [&](bool far, Window& m) __attribute__((always_inline)) {
             if (ward < 0) {
@@ -2093,10 +2130,10 @@ std::array<Reach, 16>& reach_pool() {
 }
 
 // A big group's members as lanes for find_members, built on first use (members never move): tiles
-// and reaches padded to whole vectors, and bit i of `live`: member i strikes and had health at
-// `version`, kept while it holds (health changes only with a new version).
+// and reaches padded to whole vectors. Published map coordinates and their differences fit a
+// signed byte. Bit i of `live`: member i strikes and is alive at this occupancy version.
 struct MemberLanes {
-    std::vector<std::int32_t> x, y, reach;
+    std::vector<std::int8_t> x, y, reach;
     std::vector<std::uint64_t> live;
     std::uint32_t version = 0;
     bool built = false;
@@ -2108,15 +2145,15 @@ const MemberLanes& member_lanes(const CampGroup& G, const CampBelief& c, int g) 
     auto& t = table[static_cast<std::size_t>(g)];
     const std::size_t n = G.members.size();
     if (!t.built) {
-        const std::size_t padded = (n + 3) & ~std::size_t{3};
-        t.x.assign(padded, 1 << 20), t.y.assign(padded, 1 << 20), t.reach.assign(padded, 0);
-        for (std::size_t i = 0; i < n; ++i) t.x[i] = G.members[i].pos.x, t.y[i] = G.members[i].pos.y, t.reach[i] = G.members[i].reach;
+        const std::size_t padded = (n + 15) & ~std::size_t{15};
+        t.x.assign(padded, 0), t.y.assign(padded, 0), t.reach.assign(padded, 0);
+        for (std::size_t i = 0; i < n; ++i) t.x[i] = static_cast<std::int8_t>(G.members[i].pos.x), t.y[i] = static_cast<std::int8_t>(G.members[i].pos.y), t.reach[i] = static_cast<std::int8_t>(G.members[i].reach);
         t.live.assign((n + 63) / 64, 0);
         t.built = true;
-        t.version = c.version + 1;
+        t.version = c.geometry_version + 1;
     }
-    if (t.version != c.version) {
-        t.version = c.version;
+    if (t.version != c.geometry_version) {
+        t.version = c.geometry_version;
         std::fill(t.live.begin(), t.live.end(), 0);
         for (std::size_t i = 0; i < n; ++i)
             if (c.health[i] > 0 && G.members[i].strength > 0) t.live[i >> 6] |= std::uint64_t{1} << (i & 63);
@@ -2265,45 +2302,45 @@ std::span<const Safety::CampHit> Safety::awake_members() {
             }
         };
         if (big) {
-            // Member by member in order as below, the minima four members at a time over the near
+            // Member by member in order as below, the minima sixteen members at a time over the near
             // others, whose turn order the filter has read. Only live strikers, awake or stirred, count.
             const auto& lanes = member_lanes(groups[g], c, g);
             const std::uint64_t awake_mask = stirred ? ~std::uint64_t{0} : c.awake == Awake::asleep ? 0 : ~c.asleep;
             for (std::size_t word = 0; word < lanes.live.size(); ++word) {
                 std::uint64_t left = lanes.live[word] & (word == 0 ? awake_mask : stirred || c.awake != Awake::asleep ? ~std::uint64_t{0} : 0);
                 while (left) {
-                    const int base = std::countr_zero(left) & ~3;
+                    const int base = std::countr_zero(left) & ~15;
                     const std::size_t at = 64 * word + static_cast<std::size_t>(base);
-                    std::uint32_t chunk = static_cast<std::uint32_t>(left >> base) & 15u;
-                    left &= ~(std::uint64_t{15} << base);
-                    alignas(16) std::int32_t reach4[4], tie4[4];
+                    std::uint32_t chunk = static_cast<std::uint32_t>(left >> base) & 65535u;
+                    left &= ~(std::uint64_t{65535} << base);
+                    alignas(16) std::int8_t reach16[16], tie16[16];
 #if defined(__wasm_simd128__)
                     v128_t r = wasm_v128_load(&lanes.reach[at]), t = r;
                     if (k_near > 0) {
                         const v128_t x = wasm_v128_load(&lanes.x[at]), y = wasm_v128_load(&lanes.y[at]);
                         for (int k = 0; k < k_near; ++k) {
-                            const v128_t d = wasm_i32x4_max(wasm_i32x4_abs(wasm_i32x4_sub(x, wasm_i32x4_splat(near_x[k]))),
-                                                            wasm_i32x4_abs(wasm_i32x4_sub(y, wasm_i32x4_splat(near_y[k]))));
-                            r = wasm_i32x4_min(r, wasm_i32x4_sub(d, wasm_i32x4_splat(near_first[k])));
-                            t = wasm_i32x4_min(t, d);
+                            const v128_t d = wasm_i8x16_max(wasm_i8x16_abs(wasm_i8x16_sub(x, wasm_i8x16_splat(static_cast<std::int8_t>(near_x[k])))),
+                                                            wasm_i8x16_abs(wasm_i8x16_sub(y, wasm_i8x16_splat(static_cast<std::int8_t>(near_y[k])))));
+                            r = wasm_i8x16_min(r, wasm_i8x16_sub(d, wasm_i8x16_splat(static_cast<std::int8_t>(near_first[k]))));
+                            t = wasm_i8x16_min(t, d);
                         }
                     }
-                    wasm_v128_store(reach4, r), wasm_v128_store(tie4, t);
+                    wasm_v128_store(reach16, r), wasm_v128_store(tie16, t);
 #else
-                    for (int j = 0; j < 4; ++j) {
+                    for (int j = 0; j < 16; ++j) {
                         int reach = lanes.reach[at + j], tie = reach;
                         for (int k = 0; k < k_near; ++k) {
                             const int d = std::max(std::abs(near_x[k] - lanes.x[at + j]), std::abs(near_y[k] - lanes.y[at + j]));
                             reach = std::min(reach, d - near_first[k]), tie = std::min(tie, d);
                         }
-                        reach4[j] = reach, tie4[j] = tie;
+                        reach16[j] = static_cast<std::int8_t>(reach), tie16[j] = static_cast<std::int8_t>(tie);
                     }
 #endif
                     for (; chunk; chunk &= chunk - 1) {
                         const int j = std::countr_zero(chunk);
                         const auto& m = groups[g].members[at + static_cast<std::size_t>(j)];
                         if (reread && seen_empty(m.pos)) continue;
-                        emit(m, reach4[j], tie4[j]);
+                        emit(m, reach16[j], tie16[j]);
                     }
                 }
             }
@@ -2620,10 +2657,10 @@ Blow Safety::blow(const ChampionBelief& e, vec2 p) {
     const auto& r = reach_of(e);
     const Blow b = r.at(p);
     debug_block({
-        // Strike must bound Reach: blow() cuts at Strike's reach.
+        // Do not build deferred geometry under the debug fuel refund. Strike must bound any geometry already built.
         static int last = -1;
         const int d = dist(p, e.pos);
-        if (last != world_.round && (r.reach() > s.reach || b.damage > s.at(d) + 0.01f || (b.stuns && !s.stuns[d]))) {
+        if (last != world_.round && ((r.geometry_ready() && r.reach() > s.reach) || b.damage > s.at(d) + 0.01f || (b.stuns && !s.stuns[d]))) {
             last = world_.round;
             std::printf("REACH-BOUND %d e%d reach %d/%d d %d damage %.1f/%.1f\n", world_.round, e.index, r.reach(), s.reach, d, b.damage, s.at(d));
         }

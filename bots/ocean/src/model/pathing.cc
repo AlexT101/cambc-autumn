@@ -275,8 +275,8 @@ int Pathing::centre_to_spawn(int group) {
 }
 
 const bitboard& Pathing::live_camps() {
-    if (live_camps_version_ != world_.camps_version) {
-        live_camps_version_ = world_.camps_version;
+    if (live_camps_version_ != world_.camp_geometry_version) {
+        live_camps_version_ = world_.camp_geometry_version;
         const auto& groups = map().groups;
         // After the first full pass, only the groups whose version moved since (World::camps_dirty).
         const bool all = live_versions_.size() != groups.size();
@@ -293,8 +293,8 @@ const bitboard& Pathing::live_camps() {
         };
         each([&](std::size_t g) {
             const auto& c = world_.camps[g];
-            if (live_versions_[g] == c.version) return;
-            live_versions_[g] = c.version;
+            if (live_versions_[g] == c.geometry_version) return;
+            live_versions_[g] = c.geometry_version;
             const auto& members = groups[g].members;
             if (members.size() > 64) {
                 for (std::size_t i = 0; i < members.size(); ++i) live_camps_.set(members[i].pos, c.state == CampState::alive && c.health[i] > 0);

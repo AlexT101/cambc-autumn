@@ -1,0 +1,84 @@
+{
+  "name": "oc-fourth-release-mirror500",
+  "started": "20261110-160223",
+  "wall_seconds": 127.6,
+  "threads": 24,
+  "fuel": null,
+  "release": true,
+  "cand": {
+    "spec": "variants/oc-f4x-current-ref-release",
+    "kind": "dir",
+    "path": "bots/variants/oc-f4x-current-ref-release"
+  },
+  "ref": {
+    "spec": "variants/oc-f4x-mirror500",
+    "kind": "dir",
+    "path": "bots/variants/oc-f4x-mirror500"
+  },
+  "games": 4096,
+  "cand_wins": 2048,
+  "cand_win_pct": 50.0,
+  "ci95": [
+    48.47,
+    51.53
+  ],
+  "errors": 0,
+  "oof": {
+    "cand": [
+      32119,
+      2924
+    ],
+    "ref": [
+      32119,
+      2924
+    ]
+  },
+  "early_losses": {
+    "cand": 0,
+    "ref": 0
+  },
+  "handoff_failures": {
+    "cand": 0,
+    "ref": 0
+  },
+  "capped_drafts": {
+    "cand": 0,
+    "ref": 0
+  },
+  "notes": [],
+  "suites": [
+    {
+      "suite": "confirm-all",
+      "batch": "replays/batch-20261110-160223-ab-oc-fourth-release-mirror500-confirm-all",
+      "log": "replays/ab/oc-fourth-release-mirror500/confirm-all.log",
+      "exit": 0,
+      "games": 4096,
+      "wins": 2048,
+      "errors": 0,
+      "failed": [],
+      "oof": {
+        "cand": [
+          32119,
+          2924
+        ],
+        "ref": [
+          32119,
+          2924
+        ]
+      },
+      "early": {
+        "cand": 0,
+        "ref": 0
+      },
+      "handoff": {
+        "cand": 0,
+        "ref": 0
+      },
+      "capped": {
+        "cand": 0,
+        "ref": 0
+      }
+    }
+  ],
+  "cambc": "5.0.1"
+}

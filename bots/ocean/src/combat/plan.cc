@@ -1,4 +1,7 @@
 #include "plan.h"
+#if defined(__wasm_simd128__)
+#include <wasm_simd128.h>
+#endif
 #include <algorithm>
 #include <array>
 #include <bit>
@@ -284,6 +287,24 @@ struct Node {
     // The tiles of units killed before the walk, and before the dash, which it could cross or end on.
     Grid open_w = 0, open_d = 0;
 };
+
+// A bulk copy charges per byte; fixed vector loads and stores copy the same representation.
+[[gnu::always_inline]] inline Node copy_node(const Node& from) {
+#if defined(__wasm_simd128__)
+    static_assert(sizeof(Node) == 72 && std::is_trivially_copyable_v<Node>);
+    Node to;
+    const auto* src = reinterpret_cast<const unsigned char*>(&from);
+    auto* dst = reinterpret_cast<unsigned char*>(&to);
+    wasm_v128_store(dst, wasm_v128_load(src));
+    wasm_v128_store(dst + 16, wasm_v128_load(src + 16));
+    wasm_v128_store(dst + 32, wasm_v128_load(src + 32));
+    wasm_v128_store(dst + 48, wasm_v128_load(src + 48));
+    wasm_v128_store64_lane(dst + 64, wasm_v128_load64_zero(src + 64), 0);
+    return to;
+#else
+    return from;
+#endif
+}
 
 // A sequence as the search grows it, its walk and dash tiles left open.
 struct Leaf {
@@ -1716,7 +1737,7 @@ void Search::grow(const Node& s) {
     if (s.attack)
         for (int t = 0; t < n; ++t) {
             if (h[t] <= 0 || !open(u[t].legal) || hoisted(s, t)) continue;
-            Node c = s;
+            Node c = copy_node(s);
             if (legal_at(c, u[t].legal) && hit_unit(t, c)) {
                 if (s.depth == 0 && h[t] > 0 && u[t].link < 0 && !u[t].spawn && partner(t) >= saved[t])
                     soft_first |= static_cast<std::uint16_t>(1u << t);
@@ -1726,12 +1747,12 @@ void Search::grow(const Node& s) {
             }
         }
     if (s.cast && s.reset && !s.attack) {
-        Node c = s;
+        Node c = copy_node(s);
         c.attack = true, c.cast = false, c.reset = false, c.armed = arms, c.pending = 0;
         push(c, {Op::reset});
     }
     if (s.walk && !s.excl && (melee || s.attack) && (s.seg == at_start || s.seg == dashed)) {
-        Node c = s;
+        Node c = copy_node(s);
         c.walk = false, c.owed = true, c.open_w = opened_now;
         if (!melee) c.attack = false;
         c.seg = s.seg == at_start ? walked : dashed_walked;
@@ -1755,7 +1776,7 @@ void Search::grow(const Node& s) {
             // the walk to spare.
             if (stack[s.depth - 1].op == Op::walk) reach &= ~land_here_at(opened_now);
         }
-        Node c = s;
+        Node c = copy_node(s);
         c.cast = false, c.dash = false, c.value -= dash_cost, c.pending = dash_cost, c.req_d = reach, c.owed = true;
         c.open_d = opened_now;
         c.seg = first ? dashed : walked_dashed;
@@ -1771,7 +1792,7 @@ void Search::grow(const Node& s) {
             std::array<Grid, grid_cells> alike;
             std::copy_n(land_groups.begin(), kinds, alike.begin());
             for (int i = 0; i < kinds; ++i) {
-                Node d = c;
+                Node d = copy_node(c);
                 if (land_at(std::countr_zero(alike[i]), d)) {
                     d.lset = alike[i];
                     push(d, {Op::dash});
@@ -1787,7 +1808,7 @@ void Search::grow(const Node& s) {
             if (sp.unit) {
                 for (int t = 0; t < foes; ++t) {
                     if (h[t] <= 0 || !open(u[t].cast_legal)) continue;
-                    Node c = s;
+                    Node c = copy_node(s);
                     if (legal_at(c, u[t].cast_legal) && spell_unit(sp, t, c))
                         push(c, {Op::spell, static_cast<std::int8_t>(t), static_cast<std::int8_t>(sp.slot)});
                     else h = saved;
@@ -1823,7 +1844,7 @@ void Search::grow(const Node& s) {
                     }
                 }
                 for (int i = 0; i < kinds; ++i) {
-                    Node c = s;
+                    Node c = copy_node(s);
                     hit_centre(plan_tables.centres[which[i]], sp.slot, c);
                     push(c, {Op::spell, -1, static_cast<std::int8_t>(sp.slot), plan_tables.centres[which[i]].tile});
                 }

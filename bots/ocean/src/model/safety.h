@@ -11,6 +11,10 @@
 #include <cstdint>
 #include <optional>
 #include <span>
+#include <type_traits>
+#if defined(__wasm_simd128__)
+#include <wasm_simd128.h>
+#endif
 #include <vector>
 #include "../champions.h"
 #include "../util.h"
@@ -91,6 +95,7 @@ public:
     // turn falls in turn_round + 1, so a slot coming ready then counts for it.
     void build(const World& world, const ChampionBelief& e, int turn_round, bool twice);
     Blow at(vec2 p) const;
+    bool geometry_ready() const { return geometry_ready_; }
     int reach() const; // Chebyshev bound on the tiles it can affect
 
     // The tiles within `radius` around the enemy, bit at(x, y) for the offset (x, y), in two words
@@ -107,7 +112,12 @@ public:
         constexpr Window operator~() const { return {~lo, ~hi & hi_mask}; }
         constexpr Window& operator&=(Window b) { return *this = *this & b; }
         constexpr Window& operator|=(Window b) { return *this = *this | b; }
-        constexpr explicit operator bool() const { return (lo | hi) != 0; }
+        constexpr explicit operator bool() const {
+#if defined(__wasm_simd128__)
+            if (!std::is_constant_evaluated()) return wasm_v128_any_true(wasm_v128_load(this));
+#endif
+            return (lo | hi) != 0;
+        }
         // 0 <= k < cells
         constexpr Window shl(int k) const {
             if (k == 0) return *this;
@@ -134,6 +144,10 @@ private:
     int bound(const Way& w) const { return extent_[w.from] + w.range + (splash_ && w.sight && units_ ? 1 : 0); }
     // bound() of each way, worked out at the end of a build.
     void set_bounds();
+    void build_geometry();
+    const ChampionBelief* enemy_ = nullptr;
+    int turn_round_ = 0;
+    bool geometry_ready_ = false, dash_ = false;
     std::array<std::int8_t, 14> bounds_;
     // The ways from the tile sets, unless the recipe is unchanged.
     // ready2: the slots ready on its second turn (ready's, unless twice).
@@ -147,11 +161,12 @@ private:
     static constexpr int unknown_ward = -2;
     mutable int ward_ = unknown_ward;
     // What tiles_ were worked out for: kept while it stays put, our champions around it stay put
-    // and no camp lies in its window.
+    // and camp occupancy is unchanged (Varg still rebuilds its splash units near camps).
     vec2 sets_origin_{-1, -1};
     Window sets_occupied_, sets_fixed_;
     std::uint8_t sets_kind_ = 0;
-    bool sets_reusable_ = false;
+    bool sets_reusable_ = false, sets_built_ = false;
+    std::uint32_t sets_camps_version_ = 0;
     // The ways depend only on what the recipe holds: kept between builds while it is unchanged,
     // one set for each ready slots and number of turns, as cooldowns run out and come back.
     struct Recipe {
@@ -165,7 +180,9 @@ private:
         Recipe recipe;
         std::array<Way, 14> way;
         int count = 0;
-        bool stuns = false;
+        bool stuns = false, stationary = false;
+        Blow from_here;
+        int from_here_range = 0;
         int basic = -1; // the plain basic attack's way
     };
     // By each slot's turns ready (0-2) and twice.

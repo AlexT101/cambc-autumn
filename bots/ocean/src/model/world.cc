@@ -2123,6 +2123,7 @@ void World::note_capture(int group, int respawn_round) {
     c.told_respawn = respawn_round;
     if (c.state_round == round) return; // in view: our own reading stands
     if (static_cast<std::size_t>(group) < 64 * camps_pending_.size()) camps_pending_[group >> 6] |= std::uint64_t{1} << (group & 63);
+    if (c.state == CampState::alive) ++camp_geometry_version, ++c.geometry_version;
     const bool moved = c.state != CampState::respawning;
     c.version += moved;
     c.state = CampState::respawning;
@@ -2608,6 +2609,7 @@ bool World::camp_settled(const CampGroup& G, CampBelief& c) {
             c.held_since = -1;
         }
         if (c.state == CampState::respawning && round >= c.respawn_round) {
+            ++camp_geometry_version, ++c.geometry_version;
             c.state = CampState::alive;
             restore(c, G, c.respawn_round - 1); // a new version
         }
@@ -2625,6 +2627,7 @@ bool World::camp_settled(const CampGroup& G, CampBelief& c) {
         c.state = CampState::respawning;
         c.respawn_round = c.read_respawn = round + timer;
     }
+    if ((c.state == CampState::alive) != (previous == CampState::alive)) ++camp_geometry_version, ++c.geometry_version;
     c.version += c.state != previous;
     c.state_round = round;
     // Not alive when last seen: it returned at full health after that, and after its timer.
@@ -2680,6 +2683,8 @@ bool World::camp_settled(const CampGroup& G, CampBelief& c) {
                         woke = true;
                     }
                 }
+                if constexpr (live)
+                    if ((hp > 0) != (health[i] > 0)) ++camp_geometry_version, ++c.geometry_version;
                 version += hp != health[i];
                 health[i] = hp;
                 health_round[i] = now;
