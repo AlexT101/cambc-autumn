@@ -4249,6 +4249,30 @@ Against `variants/oc-fuel-495`, fast runner 5.0.1, matched drafts:
 
 Frozen as `variants/oc-fuel-496` (= bots/ocean).
 
+## 497: Fuel: compile attack formulas and geometry, SIMD ranks, ward masks and settled-query exit (ocean, 2026-11-10)
+
+On 496. [Evidence, conditional coverage and rejected experiments](../fuel-2026-11-10-third/README.md).
+
+- Strike damage coefficients, reach and stuns are compiled by kit, ready-slot mask and movement; SIMD
+  evaluates changing stats with the original float operation order. Derived champion metadata is compiled too.
+- Small teams' priority ranks compare cyclic offsets with SIMD, keeping lower-index ties and a scalar fallback.
+- Reach's geometry, equal-key merges and insertion order are compiled by kit/readiness; runtime retains its
+  stable damage order and basic-attack index. Queries stop once damage, the basic follow-up and stuns are settled.
+- Support and turn order use square window masks for ward sight; actual ward boards use the existing validated
+  chunk reader. No search budgets, fuel gates, combat thresholds or draft changes.
+
+Against frozen 496, fast runner 5.0.1, matched drafts:
+- **100M bench:** 93/96 own-draft and **108/108 all-champion/stress replays byte-identical**. The three differing
+  own-draft maps are 6/6 identical when both diagnostic copies omit next-turn walk preparation: the existing
+  cache-readiness coupling. Actual-source arithmetic and same-state engine oracles pass; ≥100k matching turns
+  save 1,645 fuel on average.
+- **Fresh 4,096-game real-budget bench:** OOF 40,183 → 34,789 (**-13.42%**, 95% -16.43 to -10.07), shortcuts
+  1,419,556 → 1,327,255 (**-6.50%**). Per turn: -12.96% OOF, -6.00% shortcuts; mean fuel -0.89%.
+- **Release A/B:** standard 1,280 games, 47.8% (45.1–50.6), OOF -8.14%. Fresh ladder-v2 seeds 1461410–1461417,
+  4,096 games, **51.0% (49.4–52.5)**, OOF 37,031 → 32,964 (**-10.98%**). No failed games or broken/capped drafts.
+
+Frozen as `variants/oc-fuel-497` (= bots/ocean).
+
 ## 498: Keep a lethal camp hit from falling onto an ally that has acted (ocean, 2026-11-10)
 
 User-authorized judgement merge of `cl-shz-gen` (research commit `a70ed4a87`), onto the current working

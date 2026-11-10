@@ -911,50 +911,100 @@ int next_turn_round(const World& world, const ChampionBelief& c) {
 
 namespace {
 
-// Slot bit i: ability i counts. `moved`: a turn whose walk or dash is already in the tiles it is
-// placed from (an unseen enemy's `possible`), so it only acts from where it ends.
-Strike compute_strike(const ChampionFacts& f, float s, float focus, unsigned slots, bool moved = false) {
-    const int range = f.attack_range();
-    // Varg's basic attack reaches a tile through a target beside it.
-    const int basic = f.basic_reach();
-    const int walk = f.ranged || moved ? 0 : 1; // a ranged champion's walk spends its attack
-    Strike out;
-    const auto add = [&](int reach, float damage, bool stuns) {
+// Movement and ability ranges are static; only Strength and Focus change between strikes.
+struct StrikeFormula {
+    alignas(16) std::array<float, 8> basic{}, focus{}, added{};
+    std::array<bool, Strike::max_reach + 1> stuns{};
+    int reach = -1;
+    bool valid = true;
+};
+
+constexpr StrikeFormula strike_formula(const ChampionFacts& f, unsigned slots, bool moved) {
+    StrikeFormula out;
+    std::array<float, 8> pure{}, combined{};
+    const int range = f.attack_range(), basic = f.basic_reach();
+    const int walk = f.ranged || moved ? 0 : 1;
+    const auto add = [&](int reach, float strength, float focus, bool stuns) {
         reach = std::min(reach, Strike::max_reach);
         for (int d = 0; d <= reach; ++d) {
-            out.damage[d] = std::max(out.damage[d], damage);
+            if (focus > 0) {
+                auto& term = strength > 0 ? combined[d] : pure[d];
+                term = std::max(term, focus);
+            } else out.basic[d] = std::max(out.basic[d], strength);
             out.stuns[d] = out.stuns[d] || stuns;
         }
         out.reach = std::max(out.reach, reach);
     };
-    add(basic + walk, s, false);
+    add(basic + walk, 1, 0, false);
     for (int slot = 0; slot < 2; ++slot) {
         if (!(slots >> slot & 1)) continue;
         const auto& a = f.abilities[slot];
         switch (a.kind) {
         case AbilityKind::attack_reset:
-            add(basic + walk, 2 * s, a.stuns);
-            if (f.ranged && !moved) add(basic + 1, s, a.stuns); // walk, reset, attack
+            add(basic + walk, 2, 0, a.stuns);
+            if (f.ranged && !moved) add(basic + 1, 1, 0, a.stuns);
             break;
         case AbilityKind::dash: {
             const int travel = moved ? 0 : a.range();
-            add(basic + walk + travel, s, false);
+            add(basic + walk + travel, 1, 0, false);
             if (a.lands()) {
-                // The landing, then a basic attack from it.
-                add(walk + travel + a.radius, a.multiplier * focus, a.stuns);
-                add(walk + travel + std::min(range, a.radius), a.multiplier * focus + s, a.stuns);
+                add(walk + travel + a.radius, 0, a.multiplier, a.stuns);
+                add(walk + travel + std::min(range, a.radius), 1, a.multiplier, a.stuns);
             }
             break;
         }
         case AbilityKind::damage:
-            // Excludes walking but not the basic attack.
-            add(a.reach(), a.multiplier * focus, a.stuns);
-            add(range, a.multiplier * focus + s, a.stuns);
+            add(a.reach(), 0, a.multiplier, a.stuns);
+            add(range, 1, a.multiplier, a.stuns);
             break;
-        case AbilityKind::stun: add(a.reach() + (a.excludes_walking || moved ? 0 : 1), 0, true); break;
+        case AbilityKind::stun: add(a.reach() + (a.excludes_walking || moved ? 0 : 1), 0, 0, true); break;
         default: break;
         }
     }
+    for (int d = 0; d <= Strike::max_reach; ++d) {
+        // For these kits, a spell with a basic attack dominates every spell without one at that distance.
+        if (combined[d] > 0) {
+            out.valid &= combined[d] >= pure[d];
+            out.focus[d] = combined[d], out.added[d] = 1;
+        } else out.focus[d] = pure[d];
+    }
+    return out;
+}
+
+constexpr auto strike_formulas = [] {
+    std::array<std::array<StrikeFormula, 8>, champion_table.size()> out{};
+    for (std::size_t i = 0; i < out.size(); ++i)
+        for (unsigned k = 0; k < 8; ++k) out[i][k] = strike_formula(champion_table[i], k & 3u, k >= 4);
+    return out;
+}();
+static_assert([] {
+    for (const auto& champion : strike_formulas)
+        for (const auto& f : champion)
+            if (!f.valid) return false;
+    return true;
+}());
+
+Strike compute_strike(const ChampionFacts& f, float s, float focus, unsigned slots, bool moved = false) {
+    const auto& formula = strike_formulas[&f - champion_table.data()][slots + (moved ? 4 : 0)];
+    Strike out;
+#if defined(__wasm_simd128__)
+    const v128_t strength = wasm_f32x4_splat(s), power = wasm_f32x4_splat(focus);
+    const auto four = [&](int i) {
+        return wasm_f32x4_max(wasm_f32x4_mul(wasm_v128_load(&formula.basic[i]), strength),
+                             wasm_f32x4_add(wasm_f32x4_mul(wasm_v128_load(&formula.focus[i]), power),
+                                            wasm_f32x4_mul(wasm_v128_load(&formula.added[i]), strength)));
+    };
+    wasm_v128_store(out.damage.data(), four(0));
+    const v128_t high = four(4);
+    out.damage[4] = wasm_f32x4_extract_lane(high, 0);
+    out.damage[5] = wasm_f32x4_extract_lane(high, 1);
+    out.damage[6] = wasm_f32x4_extract_lane(high, 2);
+#else
+    for (int d = 0; d <= Strike::max_reach; ++d)
+        out.damage[d] = std::max(formula.basic[d] * s, formula.focus[d] * focus + formula.added[d] * s);
+#endif
+    out.stuns = formula.stuns;
+    out.reach = formula.reach;
     return out;
 }
 
@@ -1567,6 +1617,17 @@ Reach::Window seen_from(const World& world, vec2 p, int range) {
     return m;
 }
 
+Reach::Window window_square(int range) { return tables.square[static_cast<std::size_t>(range)]; }
+
+Reach::Window board_window(const World& world, const bitboard& board, vec2 centre) {
+    const auto& t = terrain(world.map());
+    if (t.chunked) return t.chunk_window(board.ptr(), centre);
+    Window out;
+    for (const vec2 p : positions_within(board, centre, win_r))
+        out |= win_bit(p.x - centre.x + win_r, p.y - centre.y + win_r);
+    return out;
+}
+
 namespace {
 
 // sight() laid out around the enemy at p - (dx, dy). Out of line: inlined, the shift's constants
@@ -1673,22 +1734,6 @@ int board_chunks_across(const StaticMap& map) {
 void warm_reach_tile(const World& world, vec2 p) {
     (void)static_window(world, p);
     (void)sight(world, p, true);
-}
-
-int Reach::add(Tiles from, int range, bool sight, float damage, bool stuns, bool walked) {
-    auto& ws = *ways_;
-    const auto key = static_cast<std::uint8_t>(((from * 8 + range) * 2 + sight) * 2 + walked);
-    for (int i = 0; i < ws.count; ++i) {
-        auto& w = ws.way[static_cast<std::size_t>(i)];
-        if (w.key == key) {
-            w.damage = std::max(w.damage, damage);
-            w.stuns = w.stuns || stuns;
-            return i;
-        }
-    }
-    if (ws.count == static_cast<int>(ws.way.size())) return -1;
-    ws.way[static_cast<std::size_t>(ws.count)] = {damage, from, static_cast<std::int8_t>(range), key, sight, stuns, walked};
-    return ws.count++;
 }
 
 void Reach::build(const World& world, const ChampionBelief& e, int turn_round, bool twice) {
@@ -1819,44 +1864,93 @@ void Reach::build_ways(const ChampionBelief& e, std::array<bool, 2> ready, std::
     auto& ws = *ways_;
     if (recipe == ws.recipe) return;
     ws.recipe = recipe;
-    ws.count = 0;
-    ws.basic = -1;
-    const Tiles basic_from = f.ranged ? here : walked1;
-    const int range = f.attack_range();
-    for (int turn = 0; turn < (twice ? 2 : 1); ++turn) {
-        const bool walked = turn == 1;
-        // A walk first, on the first of two turns.
-        const auto from = [&](Tiles x) { return !walked ? x : x == here ? walked1 : x == walked1 ? walked2 : dashed_walked; };
-        const int basic = add(from(basic_from), range, true, s, false, walked);
-        if (!walked) ws.basic = basic;
-        for (std::size_t slot = 0; slot < 2; ++slot) {
-            if (!(walked ? ready2 : ready)[slot]) continue;
-            const auto& a = f.abilities[slot];
-            const float spell = a.multiplier * focus;
-            switch (a.kind) {
-            case AbilityKind::attack_reset:
-                add(from(basic_from), range, true, 2 * s, a.stuns, walked);
-                if (f.ranged) add(from(walked1), range, true, s, a.stuns, walked); // walk, reset, attack
-                break;
-            case AbilityKind::dash:
-                add(from(dashed), range, true, s, false, walked);
-                // The landing hits unseen tiles too; the landings are taken as all of `dashed`.
-                if (a.lands()) {
-                    add(from(dashed), a.radius, false, spell, a.stuns, walked);
-                    add(from(dashed), std::min(range, a.radius), true, spell + s, a.stuns, walked);
+    // Ability geometry and equal-key merges depend only on the kit and ready slots.
+    struct Term {
+        Way way{};
+        float basic = 0, pure = 0, combined = 0;
+    };
+    struct Pattern {
+        std::array<Term, 14> terms{};
+        int count = 0, basic = -1;
+        bool stuns = false;
+    };
+    static constexpr auto patterns = [] {
+        std::array<std::array<Pattern, 18>, champion_table.size()> table{};
+        for (std::size_t i = 0; i < table.size(); ++i)
+            for (int k = 0; k < 18; ++k) {
+                auto& out = table[i][k];
+                const auto& f = champion_table[i];
+                const bool twice = k >= 9;
+                const int x = k % 9;
+                const std::array<bool, 2> ready{x % 3 == 2, x / 3 == 2}, ready2{x % 3 != 0, x / 3 != 0};
+                const auto add = [&](Tiles from, int range, bool sight, float strength, float focus, bool stuns, bool walked) {
+                    const auto key = static_cast<std::uint8_t>(((from * 8 + range) * 2 + sight) * 2 + walked);
+                    int j = 0;
+                    while (j < out.count && out.terms[j].way.key != key) ++j;
+                    if (j == static_cast<int>(out.terms.size())) return -1;
+                    if (j == out.count) {
+                        out.terms[j].way = {0, from, static_cast<std::int8_t>(range), key, sight, stuns, walked};
+                        ++out.count;
+                    }
+                    auto& t = out.terms[j];
+                    t.way.stuns |= stuns;
+                    out.stuns |= stuns;
+                    if (focus > 0) {
+                        auto& coefficient = strength > 0 ? t.combined : t.pure;
+                        coefficient = std::max(coefficient, focus);
+                    } else t.basic = std::max(t.basic, strength);
+                    return j;
+                };
+                const Tiles basic_from = f.ranged ? here : walked1;
+                const int range = f.attack_range();
+                for (int turn = 0; turn < (twice ? 2 : 1); ++turn) {
+                    const bool walked = turn == 1;
+                    // A walk first, on the first of two turns.
+                    const auto from = [&](Tiles x) { return !walked ? x : x == here ? walked1 : x == walked1 ? walked2 : dashed_walked; };
+                    const int basic = add(from(basic_from), range, true, 1, 0, false, walked);
+                    if (!walked) out.basic = basic;
+                    for (std::size_t slot = 0; slot < 2; ++slot) {
+                        if (!(walked ? ready2 : ready)[slot]) continue;
+                        const auto& a = f.abilities[slot];
+                        const float spell = a.multiplier;
+                        switch (a.kind) {
+                        case AbilityKind::attack_reset:
+                            add(from(basic_from), range, true, 2, 0, a.stuns, walked);
+                            if (f.ranged) add(from(walked1), range, true, 1, 0, a.stuns, walked); // walk, reset, attack
+                            break;
+                        case AbilityKind::dash:
+                            add(from(dashed), range, true, 1, 0, false, walked);
+                            // The landing hits unseen tiles too; the landings are taken as all of `dashed`.
+                            if (a.lands()) {
+                                add(from(dashed), a.radius, false, 0, spell, a.stuns, walked);
+                                add(from(dashed), std::min(range, a.radius), true, 1, spell, a.stuns, walked);
+                            }
+                            break;
+                        case AbilityKind::damage:
+                            // Excludes walking but not the basic attack.
+                            add(from(here), a.reach(), a.target == Targeting::unit, 0, spell, a.stuns, walked);
+                            add(from(here), range, true, 1, spell, a.stuns, walked);
+                            break;
+                        case AbilityKind::stun:
+                            add(from(a.excludes_walking ? here : walked1), a.reach(), a.target == Targeting::unit, 0, 0, true, walked);
+                            break;
+                        default: break;
+                        }
+                    }
                 }
-                break;
-            case AbilityKind::damage:
-                // Excludes walking but not the basic attack.
-                add(from(here), a.reach(), a.target == Targeting::unit, spell, a.stuns, walked);
-                add(from(here), range, true, spell + s, a.stuns, walked);
-                break;
-            case AbilityKind::stun:
-                add(from(a.excludes_walking ? here : walked1), a.reach(), a.target == Targeting::unit, 0, true, walked);
-                break;
-            default: break;
+
             }
-        }
+        return table;
+    }();
+    const auto& pattern = patterns[&f - champion_table.data()][ready[0] + ready2[0] + 3 * (ready[1] + ready2[1]) + 9 * twice];
+    ws.count = pattern.count;
+    ws.basic = pattern.basic;
+    ws.stuns = pattern.stuns;
+    for (int i = 0; i < ws.count; ++i) {
+        const auto& term = pattern.terms[i];
+        auto& w = ws.way[i];
+        w = term.way;
+        w.damage = std::max(term.basic * s, std::max(term.pure * focus, term.combined > 0 ? term.combined * focus + s : 0.0f));
     }
     // Largest damage first: a query stops at the first way that reaches it.
     for (int i = 1; i < ws.count; ++i)
@@ -1946,6 +2040,8 @@ Blow Reach::at(vec2 p) const {
             basic |= i == ws.basic;
             out.stuns |= w.stuns;
             out.hits = true;
+            // Remaining ways cannot beat this single turn; only a basic follow-up or stun is missing.
+            if (single >= w.damage && (!twice_ || basic) && (!ws.stuns || out.stuns)) break;
         }
         if (out.hits) out.damage = std::max({0.0f, walked, single < 0 ? 0.0f : single + (twice_ && basic ? strength_ : 0.0f)});
     }

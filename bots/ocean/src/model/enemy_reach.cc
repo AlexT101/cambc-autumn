@@ -6,14 +6,7 @@
 
 namespace aph::enemy_reach {
 
-int act_range(const ChampionFacts& f) {
-    int a = f.basic_reach();
-    for (const auto& ab : f.abilities) {
-        if (ab.kind == AbilityKind::damage || ab.kind == AbilityKind::stun) a = std::max(a, ab.reach());
-        else if (ab.lands()) a = std::max(a, ab.radius);
-    }
-    return a;
-}
+int act_range(const ChampionFacts& f) { return f.action_range; }
 
 Profile profile(const ChampionFacts& f) { return {act_range(f), f.has_dash()}; }
 

@@ -54,6 +54,37 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 - A risk change can win the mirror and nothing else (nuke guard, 2026-11-08): +0.22 held out over 149k, panel -0.02.
   The v84 pattern again: a risk or greed change needs its panel H1 before it ships.
 
+## Fuel after 496 (ocean, 2026-11-10; CHANGES 497)
+
+[Campaign, manifests, oracles and rejected experiments](fuel-2026-11-10-third/README.md). Worked alone.
+Fresh 4,096-game bench: **OOF 40,183 → 34,789 (-13.42%, 95% -16.43 to -10.07)**; shortcuts
+**1,419,556 → 1,327,255 (-6.50%)**. Per-turn reductions are 12.96% and 6.00%; mean fuel falls 0.89%.
+Fresh release A/B: **51.0% (49.4–52.5)**, OOF 37,031 → 32,964 (**-10.98%**). Standard release: 47.8%
+(45.1–50.6), OOF -8.14%. No failed games or broken/capped drafts. Frozen as `variants/oc-fuel-497`.
+
+Kept: compile-time strike coefficients (SIMD evaluation), derived champion metadata, SIMD team ranks,
+compile-time Reach geometry/merges, ward window masks, and an exact early exit once Reach's damage/basic
+follow-up/stun result is settled. No budgets, thresholds or draft changes. Matching ≥100k turns save
+1,645 fuel on average. 100M: 93/96 own-draft replays directly identical; the three differing maps become
+6/6 identical without either bot's next-turn walk preparation (the existing cache-readiness coupling).
+Forced compositions covering all 13 bodies and large camp groups: **108/108 identical**. Actual-source
+checks cover 2.08M strikes in scalar and SIMD, 3.38M ordered Reach recipes, 1.7M rankings, all derived
+metadata, and over 325k same-state engine Reach queries.
+
+The first five changes screened at -14.4% OOF but confirmed at only -9.3% debug/-9.7% release. The early
+exit was added; the final independent suite is ladder-v2 seeds 1461410–1461417. Do not count the first
+suite's development reruns as fresh evidence. The exact final source totals -11.43% OOF over both 4,096-game
+debug suites. The final suite also reduces farm cuts from 586,607 to 556,458 and prey cuts from 174,045 to 156,239.
+
+Dropped after measurement: compact Fighter fields, quiet-damage batching, extra strike/camp/HealGate
+caches, relative-order caching, dominated-way pruning, redundant-bound caching, shared stun/shield reads,
+camp-stun guards, a strike-tile heap, and scalar pairwise ranking. Most add bookkeeping to already cheap
+paths. Reusing attack-range boxes costs 74 fuel per heavy turn; a stored maximum reach saves mean fuel
+but costs heavy turns. The paused fuel-prover handoff was reviewed: more farm-loop slack increased OOF
+without a clear win-rate gain; those reserve reductions are not included. Its queue guard, ported onto
+this bundle and screened on 1,024 games, gives OOF 8,671 → 8,772 (+1.16%, within noise), shortcuts +0.84%
+and mean fuel +0.28%; dropped. Details and the preserved handoff are in this campaign's notes.
+
 ## Emblem lab round 4 on ocean (2026-11-10, tools/emblab; nothing shipped): 1.84M games, no table beats ocean's, and the dense per-decision design cannot see what the A/Bs see
 
 Run by [RUNBOOK.md](../tools/emblab/RUNBOOK.md) (written from this run) on ocean b0eeff17e (= CHANGES 496).

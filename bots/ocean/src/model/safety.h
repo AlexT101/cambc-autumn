@@ -130,8 +130,6 @@ private:
         std::uint8_t key; // its tiles, range, sight and turn: ways with equal keys merge
         bool sight, stuns, walked;
     };
-    // Returns the way's index: one already there with the same key takes the larger damage.
-    int add(Tiles from, int range, bool sight, float damage, bool stuns, bool walked);
     // The farthest tile a way reaches.
     int bound(const Way& w) const { return extent_[w.from] + w.range + (splash_ && w.sight && units_ ? 1 : 0); }
     // bound() of each way, worked out at the end of a build.
@@ -167,6 +165,7 @@ private:
         Recipe recipe;
         std::array<Way, 14> way;
         int count = 0;
+        bool stuns = false;
         int basic = -1; // the plain basic attack's way
     };
     // By each slot's turns ready (0-2) and twice.
@@ -201,6 +200,8 @@ Reach::Window attack_viewers(const World& world, vec2 target, int range, bool st
 // Tiles within `range` (at most 4) that a champion at p, off bushes, sees: never a bush tile, which
 // is seen only from its own cluster (vision.occlusion).
 Reach::Window seen_from(const World& world, vec2 p, int range);
+Reach::Window window_square(int range); // 0..Window::radius, centred in the window
+Reach::Window board_window(const World& world, const bitboard& board, vec2 centre);
 
 // The static window and far sight mask at p (not a wall), as a miss would fill them.
 void warm_reach_tile(const World& world, vec2 p);

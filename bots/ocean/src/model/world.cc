@@ -2207,22 +2207,48 @@ void World::fix_at_spawn(ChampionBelief& b, const bitboard& spawn, const GrowBox
 
 namespace {
 
-// Each of the n <= 16 priorities' rank, the count of those ahead of it: higher, or equal at a lower
-// index (handles ascend with the index). Up to 8 compare 4 lanes at once; an insertion sort, or the
-// same loops vectorised by the compiler, cost two to three times more.
-template <class Write> [[gnu::always_inline]] inline void rank_by(const std::int32_t* p, int n, Write&& write) {
-    const unsigned valid = (1u << n) - 1;
-    if (n <= 8) {
-        const v128_t a = wasm_v128_load(p), b = wasm_v128_load(p + 4); // lanes from n on are masked out
-#pragma clang loop vectorize(disable) unroll(disable)
-        for (int i = 0; i < n; ++i) {
-            const v128_t x = wasm_i32x4_splat(p[i]);
-            const unsigned ahead = static_cast<unsigned>(wasm_i32x4_bitmask(wasm_i32x4_gt(a, x)) | wasm_i32x4_bitmask(wasm_i32x4_gt(b, x)) << 4);
-            const unsigned tied = static_cast<unsigned>(wasm_i32x4_bitmask(wasm_i32x4_eq(a, x)) | wasm_i32x4_bitmask(wasm_i32x4_eq(b, x)) << 4);
-            write(i, std::popcount((ahead | (tied & ((1u << i) - 1))) & valid));
-        }
-        return;
+// Compare every cyclic offset in parallel. Padding at INT_MIN cannot outrank a real entry,
+// even on a tie: every padding index follows every real one.
+template <int N, class Write>
+[[gnu::always_inline]] inline void rank_small(const std::int32_t* p, int n, Write&& write) {
+    const v128_t floor = wasm_i32x4_splat(std::numeric_limits<std::int32_t>::min());
+    const v128_t count = wasm_i32x4_splat(n);
+    const v128_t a = wasm_v128_bitselect(wasm_v128_load(p), floor, wasm_i32x4_lt(wasm_i32x4_make(0, 1, 2, 3), count));
+    v128_t ra = wasm_i32x4_splat(0);
+    v128_t b, rb;
+    if constexpr (N == 8) {
+        b = wasm_v128_bitselect(wasm_v128_load(p + 4), floor, wasm_i32x4_lt(wasm_i32x4_make(4, 5, 6, 7), count));
+        rb = wasm_i32x4_splat(0);
     }
+    [&]<int... I>(std::integer_sequence<int, I...>) {
+        ([&] {
+            constexpr int k = I + 1;
+            const v128_t q = [&] {
+                if constexpr (N == 4) return wasm_i32x4_shuffle(a, a, k % 4, (k + 1) % 4, (k + 2) % 4, (k + 3) % 4);
+                else return wasm_i32x4_shuffle(a, b, k % 8, (k + 1) % 8, (k + 2) % 8, (k + 3) % 8);
+            }();
+            const v128_t tie = wasm_i32x4_make(0, -(((k + 1) % N) < 1), -(((k + 2) % N) < 2), -(((k + 3) % N) < 3));
+            ra = wasm_i32x4_sub(ra, wasm_v128_or(wasm_i32x4_gt(q, a), wasm_v128_and(wasm_i32x4_eq(q, a), tie)));
+            if constexpr (N == 8) {
+                const v128_t z = wasm_i32x4_shuffle(a, b, (k + 4) % 8, (k + 5) % 8, (k + 6) % 8, (k + 7) % 8);
+                const v128_t tie_b = wasm_i32x4_make(-(((k + 4) % 8) < 4), -(((k + 5) % 8) < 5), -(((k + 6) % 8) < 6), -(((k + 7) % 8) < 7));
+                rb = wasm_i32x4_sub(rb, wasm_v128_or(wasm_i32x4_gt(z, b), wasm_v128_and(wasm_i32x4_eq(z, b), tie_b)));
+            }
+        }(), ...);
+    }(std::make_integer_sequence<int, N - 1>{});
+    [&]<int... I>(std::integer_sequence<int, I...>) {
+        ([&] {
+            if (I >= n) return;
+            if constexpr (I < 4) write(I, wasm_i32x4_extract_lane(ra, I));
+            else write(I, wasm_i32x4_extract_lane(rb, I - 4));
+        }(), ...);
+    }(std::make_integer_sequence<int, N>{});
+}
+
+template <class Write> [[gnu::always_inline]] inline void rank_by(const std::int32_t* p, int n, Write&& write) {
+    if (n <= 4) return rank_small<4>(p, n, write);
+    if (n <= 8) return rank_small<8>(p, n, write);
+    const unsigned valid = (1u << n) - 1;
     for (int i = 0; i < n; ++i) {
         unsigned ahead = 0, tied = 0;
         for (int j = 0; j < n; ++j) {

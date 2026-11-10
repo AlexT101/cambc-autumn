@@ -190,11 +190,7 @@ bool own_ward_sees(const World& world, vec2 p) {
 Reach::Window heal_viewers(const World& world, vec2 target, int range) {
     range = std::clamp(range, 0, Reach::Window::radius);
     Reach::Window w;
-    if (own_ward_sees(world, target)) {
-        for (int y = -range; y <= range; ++y)
-            for (int x = -range; x <= range; ++x) w |= Reach::Window::bit(Reach::Window::at(x, y));
-        return w;
-    }
+    if (own_ward_sees(world, target)) return window_square(range);
     w = attack_viewers(world, target, range);
     if (const vec2 here = my_position(); dist(here, target) <= range)
         w |= Reach::Window::bit(Reach::Window::at(here.x - target.x, here.y - target.y));
@@ -512,10 +508,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
         formation_view = test(world.map().bushes, mate->pos) ? attack_viewers(world, mate->pos, range)
                                                               : seen_from(world, mate->pos, range);
         if (const auto* sight = ward_sight(world, static_cast<std::uint32_t>(mate->handle)))
-            for (int y = -range; y <= range; ++y)
-                for (int x = -range; x <= range; ++x)
-                    if (const vec2 p{mate->pos.x + x, mate->pos.y + y}; in_bounds(p) && test(*sight, p))
-                        formation_view |= Reach::Window::bit(Reach::Window::at(x, y));
+            formation_view |= board_window(world, *sight, mate->pos) & window_square(range);
         const float usable = my_max_health() * (1 - params::recall_health_fraction);
         const float out = static_cast<float>(world.map().from_ally_spawn().at(here));
         const float saved = gain / usable * heal_trip(world, out, out);

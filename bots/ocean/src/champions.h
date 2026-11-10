@@ -1,6 +1,7 @@
 // Transcribed from cambc-rules.yaml.
 #pragma once
 #include <cambc.h>
+#include <algorithm>
 #include <array>
 #include <cstdint>
 
@@ -103,43 +104,54 @@ struct ChampionFacts {
     constexpr int basic_reach() const { return attack_range() + (passive == Passive::splash_attack ? splash_radius : 0); }
     constexpr bool walk_and_attack_independent() const { return !ranged; }
 
-    constexpr int slot_of(AbilityKind kind) const {
-        for (int s = 0; s < 2; ++s)
-            if (abilities[s].kind == kind) return s;
-        return -1;
-    }
-    constexpr bool has(AbilityKind kind) const {
-        return abilities[0].kind == kind || abilities[1].kind == kind;
-    }
-    constexpr bool has_attack_reset() const { return has(AbilityKind::attack_reset); }
-    constexpr bool heals() const { return has(AbilityKind::heal); }
-    constexpr bool has_dash() const { return has(AbilityKind::dash); }
-    // 0: no dash; 1: a dash; 2: a dash that hits where it lands (StaticMap::landing_dash_walls).
-    constexpr int dash_kind() const {
-        const int dash = slot_of(AbilityKind::dash);
-        return dash < 0 ? 0 : abilities[dash].lands() ? 2 : 1;
-    }
-
-    // Farthest tile an enemy-hitting ability reaches from where we stand; 0 if none.
-    constexpr int cast_reach() const {
+    std::array<std::int8_t, 8> slots = [&] {
+        std::array<std::int8_t, 8> out{};
+        out.fill(-1);
+        for (int s = 1; s >= 0; --s) out[static_cast<unsigned>(abilities[s].kind)] = static_cast<std::int8_t>(s);
+        return out;
+    }();
+    int cast_range = [&] {
         int r = 0;
         for (const auto& a : abilities)
             if (a.hits_enemies() && a.reach() > r) r = a.reach();
         return r;
-    }
-    // Farthest tile from which this slot can stun something this turn (the basic attack for
-    // Marcella); -1 if it never stuns.
-    constexpr int stun_reach(int slot) const {
-        const auto& a = abilities[slot];
-        if (!a.stuns) return -1;
-        return a.kind == AbilityKind::attack_reset ? attack_range() : a.reach();
-    }
-    // stun_reach with a walk first this turn: a tile more for a stun that allows one (Cassi, Heart
-    // of Ruin's landing, Marcella's attack).
-    constexpr int stun_reach_with_walk(int slot) const {
-        const int r = stun_reach(slot);
-        return r < 0 || abilities[slot].excludes_walking ? r : r + 1;
-    }
+    }();
+    std::array<int, 2> stun_range = [&] {
+        std::array<int, 2> r{};
+        for (int s = 0; s < 2; ++s) {
+            const auto& a = abilities[s];
+            r[s] = !a.stuns ? -1 : a.kind == AbilityKind::attack_reset ? attack_range() : a.reach();
+        }
+        return r;
+    }();
+    std::array<int, 2> stun_walk_range = [&] {
+        auto r = stun_range;
+        for (int s = 0; s < 2; ++s)
+            if (r[s] >= 0 && !abilities[s].excludes_walking) ++r[s];
+        return r;
+    }();
+    int dash_type = [&] {
+        const int dash = slots[static_cast<unsigned>(AbilityKind::dash)];
+        return dash < 0 ? 0 : abilities[dash].lands() ? 2 : 1;
+    }();
+    int action_range = [&] {
+        int r = basic_reach();
+        for (const auto& a : abilities) {
+            if (a.kind == AbilityKind::damage || a.kind == AbilityKind::stun) r = std::max(r, a.reach());
+            else if (a.lands()) r = std::max(r, a.radius);
+        }
+        return r;
+    }();
+
+    constexpr int slot_of(AbilityKind kind) const { return slots[static_cast<unsigned>(kind)]; }
+    constexpr bool has(AbilityKind kind) const { return slot_of(kind) >= 0; }
+    constexpr bool has_attack_reset() const { return has(AbilityKind::attack_reset); }
+    constexpr bool heals() const { return has(AbilityKind::heal); }
+    constexpr bool has_dash() const { return has(AbilityKind::dash); }
+    constexpr int dash_kind() const { return dash_type; }
+    constexpr int cast_reach() const { return cast_range; }
+    constexpr int stun_reach(int slot) const { return stun_range[slot]; }
+    constexpr int stun_reach_with_walk(int slot) const { return stun_walk_range[slot]; }
 
     // Damage a turn, spells (and dash landings) spread over their cooldown.
     constexpr float raw_output(float strength, float focus) const {
