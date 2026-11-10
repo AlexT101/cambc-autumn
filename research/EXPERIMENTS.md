@@ -15982,6 +15982,24 @@ Artifacts: `~/tmp-offload/handoff/codex/live-analysis/v107-v105.json` and
 match IDs are retained. Reproducers are `queue-ops/analyze_live107_{prepare,counts}.py` beside the live-analysis
 directory. No new scrims, repins or source changes were made for this analysis.
 
+## Local queue tune1 terminal gate (2026-11-10, Codex)
+
+The 19-parameter SPSA on frozen `ocean-16d6f78` finished 703 iterations against its nine-opponent panel
+on 10,240 fresh ladder-v2 pool maps. The second-half average was ported to `variants/lq-oc16-t1`;
+port identity checks passed 16/16 and 52/52. This is the older base, not full fuel497 + shield498.
+
+Its release 100k fresh-map gate against `ocean-16d6f78`, fixed Flp4/Mt3q bodies, stopped **NARROWED**
+at 329 blocks / 42,112 fresh units: **49.812% (49.562–50.062)**. Fresh Fish delta -0.239±0.337 points,
+Mite -0.137±0.363; ladder +0.539±0.250, pooled +0.176±0.177. Low LLR -0.965, high -12.527; no low
+rejection, screen or zone decision. The width stop is unresolved, not a rejection or established gain.
+The ladder/pooled lift does not override the fresh-map decision. No source merge or live promotion.
+
+Terminal evidence is `~/tmp-offload/localq/tune1/fgate.out` and the sealed result
+`~/tmp-offload/handoff/codex/queue-ops/tune1-final.json`; fit/port/identity logs remain in the tune1 directory.
+Post-processing succeeded and did not duplicate the three already queued future tune rounds. Those rounds
+remain behind ready behavior experiments on explicitly frozen full498; the released slot starts the
+prioritized `c107-wakeheal2` normal-fuel gate.
+
 ## Local queue draft10 F92 refit (2026-11-10, Codex)
 
 799,998 training games on fresh ladder-v2 maps, with Fish/Mite-weighted opponents, on frozen
