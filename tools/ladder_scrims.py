@@ -286,7 +286,7 @@ def collect(task, ev, detail):
                         cambc("matches", what, m["matchId"], "-o", str(path))
                     except CambcError as e:
                         log(f"warning: {what} {m['matchId']}: {e}")
-                    time.sleep(3)  # the CLI's download endpoints rate-limit bursts
+                    time.sleep(1)  # the download endpoints rate-limit bursts (cambc() spaces and retries calls too)
             if raw.exists():
                 row.update(summary_fields(raw, row["side"]))
             row["replay"] = str(bundle.relative_to(ROOT)) if bundle.exists() else None
