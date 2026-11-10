@@ -4,10 +4,10 @@ Two frozen candidates are under test against full `oc-campsh-498`. The approved 
 
 | Candidate | Real budget | 200k diagnostic |
 |---|---|---|
-| `c107-wakeheal2` | Running, seed 206 | NARROWED: 0.000 ±0.224 pp fresh, 1,024 units |
-| `c107-wakecrew3` | Queued, seed 208 | Queued, seed 207, eight blocks |
+| `c107-wakeheal2` | NARROWED (ZONE crossed): +0.330 ±0.250 pp, 3,712 fresh units | NARROWED: 0.000 ±0.224 pp fresh, 1,024 units |
+| `c107-wakecrew3` | Running, seed 208 | Queued, seed 207, eight blocks |
 
-Both gates use standard fgate, fresh ladder-v2, Flp4/Mt3q, release/own drafts and engine 5.0.1. High H0 alone is not rejection. The doubled-fuel result is unresolved, not a demonstrated gain or statistical rejection; ladder +0.195 ±0.244 pp, pooled +0.098 ±0.166. All intervals here are 95% half-widths. Source seals, admissions, logs and large artifacts live under `~/tmp-offload/camp107-mechanism/`.
+Both gates use standard fgate, fresh ladder-v2, Flp4/Mt3q, release/own drafts and engine 5.0.1. High H0 alone is not rejection. The doubled-fuel result is unresolved, not a demonstrated gain or statistical rejection; ladder +0.195 ±0.244 pp, pooled +0.098 ±0.166. All intervals here are 95% half-widths. The real-budget wakeheal2 result is judgment-eligible: Fish +0.323 ±0.327 pp, Mite +0.337 ±0.370, ladder +0.007 ±0.302, pooled +0.168 ±0.196; low LLR +6.998, high −4.537, no screen/live-bar pass. It is retained as a small-gain fallback while the extension is judged, not automatically promoted. Source seals, admissions, logs and large artifacts live under `~/tmp-offload/camp107-mechanism/`.
 
 ## Exact reported failure
 
@@ -19,7 +19,7 @@ The exact trace says `CREW PICK 28 2 g20 J trips 0 tank 0 expected 1 output 236 
 
 ## Self-initiation guard
 
-[Wakeheal2](wakeheal2.patch) checks the actual position before waking a sleeping crew target, including after movement/reveal and before the attack. It compares health with both estimated solo-clear damage and straight-walk retreat exposure from every living striker. If neither fits, it commits the existing camp retreat until a heal. It skips our spawn and requires attack reach; Monolith staging stays separate. There is no map key or fixed HP threshold. The retreat exposure is an estimate, not a terrain-aware escape proof.
+[Wakeheal2](wakeheal2.patch) checks the actual position before waking a sleeping crew target, including after movement/reveal and before the attack. It compares health with both estimated solo-clear damage and straight-walk retreat exposure from every living striker. If neither fits, it commits the existing camp retreat until a heal. It skips our spawn and requires proximity to a static camp tile within attack range; that tile can be a dead member. Monolith staging stays separate. There is no map key or fixed HP threshold. The retreat exposure is an estimate, not a terrain-aware escape proof.
 
 The historical counterfactual is identical through Issac's round-28 dash. At step 6567, it replaces his Elk attack with retreat. He keeps 200 HP through recall and is healed by round 34; Cassi survives. Release and debug are identical across the resulting 569 rounds. The later puppet win is not strength evidence.
 
@@ -66,3 +66,7 @@ An initial historical diagnostic was stopped before play after detecting the wro
 Wakeheal2 normal and doubled gates were admitted at 12:48:19 UTC and started at 13:05/13:06. Old wakeheal entries were held before launch. Final files: `fg-wakeheal2.log` / `wakeheal2gate.pid`, `fg-wakeheal2200.log` / `wakeheal2200.pid`; seal `wakeheal2-source.json`, admission `admission-wakeheal2.json`.
 
 Wakecrew3 gates were admitted separately at 13:16:43 after bush200k, preserving active jobs and all previous source/cache identities. Files: `fg-wakecrew3.log` / `wakecrew3gate.pid`, `fg-wakecrew3200.log` / `wakecrew3200.pid`; seal `wakecrew3-source.json`, admission `admission-wakecrew3.json`. Neither gate was independently launched by this owner.
+
+## Independent review
+
+Version-check’s read-only review found no blocking correctness issue for continuing these experiments. Next-round NPC tie order, direct asleep confirmation and the single-striker finishing exemption were checked. Conservative limitations remain: a basic attack that cleaves from a harmless target may kill the striker without receiving the finishing exemption; Marcella’s enhanced-basic stun is not credited; allies may move, receive shields/heals or hand off the target before the estimated exposure occurs. A stalled wounded ally can theoretically suppress a wake indefinitely, although the observed waits are at most four rounds. The self guard’s static-tile proximity includes dead members and can therefore request a heal before a living member is attackable. Its cached solo-clear/shield estimates are existing heuristics, not a safety guarantee. No frozen gate source was changed in response to review.
