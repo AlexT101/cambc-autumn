@@ -16767,3 +16767,16 @@ same 29,952 maps as "Ocean main against ocean-16d6f78" (`merged/oc-16d6`, both s
 change winner: CAND wins 13,891 only against 16d6f78 and 13,283 only against ba65375 (608 net, z ~3.7). Against
 current ocean the pre-removal base scores about 1.0 point better than the post-removal 16d6f78.
 `replays/ab/ocean-vs-ba65375-60k/`.
+
+
+## (ocean, 2026-11-10) Requested quick current506 versus v86 benchmark
+
+Exact shipped `oc-dfuel-506` (183a1295c) versus `oc-base23` (dd7002a8), rebuilt unchanged with current SDK/engine5.0.1; own drafts, release/native, explicit100k. Fixed4,352 games: fresh2,048 new ladder-v2 maps both sides plus all128 ladder maps both sides, no optional stopping or extension. Source/code/map seals and every raw map-side cell verified; zero errors, early losses, handoff failures or capped drafts.
+
+- **Fresh:** 2,355/4,096 wins, **57.50%**, map-paired95% interval **55.94–59.05%**.
+- **Ladder:** 139/256 wins, **54.30%**, map-paired95% interval **47.59–61.00%**.
+- Fresh-minus-ladder +3.20pp, descriptive95% interval−3.68..+10.08: no demonstrated ladder-specific overfit gap. Fresh evidence supports the cumulative506-v86 head-to-head gain; no individual-feature attribution or Fish/Mite strength claim.
+
+Exhausted-turn counts506/v86: fresh24,473/37,489; ladder1,613/2,406. These are descriptive, not a separate fuel-cut gate. Existing ward controller4112940 resumed at its original identity after all benchmark children drained. Initial larger preparation was reduced before any games at the user's request; then506 was explicitly selected after main advanced. Path/job names retain504 for compatibility, but actual candidate is506.
+
+[Protocol, provenance and complete result](ideas-2026-11-10/ocean504-v86/README.md); raw evidence `~/tmp-offload/ocean504-v86`. No new games or automatic follow-on authorized by this result.

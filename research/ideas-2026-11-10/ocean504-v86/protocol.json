@@ -1,0 +1,43 @@
+{
+  "purpose": "User-requested quick direct benchmark of explicitly selected shipped506 against exactv86; not candidate/fuel-cut gate",
+  "candidate": "variants/oc-dfuel-506",
+  "reference": "variants/oc-base23",
+  "candidate_commit": "183a1295c335a83d03679f93fcb11cdbde5617b2",
+  "reference_commit": "dd7002a8f85d4a543e68dfc5bad99c4c2fa6d40a",
+  "engine": "5.0.1",
+  "fuel": 100000,
+  "release": true,
+  "drafts": "own",
+  "runner": "native",
+  "fresh_maps": 2048,
+  "fresh_games": 4096,
+  "ladder_maps": 128,
+  "ladder_games": 256,
+  "total_games": 4352,
+  "seeds": [
+    2416000,
+    2416001,
+    2416002,
+    2416003,
+    2416004,
+    2416005,
+    2416006,
+    2416007
+  ],
+  "duplicate_only_replacement_seeds": [
+    2416008,
+    2416009,
+    2416010,
+    2416011
+  ],
+  "mix": "ladder-v2",
+  "fixed_sample": true,
+  "interim_stopping": false,
+  "automatic_extension": false,
+  "primary": "fresh direct win rate; map-pair sample95% uncertainty",
+  "diagnostic": "ladder separately; descriptive fresh-minus-ladder gap, no pooling",
+  "source_scope": "Unchanged exact historical bot sources rebuilt with sealed current SDK and engine; no parameter/stat table upgrades",
+  "queue": "exclusive, at most64 game workers, weight1 in shared86; mapgen pooled1 jobs1",
+  "failure_policy": "Errors/partial coverage HOLD; early-loss/handoff/draft-caps retained as outcomes and reported; no silent repeated games",
+  "selection": "Root selected506 before any heavy work; later main changes do not retarget or block this fixed benchmark"
+}

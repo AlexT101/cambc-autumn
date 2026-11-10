@@ -1,0 +1,26 @@
+{
+  "complete_unique_games": 4352,
+  "fresh_wins": 2355,
+  "ladder_wins": 139,
+  "hashes_cells_metadata_source_verified": true,
+  "gap_pp": 3.1982421875,
+  "gap_descriptive_95ci_pp": [
+    -3.683871504828444,
+    10.080355879828444
+  ],
+  "fresh_oof_turns": {
+    "cand": 24473,
+    "ref": 37489
+  },
+  "ladder_oof_turns": {
+    "cand": [
+      1613,
+      187
+    ],
+    "ref": [
+      2406,
+      198
+    ]
+  },
+  "result_sha256": "1281f6b605ec66d1bdbdf579457d2d05baf257d13a3705d4588eaf4eab517a91"
+}

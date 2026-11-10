@@ -694,3 +694,6 @@ Cancelled component-study launchers: `reserve-tools/run_gate.py`, `skirmish-tool
 
 
 - `research/ideas-2026-11-10/cond504/mirror.py`: mandatory fixed direct candidate-vs-frozen504 mirror after either conditional gate terminal;8,192 unique maps, both sides,200k, exact-cell audits and map-paired intervals. No repeated noise cells or automatic extensions; `test_mirror.py` validates pairing and duplicate/missing-cell rejection.
+
+
+- `research/ideas-2026-11-10/ocean504-v86/{run,seal,test_run}.py`: fixed user-requested506-versus-v86 direct benchmark; seal historical sources/SDK, queue-only release100k fresh+ladder panels, audit complete map pairs and uncertainty. See [protocol/results](../research/ideas-2026-11-10/ocean504-v86/README.md). Artifact naming retains504; selected candidate is506.

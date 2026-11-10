@@ -1,0 +1,212 @@
+{
+  "candidate": "variants/oc-dfuel-506",
+  "reference": "variants/oc-base23",
+  "engine": "5.0.1",
+  "fuel": 100000,
+  "release": true,
+  "fixed_sample_games": 4352,
+  "fresh_candidate_wins": 2355,
+  "fresh": {
+    "maps": 2048,
+    "win_pct": 57.4951171875,
+    "map_paired_normal_95ci_pct": [
+      55.93608251865292,
+      59.05415185634708
+    ],
+    "map_paired_empirical_bernstein_95ci_pct": [
+      54.91409127226502,
+      60.07614310273498
+    ],
+    "pair_counts": {
+      "0": 400,
+      "0.5": 941,
+      "1": 707
+    }
+  },
+  "ladder_candidate_wins": 139,
+  "ladder": {
+    "maps": 128,
+    "win_pct": 54.296875,
+    "map_paired_normal_95ci_pct": [
+      47.593674288737695,
+      61.00007571126231
+    ],
+    "map_paired_empirical_bernstein_95ci_pct": [
+      38.22999083332145,
+      70.36375916667853
+    ],
+    "pair_counts": {
+      "0": 33,
+      "0.5": 51,
+      "1": 44
+    }
+  },
+  "fresh_minus_ladder_pp": 3.1982421875,
+  "panel_note": "Fresh is primary; ladder is a separate descriptive overfit diagnostic. No pooled primary, no interim decision.",
+  "audit": [
+    {
+      "name": "ocean504-v86-2416000-bL-e501-f100k",
+      "summary_sha256": "8c29978a7229708193593c273b79da99e31f8c5fd146f5b34eb7fe1d70d0c716",
+      "batches": {
+        "/home/ubuntu/cambc-autumn/replays/batch-20261110-221136-ab-ocean504-v86-2416000-bL-e501-f100k-ladder/results.json": "a7b04d4f44ce53e4df5e5364ab1c33bf272e43c3dd9711fc5e88e350fa883daf"
+      },
+      "counts": {
+        "errors": 0,
+        "oof": {
+          "cand": [
+            1613,
+            187
+          ],
+          "ref": [
+            2406,
+            198
+          ]
+        },
+        "early_losses": {
+          "cand": 0,
+          "ref": 0
+        },
+        "handoff_failures": {
+          "cand": 0,
+          "ref": 0
+        },
+        "capped_drafts": {
+          "cand": 0,
+          "ref": 0
+        }
+      }
+    },
+    {
+      "name": "ocean504-v86-2416000-b0-e501-f100k",
+      "summary_sha256": "56fd14cea6b3b69083fb0339ae7f0c60dc2330f14b29373d71c9e77e29b8e057",
+      "batches": {
+        "/home/ubuntu/cambc-autumn/replays/batch-20261110-221227-ab-ocean504-v86-2416000-b0-e501-f100k-b0/results.json": "8298b92db095e7f45a7d59cc6c58fce38315702acc53a0c0d0613020709434a3"
+      },
+      "counts": {
+        "errors": 0,
+        "oof": {
+          "cand": [
+            6442,
+            719
+          ],
+          "ref": [
+            9574,
+            762
+          ]
+        },
+        "early_losses": {
+          "cand": 0,
+          "ref": 0
+        },
+        "handoff_failures": {
+          "cand": 0,
+          "ref": 0
+        },
+        "capped_drafts": {
+          "cand": 0,
+          "ref": 0
+        }
+      }
+    },
+    {
+      "name": "ocean504-v86-2416000-b1-e501-f100k",
+      "summary_sha256": "9bd0be76545f36c92ef793b196253836d5fdbfa1137031b92afd1b884aaf5fd4",
+      "batches": {
+        "/home/ubuntu/cambc-autumn/replays/batch-20261110-221231-ab-ocean504-v86-2416000-b1-e501-f100k-b1/results.json": "4b65dde25c7624900e1e227633f9618dc9545b21137f222df59304572519af96"
+      },
+      "counts": {
+        "errors": 0,
+        "oof": {
+          "cand": [
+            6692,
+            646
+          ],
+          "ref": [
+            10019,
+            723
+          ]
+        },
+        "early_losses": {
+          "cand": 0,
+          "ref": 0
+        },
+        "handoff_failures": {
+          "cand": 0,
+          "ref": 0
+        },
+        "capped_drafts": {
+          "cand": 0,
+          "ref": 0
+        }
+      }
+    },
+    {
+      "name": "ocean504-v86-2416000-b2-e501-f100k",
+      "summary_sha256": "ffe892a69483534157b0fc1660d38adda5016694200383e9b14dcf7affc6e294",
+      "batches": {
+        "/home/ubuntu/cambc-autumn/replays/batch-20261110-221235-ab-ocean504-v86-2416000-b2-e501-f100k-b2/results.json": "cde1b4f7f878de41ac74a4c6b148f90cb434286ba294298134ad46efbe9db642"
+      },
+      "counts": {
+        "errors": 0,
+        "oof": {
+          "cand": [
+            5752,
+            674
+          ],
+          "ref": [
+            8771,
+            750
+          ]
+        },
+        "early_losses": {
+          "cand": 0,
+          "ref": 0
+        },
+        "handoff_failures": {
+          "cand": 0,
+          "ref": 0
+        },
+        "capped_drafts": {
+          "cand": 0,
+          "ref": 0
+        }
+      }
+    },
+    {
+      "name": "ocean504-v86-2416000-b3-e501-f100k",
+      "summary_sha256": "f081e7da524a04ff05769c1e68fea56cbe612dd76281a2d27e1e39d0520543b6",
+      "batches": {
+        "/home/ubuntu/cambc-autumn/replays/batch-20261110-221238-ab-ocean504-v86-2416000-b3-e501-f100k-b3/results.json": "3c64a7cf7cd635bf825a67e8125f5a87ae709a1f06a2647ca486f2c3e0ac93a7"
+      },
+      "counts": {
+        "errors": 0,
+        "oof": {
+          "cand": [
+            5587,
+            674
+          ],
+          "ref": [
+            9125,
+            734
+          ]
+        },
+        "early_losses": {
+          "cand": 0,
+          "ref": 0
+        },
+        "handoff_failures": {
+          "cand": 0,
+          "ref": 0
+        },
+        "capped_drafts": {
+          "cand": 0,
+          "ref": 0
+        }
+      }
+    }
+  ],
+  "manifest_sha256": "97cb7bf34db6c3485d6b94ef07860abc5750bfe139ce1e5b5e12f4222e7e3d5e",
+  "maps_sha256": "04f9b74bd6eda747f1f5986caf552ab748c88b4dc5c4a7635e6a3a7f4a5b82d2",
+  "scores_sha256": "49734483893527185bc248577cd8aa487361e1043df7f32e66a2e414a14e23c6",
+  "interpretation": "Direct whole-bundle benchmark; not per-feature attribution, live prediction or automatic promotion. All draft guard failures remain counted outcomes. No optional stopping or automatic extension."
+}
