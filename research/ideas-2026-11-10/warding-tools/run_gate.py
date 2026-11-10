@@ -9,7 +9,7 @@ import sys
 T = Path(__file__).resolve().parent
 R = T.parents[2]
 p = argparse.ArgumentParser(description=__doc__)
-p.add_argument('arm', choices=['oc-wtile-498','oc-wbush-498','oc-wcamp-498'])
+p.add_argument('arm', choices=['oc-wtile-498','oc-wbush-498','oc-wcamp-498','oc-wcampall-498'])
 p.add_argument('--fuel', type=int, choices=[100000,200000], default=100000)
 p.add_argument('--jobs', type=int, default=4)
 a = p.parse_args()

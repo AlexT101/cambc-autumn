@@ -30,13 +30,13 @@ Mite's camp wards add only 2.13 immediate tiles on average; 769/1,088 add none. 
 
 A second pass over the same 120 cohort views separates current-turn reveal from retained information (`warding-tools/timing.py`, artifacts `timing.json` and `timing.log`). Ad Astra moves before 3,551/4,030 placements (88.1%); no observed placement is followed by movement or a cast by that actor in the same turn, and only 14 are followed by a basic attack. None of its 278 confirmed ward-only champion attacks uses a ward placed in that same turn. Mite has 19 immediate ward-only attacks enabled by 12 placements, versus 325 later attacks; Ocean has 23 immediate attacks enabled by 21 placements, versus 366 later attacks.
 
-Thus Ad Astra's higher frequency of placements near visible enemies does not establish an aggressive early-reveal policy. In these games, its observed attack use is entirely later-turn information. Ocean's current early reveal mechanism has measurable immediate use and remains enabled in all three experimental arms. Spells and non-attack information value remain unmeasured; this timing comparison inherits the cohort confounds above.
+Thus Ad Astra's higher frequency of placements near visible enemies does not establish an aggressive early-reveal policy. In these games, its observed attack use is entirely later-turn information. Ocean's current early reveal mechanism has measurable immediate use and remains enabled in all experimental arms. Spells and non-attack information value remain unmeasured; this timing comparison inherits the cohort confounds above.
 
 ## Prior null results and new experimental questions
 
 The [earlier Mite study](../ideas-2026-11-08/mite-wards.md) tested extra fresh-bush wards, broad camp wards and removing the reveal-ward combat gate on the older oc-base25. Their large samples were approximately level. Broad camp scanning increased out-of-fuel turns by 36%. These variants therefore do not blindly repeat those implementations. CHANGES473 already made planned-ward site scores and ward sight masks exact, but explicitly deferred exact turn-end bush tile ranking for fuel risk.
 
-All new arms independently copy **`variants/oc-campsh-498`**, the full frozen working498 including fuel497. Commit2905 alone omits fuel497. No arm stacks another ward experiment, modifies opponent bodies, changes drafts, or modifies working Ocean.
+All new arms derive from **`variants/oc-campsh-498`**, the full frozen working498 including fuel497. Commit2905 alone omits fuel497. No arm stacks another ward experiment, modifies opponent bodies, changes drafts, or modifies working Ocean.
 
 - **`variants/oc-wtile-498`** keeps the existing bush cluster selection, replacement trigger and candidate restriction. Within that chosen cluster, it ranks candidate tiles by actual ward sight covering tiles within ability range of the actor and its claimed work. Stable ties preserve the first tile; a 7,000-fuel floor bounds the search, and existing first-three placement fallback remains. This tests the previously deferred exact tile ranking, including its runtime cost.
 - **`variants/oc-wbush-498`** disables only planned wards on non-bush tiles and falls back to Ocean's existing bush policy. Bush planned wards and combat reveal wards stay unchanged. This Ad Astra-inspired ablation asks whether non-bush planned wards are useful relative to conserving/reusing the ward for bushes; it is not a reconstruction of Ad Astra's whole policy.
@@ -44,13 +44,19 @@ All new arms independently copy **`variants/oc-campsh-498`**, the full frozen wo
 
 `warding-tools/prepare.py` reproduces these source changes and refuses to overwrite existing arms. `warding-tools/sources.json` records the sealed source fingerprints; the artifact `source-manifest.json` lists every source file hash, with exact patches beside it. The frozen base source fingerprint must equal the queue's known full498 fingerprint `d0a0755075bf4010dc1ac96e7b209aafd3791ba1a8bc1c3b625d56e55f38a23e`.
 
+## Alive-camp follow-up
+
+The event-level camp-state audit (`warding-tools/camp_timing.py`, artifact `camp-timing.json`) shows that Mite placed 686/1,088 camp wards on **alive** groups, 269 on cleared groups and 133 on respawning groups; only two replaced a ward on the same group. This uses actual `group_clear`, `capture` and `group_respawn` transitions, not copied reward metadata. Spot-checked event sequences place the ward before subsequent monster deaths, confirming that the alive classification is meaningful.
+
+Accordingly **`variants/oc-wcampall-498`** adds a matched ablation of the dead-group restriction: it copies the sealed cheap camp arm and removes only that condition. Its radius-2 scan, nearby-old-ward retention, fuel floor and priority below planned/bush wards are unchanged. The original dead-camp arm is retained unchanged, so their separate gates can show whether alive-camp information is worth including. Both get normal and doubled fuel gates. This follows the observed Mite policy more closely without reviving the previous expensive whole-map scan.
+
 ## Matched fuel gates
 
 Each arm gets separate normal-budget and `--fuel 200000` fresh gates against the same frozen base. Both candidate and reference face the same Flp4/Mt3q bodies, noise blocks, maps and sides within each fuel condition. Both teams receive the selected budget; this scales the engine's first-turn/draft allowance too, so the raised-budget comparison measures the whole game under that budget. Do not pool the two budgets or interpret their difference as a clean estimate of only our ward-search cost.
 
 `fgate.py --fuel` passes the value to ab.py and appends `-fuel200000` to game, lock, log and final result names. Cache acceptance also requires matching summary fuel metadata; normal-budget names remain unchanged. Three tests check unchanged normal names, all nine selected/cached budget combinations, and the actual launched command. Raised-budget `--no-run` reads zero normal-budget cells.
 
-The queue should run these six behavior gates before pending draft/tuning rounds, without interrupting active jobs. They share reference results only within a matching budget and retain the normal sequential gate interpretation: high-H0 alone is not rejection, and narrow results require judgment. There is no strength conclusion or promotion at preparation time.
+The queue should run these eight behavior gates before pending draft/tuning rounds, without interrupting active jobs. They share reference results only within a matching budget and retain the normal sequential gate interpretation: high-H0 alone is not rejection, and narrow results require judgment. There is no strength conclusion or promotion at preparation time.
 
 ## Preparation validation
 
@@ -60,4 +66,6 @@ All 64 extracted replays pass hard validation. The smoke confirms actual mechani
 
 Normal-budget candidate out-of-fuel turns across the eight games are base34, tile33, camp37, bush45. All are zero at doubled fuel (both teams). These are a mechanism smoke, not a cost benchmark or a win-rate estimate: altered trajectories change both game length and workload. Fresh gates determine usefulness.
 
-`queue-commands.json` in the artifact directory names the six wrapper commands; queue operations owns admission and ongoing execution. The wrapper checks the sealed base/arm hashes on every start. Neither opponent pinning nor live submission selection is part of these experiments.
+`queue-commands.json` in the artifact directory names the eight wrapper commands; queue operations owns admission and ongoing execution. The wrapper checks the sealed base/arm hashes on every start. Neither opponent pinning nor live submission selection is part of these experiments.
+
+The alive-camp follow-up adds 16 successful release smoke games, all with matching drafts and passing hard replay validation. It produces 422/410 camp wards at normal/doubled fuel versus 301/274 for the dead-camp arm on the same eight cells. Its out-of-fuel counts are 26 and 1, respectively; these are trajectory-dependent smoke counts, not a fuel benchmark. Its validation is separate in artifact `verified-campall-smokes.json`, while `mechanism.json` now covers all 80 games.

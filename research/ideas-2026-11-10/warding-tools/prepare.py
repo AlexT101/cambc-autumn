@@ -61,3 +61,11 @@ p = R/'bots/variants/oc-wcamp-498/src/bot.cc'
 s = p.read_text();old='const bool placed = planned ? *planned : bushes && ward_bushes(world, memory);'
 assert s.count(old)==1
 p.write_text(s.replace(old,'const bool placed = planned ? *planned : bushes && (ward_bushes(world, memory) || ward_camp(world, memory));'))
+
+# Alive-camp ablation keeps the bounded scan and replacement policy identical.
+subprocess.run([str(R/'copybot'), 'variants/oc-wcamp-498', 'variants/oc-wcampall-498'], check=True, cwd=R)
+p = R/'bots/variants/oc-wcampall-498/src/bot.cc'
+s = p.read_text().replace('// A cleared camp near our feet can retain information after we leave; avoid a map-wide scan.', '// A camp near our feet can retain information after we leave; avoid a map-wide scan.')
+old = 'group >= 0 && world.camps[group].state != CampState::alive && try_ward(p, memory)'
+assert s.count(old) == 1
+p.write_text(s.replace(old, 'group >= 0 && try_ward(p, memory)'))
