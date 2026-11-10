@@ -53,7 +53,7 @@ inline constexpr bool fishx_deny = false;
 // Cohesion (farm.cc, research/ideas-2026-11-09/oppmodel/cohesion.md): 0 off, 1 while fishx::on, 2 always. A group
 // farther than coh_near from every live ally's anchor (its claimed group's centre, else its seen or told tile) is
 // worth less, linearly down to coh_floor of itself at coh_far and beyond.
-inline constexpr int coh_mode = 1;
+inline constexpr int coh_mode = 0; // fc1/fc2 level or lost on fgate (EXPERIMENTS 2026-11-10)
 inline constexpr int coh_near = 6, coh_far = 14;
 inline constexpr float coh_floor = 0.75f;
 // Each ally but the healers posts its own position in turn, in the shared bytes' free bits, for
