@@ -16622,3 +16622,10 @@ Evidence: `~/tmp-offload/handoff/codex/live-analysis/v110-readout.json`, `pair11
 ### Prospective Fish-only camp-ward screen on503 (2026-11-10)
 
 [Protocol](ideas-2026-11-10/ward-fish503/README.md): one post-hoc Fish lead from498(+0.375±0.340pp) is tested independently on512 new ladder-v2 maps, both sides versus fixedFlp4, CAND/REF release200k,2048games maximum. Exact old ward diff only on committed503;502 preparation was superseded before play and same generator selection reused, then two Food-content collisions replaced before play under the bounded novelty audit. Positive fresh paired95%lower>0 with valid complete cells is required even to consider a separately authorized100k test. No Mite, old pooled-gate revival, automatic extension, classifier claim or promotion. Results pending.
+
+
+### Fish-only alive-camp ward screen on503: HOLD (2026-11-10)
+
+The [prospective fixed screen](ideas-2026-11-10/ward-fish503/README.md) completed exactly512 newly sealed ladder-v2 maps/2048 release200k games, both sides of candidate/reference against fixedFlp4. Fresh paired Fish gain **−0.879pp,95%CI[−3.827,+2.070]**: **HOLD**, not statistical rejection. The prespecified positive-lower-bound requirement failed; no100k test, extension, new candidate, live action or merge is authorized. This independent screen does not confirm the old498 post-hoc Fish+0.375±0.340 lead.
+
+Source/map/protocol/launcher seals rechecked after completion; exact1024 map-side cells per arm, zero run errors, early losses, draft handoff failures or capped drafts. Both arms remain on frozen503; no fuel503 attribution claim. Two initial prior-Food map collisions were replaced prospectively before any game, within the approved bounded novelty scope. Evidence `~/tmp-offload/ward-fish503-screen/{result,terminal-summary-audit,manifest,novelty}.json`. Local queue remains idle.
