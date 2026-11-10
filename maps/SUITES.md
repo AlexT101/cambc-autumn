@@ -965,3 +965,6 @@ re-measured"; used).
 
 **Draft10 port to 501 (2026-11-10):** `--mix ladder-v2`, under `suites/d10port/fresh-{seed}`, symlinked into `merged/d10port`:
 - 5110000–5110116, 29,952 maps: used by the head-to-head A/B `oc-501-draft10` vs `oc-fuel-501` (EXPERIMENTS "Local queue draft10 F92 refit", port to 501).
+
+
+- `63704100–63704102` (2026-11-10, ladder-v2): bounded Fish-only camp-ward screen;768 generated,512 selected before play after old1024ward-pool/registered-ladder hash exclusions. Artifacts `~/tmp-offload/ward-fish502-screen/generated`, 503 suite resealed before play after two Food-confirmation collisions were replaced. No other experiment may reuse as fresh confirmation.
