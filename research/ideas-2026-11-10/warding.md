@@ -32,6 +32,19 @@ A second pass over the same 120 cohort views separates current-turn reveal from 
 
 Thus Ad Astra's higher frequency of placements near visible enemies does not establish an aggressive early-reveal policy. In these games, its observed attack use is entirely later-turn information. Ocean's current early reveal mechanism has measurable immediate use and remains enabled in all experimental arms. Spells and non-attack information value remain unmeasured; this timing comparison inherits the cohort confounds above.
 
+## Potential camp information
+
+`warding-tools/camp_information.py` counts clear/capture/respawn transitions for which the owner's ward sees a group member while the owner's personal sight sees none. These are **potential first-hand observations**, not proof that the bot read or acted on them, and not necessarily new team knowledge: a teammate could already know and communicate the state. Each owner/transition pair counts separately. The ward remains active while its owner is dead, which is reported separately.
+
+| Forty games per team | Mite r5 | Ad Astra | Ocean v105 |
+|---|---:|---:|---:|
+| Ward-only camp-state observer/transition pairs | 3,510 | 3,648 | 3,727 |
+| Of those while the owner is dead | 821 | 923 | 1,068 |
+| Alive-owner observations per 100 alive champion-rounds | 1.62 | 1.66 | 1.65 |
+| Wards covering at least one such transition | 1,564/6,982 | 1,132/4,030 | 1,075/4,086 |
+
+Mite's camp-tile wards cover 705 of its observer/transition pairs; 215/1,088 cover at least one transition. Ocean's non-bush wards account for 1,649/3,727 pairs (1,095 while alive), despite only 1,027/4,086 placements being non-bush. Thus the bush-only ablation trades away substantial potential camp coverage; more frequent Mite placements do not establish a higher overall information rate. Information value, opponent coverage, camp rewards, durations and decision use differ, so these descriptive counts cannot replace the game gates. Artifacts are `camp-information.json` and `camp-information.log`.
+
 ## Prior null results and new experimental questions
 
 The [earlier Mite study](../ideas-2026-11-08/mite-wards.md) tested extra fresh-bush wards, broad camp wards and removing the reveal-ward combat gate on the older oc-base25. Their large samples were approximately level. Broad camp scanning increased out-of-fuel turns by 36%. These variants therefore do not blindly repeat those implementations. CHANGES473 already made planned-ward site scores and ward sight masks exact, but explicitly deferred exact turn-end bush tile ranking for fuel risk.
