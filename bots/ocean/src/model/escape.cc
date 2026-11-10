@@ -539,10 +539,15 @@ template <bool Dash>
     if constexpr (!Dash) s01 = s00, s11 = s10;
     out.after[0][0] = s00, out.after[1][0] = s10, out.after[0][1] = s01, out.after[1][1] = s11;
     const Rows hit = hits[1], clear = ~hit;
-    out.dashed[0] = grow(s00 & clear) & walk;
-    out.dashed[1] = grow((s10 & clear) | (s00 & hit)) & walk;
-    out.kept[0] = grow(s01 & clear) & walk;
-    out.kept[1] = grow((s11 & clear) | (s01 & hit)) & walk;
+    out.landed[0] = s00 & clear, out.landed[1] = (s10 & clear) | (s00 & hit);
+    out.stood[0] = s01 & clear, out.stood[1] = (s11 & clear) | (s01 & hit);
+    for (int j = 0; j < 2; ++j) {
+        const Rows near_landed = grow(out.landed[j]);
+        out.dashed[j] = near_landed & walk;
+        out.kept[j] = grow(out.stood[j]) & walk;
+        // The later turns' dash term, on turn 1: the walk ends where the dash starts.
+        out.walk_dashed[j] = dash_landings(near_landed, path, walk);
+    }
     out.ready = true;
 }
 
@@ -572,6 +577,12 @@ int Plan::after_dash(vec2 p, bool slack) const { return value(pass(slack).dashed
 
 int Plan::keep_dash(bool slack) const { return value(pass(slack).kept[0], pass(slack).kept[1], at); }
 
+int Plan::walk_dash(vec2 p, bool slack) const { return value(pass(slack).walk_dashed[0], pass(slack).walk_dashed[1], p); }
+
+int Plan::landed(vec2 p, bool slack) const { return value(pass(slack).landed[0], pass(slack).landed[1], p); }
+
+int Plan::stood(vec2 p, bool slack) const { return value(pass(slack).stood[0], pass(slack).stood[1], p); }
+
 bool Plan::runner_hit_now() const { return get(hit_[1], at.y - origin_.y) >> (at.x - origin_.x) & 1; }
 
 int Plan::runner_hits(bool slack) const { return std::min(many, (runner_hit_now() ? 1 : 0) + after_walk(at, slack)); }
@@ -593,8 +604,17 @@ Plan* chase_plan(const World& world, Pathing& pathing, const ChampionBelief& tar
     return &p;
 }
 
+namespace {
+Plan own_plan; // plan()'s
+} // namespace
+
+const Plan* built(const World& world) {
+    const auto& p = own_plan;
+    return p.round == world.round && p.handle == static_cast<std::uint32_t>(world.me().handle) && p.active() ? &p : nullptr;
+}
+
 Plan& plan(const World& world, Pathing& pathing, Safety& safety) {
-    static Plan p;
+    auto& p = own_plan;
     const vec2 here = my_position();
     const auto me = static_cast<std::uint32_t>(world.me().handle);
     if (p.round != world.round || p.handle != me || p.at != here || p.observations != world.observations) {

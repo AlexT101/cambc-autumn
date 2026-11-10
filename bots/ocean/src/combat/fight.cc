@@ -185,8 +185,10 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
         pathing.step_towards(home);
         return;
     }
+    // A walk the dash was put off for is the plan's to choose.
+    const bool walk_dash = walk_dash_deferred(world) && my_can_cast();
     const auto& avoid = safety.avoid();
-    if (!test(avoid, here) && pathing.step_towards(home, &avoid)) return;
+    if (!walk_dash && !test(avoid, here) && pathing.step_towards(home, &avoid)) return;
     const int steps = home.at(here);
     const auto& blocked = pathing.blocked();
     struct Option {
@@ -199,6 +201,7 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
         int bush = 2;
         float eff = 0; // damage less bush_margin's bonus
         int rank = 0;  // the group it is tried in, after HomeWalk's: the plan's rank, or without a plan, damage now
+        bool dashes = false; // ranked as a walk then a dash (walk_dash_deferred): this turn does not end here
     };
     Unwritten<Option, 8> scratch;
     auto& options = scratch.a;
@@ -263,6 +266,9 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
         auto& o = options[i];
         const int now = hit_now(o);
         o.rank = plan.active() ? escape::rank(now + plan.after_walk(o.p, false), now + plan.after_walk(o.p, !safe)) : o.home ? 0 : now;
+        // The plan's walk_dash bounds the real one from below: only a step it already ranks first is checked.
+        if (walk_dash && plan.active() && escape::rank(plan.walk_dash(o.p, false), plan.walk_dash(o.p, !safe)) < o.rank)
+            if (const int r = walk_dash_rank(world, pathing, plan, o.p, !safe); r < o.rank) o.rank = r, o.dashes = true;
     }
     const auto by = [](const Option& a, const Option& b) {
         if (a.home != b.home) return a.home;
@@ -292,7 +298,7 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
         for (; e < n && options[order[e]].home == lead_home && options[order[e]].rank == lead_rank; ++e) {
             auto& o = options[order[e]];
             if (o.home || o.t.left) price(o);
-            if (plan.active() && !o.home && o.damage > 0) {
+            if (plan.active() && !o.home && o.damage > 0 && !o.dashes) {
                 if (life < 0) life = my_health_and_shield(world);
                 if (o.damage >= life) {
                     last[lasts++] = order[e];
@@ -1301,7 +1307,7 @@ bool dash_retreat_casts(World& world, Pathing& pathing, Safety& safety, Memory& 
         if (escape_walk(world, pathing, safety, &looked)) casted = !my_can_cast(), reusable = false;
         if (looked) reusable = false;
     }
-    if (!casted) {
+    if (!casted && !walk_dash_deferred(world)) {
         bool attempted = false;
         casted = cast_at_enemies(world, escape_step_value, false, &attempted);
         if (attempted && !casted) {
@@ -1321,7 +1327,8 @@ bool dash_retreat_casts(World& world, Pathing& pathing, Safety& safety, Memory& 
             if (quote.count > 0) see_again(world, pathing, safety);
             if (!escaped && quote.count > 0 && dash_away(world, pathing, safety, pathing.to_ally_spawn(), dead))
                 see_again(world, pathing, safety);
-        } else if (dash_away(world, pathing, safety, pathing.to_ally_spawn(), dead)) {
+        } else if (!(walk_dash_deferred(world) && my_can_move()) // a dash put off for the walk waits for it (retreat)
+                   && dash_away(world, pathing, safety, pathing.to_ally_spawn(), dead)) {
             see_again(world, pathing, safety);
         }
     }
@@ -1377,9 +1384,12 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         dash_away(world, pathing, safety, pathing.to_ally_spawn(), dead);
     }
     // The escape dash shares the one cast: the reset only after it, from a melee attack or a ranged walk.
-    if (reset_and_attack_enemy(world)) see_kills(world, pathing, safety);
+    const bool walk_dash = walk_dash_deferred(world) && my_can_cast();
+    if (!walk_dash && reset_and_attack_enemy(world)) see_kills(world, pathing, safety);
     else see_stuns(world, safety); // Heart of Ruin's landing
     if (!flee_camps(world, pathing, safety, pathing.to_ally_spawn())) retreat_step(world, pathing, safety, pathing.to_ally_spawn());
+    // The dash put off for the walk, from its tile (from here if the walk was refused: put off once a turn).
+    if (walk_dash && my_can_cast() && dash_away(world, pathing, safety, pathing.to_ally_spawn(), dead)) see_again(world, pathing, safety);
     // A walk to a hole line's edge can bring a dash out of the camps' reach in reach.
     if (my_can_cast() && safety.camp_damage(my_position()) > 0 && dash_away(world, pathing, safety, pathing.to_ally_spawn(), dead, false))
         see_again(world, pathing, safety);

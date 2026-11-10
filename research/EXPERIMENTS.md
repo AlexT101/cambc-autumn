@@ -15262,7 +15262,7 @@ The provable-cap line was ported onto oc32s-bsk (patches in [fuelcap-2026-11-09]
   - 2.0% after 90k or more;
   - 10.7% after an OOF turn.
 
-## v94's falls line and walk-then-dash in the escape planner (ocean fc9ae7880, 2026-11-10): both level, nothing merged
+## v94's falls line and walk-then-dash in the escape planner (ocean fc9ae7880, 2026-11-10): falls level; walk-then-dash merged (CHANGES 494)
 
 Both arms are against `variants/ocean-fc9ae78` (= bots/ocean at fc9ae7880, CHANGES 493) on fresh `merged/wdf-1980`
 (ladder-v2, 10,240 maps). Each played 20,480 games: release builds, fast runner, own drafts (`--no-test-draft`),
@@ -15292,6 +15292,20 @@ no failed matches.
     ranked better than keeping the dash; 6 walked and kept the dash; 4 never reached the post-walk dash.
 - **Reading:** oc-wdash is +0.5 with the interval touching 50, and OOF up 2.7% (falls: +0.2%). It fires about once
   in six games, so its effect is mostly diluted.
+- **Held out:** oc-wdash on `merged/wd2-1981` read 50.6% (49.9-51.3) of 20,480, OOF CAND 255,043 against REF
+  250,409 (+1.9%). Pooled with wdf-1980: about 50.55% of 40,960 (+0.55 ±0.48).
+- **Audit fixes before the merge** (read-only audit). The pre-fix build trusted the plan's landings from the walk
+  tile, which are terrain only. It could walk onto a tile Safety priced lethal for a dash with no real landing, and
+  after the walk it had no Safety fallback.
+  - The deferral and `retreat_step` now check the real landings from the walk tile (`Pathing::dash_landings_at`).
+  - The post-walk choice falls back to Safety's ranking.
+  - Smoke (debug, 128 `maps/gen` maps): 31 deferrals; 24 of 25 post-walk turns had a planned landing (before the
+    fixes, 30 of 36).
+- **As merged (CHANGES 494, `variants/oc-wdash-494`)** on `merged/wd3-1982`: 49.9% (49.2-50.6) of 20,480, OOF CAND 249,309 against
+  REF 243,159 (+2.5%). The pre-fix build (`variants/oc-wdash-pre`) on the same maps read 50.0% (49.3-50.7). Paired, 969
+  games differ, 479 merged-only wins against 490 pre-fix-only (z -0.35): the fixes are level.
+- **Overall:** the pre-fix build is 50.5 / 50.6 / 50.0 on three fresh suites, about 50.4% of 61,440 (50.0-50.8). That
+  is level to a small gain, for about 2% more OOF turns. Merged as CHANGES 494 on the user's call.
 
 ## One-site conditioning of the removal branch: 429's lock and deny back only where every altar is one site (ocean = removal tip 7862c1b39, 2026-11-09/10): no arm, the live split was noise
 

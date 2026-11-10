@@ -55,6 +55,12 @@ public:
     int after_dash(vec2 p, bool slack) const;
     // This turn's walk with the dash kept: hits on turns 1..horizon.
     int keep_dash(bool slack) const;
+    // This turn's walk to p, then a dash from p: hits on turns 1..horizon, the landing's turn-1 hit included.
+    // p itself counts as a landing (landed(p), never below stood(p)): only a value below stood(p) needs a real dash.
+    int walk_dash(vec2 p, bool slack) const;
+    // This turn ending on p, dash spent (landed) or kept (stood): hits on turns 1..horizon.
+    int landed(vec2 p, bool slack) const;
+    int stood(vec2 p, bool slack) const;
     bool dash_now() const { return dash_now_; } // a dash of ours can be cast this turn
     // The slack pass, worked out on first ask; until then the slack values read as the full ones.
     void want_slack();
@@ -84,6 +90,8 @@ public:
         Rows after[2][2];
         Rows dashed[2]; // the tiles a dash now may land on: this turn's walk from them, then S_1 (dash spent)
         Rows kept[2];   // this turn's walk without a dash, then S_1 (dash kept)
+        Rows landed[2], stood[2]; // turn 1 ending on the tile, then S_1: dash spent / kept
+        Rows walk_dashed[2];      // the tiles a dash from lands in `landed`: this turn's walk ends on them
     };
 
 private:
@@ -103,6 +111,9 @@ private:
 
 // The plan for this turn from our tile, built on first ask and kept while its key holds.
 Plan& plan(const World& world, Pathing& pathing, Safety& safety);
+// This round's plan as last built (from Plan::at), never rebuilt: null if none or inactive. Its sets are on map
+// tiles, so they still read right after we walk off `at`.
+const Plan* built(const World& world);
 
 // The chase plan against a visible enemy this round, built on first ask (null if the fuel left is under
 // `need` then) and kept for the round: nothing it reads moves during our turn.

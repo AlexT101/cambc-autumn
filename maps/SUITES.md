@@ -919,3 +919,11 @@ gap-fix-ender on the removal branch"):
 
 `--mix ladder-v2`, in `suites/fresh/fresh-{seed}`, symlinked into `merged/` (CHANGES 491):
 - `ocft-1950`: 1950000-1950019, 5,120 maps (CHANGES 491's A/B and held-out --need headroom; used).
+
+## v94 ports (ocean, 2026-11-10)
+
+`--mix ladder-v2`, in `suites/fresh/fresh-{seed}`, symlinked into `merged/` (EXPERIMENTS "v94's falls line and
+walk-then-dash in the escape planner"):
+- `wdf-1980`: 1980000-1980039, 10,240 maps (oc-falls and oc-wdash against ocean-fc9ae78; used).
+- `wd2-1981`: 1981000-1981039, 10,240 maps (oc-wdash held out; used).
+- `wd3-1982`: 1982000-1982039, 10,240 maps (oc-wdash-494, CHANGES 494 as merged; used).

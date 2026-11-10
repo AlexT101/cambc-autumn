@@ -1890,6 +1890,15 @@ const bitboard& Pathing::dash_landings() {
     return dash_landings_from(map(), my_pos(), also);
 }
 
+const bitboard& Pathing::dash_landings_at(vec2 from) {
+    static bitboard off{cambc::uninitialized};
+    const bitboard* also = nullptr;
+    if (bumped_any_ && guard()) or_into(bumped_, *guard(), off), also = &off;
+    else if (bumped_any_) also = &bumped_;
+    else if (guard()) also = guard();
+    return dash_landings_from(map(), from, also);
+}
+
 bitboard Pathing::teleport_targets() {
     static bitboard t{cambc::uninitialized};
     const vec2 here = my_pos();

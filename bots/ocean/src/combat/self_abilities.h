@@ -11,6 +11,9 @@ class World;
 class Pathing;
 class Safety;
 struct ChampionBelief;
+namespace escape {
+class Plan;
+}
 
 // The enemy a basic attack from here should hit, read live as vision changes when we move: the
 // biggest kill, else the weakest, or for Varg the most value counting splash. Never one whose
@@ -41,6 +44,13 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* 
 // better than walking with the dash kept (unless `plan` is off). `dead`: the tile of an enemy we killed this
 // turn, which the beliefs still hold alive.
 bool dash_away(const World& world, Pathing& pathing, Safety& safety, const Field& home, vec2 dead = {-1, -1}, bool plan = true);
+// dash_away (or the quote) put the dash off this turn for a walk then a dash from the walk's tile (the escape
+// plan's walk_dash): until the walk, no other cast should take the dash's, and after it dash_away ranks the
+// landings by the plan built before it.
+bool walk_dash_deferred(const World& world);
+// The escape plan's walk to w then a dash from it, by the landings a dash from w really has; `unreachable`
+// unless it ranks below walking to w with the dash kept.
+int walk_dash_rank(const World& world, Pathing& pathing, const escape::Plan& plan, vec2 w, bool slack, vec2 dead = {-1, -1});
 // dash_away's choice, quoted without casting: its first landings, best first, from `from`.
 // `clears`: the first lands where no threat reaches us (a camp's only where it would pick us).
 struct EscapeDashQuote {

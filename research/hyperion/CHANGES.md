@@ -4166,3 +4166,35 @@ Exact:
 The saving reaches 437k a draft (the 10 heaviest held-out turns save 0.07-0.32M); the median draft is level (-0.6k).
 The 768 set's max (gen-ladder-194000000044) has few pops, so it is unchanged. The ward-cast cache was dropped
 (EXPERIMENTS "Draft first-turn fuel 2"). Frozen as `variants/df2-a3` (= bots/ocean).
+
+## 494: Walk then dash in the escape planner (ocean, 2026-11-10)
+
+`model/escape.{h,cc}`, `combat/self_abilities.{h,cc}`, `combat/fight.cc`, `model/pathing.{h,cc}`, on 493. The 478
+planner priced this turn's walk with the dash saved for later turns, and this turn's dash only as dash then walk. It
+never chose a walk made so that a dash from its tile clears this turn: v94's moat crossing
+(`bots/baselines/v94` `quote_walk_dash`, a separate heuristic).
+- **Planner:** turn-1 sets `landed` (ends on the tile, dash spent), `stood` (dash kept) and `walk_dashed` (the later
+  turns' walk-then-dash inverse applied to turn 1), with queries `walk_dash`, `landed` and `stood`. `escape::built()`
+  reads this round's plan without a rebuild.
+- **Deferral:** `escape_landings` puts the dash off, once a turn, when a walk then dash ranks below every dash-now
+  landing and below keeping the dash.
+  - A walk counts only below its tile's `stood`, so the dash must move us.
+  - Its landings are the ones a dash from that tile really has (`Pathing::dash_landings_at`: units, guard and harmful
+    tiles off).
+- **The walk:** `retreat_step` ranks each walk by the better of its own rank and that walk-dash rank. A walk-dash
+  step is not sent last for damage on its tile.
+- **The cast is held:** no reset and no non-lethal cast spends the dash's cast before the walk.
+- **The dash after the walk:** `dash_away` ranks the landings by the pre-walk plan (`landed` against `stood`), and
+  falls back to Safety's ranking when none beats keeping the dash.
+- No new constants.
+
+Evidence (EXPERIMENTS "v94's falls line and walk-then-dash in the escape planner"), all against
+`variants/ocean-fc9ae78` (= 493), release, fast runner, own drafts:
+- **Before the audit's fixes** (real landings, Safety fallback): 50.5% (49.9-51.2) on `merged/wdf-1980` and 50.6%
+  (49.9-51.3) on `merged/wd2-1981`, 20,480 games each. Pooled about +0.55 (±0.48). OOF up 2-3%.
+- **As merged:** 49.9% (49.2-50.6) on `merged/wd3-1982` (20,480 games), OOF +2.5%. The pre-fix build
+  read 50.0% on the same maps, paired level (969 games differ, 479 / 490, z -0.35). So the fixes neither cost nor
+  added anything. Over all three suites the pre-fix build is about 50.4% of 61,440 (50.0-50.8): level to a small gain,
+  for about 2% more out-of-fuel turns. Merged on the user's call.
+
+Frozen as `variants/oc-wdash-494` (= bots/ocean).
