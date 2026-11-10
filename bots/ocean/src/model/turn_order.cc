@@ -698,6 +698,8 @@ Wish bid(const World& world, Safety& safety, const ChampionBelief& self, cambc::
 // at most over 3.2M calls (fuel campaign 4). Its reserve covers that and mostly leaves the comms
 // refresh its 5k: at 5k, comms-stale-vision rose a third.
 constexpr std::uint64_t quiet_reserve = 6000;
+// Bidding can spend the old 10k floor before the priority and comms are published.
+constexpr std::uint64_t order_reserve = end_reserve + 2000;
 bool quiet(const World& world) {
     if (world.enemy_seen() || world.me().facts().heals() || world.round == world.first_round) return false;
     return !channel_ending(cambc::champion_state::from_bits_retain(my_record().state));
@@ -707,7 +709,7 @@ bool quiet(const World& world) {
 
 void set_turn_order(const World& world, Safety& safety) {
     world.throw_if_stale();
-    const bool short_of_fuel = world.me().alive && !fuel_ok(end_reserve) && !(fuel_ok(quiet_reserve) && quiet(world));
+    const bool short_of_fuel = world.me().alive && !fuel_ok(order_reserve) && !(fuel_ok(quiet_reserve) && quiet(world));
     if (short_of_fuel) {
         note_shortcut("turn-order");
         // Keeps the last rank; with none yet, the plain priority rather than the start's 0.

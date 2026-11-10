@@ -426,8 +426,24 @@ template <bool FlipX, bool FlipY>
 
 } // namespace
 
+namespace {
+// Only terrain is static: live camps are exported separately for each plan.
+using StaticRows = std::array<Rows, 3>;
+std::array<StaticRows, 100 * 100> terrain_windows;
+std::array<std::uint8_t, 100 * 100> terrain_known;
+const StaticRows& terrain_window(vec2 origin, const Span& at) {
+    const int index = (origin.y + radius) * statics.width + origin.x + radius;
+    if (!terrain_known[index]) {
+        terrain_windows[index] = rows_of<3>({&statics.passable, &statics.unwalled, &statics.bushes}, at);
+        terrain_known[index] = 1;
+    }
+    return terrain_windows[index];
+}
+}
+
 // The terrain, the hit layers and the goals, then the full pass: active once it ran.
 void Plan::finish(Pathing& pathing, Race& race) {
+    chase_ = !race.ours;
     const Span& at = race.at;
     // Terrain in the window. Live camps change rarely: exported again only when they do.
     const auto& camps = pathing.live_camps();
@@ -439,12 +455,13 @@ void Plan::finish(Pathing& pathing, Race& race) {
         const bool meets = b.x0 < origin_.x + side && b.x1 >= origin_.x && b.y0 < origin_.y + side && b.y1 >= origin_.y;
         return meets ? rows_of(p, at, std::max(0, b.y0 - origin_.y), std::min(side, b.y1 - origin_.y + 1)) : Rows{};
     };
-    const auto terrain = rows_of<4>({&camps_packed, &statics.passable, &statics.unwalled, &statics.bushes}, at);
-    const Rows bush = terrain[3];
+    const auto& terrain = terrain_window(origin_, at);
+    const Rows camps_rows = rows_of(camps_packed, at);
+    const Rows bush = terrain[2];
     // The runner's spawn (its turn ends heal there, and its pursuers may not enter) and the pursuers' (the runner's
     // may not).
     const Rows spawn = race.ours ? spawn_rows(statics.ally_spawn, statics.ally_box) : spawn_rows(statics.enemy_spawn, statics.enemy_box);
-    const Rows uncamped = ~terrain[0], walkable = terrain[1] & uncamped, crossable = terrain[2] & uncamped;
+    const Rows uncamped = ~camps_rows, walkable = terrain[0] & uncamped, crossable = terrain[1] & uncamped;
     const Rows ours = ~(race.ours ? spawn_rows(statics.enemy_spawn, statics.enemy_box) : spawn_rows(statics.ally_spawn, statics.ally_box));
     const Rows theirs = ~spawn;
     walk_ = walkable & ours, path_ = crossable & ours;
@@ -518,26 +535,28 @@ void Plan::finish(Pathing& pathing, Race& race) {
 // holds it; S_{k-1} is where a turn-k move (a walk, and with the dash kept and ready, a dash before
 // or after it: approximated as a walk then a dash) reaches T_k, the tiles S_k leaves room for.
 // s<j><d>: by hits allowed j and dash kept d (with Dash only; else d reads as 0).
-template <bool Dash>
+template <bool Dash, bool One = true>
 [[gnu::always_inline]] inline void run_pass(const Rows& goal, const Rows& walk, const Rows& path, const std::array<Rows, horizon + 1>& hits,
-                                            int dash_turn, Plan::Pass& out) {
+                                            int dash_turn, Plan::Pass& out, bool skip_first) {
     Rows s00 = goal, s10 = goal, s01 = goal, s11 = goal; // the goal holds walk tiles only
     for (int k = horizon; k >= 2; --k) {
         const Rows hit = hits[k], clear = ~hit;
-        const Rows g0 = grow(s00 & clear), g1 = grow((s10 & clear) | (s00 & hit));
+        const Rows g0 = grow(s00 & clear), g1 = One ? grow((s10 & clear) | (s00 & hit)) : g0;
         if constexpr (Dash) {
-            Rows k0 = s01 & clear, k1 = (s11 & clear) | (s01 & hit);
+            Rows k0 = s01 & clear, k1 = One ? (s11 & clear) | (s01 & hit) : k0;
             if (k >= dash_turn) {
                 // The tiles a dash from lands in T (dash spent), stood on after this turn's walk.
                 k0 |= dash_landings(g0, path, walk);
-                k1 |= dash_landings(g1, path, walk);
+                if constexpr (One) k1 |= dash_landings(g1, path, walk);
             }
-            s01 = grow(k0) & walk, s11 = grow(k1) & walk;
+            s01 = grow(k0) & walk;
+            s11 = One ? grow(k1) & walk : s01;
         }
         s00 = g0 & walk, s10 = g1 & walk;
     }
     if constexpr (!Dash) s01 = s00, s11 = s10;
     out.after[0][0] = s00, out.after[1][0] = s10, out.after[0][1] = s01, out.after[1][1] = s11;
+    if (skip_first) { out.ready = true; return; }
     const Rows hit = hits[1], clear = ~hit;
     out.landed[0] = s00 & clear, out.landed[1] = (s10 & clear) | (s00 & hit);
     out.stood[0] = s01 & clear, out.stood[1] = (s11 & clear) | (s01 & hit);
@@ -552,8 +571,14 @@ template <bool Dash>
 }
 
 void Plan::run(const Rows& goal, Pass& out) const {
-    if (dash_) run_pass<true>(goal, walk_, path_, hit_, dash_turn_, out);
-    else run_pass<false>(goal, walk_, path_, hit_, dash_turn_, out);
+    // runner_hits caps at two: after a hit now, only a zero-hit future can change it.
+    if (chase_ && runner_hit_now()) {
+        if (dash_) run_pass<true, false>(goal, walk_, path_, hit_, dash_turn_, out, true);
+        else run_pass<false, false>(goal, walk_, path_, hit_, dash_turn_, out, true);
+    } else {
+        if (dash_) run_pass<true>(goal, walk_, path_, hit_, dash_turn_, out, chase_ || !dash_now_);
+        else run_pass<false>(goal, walk_, path_, hit_, dash_turn_, out, chase_ || !dash_now_);
+    }
 }
 
 void Plan::want_slack() {

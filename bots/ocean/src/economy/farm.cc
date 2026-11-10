@@ -14,22 +14,18 @@ constexpr std::uint64_t pack_zone_cost_bound = 3500;
 // Member tiles are static once prepared, so the union is kept while the same members live.
 struct KeptAttackTiles {
     int group = -1, range = -1;
-    std::array<std::uint64_t, 4> alive{};
-    bool respawning = false; // its camp tiles left out (Pathing::attack_tiles)
+    std::uint32_t version = 0;
+    CampState state = CampState::alive;
     bitboard tiles;
 };
 KeptAttackTiles kept_attack_tiles;
 
-// Whether farm_attack_tiles keeps the group's union as its live members are now.
-bool attack_tiles_kept(const World& world, int group, int range, std::array<std::uint64_t, 4>& alive, bool& keeps) {
+bool attack_tiles_kept(const World& world, int group, int range) {
     const auto& kept = kept_attack_tiles;
-    const auto& health = world.camps[group].health;
-    keeps = health.size() <= 64 * kept.alive.size();
-    alive = {};
-    for (std::size_t i = 0; i < health.size() && keeps; ++i)
-        if (health[i] > 0) alive[i >> 6] |= std::uint64_t{1} << (i & 63);
-    return keeps && kept.group == group && kept.range == range && kept.alive == alive
-           && kept.respawning == (world.camps[group].state == CampState::respawning);
+    const auto& c = world.camps[group];
+    // A non-alive group can retain positive unseen health, which attack_tiles still reads.
+    return kept.group == group && kept.range == range
+           && kept.version == (c.state == CampState::alive ? c.geometry_version : c.version) && kept.state == c.state;
 }
 
 // What farm_attack_tiles would spend decoding drafted tiles not decoded yet (measured on a bushy
@@ -37,9 +33,7 @@ bool attack_tiles_kept(const World& world, int group, int range, std::array<std:
 // its own floor.
 std::uint64_t attack_tiles_cost(const World& world, Pathing& pathing, int group, int range) {
     if (group < 0 || group >= static_cast<int>(world.camps.size()) || world.camps[group].state == CampState::cleared) return 0;
-    std::array<std::uint64_t, 4> alive;
-    bool keeps;
-    if (attack_tiles_kept(world, group, range, alive, keeps) || !world.map().attack_tiles_drafted(group, range)) return 0;
+    if (attack_tiles_kept(world, group, range) || !world.map().attack_tiles_drafted(group, range)) return 0;
     std::uint64_t cost = world.map().attack_tiles_indexed(group) ? 0 : 9000;
     const auto& health = world.camps[group].health;
     for (int i = 0; i < static_cast<int>(health.size()); ++i)
@@ -61,14 +55,13 @@ std::uint64_t attack_tiles_cost_bound(const StaticMap& map) {
 template <class Floor>
 [[gnu::noinline]] const bitboard* farm_attack_tiles(const World& world, Pathing& pathing, int group, int range, Floor floor) {
     auto& kept = kept_attack_tiles;
-    std::array<std::uint64_t, 4> alive;
-    bool keeps;
-    if (attack_tiles_kept(world, group, range, alive, keeps)) return &kept.tiles;
+    if (attack_tiles_kept(world, group, range)) return &kept.tiles;
     // Drafted tiles need no preparing, and asking per member costs ~130 each.
     if (!world.map().attack_tiles_drafted(group, range) && !pathing.prepare_attack_tiles(group, range, floor())) return nullptr;
     pathing.attack_tiles(group, range, kept.tiles);
-    kept.group = keeps ? group : -1, kept.range = range, kept.alive = alive;
-    kept.respawning = world.camps[group].state == CampState::respawning;
+    kept.group = group, kept.range = range;
+    kept.version = world.camps[group].state == CampState::alive ? world.camps[group].geometry_version : world.camps[group].version;
+    kept.state = world.camps[group].state;
     return &kept.tiles;
 }
 
@@ -1081,13 +1074,13 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
         KeptArrival* kept = nullptr;
         if (static_cast<std::size_t>(g) < kept_arrival.size() && static_cast<std::size_t>(a.index) < kept_arrival[0].size()) {
             kept = &kept_arrival[static_cast<std::size_t>(g)][static_cast<std::size_t>(a.index)];
-            if (kept->known && kept->visible == a.visible && kept->x == a.pos.x && kept->y == a.pos.y && kept->version == belief.version && kept->dash_ready == arrival.dash_ready
+            if (kept->known && kept->visible == a.visible && kept->x == a.pos.x && kept->y == a.pos.y && kept->version == belief.geometry_version && kept->dash_ready == arrival.dash_ready
                 && kept->recall_delay == arrival.recall_delay && kept->first_turn == first_turn) {
                 if (kept->earliest < 0) return WorkArrival{};
                 arrival.earliest = kept->earliest;
                 return arrival;
             }
-            *kept = {true, a.visible, a.pos.x, a.pos.y, belief.version, arrival.dash_ready, arrival.recall_delay, first_turn, -1};
+            *kept = {true, a.visible, a.pos.x, a.pos.y, belief.geometry_version, arrival.dash_ready, arrival.recall_delay, first_turn, -1};
         }
         arrival.reach = f.basic_reach();
         // Readiness and walking exclusions can only delay this earliest effect.

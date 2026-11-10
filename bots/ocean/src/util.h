@@ -369,9 +369,11 @@ inline std::int32_t my_channel_time() {
 // In 32 bits: the SDK's chebyshev_distance works in 64.
 inline int dist(vec2 a, vec2 b) { return std::max(std::abs(a.x - b.x), std::abs(a.y - b.y)); }
 
-inline bool in_bounds(vec2 p) { return cambc::map::is_in_bounds(p); }
+inline const int map_width = cambc::map::width(), map_height = cambc::map::height();
+inline const std::uint64_t map_chunks = static_cast<std::uint64_t>((map_width + 7) / 8 * ((map_height + 7) / 8));
+inline bool in_bounds(vec2 p) { return static_cast<unsigned>(p.x) < static_cast<unsigned>(map_width) && static_cast<unsigned>(p.y) < static_cast<unsigned>(map_height); }
 
-inline int tile_index(vec2 p) { return p.x + p.y * cambc::map::width(); }
+inline int tile_index(vec2 p) { return p.x + p.y * map_width; }
 
 // The 8 king-step directions, north first and clockwise.
 inline constexpr vec2 directions[8] = {vec2::north, vec2::north_east, vec2::east, vec2::south_east,
@@ -568,7 +570,7 @@ struct Field {
 };
 
 inline std::uint64_t search_chunks() { // 8x8 chunks of the map
-    return static_cast<std::uint64_t>((cambc::map::width() + 7) / 8 * ((cambc::map::height() + 7) / 8));
+    return map_chunks;
 }
 
 // The most an uncapped field has cost so far, 0 before the first.
@@ -647,7 +649,7 @@ inline std::optional<Field> make_field(const bitboard& walls, const bitboard& go
 // static_field_cost_estimate's measured bound.
 inline std::uint64_t field_cost_estimate() {
     const int seen = max_field_layers();
-    return static_field_cost_estimate(seen ? seen + seen / 4 : cambc::map::width() + cambc::map::height()) - 1000;
+    return static_field_cost_estimate(seen ? seen + seen / 4 : map_width + map_height) - 1000;
 }
 // An uncapped field from anywhere: a quarter over the costliest so far, once one is measured.
 inline std::uint64_t full_field_cost_estimate() {

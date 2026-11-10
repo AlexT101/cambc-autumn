@@ -4370,3 +4370,28 @@ base: `map_features.cc` differs only by the plans-identical SIMD flood (491, 493
 - Draft10's own fresh gate on its base against the Fish/Mite bodies: 50.70% (50.45–50.95), Fish +0.82, Mite +0.58 points.
 
 Evidence: EXPERIMENTS "Local queue draft10 F92 refit". Frozen as `variants/oc-501-draft10` (= bots/ocean).
+
+## 503: Reduce repeated geometry work and turn-order exhaustion (ocean, 2026-11-10)
+
+Reuse viewer and static escape windows; compute the radius-four terrain dilation with a distance field;
+reject enemies beyond strike reach before building their geometry. Cache farm attack tiles and arrival
+geometry by the state they actually depend on, including groups over 256 members, and cache map dimensions.
+Escape plans omit unused first-move tables and the one-hit recurrence when a chase has already taken its
+first hit. Raise only the non-quiet turn-order reserve from 10k to 12k; keep the 6k quiet path.
+
+- **Fresh paired real-budget bench:** 4,096 games, exhausted turns **27,710 → 24,267 (-12.43%)**;
+  shortcuts **1,225,630 → 1,194,571 (-2.53%)**; mean fuel -1.44%. Excluding five stdout-capped pairs,
+  shortcuts still fall 2.33%. Runner counts include consecutive exhausted turns.
+- **Fresh release:** 4,096 games, exhausted turns **25,939 → 23,665 (-8.77%)**; wins 50.32%
+  (48.79–51.85). Standard release: 1,280 games, OOF 7,463 → 7,188 (-3.68%), wins 51.80%.
+  No failures, early losses or broken/capped drafts in either release suite. The 10% target is met
+  in the paired bench; the release reduction is smaller.
+- **Development real-budget bench:** 4,096 games, exhausted turns 27,841 → 24,841 (-10.78%),
+  shortcuts 1,240,620 → 1,200,655 (-3.22%). A 15k reserve was rejected for increasing shortcuts.
+- **100M bench:** 93/96 own-draft and 105/108 forced-composition replays byte-identical to 502,
+  covering all 13 bodies and camp groups up to 352 members. All six exceptions disappear when diagnostic
+  copies omit only next-turn preparation; cache and escape-result oracles report no mismatches.
+  Final cleanup is 204/204 identical to the tested core, including every per-turn fuel sample.
+- **First draft turn:** max 9,385,011 / 10M across the 640 standard maps, none over.
+
+Results, exactness exceptions and lessons: [fuel 503](../fuel-2026-11-10-fifth/README.md).

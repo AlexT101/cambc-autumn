@@ -48,6 +48,8 @@ struct Rows {
 class Plan {
 public:
     bool active() const { return active_; }
+    // Own-plan queries below; chase callers use runner_hits only. First-move dash
+    // tables are built only when dash_now() is true.
     // Hits on turns 2..horizon after a walk this turn that ends on p, the dash (if the plan has one)
     // still to come. Off the window: many.
     int after_walk(vec2 p, bool slack) const;
@@ -101,7 +103,7 @@ private:
     int value(const Rows& none, const Rows& one, vec2 p) const;
     const Pass& pass(bool slack) const { return pass_[slack && pass_[1].ready ? 1 : 0]; }
 
-    bool active_ = false, dash_ = false, dash_now_ = false;
+    bool active_ = false, dash_ = false, dash_now_ = false, chase_ = false;
     int dash_turn_ = 0; // our first turn (2..horizon) a planned dash may fall in
     vec2 origin_{0, 0}; // the window's tile (0, 0)
     Rows walk_{}, path_{}, slack_goal_{}; // our walk and landing tiles, the tiles a dash path of ours crosses

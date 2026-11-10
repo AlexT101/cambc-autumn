@@ -1401,24 +1401,12 @@ const Terrain& terrain(const StaticMap& map) {
 // is already short on big maps; until then sight() scans rows.
 [[gnu::noinline]] void make_near(Terrain& t, const StaticMap& map) {
     t.near_ready = true;
-    // Shifted-off tiles never come back, so the dilation clips to the map as row() does.
+    static const bitboard open;
+    static cambc::distance_field field;
+    static bitboard dilated{cambc::uninitialized};
     const auto near = [&](const bitboard& b, std::array<std::uint8_t, Terrain::bytes>& out) {
-        bitboard across, shifted, d;
-        copy_into(b, across);
-        for (int k = 1; k <= win_r; ++k) {
-            ok(cambc::detail::sdk_Bitboard_ShiftRight(b.ptr(), shifted.ptr(), k));
-            or_into(across, shifted, across);
-            ok(cambc::detail::sdk_Bitboard_ShiftRight(b.ptr(), shifted.ptr(), -k));
-            or_into(across, shifted, across);
-        }
-        copy_into(across, d);
-        for (int k = 1; k <= win_r; ++k) {
-            ok(cambc::detail::sdk_Bitboard_ShiftUp(across.ptr(), shifted.ptr(), k));
-            or_into(d, shifted, d);
-            ok(cambc::detail::sdk_Bitboard_ShiftUp(across.ptr(), shifted.ptr(), -k));
-            or_into(d, shifted, d);
-        }
-        d.export_linear_buffer({out.data(), bitboard::linear_buffer_size()});
+        field.compute(open, b, dilated, static_cast<std::uint16_t>(win_r));
+        dilated.export_linear_buffer({out.data(), bitboard::linear_buffer_size()});
     };
     near(map.bushes, t.near_bushes);
     near(map.walls, t.near_walls);
@@ -1508,8 +1496,19 @@ Window sight(const World& world, vec2 p, bool far, bool store = true) {
     const auto& t = terrain(world.map());
     if (!far) {
         if (!t.bush(p)) return tables.square[1];
-        // A bush tile is seen only from its own cluster; diagonal bushes join through a bush
-        // beside both.
+        // A diagonal bush joins through either shared cardinal neighbour.
+        if (t.packed) {
+            const int x0 = p.x - 1;
+            const unsigned b = (t.row(t.bushes, x0, p.y - 1) & 7)
+                | ((t.row(t.bushes, x0, p.y) & 7) << 3)
+                | ((t.row(t.bushes, x0, p.y + 1) & 7) << 6);
+            const unsigned card = b & 0x0aa;
+            const unsigned connected = b & (0x0ba | ((card & 0x082) >> 1) | ((card & 0x082) << 1)
+                | ((card & 0x028) >> 3) | ((card & 0x028) << 3));
+            return Window{static_cast<std::uint64_t>(connected & 7) << 30
+                | static_cast<std::uint64_t>((connected >> 3) & 7) << 39
+                | static_cast<std::uint64_t>(connected >> 6) << 48, 0};
+        }
         Window m = win_bit(win_r, win_r);
         for (const vec2 d : directions) {
             const vec2 q = p + d;
@@ -2609,6 +2608,7 @@ std::span<const Threat> Safety::threats() {
 template <class F> void Safety::each_threat(vec2 p, F&& f) {
     for (auto left = live_enemies(); left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (e.visible ? !in_square(p, acts_from(e), Strike::max_reach) : !e.possible_box.meets(p, Strike::max_reach)) continue;
         if (gone(e)) continue;
         auto& x = foe(e);
         const auto& s = x.strike;
@@ -2624,6 +2624,7 @@ template <class F> void Safety::each_threat(vec2 p, F&& f) {
 template <class F> bool Safety::any_threat_at(vec2 p, F&& f) {
     for (auto left = live_enemies(); left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (e.visible ? !in_square(p, acts_from(e), Strike::max_reach) : !e.possible_box.meets(p, Strike::max_reach)) continue;
         if (gone(e)) continue;
         auto& x = foe(e);
         const auto& s = x.strike;
@@ -2919,6 +2920,7 @@ bool Safety::threat_at(vec2 p) {
     float safe = 1;
     for (auto left = live_enemies(); left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (e.visible ? !in_square(p, acts_from(e), Strike::max_reach) : !e.possible_box.meets(p, Strike::max_reach)) continue;
         if (gone(e)) continue;
         auto& x = foe(e);
         const auto& s = x.strike;
@@ -2939,6 +2941,7 @@ float Safety::damage_ceiling(vec2 p, bool double_unacted, float blow_scale) {
     float total = camp_damage(p, true, true);
     for (auto left = live_enemies(); left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (e.visible && !in_square(p, acts_from(e), Strike::max_reach)) continue;
         if (gone(e)) continue;
         if (!e.visible) {
             total += most_damage(e) * blow_scale;
@@ -2968,6 +2971,7 @@ void Safety::tally_on(Tally& t, vec2 p, float blow_scale, bool first) {
     while (t.left) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(t.left))];
         t.left &= t.left - 1;
+        if (e.visible ? !in_square(p, acts_from(e), Strike::max_reach) : !e.possible_box.meets(p, Strike::max_reach)) continue;
         if (gone(e)) continue;
         auto& x = foe(e);
         const auto& s = x.strike;
@@ -3084,6 +3088,7 @@ bool Safety::avoid_within(vec2 p, int r) {
     if (built_) return any_within(enemy_area(), p, r);
     for (auto left = live_enemies(); left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+        if (e.visible ? !in_square(p, acts_from(e), Strike::max_reach + r) : !e.possible_box.meets(p, Strike::max_reach + r)) continue;
         if (gone(e)) continue;
         const auto& x = foe(e);
         const int reach = x.strike.reach;

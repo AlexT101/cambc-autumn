@@ -16472,3 +16472,37 @@ Evidence: `~/tmp-offload/handoff/codex/live-analysis/v109-readout.json` (all mat
 ### Frozen502 tribute Safety audit (2026-11-10; read-only)
 
 [Audit and exact live cases](ideas-2026-11-10/tribute-safety-audit502.md): immediate Safety hits already model bush visibility; future walk-in arrival remains conservative. The attractive Prism carrying 784 cancel/restart case instead enabled 2830.3 damage against an approaching enemy that could enter the bush within the 11-turn window. Hidden wards, ground-target spells, walk-in, locks and sampled visibility prevent calling it a proven false cancel. Prior C1’s 48.8% and 65% increase in later bag deaths also argue against blanket relaxation. **No justified candidate or test admission; no implementation or games.**
+
+## Ocean fuel fifth pass (2026-11-10, CHANGES 503)
+
+On Ocean 502, selected shared viewer/static escape geometry, early strike-reach cuts, distance-field
+terrain dilation, map dimension caching, camp attack/arrival geometry versions, and escape recurrences
+restricted to the values their callers consume. A 12k non-quiet turn-order reserve replaces 10k;
+quiet turns keep 6k. Draft10 and strategic parameters are unchanged.
+
+Development (4,096 paired debug games): exhausted turns 27,841 → 24,841 (-10.78%), shortcuts
+1,240,620 → 1,200,655 (-3.22%). Fresh ladder-v2 seeds 1463710–1463717, selected only afterward:
+4,096 paired games, exhaustion **27,710 → 24,267 (-12.43%, paired CI -15.76..-9.14)**, shortcuts
+**1,225,630 → 1,194,571 (-2.53%, CI -4.12..-0.97)**, mean fuel -1.44%. Five pairs contain a capped
+stdout; excluding them still gives shortcuts -2.33%. Counts use the runner, which includes consecutive
+exhausted turns; shortcut totals exclude OOF recoveries and malformed SLOT lines.
+
+Independent release on those fresh maps: 2,061/4,096 wins (50.32%, 48.79–51.85), OOF
+25,939 → 23,665 (-8.77%). Standard 1,280 release games: 51.80%, OOF 7,463 → 7,188 (-3.68%).
+No failures, early losses or broken/capped drafts. The 10% point-estimate target is met by the paired
+bench; do not claim the release result also reaches 10%.
+
+At 100M: 93/96 ordinary and 105/108 conditional replays byte-identical to 502, all 13 bodies and groups
+up to 352 members covered. The six differences are the existing fuel-dependent next-turn preparation
+coupling: all vanish in paired diagnostics omitting only that preparation. Cache and escape-result
+oracles pass. The final build matches the tested core's replay bytes and every per-turn fuel
+sample in all 204 games. First draft turn max 9,385,011 / 10M, none over, across the 640 standard maps.
+
+Lessons: small means did not predict exhaustion; combo2's -13.23% screen became only -1.88% on a fresh
+suite. Warming every escape window raised mean fuel and worsened the tail. A 15k turn-order reserve
+reached -11.86% development OOF but raised shortcuts 3.16%; a late-action recheck added essentially
+nothing. Empty-path exits in the escape recurrence were exact but cost more than they saved. Cache
+keys must include non-alive camp health: those states can retain unseen positive members. Raw SDK
+reads, generic rank caches and many tiny memo tables repeated earlier failures and were rejected.
+
+Results, exactness exceptions and lessons: [fuel fifth pass](fuel-2026-11-10-fifth/README.md).

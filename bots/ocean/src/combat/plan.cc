@@ -1942,12 +1942,16 @@ int strike_free(const World& world, Pathing& pathing, Safety& safety, const Inte
 } // namespace
 
 void warm_tile(const World& world, vec2 p) {
+    static_assert(melee_range <= ability_range && ranged_range <= ability_range);
     warm_reach_tile(world, p);
     const auto i = static_cast<std::size_t>(p.x + p.y * world.map().width);
     if (i >= viewer_windows_known[0].size()) return;
-    const int ranges[2] = {ability_range, world.me().facts().attack_range()};
-    for (int s = 0; s < 2; ++s)
-        if (!viewer_windows_known[s][i]) fill_viewer_window(world, p, ranges[s], viewer_windows[s][i]), viewer_windows_known[s][i] = 1;
+    if (!viewer_windows_known[0][i])
+        fill_viewer_window(world, p, ability_range, viewer_windows[0][i]), viewer_windows_known[0][i] = 1;
+    if (!viewer_windows_known[1][i]) {
+        viewer_windows[1][i] = viewer_windows[0][i] & window_square(world.me().facts().attack_range());
+        viewer_windows_known[1][i] = 1;
+    }
 }
 
 bool strike_possible(const World& world) {
