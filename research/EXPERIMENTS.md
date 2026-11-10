@@ -15913,3 +15913,9 @@ next due 09:36:58 UTC. Fourteen coordination/recovery tests pass. Later changed
 summary trajectories are logged and relayed to the user as behaviour/version-change
 evidence, with engine/seed/nondeterminism caveats, never as an automatic repin.
 [Implementation, evidence paths and recovery](ladder-scrims-2026-11-06/VERSION-CHECK.md).
+
+## Warding policy evidence and fuel-matched experiments — 2026-11-10
+
+Forty common map/side cells per cohort: Mite r5 placed 6,982 wards (62.9% bush,15.6% camp), Ad Astra 4,030 (100% bush), Ocean-v105 4,086 (74.9% bush,1.5% camp). Confirmed ward-only basic-attack shares 8.35%, 5.14%, 8.98%; no demonstrated Ocean ward-value deficit. Opponents/drafts differ; five Ad Astra games predate the 5.0.1 switch, and excluding those cells preserves findings. Mite's camp wards mostly retain future information (769/1,088 add no immediate sight). This is descriptive policy evidence, not causal strength evidence.
+
+Prepared independent full 498 arms `oc-wtile-498` (exact sight ranks tiles in the existing chosen bush cluster), `oc-wbush-498` (bush-only planned-ward ablation), `oc-wcamp-498` (bounded nearby cleared-camp fallback, avoiding the earlier expensive map scan). All release builds and 64 matched smoke games passed with no errors or unfinished draft handoffs. Replayed placements confirm each mechanism; no strength conclusion or merge. Six fresh gates compare each against `oc-campsh-498` under normal and doubled fuel, with Flp4/Mt3q fixed and separate cache/result namespaces. Queue ops owns priority admission before pending training. [Evidence, provenance and commands](ideas-2026-11-10/warding.md).

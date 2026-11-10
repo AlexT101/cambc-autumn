@@ -1,7 +1,7 @@
 """The fresh-map gate (diverse-panel.md "Fresh-map gate", TEST-STANDARD rule 5): dgate's paired sequential test, with
 opponents that draft from map features and a map pool of the 128 ladder maps plus 1024 fresh ladder-v2 maps.
 
-    py fgate.py CAND REF [--max-seeds N] [--jobs 8] [--seed S] [--no-run] [--ci 0.25]
+    py fgate.py CAND REF [--max-seeds N] [--jobs 8] [--seed S] [--no-run] [--ci 0.25] [--fuel N]
 
 - Opponents: noise block k plays v87 noise seed k (dgate's spar-dvnK bodies with Fish's locks or Mite's tribute habit),
   drafting with Fish's or Mite's pick model (fitgen.py, patch_fm.py: spar-dvnK-Flp / -Mt3p). There is no per-map
@@ -13,6 +13,7 @@ opponents that draft from map features and a map pool of the 128 ladder maps plu
   against both bodies.
 - Decision: the SPRTs, the ZONE and the NARROWED stop read only the fresh units, so a gain that holds only on the
   ladder maps cannot pass. Ladder, fresh and pooled reads, and the ladder - fresh gap, are all reported.
+- Fuel: --fuel N applies to both teams and uses separate run/result names and verified fuel metadata.
 - Map class (one-site / multi-site) comes from the map's features (altars, altar_centre), not its name.
 """
 import argparse, json, math, os, random, subprocess, sys, time, fcntl, numpy as np
@@ -33,6 +34,8 @@ FISH_PATCHES = [v for v in VERSIONS if v.startswith('Fl')]
 MITE_PATCHES = [v for v in VERSIONS if v.startswith('Mt')]
 def tag(o): return '' if BODY[o] in ('Flp', 'Mt3p') else BODY[o].removeprefix('Fl').removeprefix('Mt3')
 ENG = 'e' + CAMBC.replace('.', '')
+FUEL = None
+def fuel_tag(): return '' if FUEL is None else f'-fuel{FUEL}'
 
 def feats():
     out = {}
@@ -49,13 +52,14 @@ def one_site(m):
 def mdir(k, o): return f'variants/spar-dvn{k}-{BODY[o]}'
 def slice_of(k): return (k - 1) % len(POOL)
 def suites(k): return [('L', 'ladder', 2 * 128), (f'f{slice_of(k)}', POOL[slice_of(k)], 2 * len(os.listdir(POOL[slice_of(k)])))]
-def rname(bot, k, o, s): return f'fg{ENG}-{os.path.basename(bot.rstrip("/")).removeprefix("oc-")}-dvn{k}{o}{tag(o)}-{s}'
+def rname(bot, k, o, s): return f'fg{ENG}-{os.path.basename(bot.rstrip("/")).removeprefix("oc-")}-dvn{k}{o}{tag(o)}-{s}{fuel_tag()}'
 def done(n, games):
     p = f'{R}replays/ab/{n}/summary.json'
     if not os.path.exists(p): return False
-    try: s = json.load(open(p))
+    try:
+        with open(p) as fh: s = json.load(fh)
     except ValueError: return False
-    return s['games'] + s['errors'] >= games and s.get('release') is True and s.get('cambc') == CAMBC
+    return s['games'] + s['errors'] >= games and s.get('release') is True and s.get('cambc') == CAMBC and s.get('fuel') == FUEL
 
 def build_seed(k):
     dgate.NEW = True; dgate.build_seed(k)  # spar-dvnK-Fl / -Mt3 (hash-table bodies), the bases
@@ -103,6 +107,7 @@ class Runner(dgate.Runner):
             if time.time() - os.path.getmtime(lock) < 4 * 3600: return False
             os.unlink(lock); os.close(os.open(lock, os.O_CREAT | os.O_EXCL))
         cmd = [sys.executable, f'{R}tools/ab.py', bot, mdir(k, o), '--no-test-draft', '--suites', suite, '--name', n, '--keep-replays', '1']
+        if FUEL is not None: cmd += ['--fuel', str(FUEL)]
         self.procs[n] = (subprocess.Popen(cmd, cwd=R, env=self.env, stdout=open(f'{LOGS}/{n}.log', 'w'), stderr=subprocess.STDOUT), lock)
         return False
 
@@ -131,16 +136,20 @@ def est(u):
     return [round(100 * u.mean(), 3), round(196 * u.std() / math.sqrt(len(u)), 3)] if len(u) > 1 else None
 
 def main():
+    global FUEL
     ap = argparse.ArgumentParser(); ap.add_argument('cand'); ap.add_argument('ref')
     ap.add_argument('--sprt', default='0.505,0.5075'); ap.add_argument('--low', default='0.4975,0.50')
     ap.add_argument('--max-seeds', type=int, default=1000); ap.add_argument('--jobs', type=int, default=8)
     ap.add_argument('--ahead', type=int, default=2); ap.add_argument('--seed', type=int, default=0)
+    ap.add_argument('--fuel', type=int, help='matched fuel per turn for both teams; separate run/cache namespace')
     ap.add_argument('--no-run', action='store_true'); ap.add_argument('--zone-stop', action='store_true')
     ap.add_argument('--ci', type=float, default=0.25, help='NARROWED once the fresh 95%% CI half-width is this many points')
     ap.add_argument('--fish-body', default='Flp4', choices=['Flp'] + FISH_PATCHES, help='Fish body version (Flp4 from 2026-11-10 ~01:00, Flp3 from ~00:30, Flp2 from 2026-11-09 23:40, Flp before)')
     ap.add_argument('--mite-body', default='Mt3q', choices=['Mt3p'] + MITE_PATCHES, help='Mite body version (Mt3q from 2026-11-10 ~00:30, Mt3p before)')
     ap.add_argument('--min-blocks', type=int, default=8, help='blocks before NARROWED can stop (every fresh slice played once)')
     a = ap.parse_args(); p0, p1 = map(float, a.sprt.split(',')); q0, q1 = map(float, a.low.split(','))
+    if a.fuel is not None and a.fuel <= 0: ap.error('--fuel must be positive')
+    FUEL = a.fuel
     BODY["F"], BODY["M"] = a.fish_body, a.mite_body
     lo, screen_hi, live_hi = math.log(0.05 / 0.95), math.log(0.95 / 0.05), math.log(99)
     run = Runner(a.jobs); U = {'L': {}, 'fresh': {}}; k = 1; outcome = None
@@ -185,14 +194,14 @@ def main():
     n = min(len(Lu), len(Fu))
     gap = est(list(0.5 + np.array(Lu[:n]) - np.array(Fu[:n]))) if n > 1 else None  # paired by block position
     res = {'cand': a.cand, 'ref': a.ref, 'outcome': outcome, 'blocks': k if outcome != 'undecided' else k - 1, 'cambc': CAMBC,
-           'bodies': f'pick-model ({BODY["F"]}/{BODY["M"]})', 'fresh': est(Fu), 'ladder': est(Lu), 'pooled': est(Lu + Fu), 'ladder_minus_fresh': gap,
+           'fuel': FUEL, 'bodies': f'pick-model ({BODY["F"]}/{BODY["M"]})', 'fresh': est(Fu), 'ladder': est(Lu), 'pooled': est(Lu + Fu), 'ladder_minus_fresh': gap,
            'fresh_fish': est(U['fresh'].get('F', [])), 'fresh_mite': est(U['fresh'].get('M', [])),
            'fresh_one_site': est(U['fresh'].get('one', [])), 'fresh_multi_site': est(U['fresh'].get('multi', [])),
            'ladder_fish': est(U['L'].get('F', [])), 'ladder_mite': est(U['L'].get('M', [])),
            'fresh_units': len(Fu), 'llr_high': round(ab.llr(Fu, p0, p1), 3) if Fu else None, 'llr_low': round(ab.llr(Fu, q0, q1), 3) if Fu else None,
            'zone_at_units': zone_at, 'screen_at_units': screen_at, 'low_h1_at_units': low_at, 'high_h0_at_units': high_h0_at}
     print(json.dumps(res))
-    if not a.no_run: json.dump(res, open(f'{LOGS}/fgate-{os.path.basename(a.cand.rstrip("/"))}--{os.path.basename(a.ref.rstrip("/"))}{tag("F")}{tag("M")}.json', 'w'))
+    if not a.no_run: json.dump(res, open(f'{LOGS}/fgate-{os.path.basename(a.cand.rstrip("/"))}--{os.path.basename(a.ref.rstrip("/"))}{tag("F")}{tag("M")}{fuel_tag()}.json', 'w'))
 
 if __name__ == '__main__':
     main()

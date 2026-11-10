@@ -638,3 +638,13 @@ queues a repin. `ladder_coordination.py` shares a creation/switch lock with
 `ladder_scrims.py`. Operational state, evidence and recovery instructions are in
 [the operator guide](../research/ladder-scrims-2026-11-06/VERSION-CHECK.md). Tests:
 `python -m unittest discover -s tools/tests -p test_ladder_version_check.py -v`.
+
+### Warding research and fuel-matched gates
+
+`research/ideas-2026-11-10/warding-tools/` holds the Mite/Ad Astra ward audit,
+reproducible isolated ocean498 variants, and `run_gate.py ARM --fuel 100000|200000`.
+The wrapper verifies frozen source hashes before using `freshgate-tools/fgate.py`.
+Its `--fuel N` option gives both teams that budget and separates run, lock and
+result names; cached summaries must have matching fuel metadata. Normal-budget
+names stay unchanged. `test_fuel_namespace.py` checks that separation. Evidence,
+limits and the six-condition design are in [warding.md](../research/ideas-2026-11-10/warding.md).
