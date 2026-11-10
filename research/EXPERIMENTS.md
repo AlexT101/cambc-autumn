@@ -11,6 +11,10 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 
 ## Lessons
 
+- The emblem lab's per-decision randomisation misreads policy-level effects (round 4, 2026-11-10): 1.28M games
+  scored ocean without its learned table as level where an A/B reads 47.0%, and its best selection (+0.15 ± 0.05
+  cross-fitted, all folds positive) lost 2 points. Calibrate a lab on an effect an A/B already knows, replicate on
+  later games, and A/B a mid-run candidate before the final fit.
 - A joint SPSA over a large set of level changes and their constants finds nothing (soup tune, 2026-11-07: 92 params,
   6.5M games, every checkpoint within noise of the base). Level members stay level when fitted together, and
   members that read ~50 alone can sum to -4 to -16 points through fuel and interactions: bisect a pooled start at
@@ -49,6 +53,109 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   r400) cost her teammates 230. Check kills and team totals before building an arm from a rate.
 - A risk change can win the mirror and nothing else (nuke guard, 2026-11-08): +0.22 held out over 149k, panel -0.02.
   The v84 pattern again: a risk or greed change needs its panel H1 before it ships.
+
+## Emblem lab round 4 on ocean (2026-11-10, tools/emblab; nothing shipped): 1.84M games, no table beats ocean's, and the dense per-decision design cannot see what the A/Bs see
+
+Run by [RUNBOOK.md](../tools/emblab/RUNBOOK.md) (written from this run) on ocean b0eeff17e (= CHANGES 496).
+Tools and tables: `tools/emblab/` (README "Round 4"), `research/ideas-2026-11-10/emblab4/`; data in
+`replays/emblab/{r4,r4b,r4c,r4d}`.
+
+**The lab.**
+- **Games:** 1,840,000, every batch 0 errors and 0 draft mismatches (about 20 games a batch end by round 5: a
+  body's unfinished draft). 80k-game batches at slot weight 35, ~6.5 minutes each (~195 games/s) beside other jobs.
+- **Maps:** the 128 ladder maps and fresh-3100000..3100399 (`--mix ladder-v2`; 100,481 maps of published size),
+  the non-ladder ones walked in a fixed shuffle. Held out: fresh-3110000..3110119 (`merged/emb4-h1`, `-h2`, `-h3`).
+- **Drafts** of the lab side: 40% random (half holding Cassi & Issac, none Stellar), 30% the top 10 other teams'
+  ladder compositions since 2026-11-06 (4,219 ranked groups; 4,965 / 6,340 / 19,461 team-games at 3 / 4 / 5 picks),
+  30% the shipped draft model's team on the map.
+- **Opponents (new):** 40% a second lab team, 30% the Fish body, 30% the Mite body (`spar-dvn952/953-Flp4`, `-Mt3q`),
+  which draft and shop for themselves. The lab side won 58.6% / 51.0% against the Fish / Mite body under dense
+  forcing and 62.1% / 54.6% under sparse: dense forcing alone costs a team about 3.5 points.
+- **Dense phases** (1,280,000 games; 35% / 50% of every new-emblem decision below k12 drawn, as rounds 2-3): `r4`
+  480k with the proposal steered by round 3's static gains, `r4b` 400k steered by this round's own 240k-game fit,
+  `r4c` 400k by its 720k-game fit (every row logs its own probabilities, so the steer may change).
+- **Sparse phase** (`r4d`, 560,000 games): only the first three emblems, each drawn 10% of the time.
+- **Checks:** over rows with k < 12, the mean of 1 / P(base) where the base was taken is 1.0004 and the summed
+  1 / P(chosen) elsewhere 28.400 a row against 28.406 other drawable arms.
+
+**What the dense lab reads** (`dfit.mjs --variant static`, round 3's penalties; `select.py`; win points a decision,
+cross-fitted over maps; a team makes ~28 decisions below k12):
+
+| rule | 720k games (mid-run) | the next 240k (`--on`) | all 1.28M |
+|---|---|---|---|
+| per cell (pick count, type, ordinal), z 2 | -0.03 ± 0.05 | +0.01 ± 0.09 | +0.03 ± 0.04 |
+| per (type, ordinal bucket), z 2 (`tb-z2`) | **+0.149 ± 0.050** | -0.02 ± 0.09 | +0.07 ± 0.04 |
+| per (type, ordinal), z 2 | +0.135 ± 0.049 | -0.06 ± 0.08 | +0.09 ± 0.04 |
+| the fit's own best arm (any lead) | -0.27 ± 0.07 | | -0.16 ± 0.05 |
+
+- **Map-keyed** (9 features named before the run: gold_side, contested_share, spawn_dist, area, gems_side,
+  big_share, cluster_share, altar_centre, altars; cuts at bins 2, 4, 6 of 8; 312 configs), nested: static configs
+  +0.05 ± 0.04, map-keyed configs -0.01 ± 0.05. The best single config (per type, gold_side split, z 1) reads
+  +0.20 ± 0.06 and is the best of 312. As in round 3, no map split survives nesting.
+- **Per opponent kind and per draft source** (`--kinds src`) the readings agree within their errors: `tb-z2`
+  +0.05 / +0.05 / +0.14 against self / Fish / Mite, +0.08 / +0.07 / +0.06 on random / ladder / model teams.
+
+**What the A/Bs read.** Every row: 20,480 games on a held-out merged suite, own drafts, release builds, fast
+runner, against `variants/ocean-b0eeff1`; ± is the 95% interval.
+
+| candidate | the lab's estimate | A/B |
+|---|---|---|
+| mid-run `tb-z2`, arms written into `learned_arm` (207 cells) | +0.149 a decision | 47.9% (47.2-48.6) h1; fresh gate -2.9 ± 1.7 after 8 blocks, ladder -1.1 |
+| the same at the purchase only (`candidate.py --buy`) | | 48.1% (47.5-48.8) h1; fresh gate -2.0 ± 1.3 after 10 blocks, ladder -0.2 |
+| its first-emblem cells only / second only / k >= 3 only | k0 +0.50 ± 0.17 a k0 decision | 49.7% / 49.8% / 48.6% h1 |
+| Prism's first emblem Jungle-Focus alone | +3.2 a decision (in sample) | 49.8% h1 |
+| all 1.28M games' `tb-z2` (225 cells), purchase only | +0.07 a decision | 48.4% (47.8-49.1) h2 |
+| all 1.28M games' per (type, ordinal) z 2, k < 3 only (69 cells) | +0.065 a decision | 50.0% (49.3-50.7) h2 |
+
+**Calibration: what ocean's existing table (CHANGES 233, round 2) is worth, which the lab should also see.**
+
+| change to ocean | A/B (h1 unless noted) | the dense lab |
+|---|---|---|
+| no table (every cell the current logic) | **47.0%** (46.3-47.7) | +0.010 ± 0.030 a decision: level |
+| no table at the purchase only (forecasts keep it) | 47.4% | |
+| the same on ladder test drafts (both bots `test_draft`) | 45.6% (44.9-46.3) | model teams -0.01 ± 0.05, ladder +0.04 ± 0.05, random 0.00 ± 0.05 |
+| no table from k3 on | 48.1%; purchase only 48.3% | -0.003 ± 0.022 |
+| no table at k0-2 | 50.5%, 50.4% (h2), 49.9% (h3): 50.3% of 61,440 | +0.012 ± 0.020 |
+| k >= 3 without its Collectors cells (39) | **48.3%** (47.6-49.0) | |
+| k >= 3 without its Home (40) / Tribute (21) / Monster (36) / Durability (27) cells | 49.8% / 50.0% / 49.7% / 49.9% | |
+| Collectors as everyone's k-th emblem where the table has none by then: k 1 / 2 / 3 / 4 / 6 / 8 | 48.7% / 49.4% / 49.8% / 50.2% / 49.9% / 50.4% | |
+| family F as everyone's 5th emblem (k 4) where the table has none by then: Skirmish / Durability / Monster / Prospector / Jungle / Capture / Treasure / Hunter / Home / Tribute | 50.7% (50.0-51.3) / 50.1% / 50.1% / 50.1% / 50.0% / 49.8% / 49.7% / 49.7% / 49.7% / 49.1% | |
+| Skirmish as everyone's k-th emblem: k 3 / 4 / 5 / 6 | 50.1% / 50.7% / 50.3% / 50.5% | |
+| Skirmish at k 4 on the other holdouts | 50.5% (h2), 50.5% (h3): **50.55% of 61,440** (z 2.7) | |
+| Skirmish at k 4 and no table at k0-2 | 50.4%, 50.8% (h2), 50.2% (h3): 50.46% of 61,440 | |
+| Skirmish at k 4, fresh gate (Flp4 / Mt3qro) | 32 blocks, 4,096 fresh units: fresh **+0.59 ± 0.61**, ladder +0.43 ± 0.59, pooled +0.51 ± 0.42; Fish +0.54, Mite +0.65; SPRT undecided (LLR -0.09 at 50.5 / 50.75) | |
+
+**Findings.**
+- **Nothing to ship.** No selection from 1.28M dense games beats ocean: the mid-run and final candidates lose 1.6
+  to 2.1 points, their early-ordinal parts are level.
+- **The existing table is worth about 3 points to ocean, nearly all of it late Collectors** (+1% damage per family
+  owned; `current_emblem` credits it for camp damage only). Its k0-2 cells are worth nothing (50.3% of 61,440 without them);
+  its Home, Tribute, Monster and Durability cells are each level. Collectors is already placed about right:
+  earlier costs, later or wider is level.
+- **The dense design is blind to that value.** It scores "no table" as level for every draft source and opponent
+  kind, where A/Bs read -2.6 to -4.4 points; and it scores its own selections +2 to +4 points above what they
+  play. Not a fitting bug (a model-free Hajek check agrees with the fit; the candidates buy what their tables say:
+  `emblem_orders.mjs`), not the forecasts (purchase-only builds read the same), not the draft mix. With 35-50% of
+  every build drawn, a decision's arm is measured inside a scrambled build against scrambled teams: effects that
+  need the rest of the build to be the bot's own (a 0.1-point-a-decision, 3-point-a-policy effect) do not show.
+  Round 2's table came out of the same design and did transfer (+2.3 on astraeus): the design is not always
+  wrong, but its cross-fitted number is not evidence by itself.
+- **A cross-fitted +0.15 ± 0.05 with all five folds positive did not replicate** on the next games (-0.02 ± 0.09).
+  Require the replication (`select.py --on`) and an A/B of a mid-run candidate before trusting a fit.
+- **The sparse design is honest but far too thin at this size:** three batches gave 200-350 draws an arm at a main
+  champion's first emblem (±3 points). It needs 10M+ games, or draws limited to a handful of arms.
+- **One lead: Skirmish as every champion's fifth emblem** (`tables/emblem_table-skirmish4.h`: Skirmish in the type's
+  usual stat at ordinal 4 of the 37 rows with none by then; `collectors.py --family skirmish --at 4`): 50.55% of
+  61,440 over three held-out suites (50.7 / 50.5 / 50.5), ordinals 3, 5 and 6 at 50.1-50.5%. Skirmish went to x1.10
+  in patch 4.0.0, after the table was learned (9 of its cells hold it); it was the only one of ten passive families to read
+  above level in this slot (ten looks: the first reading alone was a 1-in-4 chance, the two repeats and the gate
+  are the evidence). The fresh gate reads the same against the bodies, +0.51 ± 0.42 pooled over 32 blocks, and its
+  SPRT stays undecided: about half a point, at the 50.5 bar rather than over it. Not merged.
+- **What measured correctly tonight was the clean A/B of a policy-level change** (20,480 games, ±0.7, ~10 minutes
+  beside other jobs). The next emblem work should randomise whole tables or build orders per team-game, not
+  single decisions inside a shared build.
+- **Tooling:** the CPU-slot pool's member-file race lost the lab's weight for a batch (19 of 86 slots, 25 minutes
+  instead of 6.5; `tools/emblab/slot_keeper.py`, RUNBOOK section 9). Not fixed in `cpu_slots.py` / fastrunner.
 
 ## Fuel after 495 (ocean, 2026-11-10; CHANGES 496)
 

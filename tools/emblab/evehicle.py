@@ -1,18 +1,24 @@
-"""Emblem lab vehicles: draft lab vehicles (tools/draftlab/vehicle.py) of an astraeus with the learned table
-(8fad72c on), whose champions draw some new emblems at random in the game (trainer.h). Where the table forces the
-k-th new emblem (k < 12), the arm is drawn from
+"""Emblem lab vehicles: draft lab vehicles (tools/draftlab/vehicle.py) of a bot with the learned table (astraeus
+8fad72c on, ocean), whose champions draw some new emblems at random in the game (trainer.h). Where the table forces
+the k-th new emblem (k < 12), the arm is drawn from
     mode 0: eps / n over the n arms whose passive is not owned (Power and Bruiser repeat), plus (1 - eps) x softmax of
             (v[a] - v[base]) / tau + corr[a] / corr_tau, v the current logic's value of the arm, corr the previous
             fit's static gain (logit) of the arm over the current logic's choice;
     mode 1: uniform over those n arms (the unbiased check).
 Every new-emblem decision buy_shards reaches is logged in debug_block (no fuel in local builds) as one line:
 
-    EMB2 round type k forced mode chosen base current q gold strength focus max_health own_gems enemy_gems carried
+    EMB3 round type k forced mode chosen base current q qb gold strength focus max_health own_gems enemy_gems carried
          allies_alive picks v0 ... v41
 
 base: the bot's own choice (its learned table, else the current logic); current: the current logic's; chosen: what
-was bought (base unless forced); q: the probability chosen had (1 unforced); v: the current logic's value of every
-arm, x where Greed or not drawable. Arms are family * 3 + stat."""
+was bought (base unless forced); q: the probability the proposal gave chosen (1 unforced); qb: the probability it
+gives base, forced or not (round 4 on: with it the logging probability of every row is known without recomputing
+the proposal, so corr may change between batches); v: the current logic's value of every arm, x where Greed or not
+drawable. Arms are family * 3 + stat.
+
+Round 4 (ocean): only buy_shards' own calls draw (lab_shopping; ocean's best_emblem also serves forecasts), and
+every other debug_block but main.cc's OOF line is compiled out (lab_off), so the 1 MiB stdout cap never cuts an
+EMB3 line and games cost no printing."""
 import json
 import sys
 from functools import lru_cache
@@ -35,6 +41,7 @@ NARMS = 42
 WRAPPER = r'''
 // Emblem lab: at a new emblem the table forces, a drawn arm in place of the base's (base_emblem); every new emblem
 // logged with the current logic's value of every arm.
+bool lab_shopping = false; // inside buy_shards
 Emblem lab_pinned(const World& world, const Build& bought, int family, int stat) {
     pin_family = family, pin_stat = stat;
     const Emblem e = current_emblem(world, bought, nullptr);
@@ -44,7 +51,7 @@ Emblem lab_pinned(const World& world, const Build& bought, int family, int stat)
 
 Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::enum_map<cambc::item_type>* items = nullptr) {
     const Emblem base = base_emblem(world, bought, items);
-    if (!shopping || items) return base;
+    if (!lab_shopping || items) return base;
     const auto& owned = my_items();
     if (begun_emblem(world, owned)) return base;
     int ordinal = 0;
@@ -71,9 +78,9 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
             }
         const float vb = lab_pinned(world, bought, base.family, base.stat).saved;
         const int picks = economy_pick_count(world), t = static_cast<int>(self.type);
-        float q = 1;
-        if (force && ordinal == drawn_ordinal) arm = drawn_arm, q = drawn_q;
-        else if (force && n > 0) {
+        float q = 1, qb = 1;
+        int pick = -1;
+        if (n > 0) {
             float top = -1e30f;
             for (int a = 0; a < trainer::arms; ++a)
                 if (ok[a]) {
@@ -85,7 +92,6 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
             for (int a = 0; a < trainer::arms; ++a) sum += ok[a] ? (p[a] = std::exp(p[a] - top)) : 0;
             const float eps = mode == 1 ? 1.0f : trainer::proposal_eps;
             double acc = 0;
-            int pick = -1;
             for (int a = 0; a < trainer::arms; ++a)
                 if (ok[a]) {
                     p[a] = eps / static_cast<float>(n) + (1 - eps) * p[a] / sum;
@@ -94,6 +100,10 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
                 }
             for (int a = trainer::arms - 1; pick < 0 && a >= 0; --a) // rounding: the last drawable arm
                 if (ok[a]) pick = a;
+            qb = ok[base_arm] ? p[base_arm] : 0;
+        }
+        if (force && ordinal == drawn_ordinal) arm = drawn_arm, q = drawn_q;
+        else if (force && n > 0) {
             arm = pick, q = p[pick];
             drawn_ordinal = ordinal, drawn_arm = arm, drawn_q = q;
         }
@@ -102,8 +112,8 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
             const Emblem cur = current_emblem(world, bought, items);
             int alive = 0;
             for (const auto& ally : world.allies) alive += ally.alive;
-            std::printf("EMB2 %d %d %d %d %d %d %d %d %.4g %u %.1f %.1f %.0f %u %u %d %d %d", world.round, t, ordinal, force ? 1 : 0, mode, arm,
-                        base_arm, cur.family * 3 + cur.stat, q, my_gold(), self.strength, self.focus, self.max_health,
+            std::printf("EMB3 %d %d %d %d %d %d %d %d %.4g %.4g %u %.1f %.1f %.0f %u %u %d %d %d", world.round, t, ordinal, force ? 1 : 0, mode, arm,
+                        base_arm, cur.family * 3 + cur.stat, q, qb, my_gold(), self.strength, self.focus, self.max_health,
                         cambc::global_submitted_gems(cambc::team::ally), cambc::global_submitted_gems(cambc::team::enemy), self.gems, alive, picks);
             for (int a = 0; a < trainer::arms; ++a)
                 if (ok[a]) std::printf(" %.4g", v[a]);
@@ -122,31 +132,58 @@ PATCHES = {SHOP: [
       "Emblem base_emblem(const World& world, const Build& bought, const cambc::enum_map<cambc::item_type>* items) {\n")],
     [("// True if any shard was bought.\nbool buy_shards(const World& world) {\n",
       WRAPPER.lstrip("\n") + "\n// True if any shard was bought.\nbool buy_shards(const World& world) {\n")],
-],
-    # The 1 MiB stdout cap: the chattiest debug lines would crowd out late EMB2 lines.
-    "src/model/world.cc": [[('std::printf("SLOT %d', 'if (false) std::printf("SLOT %d')]],
-    "src/bot.cc": [[('std::printf("D %d %u %c', 'if (false) std::printf("D %d %u %c')]],
-    # And in 2000-round games these filled up to ~0.9 MiB.
-    "src/util.h": [[('        if (!cambc::is_draft())\n            std::printf("SHORTCUT', '        if (false)\n            std::printf("SHORTCUT')]],
-    "src/combat/plan.cc": [[('            std::printf("SRCH %d %u fuel', '            if (false) std::printf("SRCH %d %u fuel')]],
-}
+    # Only the purchase draws: ocean's best_emblem also prices forecasts (prices(), affordable_prefix()).
+    [("        const auto [family, stat, saved, cost, passive] = best_emblem(world, bought);\n        const unsigned have",
+      "        const auto [family, stat, saved, cost, passive] = (lab_shopping = true, best_emblem(world, bought));\n"
+      "        lab_shopping = false;\n        const unsigned have")],
+]}
+LAB_OFF = "#ifndef lab_off\n#define lab_off(...) if (false) { __VA_ARGS__ } else (void)0\n#endif\n"
+
+
+def quiet(blobs):
+    """Compiles out every debug_block of the source but main.cc's OOF line: the engine caps a team's stdout at
+    1 MiB whatever --log-limit says, and the vehicle's own block (the wrapper, patched in after this) must never be
+    cut. Debug blocks pause fuel, so play is as before."""
+    for rel, data in blobs.items():
+        if not rel.endswith((".cc", ".h", ".cpp")) or b"debug_block(" not in data:
+            continue
+        parts = data.decode().split("debug_block(")
+        out = parts[0]
+        for part in parts[1:]:
+            out += ("debug_block(" if 'std::printf("OOF ' in part[:400] else "lab_off(") + part
+        blobs[rel] = (LAB_OFF + out).encode()
 
 
 @lru_cache(maxsize=4)
 def corr_values(model_path):
-    """corr[picks - 3][type][k][arm]: a fit's static gain (logit) of each arm (fit.mjs armGains without the model-choice
-    terms, which cancel in the softmax), k >= the fit's buckets using its last; 0 for Greed or without a model."""
+    """corr[picks - 3][type][k][arm]: a fit's static gain (logit) of each arm, 0 for Greed or without a model. From a
+    round-1 model (fit.mjs: armGains without the model-choice terms, which cancel in the softmax; k >= the fit's
+    buckets using its last) or a per-decision one (dfit.mjs: phi's static terms EA + ETF + ETS + EKF + EKS + EPF +
+    EPS; the base's cancel in the softmax)."""
     out = [[[[0.0] * NARMS for _ in range(ORDINALS)] for _ in TYPES] for _ in range(3)]
     if not model_path:
         return out
     m = json.loads((ROOT / model_path).read_text())
-    th, L, N = m["theta"], m["L"], m["N"]
-    NF = len(FAMILIES)
+    th, L = m["theta"], m["L"]
+    NF, NT = len(FAMILIES), len(TYPES)
+    if "EA" in L:
+        NKC = 5
+        for pi in range(3):
+            for t in range(NT):
+                for k in range(ORDINALS):
+                    kc = k if k < 3 else 3 if k < 6 else 4
+                    for a in ARMS:
+                        f, s = divmod(a, 3)
+                        out[pi][t][k][a] = (th[L["EA"] + (t * ORDINALS + k) * NARMS + a] + th[L["ETF"] + (t * NKC + kc) * NF + f]
+                                            + th[L["ETS"] + (t * NKC + kc) * 3 + s] + th[L["EKF"] + k * NF + f] + th[L["EKS"] + k * 3 + s]
+                                            + th[L["EPF"] + (pi * NT + t) * NF + f] + th[L["EPS"] + (pi * NT + t) * 3 + s])
+        return out
+    N = m["N"]
 
     def at(name, i, pi):
         return th[L[name] + i] + th[L[name + "P"] + pi * N[name] + i]
     for pi in range(3):
-        for t in range(len(TYPES)):
+        for t in range(NT):
             for k in range(ORDINALS):
                 kb = min(k, 3)
                 for a in ARMS:
@@ -177,4 +214,14 @@ def table_header(entries, model_path=None):
 
 
 def make(source, name, entries, model_path=None):
-    return vehicle.make(source, name, entries, trainer=HERE / "trainer.h", table=table_header(entries, model_path), patches=PATCHES)
+    return vehicle.make(source, name, entries, trainer=HERE / "trainer.h", table=table_header(entries, model_path), patches=PATCHES,
+                        transform=quiet)
+
+
+def make_body(source, name):
+    """A quiet copy (quiet()) of a sparring body, which drafts for itself: the other side of a body game."""
+    source, target = Path(source), vehicle.VARIANTS / name
+    blobs = {p.relative_to(source).as_posix(): p.read_bytes() for p in (source / "src").rglob("*") if p.is_file()}
+    quiet(blobs)
+    changed = [rel for rel, data in sorted(blobs.items()) if vehicle.write_if_changed(target / rel, data)]
+    return target, bool(changed)

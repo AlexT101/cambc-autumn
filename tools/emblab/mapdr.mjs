@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import { FEATURES } from '../draftlab/model.mjs';
 
 export const NB = 8;
+const SEARCH = { cuts: null };
 const ZS = [0, 1, 2, 3], MIN_N = 30;
 
 function kmeans(points, k, dim) {
@@ -41,18 +42,22 @@ function kmeans(points, k, dim) {
   return { assign, centres: centres.map(c => Array.from(c)) };
 }
 
-// bins: Uint8Array (shared) of maps x partitions.
-export function partitions(table) {
+// bins: Uint8Array (shared) of maps x partitions. opts (round 4 on; without it every feature, every cut, k-means 2-6):
+// splits: the feature names to split on (a short list stated before the run keeps the nested search's choice
+// stable); cuts: the bin thresholds tried (1..NB-1); kmeans: the cluster counts, over the first `dims` features.
+export function partitions(table, opts = {}) {
   const maps = table.maps, n = maps.length, K = FEATURES.length, list = [];
+  SEARCH.cuts = opts.cuts ?? null;
   for (let k = 0; k < K; k++) {
+    if (opts.splits && !opts.splits.includes(FEATURES[k][0])) continue;
     const v = maps.map(m => m.z[k]).sort((a, b) => a - b);
     // bin = number of cuts at or below the value; ties can leave bins empty.
     const cuts = Array.from({ length: NB - 1 }, (_, j) => v[Math.floor(n * (j + 1) / NB)]);
     list.push({ name: FEATURES[k][0], kind: 'feature', feature: k, nb: NB, cuts, binOf: m => { let b = 0; while (b < NB - 1 && m.z[k] >= cuts[b]) b++; return b; } });
   }
-  const pts = maps.map(m => Array.from(m.z));
-  for (let kc = 2; kc <= 6; kc++) {
-    const { assign, centres } = kmeans(pts, kc, K);
+  const dims = opts.dims ?? K, pts = maps.map(m => Array.from(m.z.subarray(0, dims)));
+  for (const kc of opts.kmeans ?? [2, 3, 4, 5, 6]) {
+    const { assign, centres } = kmeans(pts, kc, dims);
     list.push({ name: `kmeans${kc}`, kind: 'cluster', nb: kc, centres, binOf: (m, i) => assign[i] });
   }
   const bins = new Uint8Array(new SharedArrayBuffer(n * list.length));
@@ -74,7 +79,7 @@ export function mapReport(F, rows, parts, dims, out) {
     configs.push({ g, p: -1, ns: 1, side: () => 0 });
     parts.list.forEach((p, pi) => {
       if (p.kind === 'cluster') configs.push({ g, p: pi, ns: p.nb, side: b => b });
-      else for (let j = 1; j < NB; j++) if (j === 1 || p.cuts[j - 1] !== p.cuts[j - 2]) configs.push({ g, p: pi, j, ns: 2, side: b => b >= j ? 1 : 0 });
+      else for (let j = 1; j < NB; j++) if ((!SEARCH.cuts || SEARCH.cuts.includes(j)) && (j === 1 || p.cuts[j - 1] !== p.cuts[j - 2])) configs.push({ g, p: pi, j, ns: 2, side: b => b >= j ? 1 : 0 });
     });
   }
   const label = c => `${GRAN[c.g].name}, ${c.p < 0 ? 'static' : parts.list[c.p].kind === 'cluster' ? parts.list[c.p].name
@@ -191,17 +196,22 @@ export function mapReport(F, rows, parts, dims, out) {
     }
   }
 
-  // The best config by single-level cross-fitted gain, selected on all folds.
-  const best = ranked[0], c = best.c, ncell = GRAN[c.g].n * c.ns;
-  const T = new Float64Array(GRAN[c.g].n * c.ns * NCAND * 3);
-  for (const S of F) { const s = sides(S, c); for (let i = 0; i < T.length; i++) T[i] += s[i]; }
-  const sel = selectAll(T, ncell)[ZS.indexOf(best.z)], cells = [];
-  for (let x = 0; x < ncell; x++) if (sel[x] >= 0) {
-    const o = (x * NCAND + sel[x]) * 3;
-    cells.push({ cell: Math.floor(x / c.ns), side: x % c.ns, choice: sel[x] === NA ? 'current' : armName(sel[x]), arm: sel[x] === NA ? -1 : sel[x], gain: T[o] / T[o + 2], n: T[o + 2] });
-  }
-  const p = c.p >= 0 ? parts.list[c.p] : null;
-  fs.writeFileSync(out.replace(/\.json$/, '.mappolicy.json'), JSON.stringify({ config: label(c), z: best.z, granularity: GRAN[c.g].name,
-    partition: p && { name: p.name, kind: p.kind, threshold_z: p.kind === 'feature' ? p.cuts[c.j - 1] : undefined, centres: p.centres }, cells }) + '\n');
+  // Selections on all folds: every static config, and the 8 best by single-level cross-fitted gain (the first of
+  // those is what rounds before 4 wrote alone). candidate.py --mappolicy reads one by its label.
+  const emit = h => {
+    const c = h.c, ncell = GRAN[c.g].n * c.ns;
+    const T = new Float64Array(ncell * NCAND * 3);
+    for (const S of F) { const sd = sides(S, c); for (let i = 0; i < T.length; i++) T[i] += sd[i]; }
+    const sel = selectAll(T, ncell)[ZS.indexOf(h.z)], cells = [];
+    for (let x = 0; x < ncell; x++) if (sel[x] >= 0) {
+      const o = (x * NCAND + sel[x]) * 3;
+      cells.push({ cell: Math.floor(x / c.ns), side: x % c.ns, choice: sel[x] === NA ? 'current' : armName(sel[x]), arm: sel[x] === NA ? -1 : sel[x], gain: T[o] / T[o + 2], n: T[o + 2] });
+    }
+    const p = c.p >= 0 ? parts.list[c.p] : null;
+    return { config: label(c), z: h.z, granularity: GRAN[c.g].name, cv: { gain: 100 * h.cv.gain / rows, se: 100 * Math.sqrt(h.cv.v) / rows, moved: h.cv.moved / rows },
+      partition: p && { name: p.name, kind: p.kind, feature: p.feature, threshold_z: p.kind === 'feature' ? p.cuts[c.j - 1] : undefined, centres: p.centres }, cells };
+  };
+  const wanted = [...ranked.slice(0, 8), ...H.filter(h => h.c.p < 0 && !ranked.slice(0, 8).includes(h))];
+  fs.writeFileSync(out.replace(/\.json$/, '.mappolicy.json'), JSON.stringify({ ...emit(ranked[0]), all: wanted.map(emit) }) + '\n');
   return lines;
 }

@@ -1,18 +1,20 @@
 # Emblem lab
 
-Learns which emblems astraeus should buy, and with them which champions to draft, from self-play games whose
-drafts and emblem choices are randomised. The target is winning (and the wealth margin, tributed + carried at the
-end, if cross-validation on wins says it helps), so combat value counts as fully as farming. Python 3 and Node 22+,
-no other dependencies. It reuses the draft lab's vehicles, batch runner and outcomes (tools/draftlab/README.md).
+Learns which emblems our bot should buy (ocean from round 4; astraeus before), and with them which champions to
+draft, from games whose drafts and emblem choices are randomised. The target is winning (and the wealth margin,
+tributed + carried at the end, if cross-validation on wins says it helps), so combat value counts as fully as
+farming. Python 3 and Node 22+, no other dependencies. It reuses the draft lab's vehicles, batch runner and outcomes
+(tools/draftlab/README.md). [RUNBOOK.md](RUNBOOK.md) is the step-by-step for a run.
 
 ```
-py tools/emblab/lab.py init --lab NAME [--source REF]   # freeze REF's bots/astraeus, the map table (replays/emblab/feat/), the prior
-py tools/emblab/lab.py run --lab NAME --games 40000 [--batches N] [--vehicles 4]
+py tools/emblab/lab.py init --lab NAME [--source REF]   # freeze REF's bot (config "bot", default ocean), the map table, the prior
+py tools/emblab/lab.py run --lab NAME --games 80000 [--batches N | --hours H] [--vehicles 4]   # `touch <lab>/stop` ends it after the batch in play
 py tools/emblab/lab.py status --lab NAME
 node tools/emblab/dfit.mjs --labs r2 [--search [--rounds 2]] [--boot N]   # round 2: per-decision fit (dmodel.json, dmodel.md); --rounds 0 scores only the variants
 node tools/emblab/dfit.mjs --labs r2 --variant static --dr --out replays/emblab/r2/dmodel-dr.json   # + cross-fitted DR selection (*.policy2.json)
 node tools/emblab/dfit.mjs --labs r3 --mapdr --out replays/emblab/r3/dmodel-mapdr.json   # + map-keyed policies, nested (mapdr.mjs; *.mappolicy.json)
-py tools/emblab/candidate.py SELECTION --key 0-2 [--flat] --out bots/variants/NAME   # a candidate astraeus from a selection
+node tools/emblab/dfit.mjs --labs r4 --mapdr --mapsplits area,gems_side --mapcuts 2,4,6   # the map-keyed search over named splits only
+py tools/emblab/candidate.py SELECTION --key 0-2 [--flat] --source BOT --out bots/variants/NAME   # a candidate bot from a selection
 node tools/emblab/fit.mjs --labs main,pilot [--search] [--boot 20]   # round 1: whole-game fit (model.json, model.md)
 py tools/emblab/policy.py [model.policy.json] [--min-p10 0]   # astraeus's learned table from round 1 (src/economy/emblem_table.h)
 node tools/emblab/ladder_emblems.mjs [replays/ladder]    # top teams' emblem orders (ladder_emblems.jsonl)
@@ -33,6 +35,63 @@ the ladder, `fall-custom`, `gen`, `gen-s1` and `fresh-4003` to `fresh-4120`. Rou
 Rounds: round 1 (`pilot`, `main`, 172k games, 1c0d627) forced uniformly random arms at k < 8 from a pre-drawn table
 and was fitted whole-game (fit.mjs); its table shipped as CHANGES 232. Round 2 (`r2`, from 8fad72c) draws arms in
 the game and is fitted per decision (dfit.mjs); PLAN.md has the reasoning.
+
+## Round 4 (ocean, 2026-11-10)
+
+What changed from rounds 2-3, whose design the sections below describe:
+
+- **The bot is ocean** (`config.json` `bot`). Its `best_emblem` also prices forecasts, so the vehicle draws only
+  inside `buy_shards` (`lab_shopping`); a forecast before the first shard still prices the base's emblem.
+- **Opponents** (`opponents`, `opponent_bots`): a share of games put the lab team against a sparring body (the
+  Fish and Mite bodies of the gates, other noise seeds), which drafts and shops for itself and logs nothing. The
+  game row has `opp` (the kind), `us` (the lab's sides) and the body's own draft; the fit has an intercept per
+  opponent kind and pick count (`OPP`), and `--dr` prints every selection's gain against each kind. A table whose
+  gain is only against `self` is a mirror artefact.
+- **Logs:** `EMB3` lines carry `qb`, the proposal's probability of the base, for every decision, and the entry's
+  mode for unforced ones. With `q` (the chosen arm's, forced rows) the logging probability of each row is
+  P(base) = 1 - p + p qb, P(arm) = p q, with nothing recomputed, so `corr_model` may change between batches
+  (`prepare` reads it from `config.json` per batch and the plan records it): round 4 started on round 3's static
+  gains and moved to its own interim fit.
+- **Quiet vehicles** (`evehicle.quiet`): every `debug_block` of the source but `main.cc`'s OOF line is compiled out
+  (`lab_off`), in the bodies too. A team's stdout is ~10 KB, far from the 1 MiB cap, and games play faster.
+- **Decisions** are written per batch, compressed (`decisions/bNNN.jsonl.zst`); `zstd -dc` them into
+  `decisions.jsonl` for a fit and delete it after.
+- **Maps:** the pool is walked in one fixed shuffle, a slice a batch. The fit's map features are the draft lab's
+  first 30 (its base features); the squares and products added for draft7 would put ~370 entries in every row.
+- **Checks** (any batch, rows with k < 12): the mean of 1 / P(base) over rows that took the base is 1 (1.0004 on
+  the smoke lab), and the sum of 1 / P(chosen) over rows that left it, per row, is the mean number of other
+  drawable arms (28.400 against 28.406).
+
+### What round 4 found about the method (read before running another)
+
+Numbers and tables: research/EXPERIMENTS.md "Emblem lab round 4 on ocean".
+
+- **The dense per-decision design did not measure ocean correctly.** With 35-50% of every new-emblem decision below
+  k12 drawn, 1.28M games scored "no learned table at all" as level (+0.01 ± 0.03 win points a decision), where a
+  clean A/B reads 47.0% (the table is worth about 3 points, nearly all of it late Collectors), and scored its own
+  selections 2 to 4 points above what they play (47.9-48.4%). The same holds per draft source and per opponent
+  kind. An arm is measured inside a scrambled build against scrambled teams (the lab side wins 58.6% against the
+  Fish body under dense forcing, 62.1% under sparse), so an effect that needs the rest of the build to be the
+  bot's own does not show. Round 2's table came out of this design and did transfer: it is not always wrong, but
+  its number is not evidence by itself.
+- **A cross-fitted gain is not a result until it replicates.** The mid-run fit (720k games) read one arm per
+  (type, ordinal bucket) at +0.149 ± 0.050 a decision (`select.py` `tb-z2`; all five map folds positive, per-cell
+  selection at zero). The same selection scored on the next 240k games (`select.py --on`): -0.02 ± 0.09.
+- **Calibrate the lab on something an A/B already knows.** `select.py`'s sums hold a candidate "the current logic"
+  for every cell: the lab's estimate of dropping the shipped table. If that disagrees with the A/B of dropping it
+  (10 minutes), the lab's other numbers are off by as much.
+- **A/B a mid-run candidate.** That costs 15 minutes and showed two hours before the final fit that the lab's
+  numbers were not turning into wins.
+- **Deploy what the vehicle did** (`candidate.py --buy`): arms at the purchase only. Writing them into the table
+  ocean's forecasts read measured 47.9% against the purchase-only build's 48.1%: not the cause here, but a second
+  difference between the lab and the bot that an A/B then cannot tell apart.
+- **Sparse forcing** (`r4d`: `p_force` [0.1, 0.1, 0.1, 0, ...], `uniform_share` 0; fit it alone, with `--fitall`)
+  keeps later purchases, teammates and opponents on the base policy (71% of teams hold at most one drawn decision),
+  but 560k games gave a few hundred draws per arm at a main champion's first emblem: it needs 10M+ games, or draws
+  limited to a handful of arms.
+- **What measured correctly was the clean A/B of a policy-level change** (a whole table, a family at an ordinal:
+  `research/ideas-2026-11-10/emblab4/collectors.py`), 20,480 games for ±0.7 points. The next lab should randomise
+  whole tables or build orders per team-game, not single decisions inside a shared build.
 
 ## How it works (round 2)
 
@@ -118,6 +177,7 @@ Pilot findings (2026-10-29, 12k games), which set the design:
 
 Under `replays/emblab/<lab>/`: `config.json` (defaults in `lab.py DEFAULTS`), `maps.jsonl`, `prior.json`,
 `games.jsonl` (drafts, sources, modes, seeds and force masks (round 1: arms), winner, wealth, checkpoints,
-per-champion statistics, out-of-fuel lines and stdout bytes per team), `decisions.jsonl`, `lab.log`,
+per-champion statistics, out-of-fuel lines and stdout bytes per team), `decisions.jsonl` (round 4:
+`decisions/bNNN.jsonl.zst`), `lab.log`,
 `batches/bNNN/` (plan, manifest, results, emb, outcomes, run log). Rounds 2 and 3 keep `decisions.jsonl` and the
 batches' `emb.dec` zstd-compressed (2026-10-31, for disk): `zstd -d` them before `dfit.mjs` (it reads plain JSONL).

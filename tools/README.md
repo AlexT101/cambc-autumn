@@ -316,15 +316,20 @@ statistics, without a full extraction), `firstturn.py` (the model draft's first-
 
 ## Emblem lab: tools/emblab
 
-Which emblems (and with them which drafts) win, from self-play whose drafts and emblem choices are randomised; it
-reuses the draft lab's vehicles and outcomes. Details and the round-by-round plan in [emblab/README.md](emblab/README.md).
+Which emblems (and with them which drafts) win, from games whose drafts and emblem choices are randomised (ocean
+from round 4, against itself and the Fish and Mite bodies); it reuses the draft lab's vehicles and outcomes. How it
+works and what each round found in [emblab/README.md](emblab/README.md); the step-by-step for a run, with round 4's
+pitfalls, in [emblab/RUNBOOK.md](emblab/RUNBOOK.md).
 
 ```
-py tools/emblab/lab.py init --lab NAME [--source REF]        # freeze REF's astraeus, the map table, the prior
-py tools/emblab/lab.py run --lab NAME --games 40000           # resumable; status: lab.py status --lab NAME
+py tools/emblab/lab.py init --lab NAME [--source REF]        # freeze REF's bot (config "bot", default ocean), the map table, the prior
+py tools/emblab/lab.py run --lab NAME --games 80000 --hours 3   # resumable; `touch <lab>/stop` ends it; status: lab.py status --lab NAME
+py tools/emblab/slot_keeper.py job-<lab.py pid> 35 <pid>      # keeps the lab's slot weight registered (cpu_slots' member race)
+node tools/emblab/dfit.mjs --labs r4,r4b [--dr | --mapdr] [--fitall]   # per-decision fit, DR / map-keyed selections; streams decisions/*.zst
+py tools/emblab/with_slots.py 64 node tools/emblab/dfit.mjs ... --threads '{slots}'   # the fit on CPU slots taken from the pool
+py tools/emblab/select.py MODEL.json [--maps] [--on LATER.json]   # selection rules on the fit's dumped sums; --on: replication on later games
+py tools/emblab/candidate.py SEL.json --key RULE --buy --source BOT --out bots/variants/NAME   # a candidate bot (--buy: arms at the purchase only)
 node tools/emblab/fit.mjs --labs main,pilot [--boot 20]       # round 1: whole-game fit; policy.py writes emblem_table.h
-node tools/emblab/dfit.mjs --labs r2 [--dr | --mapdr]         # round 2+: per-decision fit, DR / map-keyed selections
-py tools/emblab/candidate.py SELECTION --key 0-2 --out bots/variants/NAME   # a candidate astraeus from a selection
 node tools/emblab/ladder_emblems.mjs [replays/ladder]         # top teams' emblem orders
 py tools/emblab/pilot.py --lab pilot                          # log checks and effect sizes before a main run
 ```

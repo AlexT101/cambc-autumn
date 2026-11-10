@@ -101,9 +101,9 @@ inline int row_of(cambc::champion_type type) {
 inline bool forced(cambc::champion_type type, int ordinal, double* u, int* mode) {
     const Entry* e = find();
     const int row = row_of(type);
+    if (row >= 0) *mode = e->mode; // unforced decisions log the proposal's probability of the base too
     if (row < 0 || ordinal < 0 || ordinal >= ordinals || !((e->force[row] >> ordinal) & 1)) return false;
     *u = static_cast<double>(mix(e->seed ^ (std::uint64_t{static_cast<unsigned>(row)} << 40) ^ (std::uint64_t{static_cast<unsigned>(ordinal)} << 48)) >> 11) * 0x1p-53;
-    *mode = e->mode;
     return true;
 }
 

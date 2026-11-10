@@ -75,15 +75,18 @@ def table_header(entries):
             "namespace aph::trainer {\ninline constexpr Entry entries[] = {\n" + "\n".join(lines) + "\n};\n}\n")
 
 
-def make(source, name, entries, trainer=None, table=None, patches=None):
+def make(source, name, entries, trainer=None, table=None, patches=None, transform=None):
     """trainer, table: the header and generated table text to use instead of this lab's; patches: further
-    {src-relative file: [alternatives, ...]} edits, as PATCHES."""
+    {src-relative file: [alternatives, ...]} edits, as PATCHES; transform(blobs): edits the source's files
+    ({src-relative file: bytes}) in place before any patch."""
     source = Path(source)
     target = VARIANTS / name
     blobs = {}
     for path in (source / "src").rglob("*"):
         if path.is_file():
             blobs[path.relative_to(source).as_posix()] = path.read_bytes()
+    if transform:
+        transform(blobs)
     params = blobs["src/params.h"].decode()
     assert re.search(r"constexpr bool test_draft = false;", params), "the source's test_draft must be off"
     # src/draft/ since the folder split (2026-10-28), flat in older frozen sources; the table goes beside it.

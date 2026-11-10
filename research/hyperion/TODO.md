@@ -178,6 +178,20 @@ Each needs an A/B (check EXPERIMENTS first). Bundle removals and keep them if le
   rounds a gem, 0.005 kills and 0.015 Tribute turns a gem, weight 30 gems) are measured, never tuned. An ally's
   Capture already covers holds we share (W1-C, not run). Hunter is almost never chosen. The low captures-per-gem
   tercile (big groups) was level (Capture first lost there): check what the model buys on those maps.
+  - **After emblem lab round 4** (2026-11-10, EXPERIMENTS "Emblem lab round 4 on ocean"): the table is worth ~3
+    points to ocean and nearly all of that is its late Collectors cells; its k0-2 cells are worth nothing. The
+    current logic underprices Collectors (`current_emblem` credits it for camp damage only): price its champion
+    damage and the table may no longer be needed for it.
+  - **Skirmish as everyone's fifth emblem** reads 50.55% of 61,440 held-out mirror games
+    (`research/ideas-2026-11-10/emblab4/tables/emblem_table-skirmish4.h`). Skirmish has been x1.10 since patch
+    4.0.0, after the table was learned (9 of its cells hold it); `passive_saved` prices it at `fight_weight x
+    fight_share x (1 - 1 / 1.1)` and rarely picks it. Not merged: take it to the gate's live bar, or raise the
+    pricing instead.
+  - **The lab's design:** drawing 35-50% of every decision scrambles builds and hides effects of this size. Next
+    time randomise whole tables or build orders per team-game (tools/emblab/README.md "What round 4 found").
+  - **`tools/cpu_slots.py` and fastrunner's `Slots::new`** create a member file and then lock it; another job's scan
+    in between unlinks it and the group counts at weight 1 from then on. Lock a temporary file and rename it into
+    `members/` (as `tools/emblab/slot_keeper.py` does); fastrunner needs a rebuild for it.
 
 ## Fuel
 

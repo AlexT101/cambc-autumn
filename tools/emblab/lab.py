@@ -1,13 +1,14 @@
 """Emblem lab: learn which emblems (and, with them, which drafts) win, from self-play games whose drafts and
 emblem choices are randomised (tools/emblab/README.md).
 
-    py tools/emblab/lab.py init   --lab NAME [--source REF]     # freeze REF's bots/astraeus, the map table, the prior
-    py tools/emblab/lab.py run    --lab NAME --games 40000 [--batches N] [--vehicles 4] [--threads 94]
+    py tools/emblab/lab.py init   --lab NAME [--source REF]     # freeze the bot (config "bot", default ocean), the map table, the prior
+    py tools/emblab/lab.py run    --lab NAME --games 80000 [--batches N | --hours H] [--vehicles 4] [--threads N]
     py tools/emblab/lab.py status --lab NAME
 
 Everything lives in replays/emblab/NAME/: config.json, maps.jsonl, prior.json, games.jsonl (one row per game),
-decisions.jsonl (one row per logged emblem decision), lab.log and batches/bNNN/."""
-import argparse, collections, itertools, json, random, re, subprocess, sys, time, zipfile
+decisions/bNNN.jsonl.zst (one row per logged emblem decision; rounds 1-3: decisions.jsonl), lab.log and
+batches/bNNN/. RUNBOOK.md is the step-by-step."""
+import argparse, collections, itertools, json, os, random, re, subprocess, sys, time, zipfile
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from pathlib import Path
 
@@ -26,7 +27,13 @@ DEFAULTS = {
     # p_force[k]: the chance the k-th new emblem is drawn (mode 0); a uniform_share of team-games draw uniformly
     # (mode 1) at p_uniform instead. corr_model: the fit whose static gains steer mode 0's proposal.
     "seed": 1, "p_force": [0.35] + [0.5] * 11, "uniform_share": 0.1, "p_uniform": 0.2, "corr_model": "replays/emblab/main/model.json",
-    "draft_mix": {"explore": 0.4, "ladder": 0.3, "night1": 0.3}, "explore_exclude": ["stellar"], "vehicles": 4, "threads": 94, "timeout": 900, "log_limit": 8 << 20, "night1": "research/night1-games.jsonl.gz",
+    "draft_mix": {"explore": 0.4, "ladder": 0.3, "night1": 0.3}, "explore_exclude": ["stellar"], "vehicles": 4, "threads": None, "timeout": 900, "log_limit": 8 << 20, "night1": "research/night1-games.jsonl.gz",
+    # Round 4 on. bot: the bot directory init freezes. explore_require / explore_require_share: that share of
+    # random teams hold these champions (the draft's team lock), the rest are free. opponents: {"self": share,
+    # KIND: share}: who plays the other side of a game; "self" is a second lab team on the same vehicle, any other
+    # kind one of opponent_bots[KIND] (bot directories), which drafts and shops for itself and logs nothing.
+    # finish_threads: processes reading a played batch's logs while the next one plays.
+    "bot": "ocean", "explore_require": [], "explore_require_share": 0, "opponents": None, "opponent_bots": {}, "finish_threads": 24,
     # holdout: sets never played (the suites that judge what the lab deploys). Round 3 on: pool, globs as the draft
     # lab's (features.mjs at init); the ladder compositions of the `top` best-rated other teams since patch_since
     # (draftlab ladder_data); draft_lab, a draft lab whose model gives the "model" teams (its deployed team per
@@ -47,7 +54,7 @@ def init(args):
     lab.mkdir(parents=True, exist_ok=True)
     cfg = {**DEFAULTS, **json.loads((lab / "config.json").read_text())} if (lab / "config.json").is_file() else dict(DEFAULTS)
     if args.source or "source" not in cfg:
-        src = vehicle.freeze(args.source or "HEAD")
+        src = vehicle.freeze(args.source or "HEAD", cfg["bot"])
         cfg["source"] = src.relative_to(ROOT).as_posix()
         cfg["source_sha"] = vehicle.git("rev-parse", args.source or "HEAD")
     (lab / "config.json").write_text(json.dumps(cfg, indent=1) + "\n")
@@ -129,7 +136,13 @@ def draw_team(r, picks, cfg, prior, key=None):
     mix = cfg["draft_mix"]
     u = r.random()
     if u < mix["explore"]:
-        return r.sample([c for c in ev.CHAMPS if c not in cfg.get("explore_exclude", [])], picks), "explore"
+        free = [c for c in ev.CHAMPS if c not in cfg.get("explore_exclude", [])]
+        need = [c for c in cfg.get("explore_require", []) if c in free]
+        if need and r.random() < cfg.get("explore_require_share", 0):
+            team = need + r.sample([c for c in free if c not in need], picks - len(need))
+            r.shuffle(team)
+            return team, "explore"
+        return r.sample(free, picks), "explore"
     # The per-map teams: the draft lab model's ("model"), or night1's Thompson teams.
     per_map = "model" if "model" in mix else "night1"
     if u >= 1 - mix.get(per_map, 0) and prior.get(key):
@@ -163,12 +176,28 @@ def plan(lab, cfg, b, games):
     ladder = [m for m in maps if m["set"] == "maps"]
     rest = [m for m in maps if m["set"] != "maps"]
     r.shuffle(rest)
-    chosen = ladder + rest[:max(0, games // V - len(ladder))]
+    # The pool beyond the ladder maps is walked in one fixed shuffle (cfg seed), a slice a batch, so every map is
+    # played about equally often; before round 4 each batch drew its own shuffle.
+    n = max(0, games // V - len(ladder))
+    if cfg.get("opponents"):
+        random.Random(cfg["seed"]).shuffle(rest)
+        start = b * n
+        chosen = ladder + [rest[(start + i) % len(rest)] for i in range(min(n, len(rest)))]
+    else:
+        r.shuffle(rest)
+        chosen = ladder + rest[:n]
+    opp = cfg.get("opponents") or {"self": 1}
+    kinds, shares = list(opp), list(opp.values())
     out = []
     for m in chosen:
         for v in range(V):
             g = {"map": m["path"], "key": m["key"], "set": m["set"], "picks": m["picks"], "vehicle": v}
-            for s in "AB":
+            kind = r.choices(kinds, weights=shares)[0]
+            # us: the sides the lab drafts and logs; a body plays the other one.
+            g["opp"], g["us"] = kind, "AB" if kind == "self" else r.choice("AB")
+            if kind != "self":
+                g["body"] = r.randrange(len(cfg["opponent_bots"][kind]))
+            for s in g["us"]:
                 g[s], g[f"src{s}"] = draw_team(r, m["picks"], cfg, prior, m["key"])
                 g[f"mode{s}"], g[f"seed{s}"], g[f"force{s}"] = draw_force(r, g[s], cfg)
             out.append(g)
@@ -178,6 +207,7 @@ def plan(lab, cfg, b, games):
 # ---------- extraction ----------
 INTS = ("round", "type", "k", "forced", "mode", "chosen", "base", "current")
 STATE = ("own_gems", "enemy_gems", "carried", "alive", "picks")
+ZSTD = ["zstd", "-q", "-T8", "-6", "--rm", "-f"]
 
 
 def emb_lines(path, b):
@@ -192,14 +222,20 @@ def emb_lines(path, b):
                 text = z.read(f"team-{team}.stdout").replace(b"\0", b"").decode("utf-8", "replace")
                 out["bytes"][t] = len(text)
                 for line in text.splitlines():
-                    if line.startswith("EMB2 "):
+                    if line.startswith(("EMB3 ", "EMB2 ")):
                         f = line.split()[1:]
-                        if len(f) != 18 + 42:  # cut off (the stdout cap, or the game's end)
+                        # EMB3 (round 4 on) has qb, the proposal's probability of the base, after q.
+                        qb = line.startswith("EMB3 ")
+                        if len(f) != 18 + qb + 42:  # cut off (the stdout cap, or the game's end)
+                            out["cut"] = out.get("cut", 0) + 1
                             continue
-                        rows.append({"id": f"b{b:03d}-{stem}", "team": t, **{k: int(x) for k, x in zip(INTS, f[:8])}, "q": float(f[8]),
-                                     "gold": int(f[9]), "str": float(f[10]), "foc": float(f[11]), "hp": float(f[12]),
-                                     **{k: int(x) for k, x in zip(STATE, f[13:18])},
-                                     "v": [None if x == "x" else float(x) for x in f[18:]]})
+                        row = {"id": f"b{b:03d}-{stem}", "team": t, **{k: int(x) for k, x in zip(INTS, f[:8])}, "q": float(f[8])}
+                        if qb:
+                            row["qb"] = float(f[9])
+                            del f[9]
+                        row.update(gold=int(f[9]), str=float(f[10]), foc=float(f[11]), hp=float(f[12]),
+                                   **{k: int(x) for k, x in zip(STATE, f[13:18])}, v=[None if x == "x" else float(x) for x in f[18:]])
+                        rows.append(row)
                         out["decisions"][t] += 1
                     elif line.startswith("OOF "):
                         out["oof"][t] += 1
@@ -217,32 +253,36 @@ def finish(lab, b, bdir, cfg, threads):
     dec = bdir / "emb.dec"
     if files:
         at = dec.stat().st_size if dec.is_file() else 0
-        with ProcessPoolExecutor(threads) as ex, open(bdir / "emb.jsonl", "a") as f, open(dec, "ab") as g:
+        with ProcessPoolExecutor(min(threads, cfg["finish_threads"])) as ex, open(bdir / "emb.jsonl", "a") as f, open(dec, "ab") as g:
             for o, text in ex.map(emb_lines, files, itertools.repeat(b), chunksize=16):
                 o["at"] = [at, len(text)]
                 at += len(text)
                 g.write(text)
                 f.write(json.dumps(o) + "\n")
-        dlab.node(dlab.HERE / "outcome.mjs", bdir, "--out", bdir / "outcomes.jsonl", "--delete", "--threads", threads)
+        dlab.node(dlab.HERE / "outcome.mjs", bdir, "--out", bdir / "outcomes.jsonl", "--delete", "--threads", min(threads, cfg["finish_threads"]))
     embs = {r["stem"]: r for r in dlab.jsonl(bdir / "emb.jsonl")}
     blob = dec.read_bytes() if dec.is_file() else b""
     outcomes = {r["file"].removesuffix(".repl26a"): r for r in dlab.jsonl(bdir / "outcomes.jsonl")}
-    rows, decisions, bad = [], [], 0
+    rows, decisions, bad, early, cut = [], [], 0, 0, sum(e.get("cut", 0) for e in embs.values())
     for i, g in enumerate(p["games"]):
         stem = f"g{i:05d}"
         res = results.get(stem)
         if res is None:
             continue
         gid = f"b{b:03d}-{stem}"
-        row = {"id": gid, "batch": b, "bot": cfg["source_sha"][:10], **{k: v for k, v in g.items() if k != "vehicle_name"}}
+        row = {"id": gid, "batch": b, "bot": cfg["source_sha"][:10], **{k: v for k, v in g.items() if k not in ("vehicle_name", "vehicle_a", "vehicle_b")}}
         if res.get("error"):
             row["error"] = res["error"]
         else:
             row.update(winner=res["winner"], rounds=res["rounds"])
+            early += res["rounds"] is not None and res["rounds"] <= dlab.cambc_env.EARLY_ROUNDS
             o = outcomes.get(stem)
             if o:
-                ids = [[vehicle.CHAMPS.index(c) for c in g[s]] for s in "AB"]
-                row["draft_ok"] = o["draft"] == ids
+                us = g.get("us", "AB")
+                row["draft_ok"] = all(o["draft"][t] == [vehicle.CHAMPS.index(c) for c in g[s]] for t, s in enumerate("AB") if s in us)
+                for t, s in enumerate("AB"):  # a body's own draft
+                    if s not in us:
+                        row[s], row[f"src{s}"] = [vehicle.CHAMPS[c] for c in o["draft"][t]], g["opp"]
                 bad += not row["draft_ok"]
                 end = o["cp"]["end"]
                 row.update(wealth=[end[0][0] + end[0][1], end[1][0] + end[1][1]], cp=o["cp"], tributed=o["tributed"],
@@ -254,12 +294,23 @@ def finish(lab, b, bdir, cfg, threads):
         rows.append(row)
     with open(lab / "games.jsonl", "a") as f:
         f.write("".join(json.dumps(r) + "\n" for r in rows))
-    with open(lab / "decisions.jsonl", "ab") as f:
-        f.write(b"".join(decisions))
+    if cfg.get("opponents"):
+        # Round 4 on: a compressed file a batch (~25 GB a million games plain); emb.dec was only for a resumed finish.
+        (lab / "decisions").mkdir(exist_ok=True)
+        out = lab / "decisions" / f"b{b:03d}.jsonl"
+        out.write_bytes(b"".join(decisions))
+        subprocess.run([*ZSTD, str(out)], check=True)
+        dec.unlink(missing_ok=True)
+    else:
+        with open(lab / "decisions.jsonl", "ab") as f:
+            f.write(b"".join(decisions))
     (bdir / "merged").write_text(f"{len(rows)}\n")
     errors = sum(1 for r in rows if r.get("error"))
-    log(lab, f"batch {b}: merged {len(rows)} games ({errors} errors, {bad} draft mismatches), "
-             f"{sum(sum(r.get('decisions', (0, 0))) for r in rows if 'winner' in r)} decisions")
+    ok = [r for r in rows if "winner" in r]
+    log(lab, f"batch {b}: merged {len(rows)} games ({errors} errors, {bad} draft mismatches, {early} over by round "
+             f"{dlab.cambc_env.EARLY_ROUNDS}, {cut} cut log lines), {sum(sum(r.get('decisions', (0, 0))) for r in ok)} decisions, "
+             f"out-of-fuel lines a lab team-game {sum(sum(r.get('oof', (0, 0))) for r in ok) / max(1, sum(len(r.get('us', 'AB')) for r in ok)):.1f}, "
+             f"opponents {dict(collections.Counter(r.get('opp', 'self') for r in ok))}")
     if bad > max(5, 0.02 * len(rows)):
         raise SystemExit(f"{bad} games drafted off the table: stopping")
 
@@ -270,20 +321,35 @@ def vehicle_name(lab, b, v):
     return f"el-{lab.name}-v{v}" + ("-odd" if b % 2 else "")
 
 
+def body_name(lab, kind, i):
+    return f"el-{lab.name}-{kind}{i}"
+
+
 def build(lab, cfg, b, p):
     source = ROOT / cfg["source"]
     per_vehicle = collections.defaultdict(list)
     for g in p["games"]:
-        per_vehicle[g["vehicle"]] += [(g["key"], t, g[s], g[f"mode{s}"], g[f"seed{s}"], g[f"force{s}"]) for t, s in enumerate("AB")]
+        per_vehicle[g["vehicle"]] += [(g["key"], t, g[s], g[f"mode{s}"], g[f"seed{s}"], g[f"force{s}"]) for t, s in enumerate("AB")
+                                      if s in g.get("us", "AB")]
     paths = []
+    for kind, bots in cfg.get("opponent_bots", {}).items():
+        for i, bot in enumerate(bots):
+            path, changed = ev.make_body(ROOT / bot, body_name(lab, kind, i))
+            if changed or not vehicle.built(path):
+                paths.append(path)
+    # The plan carries the proposal's corr model, so a resumed batch rebuilds as planned. prepare() reads it from
+    # config.json per batch: it may change during a run (every row logs its own probabilities).
     for v in sorted(per_vehicle):
-        path, changed = ev.make(source, vehicle_name(lab, b, v), per_vehicle[v], cfg.get("corr_model"))
+        path, changed = ev.make(source, vehicle_name(lab, b, v), per_vehicle[v], p.get("corr_model", cfg.get("corr_model")))
         if changed or not vehicle.built(path):
             paths.append(path)
     if paths:
         log(lab, f"batch {b}: built {len(paths)} vehicles in {vehicle.build_all(paths, par=len(paths)):.0f} s")
     for g in p["games"]:
         g["vehicle_name"] = vehicle_name(lab, b, g["vehicle"])
+        if g.get("opp", "self") != "self":
+            body = body_name(lab, g["opp"], g["body"])
+            g["vehicle_a"], g["vehicle_b"] = (g["vehicle_name"], body) if g["us"] == "A" else (body, g["vehicle_name"])
 
 
 def prepare(lab, cfg, b, games):
@@ -291,6 +357,7 @@ def prepare(lab, cfg, b, games):
     bdir = lab / "batches" / f"b{b:03d}"
     bdir.mkdir(parents=True)
     p = plan(lab, cfg, b, games)
+    p["corr_model"] = json.loads((lab / "config.json").read_text()).get("corr_model", cfg.get("corr_model"))
     build(lab, cfg, b, p)
     (bdir / "plan.json").write_text(json.dumps(p))
     return bdir, p
@@ -302,6 +369,17 @@ def run(args):
     for k in ("threads", "vehicles"):
         if getattr(args, k):
             cfg[k] = getattr(args, k)
+    cfg["threads"] = cfg["threads"] or dlab.cpu_slots.SIZE
+    cli, fast, env = dlab.runner()
+    log(lab, f"runner {cli}: " + (f"fastrunner, {env['FASTRUNNER_MODE']}" if fast else "STOCK cambc") +
+        f"; {cfg['threads']} threads of {dlab.cpu_slots.SIZE} slots at weight {os.environ.get('CAMBC_SLOT_WEIGHT')}")
+    deadline = time.time() + args.hours * 3600 if args.hours else None
+    if deadline:
+        args.batches = 10 ** 6
+
+    def more(b):
+        """Whether batch b should be planned: within --batches, before the --hours deadline, and no `stop` file."""
+        return b < first + args.batches and not (lab / "stop").exists() and (deadline is None or time.time() < deadline)
     (lab / "batches").mkdir(exist_ok=True)
     for bdir in dlab.batch_dirs(lab):
         if not (bdir / "merged").is_file() and (bdir / "plan.json").is_file():
@@ -318,16 +396,20 @@ def run(args):
     played = None
     with ThreadPoolExecutor(1) as player:
         for b in range(first, first + args.batches):
+            if ready is None:
+                break
             bdir, p = ready
             t0 = time.time()
             log(lab, f"batch {b}: {len(p['games'])} games")
             playing = player.submit(dlab.run_batch, bdir, p["games"], cfg["threads"], cfg["timeout"], cfg["log_limit"])
             if played:
                 finish(lab, *played, cfg, cfg["threads"])
-            ready = prepare(lab, cfg, b + 1, args.games) if b + 1 < first + args.batches else None
+            ready = prepare(lab, cfg, b + 1, args.games) if more(b + 1) else None
             playing.result()
             log(lab, f"batch {b}: played in {time.time() - t0:.0f} s")
             played = (b, bdir)
+            if ready is None:
+                break
     if played:
         finish(lab, *played, cfg, cfg["threads"])
 
@@ -348,6 +430,7 @@ def main():
     p.add_argument("--source")
     p.add_argument("--games", type=int, default=12000)
     p.add_argument("--batches", type=int, default=1)
+    p.add_argument("--hours", type=float, help="plan batches until this many hours from now (or a `stop` file in the lab)")
     p.add_argument("--threads", type=int)
     p.add_argument("--vehicles", type=int)
     args = p.parse_args()

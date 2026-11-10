@@ -939,3 +939,9 @@ walk-then-dash in the escape planner"):
 **fuel ceiling (2026-11-10):** `--mix ladder-v2`, in `suites/fresh/fresh-{seed}`, symlinked into `merged/fceil-2020`:
 2020000-2020039, 10,240 maps (oc-ceil-10m and oc-ceil-view against oc-ceil-ref, EXPERIMENTS "Fuel ceiling
 re-measured"; used).
+
+**Emblem lab round 4 (ocean, 2026-11-10):** `--mix ladder-v2`, in `suites/fresh/fresh-{seed}` (tools/emblab/RUNBOOK.md):
+- 3100000-3100399, 102,400 maps: the lab's training pool (`replays/emblab/r4`, `r4b`, `r4c`, `r4d`; used).
+- 3110000-3110119, 30,720 maps, held out from the lab, symlinked into `merged/emb4-h1` (3110000-39), `emb4-h2`
+  (3110040-79) and `emb4-h3` (3110080-119), 10,240 maps each: the candidates' and the table's A/Bs (EXPERIMENTS
+  "Emblem lab round 4 on ocean"; all three used).
