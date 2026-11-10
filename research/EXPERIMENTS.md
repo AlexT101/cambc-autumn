@@ -175,7 +175,25 @@ against 76, Vendetta 66 against 76, Vesper 115 against 133. Gold-weight arms (`p
 | Mt3qc | cohesion 0.5 | 81.2 |
 | Mt3r | both | 80.1 |
 
-Each makes the body weaker, not closer to live. mite-re is checking their fidelity stats.
+Each makes the body weaker, not closer to live. mite-re's fidelity set on 400 multi-site fresh games found:
+- Our deaths stay put: 3.1-3.3 against 7.9 real.
+- Mt3qe's stats trade one for another: Vesper Strength 246 → 278 but max hp 2672 → 1771. Real Mite has both, from
+  more gold.
+- On map-matched ladder games, real Mite takes 22% more capture gold, 15% more gold per capture before r300, and
+  ~5 more late camps a game.
+
+**Gold-weight arms on Flp4** (`patch_gold.py X`: farm's per_gold × X; 256 ladder games):
+
+| Body | Earned r100 (real 452) | Earned r200 (real 1001) | Marcella gold/share (76) | ocean win % |
+|---|---|---|---|---|
+| Flp4 | 348 | 792 | 53 | 75.8 |
+| ×1.5 | 370 | 824 | 56 | 77.0 |
+| ×2 | 373 | 838 | 54 | 80.9 |
+| ×3 | 392 | 883 | 57 | 78.1 |
+
+Pricing gold higher closes about half the r100 gap, but the body gets weaker. Every lever tried so far (banking,
+emblems, cohesion, hunt, gold price) moves its own statistic toward live without moving the win rate toward ~64%.
+The bodies' strength gap is not one missing rule; Flp2's banking rule is the only change that moved it (80.5 → 71).
 
 ## (ocean, 2026-11-09) Draft first-turn fuel 2 (CHANGES 493): dash-travel flood kept, ward-cast cache dropped
 
