@@ -16250,3 +16250,11 @@ The first confirmation launcher stopped on an overstrict zero-handoff assertion 
 ### Ward exact-tile fuel comparison completed (2026-11-10 13:06 UTC)
 
 The 200k gate stopped NARROWED at 34 blocks/4,352 fresh paired units: −0.270±0.247 points (Fish −0.322±0.326; Mite −0.218±0.367), ladder −0.195±0.297. No acceptance screen; low LLR −2.286 did not cross formal rejection. Normal 100k was +0.101±0.249. Neither supports promotion. Balanced common 32-block/1,024-map secondary contrast is raised-minus-normal−0.470±0.428 conditional descriptive points; both teams' budgets change. Close the tile-ranking branch without the conditional cheaper-tile follow-up. Remaining bush/camp/timing gates are independent. [Full evidence](ideas-2026-11-10/warding.md).
+
+### Skirmish fifth-emblem continuation reached judgment zone (2026-11-10 14:40 UTC)
+
+Continued food's frozen `oc-emb4-f4-skirmish` against `ocean-b0eeff1` from its original 32 blocks, preserving every cached cell, body pair Flp4/Mt3qro, seed0, release own drafts, engine5.0.1 and normal100k fuel. Source hashes and all256 original summaries were verified; the old process was terminal before continuation. This is the original old-base table experiment, not a port to current498.
+
+With the width stop disabled and the previously specified zone stop retained, it ended **ZONE** at82 blocks/10,496 fresh paired units: **+0.326±0.382pp95%** (49.944–50.708%), Fish+0.562±0.522, Mite+0.091±0.552; ladder+0.274±0.369, pooled+0.300±0.266. LowLLR+2.963 crossed its threshold; highLLR−1.961 had previously crossed high-H0 at9,088units. No strength screen or99%live-bar pass. The interval still spans50: unresolved judgment-zone evidence, neither a proven gain nor rejection. No merge or live promotion.
+
+The shared-pool move at14:06 changed resource scheduling only, not frozen sources, run names or sample order. Provenance: `~/tmp-offload/handoff/codex/queue-ops/skirmish-{sources,stage1,final}.json`, `skirmish-main-dispatch.json`, and `skirmish-continue.log`; authoritative result `~/tmp-offload/diverse/gate-logs/fgate-oc-emb4-f4-skirmish--ocean-b0eeff1p4qro.json`.
