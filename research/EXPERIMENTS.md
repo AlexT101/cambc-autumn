@@ -54,6 +54,32 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 - A risk change can win the mirror and nothing else (nuke guard, 2026-11-08): +0.22 held out over 149k, panel -0.02.
   The v84 pattern again: a risk or greed change needs its panel H1 before it ships.
 
+## (ocean, 2026-11-10) Draft first-turn fuel 3 (CHANGES 506): -588k a draft, max 9.33M -> 8.27M; ward prunes and a ward-cast cache lost again
+
+Identity throughout: per-round plan hashes, picks and a raw-feature hash on 1456 team-drafts (128 ladder + 600 ocft-1950
+maps), then bench.py at 100M. Kept parts are in CHANGES 506. Before them, the heaviest drafts split as:
+- model 2-3.6M (`travel<1>` 0.7-1.7M, sight gap ~0.48M);
+- open-plan search 1.4-3.1M;
+- wards 1.1-1.8M (~750 candidates a site);
+- attacks 0.5-0.7M;
+- candidate floods 0.3-0.5M.
+
+**Didn't pay** (all exact; every one lost on fuel):
+- **Ward bound, exact window popcount** (skip a candidate whose near/far tiles in its 13x13 cannot beat the best): it
+  skipped 65% of candidates, but at ~700 fuel a candidate the draft cost +387k.
+- **Ward bound, whole-chunk sums** (a per-site chunk table, ≤9 adds a candidate): it skips only ~3% of casts, because
+  occlusion keeps real scores far under any window bound. The adds cost ~330 a candidate in wasm, so the wards rose by
+  up to +960k (03the-front).
+- **Ward-cast cache, again** (a persistent per-tile slot table, so no memset, and casts' ≤3x3 chunk windows kept):
+  - repeats are 1-15% of casts on most maps, though 67% on 03the-front (2858 candidates, 954 tiles);
+  - copying a window costs ~240 fuel, half a cast, and the indirect scoring cost more;
+  - net +173k a draft against the same bot without it. Only a free store would pay at these repeat rates.
+
+**Left:**
+- `travel<1>`'s Dial loop (~1.3M on the heaviest; pops are ~70% of tiles at ~200 each);
+- best_ward's scoring (~400k on clustered maps: a SIMD popcount of chunk pairs might halve it);
+- the search's per-event cost (spread over choose, finalize and the trace snapshots, no single hotspot).
+
 ## Emblem lab round 5 on ocean (2026-11-10, tools/emblab `elab.py`; CHANGES 504): an edit lab that agrees with A/Bs; one typed edit and three near-misses win on 501 and, less clearly, on 503's new draft
 
 The plan and the audit of round 4: [tools/emblab/PLAN-round5.md](../tools/emblab/PLAN-round5.md); how the lab works:

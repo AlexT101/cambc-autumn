@@ -465,30 +465,52 @@ void write_dash_steps(const StaticMap& map, Analysis& a, DraftPlan& plan, PlanHe
     a.dash_bits = same ? w.at() - at : 0;
 }
 
-// One member's attack tiles; false, writing nothing, if they do not fit or champions could not
-// decode them.
+// One member's attack tiles; false, writing nothing, if they do not fit.
 bool write_attack_tiles(const StaticMap& map, vec2 p, Analysis& a, DraftPlan& plan) {
     // Only the largest range is cast. A shadowcast from a clear tile at a smaller radius is the larger's within it
     // (rules: vision.shadowcast_radius), and a cluster out of the smaller range has no tile within it, so each
-    // smaller range's viewers and sight off bushes are the largest's within that range: its checks always pass.
+    // smaller range's viewers and sight off bushes are the largest's within that range.
     static_assert(DraftPlan::attack_ranges.size() == 2 && DraftPlan::attack_ranges[1] < DraftPlan::attack_ranges[0]);
-    static bitboard sent{cambc::uninitialized}, off{cambc::uninitialized}, sight{cambc::uninitialized};
-    const int r = DraftPlan::attack_ranges[0];
-    map.viewers_into(p, r, sent);
-    sent &= map.open_for_us;
-    copy_into(sent, off);
-    drop(off, map.open_bushes());
-    map.sight_off_bushes_into(p, r, sight);
-    if (!boards_equal(off, sight)) return false;
+    static_assert(DraftPlan::bush_range == DraftPlan::attack_ranges[0]);
+    static bitboard sent{cambc::uninitialized}, opaque{cambc::uninitialized}, one{cambc::uninitialized},
+        left{cambc::uninitialized}, rest{cambc::uninitialized};
+    const auto r = static_cast<std::uint16_t>(DraftPlan::attack_ranges[0]);
     // Bits go only over bush_range's square, a tile's in each_in_square's order: by word, low bit first.
     const std::uint64_t* const seen = sent.ptr();
     const int stride = static_cast<int>(cambc::detail::layout().chunk_stride);
-    bool any = false;
     int bits = 0;
-    each_word_in_square(map.open_bushes(), p, DraftPlan::bush_range, [&](int cx, int cy, std::uint64_t tiles) {
-        bits += __builtin_popcountll(tiles);
-        any = any || (tiles & seen[cy * stride + cx]) != 0;
-    });
+    each_word_in_square(map.open_bushes(), p, DraftPlan::bush_range, [&](int, int, std::uint64_t tiles) { bits += __builtin_popcountll(tiles); });
+    // Champions take the tiles off bushes from sight_off_bushes, which is viewers_into's off bushes: a cast from
+    // outside a cluster holds no bush (vision.occlusion), and one from inside holds only its cluster. So only the
+    // bushes that see p are cast for, as viewers_into finds them: each cluster in reach from inside it, or from a
+    // bush its own.
+    bool any = false;
+    if (bits > 0) {
+        bool first = true;
+        const auto cast_from_inside = [&](const bitboard& cluster) {
+            bitboard& to = first ? sent : one;
+            xor_into(map.walls_and_bushes, cluster, opaque); // walls_and_bushes & ~cluster
+            opaque.shadow_cast_into(p, r, to);
+            to &= cluster;
+            if (!first) sent |= one;
+            first = false;
+        };
+        if (test(map.bushes, p)) cast_from_inside(map.bush_cluster(p).tiles);
+        else {
+            left.clear();
+            left.draw_chebyshev(p, static_cast<float>(r));
+            left &= map.bushes;
+            while (!left.is_empty()) {
+                const auto& cluster = map.bush_cluster(first_tile(left)).tiles;
+                cast_from_inside(cluster);
+                not_into(cluster, rest);
+                left &= rest;
+            }
+        }
+        if (!first)
+            each_word_in_square(map.open_bushes(), p, DraftPlan::bush_range,
+                                [&](int cx, int cy, std::uint64_t tiles) { any = any || (tiles & seen[cy * stride + cx]) != 0; });
+    }
     PlanWriter w{plan, a.attack_at};
     if (!w.fits(any ? bits : 0)) return false;
     if (any) {
@@ -805,8 +827,12 @@ void make_open_plan(const StaticMap& map, Analysis& a, DraftPlan& plan, std::uin
     // body's attack range, so the floods stop there: past it every step count reads unreachable, to the same effect.
     int reach = 0;
     for (int b = 0; b < p.bodies; ++b) reach = std::max(reach, facts(a.lead_for[b]).attack_range());
+    // Walks are symmetric (a step tests only the tile stepped onto), so candidate c's flood fills its row and column
+    // for the candidates after it, and stops once they are reached. A blocked centre is no root and no goal.
     static cambc::distance_field walk;
-    static bitboard root{cambc::uninitialized}, visited{cambc::uninitialized};
+    static bitboard root{cambc::uninitialized}, goals{cambc::uninitialized}, visited{cambc::uninitialized};
+    std::array<bool, op::max_cands> open_centre;
+    for (int c = 0; c < p.cands; ++c) open_centre[c] = !test(map.blocked_for_us, map.groups[order[c].second].centre);
     for (int c = 0; c < p.cands; ++c) {
         const int g = order[c].second;
         const auto& G = map.groups[g];
@@ -819,10 +845,19 @@ void make_open_plan(const StaticMap& map, Analysis& a, DraftPlan& plan, std::uin
             C.hp[m] += hp, C.strength[m] += hits, C.total += hp, C.total_strength += hits;
             C.members = std::min(C.members + 1, op::max_members);
         }
+        const bool open = open_centre[c];
+        p.steps[c][c] = open ? 0 : unreachable;
+        clear_board(goals);
+        bool any = false;
+        for (int d = c + 1; d < p.cands; ++d)
+            if (open && open_centre[d]) set_tile(goals, map.groups[order[d].second].centre), any = true;
+            else p.steps[c][d] = p.steps[d][c] = unreachable;
+        if (!any) continue;
         clear_board(root);
-        if (!test(map.blocked_for_us, G.centre)) set_tile(root, G.centre);
-        walk.compute(map.blocked_for_us, root, visited, static_cast<std::uint16_t>(p.horizon + reach));
-        for (int d = 0; d < p.cands; ++d) p.steps[c][d] = static_cast<std::uint16_t>(steps_at(walk, map.groups[order[d].second].centre));
+        set_tile(root, G.centre);
+        walk.compute_to(map.blocked_for_us, root, goals, visited, static_cast<std::uint16_t>(p.horizon + reach));
+        for (int d = c + 1; d < p.cands; ++d)
+            if (open_centre[d]) p.steps[c][d] = p.steps[d][c] = static_cast<std::uint16_t>(steps_at(walk, map.groups[order[d].second].centre));
     }
     for (int b = 0; b < p.bodies; ++b) {
         const auto type = a.lead_for[b];
@@ -840,7 +875,7 @@ void make_open_plan(const StaticMap& map, Analysis& a, DraftPlan& plan, std::uin
     [[maybe_unused]] const auto fuel_search = cambc::fuel_remaining();
     const auto best = op::solve(p, floor + 20000, value, iterations);
     op::Lists worked;
-    op::simulate(p, best, &worked);
+    op::simulate_solved(p, best, &worked);
     std::array<std::array<std::uint8_t, op::max_steps>, op::max_bodies> steps{};
     for (int b = 0; b < p.bodies; ++b)
         for (int k = 0; k < op::max_steps; ++k) steps[b][k] = worked[b][k] >= 0 ? static_cast<std::uint8_t>(p.cand[worked[b][k]].group + 1) : 0;
@@ -947,8 +982,10 @@ void analyse(DraftState& state) {
         const auto& members = map.groups[a.attack_group].members;
         for (; a.attack_member < static_cast<int>(members.size()); ++a.attack_member) {
             const vec2 p = members[a.attack_member].pos;
+            // With no bush in range, finding clusters would do nothing.
             const bool found = room(attack_bound, cap_attacks) && afford(attack_cost)
-                               && map.find_bush_clusters(p, DraftPlan::attack_ranges[0], first ? floor(attack_bound) : draft_reserve() + attack_cost);
+                               && (count_in_small_square<DraftPlan::attack_ranges[0]>(map.bushes, p) == 0
+                                   || map.find_bush_clusters(p, DraftPlan::attack_ranges[0], first ? floor(attack_bound) : draft_reserve() + attack_cost));
             if (!found && !first) return;
             if (!found) {
                 a.capped |= cap_attacks;
@@ -1385,12 +1422,34 @@ mapfeat::Input engine_input() {
     in.W = cambc::map::width(), in.H = cambc::map::height();
     const auto sym = cambc::map::symmetry();
     in.sym = sym == cambc::symmetry::horizontal ? mapfeat::horizontal : sym == cambc::symmetry::vertical ? mapfeat::vertical : mapfeat::rotational;
-    in.t.assign(static_cast<std::size_t>(in.W * in.H), mapfeat::ground);
-    const auto paint = [&](const bitboard& board, mapfeat::Tile kind) {
-        for (const vec2 p : board.positions()) in.t[static_cast<std::size_t>(p.y * in.W + p.x)] = kind;
-    };
-    paint(cambc::map::walls(), mapfeat::wall), paint(cambc::map::holes(), mapfeat::hole);
-    paint(cambc::map::bushes(), mapfeat::bush), paint(cambc::map::altars(), mapfeat::altar);
+    // Each board's packed rows (a bit a tile, row-major, low bit first) painted 16 tiles at a time, in this order:
+    // positions() cost ~10 fuel a tile.
+    const std::size_t tiles = static_cast<std::size_t>(in.W * in.H), size = bitboard::linear_buffer_size();
+    in.t.resize(tiles);
+    constexpr int kinds = 4;
+    const bitboard* const boards[kinds] = {&cambc::map::walls(), &cambc::map::holes(), &cambc::map::bushes(), &cambc::map::altars()};
+    constexpr mapfeat::Tile kind[kinds] = {mapfeat::wall, mapfeat::hole, mapfeat::bush, mapfeat::altar};
+    std::vector<std::uint8_t> bits(kinds * size);
+    for (int b = 0; b < kinds; ++b) boards[b]->export_linear_buffer({bits.data() + b * size, size});
+    std::uint8_t* const t = in.t.data();
+    std::size_t i = 0;
+    const v128_t lanes = wasm_i8x16_make(1, 2, 4, 8, 16, 32, 64, -128, 1, 2, 4, 8, 16, 32, 64, -128);
+    const v128_t spread = wasm_i8x16_make(0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1);
+    for (; i + 16 <= tiles; i += 16) {
+        v128_t out = wasm_i8x16_splat(mapfeat::ground);
+        for (int b = 0; b < kinds; ++b) {
+            std::uint16_t word;
+            std::memcpy(&word, bits.data() + b * size + i / 8, 2);
+            const v128_t set = wasm_i8x16_eq(wasm_v128_and(wasm_i8x16_swizzle(wasm_i16x8_splat(static_cast<std::int16_t>(word)), spread), lanes), lanes);
+            out = wasm_v128_bitselect(wasm_i8x16_splat(kind[b]), out, set);
+        }
+        wasm_v128_store(t + i, out);
+    }
+    for (; i < tiles; ++i) {
+        t[i] = mapfeat::ground;
+        for (int b = 0; b < kinds; ++b)
+            if (bits[b * size + i / 8] >> (i % 8) & 1) t[i] = kind[b];
+    }
     cambc::detail::aabb box{};
     cambc::detail::check(cambc::detail::sdk_spawn_region(0, &box));
     in.sx = box.min_x, in.sy = box.min_y, in.sw = box.max_x - box.min_x, in.sh = box.max_y - box.min_y;

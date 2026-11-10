@@ -158,15 +158,26 @@ struct Grid {
         if (in.sym == vertical) return (H - 1 - y) * W + x;
         return (H - 1 - y) * W + (W - 1 - x);
     }
-    // out[i] = a[mirror(i)], a row at a time.
+    // out[i] = a[mirror(i)], a row at a time: copied, or reversed 4 at a time (inserts through reverse iterators
+    // cost ~5 fuel a tile). out is not a.
     void mirrored(const std::vector<int>& a, std::vector<int>& out) const {
-        out.clear();
-        out.reserve(static_cast<std::size_t>(n));
+        out.resize(static_cast<std::size_t>(n));
         const bool flip_rows = in.sym != horizontal, reverse = in.sym != vertical;
         for (int y = 0; y < H; ++y) {
             const int* const row = a.data() + (flip_rows ? H - 1 - y : y) * W;
-            if (reverse) out.insert(out.end(), std::make_reverse_iterator(row + W), std::make_reverse_iterator(row));
-            else out.insert(out.end(), row, row + W);
+            int* const to = out.data() + y * W;
+            if (!reverse) {
+                std::memcpy(to, row, sizeof(int) * static_cast<std::size_t>(W));
+                continue;
+            }
+            int x = 0;
+#if defined(__wasm_simd128__)
+            for (; x + 4 <= W; x += 4) {
+                const v128_t v = wasm_v128_load(row + W - 4 - x);
+                wasm_v128_store(to + x, wasm_i32x4_shuffle(v, v, 3, 2, 1, 0));
+            }
+#endif
+            for (; x < W; ++x) to[x] = row[W - 1 - x];
         }
     }
     std::vector<int> spawn_tiles(int team) const {
@@ -241,7 +252,9 @@ struct Grid {
         };
         const auto store8 = [](std::uint8_t* p, std::uint64_t x) { std::memcpy(p, &x, 8); };
         // The byte masks are read and written a word at a time (16 tiles in the bot), up to 16 bytes past a row.
+        // Zeroed, or `raw` (every byte read is written first: zeroing cost a fuel a byte).
         const auto bytes = [&] { return std::make_unique<std::uint8_t[]>(static_cast<std::size_t>(N + 32)); };
+        const auto raw = [&] { return std::make_unique_for_overwrite<std::uint8_t[]>(static_cast<std::size_t>(N + 32)); };
 #if defined(__wasm_simd128__)
         using Word = v128_t;
         constexpr int wb = 16;
@@ -266,7 +279,8 @@ struct Grid {
         // unwalkable, the other spawn or not walked to); and with crystals the landable tiles no crystal has
         // reached yet (`open`): tiles pop in distance order, so the first crystal to reach a tile is its best,
         // and each tile is relaxed by a crystal at most once; a tile's 7x7 box is 7 eight-byte words, not 40.
-        const auto low_v = bytes(), walked_v = bytes();
+        // walked is read past a row's end only in bits the leap scan stops before.
+        const auto low_v = raw(), walked_v = raw();
         const auto open_v = level > 1 ? bytes() : nullptr;
         // A dash beats walking only over a hole or altar (a walkable middle tile is walked through for 2, walls
         // block), so only tiles next to one (`cross`) try dashes; without crystals only they leap.
@@ -346,7 +360,7 @@ struct Grid {
         // more tiles changes no distance), or without crystals next to a hole or altar. Dilated along the rows,
         // then across them. nb is left 0 outside the leaping words, where no dash can beat walking.
         const std::uint8_t* const src = level > 1 ? low : cross;
-        const auto across_v = bytes(), leaps_v = bytes();
+        const auto across_v = raw(), leaps_v = raw();
         std::uint8_t* const across = across_v.get();
         std::uint8_t* const leaps = leaps_v.get();
         for (int r = pad - R; r < h + pad + R; ++r)
@@ -362,7 +376,7 @@ struct Grid {
                 st(leaps + q, x);
             }
         // Each map tile's mask of low n8 neighbours (a byte's bit k from the low byte at step k).
-        const auto nb_v = bytes();
+        const auto nb_v = level > 1 ? raw() : bytes(); // with crystals it is cleared below
         std::uint8_t* const nb = nb_v.get();
         // Only words with a tile next to a hole or altar are filled (the rest stay 0, trying no dash): with crystals,
         // cross dilated once more into `across`, which the leaps no longer need.
@@ -847,6 +861,7 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
     std::vector<int> front(Si + 2, 0);
     bool any_ratio = false;
     double best_d = 0, best_ratio = 0, centre_sum = 0;
+    std::vector<int> altar_at; // the altar tiles in index order
     const double cx = (g.W - 1) / 2.0, cy = (g.H - 1) / 2.0, half = std::max(g.W, g.H) / 2.0;
     const std::uint8_t* const tiles = in.t.data();
     // A byte a tile, 1 where team A walks to, with 8 bytes of slack for word reads.
@@ -878,14 +893,16 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
         const int* const dA = fA.data();
         int i = 0;
 #if defined(__wasm_simd128__)
-        // Tiles past Si (or unreached, -1 unsigned) land in front[Si + 1], which choke never reads.
-        const v128_t dump = wasm_i32x4_splat(Si + 1);
-        for (; i + 16 <= n; i += 16)
-            for (int g4 = 0; g4 < 16; g4 += 4) {
-                const v128_t v = wasm_u32x4_min(wasm_v128_load(dA + i + g4), dump);
-                ++f[wasm_i32x4_extract_lane(v, 0)], ++f[wasm_i32x4_extract_lane(v, 1)];
-                ++f[wasm_i32x4_extract_lane(v, 2)], ++f[wasm_i32x4_extract_lane(v, 3)];
-            }
+        // Choke reads only the middle half, [Si / 4, (3 Si + 3) / 4]: the tiles outside it (unreached, -1 unsigned,
+        // included) land in front[Si + 1], which it never reads, and 4 tiles with none in it are not counted.
+        const v128_t dump = wasm_i32x4_splat(Si + 1), lo = wasm_i32x4_splat(Si / 4), span = wasm_i32x4_splat((3 * Si + 3) / 4 - Si / 4);
+        for (; i + 4 <= n; i += 4) {
+            const v128_t v = wasm_v128_load(dA + i), in = wasm_u32x4_le(wasm_i32x4_sub(v, lo), span);
+            if (!wasm_v128_any_true(in)) continue;
+            const v128_t k = wasm_v128_bitselect(v, dump, in);
+            ++f[wasm_i32x4_extract_lane(k, 0)], ++f[wasm_i32x4_extract_lane(k, 1)];
+            ++f[wasm_i32x4_extract_lane(k, 2)], ++f[wasm_i32x4_extract_lane(k, 3)];
+        }
 #endif
         for (; i < n; ++i)
             if (static_cast<unsigned>(dA[i]) <= static_cast<unsigned>(Si)) ++f[dA[i]];
@@ -900,7 +917,7 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
         }
         for (int i = c; i < std::min(n, c + 8); ++i) {
             if (tiles[i] != altar) continue;
-            ++altars;
+            ++altars, altar_at.push_back(i);
             const int x = i % g.W, y = i / g.W, dA = g.reach_near(fA, x, y), dB = g.reach_near(fB, x, y);
             centre_sum += std::max(std::abs(x - cx), std::abs(y - cy)) / half;
             if (dA >= 0 && dB >= 0) {
@@ -1063,9 +1080,8 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
     }
     if (want >> camp_altar & 1 && altars && !in.camps.empty()) {
         int nearest = std::numeric_limits<int>::max();
-        for (int i = 0; i < n; ++i)
-            if (in.t[i] == altar)
-                for (const auto& c : in.camps) nearest = std::min(nearest, std::max(std::abs(i % g.W - c.x), std::abs(i / g.W - c.y)));
+        for (const int i : altar_at)
+            for (const auto& c : in.camps) nearest = std::min(nearest, std::max(std::abs(i % g.W - c.x), std::abs(i / g.W - c.y)));
         out[camp_altar] = nearest;
     }
     if (want >> sight_gap & 1) {

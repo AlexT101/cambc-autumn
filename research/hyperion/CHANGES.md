@@ -4436,3 +4436,33 @@ the verdict for fights it declines. Declined fights wait until their target is f
 Results and lessons: [fuel 505](../fuel-2026-11-10-sixth/README.md).
 
 Frozen as `variants/oc-fuel-505` (= bots/ocean).
+
+## 506: The draft's first turn ~590k cheaper a draft, at most 9.33M -> 8.27M, plans identical (ocean, 2026-11-10; fuel-only)
+
+Draft files only (`draft/draft.cc`, `map_features.cc`, `open_plan.cc`). Each change is exact:
+- **Open-plan search memo:** the local search can accept only a plan whose (value, -length) beats the best, which
+  never falls, and a plan's value depends on the plan alone. So a plan it has already evaluated (15-55% of its moves)
+  is skipped without simulating, through a 1024-slot hash set. The best plan's run trace is left unconstructed
+  (~150k of initialisers), and `simulate_solved` reuses solve's tables.
+- **Candidate floods:** walks are symmetric (a step tests only the tile stepped onto), so candidate c floods once
+  for the candidates after it (`compute_to`, stopping when they are reached) and fills both halves of the matrix.
+  Blocked centres read unreachable without a flood.
+- **Attack tiles:** champions read the tiles off bushes, so only the bush clusters that see the tile are cast, from
+  inside each cluster, mirroring `viewers_into`. The base cast and its always-true check are gone. A member with no
+  bush in range skips `find_bush_clusters`.
+- **Model input and features:** `engine_input` paints the four boards' packed rows 16 tiles at a time (positions()
+  cost ~10 a tile). `Grid::mirrored` copies or reverses rows 4 at a time. The front histogram skips 4-groups with
+  no lane in range. `camp_altar` iterates the altar tiles. `travel_at` no longer zero-fills the byte masks that are
+  written before being read.
+
+Exact:
+- plans of every draft round, picks and a hash of the raw model features are identical to `variants/dfd-ref`
+  (= bots/ocean at 504) on all 1456 team-drafts of 728 maps (the 128 ladder maps and half of ocft-1950's
+  huge/maze/lakes/jungle/caves/contested/monolith/vaults/classic);
+- bench.py replays at 100M are identical: 52/52 `--set wide`, 52/52 `--set wide --test-draft` and 30/30 on 15 heavy
+  maps.
+
+First-turn fuel on the 1456 (unlimited first turn): p50 4.22M -> 3.67M, p90 6.92M -> 6.16M, p99 8.56M -> 7.69M, max
+9.33M -> 8.27M. Every draft is cheaper: the mean saving is 588k, between 47k and 1.32M. The 8 heaviest save 0.82-1.32M.
+In the bench bundles the draft turn's max is 8.91M -> 7.80M on the heavy maps and 6.92M -> 6.30M on wide.
+Frozen as `variants/oc-dfuel-506` (= bots/ocean).

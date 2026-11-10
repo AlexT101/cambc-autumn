@@ -133,7 +133,13 @@ struct Mark {
 struct Trace {
     int n = 0;
     std::array<Mark, 64 * max_bodies> mark;
-    std::array<State, 64 * max_bodies> state;
+    // Every snapshot is written before it is read, so they are left unconstructed: 384 States' initialisers (a group's
+    // clear is never, not 0) cost ~150k fuel.
+    union Snapshots {
+        Snapshots() {}
+        State& operator[](int i) { return at[i]; }
+        State at[64 * max_bodies];
+    } state;
     std::array<std::array<int, max_steps>, max_bodies> first; // the first mark of each body reading each index, else n
 
     void index(int bodies) {
@@ -330,6 +336,36 @@ int length(const std::array<std::int8_t, max_steps>& l) {
     return n;
 }
 
+// The plans the local search has evaluated (15-55% of its moves repeat one). The search accepts only a plan whose
+// (value, -length) beats the best's, which never decreases, and a plan's value depends on the plan alone: one
+// evaluated before can never be accepted again, so it is skipped unsimulated. Open addressing, the plans compared
+// whole (every entry after a list's end is -1, so bytes equal is plans equal).
+struct Tried {
+    static constexpr int slots = 1024;
+    static_assert(slots >= 2 * params::open_plan::iterations);
+    std::array<Lists, slots> plan;
+    std::array<std::uint32_t, slots> gen{};
+    std::uint32_t now = 0;
+
+    void clear() { ++now; }
+    // False if `l` was inserted before.
+    bool insert(const Lists& l) {
+        static_assert(sizeof(Lists) == 36);
+        std::uint64_t w[4];
+        std::uint32_t last;
+        std::memcpy(w, &l, 32), std::memcpy(&last, reinterpret_cast<const char*>(&l) + 32, 4);
+        std::uint64_t h = (w[0] ^ w[1] * 0x9E3779B97F4A7C15ull) + (w[2] ^ w[3] * 0xC2B2AE3D27D4EB4Full) + last;
+        h *= 0xFF51AFD7ED558CCDull;
+        for (unsigned i = static_cast<unsigned>(h >> 54);; i = (i + 1) & (slots - 1)) {
+            if (gen[i] != now) {
+                gen[i] = now, plan[i] = l;
+                return true;
+            }
+            if (std::memcmp(&plan[i], &l, sizeof(Lists)) == 0) return false;
+        }
+    }
+};
+
 } // namespace
 
 namespace {
@@ -349,6 +385,8 @@ float simulate(const Problem& p, const Lists& plan, Lists* attended) {
     tables.build(p);
     return run_plan(p, plan, attended);
 }
+
+float simulate_solved(const Problem& p, const Lists& plan, Lists* attended) { return run_plan(p, plan, attended); }
 
 Lists solve(const Problem& p, std::uint64_t fuel_floor, float& value, int& iterations) {
     Lists best;
@@ -397,6 +435,8 @@ Lists solve(const Problem& p, std::uint64_t fuel_floor, float& value, int& itera
         trace.index(p.bodies);
     };
     record(-1);
+    static Tried tried;
+    tried.clear();
     while (iterations < params::open_plan::iterations && fuel_ok(fuel_floor)) {
         ++iterations;
         Lists cand = best;
@@ -426,7 +466,7 @@ Lists solve(const Problem& p, std::uint64_t fuel_floor, float& value, int& itera
         } else if (op == 4 && n > 0) {
             l[rng.below(n)] = static_cast<std::int8_t>(rng.below(p.cands)), made = true;
         }
-        if (!made) continue;
+        if (!made || !tried.insert(cand)) continue;
         // simulate(p, cand), resumed from the best's run where they part (Trace).
         int d = 0;
         while (d < max_steps && l[d] == best[b][d]) ++d;

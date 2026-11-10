@@ -44,6 +44,8 @@ using Lists = std::array<std::array<std::int8_t, max_steps>, max_bodies>; // can
 
 // Value paid by the horizon; `attended`, when given, gets each body's groups it worked, in order (-1 ends).
 float simulate(const Problem& p, const Lists& plan, Lists* attended = nullptr);
+// simulate, right after solve(p) with the same p: its tables are kept.
+float simulate_solved(const Problem& p, const Lists& plan, Lists* attended = nullptr);
 // The best plan found within `fuel_floor`; its value into `value`.
 Lists solve(const Problem& p, std::uint64_t fuel_floor, float& value, int& iterations);
 
