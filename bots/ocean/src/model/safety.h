@@ -236,6 +236,13 @@ int attack_reach_in_turn(const ChampionBelief& c, int round);
 // runs through e: damage on it counts in full.
 inline constexpr float no_partner_bound = 1e9f;
 float partner_bound(const World& world, const ChampionBelief& e);
+// A camp hit we could take instead of `o`, an ally done acting that it would fell: its death in our health
+// (all of it, and more, for our linked partner).
+float ally_fall_value(const World& world, const ChampionBelief& o);
+// Not counting on the shelter of an ally yet to act from a camp hit that would fell us: it may leave.
+inline constexpr bool shield_doubt_later = false;
+// The most any group deals in a camp phase: an ally with more health and shield no group can fell.
+float max_group_strength(const World& world);
 // A visible enemy within `margin` of our `reach` from p, or of its own strike before our next turn:
 // a fight may open there that wants what we would spend now.
 bool engagement_near(const World& world, vec2 p, int reach, int margin = 1);
@@ -571,6 +578,10 @@ private:
         std::array<CampHit, 8> tie_only_;
     };
     int tie_only_count_ = 0;
+    // camp_damage reads members_ to here: after the members, each shield (a member whose hit falls on an ally done
+    // acting that it fells, where our taking it would spare the ally) as two hits that cancel within the radius
+    // where we would take that hit instead and leave ally_fall_value beyond it.
+    int camp_total_ = 0;
     bool members_known_ = false;
     float camp_factor_ = 0; // camp_hit_factor(), read on first need: CampHit strengths carry it
     struct CampMemo {

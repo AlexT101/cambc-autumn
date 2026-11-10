@@ -872,6 +872,25 @@ int attack_reach_in_turn(const ChampionBelief& c, int round) {
     return r;
 }
 
+float ally_fall_value(const World& world, const ChampionBelief& o) {
+    const auto& me = world.me();
+    const float ours = my_health() + (me.shield_slot >= 0 ? shield_value(me.handle) : 0.0f);
+    if (o.facts().passive == Passive::linked_pair && me.facts().passive == Passive::linked_pair) return my_max_health() + ours + 1;
+    // Its life against ours: each full health, life and bag (params value units).
+    const float theirs = o.max_health + params::life_value + params::gem_value * static_cast<float>(o.gems);
+    const float own = my_max_health() + params::life_value + params::gem_value * static_cast<float>(me.gems);
+    return ours * std::min(1.0f, theirs / own);
+}
+
+float max_group_strength(const World& world) {
+    static float most = -1;
+    if (most < 0) {
+        most = 0;
+        for (const auto& g : world.map().groups) most = std::max(most, g.strength);
+    }
+    return most;
+}
+
 float partner_bound(const World& world, const ChampionBelief& e) {
     const auto* p = linked_partner(world, e);
     if (!p || !p->alive || !p->visible || test(world.map().enemy_spawn, p->pos)) return no_partner_bound;
@@ -2061,14 +2080,33 @@ std::span<const Safety::CampHit> Safety::awake_members() {
     };
     const bool reread = refresh_;
     const auto& groups = world_.map().groups;
+    // Allies done acting that some group could fell (into others), and whether an ally is yet to act.
+    std::array<std::int8_t, 4> fallers;
+    int n_fallers = 0;
+    bool later = false;
+    float ours = -1; // our health and shield, read where a group could fell us
+    // Members whose hit falls on a faller: shields (camp_total_) once every hit on it is summed.
+    struct Onto {
+        vec2 pos;
+        int radius;
+        bool stunned;
+        std::int8_t ally; // into others
+        float hit;
+    };
+    std::array<Onto, 8> onto;
+    int n_onto = 0;
     world_.each_stirring([&](int g) {
         if (groups[g].strength <= 0) return;
         const auto& c = world_.camps[g];
         if (n < 0) {
             n = 0;
             for (const auto& o : world_.allies)
-                if (n < static_cast<int>(others.at.size()) && o.alive && o.visible && !o.is_self && !gone(o))
+                if (n < static_cast<int>(others.at.size()) && o.alive && o.visible && !o.is_self && !gone(o)) {
+                    if (!o.acted) later = true;
+                    else if (n_fallers < static_cast<int>(fallers.size()) && o.health + o.shield <= max_group_strength(world_) * o.taken)
+                        fallers[static_cast<std::size_t>(n_fallers++)] = static_cast<std::int8_t>(n);
                     others.at[n++] = {o.pos, &o, -1, -2};
+                }
             for (auto left = seen_enemies(); left; left &= left - 1)
                 if (const auto& o = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
                     n < static_cast<int>(others.at.size()) && !gone(o))
@@ -2175,6 +2213,42 @@ std::span<const Safety::CampHit> Safety::awake_members() {
             }
             return;
         }
+        bool track = false, doubt = false;
+        for (int i = 0; i < n_fallers && !track && c.awake == Awake::awake; ++i) {
+            const auto& o = others.at[fallers[static_cast<std::size_t>(i)]];
+            track = box_out(o) <= groups[g].reach && o.belief->health + o.belief->shield <= groups[g].strength * o.belief->taken;
+        }
+        if (shield_doubt_later && later) {
+            if (ours < 0) ours = my_health() + (world_.me().shield_slot >= 0 ? shield_value(world_.me().handle) : 0.0f);
+            doubt = groups[g].strength * camp_factor_ >= ours;
+        }
+        if (track || doubt) {
+        for (std::size_t i = 0; i < size; ++i) {
+            const auto& m = groups[g].members[i];
+            if (c.health[i] <= 0 || m.strength <= 0 || (reread && seen_empty(m.pos))) continue;
+            if (!stirred && c.member_asleep(i)) continue;
+            {
+                int reach = m.reach, tie = m.reach;
+                // The other that takes the hit: the strictly nearest within range, or -1 if tied.
+                int target = -1, target_d = m.reach + 1;
+                const bool doubts = doubt && m.strength * camp_factor_ >= ours;
+                for (int k = 0; k < k_near; ++k) {
+                    auto& o = others.at[near[k]];
+                    const int d = dist(o.pos, m.pos);
+                    if (d < target_d) target = near[k], target_d = d;
+                    else if (d == target_d) target = -1;
+                    if (d - 1 >= reach || (doubts && o.belief->side == team::ally && !o.belief->acted)) continue;
+                    reach = std::min(reach, d - first(o)), tie = std::min(tie, d);
+                }
+                if (track && target >= 0 && n_onto < static_cast<int>(onto.size()))
+                    if (const auto& o = *others.at[target].belief; o.side == team::ally && o.acted)
+                        onto[static_cast<std::size_t>(n_onto++)] = {m.pos, target_d - first(others.at[target]), camp_stunned(m.handle) && test(world_.visible, m.pos),
+                                                                    static_cast<std::int8_t>(target), m.strength * o.taken};
+                emit(m, reach, tie);
+            }
+        }
+        return;
+        }
         for (std::size_t i = 0; i < size; ++i) {
             const auto& m = groups[g].members[i];
             if (c.health[i] <= 0 || m.strength <= 0 || (reread && seen_empty(m.pos))) continue;
@@ -2190,6 +2264,20 @@ std::span<const Safety::CampHit> Safety::awake_members() {
         }
     });
     member_count_ = count;
+    camp_total_ = count;
+    // An ally felled by the hits on it, which our taking one of them would spare.
+    for (int i = 0; i < n_onto; ++i) {
+        const auto& x = onto[static_cast<std::size_t>(i)];
+        const auto& o = *others.at[x.ally].belief;
+        float sum = 0;
+        for (int j = 0; j < n_onto; ++j)
+            if (onto[static_cast<std::size_t>(j)].ally == x.ally) sum += onto[static_cast<std::size_t>(j)].hit;
+        if (const float health = o.health + o.shield; sum < health || sum - x.hit >= health) continue;
+        if (static_cast<std::size_t>(camp_total_) + 2 > members_.size()) members_.resize(static_cast<std::size_t>(camp_total_) + 2);
+        const float value = ally_fall_value(world_, o);
+        members_[static_cast<std::size_t>(camp_total_++)] = {x.pos, value, 1, 1 << 12, 0, x.stunned, 0};
+        members_[static_cast<std::size_t>(camp_total_++)] = {x.pos, -value, 1, x.radius, 0, x.stunned, 0};
+    }
 }
 
 bool Safety::gone(const ChampionBelief& c) {
@@ -2771,7 +2859,8 @@ bool Safety::may_be_hit(vec2 p) {
 }
 
 float Safety::camp_damage(vec2 p, bool worst, bool next) {
-    const auto& members = awake_members();
+    if (!members_known_) find_members();
+    const std::span<const CampHit> members{members_.data(), static_cast<std::size_t>(camp_total_)};
     if (members.empty()) return 0;
     next = next && worst;
     auto& memo = camp_memo_[next ? 2 : worst ? 1 : 0];

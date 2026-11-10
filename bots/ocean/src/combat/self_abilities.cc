@@ -54,12 +54,24 @@ struct Hazard {
     std::array<float, Strike::max_reach + 1> blow{};
 };
 
+// threats_near's camp hazards (by index) that pick an ally done acting and fell it: where they do not pick us, its
+// death (ally_fall_value), listed after the hazards as two that cancel where the member picks us.
+struct Doom {
+    int hazard;
+    float value;
+    const ChampionBelief* ally;
+    float hit;
+};
+std::array<Doom, 8> dooms;
+int n_dooms = 0;
+
 // Enemies and awake monsters that could reach a tile within a dash of `here` before our next turn.
 // A scratch vector, valid until the next call: allocating costs more than the work.
 // `dead`: an enemy we killed this turn, still alive in the beliefs.
 const std::vector<Hazard>& threats_near(const World& world, vec2 here, vec2 dead = {-1, -1}) {
     static std::vector<Hazard> out;
     out.clear();
+    n_dooms = 0;
     const float taken = world.me().taken;
     for (const auto& e : world.enemies) {
         if (!e.alive || !e.visible || e.pos == dead) continue;
@@ -76,7 +88,10 @@ const std::vector<Hazard>& threats_near(const World& world, vec2 here, vec2 dead
     struct Other {
         vec2 pos;
         bool first;
+        const ChampionBelief* belief;
     };
+    bool fallers = false, later = false;
+    float ours = -1;
     std::array<Other, 32> others;
     int n_others = -1;
     for (int g : world.map().groups_near(here, world.map().max_camp_reach + dash_range)) {
@@ -90,10 +105,37 @@ const std::vector<Hazard>& threats_near(const World& world, vec2 here, vec2 dead
                 n_others = 0;
                 for (const auto* side : {&world.allies, &world.enemies})
                     for (const auto& o : *side)
-                        if (!o.is_self && o.alive && o.visible && o.pos != dead && n_others < static_cast<int>(others.size()))
-                            others[static_cast<std::size_t>(n_others++)] = {o.pos, world.slot(o, round) < mine};
+                        if (!o.is_self && o.alive && o.visible && o.pos != dead && n_others < static_cast<int>(others.size())) {
+                            if (o.side == team::ally) {
+                                if (!o.acted) later = true;
+                                else if (o.health + o.shield <= max_group_strength(world) * o.taken) fallers = true;
+                            }
+                            others[static_cast<std::size_t>(n_others++)] = {o.pos, world.slot(o, round) < mine, &o};
+                        }
             }
             auto& h = out.emplace_back(Hazard{m.pos, m.reach, true, m.strength * hit_factor});
+            bool doubts = false;
+            if (shield_doubt_later && later) {
+                if (ours < 0) ours = max_group_strength(world) * hit_factor >= my_health_and_shield(world) ? my_health_and_shield(world) : 1e9f;
+                doubts = h.hit >= ours;
+            }
+            if (fallers || doubts) {
+                const ChampionBelief* onto = nullptr;
+                int near_d = m.reach + 1;
+                for (int k = 0; k < n_others; ++k) {
+                    const auto& o = others[static_cast<std::size_t>(k)];
+                    const int d = dist(m.pos, o.pos);
+                    if (d > m.reach) continue;
+                    if (d < near_d) near_d = d, onto = o.belief->side == team::ally && o.belief->acted ? o.belief : nullptr;
+                    else if (d == near_d) onto = nullptr;
+                    if (d > h.rival || (doubts && o.belief->side == team::ally && !o.belief->acted)) continue;
+                    h.rival_first = d < h.rival ? o.first : h.rival_first || o.first;
+                    h.rival = d;
+                }
+                if (fallers && onto && n_dooms < static_cast<int>(dooms.size()))
+                    dooms[static_cast<std::size_t>(n_dooms++)] = {static_cast<int>(out.size()) - 1, 0, onto, m.strength * onto->taken};
+                continue;
+            }
             // Rules camps.attack: the nearest champion in its reach, a tie to who acts first.
             for (int k = 0; k < n_others; ++k) {
                 const auto& o = others[static_cast<std::size_t>(k)];
@@ -103,6 +145,23 @@ const std::vector<Hazard>& threats_near(const World& world, vec2 here, vec2 dead
                 h.rival = d;
             }
         }
+    }
+    // Only the hits that fell their ally and whose taking would spare it.
+    for (int i = 0; i < n_dooms; ++i) {
+        auto& x = dooms[static_cast<std::size_t>(i)];
+        float sum = 0;
+        for (int j = 0; j < n_dooms; ++j)
+            if (dooms[static_cast<std::size_t>(j)].ally == x.ally) sum += dooms[static_cast<std::size_t>(j)].hit;
+        const float health = x.ally->health + x.ally->shield;
+        x.value = sum >= health && sum - x.hit < health ? ally_fall_value(world, *x.ally) : 0;
+    }
+    for (int i = 0; i < n_dooms; ++i) {
+        const auto& x = dooms[static_cast<std::size_t>(i)];
+        if (x.value <= 0) continue;
+        Hazard minus = out[static_cast<std::size_t>(x.hazard)];
+        minus.hit = -x.value;
+        out.push_back(Hazard{x.ally->pos, 1 << 12, true, x.value});
+        out.push_back(minus);
     }
     return out;
 }

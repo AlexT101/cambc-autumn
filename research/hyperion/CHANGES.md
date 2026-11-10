@@ -4248,3 +4248,25 @@ Against `variants/oc-fuel-495`, fast runner 5.0.1, matched drafts:
   4,096 games, **50.8% (49.2–52.3)**, OOF 43,109 → 36,087 (**-16.3%**). No failed games or broken/capped drafts.
 
 Frozen as `variants/oc-fuel-496` (= bots/ocean).
+
+## 498: Keep a lethal camp hit from falling onto an ally that has acted (ocean, 2026-11-10)
+
+User-authorized judgement merge of `cl-shz-gen` (research commit `a70ed4a87`), onto the current working
+497 source. Only its diff against frozen `oc-wdash-494` was applied: `model/safety.cc`, `model/safety.h`
+and `combat/self_abilities.cc`. The existing fuel changes are preserved.
+
+- When an ally has already acted and a camp group could kill it, account for that death when choosing our
+  position or dash landing. Taking the camp hit ourselves can protect the ally; linked partners value the
+  shared death. The extra pass runs only for a relevant group.
+- Historical exact live re-run: removes the linked pair's round-36 deaths. On identical 100M benchmark
+  games the added fuel is +0.09%; 51/52 replays identical. This is a behavioural fix, not a fuel-only change.
+- Fresh-map gate against 494 stopped at its width cap: 49.91% (95% 49.66–50.16), 12,672 units; unresolved,
+  not a significant win or rejection. The same sequential sample continues with the width stop disabled.
+- Merged on the user's explicit instruction: "ok i think it seems good and should merge tell codex this".
+  A separate informative live arm uses v105 + this patch; no 99% local-winner claim.
+- Validation: current-source release build passed; the live arm's platform-SDK release mirror smoke completed
+  under the new mask. Puppet checks on current source and v105, before/after this patch, all had no allied
+  deaths through round 60; neither baseline reproduced the historical death, so these are smoke checks,
+  not new causal proof of the original fix.
+
+Frozen as `variants/oc-campsh-498` (= bots/ocean at merge; includes the working fuel-497 source).

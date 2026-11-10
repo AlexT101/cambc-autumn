@@ -15697,6 +15697,16 @@ Verdict: the fix is right on the case and fires rarely; every arm reads ~0.25 po
 |---|---|---|---|
 | cl-shz-gen | 49.91% (49.66-50.16) of 12,672 | 50.07% | NARROWED, level (Fish +0.19, Mite -0.37) |
 
+- 2026-11-10 Codex follow-up: the width-cap result is unresolved (low LLR +0.499), not rejection. The unchanged
+  frozen `cl-shz-gen` / `oc-wdash-494` sequence continues with `--ci 0 --zone-stop`, reusing all 99 blocks.
+  User then explicitly authorized merge: "ok i think it seems good and should merge tell codex this".
+  CHANGES 498 applies only this diff to current ocean, preserving the uncommitted fuel-497 work; frozen
+  `oc-campsh-498`. Current-source release build passed. Separate `live-wd-campsh-gen` = v105 + only this diff,
+  platform-SDK/new-mask release smoke passed; queued as an informative judgement test, not a 99% local winner.
+  Comparison with v105 also changes the priority-mask key. Four old-mask puppet smokes (current source and
+  v105, each before/after) have no allied deaths through round 60; the baselines no longer reproduce the
+  historical death, so these do not add causal evidence. Artifacts: `~/tmp-offload/handoff/codex/queue-ops/`.
+
 ## Livelock by a big enemy tribute (livelock, oc-wdash-494, 2026-11-10): the oscillation is a want_home edge; contesting the channel loses, the ping-pong guard is level
 - Case 1, live 01a1c303 (04pinwheel, v104, reproduced exactly by a puppet re-run, debug build too): from r839 the enemy Prism (7,200 hp, Focus 1,250) channels 699 gems at altar (2,25) for 47 turns (976 if it lands; game_ender needs 723). Our Prism (536 gems, stun ready throughout) alternates bank (B, steps to (8,22)) and retreat (R: `stand_lost_at` at (8,22), a walker the channeller could cancel to become); Vesper and Issac, each carrying a lock, alternate farm/bank and R the same way. Nothing sends a lock or stun holder at a tribute that does not end the game (CHANGES 485 removed 429's deny); the stun was 3 steps out of reach (7 vs 4) behind the same retreat edge; Cassi's stun was across the map.
 - Case 2, live 01a1c2fb (01elk_arena, Ryth r190-194): not the same cause. Ryth steps off and back onto group 23's capture tile each turn while Vesper holds it (on at payout: the 40 gold split two ways). From the replay, `yield_capture` (Vesper is the value holder) against farm's walk back; not confirmed by a trace (the puppet re-run diverges from round 1 with every build we have). Capture-tile episodes are ~6% of all oscillation.
