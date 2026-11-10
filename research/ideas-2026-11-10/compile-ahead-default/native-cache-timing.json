@@ -1,0 +1,46 @@
+[
+  {
+    "noise": 623,
+    "body": "Flp4",
+    "wasm": "/home/ubuntu/cambc-autumn/replays/frozen/2104a37e64de/spar-dvn623-Flp4/.cambc/build-release/bot-injected.wasm",
+    "wasm_bytes": 2020418,
+    "cpp_ready": 1794351065.0400681,
+    "native_lock_first_create": 1794351205.9825797,
+    "native_so_published": 1794351212.4296646,
+    "native_cold_seconds": 6.447084903717041,
+    "native_cache_path": "/home/ubuntu/.cache/fastrunner/native/34ffcdc3fd35645245b0b742c2dc5ca6-4dff7d93.so"
+  },
+  {
+    "noise": 623,
+    "body": "Mt3q",
+    "wasm": "/home/ubuntu/cambc-autumn/replays/frozen/7d3465410b25/spar-dvn623-Mt3q/.cambc/build-release/bot-injected.wasm",
+    "wasm_bytes": 2026375,
+    "cpp_ready": 1794351065.2481258,
+    "native_lock_first_create": 1794351216.0447135,
+    "native_so_published": 1794351222.6028018,
+    "native_cold_seconds": 6.558088302612305,
+    "native_cache_path": "/home/ubuntu/.cache/fastrunner/native/c378bcdc8d3dade76781caca2f5ef774-4dff7d93.so"
+  },
+  {
+    "noise": 624,
+    "body": "Flp4",
+    "wasm": "/home/ubuntu/cambc-autumn/replays/frozen/5bd866febe35/spar-dvn624-Flp4/.cambc/build-release/bot-injected.wasm",
+    "wasm_bytes": 2020418,
+    "cpp_ready": 1794351065.6652184,
+    "native_lock_first_create": 1794351226.19385,
+    "native_so_published": 1794351232.65094,
+    "native_cold_seconds": 6.457089900970459,
+    "native_cache_path": "/home/ubuntu/.cache/fastrunner/native/a367ccedbca38ec97b6ef7c3a6110b9d-4dff7d93.so"
+  },
+  {
+    "noise": 624,
+    "body": "Mt3q",
+    "wasm": "/home/ubuntu/cambc-autumn/replays/frozen/3a6258292ad3/spar-dvn624-Mt3q/.cambc/build-release/bot-injected.wasm",
+    "wasm_bytes": 2026376,
+    "cpp_ready": 1794351066.1024125,
+    "native_lock_first_create": 1794351236.2569904,
+    "native_so_published": 1794351242.5590754,
+    "native_cold_seconds": 6.302084922790527,
+    "native_cache_path": "/home/ubuntu/.cache/fastrunner/native/f858f6c862af860235b22dcf0db75ad5-4dff7d93.so"
+  }
+]

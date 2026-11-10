@@ -16791,3 +16791,9 @@ Uninterrupted baseline median99.94s/block (benchmark-pause interval excluded); n
 ### Default bounded compile-ahead (2026-11-10)
 
 New noise-based fresh gates use `tools/fgate.py`: 16 compile workers, eight future noise blocks, shared-slot accounting and ordinary source/build locks; no extra games or changed stopping rules. Queued conditional and draft/tune final gates inherit phase-scoped cleanup and an optout. All 43 lightweight checks passed. Active ward same-process rollout preserved its sealed inputs: six warmed blocks had median21.77s versus immediately preceding four-worker median31.39s, with changing-load caveat (earlier four-worker window22.20s; original serial99.94s). This supports keeping preparation ahead, not a controlled16-v4 speed claim. [Implementation, lifecycle and timing evidence](ideas-2026-11-10/compile-ahead-default/README.md).
+
+### Cleared-camp 504: prescribed ZONE at 653 blocks (2026-11-10)
+
+`oc504-wcamp` vs `oc-emb5-504`, release 200k, Flp4/Mt3q, finished **ZONE** with fresh −0.036±0.169pp; Fish +0.024±0.229, Mite −0.096±0.249. Low LLR +2.979/high −22.181; no positive screen. This is judgement review, not formal rejection. No established gain supports 100k testing or shipping. All 653 block records/5,224 summary hashes pass terminal audit, zero validity failures, unchanged seals. The 83,584 paired noise-map units reuse 1,024 maps. Both reopened full ward comparisons are terminal; earlier evidence remains separate. [Complete record](ideas-2026-11-10/ward504/README.md).
+
+Native-cache diagnosis found about 13s of remaining serial preparation per 20.21s block. A bounded 16-slot prewarm prototype passed resource tests/review, but its owner ended before launch: **no warming was run, no benefit established, no default warm integration**. [Measured timing and preserved prototype](ideas-2026-11-10/compile-ahead-default/native-cache-diagnosis.md).
