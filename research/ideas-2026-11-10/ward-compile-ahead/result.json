@@ -1,0 +1,28 @@
+{
+  "baseline_intervals_seconds": [
+    100.91727256774902,
+    99.93646955490112,
+    99.94258451461792,
+    100.90661430358887,
+    99.92300581932068,
+    99.94240379333496,
+    99.93357944488525
+  ],
+  "baseline_median_seconds": 99.94240379333496,
+  "after_intervals_seconds": [
+    20.2034695148468,
+    25.204540491104126,
+    21.214672565460205,
+    24.210026741027832,
+    22.20497488975525
+  ],
+  "after_median_seconds": 22.20497488975525,
+  "observed_ratio": 4.500901455171002,
+  "body_hashes_match_authoritative_block_audits": true,
+  "manifest_sha256": "b595ae978fdfe7d32169ddc761ab3416dcf1f4bbd76c2b9ee893e5dba6c7ad36",
+  "owner_pid": 4112940,
+  "owner_start": "105226293",
+  "helper_pid": 2650871,
+  "test_or_sample_changes": false,
+  "warm_games": 0
+}

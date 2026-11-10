@@ -16780,3 +16780,10 @@ Exact shipped `oc-dfuel-506` (183a1295c) versus `oc-base23` (dd7002a8), rebuilt 
 Exhausted-turn counts506/v86: fresh24,473/37,489; ladder1,613/2,406. These are descriptive, not a separate fuel-cut gate. Existing ward controller4112940 resumed at its original identity after all benchmark children drained. Initial larger preparation was reduced before any games at the user's request; then506 was explicitly selected after main advanced. Path/job names retain504 for compatibility, but actual candidate is506.
 
 [Protocol, provenance and complete result](ideas-2026-11-10/ocean504-v86/README.md); raw evidence `~/tmp-offload/ocean504-v86`. No new games or automatic follow-on authorized by this result.
+
+
+## (infrastructure, 2026-11-10) Bounded compile-ahead speeds the unchanged ward gate
+
+External compile-only helper prepares the existing cleared-camp504 gate's current/nexttwo noise blocks with four process-isolated shared-pool slots. Uses identical generation locks, frozen source/SDK cache identity and build.lock; no sealed gate edits, warm/scored games, sample/stopping changes or automatic future test. Bound to exact ownerPID/start/command; stops new dispatch on exit and drains its own compiles.
+
+Uninterrupted baseline median99.94s/block (benchmark-pause interval excluded); next five fully prepared blocks549–553 took20.20/25.20/21.21/24.21/22.20s, median22.20s, about4.5× throughput. All prepared body hashes match authoritative gate audits. This is an adjacent-block timing observation, not strength evidence. [Implementation and timing proof](ideas-2026-11-10/ward-compile-ahead/README.md).

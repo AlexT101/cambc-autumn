@@ -1,0 +1,416 @@
+[
+  {
+    "block": 539,
+    "audit_written_epoch": 1794348191.3980846,
+    "summaries": [
+      {
+        "name": "fge501-emb5-504-dvn539Fp4-L-fuel200000",
+        "started": "20261110-220132",
+        "wall_seconds": 49.0
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn539Fp4-L-fuel200000",
+        "started": "20261110-220132",
+        "wall_seconds": 49.3
+      },
+      {
+        "name": "fge501-emb5-504-dvn539Fp4-f2-fuel200000",
+        "started": "20261110-220132",
+        "wall_seconds": 49.5
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn539Fp4-f2-fuel200000",
+        "started": "20261110-220132",
+        "wall_seconds": 49.5
+      },
+      {
+        "name": "fge501-emb5-504-dvn539Mq-L-fuel200000",
+        "started": "20261110-220221",
+        "wall_seconds": 49.0
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn539Mq-L-fuel200000",
+        "started": "20261110-220222",
+        "wall_seconds": 48.5
+      },
+      {
+        "name": "fge501-emb5-504-dvn539Mq-f2-fuel200000",
+        "started": "20261110-220222",
+        "wall_seconds": 48.7
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn539Mq-f2-fuel200000",
+        "started": "20261110-220222",
+        "wall_seconds": 48.7
+      }
+    ]
+  },
+  {
+    "block": 540,
+    "audit_written_epoch": 1794348292.3153572,
+    "summaries": [
+      {
+        "name": "fge501-emb5-504-dvn540Fp4-L-fuel200000",
+        "started": "20261110-220312",
+        "wall_seconds": 49.3
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn540Fp4-L-fuel200000",
+        "started": "20261110-220312",
+        "wall_seconds": 49.8
+      },
+      {
+        "name": "fge501-emb5-504-dvn540Fp4-f3-fuel200000",
+        "started": "20261110-220312",
+        "wall_seconds": 49.8
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn540Fp4-f3-fuel200000",
+        "started": "20261110-220312",
+        "wall_seconds": 49.7
+      },
+      {
+        "name": "fge501-emb5-504-dvn540Mq-L-fuel200000",
+        "started": "20261110-220402",
+        "wall_seconds": 49.8
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn540Mq-L-fuel200000",
+        "started": "20261110-220402",
+        "wall_seconds": 50.0
+      },
+      {
+        "name": "fge501-emb5-504-dvn540Mq-f3-fuel200000",
+        "started": "20261110-220402",
+        "wall_seconds": 49.8
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn540Mq-f3-fuel200000",
+        "started": "20261110-220402",
+        "wall_seconds": 49.8
+      }
+    ]
+  },
+  {
+    "block": 541,
+    "audit_written_epoch": 1794348392.2518268,
+    "summaries": [
+      {
+        "name": "fge501-emb5-504-dvn541Fp4-L-fuel200000",
+        "started": "20261110-220453",
+        "wall_seconds": 48.9
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn541Fp4-L-fuel200000",
+        "started": "20261110-220453",
+        "wall_seconds": 49.4
+      },
+      {
+        "name": "fge501-emb5-504-dvn541Fp4-f4-fuel200000",
+        "started": "20261110-220453",
+        "wall_seconds": 49.6
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn541Fp4-f4-fuel200000",
+        "started": "20261110-220453",
+        "wall_seconds": 49.4
+      },
+      {
+        "name": "fge501-emb5-504-dvn541Mq-L-fuel200000",
+        "started": "20261110-220542",
+        "wall_seconds": 48.7
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn541Mq-L-fuel200000",
+        "started": "20261110-220543",
+        "wall_seconds": 48.2
+      },
+      {
+        "name": "fge501-emb5-504-dvn541Mq-f4-fuel200000",
+        "started": "20261110-220543",
+        "wall_seconds": 48.2
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn541Mq-f4-fuel200000",
+        "started": "20261110-220543",
+        "wall_seconds": 48.1
+      }
+    ]
+  },
+  {
+    "block": 542,
+    "audit_written_epoch": 1794348492.1944113,
+    "summaries": [
+      {
+        "name": "fge501-emb5-504-dvn542Fp4-L-fuel200000",
+        "started": "20261110-220633",
+        "wall_seconds": 48.5
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn542Fp4-L-fuel200000",
+        "started": "20261110-220633",
+        "wall_seconds": 49.4
+      },
+      {
+        "name": "fge501-emb5-504-dvn542Fp4-f5-fuel200000",
+        "started": "20261110-220633",
+        "wall_seconds": 49.4
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn542Fp4-f5-fuel200000",
+        "started": "20261110-220633",
+        "wall_seconds": 49.4
+      },
+      {
+        "name": "fge501-emb5-504-dvn542Mq-L-fuel200000",
+        "started": "20261110-220722",
+        "wall_seconds": 48.5
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn542Mq-L-fuel200000",
+        "started": "20261110-220723",
+        "wall_seconds": 48.0
+      },
+      {
+        "name": "fge501-emb5-504-dvn542Mq-f5-fuel200000",
+        "started": "20261110-220723",
+        "wall_seconds": 48.2
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn542Mq-f5-fuel200000",
+        "started": "20261110-220723",
+        "wall_seconds": 48.2
+      }
+    ]
+  },
+  {
+    "block": 543,
+    "audit_written_epoch": 1794348762.7169855,
+    "summaries": [
+      {
+        "name": "fge501-emb5-504-dvn543Fp4-L-fuel200000",
+        "started": "20261110-220812",
+        "wall_seconds": 49.0
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn543Fp4-L-fuel200000",
+        "started": "20261110-220812",
+        "wall_seconds": 49.6
+      },
+      {
+        "name": "fge501-emb5-504-dvn543Fp4-f6-fuel200000",
+        "started": "20261110-220812",
+        "wall_seconds": 49.6
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn543Fp4-f6-fuel200000",
+        "started": "20261110-220813",
+        "wall_seconds": 49.6
+      },
+      {
+        "name": "fge501-emb5-504-dvn543Mq-L-fuel200000",
+        "started": "20261110-220903",
+        "wall_seconds": 48.7
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn543Mq-L-fuel200000",
+        "started": "20261110-220903",
+        "wall_seconds": 49.2
+      },
+      {
+        "name": "fge501-emb5-504-dvn543Mq-f6-fuel200000",
+        "started": "20261110-220903",
+        "wall_seconds": 49.2
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn543Mq-f6-fuel200000",
+        "started": "20261110-220903",
+        "wall_seconds": 49.2
+      }
+    ]
+  },
+  {
+    "block": 544,
+    "audit_written_epoch": 1794348863.6235998,
+    "summaries": [
+      {
+        "name": "fge501-emb5-504-dvn544Fp4-L-fuel200000",
+        "started": "20261110-221243",
+        "wall_seconds": 49.3
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn544Fp4-L-fuel200000",
+        "started": "20261110-221243",
+        "wall_seconds": 49.6
+      },
+      {
+        "name": "fge501-emb5-504-dvn544Fp4-f7-fuel200000",
+        "started": "20261110-221243",
+        "wall_seconds": 49.7
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn544Fp4-f7-fuel200000",
+        "started": "20261110-221243",
+        "wall_seconds": 49.7
+      },
+      {
+        "name": "fge501-emb5-504-dvn544Mq-L-fuel200000",
+        "started": "20261110-221333",
+        "wall_seconds": 48.8
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn544Mq-L-fuel200000",
+        "started": "20261110-221333",
+        "wall_seconds": 49.2
+      },
+      {
+        "name": "fge501-emb5-504-dvn544Mq-f7-fuel200000",
+        "started": "20261110-221333",
+        "wall_seconds": 49.3
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn544Mq-f7-fuel200000",
+        "started": "20261110-221333",
+        "wall_seconds": 49.2
+      }
+    ]
+  },
+  {
+    "block": 545,
+    "audit_written_epoch": 1794348963.5466056,
+    "summaries": [
+      {
+        "name": "fge501-emb5-504-dvn545Fp4-L-fuel200000",
+        "started": "20261110-221424",
+        "wall_seconds": 48.6
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn545Fp4-L-fuel200000",
+        "started": "20261110-221424",
+        "wall_seconds": 49.2
+      },
+      {
+        "name": "fge501-emb5-504-dvn545Fp4-f0-fuel200000",
+        "started": "20261110-221424",
+        "wall_seconds": 49.3
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn545Fp4-f0-fuel200000",
+        "started": "20261110-221424",
+        "wall_seconds": 49.4
+      },
+      {
+        "name": "fge501-emb5-504-dvn545Mq-L-fuel200000",
+        "started": "20261110-221513",
+        "wall_seconds": 49.2
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn545Mq-L-fuel200000",
+        "started": "20261110-221514",
+        "wall_seconds": 48.4
+      },
+      {
+        "name": "fge501-emb5-504-dvn545Mq-f0-fuel200000",
+        "started": "20261110-221514",
+        "wall_seconds": 48.4
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn545Mq-f0-fuel200000",
+        "started": "20261110-221514",
+        "wall_seconds": 48.2
+      }
+    ]
+  },
+  {
+    "block": 546,
+    "audit_written_epoch": 1794349063.4890094,
+    "summaries": [
+      {
+        "name": "fge501-emb5-504-dvn546Fp4-L-fuel200000",
+        "started": "20261110-221604",
+        "wall_seconds": 49.0
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn546Fp4-L-fuel200000",
+        "started": "20261110-221604",
+        "wall_seconds": 49.5
+      },
+      {
+        "name": "fge501-emb5-504-dvn546Fp4-f1-fuel200000",
+        "started": "20261110-221604",
+        "wall_seconds": 49.5
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn546Fp4-f1-fuel200000",
+        "started": "20261110-221604",
+        "wall_seconds": 49.5
+      },
+      {
+        "name": "fge501-emb5-504-dvn546Mq-L-fuel200000",
+        "started": "20261110-221653",
+        "wall_seconds": 48.8
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn546Mq-L-fuel200000",
+        "started": "20261110-221654",
+        "wall_seconds": 48.5
+      },
+      {
+        "name": "fge501-emb5-504-dvn546Mq-f1-fuel200000",
+        "started": "20261110-221654",
+        "wall_seconds": 48.5
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn546Mq-f1-fuel200000",
+        "started": "20261110-221654",
+        "wall_seconds": 48.7
+      }
+    ]
+  },
+  {
+    "block": 547,
+    "audit_written_epoch": 1794349163.4225888,
+    "summaries": [
+      {
+        "name": "fge501-emb5-504-dvn547Fp4-L-fuel200000",
+        "started": "20261110-221744",
+        "wall_seconds": 49.0
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn547Fp4-L-fuel200000",
+        "started": "20261110-221744",
+        "wall_seconds": 49.5
+      },
+      {
+        "name": "fge501-emb5-504-dvn547Fp4-f2-fuel200000",
+        "started": "20261110-221744",
+        "wall_seconds": 49.4
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn547Fp4-f2-fuel200000",
+        "started": "20261110-221744",
+        "wall_seconds": 49.6
+      },
+      {
+        "name": "fge501-emb5-504-dvn547Mq-L-fuel200000",
+        "started": "20261110-221833",
+        "wall_seconds": 48.7
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn547Mq-L-fuel200000",
+        "started": "20261110-221834",
+        "wall_seconds": 48.0
+      },
+      {
+        "name": "fge501-emb5-504-dvn547Mq-f2-fuel200000",
+        "started": "20261110-221834",
+        "wall_seconds": 48.2
+      },
+      {
+        "name": "fge501-oc504-wcamp-dvn547Mq-f2-fuel200000",
+        "started": "20261110-221834",
+        "wall_seconds": 48.1
+      }
+    ]
+  }
+]

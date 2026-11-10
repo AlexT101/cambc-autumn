@@ -697,3 +697,6 @@ Cancelled component-study launchers: `reserve-tools/run_gate.py`, `skirmish-tool
 
 
 - `research/ideas-2026-11-10/ocean504-v86/{run,seal,test_run}.py`: fixed user-requested506-versus-v86 direct benchmark; seal historical sources/SDK, queue-only release100k fresh+ladder panels, audit complete map pairs and uncertainty. See [protocol/results](../research/ideas-2026-11-10/ocean504-v86/README.md). Artifact naming retains504; selected candidate is506.
+
+
+- `research/ideas-2026-11-10/ward-compile-ahead/{ahead,test_ahead}.py`: audited snapshot of the owner-bound external ward compile helper; four shared-slot workers prepare existing opponent builds only, without changing or launching tests. [Design and timing](../research/ideas-2026-11-10/ward-compile-ahead/README.md).
