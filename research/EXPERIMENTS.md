@@ -54,7 +54,7 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 - A risk change can win the mirror and nothing else (nuke guard, 2026-11-08): +0.22 held out over 149k, panel -0.02.
   The v84 pattern again: a risk or greed change needs its panel H1 before it ships.
 
-## Emblem lab round 5 on ocean (2026-11-10, tools/emblab `elab.py`; nothing merged yet): an edit lab that agrees with A/Bs; one typed edit and three near-misses win on 501, and only the three carry over to 503's new draft
+## Emblem lab round 5 on ocean (2026-11-10, tools/emblab `elab.py`; CHANGES 504): an edit lab that agrees with A/Bs; one typed edit and three near-misses win on 501 and, less clearly, on 503's new draft
 
 The plan and the audit of round 4: [tools/emblab/PLAN-round5.md](../tools/emblab/PLAN-round5.md); how the lab works:
 tools/emblab/README.md "Round 5". Base `variants/oc-fuel-501` (CHANGES 501); own drafts, release builds, fast runner.
@@ -131,16 +131,21 @@ One edit passes the bar (+0.25 at z 2.5), so no factorial was played.
 | Prism's rows off against **503** (`variants/ocean-7d8ee42`) | `emb5-v1..v3`, new | 50.11% of 61,440 (49.7-50.5): level |
 | Prism's rows off + the three against 503 | `emb5-v1..v3` | **50.63% of 61,440** (50.2-51.0): 50.9 / 50.6 / 50.4 |
 | the three alone against 503 | `emb5-v1..v3` | 50.51% of 61,440 (50.1-50.9): 50.6 / 50.8 / 50.1 |
+| Prism's rows off against 503, a second map set | `emb5-w`, new | **51.09% of 40,960** (50.6-51.6) |
+| the three alone against 503, the same set | `emb5-w` | 50.62% of 40,960 (50.1-51.1) |
 
 - On 501 the Prism edit is worth +1.0 and the three near-misses +0.7 more (50.70% of 102,400 over both looks).
 - Ocean moved to 503 during the run (CHANGES 502: draft10's draft model). Prism is still on 78% of teams (80% under
-  draft7), but only 38% of teams are the same, and the Prism edit's gain is gone (+0.11 ± 0.20 against +0.99 ± 0.20).
-  The three near-misses carry over (+0.5). An emblem edit is a statement about the teams the draft fields.
+  draft7), but only 38% of teams are the same. The three near-misses carry over: 50.56% of 102,400 over the two map
+  sets. The Prism edit reads +0.11 ± 0.20 on one set and +1.09 ± 0.25 on the other, the same two bots: 3 se apart,
+  unexplained; pooled 50.50% of 102,400. An emblem edit is a statement about the teams the draft fields.
 - Fresh gate (Flp4 / Mt3qro), Prism's rows off against 501, stopped at 47 blocks when the base moved: fresh +1.01
-  ± 0.55, ladder +0.09, pooled +0.55; SPRT at 50.5 / 50.75 undecided (LLR +1.25). The gate of the combined candidate
-  against 503 (seed 5502) is in `replays/emblab/r5/fgate-503-prism-plus3.out`.
-- Candidate bots: `variants/oc503-prism-plus3`, `variants/oc503-plus3` (tables in their `emblem_table.h`). Not
-  merged: merging and a live pair are the user's calls.
+  ± 0.55, ladder +0.09, pooled +0.55; SPRT at 50.5 / 50.75 undecided (LLR +1.25).
+- Fresh gate of all four against 503 (seed 5502, `replays/emblab/r5/fgate-503-prism-plus3.out`), stopped at 138 blocks
+  on the user's instruction: fresh +0.70 ± 0.37 (17,664 units), ladder +0.46, pooled +0.58; Fish +0.67, Mite +0.74;
+  SPRT at 49.75 / 50.0 accepts (LLR +5.90), at 50.5 / 50.75 undecided (LLR +0.56).
+- **Merged as CHANGES 504** (all four, `variants/oc-emb5-504`) on the user's instruction, without a finished gate or
+  a live pair.
 
 **What the method showed.**
 - 80,000 games in ~4 minutes at slot weight 35 (1.2M an hour; round 4's logging vehicles 0.7M). From the first game to the end of the

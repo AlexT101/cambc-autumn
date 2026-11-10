@@ -187,6 +187,12 @@ Each needs an A/B (check EXPERIMENTS first). Bundle removals and keep them if le
     pricing would make the table cell unnecessary.
   - **The lab's design:** drawing 35-50% of every decision scrambles builds and hides effects of this size. Next
     time randomise whole tables or build orders per team-game (tools/emblab/README.md "What round 4 found").
+  - **After emblem lab round 5** (2026-11-10, CHANGES 504, EXPERIMENTS "Emblem lab round 5 on ocean"): the edit lab
+    (whole-policy edits per team-game) agrees with A/Bs and plays 1.2M games an hour. Open: no live pair for 504;
+    the lab ran on 501's draft, so rerun its replication round on the current bot (`efit.py step` with a new
+    `stage.json`, 45 minutes) before trusting the other finalists; the Prism edit's two A/Bs on 503 disagree
+    (+0.1 and +1.1); pricing Collectors' champion damage in `or_passive` read level (+0.05 ± 0.13), so the table
+    still carries Collectors; Greed and early Health or main-stat emblems lose 2 to 10 points.
   - **CPU-slot registration race fixed (2026-11-10):** Python and fastrunner lock and write a temporary file
     outside `members/` before renaming it into view. Forced Python interleaving and Rust concurrent cleanup
     reproduce the old lost-weight failure and pass with the fix; dead-member cleanup remains intact.

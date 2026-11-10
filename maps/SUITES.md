@@ -956,6 +956,8 @@ re-measured"; used).
 - 3150000-3150119, 30,720 maps, symlinked into `merged/emb5-c1`, `-c2`, `-c3`: the Prism edit against 501 and the
   combined candidate against it (used).
 - 3160000-3160119, 30,720 maps, symlinked into `merged/emb5-v1`, `-v2`, `-v3`: three candidates against ocean 503 (used).
+- 3170000-3170079, 20,480 maps, symlinked into `merged/emb5-w`: the Prism edit and the three small edits, each against
+  ocean 503 (CHANGES 504; used).
 
 **Ocean fuel fourth pass (2026-11-10):** `--mix ladder-v2`, under `suites/fuel-fourth/confirm-{seed}`:
 - 1462510–1462517, 2,048 maps: used for confirmation against `oc-fuel4-base` (CHANGES 498), then development of the final 501 bundle on 500.

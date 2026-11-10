@@ -4395,3 +4395,28 @@ first hit. Raise only the non-quiet turn-order reserve from 10k to 12k; keep the
 - **First draft turn:** max 9,385,011 / 10M across the 640 standard maps, none over.
 
 Results, exactness exceptions and lessons: [fuel 503](../fuel-2026-11-10-fifth/README.md).
+
+## 504: Prism's emblems from the current logic; Collectors ninth, Issac's Durability first, Vesper Vale's Collectors eighth (ocean, 2026-11-10)
+
+`economy/emblem_table.h` only, 57 cells, from round 5 of the emblem lab (tools/emblab `elab.py`; EXPERIMENTS "Emblem
+lab round 5 on ocean"), which screened 330 whole-policy edits on ocean 501 and replicated 20 on new games:
+- **Prism's rows to the current logic** (31 cells): the pricing code chooses every Prism emblem.
+- **Collectors in the type's usual stat at ordinal 8** of the 21 rows with none by then (not Prism's or Vesper Vale's).
+- **Issac's first emblem Durability in Health** (3 cells) and **Vesper Vale's ordinal 7 Collectors in Health** (4 and
+  5 picks).
+
+Evidence (own drafts, release, fast runner; against 503 = `variants/ocean-7d8ee42` unless noted):
+- **All four:** 50.63% of 61,440 (95% 50.2-51.0) on new `merged/emb5-v1..v3` (50.9 / 50.6 / 50.4); out-of-fuel turns
+  level (340,944 / 341,051).
+- **The three small edits alone:** 50.51% of 61,440 (`emb5-v1..v3`) and 50.62% of 40,960 (`emb5-w`): 50.56% of 102,400.
+- **Prism's rows alone:** 50.11% of 61,440 (`emb5-v1..v3`) and 51.09% of 40,960 (`emb5-w`): 50.50% of 102,400. The two
+  runs of the same bots differ by 3 se, unexplained.
+- **Fresh gate** (Flp4 / Mt3qro, seed 5502) of all four, stopped at 138 blocks on the user's instruction: fresh +0.70
+  ± 0.37 (17,664 units), ladder +0.46, pooled +0.58; Fish +0.67, Mite +0.74. The SPRT at 49.75 / 50.0 accepts (LLR
+  +5.90); at 50.5 / 50.75 it is undecided (LLR +0.56).
+- **On 501, where the lab ran:** Prism's rows 50.99% of 61,440 on untouched suites (lab replication +0.87 ± 0.13); the
+  three small edits on top of it 50.70% of 102,400 (each +0.25 to +0.29 ± 0.13 in the lab, under its bar alone).
+- No live pair. Merged on the user's instruction ("This looks good enough to merge ... We aren't going to finish the
+  gate because it looks good enough").
+
+Frozen as `variants/oc-emb5-504` (= bots/ocean).
