@@ -155,6 +155,7 @@ void crew_allies(const World& world, float line, CrewAllies& out) {
     // One read of our own record: each accessor reads the engine again.
     const auto& me = my_record();
     out.here = {me.x, me.y};
+    out.world = &world;
     out.my_hp = me.health, out.my_max = me.max_health;
     out.line = line, out.n = 0, out.n_claiming = 0, out.self_slot = -1;
     out.n_joinable = -1, out.avail_group = -1;
@@ -174,8 +175,19 @@ void crew_allies(const World& world, float line, CrewAllies& out) {
 std::uint32_t crew_claimer_bits(const CrewAllies& allies, int g) {
     std::uint32_t bits = 0;
     for (int k = 0; k < allies.n_claiming; ++k)
-        if (const int i = allies.claiming[static_cast<std::size_t>(k)]; allies.at[static_cast<std::size_t>(i)].seen && allies.at[static_cast<std::size_t>(i)].claim == g)
-            bits |= 1u << i;
+        if (const int i = allies.claiming[static_cast<std::size_t>(k)]; allies.at[static_cast<std::size_t>(i)].claim == g) {
+            const auto& x = allies.at[static_cast<std::size_t>(i)];
+            bool counts = x.seen;
+            // Out of sight, the tile it posts (comms_slots) says whether it is at the group.
+            if (vec2 at{-1, -1}; !counts && params::comms_slots) {
+                if (int told = -1; comms::told_ally(x.a->index, at, told)) {
+                    const vec2 centre = allies.world->map().groups[g].centre;
+                    counts = std::max(0, dist(at, centre) - x.a->facts().attack_range())
+                             <= std::max(0, dist(allies.here, centre) - allies.world->me().facts().attack_range()) + 2;
+                }
+            }
+            if (counts) bits |= 1u << i;
+        }
     return bits;
 }
 

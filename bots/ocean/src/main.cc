@@ -326,7 +326,7 @@ struct Instance {
         const auto now = aph::my_position();
         const bool moved = world->me().alive && now.x >= 0 && now != world->me().pos;
         const bool refresh = moved && aph::fuel_ok(refresh_floor);
-        run("comms send", [&] { aph::comms::send(*world, moved, refresh); });
+        run("comms send", [&] { aph::comms::send(*world, now, moved, refresh); });
         run("debug", [&] { world->debug_output(); });
         if (!aph::fuel_ok(late_floor)) return;
         if (!world->is_stale())

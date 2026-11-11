@@ -139,6 +139,8 @@ game on 1,024 fresh maps (seeds 1212020-023), base 0.251 on 2,000 games, arms on
 
 ## (ocean = 506, 2026-11-11) Comms slots: every ally's tile fits in the claim fields for free; alone it is level, and counting a told claimer in its group's crew is +0.2 at 100k (+0.46 at 200k)
 
+Shipped as CHANGES 507: `cm2-k3`, frozen as `variants/oc-comms-507`.
+
 Note, encodings, traces and the live read: [comms/README.md](ideas-2026-11-11/comms/README.md). Code:
 `ideas-2026-11-11/comms/cm2-dev.patch` on `variants/oc-dfuel-506` (`bots/variants/cm2-dev`, every knob off,
 `bench.py` wide 52/52 identical); `mkarm.py` freezes arms.

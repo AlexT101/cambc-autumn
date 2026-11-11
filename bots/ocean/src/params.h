@@ -48,6 +48,13 @@ constexpr bool test_draft = false;
 // Each ally but the healers posts its own position in turn, in the shared bytes' free bits, for
 // Willow's follow (support.cc); off on maps where it does not fit (comms.cc).
 inline constexpr bool comms_ally = true;
+// Slot comms: each ally's claim field is one slot, as wide as the shared bytes allow after the bag and camp
+// records. It holds the claim when that changes (for two turns, so teammates on both sides of the turn
+// order read it) and every slot_refresh rounds, and the ally's own tile otherwise (a c x c cell, c the
+// smallest that fits). It replaces comms_ally's record. With it, a claimer out of sight still counts in
+// its group's crew while the tile in its slot is no farther from the group than we are, by 2.
+inline constexpr bool comms_slots = true;
+inline constexpr int slot_refresh = 8;
 // tools/draftlab/parity.py's copies only: print the model draft's features and team in draft round 0
 // (debug builds), to compare with features.mjs and model.mjs.
 constexpr bool draft_parity = false;

@@ -4469,3 +4469,46 @@ First-turn fuel on the 1456 (unlimited first turn): p50 4.22M -> 3.67M, p90 6.92
 9.33M -> 8.27M. Every draft is cheaper: the mean saving is 588k, between 47k and 1.32M. The 8 heaviest save 0.82-1.32M.
 In the bench bundles the draft turn's max is 8.91M -> 7.80M on the heavy maps and 6.92M -> 6.30M on wide.
 Frozen as `variants/oc-dfuel-506` (= bots/ocean).
+
+## 507: Teammates post their tile in the claim fields; an unseen claimer's told tile counts in its group's crew (ocean, 2026-11-11)
+
+`params::comms_slots`, in `model/comms.cc` and `economy/crew.cc` (`ideas-2026-11-11/comms/cm2-k3.patch` on 506: 70
+lines added, 10 removed, 6 files):
+- **Slots:** each ally's claim field in the shared bytes becomes one slot, as wide as the bytes allow after the bag
+  and camp records (at most 16 bits). It holds the claim when the claim changes (for two turns, so teammates on both
+  sides of the turn order read it) and every `slot_refresh` = 8 rounds, and the ally's own tile otherwise, as one 2D
+  cell (c x c, c the smallest that fits; side median 6). A claim changes in 8.5% of turns, so the tile costs no bytes:
+  a slot holds one in 77% of turns.
+- **Reading:** a slot holding a tile leaves the claim as last read (one compare an ally). The tile is decoded on
+  demand from the word read this turn, with no history. The slots replace `comms_ally`'s record (one poster a round
+  in the free bits); Willow's follow reads the slot. The priority payload is unchanged (it still carries the claim).
+- **Crew:** a claimer out of sight counts in its group's crew while the tile in its slot is no farther from the group
+  than we are, by 2 (distance to the group's centre less attack range, each). Before, only claimers in sight counted.
+
+Why: a teammate is in sight in 40% of pairs, so a group's crew missed claimers already standing at it. Of everything
+tried with told positions (farm arrival, late claimers, a pathing pull, Willow's follow), the crew count is the one
+consumer that pays; the plumbing alone is level.
+
+Results against `variants/oc-dfuel-506` (fresh ladder-v2 maps, both sides, each bot against the Fish and Mite bodies,
+paired; own drafts, release, fast runner):
+
+| gate | fuel | diff, points (95% CI) | games |
+|---|---|---|---|
+| panels A+B+C | 100k | +0.18 (-0.09..+0.44) | 122,880 |
+| `fgate.py`, 16 batches | 100k | +0.17 ±0.24 | 327,680 |
+| `fgate.py`, batches 16-31 | 100k | +0.13 ±0.24 | 327,680 |
+| panels A+B+C | 200k | +0.15 (-0.11..+0.42) | 122,880 |
+
+- The three 100k reads are independent and pool to about +0.16 ±0.14. Each interval alone reaches zero.
+- **Fuel-neutral:** out-of-fuel turns 5.78 a game against 5.77 (first fgate read); 0.15% less fuel than 506 on the
+  bench's identical games at 100M.
+- A judgement-zone gain (50-50.5), merged on the coordinator's decision for the plumbing and the consistent sign. No
+  live pair: it is too small for one to see.
+- Merge checks: `bots/ocean/src` equals `variants/cm2-k3/src`. The live build's `stream_patch.py` anchors all match
+  and it builds; with `--zero` the patched copy replays identically (bench `--set wide`, 52/52, the same fuel). The
+  tile frames are in the shared bytes, which the priority mask does not touch: keyed, it plays the same game as
+  unkeyed in 51/52 (`same_play.mjs`, 100M, +0.6% fuel), and the exception (00swirl b, astraeus's order in round 18)
+  is 506's too.
+
+Evidence: EXPERIMENTS "Comms slots" (2026-11-11) and [comms/README.md](../ideas-2026-11-11/comms/README.md).
+Frozen as `variants/oc-comms-507` (= bots/ocean).

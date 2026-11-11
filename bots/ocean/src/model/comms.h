@@ -18,11 +18,12 @@ inline Posts posts;
 } // namespace detail
 
 // An ally's (by index) own position as it last posted it (params::comms_ally), to within 2; false if never.
+// With params::comms_slots: the centre of the cell in its slot now, posted at its latest turn.
 bool told_ally(int ally, vec2& at, int& round);
 // What teammates posted since our previous turn, merged into the world.
 void receive(World& world);
 // At the turn's end. With `refresh`, re-read vision first.
-void send(World& world, bool moved, bool refresh);
+void send(World& world, vec2 now, bool moved, bool refresh);
 // The gems we carry, posted when it changes.
 void bag(int gems);
 // The gems an ally (by index) carries as it last posted, rounded up to a multiple of 4 and capped

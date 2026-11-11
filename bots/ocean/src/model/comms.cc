@@ -50,6 +50,9 @@ struct Layout {
     BitField ally;
     std::uint64_t ally_bits = 0;
     int cell = 1, cells_y = 1;
+    // comms_slots: a slot value below pos_base is a claim + 1, from it on a cell. pos_on: the cells fit.
+    bool pos_on = false;
+    int pos_base = 1 << 30, max_x = 0, max_y = 0;
     int period(int g) const { return camp_offset[g + 1] - camp_offset[g]; }
 };
 
@@ -75,12 +78,24 @@ Layout layout_;
     const int bag_width = width_of(128 * static_cast<std::uint64_t>(L.team));
     const int claim_width = std::min(width_of(static_cast<std::uint64_t>(groups) + 1), (64 - bag_width) / L.team);
     L.claim_cap = (1 << claim_width) - 1;
-    for (int i = 0; i < L.team; ++i) L.claim[static_cast<std::size_t>(i)] = field(claim_width);
-    L.bag = field(bag_width);
     const int camp_width = static_cast<int>(std::bit_width(static_cast<std::uint64_t>(L.camp_offset.back())));
+    // The camp record stays wherever it fitted before; the slots share what is left.
+    const bool camp_fits = L.team * claim_width + bag_width + camp_width <= 64;
+    const int slot_width = params::comms_slots ? std::min(16, (64 - bag_width - (camp_fits ? camp_width : 0)) / L.team) : claim_width;
+    for (int i = 0; i < L.team; ++i) L.claim[static_cast<std::size_t>(i)] = field(slot_width);
+    L.bag = field(bag_width);
     L.camp_on = shift + camp_width <= 64;
     if (L.camp_on) L.camp = field(camp_width);
-    if (params::comms_ally && L.camp_on)
+    if (params::comms_slots) {
+        const int base = std::min(groups, L.claim_cap) + 1;
+        const auto room = (std::uint64_t{1} << slot_width) - static_cast<std::uint64_t>(base);
+        for (int c = 1; c <= std::max(map.width, map.height) && !L.pos_on; ++c) {
+            const auto nx = static_cast<std::uint64_t>((map.width + c - 1) / c), ny = static_cast<std::uint64_t>((map.height + c - 1) / c);
+            if (nx * ny <= room) L.cell = c, L.cells_y = static_cast<int>(ny), L.pos_base = base, L.pos_on = true;
+        }
+        L.max_x = map.width - 1, L.max_y = map.height - 1;
+    }
+    if (params::comms_ally && L.camp_on && !params::comms_slots)
         for (const int c : {1, 3, 5}) {
             const auto cells = static_cast<std::uint64_t>((map.width + c - 1) / c) * static_cast<std::uint64_t>((map.height + c - 1) / c);
             const int width = width_of(cells * 4 * static_cast<std::uint64_t>(L.team) + 1);
@@ -119,6 +134,13 @@ struct Told {
     int round = -1;
 };
 std::array<Told, 8> told_allies;
+
+// comms_slots, our own slot: the claim as last posted, the turns it still stays up, and its round.
+struct Slot {
+    std::uint64_t claim = 0;
+    int hold = 0, round = -(1 << 20);
+};
+Slot slot;
 
 support_mailbox::State support;
 int support_intent_round = -1;
@@ -190,7 +212,9 @@ std::pair<int, int> decode_capture(const Layout& L, std::uint64_t record) {
     for (const auto& a : world.allies) {
         if (a.is_self || a.index >= L.team) continue;
         const auto p = payload_of(world, a);
-        detail::posts.claims[a.index] = p >= 0 ? static_cast<int>(p & 0xff) - 1 : static_cast<int>(L.claim[static_cast<std::size_t>(a.index)].get(bits)) - 1;
+        // A slot holding a tile leaves the claim as last read.
+        if (const int v = static_cast<int>(L.claim[static_cast<std::size_t>(a.index)].get(bits)); p >= 0) detail::posts.claims[a.index] = static_cast<int>(p & 0xff) - 1;
+        else if (v < L.pos_base) detail::posts.claims[a.index] = v - 1;
     }
     if (const auto v = L.ally.get(bits); L.ally_on && (state.fresh & L.ally_bits) && v != 0) {
         const auto code = v - 1, kinds = 4 * static_cast<std::uint64_t>(L.team);
@@ -210,7 +234,7 @@ std::pair<int, int> decode_capture(const Layout& L, std::uint64_t record) {
 
 // No teammate acts during our turn: the bits are still those receive() read, if it read them this
 // round. Older bits would overwrite what teammates wrote since, as would a turn finishing late.
-void send(World& world, bool moved, bool refresh) {
+void send(World& world, vec2 now, bool moved, bool refresh) {
     if (state.now_round != world.round || (finish_late() && world.resumed())) return;
     const auto& L = layout(world);
     auto bits = state.now;
@@ -246,7 +270,14 @@ void send(World& world, bool moved, bool refresh) {
     if (me < L.team) {
         const auto& field = L.claim[static_cast<std::size_t>(me)];
         const auto claim = static_cast<std::uint64_t>(world.me().alive && mine >= 0 && mine < L.claim_cap ? mine + 1 : 0);
-        if (field.get(bits) != claim) field.set(bits, claim), dirty = true;
+        auto value = claim;
+        if (L.pos_on) {
+            if (claim != slot.claim) slot.claim = claim, slot.hold = 1, slot.round = round;
+            else if (slot.hold > 0) --slot.hold, slot.round = round;
+            else if (round - slot.round >= params::slot_refresh || !world.me().alive || now.x < 0) slot.round = round;
+            else value = static_cast<std::uint64_t>(L.pos_base + now.x / L.cell * L.cells_y + now.y / L.cell);
+        }
+        if (field.get(bits) != value) field.set(bits, value), dirty = true;
     }
 
     // One poster a round, by index among the allies that are not healers, while a healer lives.
@@ -288,6 +319,14 @@ void send(World& world, bool moved, bool refresh) {
 void bag(int gems) { detail::posts.my_bag = gems; }
 
 bool told_ally(int ally, vec2& at, int& round) {
+    if (const auto& L = layout_; L.pos_on) {
+        if (ally < 0 || ally >= L.team) return false;
+        const int cell = static_cast<int>(L.claim[static_cast<std::size_t>(ally)].get(state.now)) - L.pos_base, h = L.cell / 2;
+        if (cell < 0) return false;
+        at = {std::min(cell / L.cells_y * L.cell + h, L.max_x), std::min(cell % L.cells_y * L.cell + h, L.max_y)};
+        round = state.now_round;
+        return true;
+    }
     if (ally < 0 || ally >= 8 || told_allies[static_cast<std::size_t>(ally)].round < 0) return false;
     at = told_allies[static_cast<std::size_t>(ally)].at;
     round = told_allies[static_cast<std::size_t>(ally)].round;

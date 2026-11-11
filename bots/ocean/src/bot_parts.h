@@ -465,6 +465,7 @@ struct CrewAllies {
     int n = 0;
     float line = 0, my_hp = 0, my_max = 0;
     vec2 here{};
+    const World* world = nullptr;
     // The living allies other than us that claim a group, in ally order: each group's claimers
     // without a pass over every ally.
     std::array<std::uint8_t, 16> claiming{};
