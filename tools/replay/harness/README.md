@@ -1,4 +1,4 @@
-# Replay harness (v38, v47, v66)
+# Replay harness (v38, v47, v66, v105-v111)
 
 Every script takes `--version` (default `v38`); [versions.py](versions.py) maps a version to its commit, bot, trace bot and data directory. To add a version, add a row there, then port `trace-bot/`'s instrumentation onto that commit's sources as `trace-bot-v47/` did. The [v47](#v47) and [v66](#v66) sections have their commands; the rest of this page describes v38.
 
@@ -199,6 +199,29 @@ In Python, call `L.use("v66")` after `import v38lib as L`.
 - `ws/`: 4.3 GB, mostly 610 puppets × 2 builds.
 - `runs/`: 2.1 GB. The traces are 3.6 GB raw, gzipped.
 - `extract/`: 0.29 GB; `inputs/`: 0.17 GB.
+
+## v105-v111 (cambc 5.0.1)
+
+These rows serve the combat lab's live calibration ([fishcal-notes.md](../../../research/combat-lab/fishcal-notes.md)).
+Live versions are built from a masked upload with no commit of their own, so their `versions.py` rows have
+`"commit": None` and a `src`. That is the scheduler's frozen build workspace for the version, outside the repo, and
+`setup_ws.py` copies it into the release bot instead of running `git archive`. Manifests come from the scrim log
+(`research/combat-lab/fishcal/manifest.py`), not from `build_manifest.py`.
+
+- **Release re-runs** are exact, with identical per-turn fuel, in all 2,690 games of v105, v106, v108, v109 and v111.
+- **The recorder and tracer do not reproduce these games under cambc 5.0.1.** Recorder segments show host-call fuel
+  mismatches, even with v105's plain source in the trace slot (25% of rounds trusted), and plain debug builds reach
+  43%. Debug codegen and the debug refund no longer track release fuel closely enough.
+- **What works:** direct re-runs (`research/combat-lab/fishcal/direct.py`) of the release code against the puppet, with
+  logging added by `fishcal/make_trace_bot.py --release-guard=2`. A `RELEASE_CODE` marker in the bot makes the
+  harness cmake drop `CAMBC_DEBUG`. Each log statement then runs inside
+  `fuel_pause(); ...; fflush(stdout); fuel_adjust(2); fuel_resume();`.
+  - `fuel_adjust(x)` refunds x, and 2 a block cancels the guard's own cost.
+  - The flush must happen inside the window. Otherwise the buffered write is charged at turn end, about 110 fuel a
+    turn.
+  - With both, 85% of turns are fuel-identical to the ladder. 1,968 of 2,384 games are exact, and 81% of rounds are
+    trusted.
+- `trace_batch.py --trace-bot DIR` traces with an instrumented bot other than the version's `trace_bot`.
 
 ## How the from-scratch path was tested
 

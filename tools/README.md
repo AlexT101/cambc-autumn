@@ -427,6 +427,7 @@ py tools/replay/harness/batch.py --jobs 12          # puppets, release + recorde
 py tools/replay/harness/trace_batch.py --all --slots 8
 py tools/replay/harness/v38lib.py summary           # per-game trace availability and trust
 py tools/replay/harness/pipeline.py --version v47   # v47: manifest from replay folders, then the whole chain
+python3 research/combat-lab/fishcal/direct.py v105  # cambc 5.0.1 versions: release-guard traced re-runs (harness README)
 ```
 
 ## Combat lab frame bank: tools/combatlab

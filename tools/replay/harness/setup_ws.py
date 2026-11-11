@@ -120,6 +120,9 @@ def main():
         log(f"patched sdk/cpp/cambc.h: CAMBC_DEBUG_REFUND {args.refund}, cambc_debug_depth")
 
     rel, rec = ws / "bots" / CFG.release.name, ws / "bots" / CFG.rec.name
+    if not (rel / "src").exists() and CFG.src:
+        shutil.copytree(CFG.src, rel / "src")
+        log(f"bots/{rel.name}: copied {CFG.src}")
     if not (rel / "src").exists():
         data = subprocess.run(["git", "archive", "--format=tar", CFG.commit, f"{CFG.bot}/src"], cwd=REPO, capture_output=True, check=True).stdout
         with tarfile.open(fileobj=io.BytesIO(data)) as tf:

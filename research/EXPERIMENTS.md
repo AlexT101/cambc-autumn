@@ -47,12 +47,46 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   the boundary is flat for both stands and chases (bodies and games won within ±0.01-0.02). Its parts are biased: members
   hit 20-50% as often as the sim assumes, unseen enemies 19%. But the biases cancel. Healthy (90%+) champions that
   leave a narrowly lost stand are right to. Recalibrating the model has nothing to correct; the level combat and team
-  arms opened opportunities at this boundary, where fighting and declining are worth the same.
+  arms opened opportunities at this boundary, where fighting and declining are worth the same. It holds against Fish and
+  Mite too (2026-11-11, [combat-lab/fishcal-notes.md](combat-lab/fishcal-notes.md)): on 2,384 live scrims re-run
+  exactly against puppets, the curve crosses 50% at margin 0 and games won are flat for both. Fish's parts cancel
+  less well, but the effect stops at a short-lived bodies lean, and `hit_given_reach` transfers (0.94x the mirror's, pooled).
 - A per-champion rate gap to Fish is not a lever by itself (spell, 2026-11-08): making Cassi cast her exclusive spell
   like Fish (31% -> 53% at 2-4 tiles) added +0.02 kills a game, and weighting more capture gold to Marcella (+85 at
   r400) cost her teammates 230. Check kills and team totals before building an arm from a rate.
 - A risk change can win the mirror and nothing else (nuke guard, 2026-11-08): +0.22 held out over 149k, panel -0.02.
   The v84 pattern again: a risk or greed change needs its panel H1 before it ships.
+
+## (combat lab, 2026-11-11) ocean's fight model is calibrated against Fish and Mite too; nothing to correct
+
+Write-up: [combat-lab/fishcal-notes.md](combat-lab/fishcal-notes.md); tools in `research/combat-lab/fishcal/`.
+No bot change, A/B or live quota.
+
+- **Data.** 2,384 live scrims of v105-v111 (one fight model) against Intercontinental Fish (1,097) and Mite (1,287).
+  Each game was re-run against a puppet of the opponent's recorded inputs, with cal-dbg's stand/chase margin lines
+  added through a fuel-neutral release guard. Rows are trusted through the round before the re-run's first
+  divergence from the ladder replay (1,968 games exact, 81% of rounds), and outcomes come from the ladder replay. The
+  mirror control is 610 deduplicated self-play games of the same source. Release re-runs of all 2,690 candidate games
+  were exact, per-turn fuel included, which proves the version attribution.
+- **Stands (self 583k, Fish 342k, Mite 407k rows).** P(we lose a champion first | a death) crosses 50% at m ≈ 0
+  for all three (−0.1..0 / 0..+0.1: self 49.0/50.8, Fish 45.9/57.1, Mite 50.1/53.6%). Games won do not jump at m = 0
+  (Fish −0.018 / +0.010 at bandwidth 0.25 / 0.5, Mite −0.002 / +0.000, CIs about ±0.02-0.03).
+- **Fish bodies lean.** Staying at the Fish boundary gains +0.045 (+0.025..+0.069) bodies over 10 rounds, +0.026 over
+  20 (not significant), and nothing in games. Fully reproduced games alone give the same. Mechanism: realized over
+  simulated damage, theirs / ours near the boundary, is 0.87 against Fish, 1.04 against Mite and 1.08 in the mirror.
+  The sim overstates Fish's damage relative to ours by about a fifth. Fish's unseen and arriving members join less often
+  (8% against 13% at arrival 1-2).
+- **Chases:** level against both.
+- **`hit_given_reach` (0.234):** realized damage over the priced blow at search-priced end tiles is self 0.129,
+  Fish 0.099 (0.77x), Mite 0.141 (1.09x), pooled 0.94x. It is an SPSA-tuned price, about 1.8x the realized share
+  even in the mirror, so only the live/mirror ratio is evidence, and that is near 1. No change.
+- **Open thread:** champions under half health that stay at the boundary lose games against both opponents (Fish
+  −0.13, −0.25..−0.05; Mite −0.08, −0.15..−0.01; mirror +0.02 ± 0.05). It is one subgroup of ~50, but the sign is the
+  same for both. Test it only with a mechanism, not a health threshold.
+- **Tooling (cambc 5.0.1).** The harness recorder/tracer does not reproduce v105 games, even with the plain source
+  (25% of rounds trusted), and debug builds diverge on fuel (43%). Release code with logging inside
+  `fuel_pause` / `fuel_adjust(2)` / `fuel_resume` (stdout flushed inside the window) reproduces 85% of turns
+  fuel-identically. See `tools/replay/harness/README.md`.
 
 ## (ocean, 2026-11-10) Draft first-turn fuel 3 (CHANGES 506): -588k a draft, max 9.33M -> 8.27M; ward prunes and a ward-cast cache lost again
 

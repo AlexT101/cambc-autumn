@@ -257,9 +257,13 @@ def main():
     ap.add_argument("--batch", help="default <dir>/runs/batch")
     ap.add_argument("--log-limit", type=int, default=1 << 30)
     ap.add_argument("--force", action="store_true")
+    ap.add_argument("--trace-bot", help="instrumented bot directory instead of the version's trace_bot")
     ap.add_argument("--puppet-for", action="append", default=[], help="KEY=BOTDIR: a puppet other than ws/bots/p-KEY")
     args = ap.parse_args()
     configure(versions.get(args.version))
+    if args.trace_bot:
+        global VARIANT
+        VARIANT = Path(args.trace_bot).resolve()
     args.batch = args.batch or str(CFG.batch)
     args.slot_prefix = args.slot_prefix or CFG.slot_prefix
     args.puppet_for = dict(x.split("=", 1) for x in args.puppet_for)

@@ -25,6 +25,16 @@ VERSIONS = {
             "folders": ["replays/v66-farm/*"]},
 }
 
+# Live versions from v87 on are rebuilt from the scheduler's frozen build workspace (`src`: the masked source
+# exactly as uploaded; ~/tmp-offload/handoff/sched/gates.jsonl maps each version to it) rather than a commit.
+# Their games ran on cambc 5.0.1. Manifests come from the scrim log (research/combat-lab/fishcal/manifest.py).
+SCHED = "/home/ubuntu/tmp-offload/handoff/sched/build"
+for _v, _ws in {105: "live-wd-fsnh-1794275157", 106: "live-wd-rs8-1794286616", 108: "live-wd-chanM-1794302330",
+                109: "live-wd-bagfF-1794312740", 111: "live-wd-greed-1794333702"}.items():
+    VERSIONS[f"v{_v}"] = {"commit": None, "src": f"{SCHED}/{_ws}/bots/ocean/src", "bot": "bots/ocean", "dir": f"replays/v{_v}",
+                          "manifest": f"replays/v{_v}/manifest.json",
+                          "trace_bot": f"replays/v{_v}/trace-bot"}
+
 
 class Version:
     def __init__(self, name):
@@ -34,6 +44,7 @@ class Version:
         self.name = name
         self.number = int(name.lstrip("v"))
         self.commit = v["commit"]
+        self.src = Path(v["src"]) if v.get("src") else None
         self.bot = v["bot"]
         self.dir = REPO / v["dir"]
         self.manifest = REPO / v["manifest"]

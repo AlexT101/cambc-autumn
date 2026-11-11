@@ -171,3 +171,11 @@ has nothing to correct in either direction, so step 2 was not run.
 
 Files: `cal-tools/collect.py` (replays → rows), `flat.py` (rows → npz), `nana.py` (tables, game bootstrap), `ana.py`
 (slower per-row tables, members, pairing). Variants `bots/variants/cal-dbg`, `cal-dbg2` (debug-only instrumentation).
+
+## Against Fish and Mite (2026-11-11)
+
+[fishcal-notes.md](fishcal-notes.md) repeats this study on 2,384 live scrims of v105-v111 (one fight model) against
+Fish and Mite, re-run exactly against puppets with these lines traced. Both boundaries are calibrated against both
+opponents too: the first-death curve crosses 50% at m = 0, and games won are flat across it. Against Fish the parts
+cancel less well (its members deliver less of their simulated damage relative to ours: balance 0.87 against the
+mirror's 1.08), and standing at the boundary gains +0.03-0.05 bodies over 10 rounds there, but not over 20 or in games.
