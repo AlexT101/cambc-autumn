@@ -1,0 +1,12 @@
+diff -ruN bots/variants/charybdis-ref/src/economy/shop.cc bots/variants/r-shophalf/src/economy/shop.cc
+--- bots/variants/charybdis-ref/src/economy/shop.cc	2026-11-11 18:57:46.621333924 +0000
++++ bots/variants/r-shophalf/src/economy/shop.cc	2026-11-11 21:05:30.400144772 +0000
+@@ -699,7 +699,7 @@
+         const int back = pathing.to_ally_spawn().at(here);
+         if (back == unreachable) return false;
+         const int hurt = my_health() < my_max_health() ? 1 : 0;
+-        const float value = params::shop_gain_scale * affordable_prefix(world).gain + heal_rounds_now(world);
++        const float value = 0.5f * (params::shop_gain_scale * affordable_prefix(world).gain + heal_rounds_now(world));
+         if (!std::isfinite(value) || !(value > static_cast<float>(std::min(back, recall_turns(world) + hurt) + back))) return false;
+     } else {
+         const auto stop = home_trip(world, pathing, recall_turns(world), winning_bag(world));

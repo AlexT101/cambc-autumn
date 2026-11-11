@@ -1,0 +1,12 @@
+diff -ruN bots/charybdis/src/economy/capture.cc bots/variants/mo7-reach3/src/economy/capture.cc
+--- bots/charybdis/src/economy/capture.cc	2026-11-11 18:57:47.564021876 +0000
++++ bots/variants/mo7-reach3/src/economy/capture.cc	2026-11-11 21:49:11.108665813 +0000
+@@ -379,7 +379,7 @@
+ 
+ // The farthest walk Prism carries a capture from (farm's 'L' picks): two holds. The farther, the
+ // longer the group stands empty for an enemy to take, and each candidate builds a field.
+-int carry_reach() { return 2 * cambc::constants::capture_time; }
++int carry_reach() { return 3 * cambc::constants::capture_time; }
+ 
+ // Where ally a is, seen or as it posted it (comms_ally) within the last 2 rounds; in `slack` the steps
+ // it may have closed since (a posted tile is to within 2).

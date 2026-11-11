@@ -1,0 +1,47 @@
+diff -ruN charybdis-ref/src/economy/bank.cc stunsafe/src/economy/bank.cc
+--- charybdis-ref/src/economy/bank.cc	2026-11-11 18:57:46.064002492 +0000
++++ stunsafe/src/economy/bank.cc	2026-11-11 22:15:35.855996886 +0000
+@@ -910,9 +910,41 @@
+            || rounds_left(world) <= channel_turns + endgame_slack;
+ }
+ 
+-// A channel still running at the round limit scores nothing.
++// A stun cancels a channel without killing us, which tribute_safe does not judge: a visible enemy
++// whose stun slot is ready within the window and that can walk (and dash, if ready) within its
++// stun range of us by then.
++bool stun_threat(const World& world, int turns) {
++    if (world.me().facts().passive == Passive::stun_immune) return false;
++    const int window = std::min(turns, params::tribute_window);
++    const vec2 here = my_position();
++    for (const auto& e : world.enemies) {
++        if (!e.alive || !e.visible) continue;
++        const auto& f = e.facts();
++        const int dash = f.slot_of(AbilityKind::dash);
++        const int extra = dash >= 0 && e.ready_round[dash] <= world.round + window ? dash_range : 0;
++        const vec2 from = enemy_reach::origin(e);
++        for (int s = 0; s < 2; ++s) {
++            const int reach = f.stun_reach(s);
++            if (reach < 0 || e.ready_round[s] > world.round + window) continue;
++            if (dist(from, here) > reach + window + extra) continue;
++            const enemy_reach::Profile who{.act = reach, .dasher = f.has_dash()};
++            if (enemy_reach::within(world, who, from, here, reach + window + extra)) {
++                debug_block({ std::printf("STUNSAFE %d %u refuse %d turns enemy %d slot %d d %d\n", world.round, my_handle(), turns,
++                                          e.index, s, dist(from, here)); });
++                return true;
++            }
++        }
++    }
++    return false;
++}
++
++// A channel still running at the round limit scores nothing. A long or winning channel not yet
++// started also waits out a stun threat; once running it is kept as before.
+ bool tribute_ok(const World& world, Safety& safety, const Memory& memory, int turns) {
+-    return turns <= rounds_left(world) && (any_risk(world, turns) || tribute_safe(safety, memory, turns));
++    if (turns > rounds_left(world)) return false;
++    if (any_risk(world, turns)) return true;
++    if (!tribute_safe(safety, memory, turns)) return false;
++    return !((turns > params::tribute_window || winning_bag(world)) && !cambc::self().is_submitting_gems() && stun_threat(world, turns));
+ }
+ 
+ // At an unlocked altar in reach. The caller judged the turn's start tile safe; anywhere else, at an

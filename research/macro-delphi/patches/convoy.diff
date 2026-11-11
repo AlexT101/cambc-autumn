@@ -1,0 +1,290 @@
+diff -ruN charybdis-ref/src/bot.cc convoy/src/bot.cc
+--- charybdis-ref/src/bot.cc	2026-11-11 18:57:46.061505870 +0000
++++ convoy/src/bot.cc	2026-11-11 20:30:12.343089087 +0000
+@@ -605,6 +605,19 @@
+     if (!channelling())
+         if (const int g = walk_target(world, pathing, memory.farm_group); g >= 0) pathing.approach(g, walk_range(world, g));
+     const int claim = memory.claim;
++    debug_block({
++        // Every 50 rounds, our Prism's distance to its nearest ally seen or posted lately, and convoy's counts.
++        if (world.round % 50 == 0 && world.me().alive && world.me().facts().passive == Passive::gem_focus) {
++            int near = -1;
++            for (const auto& a : world.allies) {
++                vec2 at;
++                int slack = 0;
++                if (!a.is_self && a.alive && recent_tile(world, a, at, slack) && (near < 0 || dist(my_position(), at) < near)) near = dist(my_position(), at);
++            }
++            std::printf("CONVOY DIST %d %u near %d support %d masked %d fallback %d moved %d\n", world.round, my_handle(), near, convoy_support(world).n,
++                        convoy_stats.masked, convoy_stats.fallback, convoy_stats.moved);
++        }
++    });
+     decide(world, pathing, safety, memory);
+     if (decision != Branch::wait_altar) memory.wait_altar = -1;
+     // A turn that takes Prism off its way withdraws the capture it carries (left_for_prism).
+diff -ruN charybdis-ref/src/bot_parts.h convoy/src/bot_parts.h
+--- charybdis-ref/src/bot_parts.h	2026-11-11 18:57:46.061731273 +0000
++++ convoy/src/bot_parts.h	2026-11-11 20:28:33.227939995 +0000
+@@ -432,6 +432,15 @@
+ bool prism_takeover(const World& world, Safety& safety, const CampGroup& G, int& timer, bitboard& goal);
+ bool holders_stay(const World& world, const CampGroup& G, int round);
+ int carry_reach();
++// Our Prism's support set (convoy): each living ally's work, its claimed group (`group`, its centre `at`), else its
++// tile seen or posted lately (`group` -1). Empty for any other champion.
++struct ConvoySupport {
++    int n = 0;
++    std::array<int, 8> group{};
++    std::array<vec2, 8> at{};
++};
++const ConvoySupport& convoy_support(const World& world);
++bool in_convoy(const World& world, Pathing& pathing, int g);
+ bool left_for_prism(const World& world, Pathing& pathing, int g, bool cleared_now = false);
+ bool yields_to_prism(const World& world, Pathing& pathing);
+ const bitboard* prism_hold_tiles(const World& world, bool on_too = false);
+diff -ruN charybdis-ref/src/economy/capture.cc convoy/src/economy/capture.cc
+--- charybdis-ref/src/economy/capture.cc	2026-11-11 18:57:46.064002492 +0000
++++ convoy/src/economy/capture.cc	2026-11-11 20:42:32.499714931 +0000
+@@ -394,6 +394,46 @@
+     return false;
+ }
+ 
++const ConvoySupport& convoy_support(const World& world) {
++    static ConvoySupport support;
++    static int round = -1;
++    if (round == world.round) return support;
++    round = world.round, support = ConvoySupport{};
++    if (world.me().facts().passive != Passive::gem_focus) return support;
++    const auto& groups = world.map().groups;
++    for (const auto& a : world.allies) {
++        if (a.is_self || !a.alive || support.n == static_cast<int>(support.at.size())) continue;
++        const int g = comms::claim_of(world, a.index);
++        vec2 at;
++        int slack = 0;
++        if (g >= 0 && g < static_cast<int>(groups.size())) support.group[support.n] = g, support.at[support.n++] = groups[g].centre;
++        else if (recent_tile(world, a, at, slack)) support.group[support.n] = -1, support.at[support.n++] = at;
++    }
++    return support;
++}
++
++// Group g lies within carry_reach of some ally's work (or none is known): an ally there can still hand Prism a
++// capture, and reach Prism's fight within about two ability cooldowns. The crow's steps first, then, from a
++// claimed group, the walk down its centre field (made once and kept); short of fuel for it, the crow's.
++bool in_convoy(const World& world, Pathing& pathing, int g) {
++    const auto& support = convoy_support(world);
++    if (support.n == 0) return true;
++    const auto& G = world.map().groups[g];
++    for (int i = 0; i < support.n; ++i) {
++        const int h = support.group[i];
++        if (g == h) return true;
++        if (steps_to(G, support.at[i]) > carry_reach()) continue;
++        if (h < 0) return true;
++        const Field* field = pathing.from_centre(h);
++        if (!field && fuel_ok(full_field_cost_estimate() + act_reserve)) field = pathing.centre_field(h);
++        if (!field) return true;
++        int walk = unreachable;
++        for (const auto& m : G.members) walk = std::min(walk, field->at(m.pos));
++        if (walk == unreachable || walk <= carry_reach()) return true;
++    }
++    return false;
++}
++
+ // Prism ally a's Focus is at least twice that of every living enemy Prism we have seen, where its hits
+ // already kill in duels about half the time: a gem's Focus more there is worth less than an ally's
+ // capture now. No enemy Prism, or none seen: not.
+diff -ruN charybdis-ref/src/economy/farm.cc convoy/src/economy/farm.cc
+--- charybdis-ref/src/economy/farm.cc	2026-11-11 18:57:46.065002505 +0000
++++ convoy/src/economy/farm.cc	2026-11-11 20:42:32.499522028 +0000
+@@ -208,6 +208,27 @@
+     return steps != unreachable ? steps : steps_to(world.map().groups[g], p);
+ }
+ 
++// Set while farm_turn reweighs a turn unconstrained (convoy's fallback).
++bool& convoy_off() {
++    static bool off = false;
++    return off;
++}
++[[maybe_unused]] struct {
++    int masked = 0, fallback = 0, moved = 0; // turns the convoy mask cut a group, fell back, dropped last turn's choice
++} convoy_stats;
++
++bool convoy_carrying(const World& world, const Memory& memory, int g);
++// The convoy mask spares the group we work from where we stand: in range of its live camps hit last round, or a
++// hold's walk off its cleared tiles. And the capture an ally left us that we carry (its leave lapses otherwise).
++bool convoy_works_here(const World& world, const Memory& memory, int g) {
++    if (convoy_carrying(world, memory, g)) return true;
++    if (g != memory.farm_group) return false;
++    const auto& c = world.camps[g];
++    const int near = steps_to(world.map().groups[g], my_position());
++    return (c.state == CampState::cleared && near <= cambc::constants::capture_time)
++           || (c.state == CampState::alive && c.last_damaged_round >= world.round - 1 && near <= world.me().facts().attack_range());
++}
++
+ // Our farm choice or claim, cleared this turn and short of holders, goes to the nearest of the
+ // allies in sight claiming it (ties to the lower index), so the others move on rather than split
+ // the share. Before anything else farm does, since a ranged hit in passing would cost the step.
+@@ -222,6 +243,9 @@
+         if (c.state != CampState::cleared || c.state_round != world.round || G.has_monolith || G.gems + G.gold == 0
+             || test(G.tiles(), here) || sole_capture_holder(world, G) || enemy_on(world, G.tiles()) || left_for_prism(world, pathing, g))
+             continue;
++        if (!convoy_off() && !memory.siege && siege_group() < 0 && memory.mono_group < 0 && keeps_gems(world, pathing)
++            && !in_convoy(world, pathing, g) && !convoy_works_here(world, memory, g))
++            continue;
+         // A holder already there yields to us if our hold pays more (value_holder).
+         const bool outvalues = outvalues_holders(world, G);
+         if (allies_on(world, G.tiles()) >= holders(G) && !outvalues) continue;
+@@ -348,6 +372,11 @@
+     return memo;
+ }
+ 
++bool convoy_carrying(const World& world, const Memory& memory, int g) {
++    const auto& memo = farm_memo();
++    return g == memo.carry_group && memo.carry_round == world.round - 1 && memory.claim == g;
++}
++
+ // Carrying gems, farming on chains a capture onto the bag: it saves the walk to the altar and
+ // back but keeps the bag at risk for longer. It goes ahead only if the next group, by the time it
+ // adds to the trip, beats the best cycle starting from the altar; false means bank instead.
+@@ -731,6 +760,36 @@
+     if (farm_monolith(world, memory.farm_group) && memory.claim == memory.farm_group && mono_engage(memory.farm_group, memory.mono_output))
+         siege_group() = memory.farm_group;
+     const bool banks_bag = opening ? banking_now : banking;
++    const bool keeps = keeps_gems(world, pathing);
++    // Convoy: our keeping Prism works only groups within carry_reach of some ally's work (in_convoy), off our
++    // bag's trip, the opening plan, a siege or Monolith operation; with none of them left, the turn is weighed
++    // again unconstrained (convoy_off). Each group's test is made on first read (0 unread, 1 in, 2 out).
++    const bool convoy = keeps && !banks_bag && !memory.banking && planned_now < 0 && !memory.siege && siege_group() < 0
++                        && memory.mono_group < 0 && !convoy_off() && convoy_support(world).n > 0;
++    // Static walls: the mask holds while the support set, and which of its groups' centre fields were made, do.
++    static std::vector<std::uint8_t> convoy_out;
++    static ConvoySupport convoy_key{};
++    static std::uint32_t convoy_fields = ~0u;
++    if (convoy) {
++        const auto& support = convoy_support(world);
++        const auto fields = [&] {
++            std::uint32_t made = 0;
++            for (int i = 0; i < support.n; ++i) made |= (support.group[i] >= 0 && pathing.from_centre(support.group[i]) ? 1u : 0u) << i;
++            return made;
++        };
++        bool same = convoy_out.size() == groups.size() && support.n == convoy_key.n && fields() == convoy_fields;
++        for (int i = 0; same && i < support.n; ++i) same = support.group[i] == convoy_key.group[i] && support.at[i] == convoy_key.at[i];
++        if (!same) convoy_key = support, convoy_fields = fields(), convoy_out.assign(groups.size(), 0);
++    }
++    const auto outside = [&](int g) __attribute__((always_inline)) {
++        if (!convoy || g < 0) return false;
++        auto& out = convoy_out[g];
++        if (out == 0) out = in_convoy(world, pathing, g) ? 1 : 2;
++        return out == 2 && !convoy_works_here(world, memory, g);
++    };
++    // A candidate the mask dropped this turn: only then is the turn weighed again unconstrained.
++    bool masked_any = false;
++    const auto cut = [&](int g) __attribute__((always_inline)) { return outside(g) && (masked_any = true); };
+     // Groups in passing pay too (gold clusters are never chosen below), but not one whose clear
+     // costs more health than we can spare.
+     const auto affordable = [&](int g) __attribute__((always_inline)) {
+@@ -764,6 +823,7 @@
+     // ally clears it or, melee, once every striker is awake anyway. Allies merely walking past
+     // its reach clear nothing.
+     const auto passing = [&](int g) __attribute__((always_inline)) {
++        if (outside(g)) return false;
+         if (g == memory.farm_group) return true;
+         // The clear's price last: the other tests are cheap reads.
+         if (taken(g)) return false;
+@@ -806,7 +866,7 @@
+             // Strength is the members' sum, so none of them strikes.
+             if (h == g || H.has_monolith || H.strength > 0 || H.gems + H.gold <= 0 || known.state != CampState::alive) continue;
+             // An ally's claim wins even over our own.
+-            if (claimed_by_ally(h) || sole_capture_holder(world, H) || allies_on(world, H.tiles()) >= holders(H)) continue;
++            if (outside(h) || claimed_by_ally(h) || sole_capture_holder(world, H) || allies_on(world, H.tiles()) >= holders(H)) continue;
+             bool partial = false, alive = false, fresh = true, in_range = true;
+             for (int i = 0; i < static_cast<int>(H.members.size()); ++i) {
+                 const auto& m = H.members[i];
+@@ -847,7 +907,6 @@
+         reset_and_attack_camp(world, hit);
+         return true;
+     };
+-    const bool keeps = keeps_gems(world, pathing);
+     // On the way to take over an ally's capture, a ranged hit in passing costs the step that makes the payout,
+     // and its claim the claim the ally leaves the group to us by (left_for_prism).
+     const int carried = memo.carry_group;
+@@ -916,7 +975,7 @@
+             return pathing.walk_down(field, off(target), groups[target].centre);
+         };
+         if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve)) return walk(*field, g);
+-        const bool ready_previous = previous >= 0 && previous != g && pathing.approach_ready(previous, walk_range(world, previous));
++        const bool ready_previous = previous >= 0 && previous != g && !outside(previous) && pathing.approach_ready(previous, walk_range(world, previous));
+         // Too short of fuel to search the way: the choice stands, walked down a field already made.
+         if (pathing.approach_skipped()) {
+             if (const auto* centre = pathing.from_centre(g)) return pathing.descend(*centre, off(g), groups[g].centre);
+@@ -1742,6 +1801,8 @@
+             while (k < evaluated && !is_claimed(g = (*order)[k]) && !held(g) && !(hops && map.may_hop(g)) && (!banks_bag || altar_below(g))) ++k;
+             if (k == evaluated) break;
+         }
++        // Dropping candidates only lowers the best the prunes read.
++        if (cut(g)) continue;
+         if ((pre_pruned && barred()) || (pre_banked && best >= 0)) pre_bounds(g);
+         if (pre_pruned && barred() && (pre_upper[g] < bar_lt() || (pre_valued && best >= 0 && pre_value[g] < best_value))) continue;
+         if (pre_claims && is_claimed(g) && (best >= 0 || shared >= 0) && g != farm_group && g != memory.claim && g != memory.mono_group) {
+@@ -2253,7 +2314,7 @@
+             const auto& G = groups[g];
+             // A payout is at most capture_time rounds away, so no longer walk arrives before it (takeover_worth).
+             const int least = steps_to(G, here); // no walk to its tiles is shorter
+-            if (least >= cambc::constants::capture_time || allies_on(world, G.tiles()) == 0 || !may_take_over(world, G)
++            if (least >= cambc::constants::capture_time || cut(g) || allies_on(world, G.tiles()) == 0 || !may_take_over(world, G)
+                 || left_for_prism(world, pathing, g))
+                 return;
+             int timer = 0;
+@@ -2278,7 +2339,7 @@
+         world.each_cleared([&](int g) {
+             const auto& G = groups[g];
+             const int least = steps_to(G, here); // no walk to its tiles is shorter
+-            if (G.gems <= 0 || least > reach) return;
++            if (G.gems <= 0 || least > reach || cut(g)) return;
+             const bool held = allies_on(world, G.tiles()) > 0;
+             // Left empty: our carry pick, or our claim that an ally's claim keeps out of the loop.
+             if (!held && (g != memory.claim || world.camps[g].holder == team::enemy || (memo.carry_group != g && !claimed_by_ally(g)))) return;
+@@ -2334,7 +2395,7 @@
+             asked[static_cast<std::size_t>(n_asked++)] = g;
+             const auto& G = groups[g];
+             const auto& c = world.camps[g];
+-            if (c.state != CampState::alive || G.gems <= 0 || G.has_monolith || steps_to(G, here) > reach || enemy_on(world, G.tiles())
++            if (c.state != CampState::alive || G.gems <= 0 || G.has_monolith || steps_to(G, here) > reach || cut(g) || enemy_on(world, G.tiles())
+                 || (kited(g) && kite_owns(world, g)) || siege_declines(world, g)
+                 || world.score.ally + bag + G.gems >= winning
+                 || rounds_left(world) <= tribute_turns(bag + G.gems, world.me().fast_tribute) + map.width + map.height + endgame_margin)
+@@ -2368,6 +2429,27 @@
+                 best = g, best_steps = walk, best_value = value, best_spell = false, best_priced = Priced{'Q'};
+         }
+     }
++    debug_block({
++        if (masked_any) ++convoy_stats.masked;
++    });
++    // Nothing of ours left inside the convoy but a risky pick: the turn weighed unconstrained, never idle.
++    if (masked_any && best < 0 && shared < 0 && help_group < 0 && room()) {
++        debug_block({
++            ++convoy_stats.fallback;
++            std::printf("CONVOY FALLBACK %d %u risky g%d prev g%d\n", round, my_handle(), risky, memory.farm_group);
++        });
++        struct Off {
++            Off() { convoy_off() = true; }
++            ~Off() { convoy_off() = false; }
++        } off;
++        return farm_turn<opening, banking, repricing>(world, pathing, safety, memory);
++    }
++    debug_block({
++        if (convoy && outside(memory.farm_group) && best != memory.farm_group) {
++            ++convoy_stats.moved;
++            std::printf("CONVOY DROP %d %u prev g%d now g%d\n", round, my_handle(), memory.farm_group, best >= 0 ? best : risky);
++        }
++    });
+     if (banks_bag && (best < 0 || best_value <= from_altar_value)) return false;
+     if (banks_bag && attack_in_range()) return true;
+     if (world.is_stale()) return true;
+@@ -2424,7 +2506,8 @@
+     if (best < 0) {
+         if constexpr (repricing) return true;
+         // Cut short before weighing even last turn's choice: walk on towards it, as its crew if we were.
+-        if (k == 0 && memory.farm_group >= 0)
++        // Short of fuel for the unconstrained turn too.
++        if ((k == 0 || masked_any) && memory.farm_group >= 0)
+             memory.claim = memory.farm_group, memory.crew = crew_of_choice, walk_on(memory.farm_group);
+         else
+             pathing.leave_respawning(zone);

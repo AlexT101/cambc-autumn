@@ -1,0 +1,267 @@
+diff -ruN charybdis-ref/src/bot.cc endguard/src/bot.cc
+--- charybdis-ref/src/bot.cc	2026-11-11 18:57:46.061505870 +0000
++++ endguard/src/bot.cc	2026-11-11 21:02:42.561309724 +0000
+@@ -743,6 +743,7 @@
+     memory.health = world.me().alive ? my_health() : 0;
+     if (world.me().alive) note_income_end(world);
+     upkeep.camp_turns += camp_hits() != camp_hits_before;
++    debug_block({ escort_trace(world); });
+     debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), static_cast<char>(decision), memory.farm_group, memory.claim); });
+ }
+ 
+diff -ruN charybdis-ref/src/bot_parts.h endguard/src/bot_parts.h
+--- charybdis-ref/src/bot_parts.h	2026-11-11 18:57:46.061731273 +0000
++++ endguard/src/bot_parts.h	2026-11-11 21:11:23.237187673 +0000
+@@ -354,7 +354,9 @@
+ 
+ // economy/altar_guard.cc
+ bool keep_guard_lock(const World& world, int a);
++bool spares_carrier(const World& world, int a);
+ bool guard_turn(const World& world, Pathing& pathing, Safety& safety, Memory& memory, const Pathing::GuardState& strike_guard);
++void escort_trace(const World& world);
+ 
+ // economy/bank.cc
+ bool channelling();
+diff -ruN charybdis-ref/src/economy/altar_guard.cc endguard/src/economy/altar_guard.cc
+--- charybdis-ref/src/economy/altar_guard.cc	2026-11-11 18:57:46.063002479 +0000
++++ endguard/src/economy/altar_guard.cc	2026-11-11 21:11:23.236834508 +0000
+@@ -10,6 +10,9 @@
+ // Altars this close make one site.
+ constexpr int site_link = 3;
+ 
++// The largest bag comms posts: 127 fours.
++constexpr int comms_bag_cap = 4 * 127;
++
+ // The altar held: the map's altars as one site, every one linked to the rest by steps of at most 3 (00quarry,
+ // 03homonoliths, 04plaza: two tiles; 03the_front: a line), held at its altar nearest the enemy spawn by walk (their
+ // tributes go to their nearest), ties by ours. -1 for several sites or none.
+@@ -41,23 +44,89 @@
+     return anchor = best;
+ }
+ 
+-// A body of ours carries a winning bag (as seen, else as posted): its long channel is cancelled by any
+-// enemy stun or lock that reaches it.
+-bool escorting(const World& world) {
+-    if (guarded_altar(world) < 0) return false;
+-    int best = 0;
+-    for (const auto& a : world.allies)
+-        if (a.alive) best = std::max(best, a.is_self ? static_cast<int>(my_gems()) : a.visible ? a.gems : comms::bag_of(world, a.index));
+-    return world.score.ally + best >= static_cast<int>(cambc::constants::winning_gems);
+-}
+-
+-// Scores are read by every body alike, so the team agrees without comms.
+-bool guarding(const World& world) {
+-    static bool on = false;
+-    const int lead = world.score.enemy - world.score.ally;
+-    if (!on) on = world.score.enemy >= params::altar_enemy_min && lead >= params::altar_gap;
+-    else if (lead < params::altar_gap_off) on = false;
+-    return (on || escorting(world)) && guarded_altar(world) >= 0;
++// Our body whose bag wins (as seen, else as posted, or last seen past the post's cap), the largest, ties by
++// index; null for none. Its long channel is cancelled by any enemy stun or lock that reaches it. Bags are
++// ranked as comms posts them (rounded up to fours, capped), so bodies seeing exact and posted bags agree.
++const ChampionBelief* carrier(const World& world) {
++    const ChampionBelief* best = nullptr;
++    int best_key = -1, best_bag = 0;
++    for (const auto& a : world.allies) {
++        if (!a.alive) continue;
++        // A posted bag at the cap is only a floor: the last sighting may say more.
++        const int posted = a.is_self || a.visible ? 0 : comms::bag_of(world, a.index);
++        const int bag = a.is_self ? static_cast<int>(my_gems()) : a.visible ? a.gems : posted >= comms_bag_cap ? std::max(posted, a.gems) : posted;
++        if (const int key = std::min(comms_bag_cap, (bag + 3) / 4 * 4); key > best_key) best = &a, best_key = key, best_bag = bag;
++    }
++    return best && world.score.ally + best_bag >= static_cast<int>(cambc::constants::winning_gems) ? best : nullptr;
++}
++
++// Steps from our spawn to a tile beside altar a.
++int altar_home_steps(const StaticMap& map, int a) {
++    const auto& field = map.from_ally_spawn();
++    const vec2 p = map.altars[static_cast<std::size_t>(a)].pos;
++    int steps = unreachable;
++    for (int dx = -1; dx <= 1; ++dx)
++        for (int dy = -1; dy <= 1; ++dy)
++            if (const vec2 t{p.x + dx, p.y + dy}; (dx || dy) && in_bounds(t)) steps = std::min(steps, field.at(t));
++    return steps;
++}
++
++// The carrier's altar: the one it channels at, else the nearest to where it is (seen or posted) without an
++// enemy lock (bank_gems prices a lock's breaking), ties by our walk from spawn. Every body computes it alike,
++// so the guards gather at one altar. Where it is unknown, the altar last computed for it.
++int carrier_altar(const World& world, const ChampionBelief& c) {
++    static std::array<int, 8> last{-1, -1, -1, -1, -1, -1, -1, -1};
++    int& kept = last[static_cast<std::size_t>(c.index) % last.size()];
++    vec2 at;
++    int slack = 0;
++    if (c.is_self) {
++        at = my_position();
++        if (my_state().contains(cambc::champion_state::submitting_gems)) return kept = tribute_altar(world, at);
++    } else if (c.visible && c.channel == Channel::tribute) {
++        return kept = tribute_altar(world, c.pos);
++    } else if (!recent_tile(world, c, at, slack)) {
++        if (kept >= 0 || !in_bounds(c.pos)) return kept;
++        at = c.pos;
++    }
++    const auto& map = world.map();
++    int best = -1, best_lock = 0, best_dist = 0, best_home = 0;
++    for (int a = 0; a < static_cast<int>(map.altars.size()); ++a) {
++        const int lock = world.altars[static_cast<std::size_t>(a)].enemy_lock;
++        const int d = dist(at, map.altars[static_cast<std::size_t>(a)].pos);
++        if (best >= 0 && (lock > best_lock || (lock == best_lock && d > best_dist))) continue;
++        const int home = altar_home_steps(map, a);
++        if (best < 0 || lock < best_lock || d < best_dist || home < best_home) best = a, best_lock = lock, best_dist = d, best_home = home;
++    }
++    return kept = best;
++}
++
++// The site's guarding latch: the enemy near the win and well ahead. Scores are read by every body alike,
++// so the team agrees without comms.
++bool site_on = false;
++
++// The altar held, or -1: on a one-site map the site's while the latch is on or while escorting; elsewhere the
++// carrier's altar while escorting. `latch` updates the latch first (the debug trace leaves it).
++int held_altar(const World& world, bool latch = true) {
++    if (latch) {
++        const int lead = world.score.enemy - world.score.ally;
++        if (!site_on) site_on = world.score.enemy >= params::altar_enemy_min && lead >= params::altar_gap;
++        else if (lead < params::altar_gap_off) site_on = false;
++    }
++    const int site = guarded_altar(world);
++    const auto* c = carrier(world);
++    if (site >= 0) return site_on || c ? site : -1;
++    return c ? carrier_altar(world, *c) : -1;
++}
++
++// While escorting a carrier we cannot see, a lock at altar a may cancel its tribute (place_lock spares only
++// a carrier it sees channelling): one within reach of where it may be, or its altar if that is unknown.
++bool spares_carrier(const World& world, int a) {
++    const auto* c = carrier(world);
++    if (!c || c->is_self || c->visible) return false;
++    vec2 at;
++    int slack = 0;
++    if (!recent_tile(world, *c, at, slack)) return carrier_altar(world, *c) == a;
++    return dist(at, world.map().altars[static_cast<std::size_t>(a)].pos) - slack <= static_cast<int>(cambc::constants::submit_gems_range);
+ }
+ 
+ // Fighting weight by type: a linked pair last, since one death hands over both bags.
+@@ -67,13 +136,15 @@
+     return f.passive == Passive::linked_pair ? p * 0.25f : p;
+ }
+ 
+-// Our rank among living allies by guard_power (ties by index), or -1 past params::altar_guards.
+-int guard_rank(const World& world) {
++// Our rank by guard_power (ties by index) among living allies but the carrier, which banks, or -1 past
++// params::altar_guards. The carrier counts as one of the farmers kept.
++int guard_rank(const World& world, const ChampionBelief* skip) {
+     const auto& me = world.me();
++    if (skip && skip->is_self) return -1;
+     const float mine = guard_power(me);
+     int rank = 0;
+     for (const auto& a : world.allies) {
+-        if (a.is_self || !a.alive) continue;
++        if (a.is_self || !a.alive || (skip && a.index == skip->index)) continue;
+         const float p = guard_power(a);
+         rank += p > mine || (p == mine && a.index < me.index);
+     }
+@@ -86,12 +157,13 @@
+ // bushes first (unseen from outside, and attacking from one does not reveal us), then nearer the
+ // altar, then nearer our spawn.
+ const std::vector<vec2>& stands(const World& world, int a) {
+-    static std::vector<vec2> tiles;
+-    static int built = -1;
+-    if (built == a) return tiles;
+-    built = a;
+-    tiles.clear();
+     const auto& map = world.map();
++    static std::vector<std::vector<vec2>> by_altar;
++    static std::vector<char> built;
++    if (built.size() < map.altars.size()) built.resize(map.altars.size(), 0), by_altar.resize(map.altars.size());
++    auto& tiles = by_altar[static_cast<std::size_t>(a)];
++    if (built[static_cast<std::size_t>(a)]) return tiles;
++    built[static_cast<std::size_t>(a)] = 1;
+     const vec2 alt = map.altars[a].pos;
+     const auto in_camp_reach = [&](vec2 p) {
+         for (const auto& g : map.groups)
+@@ -124,23 +196,24 @@
+     return tiles;
+ }
+ 
+-// Our lock on the guarded altar is kept up while guarding (place_lock counts it as our side).
++// Our lock on the held altar is kept up while guarding (place_lock counts it as our side; spares_carrier
++// vetoes it first).
+ bool keep_guard_lock(const World& world, int a) {
+-    if (!guarding(world)) return false;
+-    const int g = guarded_altar(world);
++    const int g = held_altar(world);
++    if (g < 0) return false;
+     if (a == g) return true;
+     // The site's other altars by the held one: a tribute there is as near.
+     const auto& altars = world.map().altars;
+-    return g >= 0 && dist(altars[static_cast<std::size_t>(a)].pos, altars[static_cast<std::size_t>(g)].pos) <= site_link;
++    return guarded_altar(world) >= 0 && dist(altars[static_cast<std::size_t>(a)].pos, altars[static_cast<std::size_t>(g)].pos) <= site_link;
+ }
+ 
+ // A guard's turn after the bag and the shop: fight an enemy by the altar (chase prices it), else hold
+ // our stand tile. False for a non-guard or when not guarding.
+ bool guard_turn(const World& world, Pathing& pathing, Safety& safety, Memory& memory, const Pathing::GuardState& strike_guard) {
+-    if (!guarding(world)) return false;
+-    const int rank = guard_rank(world);
++    const int a = held_altar(world);
++    if (a < 0) return false;
++    const int rank = guard_rank(world, carrier(world));
+     if (rank < 0) return false;
+-    const int a = guarded_altar(world);
+     const auto& tiles = stands(world, a);
+     if (tiles.empty()) return false;
+     memory.claim = -1;
+@@ -155,7 +228,9 @@
+     const int i = rank % static_cast<int>(tiles.size());
+     const vec2 stand = tiles[static_cast<std::size_t>(i)];
+     if (!my_can_move() || my_position() == stand) return true;
+-    static std::vector<std::optional<Field>> fields;
++    static std::vector<std::vector<std::optional<Field>>> by_altar;
++    if (by_altar.size() < world.map().altars.size()) by_altar.resize(world.map().altars.size());
++    auto& fields = by_altar[static_cast<std::size_t>(a)];
+     if (fields.size() < tiles.size()) fields.resize(tiles.size());
+     auto& field = fields[static_cast<std::size_t>(i)];
+     if (!field) {
+@@ -168,6 +243,29 @@
+     return true;
+ }
+ 
++// Debug: one ESCORT line a turn per living body while escorting (role C carrier, G guard, F other; d its
++// distance to the held altar; trib/rem its own tribute), and ESCORT-END when our tribute ends without the game
++// ending (gems kept: cancelled).
++[[maybe_unused]] void escort_trace(const World& world) {
++    static bool was_trib = false;
++    static int trib_altar = -1;
++    const bool alive = world.me().alive;
++    const bool trib = alive && my_state().contains(cambc::champion_state::submitting_gems);
++    if (was_trib && !trib)
++        std::printf("ESCORT-END %d %u alt=%d alive=%d gems=%d stunned=%d\n", world.round, my_handle(), trib_altar, alive,
++                    alive ? static_cast<int>(my_gems()) : 0, static_cast<int>(stunned_turn));
++    const auto* c = carrier(world);
++    was_trib = trib && c && c->is_self;
++    if (!c || !alive) return;
++    const int a = held_altar(world, false);
++    if (was_trib) trib_altar = a;
++    const char role = c->is_self ? 'C' : guard_rank(world, c) >= 0 ? 'G' : 'F';
++    const vec2 here = my_position();
++    std::printf("ESCORT %d %u %c car=%u alt=%d at=%d,%d d=%d dec=%c trib=%d rem=%d bag=%d score=%d site=%d\n", world.round, my_handle(), role,
++                static_cast<unsigned>(c->handle), a, here.x, here.y, a >= 0 ? dist(here, world.map().altars[static_cast<std::size_t>(a)].pos) : -1,
++                static_cast<char>(decision), trib, trib ? static_cast<int>(my_channel_time()) : -1, static_cast<int>(my_gems()), world.score.ally, guarded_altar(world));
++}
++
+ } // namespace
+ 
+ } // namespace aph
+diff -ruN charybdis-ref/src/economy/bank.cc endguard/src/economy/bank.cc
+--- charybdis-ref/src/economy/bank.cc	2026-11-11 18:57:46.064002492 +0000
++++ endguard/src/economy/bank.cc	2026-11-11 21:11:23.237058751 +0000
+@@ -84,7 +84,7 @@
+                     enemy_tribute = true, winning |= enemy_tribute_wins(world, e);
+             if (enemy_tribute != (pass == 0)) continue;
+             // With no tribute to cancel, only altars on our side, or the one we guard, are worth denying.
+-            if (!enemy_tribute && !our_side(map, a) && !keep_guard_lock(world, a)) continue;
++            if (!enemy_tribute && (spares_carrier(world, a) || (!our_side(map, a) && !keep_guard_lock(world, a)))) continue;
+             // Placing one cancels every tribute at the altar, ours included: worth it only against a win.
+             bool tributing = false, ours_wins = false;
+             for (const auto& ally : world.allies)

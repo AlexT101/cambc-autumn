@@ -1,0 +1,97 @@
+diff -ruN bots/variants/charybdis-ref/src/combat/fight.cc bots/variants/e8-gank/src/combat/fight.cc
+--- bots/variants/charybdis-ref/src/combat/fight.cc	2026-11-11 18:57:46.618475567 +0000
++++ bots/variants/e8-gank/src/combat/fight.cc	2026-11-11 22:18:18.603877316 +0000
+@@ -656,6 +656,37 @@
+     return std::max(0, dist(here, *t.altar) - submit - range) < t.turns ? steps : unreachable;
+ }
+ 
++// The (round, handle) of the last enemy that only gank made preyable, for the GANK trace.
++namespace {
++int gank_round = -1;
++std::uint32_t gank_handle = 0;
++} // namespace
++
++// A visible enemy Prism, the first of a team to die losing most games, alone (no other enemy, seen or
++// credibly unseen, within gank_alone of it) and outnumbered: two or more of us within gank_reach whose
++// basic attacks kill it in gank_turns turns.
++bool gank(const World& world, Safety& safety, const ChampionBelief& e, vec2 here) {
++    constexpr int gank_alone = 6, gank_reach = 8, gank_turns = 2;
++    if (!e.visible || e.facts().passive != Passive::gem_focus) return false;
++    for (const auto& o : world.enemies)
++        if (&o != &e && o.alive && o.visible && dist(o.pos, e.pos) <= gank_alone) return false;
++    int n = 0;
++    float dealt = 0;
++    for (const auto& a : world.allies) {
++        if (!a.alive) continue;
++        if (a.is_self) {
++            if (dist(here, e.pos) > gank_reach) continue;
++            dealt += my_strength() * damage_scale(a.facts().passive, my_health(), my_max_health()) * champion_dealt_factor();
++        } else {
++            if (!a.visible || dist(a.pos, e.pos) > gank_reach) continue;
++            dealt += a.strength * a.damage_scale();
++        }
++        ++n;
++    }
++    if (n < 2 || gank_turns * dealt < effective_hp(e)) return false;
++    return !safety.unseen_within(e.pos, gank_alone);
++}
++
+ // prey's tests before the fight: e is worth chasing from `here` if that fight is won. `held`: the
+ // gems of a cleared group it stands on.
+ bool preyable(const World& world, Safety& safety, const ChampionBelief& e, vec2 here, int range, int& held) {
+@@ -670,8 +701,13 @@
+     const int g = world.map().group_at(e.pos);
+     held = g >= 0 && world.camps[g].state == CampState::cleared ? world.map().groups[g].gems : 0;
+     if (!(comeback::cooked(world) && pair_gems(world, e) >= params::comeback::bar_bag) && dist(here, e.pos) > range && !own_ground(world, e.pos) && e.health >= params::hurt_health_fraction * e.max_health && held == 0
+-        && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable))
+-        return false;
++        && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable)) {
++        if (!gank(world, safety, e, here)) return false;
++        if (pack_covers(world, safety, e.pos, range)) return false;
++        gank_round = world.round, gank_handle = static_cast<std::uint32_t>(e.handle);
++        return true;
++    }
++    if (gank_handle == static_cast<std::uint32_t>(e.handle)) gank_round = -1;
+     // Every tile in reach of it would make us retreat at once.
+     return !pack_covers(world, safety, e.pos, range);
+ }
+@@ -767,6 +803,14 @@
+     });
+ }
+ 
++// Debug trace: a chase only gank made preyable.
++void trace_gank(const World& world, const ChampionBelief& target, char tag) {
++    debug_block({
++        if (gank_round == world.round && gank_handle == static_cast<std::uint32_t>(target.handle))
++            std::printf("GANK %d %u %u %c\n", world.round, my_handle(), gank_handle, tag);
++    });
++}
++
+ // Where the strike search's walk heads when it strikes nothing: the nearest visible enemy we
+ // chased or struck on our previous turn that prey could still take, else {-1, -1}. The search
+ // walks first, and chase gets no walk after one.
+@@ -782,7 +826,7 @@
+     // A teammate's pressed fight when we have none of our own.
+     if (!engaged_before) {
+         if (const auto* t = team_pressed(world); t && preyable(world, safety, *t, here, range, held) && !escapes(world, pathing, *t, need))
+-            aim = t->pos, trace_verdict(world, pathing, *t, 'T');
++            aim = t->pos, trace_verdict(world, pathing, *t, 'T'), trace_gank(world, *t, 'T');
+         return aim;
+     }
+     // Nearest first, so a verdict is asked only up to the first that holds.
+@@ -799,6 +843,7 @@
+     for (int i = 0; i < n; ++i)
+         if (!escapes(world, pathing, *order[i].second, need)) {
+             trace_verdict(world, pathing, *order[i].second, 'A');
++            trace_gank(world, *order[i].second, 'A');
+             return order[i].second->pos;
+         }
+     return aim;
+@@ -983,6 +1028,7 @@
+     const auto* target = prey(world, pathing, safety);
+     if (!target) return false;
+     trace_verdict(world, pathing, *target, 'P');
++    trace_gank(world, *target, 'P');
+     note_engaged(static_cast<std::uint32_t>(target->handle));
+     decision = Branch::chase;
+     if constexpr (debug_fights) log_fight("FC", world, safety, target->pos, safety.fight(target->pos), static_cast<int>(target->handle));

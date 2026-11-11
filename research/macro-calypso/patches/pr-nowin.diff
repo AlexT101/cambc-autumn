@@ -1,0 +1,175 @@
+diff --git a/bots/charybdis/src/bot_parts.h b/bots/variants/pr-nowin/src/bot_parts.h
+index ef6d2f189..e6b5ad6d1 100644
+--- a/bots/charybdis/src/bot_parts.h
++++ b/bots/variants/pr-nowin/src/bot_parts.h
+@@ -363,6 +363,7 @@ bool channel_held();
+ void place_lock(const World& world);
+ int tribute_turns(int gems, bool fast);
+ int tribute_turns(const World& world, int gems);
++bool long_channel(int gems, bool fast);
+ int recall_turns(const World& world);
+ vec2 recall_landing(const World& world);
+ int rounds_left(const World& world);
+diff --git a/bots/charybdis/src/economy/bank.cc b/bots/variants/pr-nowin/src/economy/bank.cc
+index bf77ad9d2..6665d84f8 100644
+--- a/bots/charybdis/src/economy/bank.cc
++++ b/bots/variants/pr-nowin/src/economy/bank.cc
+@@ -159,6 +159,9 @@ int tribute_turns(int gems, bool fast) {
+     return fast ? b - b * tribute_emblem_cut / 100 : b;
+ }
+ int tribute_turns(const World& world, int gems) { return tribute_turns(gems, world.me().fast_tribute); }
++// pr-nowin probe: a channel longer than the window tribute safety is judged over, which any stun
++// cancels while Prism stands at the altar: a winning bag that long does not end Prism's hoard.
++bool long_channel(int gems, bool fast) { return tribute_turns(gems, fast) > params::tribute_window; }
+ 
+ int recall_turns(const World& world) {
+     return world.me().recall_turns();
+@@ -841,6 +844,9 @@ bool winning_bag(const World& world) { return gems_short(world) <= 0; }
+ // the team's bags (as seen, else as posted through comms): our bag banked later than that only delays the win.
+ int race_left_now(const World& world) {
+     int short_by = gems_short(world);
++    // pr-nowin: Prism's own long winning bag (keeps_gems) runs no race: it is kept to the round limit.
++    if (short_by <= 0 && world.me().facts().passive == Passive::gem_focus && long_channel(static_cast<int>(my_gems()), world.me().fast_tribute))
++        return rounds_left(world);
+     for (const auto& a : world.allies)
+         if (!a.is_self && a.alive && !(a.visible && a.channel == Channel::tribute))
+             short_by -= a.visible ? a.gems : comms::bag_of(world, a.index);
+@@ -892,9 +898,11 @@ bool closing_now(const World& world, Pathing& pathing) {
+     return bag_rounds_left(world) <= walk + tribute_turns(world, my_gems()) + endgame_margin;
+ }
+ 
+-// Prism keeps the gems it carries or gains for their Focus, until its bag wins or the game closes.
++// Prism keeps the gems it carries or gains for their Focus, until its bag wins with a channel short
++// enough to land (long_channel), or the game closes.
+ bool keeps_gems(const World& world, Pathing& pathing) {
+-    return world.me().facts().passive == Passive::gem_focus && !winning_bag(world) && !closing(world, pathing);
++    return world.me().facts().passive == Passive::gem_focus
++           && !(winning_bag(world) && !long_channel(static_cast<int>(my_gems()), world.me().fast_tribute)) && !closing(world, pathing);
+ }
+ 
+ bool retaining_gems(const World& world, Pathing& pathing) { return my_gems() > 0 && keeps_gems(world, pathing); }
+diff --git a/bots/charybdis/src/economy/capture.cc b/bots/variants/pr-nowin/src/economy/capture.cc
+index 2213b254c..50795facd 100644
+--- a/bots/charybdis/src/economy/capture.cc
++++ b/bots/variants/pr-nowin/src/economy/capture.cc
+@@ -148,13 +148,13 @@ bool hold_shy(const World& world, const ChampionBelief& a) {
+     return p && p->alive;
+ }
+ 
+-// A healthy Prism keeps its bag for Focus with `gems` more in it: short of the win, and early enough to bank
+-// it later. Else the bag goes to an altar, and a hurt one leaves a hold. Read from a's visible bag and health
+-// and the team's score, so allies agree.
++// A healthy Prism keeps its bag for Focus with `gems` more in it: short of the win or past it with a
++// long channel (long_channel), and early enough to bank it later. Else the bag goes to an altar, and a
++// hurt one leaves a hold. Read from a's visible bag and health and the team's score, so allies agree.
+ bool keeps_bag(const World& world, const ChampionBelief& a, int gems) {
+     const auto& map = world.map();
+     return a.facts().passive == Passive::gem_focus && a.health >= params::hurt_health_fraction * a.max_health
+-           && world.score.ally + a.gems + gems < static_cast<int>(cambc::constants::winning_gems)
++           && (world.score.ally + a.gems + gems < static_cast<int>(cambc::constants::winning_gems) || long_channel(a.gems + gems, a.fast_tribute))
+            && rounds_left(world) > tribute_turns(a.gems + gems, a.fast_tribute) + map.width + map.height + endgame_margin;
+ }
+ 
+@@ -368,7 +368,7 @@ const ChampionBelief* sole_capture_holder(const World& world, const CampGroup& G
+         if (a.facts().passive != Passive::gem_focus || !fit_on(a, G.tiles())
+             || a.channel == Channel::tribute || a.channel == Channel::teleport
+             || (a.channel == Channel::recall && a.channel_end_round <= world.round + 1)
+-            || world.score.ally + a.gems + G.gems >= winning
++            || (world.score.ally + a.gems + G.gems >= winning && !long_channel(a.gems + G.gems, a.fast_tribute))
+             || rounds_left(world) <= tribute_turns(a.gems + G.gems, a.fast_tribute) + map.width + map.height + endgame_margin
+             || (seen && prism_hold_threatened(world, a, G)))
+             continue;
+@@ -495,7 +495,7 @@ Leave leave_for_prism(const World& world, Pathing& pathing, int g, const LeftRec
+         const int bag = a.visible ? a.gems : comms::bag_of(world, a.index);
+         vec2 at;
+         int slack = 0;
+-        if (world.score.ally + bag + G.gems >= winning
++        if ((world.score.ally + bag + G.gems >= winning && !long_channel(bag + G.gems, a.fast_tribute))
+             || rounds_left(world) <= tribute_turns(bag + G.gems, a.fast_tribute) + map.width + map.height + endgame_margin
+             || !recent_tile(world, a, at, slack))
+             continue;
+@@ -560,7 +560,7 @@ bool enemy_hold_pays(const World& world, const CampBelief& c) {
+ 
+ bool holding_capture_now(const World& world, Pathing& pathing, vec2 here) {
+     const int g = world.map().group_at(here);
+-    if (g < 0 || world.camps[g].state != CampState::cleared || winning_bag(world)) return false;
++    if (g < 0 || world.camps[g].state != CampState::cleared || (winning_bag(world) && !keeps_gems(world, pathing))) return false;
+     const auto& c = world.camps[g];
+     if (pays_too_late(c)) return false;
+     const auto& G = world.map().groups[g];
+@@ -833,7 +833,7 @@ bool prism_carries(const World& world, Safety& safety, const CampGroup& G, bitbo
+     const auto& map = world.map();
+     const int bag = static_cast<int>(my_gems());
+     if (my_health() < params::hurt_health_fraction * my_max_health()
+-        || world.score.ally + bag + G.gems >= static_cast<int>(cambc::constants::winning_gems)
++        || (world.score.ally + bag + G.gems >= static_cast<int>(cambc::constants::winning_gems) && !long_channel(bag + G.gems, world.me().fast_tribute))
+         || rounds_left(world) <= tribute_turns(bag + G.gems, world.me().fast_tribute) + map.width + map.height + endgame_margin
+         || enemy_on(world, G.tiles()))
+         return false;
+@@ -944,7 +944,9 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory
+     const int channel = my_channel_time();
+     if (world.round + channel < payout) return false;
+     const auto& G = world.map().groups[g];
+-    const bool wins = gem_share(world, G) >= gems_short(world);
++    // A share that wins with a channel Prism keeps through (long_channel) rides on as kept.
++    const bool wins = gem_share(world, G) >= gems_short(world)
++                      && !(keeps_gems(world, pathing) && long_channel(static_cast<int>(my_gems()) + gem_share(world, G), world.me().fast_tribute));
+     const auto* prism = sole_capture_holder(world, G);
+     // Prism on the tiles or on its way takes the hold: off the recall, we yield it (yield_capture).
+     if (!wins && ((prism && !prism->is_self && prism->facts().passive == Passive::gem_focus) || prism_coming(world, pathing, G, c, g)))
+@@ -953,8 +955,7 @@ bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory
+     if (!wins && (retaining_gems(world, pathing) || (prism && prism->is_self && !enemy_may_see(world, here)))) {
+         // A bag kept off the altar: only Prism rides home, when the shop and heal there outweigh
+         // the rounds the trip costs.
+-        if (world.me().facts().passive != Passive::gem_focus || !shops_at_home(world) || winning_bag(world)
+-            || closing(world, pathing) || !recall_outruns(safety) || enemy_on(world, G.tiles()))
++        if (!keeps_gems(world, pathing) || !shops_at_home(world) || !recall_outruns(safety) || enemy_on(world, G.tiles()))
+             return false;
+         const int back = pathing.to_ally_spawn().at(here);
+         if (back == unreachable || payout < world.round) return false;
+diff --git a/bots/charybdis/src/economy/farm.cc b/bots/variants/pr-nowin/src/economy/farm.cc
+index 7e911ce58..97e764a43 100644
+--- a/bots/charybdis/src/economy/farm.cc
++++ b/bots/variants/pr-nowin/src/economy/farm.cc
+@@ -976,14 +976,16 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+         last_per_gold = per_gold, last_tribute_gold = tribute_gold, ++gold_context;
+     // A Prism keeping its gems (keeps_gems) gains carried_bonus on each gem of a capture it takes part in,
+     // at its takeover price: every pick type, the carries' 'G' and 'L' too. Applied past the kept facts,
+-    // which hold none of it. Not on a Monolith or a capture that wins. keeps_bag only tightens with the
+-    // gems, so `keep_most`, a gem's at 1, bounds every group's: the prunes add it to the gems' price as
++    // which hold none of it. Not on a Monolith or a capture that wins with a short channel (long_channel).
++    // With short_by > 1 a gem's win test passes and keeps_bag's other tests only tighten with the gems,
++    // so `keep_most`, a gem's at 1, bounds every group's: the prunes add it to the gems' price as
+     // tribute_gold is.
+     const bool keeper = keeps;
+     const float keeper_price = keeper ? prices(world).per_gold : 0.0f;
+     const float keep_most = keeper && short_by > 1 ? carried_bonus(world, world.me(), 1, keeper_price) : 0.0f;
+     const auto keep_bonus = [&](const CampGroup& G) __attribute__((always_inline)) {
+-        return keep_most > 0 && G.gems > 0 && G.gems < short_by && !G.has_monolith ? carried_bonus(world, world.me(), G.gems, keeper_price) : 0.0f;
++        return keep_most > 0 && G.gems > 0 && (G.gems < short_by || long_channel(static_cast<int>(my_gems()) + G.gems, world.me().fast_tribute)) && !G.has_monolith
++                   ? carried_bonus(world, world.me(), G.gems, keeper_price) : 0.0f;
+     };
+     const float bound_tribute = tribute_gold + keep_most;
+     const float spells = world.me().facts().ranged ? spell_output(world.me()) : 0.0f, basic = std::max(1.0f, basic_output(world.me()));
+@@ -2336,7 +2338,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+             const auto& c = world.camps[g];
+             if (c.state != CampState::alive || G.gems <= 0 || G.has_monolith || steps_to(G, here) > reach || enemy_on(world, G.tiles())
+                 || (kited(g) && kite_owns(world, g)) || siege_declines(world, g)
+-                || world.score.ally + bag + G.gems >= winning
++                || (world.score.ally + bag + G.gems >= winning && !long_channel(bag + G.gems, world.me().fast_tribute))
+                 || rounds_left(world) <= tribute_turns(bag + G.gems, world.me().fast_tribute) + map.width + map.height + endgame_margin)
+                 continue;
+             float output = 0;
+diff --git a/bots/charybdis/src/economy/shop.cc b/bots/variants/pr-nowin/src/economy/shop.cc
+index 9df537cef..f5837fcd8 100644
+--- a/bots/charybdis/src/economy/shop.cc
++++ b/bots/variants/pr-nowin/src/economy/shop.cc
+@@ -695,7 +695,7 @@ void note_income_end(const World& world) {
+     if (test(world.map().ally_spawn, here) || safety.threatened(here)) return false;
+     // The trip costs the recall and the walk back out; arriving by recall, the heal takes the turn.
+     if (prism) {
+-        if (winning_bag(world) || closing(world, pathing)) return false;
++        if (!keeps_gems(world, pathing)) return false;
+         const int back = pathing.to_ally_spawn().at(here);
+         if (back == unreachable) return false;
+         const int hurt = my_health() < my_max_health() ? 1 : 0;

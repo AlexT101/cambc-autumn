@@ -1,0 +1,114 @@
+diff --git a/bots/charybdis/src/draft/draft.cc b/bots/variants/cal-o/src/draft/draft.cc
+index a685661b5..8f90ba24a 100644
+--- a/bots/charybdis/src/draft/draft.cc
++++ b/bots/variants/cal-o/src/draft/draft.cc
+@@ -866,6 +866,10 @@ void make_open_plan(const StaticMap& map, Analysis& a, DraftPlan& plan, std::uin
+         B.dps = base_output(type), B.range = f.attack_range(), B.melee = !f.ranged;
+         B.health = f.health.base, B.usable = f.health.base * (1.0f - params::draft_recall_health_fraction);
+         B.bonus = f.passive == Passive::bonus_gold ? 1.0f + static_cast<float>(cambc::constants::passive_abilities::vesper_vale_bonus_gold_percent) / 100.0f : 1.0f;
++        // As capture.cc's carried_bonus: a kept gem's Focus is what prism_focus_per_gem / growth shards would buy.
++        B.gem_weight = f.passive == Passive::gem_focus
++                           ? 1.0f + p.per_gold * cambc::constants::passive_abilities::prism_focus_per_gem / f.focus.growth * static_cast<float>(shard_price)
++                           : 1.0f;
+         const int i = body_spawn_index(map, b);
+         const bool by_tile = !a.spawn_steps.empty() && i < static_cast<int>(map.ally_spawn_tiles.size());
+         for (int c = 0; c < p.cands; ++c) B.from_spawn[c] = by_tile ? a.spawn_steps[order[c].second][i] : a.steps[order[c].second][0];
+diff --git a/bots/charybdis/src/draft/open_plan.cc b/bots/variants/cal-o/src/draft/open_plan.cc
+index da117ecd2..796ac1e13 100644
+--- a/bots/charybdis/src/draft/open_plan.cc
++++ b/bots/variants/cal-o/src/draft/open_plan.cc
+@@ -25,7 +25,7 @@ struct GroupState {
+ // The problem's numbers a run reads, laid out for it once per problem: by body, and per candidate the walk from
+ // spawn (row 0) or from each candidate, the capture's value by holder and the trip home.
+ struct Tables {
+-    std::array<float, max_bodies> dps, usable, bonus, health;
++    std::array<float, max_bodies> dps, usable, health;
+     std::array<bool, max_bodies> melee;
+     std::array<std::array<std::array<float, max_cands>, max_cands + 1>, max_bodies> walk;
+     std::array<std::array<float, max_bodies>, max_cands> worth;
+@@ -34,14 +34,14 @@ struct Tables {
+     void build(const Problem& p) {
+         for (int b = 0; b < p.bodies; ++b) {
+             const auto& B = p.body[b];
+-            dps[b] = B.dps, usable[b] = B.usable, bonus[b] = B.bonus, health[b] = B.health, melee[b] = B.melee;
++            dps[b] = B.dps, usable[b] = B.usable, health[b] = B.health, melee[b] = B.melee;
+             for (int c = 0; c < p.cands; ++c) walk[b][0][c] = static_cast<float>(std::max(0, B.from_spawn[c] - B.range));
+             for (int l = 0; l < p.cands; ++l)
+                 for (int c = 0; c < p.cands; ++c) walk[b][l + 1][c] = static_cast<float>(std::max(0, p.steps[l][c] - B.range));
+         }
+         for (int c = 0; c < p.cands; ++c) {
+             const auto& C = p.cand[c];
+-            for (int b = 0; b < p.bodies; ++b) worth[c][b] = C.gems + p.per_gold * C.gold * p.body[b].bonus;
++            for (int b = 0; b < p.bodies; ++b) worth[c][b] = C.gems * p.body[b].gem_weight + p.per_gold * C.gold * p.body[b].bonus;
+             home[c] = static_cast<float>(std::min(2 * C.home, cambc::constants::recall_time + C.home));
+             respawn[c] = static_cast<float>(C.respawn);
+         }
+@@ -184,13 +184,13 @@ struct Sim {
+         clear_damage(x, C, g, taken.data());
+         // A clear that takes anyone past its usable health fails: the real one leaves for home part way (and its
+         // fire is what sends farm's bodies home), so the plan gets nothing from the group and it leaves the list.
+-        // The holder: the attendee with the best gold bonus, the first of equals.
++        // The holder: the attendee the capture is worth most to, the first of equals.
+         bool failed = false;
+         int holder = -1;
+         for (int i = 0; i < g.n; ++i) {
+             const int b = g.att[i];
+             failed |= damage[b] + taken[i] > x.usable[b];
+-            if (holder < 0 || x.bonus[b] > x.bonus[g.att[holder]]) holder = i;
++            if (holder < 0 || x.worth[c][b] > x.worth[c][g.att[holder]]) holder = i;
+         }
+         if (failed) holder = -1;
+         if (holder >= 0 && T + capture <= static_cast<float>(p.horizon)) s.value += x.worth[c][g.att[holder]];
+@@ -295,7 +295,7 @@ struct Sim {
+ };
+ 
+ struct Unit {
+-    float dps = 0, bonus = 1;
++    float dps = 0, bonus = 1, gem_weight = 1;
+     int range = 1, lead = 0; // the body whose start tile it walks from
+ };
+ 
+@@ -316,7 +316,7 @@ void greedy(const Problem& p, const std::array<Unit, max_bodies>& units, int n,
+                 const auto& C = p.cand[c];
+                 const int d = loc[u] < 0 ? p.body[units[u].lead].from_spawn[c] : p.steps[loc[u]][c];
+                 const float rounds = static_cast<float>(std::max(0, d - units[u].range)) + C.total / units[u].dps + capture;
+-                const float rate = (C.gems + p.per_gold * C.gold * units[u].bonus) / rounds;
++                const float rate = (C.gems * units[u].gem_weight + p.per_gold * C.gold * units[u].bonus) / rounds;
+                 if (t[u] + rounds <= static_cast<float>(p.horizon) + capture && rate > best_rate) best = c, best_rate = rate, best_rounds = rounds;
+             }
+             if (best < 0) continue;
+@@ -394,9 +394,9 @@ Lists solve(const Problem& p, std::uint64_t fuel_floor, float& value, int& itera
+     value = 0, iterations = 0;
+     if (p.bodies == 0 || p.cands == 0) return best;
+     tables.build(p);
+-    const auto unit_of = [&](int b) { return Unit{p.body[b].dps, p.body[b].bonus, p.body[b].range, b}; };
++    const auto unit_of = [&](int b) { return Unit{p.body[b].dps, p.body[b].bonus, p.body[b].gem_weight, p.body[b].range, b}; };
+     const auto join = [&](Unit u, int b) {
+-        u.dps += p.body[b].dps, u.bonus = std::max(u.bonus, p.body[b].bonus), u.range = std::min(u.range, p.body[b].range);
++        u.dps += p.body[b].dps, u.bonus = std::max(u.bonus, p.body[b].bonus), u.gem_weight = std::max(u.gem_weight, p.body[b].gem_weight), u.range = std::min(u.range, p.body[b].range);
+         return u;
+     };
+     // Seeds: every body alone; the whole team as one; pairs in id order (Cassi and Issac together).
+diff --git a/bots/charybdis/src/draft/open_plan.h b/bots/variants/cal-o/src/draft/open_plan.h
+index a1283388d..169e65c77 100644
+--- a/bots/charybdis/src/draft/open_plan.h
++++ b/bots/variants/cal-o/src/draft/open_plan.h
+@@ -2,8 +2,8 @@
+ // The opening plan (research/draftfarm-2026-11-08): solved in the draft's first turn for the team we expect, it
+ // names each body's first groups to clear, in order, up to params::open_plan::horizon. Its model: the team farms
+ // our half alone from full health at spawn; a group's monsters hit the first champion to arrive until a melee
+-// arrives; a body past its usable health walks home; a capture pays its holder (the attendee with the best gold
+-// bonus) capture_time after the clear. Plans are lists per body, searched for the most value paid by the horizon.
++// arrives; a body past its usable health walks home; a capture pays its holder (the attendee it is worth most to)
++// capture_time after the clear. Plans are lists per body, searched for the most value paid by the horizon.
+ #include <array>
+ #include <cstdint>
+ #include <vector>
+@@ -19,6 +19,7 @@ struct Body {
+     float usable = 0;  // camp damage taken before a trip home
+     float health = 0;  // camp damage that kills
+     float bonus = 1;   // gold multiplier on its capture shares
++    float gem_weight = 1; // a gem it holds, in gems: a Prism keeps it, adding its Focus's worth in shard gold
+     bool melee = false;
+     std::array<std::uint16_t, max_cands> from_spawn{}; // walking steps from its start tile to each candidate
+ };

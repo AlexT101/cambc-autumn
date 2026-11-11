@@ -1,0 +1,335 @@
+diff --git a/bots/charybdis/src/bot.cc b/bots/variants/cal-f/src/bot.cc
+index 06a678a17..49ef83d14 100644
+--- a/bots/charybdis/src/bot.cc
++++ b/bots/variants/cal-f/src/bot.cc
+@@ -351,6 +351,7 @@ bool search_strikes(World& world, Pathing& pathing, Safety& safety, const Memory
+     if (memory.claim >= 0 && (memory.siege || memory.claim == memory.mono_group) && memory.camp_fled < 0 && !intent.to_altar)
+         intent.own_fire = memory.claim;
+     intent.aim = chase_aim(world, pathing, safety);
++    if (!in_bounds(intent.aim)) intent.aim = hunt_aim(world);
+     struck = searched = true;
+     const auto planned = plan_strikes(world, pathing, safety, intent);
+     note_search(planned.searched);
+@@ -523,6 +524,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     }
+     if (guard_turn(world, pathing, safety, memory, strike_guard)) return;
+     if (chase_with_guard(world, pathing, safety, strike_guard)) return;
++    if (hunt_with_guard(world, pathing, safety, strike_guard)) return;
+     if (contest_capture(world, pathing, memory)) {
+         decision = Branch::contest;
+         return;
+@@ -689,6 +691,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
+     support_owned = support_requested = support_offered = support_retreat = end_ward = end_tight = false;
+     comms::support_intent(world.round, false);
+     siege_group() = -1;
++    hunt_turn_start();
+     turn_acts = {};
+     engaged_before = memory.round == world.round - 1 ? engaged : 0;
+     engaged = 0;
+@@ -737,6 +740,8 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
+     comms::claim(memory.claim);
+     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);
+     comms::chasing(world.round, world.me().alive && decision == Branch::chase);
++    comms::hunting(world.round, world.me().alive && world.me().facts().passive == Passive::gem_focus && hunted_this_turn());
++    hunt_turn_end(world);
+     if (!world.is_stale()) publish_turn_order(world, comms::priority_payload(world));
+     memory.live_claim = live_claim;
+     memory.round = world.round;
+diff --git a/bots/charybdis/src/bot_parts.h b/bots/variants/cal-f/src/bot_parts.h
+index ef6d2f189..3082a0aa0 100644
+--- a/bots/charybdis/src/bot_parts.h
++++ b/bots/variants/cal-f/src/bot_parts.h
+@@ -340,6 +340,13 @@ vec2 chase_aim(const World& world, Pathing& pathing, Safety& safety);
+ // A successful chase keeps its guard; a failed one restores the work guard.
+ bool chase_with_guard(const World& world, Pathing& pathing, Safety& safety, const Pathing::GuardState& guard);
+ const ChampionBelief* stoppable_winning_tribute(const World& world);
++
++// combat/hunt.cc: our Prism with the bigger bag goes for the enemy Prism; allies near it follow.
++vec2 hunt_aim(const World& world);
++bool hunt_with_guard(const World& world, Pathing& pathing, Safety& safety, const Pathing::GuardState& guard);
++bool hunted_this_turn();
++void hunt_turn_start();
++void hunt_turn_end(const World& world);
+ bool ally_stops(const World& world, const ChampionBelief& e);
+ const ChampionBelief* game_ender(const World& world);
+ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e);
+diff --git a/bots/variants/cal-f/src/combat/hunt.cc b/bots/variants/cal-f/src/combat/hunt.cc
+new file mode 100644
+index 000000000..8c79d4210
+--- /dev/null
++++ b/bots/variants/cal-f/src/combat/hunt.cc
+@@ -0,0 +1,203 @@
++// The Prism hunt. Prism's Focus grows 1.5 a carried gem and the killer takes the victim's whole bag,
++// so between the two Prisms the bigger bag wins the duel and then holds both. Our Prism carrying the
++// bigger bag goes for the enemy's ahead of farming, and allies near it with no bag to lose follow.
++#include "../bot_parts.h"
++
++namespace aph {
++
++namespace {
++
++namespace hunt {
++
++// The enemy walks a step before our next turn: from this near now, it is in the stun's range then.
++constexpr int stun_goal = ability_range - 1;
++// Sightings older than this give no hunt (the design's admitted staleness, past which its bag and
++// whereabouts are guesses).
++constexpr int stale_rounds = params::track_horizon + 5;
++// The walk a hunt pursues: two horizons of its walking away while we close in, and the margin the
++// design allows; farther, the farm goes on.
++constexpr int pursuit_steps = 2 * params::track_horizon + 4;
++
++int prism_index(const std::vector<ChampionBelief>& team) {
++    for (const auto& c : team)
++        if (c.facts().passive == Passive::gem_focus) return c.index;
++    return -1;
++}
++const ChampionBelief* ally_prism(const World& world) {
++    static const int i = prism_index(world.allies);
++    return i >= 0 ? &world.allies[static_cast<std::size_t>(i)] : nullptr;
++}
++const ChampionBelief* enemy_prism(const World& world) {
++    static const int i = prism_index(world.enemies);
++    return i >= 0 ? &world.enemies[static_cast<std::size_t>(i)] : nullptr;
++}
++
++// The enemy Prism, alive and seen recently enough to go for, off its spawn's edge where it heals.
++const ChampionBelief* fresh_prey(const World& world) {
++    const auto* e = enemy_prism(world);
++    if (!e || !e->alive || e->stats_round < 0 || e->age(world.round) > stale_rounds || !in_bounds(e->pos)) return nullptr;
++    if (test(world.map().near_enemy_spawn, e->pos)) return nullptr;
++    return e;
++}
++
++// Our Prism's prey while ours is the bigger bag (brake_bag or more: below it the Focus between the bags
++// decides no duel) and we are not hurt; else null.
++const ChampionBelief* prism_prey(const World& world) {
++    const auto& me = world.me();
++    if (!me.alive || me.facts().passive != Passive::gem_focus) return nullptr;
++    const int bag = static_cast<int>(my_gems());
++    if (bag < params::brake_bag || my_health() <= params::hurt_health_fraction * my_max_health()) return nullptr;
++    const auto* e = fresh_prey(world);
++    return e && bag > e->gems ? e : nullptr;
++}
++
++// A non-Prism ally's lead: our Prism in sight, hunting, within our sight's radius; null if none. We follow
++// with no bag of brake_bag (ours would be the prize of a lost fight) and no channel. Willow has her own support.
++const ChampionBelief* hunt_lead(const World& world) {
++    const auto& me = world.me();
++    if (!me.alive || me.facts().passive == Passive::gem_focus || me.facts().heals()) return nullptr;
++    if (static_cast<int>(my_gems()) >= params::brake_bag || channelling()) return nullptr;
++    const auto* p = ally_prism(world);
++    if (!p || p->is_self || !p->alive || !p->visible || dist(my_position(), p->pos) > vision_radius) return nullptr;
++    return comms::ally_hunting(world, *p) ? p : nullptr;
++}
++
++// Tiles to walk to against e: within `radius` of it in sight; out of sight where it may be while
++// tracked, else within `radius` of its last tile, the centre of where it may be.
++void goals_of(const World& world, const ChampionBelief& e, int radius, bitboard& out) {
++    clear_board(out);
++    if (e.visible || !e.tracked) draw_square(out, e.pos, static_cast<float>(radius));
++    else out |= e.possible;
++    and_into(out, world.map().open_for_us, out);
++}
++
++enum class Took : std::uint8_t { none, held, stepped, spent };
++
++// Towards `goals` under the step guard, off the tiles a pack outmatching us may reach (as chase). Held:
++// already on one, with the prey in sight. On one with the prey unseen, we have lost it: no hunt.
++Took walk(const World& world, Pathing& pathing, Safety& safety, bitboard& goals, bool seen) {
++    const vec2 here = my_position();
++    const auto* zone = pack_zone(world, safety);
++    if (zone) drop(goals, *zone);
++    if (in_bounds(here) && test(goals, here)) return seen ? Took::held : Took::none;
++    if (board_empty(goals)) return Took::none;
++    if (!my_can_move()) return Took::spent;
++    return pathing.step_towards(goals, zone, pursuit_steps) ? Took::stepped : Took::none;
++}
++
++struct Track {
++    int last = -1;  // the round of our last hunt (Prism) or follow (ally) turn
++    int start = -1; // its streak's first round
++    int turns = 0;
++    int our_bag = 0, their_bag = 0;
++    bool prey_alive = false; // the enemy Prism, at our last turn
++} track;
++bool hunted = false; // this turn: a hunt (Prism) or a follow (ally)
++int aimed = -1;      // the round the strike search's walk took hunt_aim
++
++void trace_start(const World& world, const ChampionBelief& e, bool follow, const ChampionBelief* lead) {
++    debug_block({
++        if (follow)
++            std::printf("HUNTJ %d %u %u %d %d %d\n", world.round, my_handle(), static_cast<std::uint32_t>(lead->handle),
++                        dist(my_position(), lead->pos), e.visible ? dist(my_position(), e.pos) : -1, e.age(world.round));
++        else
++            std::printf("HUNT+ %d %u %d %d %d %d\n", world.round, my_handle(), static_cast<int>(my_gems()), e.gems, dist(my_position(), e.pos),
++                        e.age(world.round));
++    });
++}
++
++void note(const World& world, const ChampionBelief& e, bool engage, const ChampionBelief* lead) {
++    hunted = true;
++    // Engaged as a fight is (the turn order's seat, the chase's hand-off next turn): only with it in sight.
++    if (engage && e.visible) note_engaged(static_cast<std::uint32_t>(e.handle));
++    const bool follow = lead != nullptr;
++    if (track.last != world.round - 1) {
++        track.start = world.round, track.turns = 0;
++        trace_start(world, e, follow, lead);
++    }
++    ++track.turns;
++    track.last = world.round;
++    track.our_bag = static_cast<int>(my_gems()), track.their_bag = e.gems;
++}
++
++} // namespace hunt
++
++// Debug trace of a hunt's end. At our turn's end, every turn, dead or alive: a streak that missed this
++// turn has stopped, an enemy Prism dead since our previous hunt turn died to (or during) the hunt.
++void hunt_turn_end(const World& world) {
++    using namespace hunt;
++    const auto* e = enemy_prism(world);
++    const bool prey_alive = e && e->alive;
++    debug_block({
++        const bool prism = world.me().facts().passive == Passive::gem_focus;
++        const bool after = track.last >= world.round - 1; // hunted this turn or our previous
++        if (after && track.prey_alive && !prey_alive)
++            std::printf("HUNTK %d %u %c %d %d %d\n", world.round, my_handle(), prism ? 'P' : 'a', track.our_bag, track.their_bag,
++                        world.me().alive ? static_cast<int>(my_gems()) : -1);
++        if (track.last == world.round - 1 && !hunted) {
++            const char why = !world.me().alive ? 'D' : !prey_alive ? 'K' : 'S';
++            std::printf("HUNT- %d %u %c %c %d %d %d\n", world.round, my_handle(), prism ? 'P' : 'a', why, track.turns, track.our_bag, track.their_bag);
++        }
++    });
++    track.prey_alive = prey_alive;
++}
++
++// Where the strike search's walk heads in a hunt or its follow: the prey's tile, its last out of sight;
++// else {-1, -1}.
++vec2 hunt_aim(const World& world) {
++    using namespace hunt;
++    const auto* e = world.me().facts().passive == Passive::gem_focus ? prism_prey(world) : hunt_lead(world) ? fresh_prey(world) : nullptr;
++    if (!e) return {-1, -1};
++    aimed = world.round;
++    return e->pos;
++}
++
++// The hunt, or an ally's follow of it, under the strike search's guard as a chase: true if it took the walk
++// (or holds in reach). A failed one restores the work guard.
++bool hunt_with_guard(const World& world, Pathing& pathing, Safety& safety, const Pathing::GuardState& guard) {
++    using namespace hunt;
++    const auto* prey = prism_prey(world);
++    const ChampionBelief* lead = prey ? nullptr : hunt_lead(world);
++    const ChampionBelief* known = lead ? fresh_prey(world) : nullptr;
++    if (!prey && !lead) return false;
++    // As prey's chase: the walk's search and the turn's end.
++    if (!fuel_ok(search_cost_estimate(pursuit_steps) + end_reserve)) {
++        note_shortcut("hunt-cut-short");
++        return false;
++    }
++    static bitboard goals{cambc::uninitialized};
++    if (prey) goals_of(world, *prey, stun_goal, goals);
++    else if (known) goals_of(world, *known, world.me().facts().attack_range(), goals);
++    // The prey unknown to us: our Prism leads to it, and within this of it we count in its fights.
++    else {
++        clear_board(goals);
++        draw_square(goals, lead->pos, static_cast<float>(safety_params::fight_ally_radius));
++        and_into(goals, world.map().open_for_us, goals);
++    }
++    const auto work_guard = pathing.held_guard();
++    pathing.restore_guard(guard);
++    const Took took = walk(world, pathing, safety, goals, prey ? prey->visible : known ? known->visible : true);
++    // A walk the strike search spent (a ranged strike, or its step towards hunt_aim) hunted when the search
++    // aimed at the prey, which lies within the pursuit. Such a turn is the hunt's: the farm would spend the
++    // cast, the stun among them, on a camp.
++    const auto* target = prey ? prey : known;
++    const bool on = took == Took::held || took == Took::stepped
++                    || (took == Took::spent && aimed == world.round && (!target || dist(my_position(), target->pos) <= pursuit_steps + stun_goal));
++    // The lead's prey unknown to us is not ours to mark engaged.
++    if (on)
++        if (const auto* e = target ? target : enemy_prism(world)) note(world, *e, target != nullptr, lead);
++    if (on) {
++        decision = Branch::chase;
++        return true;
++    }
++    strike_guard_known(pathing, my_position());
++    pathing.restore_guard(work_guard);
++    return false;
++}
++
++bool hunted_this_turn() { return hunt::hunted; }
++void hunt_turn_start() { hunt::hunted = false; }
++
++} // namespace
++
++} // namespace aph
+diff --git a/bots/charybdis/src/model/comms.cc b/bots/variants/cal-f/src/model/comms.cc
+index 059344778..4dadf9c1f 100644
+--- a/bots/charybdis/src/model/comms.cc
++++ b/bots/variants/cal-f/src/model/comms.cc
+@@ -128,6 +128,13 @@ bool chasing_value = false;
+ // Above the claim (0-7) and support mailbox (8-10): the chase bit, then its posting round mod 4.
+ constexpr int chase_shift = 11;
+ static_assert(support_mailbox::payload_shift + 3 <= chase_shift && chase_shift + 3 <= priority_payload_bits);
++// Above the chase: our Prism hunts the enemy's (combat/hunt.cc), then the posting round's parity. A reader
++// knows the round the payload it sees was set in (this one if the poster has acted, else the last), so the
++// parity alone tells a payload a lost turn left standing.
++constexpr int hunt_shift = chase_shift + 3;
++static_assert(hunt_shift + 2 <= priority_payload_bits);
++int hunting_round = -1;
++bool hunting_value = false;
+ 
+ static_assert(support_mailbox::protected_mate == 0 && support_mailbox::healer == 1); // support_pair's order
+ 
+@@ -316,6 +323,15 @@ bool ally_chasing(const World& world, const ChampionBelief& a) {
+     return ((world.round - static_cast<int>(p >> (chase_shift + 1) & 3)) & 3) <= 1;
+ }
+ 
++void hunting(int round, bool v) { hunting_round = round, hunting_value = v; }
++
++bool ally_hunting(const World& world, const ChampionBelief& a) {
++    if (a.is_self || !a.alive) return false;
++    const auto p = payload_of(world, a);
++    const int posted = a.acted ? world.round : world.round - 1;
++    return p >= 0 && (p >> hunt_shift & 1) && static_cast<int>(p >> (hunt_shift + 1) & 1) == (posted & 1);
++}
++
+ std::uint32_t priority_payload(const World& world) {
+     auto payload = static_cast<std::uint32_t>(detail::posts.mine + 1);
+     const auto pair = support_pair(world);
+@@ -324,6 +340,7 @@ std::uint32_t priority_payload(const World& world) {
+                                                                                      pair[0]->alive && pair[1]->alive));
+     if (chasing_round == world.round && chasing_value)
+         payload |= 1u << chase_shift | static_cast<std::uint32_t>(world.round & 3) << (chase_shift + 1);
++    if (hunting_round == world.round && hunting_value) payload |= 1u << hunt_shift | static_cast<std::uint32_t>(world.round & 1) << (hunt_shift + 1);
+     return payload;
+ }
+ 
+diff --git a/bots/charybdis/src/model/comms.h b/bots/variants/cal-f/src/model/comms.h
+index 5d352b568..46a467247 100644
+--- a/bots/charybdis/src/model/comms.h
++++ b/bots/variants/cal-f/src/model/comms.h
+@@ -45,7 +45,11 @@ void support_intent(int round, bool positive);
+ // this round or last.
+ void chasing(int round, bool chasing);
+ bool ally_chasing(const World& world, const ChampionBelief& a);
+-// Our priority payload: the claim, support intents and chase bit posted this turn.
++// Whether our Prism hunts the enemy's this turn (combat/hunt.cc), posted in its priority payload; and
++// whether an ally in sight posted it.
++void hunting(int round, bool hunting);
++bool ally_hunting(const World& world, const ChampionBelief& a);
++// Our priority payload: the claim, support intents, chase and hunt bits posted this turn.
+ std::uint32_t priority_payload(const World& world);
+ // The group an ally (by index) claims, -1 for none or while it is dead.
+ inline int claim_of(const World& world, int ally) {
+diff --git a/bots/charybdis/src/unity.cpp b/bots/variants/cal-f/src/unity.cpp
+index e876fd4a2..51da67127 100644
+--- a/bots/charybdis/src/unity.cpp
++++ b/bots/variants/cal-f/src/unity.cpp
+@@ -9,6 +9,7 @@
+ #include "economy/home.cc"
+ #include "combat/guard.cc"
+ #include "combat/fight.cc"
++#include "combat/hunt.cc"
+ #include "economy/bank.cc"
+ #include "economy/capture.cc"
+ #include "economy/crew.cc"

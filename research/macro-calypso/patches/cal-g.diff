@@ -1,0 +1,283 @@
+diff --git a/bots/charybdis/src/bot_parts.h b/bots/variants/cal-g/src/bot_parts.h
+index ef6d2f189..12353253a 100644
+--- a/bots/charybdis/src/bot_parts.h
++++ b/bots/variants/cal-g/src/bot_parts.h
+@@ -545,6 +545,21 @@ bool siege_declines(const World& world, int g);
+ // Willow before params::willow_fight_until.
+ inline bool willow_early(const World& world) { return world.round < params::willow_fight_until && world.me().facts().heals(); }
+ 
++// economy/bodyguard.cc: whether we guard our Prism this turn, and its tile as known.
++struct Bodyguard {
++    bool active = false;
++    bool suspended = false; // no group near the Prism this turn: the farm loop chose as usual
++    int prism = -1, bag = 0;
++    vec2 at{-1, -1};
++};
++const Bodyguard& bodyguard(const World& world);
++// Guarding, whether group g has no camp tile within guard_radius of the Prism.
++bool guard_far(const World& world, int g);
++// No group near the Prism worth working: guard_far is off for the rest of the turn.
++void guard_suspend(const World& world);
++// Guarding with no group near the Prism to work: a step to stand by it. True when it took the walk.
++bool guard_follow(World& world, Pathing& pathing, Safety& safety);
++
+ // combat/support.cc
+ bool own_ward_sees(const World& world, vec2 p);
+ bool willow_stands(const World& world);
+diff --git a/bots/variants/cal-g/src/economy/bodyguard.cc b/bots/variants/cal-g/src/economy/bodyguard.cc
+new file mode 100644
+index 000000000..52deeebe6
+--- /dev/null
++++ b/bots/variants/cal-g/src/economy/bodyguard.cc
+@@ -0,0 +1,121 @@
++// A bodyguard for a Prism hoarding for its Focus: a Prism whose bag dies with it loses the game
++// most of the time, and it dies with a big bag mostly while few allies stand near it. The guard pays
++// with its own farm: it works only groups near the Prism, and stands by it when none is worth it.
++#include "../bot_parts.h"
++
++namespace aph {
++
++namespace {
++
++// The ally that guards our Prism: chosen from pick facts and liveness alone, which every ally reads
++// the same, so no comms are needed. Not Willow (willow_follow keeps her by the crowd) nor Cassi or
++// Issac (a linked death gives both bags). Fight power: base output times base health.
++int guard_index(const World& world, int prism) {
++    int best = -1;
++    float best_power = 0;
++    for (const auto& a : world.allies) {
++        if (a.index == prism || !a.alive) continue;
++        const auto& f = a.facts();
++        if (f.heals() || f.passive == Passive::linked_pair || f.passive == Passive::gem_focus) continue;
++        const float power = f.raw_output(f.strength.base, f.focus.base) * f.health.base;
++        if (power > best_power) best = a.index, best_power = power; // ties: the lower index, first seen
++    }
++    return best;
++}
++
++// The Prism's tile as willow_follow reads an ally's: seen within 2 rounds, else posted within 6. Not its
++// claim's centre: the guard keeps to the Prism's real tile or not at all.
++bool prism_tile(const World& world, const ChampionBelief& a, vec2& at) {
++    if (a.visible || (a.pos_round >= world.round - 2 && a.pos.x >= 0)) return at = a.pos, true;
++    if (int told = -1; params::comms_ally && comms::told_ally(a.index, at, told) && told >= world.round - 6 && told > a.pos_round) return true;
++    return false;
++}
++
++int seen_bag(const World& world, const ChampionBelief& a) {
++    if (a.is_self) return static_cast<int>(my_gems());
++    return a.visible ? a.gems : comms::bag_of(world, a.index);
++}
++
++const Bodyguard& bodyguard(const World& world) {
++    static Bodyguard g;
++    static int round = -1;
++    if (round == world.round) return g;
++    round = world.round;
++    [[maybe_unused]] const bool was = g.active;
++    g.active = g.suspended = false;
++    static const int prism = [&] {
++        for (const auto& a : world.allies)
++            if (a.facts().passive == Passive::gem_focus) return a.index;
++        return -1;
++    }();
++    if (prism < 0 || world.me().index == prism || !world.me().alive) return g;
++    const auto& p = world.allies[static_cast<std::size_t>(prism)];
++    if (!p.alive || guard_index(world, prism) != world.me().index) return g;
++    // A guard with a bag of its own banks it first.
++    if (static_cast<int>(my_gems()) >= params::brake_bag) return g;
++    const int bag = seen_bag(world, p);
++    if (bag < params::guard_bag) return g;
++    for (const auto& a : world.allies)
++        if (a.index != prism && a.alive && seen_bag(world, a) > bag) return g;
++    vec2 at;
++    // Only a guard already in the Prism's sight takes the post: no long walks to rejoin it.
++    if (!prism_tile(world, p, at) || test(world.map().ally_spawn, at) || dist(world.me().pos, at) > params::guard_join) return g;
++    g.active = true, g.prism = prism, g.at = at, g.bag = bag;
++    debug_block({
++        if (!was) std::printf("BG ON %d %u prism %d bag %d at %d,%d d %d\n", world.round, my_handle(), prism, bag, at.x, at.y, dist(world.me().pos, at));
++        // Hurt by its latest reading with an enemy in sight beside it: an attack on it while we guard.
++        if (p.visible && p.hurt_round >= world.round - 1 && dist(world.me().pos, at) <= params::guard_radius) {
++            int near = 0;
++            for (const auto& e : world.enemies)
++                if (e.alive && e.visible && dist(e.pos, at) <= e.facts().action_range + 1) ++near;
++            if (near > 0) std::printf("BG HIT %d %u prism %d bag %d d %d enemies %d hp %.0f/%.0f\n", world.round, my_handle(), prism, bag,
++                                      dist(world.me().pos, at), near, p.health, p.max_health);
++        }
++    });
++    return g;
++}
++
++bool guard_far(const World& world, int g) {
++    const auto& b = bodyguard(world);
++    if (!b.active || b.suspended || g < 0) return false;
++    for (const auto& m : world.map().groups[g].members)
++        if (dist(m.pos, b.at) <= params::guard_radius) return false;
++    return true;
++}
++
++void guard_suspend(const World& world) {
++    auto& b = const_cast<Bodyguard&>(bodyguard(world));
++    b.suspended = true;
++    debug_block({ if (b.active) std::printf("BG FREE %d %u prism %d bag %d d %d\n", world.round, my_handle(), b.prism, b.bag, dist(my_position(), b.at)); });
++}
++
++// 3 to guard_station tiles from the Prism: no one 3x3 ground spell covers us both (at 2 the tile
++// between us centres one), off
++// the tiles of a group it holds alone (we would split its payout).
++bool guard_follow(World& world, Pathing& pathing, Safety& safety) {
++    const auto& b = bodyguard(world);
++    if (!b.active || !my_can_move() || stunned_turn) return false;
++    const vec2 here = my_position();
++    const int d = dist(here, b.at);
++    const auto trace = [&](int step) {
++        debug_block({ std::printf("BG FOLLOW %d %u prism %d bag %d d %d at %d,%d from %d,%d step %d\n", world.round, my_handle(), b.prism, b.bag, d,
++                                  b.at.x, b.at.y, here.x, here.y, step); });
++        (void)step;
++    };
++    const bitboard* held = prism_hold_seen(world, false);
++    if (d > 2 * ground_radius && d <= params::guard_station && !(held && test(*held, here))) return trace(0), true;
++    static bitboard goals{cambc::uninitialized};
++    copy_into(within(world.map().open_for_us, b.at, params::guard_station), goals);
++    drop(goals, square(b.at, 2 * ground_radius));
++    if (held) drop(goals, *held);
++    if (board_empty(goals)) return trace(-2), false;
++    world.throw_if_stale();
++    if (!pathing.step_towards(goals)) return trace(-1), false;
++    trace(1);
++    see_revealed(world, pathing, safety);
++    return true;
++}
++
++} // namespace
++
++} // namespace aph
+diff --git a/bots/charybdis/src/economy/farm.cc b/bots/variants/cal-g/src/economy/farm.cc
+index 7e911ce58..8fc2f3532 100644
+--- a/bots/charybdis/src/economy/farm.cc
++++ b/bots/variants/cal-g/src/economy/farm.cc
+@@ -764,6 +764,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+     // ally clears it or, melee, once every striker is awake anyway. Allies merely walking past
+     // its reach clear nothing.
+     const auto passing = [&](int g) __attribute__((always_inline)) {
++        if (guard_far(world, g)) return false;
+         if (g == memory.farm_group) return true;
+         // The clear's price last: the other tests are cheap reads.
+         if (taken(g)) return false;
+@@ -780,7 +781,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+         const int g = alternative.group;
+         const auto& G = groups[g];
+         const auto& c = world.camps[g];
+-        if (G.has_monolith || G.members[alternative.member].strength <= 0 || c.state != CampState::alive) return -1;
++        if (guard_far(world, g) || G.has_monolith || G.members[alternative.member].strength <= 0 || c.state != CampState::alive) return -1;
+         const vec2 here = my_position();
+         bool striker = false;
+         for (int i = 0; i < static_cast<int>(G.members.size()); ++i) {
+@@ -916,7 +917,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+             return pathing.walk_down(field, off(target), groups[target].centre);
+         };
+         if (const auto* field = pathing.prepare_approach(g, walk_range(world, g), end_reserve)) return walk(*field, g);
+-        const bool ready_previous = previous >= 0 && previous != g && pathing.approach_ready(previous, walk_range(world, previous));
++        const bool ready_previous = previous >= 0 && previous != g && !guard_far(world, previous) && pathing.approach_ready(previous, walk_range(world, previous));
+         // Too short of fuel to search the way: the choice stands, walked down a field already made.
+         if (pathing.approach_skipped()) {
+             if (const auto* centre = pathing.from_centre(g)) return pathing.descend(*centre, off(g), groups[g].centre);
+@@ -1733,6 +1734,8 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+     // By group, whether the loop priced it by way of spawn (read for the best only).
+     static std::vector<std::uint8_t> routed;
+     if (static_cast<int>(routed.size()) != n_groups) routed.assign(n_groups, 0);
++    // Guarding our Prism: only groups near it are ours (bodyguard.cc).
++    const bool guarding = bodyguard(world).active && !bodyguard(world).suspended;
+     int k = 0;
+     for (; k < evaluated && room(); ++k) {
+         int g = order ? (*order)[k] : (first + k) % n_groups;
+@@ -1765,7 +1768,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+         if ((group.has_monolith && map.monolith_only) || group.gems + group.gold == 0
+             || (belief.state == CampState::cleared && (ally_holding(g) || belief.holder == team::enemy))
+             || (belief.state != CampState::cleared && kited(g) && kite_owns(world, g)) || siege_declines(world, g)
+-            || (belief.state == CampState::cleared && left_for_prism(world, pathing, g)))
++            || (belief.state == CampState::cleared && left_for_prism(world, pathing, g)) || (guarding && guard_far(world, g)))
+             continue;
+         // A Monolith with an enemy in sight near it is not taken up: our crew would clear it for
+         // them. Unless the enemy already stands in its reach, taking the hits.
+@@ -2254,7 +2257,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+             // A payout is at most capture_time rounds away, so no longer walk arrives before it (takeover_worth).
+             const int least = steps_to(G, here); // no walk to its tiles is shorter
+             if (least >= cambc::constants::capture_time || allies_on(world, G.tiles()) == 0 || !may_take_over(world, G)
+-                || left_for_prism(world, pathing, g))
++                || left_for_prism(world, pathing, g) || (guarding && guard_far(world, g)))
+                 return;
+             int timer = 0;
+             const float gain = takeover_gain(world, G, timer);
+@@ -2368,6 +2371,12 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+                 best = g, best_steps = walk, best_value = value, best_spell = false, best_priced = Priced{'Q'};
+         }
+     }
++    // Guarding with no group near the Prism worth working: the turn farms as usual. The loop has not
++    // acted, so it is weighed again without the filter.
++    if (guarding && best < 0 && shared < 0 && !world.is_stale()) {
++        guard_suspend(world);
++        return farm_turn<opening, banking, repricing>(world, pathing, safety, memory);
++    }
+     if (banks_bag && (best < 0 || best_value <= from_altar_value)) return false;
+     if (banks_bag && attack_in_range()) return true;
+     if (world.is_stale()) return true;
+@@ -2387,11 +2396,11 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+         }
+     }
+     // Help does not pull a member off a Monolith operation.
+-    if (help_group >= 0 && !(farm_monolith(world, best) && memory.claim == best))
++    if (help_group >= 0 && !(farm_monolith(world, best) && memory.claim == best) && !guard_far(world, help_group))
+         best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, spell = false, chosen = Priced{'H'};
+     if constexpr (!banking && !repricing && params::open_plan::weight <= 0) {
+         // A help call (an ally struggling at its group) keeps its pull.
+-        if (const int planned = banks_bag || help_group >= 0 ? -1 : open_plan_choice(world, memory); planned >= 0 && planned != best) {
++        if (const int planned = banks_bag || help_group >= 0 ? -1 : open_plan_choice(world, memory); planned >= 0 && planned != best && !guard_far(world, planned)) {
+             const int s = steps_data[planned];
+             best = planned, best_steps = s >= 0 && s != unreachable ? s : dist(here, groups[planned].centre);
+             memory.claim = planned, memory.crew = claimed_by_ally(planned), spell = false, chosen = Priced{'P'};
+@@ -2424,9 +2433,10 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+     if (best < 0) {
+         if constexpr (repricing) return true;
+         // Cut short before weighing even last turn's choice: walk on towards it, as its crew if we were.
+-        if (k == 0 && memory.farm_group >= 0)
++        if (k == 0 && memory.farm_group >= 0 && !guard_far(world, memory.farm_group))
+             memory.claim = memory.farm_group, memory.crew = crew_of_choice, walk_on(memory.farm_group);
+-        else
++        else if (bodyguard(world).active && guard_follow(world, pathing, safety)) {
++        } else
+             pathing.leave_respawning(zone);
+         return true;
+     }
+diff --git a/bots/charybdis/src/params.h b/bots/variants/cal-g/src/params.h
+index bf58f52b1..45fdeb349 100644
+--- a/bots/charybdis/src/params.h
++++ b/bots/variants/cal-g/src/params.h
+@@ -133,6 +133,16 @@ inline constexpr float hurt_retreat_ratio = 3.3350472f;
+ // A bag this big (a tribute of two turns or more) is worth chasing: it counts as hurt above, and
+ // makes our own ground no refuge from pursuit.
+ inline constexpr int brake_bag = 19;
++// Bodyguard (economy/bodyguard.cc): our strongest fighter guards our Prism while its bag is at
++// least guard_bag and the team's largest (a team whose Prism first dies with 50+ gems won 10%
++// of the measured games). It works only groups with a camp tile within guard_radius of the Prism
++// while one is worth it, else farms as usual; it takes the post only within guard_join (sight
++// radius) of the Prism. With nothing to farm it stands 3 to guard_station tiles from it: in
++// unit-spell range, out of one 3x3 spell.
++inline constexpr int guard_bag = 50;
++inline constexpr int guard_join = 8;
++inline constexpr int guard_radius = 6;
++inline constexpr int guard_station = 4;
+ // In our own half, give way to packs at this ratio: an enemy pack there has come to fight.
+ inline constexpr float home_retreat_ratio = 2.1740904f;
+ // Leave before contact when the visible enemies within this many steps of their reach would win
+diff --git a/bots/charybdis/src/unity.cpp b/bots/variants/cal-g/src/unity.cpp
+index e876fd4a2..ba9ef0139 100644
+--- a/bots/charybdis/src/unity.cpp
++++ b/bots/variants/cal-g/src/unity.cpp
+@@ -12,6 +12,7 @@
+ #include "economy/bank.cc"
+ #include "economy/capture.cc"
+ #include "economy/crew.cc"
++#include "economy/bodyguard.cc"
+ #include "economy/farm.cc"
+ #include "economy/siege.cc"
+ #include "combat/support.cc"

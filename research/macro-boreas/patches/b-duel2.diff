@@ -1,0 +1,397 @@
+diff -ruN bots/charybdis/src/bot.cc bots/variants/b-duel2/src/bot.cc
+--- bots/charybdis/src/bot.cc	2026-11-11 18:57:45.034923804 +0000
++++ bots/variants/b-duel2/src/bot.cc	2026-11-11 20:03:35.564736823 +0000
+@@ -485,6 +485,17 @@
+     if (!my_can_attack() || !my_can_cast()) pathing.settle_guard(), see_stuns(world, safety), safety.refresh();
+     // The guard was placed around the tile we started on: the goal steps from where the search left us.
+     if (my_position() != world.turn_start && (my_can_move() || my_can_cast())) guard_steps(world, pathing, safety);
++    // Our Prism ends no turn where an enemy Prism's stun burst kills us (Safety::burst_lethal), a hold
++    // included: with the walk left after the search (a cast or ranged attack spends it), it retreats.
++    if (world.me().facts().passive == Passive::gem_focus && my_can_move() && safety.burst_lethal(my_position())) {
++        debug_block({
++            const auto b = safety.stun_burst(my_position());
++            std::printf("BLR %d %u %d %d %c %d %d %d\n", world.round, my_handle(), my_position().x, my_position().y, static_cast<char>(decision),
++                        static_cast<int>(b.damage), static_cast<int>(my_health()), static_cast<int>(holding));
++        });
++        retreat(world, pathing, safety, memory);
++        return;
++    }
+     if (holding) {
+         hold_capture(world, memory, attacked);
+         return;
+@@ -743,6 +754,21 @@
+     memory.health = world.me().alive ? my_health() : 0;
+     if (world.me().alive) note_income_end(world);
+     upkeep.camp_turns += camp_hits() != camp_hits_before;
++    debug_block({
++        if (!world.is_stale() && world.me().alive && world.me().facts().passive == Passive::gem_focus && fuel_ok(end_reserve + 20000)) {
++            const vec2 h = my_position();
++            const auto b = safety.stun_burst(h);
++            std::printf("PB %d %u %d %d %c %d %d %d %d", world.round, my_handle(), h.x, h.y, static_cast<char>(decision), static_cast<int>(b.damage),
++                        static_cast<int>(my_health()), static_cast<int>(safety.lethal(h)), b.dist);
++            for (const auto& e : world.enemies)
++                if (e.alive && e.facts().passive == Passive::gem_focus)
++                    std::printf(" e%u:v%d:t%d:d%d:a%d:n%d:c%d:k%d:r%d,%d:f%d", static_cast<std::uint32_t>(e.handle), e.visible, e.tracked,
++                                dist(h, e.pos), world.round - e.pos_round, e.tracked && !e.visible ? static_cast<int>(board_count(e.possible)) : -1,
++                                !e.visible && safety.credible_unseen(e), turns_before_ours(world, e), e.ready_round[0] - world.round,
++                                e.ready_round[1] - world.round, static_cast<int>(e.focus));
++            std::printf("\n");
++        }
++    });
+     debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), static_cast<char>(decision), memory.farm_group, memory.claim); });
+ }
+ 
+diff -ruN bots/charybdis/src/combat/fight.cc bots/variants/b-duel2/src/combat/fight.cc
+--- bots/charybdis/src/combat/fight.cc	2026-11-11 18:57:45.035400690 +0000
++++ bots/variants/b-duel2/src/combat/fight.cc	2026-11-11 21:14:42.119554248 +0000
+@@ -253,16 +253,23 @@
+         int rank = 0;  // the group it is tried in, after HomeWalk's: the plan's rank, or without a plan, damage now
+         bool dashes = false; // ranked as a walk then a dash (walk_dash_deferred): this turn does not end here
+         bool held = false;   // on a sole Prism's hold (`held`)
++        float burst = 0;     // our Prism: an enemy Prism's stun burst (Safety::stun_burst), counted in `damage`
++        bool burst_lethal = false;
+     };
+     Unwritten<Option, 8> scratch;
+     auto& options = scratch.a;
+     int n = 0;
+     bool clear = false;
++    // Our Prism's steps count the turn an enemy Prism's stun hands back (Safety::stun_burst), as
++    // lethal() does: the one-turn tally misses it, and retreat steps into its cast range killed us.
++    bool prism = false;
++    if (world.me().facts().passive == Passive::gem_focus)
++        for (const auto& e : world.enemies) prism |= e.alive && (e.visible || e.tracked) && e.facts().passive == Passive::gem_focus;
+     // An option is summed only to its first damage until it may rank first: one with damage ranks
+     // after every clear step.
+     const auto price = [&](Option& o) {
+         if (o.t.left) safety.finish(o.t, o.p, world.me().taken);
+-        o.damage = o.t.damage, o.stuns = o.t.stuns;
++        o.damage = std::max(o.t.damage, o.burst), o.stuns = o.t.stuns || o.burst > 0;
+         o.eff = o.damage - (fixc_bush_threatened && o.bush == 0 ? params::fixc::bush_margin * my_health_and_shield(world) : 0.0f);
+     };
+     const auto add = [&](bool longer) {
+@@ -275,12 +282,17 @@
+             if (longer && safety.touched(p, world.me().taken)) continue;
+             const auto t = longer ? Safety::Tally{} : safety.tally(p, world.me().taken);
+             // A stun alone, with no damage, still takes our next turn while the pursuers close in.
+-            const bool reached = t.damage > 0 || t.hits;
++            bool reached = t.damage > 0 || t.hits;
+             int gap = unreachable;
+             for (const auto& e : world.enemies)
+                 if (e.alive && e.visible) gap = std::min(gap, dist(p, e.pos));
+             options[n++] = {p, t.damage, t.stuns, s, gap, pathing.pull(p), false, t};
+             auto& o = options[n - 1];
++            if (prism && (o.burst = safety.stun_burst(p).damage) > 0) {
++                o.burst_lethal = safety.burst_lethal(p);
++                o.damage = std::max(o.damage, o.burst), o.stuns = true;
++                reached = true;
++            }
+             o.bush = fixc_bush_rank(world, p);
+             o.held = held && test(*held, p);
+             o.eff = o.damage - (fixc_bush_threatened && o.bush == 0 ? params::fixc::bush_margin * my_health_and_shield(world) : 0.0f);
+@@ -337,6 +349,14 @@
+     // reached, then tried in `by`'s order. Without a plan: HomeWalk's, the clear, then the rest.
+     std::array<std::uint8_t, 8> order, group, last;
+     for (int i = 0; i < n; ++i) order[i] = static_cast<std::uint8_t>(i);
++    const auto burst_trace = [&](const Option& o) {
++        debug_block({
++            int bursts = 0, lethal = 0;
++            for (int i = 0; i < n; ++i) bursts += options[i].burst > 0, lethal += options[i].burst_lethal;
++            if (bursts) std::printf("DUR %d %u %d,%d->%d,%d n%d b%d l%d chosen b%d l%d tally%d home%d rank%d\n", world.round, my_handle(), here.x, here.y, o.p.x, o.p.y, n, bursts,
++                                    lethal, static_cast<int>(o.burst), static_cast<int>(o.burst_lethal), static_cast<int>(o.t.damage), static_cast<int>(o.home), o.rank);
++        });
++    };
+     std::stable_sort(order.begin(), order.begin() + n, [&](int a, int b) {
+         const auto &x = options[a], &y = options[b];
+         return x.home != y.home ? x.home : x.rank < y.rank;
+@@ -351,6 +371,11 @@
+         for (; e < n && options[order[e]].home == lead_home && options[order[e]].rank == lead_rank; ++e) {
+             auto& o = options[order[e]];
+             if (o.home || o.t.left) price(o);
++            // HomeWalk's survival misses the burst too.
++            if (!o.dashes && o.burst_lethal) {
++                last[lasts++] = order[e];
++                continue;
++            }
+             if (plan.active() && !o.home && o.damage > 0 && !o.dashes) {
+                 if (life < 0) life = my_health_and_shield(world);
+                 if (o.damage >= life) {
+@@ -362,12 +387,12 @@
+         }
+         std::stable_sort(group.begin(), group.begin() + m, by_index);
+         for (int i = 0; i < m; ++i)
+-            if (pathing.try_move(options[group[i]].p)) return;
++            if (pathing.try_move(options[group[i]].p)) return burst_trace(options[group[i]]);
+         g = e;
+     }
+     std::stable_sort(last.begin(), last.begin() + lasts, by_index);
+     for (int i = 0; i < lasts; ++i)
+-        if (pathing.try_move(options[last[i]].p)) return;
++        if (pathing.try_move(options[last[i]].p)) return burst_trace(options[last[i]]);
+     pathing.step_towards(home);
+ }
+ 
+@@ -1413,6 +1438,40 @@
+     return false;
+ }
+ 
++// Our Prism, walk unspent, on a tile where an enemy Prism's stun burst kills us (Safety::burst_lethal),
++// with a step off it that is not lethal (one retreat_step weighs): both Prism spells exclude walking,
++// so no cast pins us here, bar the escape cast that kills or stuns that Prism before it acts, while
++// nothing else makes the tile lethal. True: the cast waits for the walk.
++bool burst_walks(World& world, Pathing& pathing, Safety& safety) {
++    if (world.me().facts().passive != Passive::gem_focus || !my_can_move() || !my_can_cast()) return false;
++    const vec2 here = my_position();
++    if (!safety.burst_lethal(here)) return false;
++    const auto& home = pathing.to_ally_spawn();
++    const int steps = home.at(here);
++    const auto& blocked = pathing.blocked();
++    const auto* guard = pathing.guard();
++    int off = 0;
++    for (const auto d : directions) {
++        const vec2 p = here + d;
++        if (!in_bounds(p) || test(blocked, p) || (guard && test(*guard, p))) continue;
++        const int s = home.at(p);
++        if (s == unreachable || (s > steps && safety.touched(p, world.me().taken))) continue;
++        if (!safety.lethal(p)) {
++            off = 1;
++            break;
++        }
++    }
++    const int enemy = safety.stun_burst(here).enemy;
++    bool cast = false;
++    if (off && enemy >= 0 && (!safety.one_turn_lethal(here) || sole_escape_threat(world, safety, here) == enemy)) {
++        bool attempted = false;
++        cast = cast_at_enemies_for_escape(world, enemy, escape_step_value, attempted);
++        if (!cast && attempted) see_again(world, pathing, safety);
++    }
++    debug_block({ std::printf("BDW %d %u %d,%d off%d e%d cast%d\n", world.round, my_handle(), here.x, here.y, off, enemy, static_cast<int>(cast)); });
++    return off && !cast && my_can_move();
++}
++
+ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     world.throw_if_stale();
+     auto& me = cambc::self();
+@@ -1426,6 +1485,7 @@
+     const int range = world.me().facts().attack_range();
+     const vec2 here = my_position();
+     vec2 dead{-1, -1};
++    vec2 burst_from{-1, -1}; // burst_walks put the cast off for the walk from here
+     // A sure kill first. A ranged attack spends the walk, so only where standing is no worse:
+     // nothing else reaches us here, or the dash still lands out of every reach.
+     if (const auto* kill = my_can_attack() ? sure_kill(world, here, range) : nullptr;
+@@ -1451,11 +1511,13 @@
+         if (dash_retreat_casts(world, pathing, safety, memory, dead)) return;
+     } else {
+         // After the walk, a cast that allows walking may still follow (Cassi's stun).
+-        if (!escape_walk(world, pathing, safety) || my_can_cast()) cast_at_enemies(world, escape_step_value);
++        const bool walked = escape_walk(world, pathing, safety);
++        burst_from = !walked && burst_walks(world, pathing, safety) ? my_position() : vec2{-1, -1};
++        if (burst_from.x < 0 && (!walked || my_can_cast())) cast_at_enemies(world, escape_step_value);
+         if (!me.is_alive()) return;
+         if (!my_can_attack() || !my_can_cast()) see_kills(world, pathing, safety);
+-        // A tribute survives damage; a recall does not.
+-        if (can_tribute_safely(world, pathing, safety, memory)) {
++        // A tribute survives damage; a recall does not. Not from a tile burst_walks leaves.
++        if (burst_from.x < 0 && can_tribute_safely(world, pathing, safety, memory)) {
+             bank_gems(world, pathing, safety, memory, false);
+             return;
+         }
+@@ -1474,6 +1536,15 @@
+     }
+     // The dash put off for the walk, from its tile (from here if the walk was refused: put off once a turn).
+     if (walk_dash && my_can_cast() && dash_away(world, pathing, safety, pathing.to_ally_spawn(), dead)) see_again(world, pathing, safety);
++    // The walk off a burst-lethal tile refused: the cast it was put off for.
++    const bool burst_stuck = burst_from.x >= 0 && my_position() == burst_from && my_can_move();
++    if (burst_stuck && me.is_alive()) cast_at_enemies(world, escape_step_value);
++    debug_block({
++        if (world.me().facts().passive == Passive::gem_focus && me.is_alive())
++            std::printf("BDX %d %u %d,%d->%d,%d put%d stuck%d lethal%d cast%d\n", world.round, my_handle(), here.x, here.y, my_position().x, my_position().y,
++                        static_cast<int>(burst_from.x >= 0), static_cast<int>(burst_stuck), static_cast<int>(safety.burst_lethal(my_position())),
++                        static_cast<int>(!my_can_cast()));
++    });
+     // A walk to a hole line's edge can bring a dash out of the camps' reach in reach.
+     if (my_can_cast() && safety.camp_damage(my_position()) > 0 && dash_away(world, pathing, safety, pathing.to_ally_spawn(), dead, false))
+         see_again(world, pathing, safety);
+diff -ruN bots/charybdis/src/combat/guard.cc bots/variants/b-duel2/src/combat/guard.cc
+--- bots/charybdis/src/combat/guard.cc	2026-11-11 18:57:45.035400690 +0000
++++ bots/variants/b-duel2/src/combat/guard.cc	2026-11-11 20:02:58.528252238 +0000
+@@ -796,6 +796,32 @@
+     return made.tiles;
+ }
+ 
++// Our Prism's work steps end on no tile beside us where an enemy Prism's stun burst kills us
++// (Safety::burst_lethal): only the strike search's priced fights take one. Bit i for directions[i];
++// once a tile and Safety, for the guard and its cover. Prism has no dash: single steps only.
++unsigned burst_out(const World& world, Safety& safety, vec2 here) {
++    if (world.me().facts().passive != Passive::gem_focus) return 0;
++    static struct {
++        std::uint32_t generation = 0;
++        vec2 here{-1, -1};
++        unsigned tiles = 0;
++    } made;
++    if (made.generation == Safety::generation() && made.here == here) return made.tiles;
++    made.generation = Safety::generation(), made.here = here, made.tiles = 0;
++    bool any = false;
++    for (const auto& e : world.enemies) any |= e.alive && (e.visible || e.tracked) && e.facts().passive == Passive::gem_focus;
++    if (!any) return 0;
++    const auto& open = world.map().open_for_us;
++    for (int i = 0; i < 8; ++i) {
++        const vec2 q = here + directions[i];
++        if (in_bounds(q) && test(open, q) && safety.burst_lethal(q)) made.tiles |= 1u << i;
++    }
++    debug_block({
++        if (made.tiles) std::printf("BLG %d %u %d %d %x %d\n", world.round, my_handle(), here.x, here.y, made.tiles, static_cast<int>(safety.burst_lethal(here)));
++    });
++    return made.tiles;
++}
++
+ const bitboard* work_guard(const World& world, Safety& safety, vec2 here, int radius) {
+     const auto& in = work_guard_inputs;
+     auto& pathing = *in.pathing;
+@@ -816,16 +842,18 @@
+                         edit(), set_tile(out, q, false);
+     const unsigned kept = keep_out(world, pathing, safety, here, in.damage);
+     for (unsigned left = kept; left; left &= left - 1) edit(), set_tile(out, here + directions[std::countr_zero(left)]);
++    const unsigned burst = burst_out(world, safety, here);
++    for (unsigned left = burst; left; left &= left - 1) edit(), set_tile(out, here + directions[std::countr_zero(left)]);
+     if (in.avoid) edit(), out |= *in.avoid;
+     if (!copied) return strikes;
+-    return kept || !out.is_empty() ? &out : nullptr;
++    return kept || burst || !out.is_empty() ? &out : nullptr;
+ }
+ 
+ // work_guard's cover: step_guard's, and the tiles keep_out sets.
+ const bitboard* work_cover(const World& world, Safety& safety, vec2 here, int radius) {
+     const auto& in = work_guard_inputs;
+     const bitboard* strikes = in.strikes_known ? in.strikes : step_guard_cover(world, safety, here, radius);
+-    const unsigned kept = keep_out(world, *in.pathing, safety, here, in.damage);
++    const unsigned kept = keep_out(world, *in.pathing, safety, here, in.damage) | burst_out(world, safety, here);
+     if (!kept && !in.avoid) return strikes;
+     static bitboard cover{cambc::uninitialized};
+     if (strikes) copy_into(*strikes, cover);
+diff -ruN bots/charybdis/src/model/safety.cc bots/variants/b-duel2/src/model/safety.cc
+--- bots/charybdis/src/model/safety.cc	2026-11-11 18:57:45.040159142 +0000
++++ bots/variants/b-duel2/src/model/safety.cc	2026-11-11 21:09:22.176115437 +0000
+@@ -3550,6 +3550,18 @@
+ }
+ 
+ bool Safety::lethal(vec2 p) {
++    // Our Prism also counts the turn an enemy Prism's stun hands back (burst_lethal).
++    if (world_.me().facts().passive != Passive::gem_focus) return one_turn_lethal(p);
++    if (one_turn_lethal(p)) return true;
++    const bool burst = burst_lethal(p);
++    debug_block({
++        static int last = -1;
++        if (burst && last != world_.round) last = world_.round, std::printf("BLL %d %u %d %d\n", world_.round, my_handle(), p.x, p.y);
++    });
++    return burst;
++}
++
++bool Safety::one_turn_lethal(vec2 p) {
+     if (own_health_ < 0) own_health_ = my_health() + (world_.me().shield_slot >= 0 ? shield_value(world_.me().handle) : 0.0f);
+     // A turn ended on our spawn heals to full before any enemy acts (rules rounds.turn_end).
+     const float health = test(world_.map().ally_spawn, p) ? own_health_ - my_health() + my_max_health() : own_health_;
+@@ -3566,4 +3578,74 @@
+     return worst_damage(p, taken) >= health;
+ }
+ 
++Safety::Burst Safety::stun_burst(vec2 p) {
++    Burst out;
++    // The lost turn still ends, healing us on our spawn (rules abilities.stun): there the burst holds
++    // only for a Prism with two turns before ours, both before that turn end.
++    const bool spawn = test(world_.map().ally_spawn, p);
++    for (auto left = live_enemies(); left; left &= left - 1) {
++        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
++        const auto& f = e.facts();
++        if (f.passive != Passive::gem_focus || gone(e)) continue;
++        int stun = -1, ground = -1;
++        for (int s = 0; s < 2; ++s) {
++            const auto& a = f.abilities[static_cast<std::size_t>(s)];
++            if (a.kind != AbilityKind::damage) continue;
++            if (a.stuns && a.target == Targeting::unit) stun = s;
++            else if (a.target == Targeting::ground) ground = s;
++        }
++        if (stun < 0) continue;
++        const int turns = turns_before_ours(world_, e);
++        if (turns == 0 || (spawn && turns < 2)) continue;
++        // A stun on its first turn before ours hands it a turn before our next. With two turns before
++        // ours (teams alternate) it may walk first and stun on the second, from cast range + 1: the
++        // ground spell then lands on its turn after our next, but one step leaves us in its 3x3 area.
++        // On our spawn the lost turn heals us first.
++        const bool walks = turns >= 2 && !spawn;
++        const int cast = f.abilities[static_cast<std::size_t>(stun)].range(), basic = f.attack_range();
++        const int far = cast + (walks ? 1 : 0);
++        int d;
++        if (e.visible) d = dist(p, acts_from(e));
++        else {
++            if (!possible_within(e, p, far) || !credible_unseen(e)) continue;
++            // As Threat::at counts an unseen enemy: out to unseen_radius of its possible tiles.
++            const auto& x = foe(e);
++            const int radius = std::min(far, unseen_radius(x.strike.reach, x.tiles));
++            if (!possible_within(e, p, radius)) continue;
++            int lo = 0;
++            d = radius;
++            while (lo < d) {
++                const int mid = (lo + d) / 2;
++                if (possible_within(e, p, mid)) d = mid;
++                else lo = mid + 1;
++            }
++        }
++        if (d > far) continue;
++        const int t1 = next_turn_round(world_, e);
++        const float focus = hit_focus(e), hit = hit_strength(e);
++        const float stun_hit = f.abilities[static_cast<std::size_t>(stun)].multiplier * focus;
++        const float ground_hit = ground >= 0 ? f.abilities[static_cast<std::size_t>(ground)].multiplier * focus : 0.0f;
++        float most = 0;
++        // The stun with a basic attack, then the ground spell with another on the turn handed back.
++        if (d <= cast && e.ability_ready(stun, t1))
++            most = stun_hit + (d <= basic ? 2 * hit : 0.0f) + (ground >= 0 && e.ability_ready(ground, t1 + 1) ? ground_hit : 0.0f);
++        // A walk (a ranged walk spends the attack), the stun with a basic attack from a step nearer,
++        // then the ground spell, and a basic attack if our step keeps us in its range.
++        if (walks && e.ability_ready(stun, t1 + 1))
++            most = std::max(most, stun_hit + (d - 1 <= basic ? hit : 0.0f) + (d <= basic ? hit : 0.0f)
++                                      + (ground >= 0 && e.ability_ready(ground, t1 + 2) ? ground_hit : 0.0f));
++        if (most <= 0) continue;
++        most *= world_.me().taken;
++        if (most > out.damage) out = {most, e.index, d};
++    }
++    return out;
++}
++
++bool Safety::burst_lethal(vec2 p) {
++    if (own_health_ < 0) own_health_ = my_health() + (world_.me().shield_slot >= 0 ? shield_value(world_.me().handle) : 0.0f);
++    const float health = test(world_.map().ally_spawn, p) ? own_health_ - my_health() + my_max_health() : own_health_;
++    const auto b = stun_burst(p);
++    return b.enemy >= 0 && b.damage >= health;
++}
++
+ } // namespace aph
+diff -ruN bots/charybdis/src/model/safety.h bots/variants/b-duel2/src/model/safety.h
+--- bots/charybdis/src/model/safety.h	2026-11-11 18:57:45.040989272 +0000
++++ bots/variants/b-duel2/src/model/safety.h	2026-11-11 21:09:41.303101747 +0000
+@@ -494,9 +494,24 @@
+     // the seen enemies alone unless `unseen`.
+     int turns_to_harm_idle(const ChampionBelief& c, vec2 p, int horizon, float keep, bool unseen);
+     // Could the credible threats and camps kill us at p before our next turn? Against our health
+-    // and shield now: Ren's retaliation and our shield cast this turn count once refreshed.
++    // and shield now: Ren's retaliation and our shield cast this turn count once refreshed. Our Prism
++    // also counts an enemy Prism's stun burst (burst_lethal).
+     bool lethal(vec2 p);
++    bool one_turn_lethal(vec2 p); // lethal() within each enemy's own turns before ours
+     bool unseen_beyond(vec2 p);
++    // An enemy Prism's stun takes our next turn, so it casts again before we act (rules abilities.stun):
++    // the stun, the ground spell on the turn handed back and a basic attack with each, from a known
++    // Prism (seen, or unseen and credible) whose stun is ready and that starts its first turn before
++    // ours within cast range of p, or, with two turns before ours, within cast range + 1 (a walk, then
++    // the stun on its second). By our Durability; lethal() counts one turn.
++    struct Burst {
++        float damage = 0;
++        int enemy = -1; // the Prism's index, -1: none
++        int dist = -1;  // Chebyshev from it (unseen: its nearest possible tile)
++    };
++    Burst stun_burst(vec2 p);
++    // stun_burst(p) at least our health and shield, as lethal() reads them.
++    bool burst_lethal(vec2 p);
+ 
+     // Live members of awake (or maybe awake) groups, bar those read asleep that nobody else is near
+     // enough to wake, with where they would attack us from.

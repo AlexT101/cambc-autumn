@@ -1,0 +1,516 @@
+diff -ruN charybdis-ref/src/bot.cc rally-prism/src/bot.cc
+--- charybdis-ref/src/bot.cc	2026-11-11 18:57:46.061505870 +0000
++++ rally-prism/src/bot.cc	2026-11-11 19:24:12.002463816 +0000
+@@ -533,6 +533,7 @@
+         return;
+     }
+     if (willow_follow(world, pathing, safety)) return;
++    if (answer_fight(world, pathing, safety)) return;
+     farm(world, pathing, safety, memory);
+     if (on_cleared_group(world)) yield_capture(world, pathing, safety, memory, true);
+ }
+@@ -612,6 +613,7 @@
+         switch (decision) {
+         case Branch::retreat: case Branch::bank: case Branch::wait_altar: case Branch::guard_altar: case Branch::tribute_kept:
+         case Branch::recall_kept: case Branch::capture_recall: case Branch::mend: case Branch::shop: case Branch::prism_recovery:
++        case Branch::answer:
+             drop_carry_claim(memory);
+             break;
+         default: break;
+@@ -695,6 +697,7 @@
+     const int camp_hits_before = camp_hits();
+     note_carriers(world);
+     if (world.me().alive) note_upkeep(world, safety, memory.damage), note_income_start(world);
++    rally_turn_start(world, safety, memory.damage);
+     stunned_turn = record && my_stunned(cambc::champion_state::from_bits_retain(record->state));
+     // A failed act still posts the claim, the bag and the health that next turn's damage reads; a
+     // stale turn abandons the rest. Caught here rather than in main's run(), a StaleTurn costs one
+@@ -734,6 +737,7 @@
+     if (world.me().alive && world.me().facts().heals()
+         && ((!support_owned && camp_hits() != camp_hits_before) || my_cooldown(world.me().facts().slot_of(AbilityKind::heal)) >= ability_cooldown))
+         memory.formation_start = -1, memory.formation_turns = 0;
++    if (!world.is_stale()) rally_turn_end(world);
+     comms::claim(memory.claim);
+     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);
+     comms::chasing(world.round, world.me().alive && decision == Branch::chase);
+diff -ruN charybdis-ref/src/bot_parts.h rally-prism/src/bot_parts.h
+--- charybdis-ref/src/bot_parts.h	2026-11-11 18:57:46.061731273 +0000
++++ rally-prism/src/bot_parts.h	2026-11-11 19:42:36.860692850 +0000
+@@ -59,6 +59,7 @@
+     stop_ender = 'E',     // stopping a game-ending bag
+     willow_support = 'h', // Willow's heal or formation
+     prism_recovery = 'r', // Prism's recovery beside Willow
++    answer = 'J',         // walking to an ally's fight (combat/rally.cc)
+ };
+ Branch decision = Branch::none;
+ bool sieged = false;       // siege() or its heal trip ran this turn: act() keeps the siege
+@@ -557,6 +558,21 @@
+ bool support_work(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
+ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool leave, bool& mate_eligible);
+ 
++// combat/rally.cc
++// Champion damage since our previous turn, from last round's loss `damage`.
++void rally_turn_start(const World& world, Safety& safety, float damage);
++// Our fight post for comms::send.
++void rally_turn_end(const World& world);
++// In place of the farm: a step towards a fight we see or an ally posted, if we reach it within a
++// cooldown and our side is at least level there with us added.
++bool answer_fight(const World& world, Pathing& pathing, Safety& safety);
++// While an ally beside us fights an enemy in our reach, a basic attack about to go to a camp goes
++// to a champion instead when strike_enemy finds one worth it (camp casts are already held then:
++// camp_cast's engagement_near). rally_hit: 0 the camp hit goes ahead, 1 a champion took it, 2 the
++// attack is already spent.
++bool rally_targets_champions(const World& world);
++int rally_hit(const World& world);
++
+ // bot.cc
+ void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, const Trade& t, int target = -1);
+ bool place_ward(const World& world, Memory& memory, bool bushes = true);
+diff -ruN charybdis-ref/src/combat/rally.cc rally-prism/src/combat/rally.cc
+--- charybdis-ref/src/combat/rally.cc	1970-01-01 00:00:00.000000000 +0000
++++ rally-prism/src/combat/rally.cc	2026-11-11 20:53:42.504577346 +0000
+@@ -0,0 +1,259 @@
++// The team answers fights: each champion posts the fight it is in (comms::fight), and one that is
++// not engaged walks to a fight it can reach within a cooldown while its arrival makes our side at
++// least level there. Re-decided every turn: nothing commits it beyond the post's recency.
++#include "../bot_parts.h"
++
++namespace aph {
++
++namespace {
++
++// What an engaged champion sees around it: the enemies of its fight.
++constexpr int fight_site_radius = vision_radius;
++// A post older than this is a fight over or moved on.
++constexpr int fight_recency = 2;
++
++float champion_damage_taken = 0; // since our previous turn (rally_turn_start)
++
++// A visible enemy off its spawn whose strike before its next turn reaches p. One on its spawn heals
++// each turn end and is not followed there.
++bool enemy_reaches(const World& world, vec2 p) {
++    const auto& spawn = world.map().enemy_spawn;
++    for (const auto& e : world.enemies)
++        if (e.alive && e.visible && strike(e, next_turn_round(world, e)).hits(dist(p, e.pos)) && !test(spawn, e.pos)) return true;
++    return false;
++}
++
++int enemies_seen_near(const World& world, vec2 p) {
++    int n = 0;
++    for (const auto& e : world.enemies) n += e.alive && e.visible && dist(p, e.pos) <= fight_site_radius;
++    return n;
++}
++
++// Our hit or cast on an enemy champion this turn, champion damage since our previous turn, or a
++// visible enemy's strike on our tile.
++bool self_engaged(const World& world) {
++    if (!world.me().alive) return false;
++    const vec2 here = my_position();
++    return here.x >= 0 && (engaged != 0 || champion_damage_taken > 0.5f || enemy_reaches(world, here));
++}
++
++// For the traces: our answers since the first of a run, and whether one reached the fight.
++struct AnswerRun {
++    int first = -1, last = -1, turns = 0;
++    vec2 at{-1, -1};
++};
++AnswerRun answer_run;
++
++struct Site {
++    vec2 at;
++    int round, radius, enemies;
++    bool seen;
++};
++
++// Where ally a is within the last fight_recency rounds, seen or posted, with the steps it may have
++// walked since.
++bool ally_tile(const World& world, const ChampionBelief& a, vec2& at, int& age) {
++    if (a.visible) return at = a.pos, age = 0, true;
++    int told = -1;
++    if (params::comms_ally && comms::told_ally(a.index, at, told) && told >= world.round - fight_recency && told > a.pos_round)
++        return age = world.round - told + 2, true;
++    if (a.pos_round >= world.round - fight_recency && in_bounds(a.pos)) return at = a.pos, age = world.round - a.pos_round, true;
++    return false;
++}
++
++// Health times damage a side at the site, as the pack zone weighs them (guard.cc): us and the allies
++// near it against the enemies we believe near it, at least as many as posted.
++struct Sides {
++    float ours = 0, theirs = 0;
++    int allies = 0, enemies = 0;
++    bool stronger_prism = false; // an enemy Prism there with more Focus than ours, if we are Prism
++};
++
++Sides weigh(const World& world, const Site& s) {
++    Sides out;
++    const auto& me = world.me();
++    float oh = (my_health() + me.shield) / me.taken, od = output(me);
++    for (const auto& a : world.allies) {
++        vec2 at;
++        int age = 0;
++        if (a.is_self || !a.alive || !ally_tile(world, a, at, age) || dist(at, s.at) > fight_site_radius + age) continue;
++        oh += effective_hp(a), od += output(a), ++out.allies;
++    }
++    // A post names no poster, which stands there though we may place no ally there: the weakest.
++    if (!s.seen && out.allies == 0) {
++        const ChampionBelief* weakest = nullptr;
++        for (const auto& a : world.allies)
++            if (!a.is_self && a.alive && (!weakest || effective_hp(a) * output(a) < effective_hp(*weakest) * output(*weakest))) weakest = &a;
++        if (weakest) oh += effective_hp(*weakest), od += output(*weakest), ++out.allies;
++    }
++    float th = 0, td = 0;
++    std::uint32_t counted = 0;
++    const bool prism = me.facts().passive == Passive::gem_focus;
++    for (const auto& e : world.enemies) {
++        if (!e.alive || !in_bounds(e.pos)) continue;
++        const int age = e.visible ? 0 : world.round - e.pos_round;
++        if (age > ability_cooldown || dist(e.pos, s.at) > fight_site_radius + age) continue;
++        th += effective_hp(e), td += output(e), ++out.enemies, counted |= 1u << e.index;
++        out.stronger_prism |= prism && e.facts().passive == Passive::gem_focus && e.focus > me.focus;
++    }
++    // A fight with no count posted has at least the enemy that engaged the poster: the strongest
++    // unaccounted, as for every posted enemy we do not place there; not one we know is elsewhere.
++    for (int want = std::max(s.enemies, 1); out.enemies < want;) {
++        const ChampionBelief* best = nullptr;
++        for (const auto& e : world.enemies)
++            if (e.alive && !(counted >> e.index & 1) && !e.visible && !(in_bounds(e.pos) && world.round - e.pos_round <= ability_cooldown)
++                && (!best || effective_hp(e) * output(e) > effective_hp(*best) * output(*best))) best = &e;
++        if (!best) break;
++        th += effective_hp(*best), td += output(*best), ++out.enemies, counted |= 1u << best->index;
++        out.stronger_prism |= prism && best->facts().passive == Passive::gem_focus && best->focus > me.focus;
++    }
++    out.ours = oh * od, out.theirs = th * td;
++    return out;
++}
++
++// Steps to within s.radius of the site, if at most `limit`: a field capped just past it, kept for the round.
++const Field* site_field(const World& world, Pathing& pathing, const Site& s, int limit) {
++    static Field field;
++    static vec2 made_at{-1, -1};
++    static int made_round = -1, made_radius = -1;
++    if (made_round != world.round || made_at != s.at || made_radius != s.radius) {
++        static bitboard goals{cambc::uninitialized}, visited{cambc::uninitialized};
++        const auto& walls = pathing.static_walls();
++        made_round = -1;
++        clear_board(goals);
++        draw_square(goals, s.at, static_cast<float>(s.radius));
++        not_into(walls, field.goals);
++        field.goals &= goals;
++        if (field.goals.is_empty()) return nullptr;
++        (void)field.steps.compute_with_expansion_count(walls, field.goals, visited, static_cast<std::uint16_t>(limit + 1));
++        made_round = world.round, made_at = s.at, made_radius = s.radius;
++    }
++    return field.at(my_position()) <= limit ? &field : nullptr;
++}
++
++void rally_turn_start(const World& world, Safety& safety, float damage) {
++    const vec2 here = world.me().pos;
++    champion_damage_taken = damage > 0 && world.me().alive ? damage - std::min(damage, safety.camp_damage(here)) : 0.0f;
++    if (champion_damage_taken <= 0) return;
++    // camp_damage misses fire it did not foresee (a camp it took for asleep): only with an enemy that
++    // could have struck us is the loss a champion's.
++    for (const auto& e : world.enemies)
++        if (e.alive && (e.visible ? dist(here, e.pos) <= Strike::max_reach : e.tracked && possible_within(e, here, Strike::max_reach))) return;
++    champion_damage_taken = 0;
++}
++
++void rally_turn_end(const World& world) {
++    const bool fighting = self_engaged(world);
++    debug_block({
++        if (fighting) {
++            const vec2 p = my_position();
++            std::printf("RALLY-POST %d %u %d %d %d%d%d %d %.0f\n", world.round, my_handle(), p.x, p.y, engaged != 0, champion_damage_taken > 0.5f,
++                        enemy_reaches(world, p), enemies_seen_near(world, p), champion_damage_taken);
++        }
++    });
++    comms::fight(world.round, fighting ? enemies_seen_near(world, my_position()) : -1);
++    auto& r = answer_run;
++    if (r.first < 0) return;
++    if (fighting) {
++        debug_block({ std::printf("RALLY-ARRIVE %d %u %d %d\n", world.round, my_handle(), world.round - r.first, r.turns); });
++        r = {};
++    } else if (world.round - r.last > ability_cooldown) {
++        debug_block({ std::printf("RALLY-MISS %d %u %d %d\n", world.round, my_handle(), r.last - r.first, r.turns); });
++        r = {};
++    }
++}
++
++bool answer_fight(const World& world, Pathing& pathing, Safety& safety) {
++    const auto& me = world.me();
++    if (me.facts().passive != Passive::gem_focus) return false;
++    if (!me.alive || stunned_turn || !my_can_move() || channelling() || banks_bag(world, pathing)) return false;
++    if (my_health() <= params::hurt_health_fraction * my_max_health() || self_engaged(world)) return false;
++    const vec2 here = my_position();
++    // The latest fights first: those we see now, nearest first, then the one posted.
++    Unwritten<Site, 9> scratch;
++    auto& sites = scratch.a;
++    int n = 0;
++    for (const auto& a : world.allies)
++        if (!a.is_self && a.alive && a.visible && n < 8 && enemy_reaches(world, a.pos)) {
++            const Site s{a.pos, world.round, 1, enemies_seen_near(world, a.pos), true};
++            int i = n++;
++            for (; i > 0 && dist(here, sites[static_cast<std::size_t>(i - 1)].at) > dist(here, s.at); --i) sites[static_cast<std::size_t>(i)] = sites[static_cast<std::size_t>(i - 1)];
++            sites[static_cast<std::size_t>(i)] = s;
++        }
++    {
++        Site s{};
++        if (comms::told_fight(s.at, s.round, s.enemies, s.radius) && s.round >= world.round - fight_recency) {
++            s.radius = std::max(1, s.radius), s.seen = false;
++            sites[static_cast<std::size_t>(n++)] = s;
++        }
++    }
++    // One cooldown is an exchange of casts: arriving later misses it.
++    const int dash = me.facts().slot_of(AbilityKind::dash);
++    const int limit = ability_cooldown + (dash >= 0 && me.ability_ready(dash, world.round) ? dash_range : 0);
++    for (int i = 0; i < n; ++i) {
++        const auto& s = sites[static_cast<std::size_t>(i)];
++        // Beside a fight already: not off to another.
++        if (dist(here, s.at) <= s.radius) return false;
++        if (dist(here, s.at) - s.radius > limit) continue;
++        if (!fuel_ok(act_reserve + search_cost_estimate(limit + 1))) return false;
++        const Field* field = site_field(world, pathing, s, limit);
++        if (!field) continue;
++        // The latest fight we reach is the one considered.
++        const auto sides = weigh(world, s);
++        const bool join = sides.ours >= sides.theirs && !sides.stronger_prism;
++        bool moved = false;
++        if (join) {
++            step_safely(world, pathing, *field, safety);
++            moved = my_position() != here;
++        }
++        // join: 0 declined, 1 joined without a step, 2 stepped.
++        debug_block({
++            std::printf("RALLY %d %u %c %d %d %d %d %d %d %d %.0f %.0f %d\n", world.round, my_handle(), s.seen ? 's' : 'p', s.at.x, s.at.y,
++                        world.round - s.round, field->at(here), sides.allies, sides.enemies, s.enemies, sides.ours / 1e3f, sides.theirs / 1e3f,
++                        join + moved);
++        });
++        if (!moved) return false;
++        decision = Branch::answer;
++        auto& r = answer_run;
++        if (r.first < 0) r.first = world.round, r.turns = 0;
++        r.last = world.round, r.at = s.at, ++r.turns;
++        return true;
++    }
++    return false;
++}
++
++// An ally within fight_ally_radius of us is engaged and an enemy champion is in our basic or cast reach.
++bool rally_targets_champions(const World& world) {
++    if (!world.me().alive) return false;
++    const vec2 here = my_position();
++    if (here.x < 0) return false;
++    const auto& f = world.me().facts();
++    const int reach = std::max(f.basic_reach(), f.cast_reach());
++    bool in_reach = false;
++    for (const auto& e : world.enemies) in_reach |= e.alive && e.visible && dist(here, e.pos) <= reach;
++    if (!in_reach) return false;
++    for (const auto& a : world.allies)
++        if (!a.is_self && a.alive && a.visible && dist(here, a.pos) <= safety_params::fight_ally_radius && enemy_reaches(world, a.pos)) return true;
++    return false;
++}
++
++int rally_hit(const World& world) {
++    // strike_enemy found nothing from here this turn: the other camp targets would ask it again.
++    static int kept_round = -1;
++    static vec2 kept_at{-1, -1};
++    if (!rally_targets_champions(world)) return 0;
++    if (!my_can_attack()) return 2;
++    const vec2 here = my_position();
++    if (kept_round == world.round && kept_at == here) return 0;
++    if (!strike_enemy(world)) {
++        kept_round = world.round, kept_at = here;
++        debug_block({ std::printf("RALLY-KEEP %d %u\n", world.round, my_handle()); });
++        return 0;
++    }
++    debug_block({ std::printf("RALLY-HIT %d %u\n", world.round, my_handle()); });
++    return 1;
++}
++
++} // namespace
++
++} // namespace aph
+diff -ruN charybdis-ref/src/combat/self_abilities.cc rally-prism/src/combat/self_abilities.cc
+--- charybdis-ref/src/combat/self_abilities.cc	2026-11-11 18:57:46.062002466 +0000
++++ rally-prism/src/combat/self_abilities.cc	2026-11-11 19:24:23.632706365 +0000
+@@ -10,6 +10,7 @@
+ #include "../params.h"
+ #include "../model/comms.h"
+ #include "../model/escape.h"
++#include "../bot_parts.h"
+ #include "../model/pathing.h"
+ #include "../model/safety.h"
+ #include "../model/world.h"
+@@ -514,7 +515,7 @@
+     if (!best) return false;
+     // A Vendetta kill readies the reset again, so it need not be held.
+     const bool refunded = f.passive == Passive::reset_on_kill && best_health <= my_strength() * camp_dealt_factor();
+-    if (!refunded && engagement_near(world, here, f.basic_reach() + (f.ranged ? 0 : 1))) return false;
++    if (!refunded && (engagement_near(world, here, f.basic_reach() + (f.ranged ? 0 : 1)) || rally_targets_champions(world))) return false;
+     if (!cast(reset)) return false;
+     try {
+         self_acted(), cambc::self().attack(*best);
+diff -ruN charybdis-ref/src/economy/camps.cc rally-prism/src/economy/camps.cc
+--- charybdis-ref/src/economy/camps.cc	2026-11-11 18:57:46.064002492 +0000
++++ rally-prism/src/economy/camps.cc	2026-11-11 19:42:36.860897553 +0000
+@@ -67,6 +67,8 @@
+ 
+ bool attack_camp_target(const World& world, const CampAttackTarget& target) {
+     throw_if_stale();
++    // A champion hit in its place counts as the hit for the caller's flow, not as a camp hit.
++    if (const int rally = rally_hit(world)) return rally == 1;
+     try {
+         self_acted(), cambc::self().attack(world.map().groups[target.group].camp(target.member));
+         ++camp_hits();
+diff -ruN charybdis-ref/src/model/comms.cc rally-prism/src/model/comms.cc
+--- charybdis-ref/src/model/comms.cc	2026-11-11 18:57:46.065002505 +0000
++++ rally-prism/src/model/comms.cc	2026-11-11 19:21:42.305148168 +0000
+@@ -20,7 +20,10 @@
+ //             left out (never posted) when it does not fit
+ //   ally      0 = none, else 1 + cell * 4 team + 4 ally index + round mod 4 (params::comms_ally): a
+ //             c x c square (c odd: 1, 3 or 5, the narrowest that fits) centred on the record's tile;
+-//             left out when it does not fit
++//             left out when it does not fit, or when no ally heals (only then is it posted)
++//   fight     0 = none, else 1 + (cell * K + enemies seen - 1, capped) * 4 + round mod 4: an engaged
++//             champion's tile (cells as the ally record's, c up to 9) and the enemies it saw, K 4 or 1
++//             (count left out); left out when even c = 9 without the count does not fit
+ //   then free bits
+ // Each ally's priority payload (turn_order.h) also carries its claim + 1 in its low 8 bits, and
+ // support_mailbox.h's intents above them.
+@@ -50,6 +53,10 @@
+     BitField ally;
+     std::uint64_t ally_bits = 0;
+     int cell = 1, cells_y = 1;
++    bool fight_on = false;
++    BitField fight;
++    std::uint64_t fight_bits = 0;
++    int fight_cell = 1, fight_cells_y = 1, fight_counts = 1;
+     int period(int g) const { return camp_offset[g + 1] - camp_offset[g]; }
+ };
+ 
+@@ -80,7 +87,8 @@
+     const int camp_width = static_cast<int>(std::bit_width(static_cast<std::uint64_t>(L.camp_offset.back())));
+     L.camp_on = shift + camp_width <= 64;
+     if (L.camp_on) L.camp = field(camp_width);
+-    if (params::comms_ally && L.camp_on)
++    const bool healer = std::any_of(world.allies.begin(), world.allies.end(), [](const ChampionBelief& a) { return a.facts().heals(); });
++    if (params::comms_ally && L.camp_on && healer)
+         for (const int c : {1, 3, 5}) {
+             const auto cells = static_cast<std::uint64_t>((map.width + c - 1) / c) * static_cast<std::uint64_t>((map.height + c - 1) / c);
+             const int width = width_of(cells * 4 * static_cast<std::uint64_t>(L.team) + 1);
+@@ -90,6 +98,21 @@
+             L.ally_on = true;
+             break;
+         }
++    for (const int c : {1, 3, 5, 7, 9}) {
++        const auto cells = static_cast<std::uint64_t>((map.width + c - 1) / c) * static_cast<std::uint64_t>((map.height + c - 1) / c);
++        // Precision before the count: readers fall back on their own enemy beliefs.
++        for (const int k : {4, 1}) {
++            const int width = width_of(cells * static_cast<std::uint64_t>(k) * 4 + 1);
++            if (shift + width > 64) continue;
++            L.fight_cell = c, L.fight_cells_y = (map.height + c - 1) / c, L.fight_counts = k;
++            L.fight = field(width);
++            L.fight_on = true;
++            break;
++        }
++        if (L.fight_on) break;
++    }
++    debug_block({ std::printf("COMMS-LAYOUT team %d groups %d ally %d/%d fight %d c%d k%d free %d\n", L.team, groups, L.ally_on, L.cell, L.fight_on, L.fight_cell, L.fight_counts, 64 - shift); });
++    L.fight_bits = L.fight.mask;
+     L.ally_bits = L.ally.mask;
+     L.bag_bits = L.bag.mask;
+     L.camp_bits = L.camp.mask;
+@@ -120,6 +143,14 @@
+ };
+ std::array<Told, 8> told_allies;
+ 
++// The latest fight a teammate posted, and ours to post this turn (-1 enemies: none).
++struct ToldFight {
++    vec2 at{-1, -1};
++    int round = -1, enemies = 0;
++};
++ToldFight told_fight_;
++int fight_round = -1, fight_enemies = -1;
++
+ support_mailbox::State support;
+ int support_intent_round = -1;
+ bool support_intent_value = false;
+@@ -163,7 +194,7 @@
+ std::uint64_t changes(const Layout& L, std::uint64_t bits) {
+     const auto x = bits ^ state.last;
+     const auto whole = [x](std::uint64_t mask) { return (x & mask) ? mask : 0; };
+-    return whole(L.bag_bits) | whole(L.camp_bits) | whole(L.ally_bits);
++    return whole(L.bag_bits) | whole(L.camp_bits) | whole(L.ally_bits) | whole(L.fight_bits);
+ }
+ 
+ // A nonzero capture record's group, and the respawn round it encodes: the first from our previous
+@@ -200,6 +231,13 @@
+                                                             std::min(cell % L.cells_y * L.cell + h, world.map().height - 1)},
+                                                            round - ((round - kind) & 3)};
+     }
++    if (const auto v = L.fight.get(bits); L.fight_on && (state.fresh & L.fight_bits) && v != 0) {
++        const auto code = v - 1, kinds = 4 * static_cast<std::uint64_t>(L.fight_counts);
++        const int kind = static_cast<int>(code % kinds), cell = static_cast<int>(code / kinds), h = L.fight_cell / 2;
++        told_fight_ = {{std::min(cell / L.fight_cells_y * L.fight_cell + h, world.map().width - 1),
++                        std::min(cell % L.fight_cells_y * L.fight_cell + h, world.map().height - 1)},
++                       round - ((round - (kind & 3)) & 3), L.fight_counts > 1 ? (kind >> 2) + 1 : 0};
++    }
+     if (const auto record = L.camp.get(bits); (state.fresh & L.camp_bits) && record != 0) {
+         const auto [g, respawn] = decode_capture(L, record);
+         world.note_capture(g, respawn);
+@@ -269,6 +307,15 @@
+         }
+     }
+ 
++    // Each engaged champion posts its fight; the latest stands.
++    if (L.fight_on && world.me().alive && fight_round == round && fight_enemies >= 0) {
++        const vec2 p = my_position();
++        const int seen = std::clamp(fight_enemies, 1, L.fight_counts) - 1;
++        const auto v = 1 + (static_cast<std::uint64_t>(p.x / L.fight_cell * L.fight_cells_y + p.y / L.fight_cell) * static_cast<std::uint64_t>(L.fight_counts)
++                            + static_cast<std::uint64_t>(seen)) * 4 + static_cast<std::uint64_t>(round & 3);
++        if (p.x >= 0 && v != L.fight.get(bits)) L.fight.set(bits, v), dirty = true;
++    }
++
+     // Bags change at captures, kills, deaths and tributes. A bag not yet read at our previous turn
+     // may not have reached every teammate: ours waits. Turn order changes every round, so a
+     // teammate can miss a bag overwritten before its next turn: each in turn re-posts its own.
+@@ -296,6 +343,14 @@
+ 
+ void claim(int group) { detail::posts.mine = group < max_group ? group : -1; }
+ 
++void fight(int round, int enemies) { fight_round = round, fight_enemies = enemies; }
++
++bool told_fight(vec2& at, int& round, int& enemies, int& radius) {
++    if (told_fight_.round < 0) return false;
++    at = told_fight_.at, round = told_fight_.round, enemies = told_fight_.enemies, radius = layout_.fight_cell / 2;
++    return true;
++}
++
+ bool support_request(const World& world) {
+     return support.valid(support_mailbox::protected_mate, world.round);
+ }
+diff -ruN charybdis-ref/src/model/comms.h rally-prism/src/model/comms.h
+--- charybdis-ref/src/model/comms.h	2026-11-11 18:57:46.066533195 +0000
++++ rally-prism/src/model/comms.h	2026-11-11 19:21:42.305273590 +0000
+@@ -32,6 +32,12 @@
+     if (a.is_self) return detail::posts.my_bag;
+     return a.alive ? detail::posts.bags[ally] : 0;
+ }
++// Our fight this turn (Strike reach of a visible enemy on us, a hit given or taken), with the
++// enemies we see (>= 0), posted at the turn's end; -1: none.
++void fight(int round, int enemies);
++// The latest fight a teammate posted: its tile, to within `radius`, its round and the enemies it
++// saw (0 when the layout has no room for the count); false if none ever, or no room on this map.
++bool told_fight(vec2& at, int& round, int& enemies, int& radius);
+ // The group we work towards (-1 for none), posted every turn.
+ void claim(int group);
+ // The other support endpoint's intent (the protected mate's request, the healer's offer), posted in
+diff -ruN charybdis-ref/src/unity.cpp rally-prism/src/unity.cpp
+--- charybdis-ref/src/unity.cpp	2026-11-11 18:57:46.068002544 +0000
++++ rally-prism/src/unity.cpp	2026-11-11 19:24:12.002340215 +0000
+@@ -32,5 +32,6 @@
+ #include "model/world.cc"
+ #include "economy/comeback.cc"
+ #include "combat/fixc.cc"
++#include "combat/rally.cc"
+ #include "main.cc"
+ #pragma clang attribute pop

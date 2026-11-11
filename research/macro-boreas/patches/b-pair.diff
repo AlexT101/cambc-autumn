@@ -1,0 +1,310 @@
+diff -ruN bots/charybdis/src/combat/abilities.cc bots/variants/b-pair/src/combat/abilities.cc
+--- bots/charybdis/src/combat/abilities.cc	2026-11-11 18:57:45.035159367 +0000
++++ bots/variants/b-pair/src/combat/abilities.cc	2026-11-11 19:42:35.428325314 +0000
+@@ -78,19 +78,19 @@
+ // hit_worth, and for damage short of a kill off its spawn, the recall it cancels.
+ float hit_worth_of(const World& world, const ChampionBelief& e, float damage, float health, bool on_spawn) {
+     const float v = hit_worth(damage, health, on_spawn, params::gem_value * static_cast<float>(pair_gems(world, e)),
+-                              partner_bound(world, e), std::max(e.max_health, health));
++                              partner_bound(world, e), std::max(e.max_health, health), pair_life(world, e));
+     return damage > 0 && damage < health - 0.01f && !on_spawn && recall_kept(e) ? v + params::recall_value : v;
+ }
+ 
+ } // namespace
+ 
+-float hit_worth(float damage, float health, bool spawn, float bag, float partner, float full) {
++float hit_worth(float damage, float health, bool spawn, float bag, float partner, float full, float life) {
+     if (health <= 0) return 0;
+-    if (damage >= health - 0.01f) return kill_distance(health, full, bag);
++    if (damage >= health - 0.01f) return kill_distance(health, full, bag, life);
+     if (spawn) return 0;
+     const float left = std::min(health, partner), useful = useful_damage(damage, health, partner);
+     // The rest still costs the body its own health, as any damage short of a kill does.
+-    return params::chip_value * (damage - useful) + kill_distance(left, full, bag) - kill_distance(left - useful, full, bag);
++    return params::chip_value * (damage - useful) + kill_distance(left, full, bag, life) - kill_distance(left - useful, full, bag, life);
+ }
+ 
+ float kill_stops(const World& world, const ChampionBelief& e) {
+diff -ruN bots/charybdis/src/combat/abilities.h bots/variants/b-pair/src/combat/abilities.h
+--- bots/charybdis/src/combat/abilities.h	2026-11-11 18:57:45.035400690 +0000
++++ bots/variants/b-pair/src/combat/abilities.h	2026-11-11 19:48:23.662106651 +0000
+@@ -13,21 +13,22 @@
+ 
+ // What taking a target at `health` of `full` (with `bag` on it) down to a kill is worth: a hit is
+ // worth the fall in this, the same summed in any order. From full health it is the kill's worth,
+-// full + life + bag; damage counts params::chip_value of itself plus a share of the rest growing as
+-// the square root of the health taken off, so damage on a weak target counts most.
+-inline float kill_distance(float health, float full, float bag) {
++// full + life + bag (`life`: pair_life, two for Cassi and Issac); damage counts params::chip_value of
++// itself plus a share of the rest growing as the square root of the health taken off, so damage on a
++// weak target counts most.
++inline float kill_distance(float health, float full, float bag, float life) {
+     if (health <= 0) return 0;
+     full = std::max(full, health);
+-    const float rest = (1.0f - params::chip_value) * full + params::life_value + bag;
++    const float rest = (1.0f - params::chip_value) * full + life + bag;
+     return params::chip_value * health + rest * std::sqrt(health / full);
+ }
+ 
+-// What `damage` to a champion at `health` of `full` (bag and Cassi/Issac partner_bound given) is
+-// worth: the fall in kill_distance. A kill takes the bag, both bags for Cassi and Issac, who die
+-// together; other damage on its spawn heals at its turn end. On a pair the kill runs through the
+-// weaker body we can strike: damage on the other counts its chip, and the rest of its worth only
+-// once it takes that body below the bound.
+-float hit_worth(float damage, float health, bool spawn, float bag, float partner, float full);
++// What `damage` to a champion at `health` of `full` (bag, life and Cassi/Issac partner_bound given) is
++// worth: the fall in kill_distance. A kill takes the bag and life, both bags and lives for Cassi and
++// Issac, who die together; other damage on its spawn heals at its turn end. On a pair the kill runs
++// through the weaker body we can strike: damage on the other counts its chip, and the rest of its
++// worth only once it takes that body below the bound.
++float hit_worth(float damage, float health, bool spawn, float bag, float partner, float full, float life);
+ 
+ // The best enemy-hitting cast this turn, if worth it. An excludes-walking cast must also be worth
+ // `walk`, the walk it forgoes, unless it stuns every visible enemy that could reach us next turn.
+diff -ruN bots/charybdis/src/combat/fight.cc bots/variants/b-pair/src/combat/fight.cc
+--- bots/charybdis/src/combat/fight.cc	2026-11-11 18:57:45.035400690 +0000
++++ bots/variants/b-pair/src/combat/fight.cc	2026-11-11 19:43:20.667052529 +0000
+@@ -858,8 +858,8 @@
+         if (!preyable(world, safety, e, here, range, held)) continue;
+         if (!strength) strength = std::max(1.0f, my_strength() * world.me().damage_scale());
+         const float turns = static_cast<float>(std::max(0, dist(here, e.pos) - range)) + effective_hp(e) / *strength;
+-        // Turns per gem a kill is worth: the life (abilities' life_value, in gems) and the bag.
+-        const float cost = turns / (params::life_value / params::gem_value + static_cast<float>(pair_gems(world, e) + held));
++        // Turns per gem a kill is worth: the lives (pair_life, in gems) and the bag.
++        const float cost = turns / (pair_life(world, e) / params::gem_value + static_cast<float>(pair_gems(world, e) + held));
+         int i = n++;
+         for (; i > 0 && order[i - 1].first > cost; --i) order[i] = order[i - 1];
+         order[i] = {cost, &e};
+@@ -982,6 +982,7 @@
+     if (searched && !my_can_move()) return false;
+     const auto* target = prey(world, pathing, safety);
+     if (!target) return false;
++    debug_block({ std::printf("PAIR-PREY %d %u lives %d\n", world.round, static_cast<unsigned>(world.me().handle), pair_lives(world, *target)); });
+     trace_verdict(world, pathing, *target, 'P');
+     note_engaged(static_cast<std::uint32_t>(target->handle));
+     decision = Branch::chase;
+diff -ruN bots/charybdis/src/combat/plan.cc bots/variants/b-pair/src/combat/plan.cc
+--- bots/charybdis/src/combat/plan.cc	2026-11-11 18:57:45.035400690 +0000
++++ bots/variants/b-pair/src/combat/plan.cc	2026-11-11 19:48:09.301552402 +0000
+@@ -51,6 +51,7 @@
+     float taken; // damage it takes per point of our Strength
+     float full;  // max health with the shield
+     float stop;  // a kill's worth beyond hit_worth (kill_stops)
++    float life;  // pair_life
+ };
+ 
+ using Healths = std::array<float, max_foes>;
+@@ -101,7 +102,7 @@
+         // A shield absorbs before health: to kill, the hits must go through both.
+         b.foes[b.n++] = {&e, e.pos, health + shield, e.retaliation() * world.me().taken, partner_bound(world, e),
+                          params::gem_value * static_cast<float>(pair_gems(world, e)), test(enemy_spawn, e.pos), e.taken,
+-                         e.max_health + shield, kill_stops(world, e)};
++                         e.max_health + shield, kill_stops(world, e), pair_life(world, e)};
+     }
+     if (b.n == 0) return false;
+     b.health = my_health();
+@@ -123,7 +124,7 @@
+         if (h[i] <= 0 || dist(b.here, f.pos) > b.range) continue;
+         const auto worth = [&](const Foe& o, float health) {
+             const float d = b.strength * o.taken;
+-            return hit_worth(d, health, o.spawn, o.bag, o.partner, o.full) + (d >= health - 0.01f ? o.stop : 0.0f);
++            return hit_worth(d, health, o.spawn, o.bag, o.partner, o.full, o.life) + (d >= health - 0.01f ? o.stop : 0.0f);
+         };
+         float value = worth(f, h[i]), retaliation = f.retaliation;
+         if (b.splash)
+@@ -227,7 +228,7 @@
+     vec2 pos;
+     float health = 0, shield = 0; // a foe's health with its shield, and the shield
+     float full = 0;               // a foe's max health with its shield
+-    float retaliation = 0, partner = no_partner_bound, bag = 0;
++    float retaliation = 0, partner = no_partner_bound, bag = 0, life = params::life_value;
+     float taken = 1; // damage it takes per point dealt (a Durability emblem)
+     bool foe = true, spawn = false, stunnable = false, recall = false;
+     float stun = 0;                             // Marcella's armed attack's stun
+@@ -737,6 +738,12 @@
+         const int k = u[t].link;
+         return partner_hit && h[k] > 0 && partner_d >= h[k] - 0.01f && d < h[t] - 0.01f;
+     }
++    // An area cast on `foes` from `slot` kills t's lower-index partner, whose kill already counts
++    // t's: centre_value leaves h unchanged as it sums, so moot alone would count the pair twice.
++    bool dies_with_partner(int t, std::uint32_t foes, int slot) const {
++        const int k = u[t].link;
++        return k >= 0 && k < t && (foes >> k & 1) && h[k] > 0 && u[k].spell[slot] >= h[k] - 0.01f;
++    }
+ 
+     [[gnu::always_inline]] bool hit_unit(int t, Node& s);
+     [[gnu::always_inline]] bool spell_unit(const Spell& sp, int t, Node& s);
+@@ -1098,10 +1105,10 @@
+         const float stun = a.stuns ? stun_worth(world, e, raw > 0) : 0.0f;
+         const float back = raw > 0 ? e.retaliation() * world.me().taken : 0.0f;
+         const bool suicidal = back >= health && back > 0;
+-        const float bag = params::gem_value * static_cast<float>(pair_gems(world, e)), bound = partner_bound(world, e);
++        const float bag = params::gem_value * static_cast<float>(pair_gems(world, e)), bound = partner_bound(world, e), life = pair_life(world, e);
+         for (auto p : positions_within(e.possible, here, a.reach())) {
+             if (n_unseen == max_unseen) break;
+-            const float worth = hit_worth(std::min(raw * e.taken, hp), hp, test(enemy_spawn, p), bag, bound, e.max_health) + stun - back;
++            const float worth = hit_worth(std::min(raw * e.taken, hp), hp, test(enemy_spawn, p), bag, bound, e.max_health, life) + stun - back;
+             plan_tables.unseen[n_unseen++] = {p, 1.0f / static_cast<float>(count), worth, suicidal};
+         }
+     }
+@@ -1277,6 +1284,7 @@
+         x.taken = e.taken;
+         x.partner = partner_bound(world, e);
+         x.bag = params::gem_value * static_cast<float>(pair_gems(world, e));
++        x.life = pair_life(world, e);
+         x.spawn = test(enemy_spawn, e.pos);
+         x.stunnable = !stunned && e.facts().passive != Passive::stun_immune;
+         x.recall = recall;
+@@ -1376,7 +1384,7 @@
+     const auto splashed = [&](int k) { return splash && k != t && dist(u[k].pos, x.pos) <= 1; };
+     if (x.foe) {
+         const bool m = x.link >= 0 && moot(t, d, splashed(x.link), dealt(x.link));
+-        if (!m) value += hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full);
++        if (!m) value += hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full, x.life);
+         if (!m && s.armed && x.stunnable && !(s.stunned >> t & 1)) value += x.stun, s.stunned |= static_cast<std::uint16_t>(1u << t);
+         retaliation += x.retaliation;
+     } else {
+@@ -1389,7 +1397,7 @@
+             const auto& o = u[j];
+             if (o.foe) {
+                 const bool m = o.link >= 0 && moot(j, dealt(j), splashed(o.link) && o.link > j, dealt(o.link));
+-                if (!m) value += hit_worth(dealt(j), h[j], o.spawn, o.bag, partner(j), o.full);
++                if (!m) value += hit_worth(dealt(j), h[j], o.spawn, o.bag, partner(j), o.full, o.life);
+                 retaliation += o.retaliation;
+             }
+             lose(j, dealt(j), s);
+@@ -1420,7 +1428,7 @@
+     const float d = x.spell[sp.slot];
+     const float back = d > 0 ? x.retaliation : 0.0f;
+     if (x.suicidal[sp.slot] || (back > 0 && s.hurt + back >= health)) return false;
+-    float v = hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full) - back;
++    float v = hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full, x.life) - back;
+     if (d > 0 && d < h[t] - 0.01f && !x.spawn && x.recall) v += params::recall_value;
+     if (x.spell_stun[sp.slot] > 0 && !(s.stunned >> t & 1)) v += x.spell_stun[sp.slot], s.stunned |= static_cast<std::uint16_t>(1u << t);
+     if (d <= 0 && v <= 0) return false;
+@@ -1444,8 +1452,8 @@
+         if (h[t] <= 0) continue;
+         const float d = x.spell[slot];
+         if (d > 0) v -= x.retaliation, back += x.retaliation;
+-        if (x.link >= 0 && moot(t, d, x.link > t && (c.foes >> x.link & 1), u[x.link].spell[slot])) continue;
+-        v += hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full);
++        if (x.link >= 0 && (moot(t, d, x.link > t && (c.foes >> x.link & 1), u[x.link].spell[slot]) || dies_with_partner(t, c.foes, slot))) continue;
++        v += hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full, x.life);
+         if (d > 0 && d < h[t] - 0.01f && !x.spawn && x.recall) v += params::recall_value;
+         if (!(s.stunned >> t & 1)) v += x.spell_stun[slot];
+     }
+@@ -1463,7 +1471,8 @@
+         const int t = std::countr_zero(m);
+         const auto& x = u[t];
+         if (h[t] > 0 && x.spell_stun[slot] > 0
+-            && !(x.link >= 0 && moot(t, x.spell[slot], x.link > t && (c.foes >> x.link & 1), u[x.link].spell[slot])))
++            && !(x.link >= 0 && (moot(t, x.spell[slot], x.link > t && (c.foes >> x.link & 1), u[x.link].spell[slot])
++                                 || dies_with_partner(t, c.foes, slot))))
+             s.stunned |= static_cast<std::uint16_t>(1u << t);
+     }
+     for (std::uint32_t m = c.foes; m; m &= m - 1) {
+@@ -1487,7 +1496,7 @@
+         if (h[t] <= 0) continue;
+         struck |= x.land > 0 || x.land_stun > 0;
+         const bool m = x.link >= 0 && moot(t, x.land, x.link > t && dist(L, u[x.link].pos) <= land_radius, u[x.link].land);
+-        if (!m) value += hit_worth(x.land, h[t], x.spawn, x.bag, partner(t), x.full);
++        if (!m) value += hit_worth(x.land, h[t], x.spawn, x.bag, partner(t), x.full, x.life);
+         if (!m && x.land_stun > 0 && !(s.stunned >> t & 1)) value += x.land_stun, s.stunned |= static_cast<std::uint16_t>(1u << t);
+         retaliation += x.land > 0 ? x.retaliation : 0.0f;
+         lose(t, x.land, s);
+@@ -2331,6 +2340,9 @@
+                 if (x.foe) attack_champion(x.belief->handle);
+                 else throw_if_stale(), self_acted(), cambc::self().attack(world.map().groups[x.group].camp(x.member));
+                 ok = true;
++                debug_block({
++                    if (x.foe) std::printf("PAIR-STRIKE %d %u a lives %d\n", world.round, static_cast<unsigned>(world.me().handle), pair_lives(world, *x.belief));
++                });
+                 out.attacked = true;
+                 out.moved |= !S.melee;
+             } catch (const cambc::error&) {
+@@ -2353,6 +2365,10 @@
+         case Op::spell:
+             try {
+                 ok = a.unit >= 0 ? cast_slot_on(a.slot, S.u[a.unit].belief->handle) : cast_slot(a.slot, a.tile);
++                debug_block({
++                    if (ok && a.unit >= 0)
++                        std::printf("PAIR-STRIKE %d %u s lives %d\n", world.round, static_cast<unsigned>(world.me().handle), pair_lives(world, *S.u[a.unit].belief));
++                });
+                 out.moved |= ok && S.spells[a.slot].excl;
+             } catch (const cambc::error&) {
+             }
+diff -ruN bots/charybdis/src/combat/self_abilities.cc bots/variants/b-pair/src/combat/self_abilities.cc
+--- bots/charybdis/src/combat/self_abilities.cc	2026-11-11 18:57:45.035400690 +0000
++++ bots/variants/b-pair/src/combat/self_abilities.cc	2026-11-11 19:42:35.432678732 +0000
+@@ -398,6 +398,7 @@
+         float partner; // Cassi or Issac: partner_bound
+         float taken;   // damage it takes per point of our Strength (a Durability emblem)
+         float full, bag, stop; // max health with the shield; hit_worth's bag; kill_stops
++        float life;            // pair_life
+     };
+     static std::vector<Seen> seen; // kept across calls: allocating costs more than the work
+     seen.clear();
+@@ -411,18 +412,19 @@
+             const float retaliation = passive == Passive::retaliation ? retaliation_share * live.focus : 0.0f;
+             const bool stunnable = stunnable_only && passive != Passive::stun_immune && !stun_pending(c);
+             // A shield must be hit through before health: counted as health.
+-            float shield = 0, taken = 1, partner = no_partner_bound, full = live.max_health, bag = 0, stop = 0;
++            float shield = 0, taken = 1, partner = no_partner_bound, full = live.max_health, bag = 0, stop = 0, life = params::life_value;
+             for (const auto& e : world.enemies) {
+                 if (!e.alive || !e.visible) continue;
+                 if (e.pos == p) {
+                     if (kind.has(AbilityKind::shield) && e.shield > 0) shield = shield_value(c);
+                     taken = e.taken;
+                     bag = params::gem_value * static_cast<float>(pair_gems(world, e));
++                    life = pair_life(world, e);
+                     stop = kill_stops(world, e);
+                     partner = partner_bound(world, e);
+                 }
+             }
+-            seen.push_back({c, p, health + shield, retaliation, stunnable, partner, taken, full + shield, bag, stop});
++            seen.push_back({c, p, health + shield, retaliation, stunnable, partner, taken, full + shield, bag, stop, life});
+         } catch (const cambc::error&) {
+         }
+     }
+@@ -433,7 +435,7 @@
+     // As the strike search values a hit.
+     const auto worth = [&](const Seen& s) {
+         const float dealt = strength * s.taken;
+-        return hit_worth(dealt, s.health, test(enemy_spawn, s.pos), s.bag, s.partner, s.full) + (dealt >= s.health - 0.01f ? s.stop : 0.0f);
++        return hit_worth(dealt, s.health, test(enemy_spawn, s.pos), s.bag, s.partner, s.full, s.life) + (dealt >= s.health - 0.01f ? s.stop : 0.0f);
+     };
+     std::optional<cambc::handle_champion_t> best;
+     float best_value = 0, best_health = 0, best_pair = 0;
+diff -ruN bots/charybdis/src/model/turn_order.cc bots/variants/b-pair/src/model/turn_order.cc
+--- bots/charybdis/src/model/turn_order.cc	2026-11-11 18:57:45.040989272 +0000
++++ bots/variants/b-pair/src/model/turn_order.cc	2026-11-11 19:42:57.425118869 +0000
+@@ -454,7 +454,8 @@
+         const auto offer = [&](float v) {
+             if (can_act_before(world, their, packed(v))) wish.offer(kill, v);
+         };
+-        const float value = params::turn_life_value + params::turn_gem_value * static_cast<float>(pair_gems(world, *e));
++        const float value = params::turn_life_value * static_cast<float>(pair_lives(world, *e))
++                            + params::turn_gem_value * static_cast<float>(pair_gems(world, *e));
+         const float kill_value = e->acted ? value : unacted_share * value;
+         // Read at the real distance only for an offer that would win: one or two a turn.
+         if (const auto p = packed(kill_value); (wish.band < kill || kill_value > wish.value) && can_act_before(world, their, p)) {
+diff -ruN bots/charybdis/src/model/world.h bots/variants/b-pair/src/model/world.h
+--- bots/charybdis/src/model/world.h	2026-11-11 18:57:45.041989285 +0000
++++ bots/variants/b-pair/src/model/world.h	2026-11-11 19:42:57.424902226 +0000
+@@ -850,6 +850,16 @@
+     return c.gems + (p && p->alive ? p->gems : 0);
+ }
+ 
++// The lives its death takes: both for Cassi and Issac, out together for the respawn.
++inline int pair_lives(const World& world, const ChampionBelief& c) {
++    const auto* p = linked_partner(world, c);
++    return p && p->alive ? 2 : 1;
++}
++
++inline float pair_life(const World& world, const ChampionBelief& c) {
++    return params::life_value * static_cast<float>(pair_lives(world, c));
++}
++
+ // Many bots start a recall at every turn end and cancel it next turn unless wanted: only one kept
+ // through a turn is likely to complete.
+ inline bool kept_recall(cambc::handle_champion_t c, int full = static_cast<int>(cambc::constants::recall_time)) {

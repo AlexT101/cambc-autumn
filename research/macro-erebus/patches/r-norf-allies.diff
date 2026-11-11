@@ -1,0 +1,12 @@
+diff -ruN bots/variants/charybdis-ref/src/economy/farm.cc bots/variants/r-norf-allies/src/economy/farm.cc
+--- bots/variants/charybdis-ref/src/economy/farm.cc	2026-11-11 18:57:46.621333924 +0000
++++ bots/variants/r-norf-allies/src/economy/farm.cc	2026-11-11 21:45:28.177690984 +0000
+@@ -1023,7 +1023,7 @@
+     // way. Not where the recall would be cancelled or not started, nor out of a pocket (its own way).
+     // Carrying too (a recall keeps the gems), with the bag's walk to an altar then from the group.
+     // While repricing, our own recall is the one channelling.
+-    const bool recall_out = !in_pocket && !stunned_turn && !memory.siege
++    const bool recall_out = world.me().facts().passive == Passive::gem_focus && !in_pocket && !stunned_turn && !memory.siege
+                             && !test(map.ally_spawn, here) && (repricing || !channelling()) && !safety.threatened(here)
+                             && recall_outruns(safety, repricing ? static_cast<int>(my_channel_time()) : recall_turns(world));
+     const FarmRecall via_recall = recall_out ? farm_recall(world, pathing, repricing ? static_cast<int>(my_channel_time()) : recall_turns(world)) : FarmRecall{};

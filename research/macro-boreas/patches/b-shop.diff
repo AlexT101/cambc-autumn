@@ -1,0 +1,232 @@
+diff -ruN bots/charybdis/src/bot.cc bots/variants/b-shop/src/bot.cc
+--- bots/charybdis/src/bot.cc	2026-11-11 18:57:45.034923804 +0000
++++ bots/variants/b-shop/src/bot.cc	2026-11-11 20:03:21.670360688 +0000
+@@ -744,6 +744,11 @@
+     if (world.me().alive) note_income_end(world);
+     upkeep.camp_turns += camp_hits() != camp_hits_before;
+     debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), static_cast<char>(decision), memory.farm_group, memory.claim); });
++    debug_block({
++        if (world.me().alive && world.me().facts().passive == Passive::gem_focus && my_gold() >= shard_price && my_max_health() <= prism_threat(world))
++            std::printf("POG %d %u %c gold=%u maxh=%.0f threat=%.0f gems=%u\n", world.round, my_handle(), static_cast<char>(decision), my_gold(),
++                        my_max_health(), prism_threat(world), my_gems());
++    });
+ }
+ 
+ } // namespace aph
+diff -ruN bots/charybdis/src/bot_parts.h bots/variants/b-shop/src/bot_parts.h
+--- bots/charybdis/src/bot_parts.h	2026-11-11 18:57:45.035159367 +0000
++++ bots/variants/b-shop/src/bot_parts.h	2026-11-11 20:07:31.103362853 +0000
+@@ -193,6 +193,7 @@
+     Emblem next{};
+     unsigned count = 0;
+     float gain = 0;
++    float health = 0, focus = 0; // the max health and Focus the shards add
+ };
+ 
+ // The way to an altar `walk` steps away, in rounds: the walk, or a recall less what the stop is
+@@ -532,6 +533,7 @@
+ int team_walk_to(const World& world, Pathing& pathing, int g, vec2 p);
+ bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ float farm_step_value(const World& world);
++int carry_pick(const World& world);
+ 
+ // economy/siege.cc
+ bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory);
+diff -ruN bots/charybdis/src/economy/farm.cc bots/variants/b-shop/src/economy/farm.cc
+--- bots/charybdis/src/economy/farm.cc	2026-11-11 18:57:45.038439109 +0000
++++ bots/variants/b-shop/src/economy/farm.cc	2026-11-11 19:56:30.421423983 +0000
+@@ -646,6 +646,12 @@
+     memo.carry_group = -1;
+ }
+ 
++// The capture last turn's pick carries ('G', 'L' or 'Q'), or -1.
++int carry_pick(const World& world) {
++    const auto& memo = farm_memo();
++    return memo.carry_round >= world.round - 1 ? memo.carry_group : -1;
++}
++
+ template <bool opening, bool banking = false, bool repricing = false> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ [[gnu::noinline]] bool farm_banking(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+diff -ruN bots/charybdis/src/economy/shop.cc bots/variants/b-shop/src/economy/shop.cc
+--- bots/charybdis/src/economy/shop.cc	2026-11-11 18:57:45.038989246 +0000
++++ bots/variants/b-shop/src/economy/shop.cc	2026-11-11 20:12:42.247651324 +0000
+@@ -486,6 +486,9 @@
+     return reactive_over(world, bought, e, items);
+ }
+ 
++int outgunned_round = -1000; // traces: the last round wants_shop's outgunned rule sent us home
++float prism_threat(const World& world);
++
+ // True if any shard was bought.
+ bool buy_shards(const World& world) {
+     unsigned gold = my_gold();
+@@ -501,6 +504,11 @@
+         add_shards(bought, world.me().facts(), stat, static_cast<float>(count));
+         if (have + count == shards_needed(family)) add_completion(bought, world.me().facts(), family, stat);
+     }
++    debug_block({
++        if (gold < start && world.me().facts().passive == Passive::gem_focus)
++            std::printf("PSHOP %d %u spent=%u maxh=%.0f threat=%.0f og=%d\n", world.round, my_handle(), start - gold, my_max_health(),
++                        prism_threat(world), world.round - outgunned_round <= 40 ? 1 : 0);
++    });
+     return gold < start;
+ }
+ 
+@@ -581,7 +589,7 @@
+     static PurchaseQuote kept;
+     const Key key{budget / shard_price, self.strength, self.focus, self.max_health, reactive_bag(), main_stat(world)};
+     const float rounds = gems_share(world) * rounds_per_gem;
+-    if (key == last) return {kept.next, kept.count, kept.gain * rounds};
++    if (key == last) return {kept.next, kept.count, kept.gain * rounds, kept.health, kept.focus};
+     last = key;
+     const auto& f = self.facts();
+     auto owned = my_items();
+@@ -608,8 +616,42 @@
+     float others;
+     const Upkeep u = priced_upkeep(world, others);
+     quote.gain = upkeep_cost(world, u, others, now, now) - upkeep_cost(world, u, others, now, build(bought)) + passives;
++    quote.health = bought.max_health, quote.focus = bought.focus;
+     kept = quote;
+-    return {quote.next, quote.count, quote.gain * rounds};
++    return {quote.next, quote.count, quote.gain * rounds, quote.health, quote.focus};
++}
++
++// The max health our Prism must exceed against the living enemy Prisms we have seen, each as seen:
++// the burst (its damage spells' multipliers x its Focus: struck first, ours loses its next turn to
++// the stun and takes the ground spell too) and its own max health (a Prism with no more than its
++// killer's dies first far more often).
++float prism_threat(const World& world) {
++    float threat = 0;
++    for (const auto& e : world.enemies) {
++        if (!e.alive || e.facts().passive != Passive::gem_focus || e.stats_round < 0) continue;
++        float multiplier = 0;
++        for (int s = 0; s < 2; ++s)
++            if (e.facts().abilities[s].kind == AbilityKind::damage) multiplier += e.facts().abilities[s].multiplier;
++        threat = std::max({threat, multiplier * e.focus, e.max_health});
++    }
++    return threat;
++}
++
++// While our Prism's max health is no more than that threat, its shop trip (the way home, by recall
++// unless walking is quicker, and back out) when our gold buys max health or Focus (the duel's two
++// sides) in a batch of params::outgunned_shop_shards or more. Not during a carry pick. 0 when not.
++float outgunned_trip(const World& world, Pathing& pathing) {
++    if (world.me().facts().passive != Passive::gem_focus) return 0;
++    const float max_health = my_max_health(), threat = prism_threat(world);
++    const auto gold = my_gold();
++    // A carry under way (carry_reach: a hold's walk away) pays before the trip would be back.
++    if (!(max_health <= threat) || gold < params::outgunned_shop_shards * shard_price || carry_pick(world) >= 0) return 0;
++    const auto q = affordable_prefix(world);
++    if (!(q.health > 0 || q.focus > 0)) return 0;
++    const int back = pathing.to_ally_spawn().at(my_position());
++    if (back == unreachable || back == 0) return 0;
++    const int hurt = my_health() < max_health ? 1 : 0;
++    return static_cast<float>(std::min(back, recall_turns(world) + hurt) + back);
+ }
+ 
+ HomeTrip home_trip(const World& world, Pathing& pathing, int channel, bool wins) {
+@@ -638,13 +680,22 @@
+ }
+ 
+ // The stop's value as home_trip prices it for an empty bag: the heal, and the next emblem once our
+-// gold completes it; nothing once the end is close.
++// gold completes it (an outgunned Prism's purchase at least the trip wants_shop makes for it);
++// nothing once the end is close.
+ FarmRecall farm_recall(const World& world, Pathing& pathing, int channel) {
+     FarmRecall r{channel, my_health() < my_max_health() ? 1 : 0, 0.0f};
+     if (closing(world, pathing)) return r;
+     r.value = heal_rounds_now(world);
+-    if (shops_at_home(world))
+-        if (const auto& p = prices(world); my_gold() >= p.next.cost && std::isfinite(p.gain)) r.value += p.gain;
++    if (shops_at_home(world)) {
++        float emblem = 0;
++        if (const auto& p = prices(world); my_gold() >= p.next.cost && std::isfinite(p.gain)) emblem = p.gain;
++        const float trip = outgunned_trip(world, pathing);
++        debug_block({
++            if (trip > emblem) std::printf("SHOPOGRF %d %u gold=%u maxh=%.0f trip=%.0f emblem=%.1f\n", world.round, my_handle(), my_gold(),
++                                           my_max_health(), trip, emblem);
++        });
++        r.value += std::max(emblem, trip);
++    }
+     return r;
+ }
+ 
+@@ -683,24 +734,51 @@
+     income.end_round = world.round, income.gems_at = gems, income.gold_at = gold, income.end_pos = my_position();
+ }
+ 
++// Traces: why an outgunned Prism with a shard's gold did not shop, once per turn.
++void shop_gate(const World& world, const char* why) {
++    debug_block({
++        static int traced = -1;
++        if (traced != world.round && world.me().facts().passive == Passive::gem_focus && my_gold() >= shard_price
++            && my_max_health() <= prism_threat(world)) {
++            traced = world.round;
++            std::printf("PGATE %d %u %s gold=%u maxh=%.0f threat=%.0f\n", world.round, my_handle(), why, my_gold(), my_max_health(), prism_threat(world));
++        }
++    });
++}
++
+ // With no bag to bank and the gold to complete the next emblem (Prism: any shard), home to shop when
+ // what it buys and the heal save outweigh the trip: there by recall unless walking is quicker, and
+-// back out.
++// back out; an outgunned Prism as outgunned_trip says.
+ [[gnu::flatten]] bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
+-    if (banks_bag(world, pathing) || memory.damage > 0 || !shops_at_home(world)) return false;
++    if (banks_bag(world, pathing)) return shop_gate(world, "bank"), false;
++    if (memory.damage > 0 || !shops_at_home(world)) return shop_gate(world, "damage"), false;
+     const auto gold = my_gold();
+     const bool prism = world.me().facts().passive == Passive::gem_focus;
+     if (gold < shard_price || (!prism && gold < emblem_price && !begun_emblem(world, my_items()))) return false;
+     const vec2 here = my_position();
+-    if (test(world.map().ally_spawn, here) || safety.threatened(here)) return false;
++    if (test(world.map().ally_spawn, here)) return shop_gate(world, "spawn"), false;
++    if (safety.threatened(here)) return shop_gate(world, "threat"), false;
+     // The trip costs the recall and the walk back out; arriving by recall, the heal takes the turn.
+     if (prism) {
+-        if (winning_bag(world) || closing(world, pathing)) return false;
++        if (winning_bag(world) || closing(world, pathing)) return shop_gate(world, "closing"), false;
+         const int back = pathing.to_ally_spawn().at(here);
+-        if (back == unreachable) return false;
++        if (back == unreachable) return shop_gate(world, "noway"), false;
+         const int hurt = my_health() < my_max_health() ? 1 : 0;
+         const float value = params::shop_gain_scale * affordable_prefix(world).gain + heal_rounds_now(world);
+-        if (!std::isfinite(value) || !(value > static_cast<float>(std::min(back, recall_turns(world) + hurt) + back))) return false;
++        const float trip = static_cast<float>(std::min(back, recall_turns(world) + hurt) + back);
++        // Outgunned by an enemy Prism (prism_threat), max health or Focus is worth the trip whatever it saves farming.
++        if (!(std::isfinite(value) && value > trip)) {
++            if (!(outgunned_trip(world, pathing) > 0))
++                return shop_gate(world, carry_pick(world) >= 0                                     ? "carry"
++                                        : my_gold() < params::outgunned_shop_shards * shard_price ? "gold"
++                                                                                                    : "nostat"),
++                       false;
++            debug_block({
++                outgunned_round = world.round;
++                std::printf("SHOPOG %d %u gold=%u maxh=%.0f threat=%.0f add=%.0f/%.0f trip=%.0f value=%.1f\n", world.round, my_handle(), my_gold(),
++                            my_max_health(), prism_threat(world), affordable_prefix(world).health, affordable_prefix(world).focus, trip, value);
++            });
++        }
+     } else {
+         const auto stop = home_trip(world, pathing, recall_turns(world), winning_bag(world));
+         if (stop.short_gold > 0) return false;
+@@ -709,6 +787,7 @@
+     }
+     bool awake = false;
+     world.each_stirring([&](int g) { awake = awake || awake_over(world, g, here); });
++    if (awake) shop_gate(world, "awake");
+     return !awake;
+ }
+ 
+diff -ruN bots/charybdis/src/params.h bots/variants/b-shop/src/params.h
+--- bots/charybdis/src/params.h	2026-11-11 18:57:45.041989285 +0000
++++ bots/variants/b-shop/src/params.h	2026-11-11 20:07:31.103808849 +0000
+@@ -232,6 +232,8 @@
+ inline constexpr float fight_camp_prior = 490.12277f;
+ // wants_shop: a shopping trip goes when shop_gain_scale x the purchase's saving (plus the heal) beats the trip.
+ inline constexpr float shop_gain_scale = 0.75106156f;
++// wants_shop: a Prism outgunned by an enemy Prism (shop.cc prism_threat) shops once its gold buys this many shards.
++inline constexpr unsigned outgunned_shop_shards = 2;
+ // safety_params::hit_given_reach and recall_risk (model/safety.h), tunable here.
+ inline constexpr float hit_given_reach = 0.2338928f;
+ inline constexpr float recall_risk = 0.20703878f;

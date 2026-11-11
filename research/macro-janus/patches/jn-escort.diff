@@ -1,0 +1,98 @@
+diff -ruN bots/variants/charybdis-ref/src/bot.cc bots/variants/jn-escort/src/bot.cc
+--- bots/variants/charybdis-ref/src/bot.cc	2026-11-11 18:57:48.027578186 +0000
++++ bots/variants/jn-escort/src/bot.cc	2026-11-11 22:15:59.764736691 +0000
+@@ -532,6 +532,7 @@
+         decision = Branch::siege;
+         return;
+     }
++    if (escort_follow(world, pathing, safety)) return;
+     if (willow_follow(world, pathing, safety)) return;
+     farm(world, pathing, safety, memory);
+     if (on_cleared_group(world)) yield_capture(world, pathing, safety, memory, true);
+diff -ruN bots/variants/charybdis-ref/src/bot_parts.h bots/variants/jn-escort/src/bot_parts.h
+--- bots/variants/charybdis-ref/src/bot_parts.h	2026-11-11 18:57:48.027799289 +0000
++++ bots/variants/jn-escort/src/bot_parts.h	2026-11-11 22:15:59.764673350 +0000
+@@ -554,6 +554,7 @@
+ bool willow_bank_heal_step(World& world, Pathing& pathing, Safety& safety, const Field& field);
+ bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety, int farm_group);
+ bool willow_follow(World& world, Pathing& pathing, Safety& safety);
++bool escort_follow(World& world, Pathing& pathing, Safety& safety);
+ bool support_work(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
+ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool leave, bool& mate_eligible);
+ 
+diff -ruN bots/variants/charybdis-ref/src/combat/support.cc bots/variants/jn-escort/src/combat/support.cc
+--- bots/variants/charybdis-ref/src/combat/support.cc	2026-11-11 18:57:48.028027872 +0000
++++ bots/variants/jn-escort/src/combat/support.cc	2026-11-11 22:15:59.764620139 +0000
+@@ -412,6 +412,27 @@
+     return true;
+ }
+ 
++// The escort partner (no heals, so none of Willow's caution): with an enemy in sight and the Prism
++// seen farther than Willow's follow distance, it walks back within that distance of the Prism.
++bool escort_follow(World& world, Pathing& pathing, Safety& safety) {
++    constexpr int follow_dist = 2;
++    const auto* partner = escort_partner(world);
++    if (!partner || !partner->is_self || !my_can_move() || stunned_turn) return false;
++    const auto* mate = support_endpoint(world, false);
++    if (!mate || !mate->alive || !mate->visible || mate->pos.x < 0 || test(world.map().ally_spawn, mate->pos)) return false;
++    if (dist(my_position(), mate->pos) <= follow_dist) return false;
++    bool enemy = false;
++    for (const auto& e : world.enemies) enemy |= e.alive && e.visible;
++    if (!enemy) return false;
++    const bitboard goals = within(world.map().open_for_us, mate->pos, follow_dist);
++    if (board_empty(goals)) return false;
++    world.throw_if_stale();
++    if (!pathing.step_towards(goals)) return false;
++    see_revealed(world, pathing, safety);
++    decision = Branch::willow_support;
++    return true;
++}
++
+ // Work the support formation must not interrupt: a capture, a bag to bank, a trip to shop.
+ bool support_work(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
+     return holding_capture(world, pathing) || contesting(world)
+diff -ruN bots/variants/charybdis-ref/src/model/world.h bots/variants/jn-escort/src/model/world.h
+--- bots/variants/charybdis-ref/src/model/world.h	2026-11-11 18:57:48.033027936 +0000
++++ bots/variants/jn-escort/src/model/world.h	2026-11-11 22:15:59.764555148 +0000
+@@ -924,6 +924,28 @@
+     return pair;
+ }
+ 
++// The escort partner when the protected mate has no healer: the ally with the most base health among
++// melee champions, else among all; found once, as support_pair is.
++inline const ChampionBelief* escort_partner(const World& world) {
++    static int index = -2;
++    if (index == -2) {
++        index = -1;
++        const auto pair = support_pair(world);
++        if (params::escort_partner && pair[0] && !pair[1]) {
++            float best = -1;
++            bool best_melee = false;
++            for (int i = 0; i < static_cast<int>(world.allies.size()); ++i) {
++                const auto& a = world.allies[i];
++                if (&a == pair[0] || a.type == cambc::champion_type::issac) continue;
++                const bool melee = a.facts().walk_and_attack_independent();
++                const float h = a.facts().health.base;
++                if ((melee && !best_melee) || (melee == best_melee && h > best)) index = i, best = h, best_melee = melee;
++            }
++        }
++    }
++    return index >= 0 ? &world.allies[index] : nullptr;
++}
++
+ inline float output(const ChampionBelief& c) { return c.facts().raw_output(c.strength, c.focus) * c.damage_scale(); }
+ 
+ // Damage dealt (before its Durability) that kills it: the shield drains by the reduced damage
+diff -ruN bots/variants/charybdis-ref/src/params.h bots/variants/jn-escort/src/params.h
+--- bots/variants/charybdis-ref/src/params.h	2026-11-11 18:57:48.033027936 +0000
++++ bots/variants/jn-escort/src/params.h	2026-11-11 22:15:59.764366336 +0000
+@@ -48,6 +48,9 @@
+ // Each ally but the healers posts its own position in turn, in the shared bytes' free bits, for
+ // Willow's follow (support.cc); off on maps where it does not fit (comms.cc).
+ inline constexpr bool comms_ally = true;
++// A Prism team without a healer: its sturdiest melee champion (else sturdiest) escorts the Prism in
++// fights, as Willow's follow does, without her heals or her caution (support.cc escort_follow).
++inline constexpr bool escort_partner = true;
+ // tools/draftlab/parity.py's copies only: print the model draft's features and team in draft round 0
+ // (debug builds), to compare with features.mjs and model.mjs.
+ constexpr bool draft_parity = false;

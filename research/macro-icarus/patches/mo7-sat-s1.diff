@@ -1,0 +1,235 @@
+diff -ruN bots/charybdis/src/bot.cc bots/variants/mo7-sat-s1/src/bot.cc
+--- bots/charybdis/src/bot.cc	2026-11-11 18:57:47.561780227 +0000
++++ bots/variants/mo7-sat-s1/src/bot.cc	2026-11-11 19:51:00.198155502 +0000
+@@ -609,6 +609,10 @@
+     if (decision != Branch::wait_altar) memory.wait_altar = -1;
+     // A turn that takes Prism off its way withdraws the capture it carries (left_for_prism).
+     if (world.me().facts().passive == Passive::gem_focus) {
++        debug_block({
++            if (world.me().alive && prism_dominant(world, world.me()))
++                std::printf("PDOM %d %.0f %u\n", world.round, static_cast<double>(world.me().focus), my_gems());
++        });
+         switch (decision) {
+         case Branch::retreat: case Branch::bank: case Branch::wait_altar: case Branch::guard_altar: case Branch::tribute_kept:
+         case Branch::recall_kept: case Branch::capture_recall: case Branch::mend: case Branch::shop: case Branch::prism_recovery:
+diff -ruN bots/charybdis/src/bot_parts.h bots/variants/mo7-sat-s1/src/bot_parts.h
+--- bots/charybdis/src/bot_parts.h	2026-11-11 18:57:47.561978199 +0000
++++ bots/variants/mo7-sat-s1/src/bot_parts.h	2026-11-11 19:50:23.897164091 +0000
+@@ -422,6 +422,7 @@
+ const ChampionBelief* sole_capture_holder(const World& world, const CampGroup& G);
+ const ChampionBelief* value_holder(const World& world, const CampGroup& G);
+ bool keeps_bag(const World& world, const ChampionBelief& a, int gems);
++bool prism_dominant(const World& world, const ChampionBelief& a);
+ float carried_bonus(const World& world, const ChampionBelief& a, int gems, float price);
+ bool outvalues_holders(const World& world, const CampGroup& G);
+ bool takes_over(const World& world);
+diff -ruN bots/charybdis/src/economy/capture.cc bots/variants/mo7-sat-s1/src/economy/capture.cc
+--- bots/charybdis/src/economy/capture.cc	2026-11-11 18:57:47.564021876 +0000
++++ bots/variants/mo7-sat-s1/src/economy/capture.cc	2026-11-11 20:06:07.189255137 +0000
+@@ -160,8 +160,9 @@
+ 
+ // Gems one gem in a's kept bag is worth beyond itself, at `price` gems a gold: Prism's prism_focus_per_gem
+ // Focus a gem is what prism_focus_per_gem / growth Focus shards would buy, at shard_price gold each.
++// None once a's Focus already wins its duels (prism_dominant).
+ float carried_bonus(const World& world, const ChampionBelief& a, int gems, float price) {
+-    if (!keeps_bag(world, a, gems)) return 0.0f;
++    if (!keeps_bag(world, a, gems) || prism_dominant(world, a)) return 0.0f;
+     const float shards = cambc::constants::passive_abilities::prism_focus_per_gem / a.facts().focus.growth;
+     return std::max(0.0f, price) * shards * static_cast<float>(shard_price);
+ }
+@@ -345,9 +346,9 @@
+ }
+ 
+ // The ally that should hold G alone, the rest stepping off (yield_capture): a healthy Prism on it,
+-// whose Focus grows with its bag, even with an enemy out of sight who may see it, or one in sight
+-// that cannot hurt it before the payout (prism_hold_threatened): a second holder there only splits
+-// the gems; with no enemy in sight, on 3 picks, Marcella on what Stellar cleared, or a Prospector
++// whose Focus grows with its bag while that Focus is contested (prism_dominant), even with an enemy
++// out of sight who may see it, or one in sight that cannot hurt it before the payout
++// (prism_hold_threatened): a second holder there only splits the gems; with no enemy in sight, on 3 picks, Marcella on what Stellar cleared, or a Prospector
+ // Tavi on a pure-gold group. Null if none.
+ const ChampionBelief* sole_capture_holder(const World& world, const CampGroup& G) {
+     const bool seen = enemy_seen(world);
+@@ -370,7 +371,7 @@
+             || (a.channel == Channel::recall && a.channel_end_round <= world.round + 1)
+             || world.score.ally + a.gems + G.gems >= winning
+             || rounds_left(world) <= tribute_turns(a.gems + G.gems, a.fast_tribute) + map.width + map.height + endgame_margin
+-            || (seen && prism_hold_threatened(world, a, G)))
++            || prism_dominant(world, a) || (seen && prism_hold_threatened(world, a, G)))
+             continue;
+         return &a;
+     }
+@@ -394,19 +395,53 @@
+     return false;
+ }
+ 
+-// Prism ally a's Focus is at least twice that of every living enemy Prism we have seen, where its hits
+-// already kill in duels about half the time: a gem's Focus more there is worth less than an ally's
+-// capture now. No enemy Prism, or none seen: not.
++// Prism ally a's Focus is at least twice the enemy Prism's, where its hits already kill in duels about
++// half the time and almost never lose: a gem's Focus more there buys nothing (carried_bonus), and no
++// capture is owed to it. The enemy Prism's Focus is its last sighting's (a dead one's without the bag it
++// lost, drop_bag), and out of sight since that sighting or its respawn it may have carried every gem a
++// team takes, at our own team's rate so far (the map is symmetric). Dead and never seen, it is dominated.
++// No enemy Prism, or a living one never seen: not. Kept per ally while the beliefs hold: farm prices
++// every group with it.
+ bool prism_dominant(const World& world, const ChampionBelief& a) {
++    if (a.facts().passive != Passive::gem_focus) return false;
++    struct Kept {
++        int round = -1;
++        std::uint32_t observations = 0;
++        int bag = -1;
++        bool dominant = false;
++    };
++    static std::array<Kept, 16> kept;
++    auto& k = kept[static_cast<std::size_t>(a.index) & 15];
++    int bag = comms::bag_of(world, a.index);
++    // A teammate's post rounds up and stops at a cap: the least bag it allows, past the cap at least the
++    // bag last seen. Low rather than high, an unseen Prism is not taken as dominant before it is.
++    if (!a.is_self) {
++        const int least = std::max(0, bag - (comms::bag_post_step - 1));
++        bag = bag >= comms::bag_post_most ? std::max(least, a.gems) : least;
++    }
++    if (k.round == world.round && k.observations == world.observations && k.bag == bag) return k.dominant;
++    k = {world.round, world.observations, bag, false};
++    int taken = world.score.ally;
++    for (const auto& b : world.allies) taken += comms::bag_of(world, b.index);
++    const float per_round = static_cast<float>(taken) / static_cast<float>(std::max(1, world.round));
++    constexpr float per_gem = cambc::constants::passive_abilities::prism_focus_per_gem;
++    bool drafted = false;
+     float enemy = 0;
+-    for (const auto& e : world.enemies)
+-        if (e.alive && e.facts().passive == Passive::gem_focus && e.stats_round >= 0) enemy = std::max(enemy, e.focus);
+-    if (!(enemy > 0)) return false;
++    for (const auto& e : world.enemies) {
++        if (e.facts().passive != Passive::gem_focus) continue;
++        drafted = true;
++        if (e.stats_round < 0) {
++            if (e.alive) return false;
++            continue;
++        }
++        const int since = std::max(e.stats_round, e.respawned_round);
++        const float grown = e.alive && !e.visible ? per_gem * per_round * static_cast<float>(std::max(0, world.round - since)) : 0.0f;
++        enemy = std::max(enemy, e.focus + grown);
++    }
+     // Unseen, its Focus moves with the bag it posts.
+-    const float focus = a.visible ? a.focus
+-                                  : a.focus + cambc::constants::passive_abilities::prism_focus_per_gem
+-                                                  * static_cast<float>(comms::bag_of(world, a.index) - a.gems);
+-    return focus >= 2 * enemy;
++    const float focus = a.visible ? a.focus : a.focus + per_gem * static_cast<float>(bag - a.gems);
++    k.dominant = drafted && focus >= 2 * enemy;
++    return k.dominant;
+ }
+ 
+ // Rounds until Prism ally a, at `at`, can stand on cleared group g's tiles: free, its walk; busy with
+@@ -464,9 +499,10 @@
+ // Off Prism, no enemy in sight: a Prism ally keeping its gems (as far as the team's tests show), healthy
+ // and free to walk, near cleared gem group g. Claimed by it, within carry_reach, the group is left
+ // (`claimed`) when even at Prism's nearest it misses the payout of our hold on it (2 rounds or more off, as
+-// prism_takeover asks), or of one we would begin on arrival (prism_coming's complement). Unclaimed, it
++// prism_takeover asks), or of one we would begin on arrival (prism_coming's complement). A dominant Prism
++// (prism_dominant) is left nothing, claimed or not. Unclaimed, it
+ // is left (`near`) when empty or held from this round or last and Prism is due on it before the lapse
+-// (prism_eta), unless Prism is dominant, or reaches our hold before its payout (prism_takeover's), or
++// (prism_eta), unless Prism reaches our hold before its payout (prism_takeover's), or
+ // the leave has lapsed. Left empty, Prism holds it whole. A hold we stayed on for
+ // Prism sure to come in time we keep: Prism held up on the way would otherwise have us leave it as it is
+ // about to pay.
+@@ -485,10 +521,10 @@
+     const auto walk_from = [&](vec2 p) { return walks ? team_walk_to(world, pathing, g, p) : steps_to(G, p); };
+     for (const auto& a : world.allies) {
+         if (a.is_self || !a.alive || a.facts().passive != Passive::gem_focus) continue;
++        if (prism_dominant(world, a)) return Leave::no;
+         const bool claimed = comms::claim_of(world, a.index) == g;
+         // Unclaimed, the wait runs from our first sight of it cleared; only a hold just begun is left.
+-        if (!claimed && (left.lapsed || world.round - left.first >= cambc::constants::capture_time || (held && c.held_since < world.round - 1)
+-                         || prism_dominant(world, a)))
++        if (!claimed && (left.lapsed || world.round - left.first >= cambc::constants::capture_time || (held && c.held_since < world.round - 1)))
+             return Leave::no;
+         if (a.visible && test(G.tiles(), a.pos)) return Leave::no; // there: sole_capture_holder's
+         if (a.visible && (held_back(world, a, false) || a.health < params::hurt_health_fraction * a.max_health)) continue;
+@@ -829,7 +865,7 @@
+ // Prism keeping its gems (keeps_gems) may hold G's capture from off its tiles: sole_capture_holder's
+ // tests of us, read before we get there. In `goal` the free tiles no camp hits.
+ bool prism_carries(const World& world, Safety& safety, const CampGroup& G, bitboard& goal) {
+-    if (G.gems <= 0 || G.has_monolith || enemy_seen(world) || test(G.tiles(), my_position())) return false;
++    if (G.gems <= 0 || G.has_monolith || enemy_seen(world) || test(G.tiles(), my_position()) || prism_dominant(world, world.me())) return false;
+     const auto& map = world.map();
+     const int bag = static_cast<int>(my_gems());
+     if (my_health() < params::hurt_health_fraction * my_max_health()
+@@ -899,11 +935,12 @@
+ }
+ 
+ // Off Prism, on G's counting capture we hold (group g): a Prism ally claims it from off its tiles and
+-// walks there before the payout (prism_takeover).
++// walks there before the payout (prism_takeover), which a dominant one does not.
+ bool prism_coming(const World& world, Pathing& pathing, const CampGroup& G, const CampBelief& c, int g) {
+     if (world.me().facts().passive == Passive::gem_focus || G.gems <= 0 || c.holder != team::ally || c.held_since < 0) return false;
+     for (const auto& a : world.allies) {
+         if (a.is_self || !a.alive || a.facts().passive != Passive::gem_focus || comms::claim_of(world, a.index) != g) continue;
++        if (prism_dominant(world, a)) return false;
+         if (a.visible && test(G.tiles(), a.pos)) return false; // there: sole_capture_holder's
+         return team_walk_to(world, pathing, g, a.pos) < c.payout_round() - world.round;
+     }
+@@ -950,7 +987,9 @@
+     if (!wins && ((prism && !prism->is_self && prism->facts().passive == Passive::gem_focus) || prism_coming(world, pathing, G, c, g)))
+         return false;
+     // Prism's own hold rides home only out of an enemy's possible sight, as before sole_capture_holder stopped asking.
+-    if (!wins && (retaining_gems(world, pathing) || (prism && prism->is_self && !enemy_may_see(world, here)))) {
++    // A dominant Prism holds without being the sole holder, and still keeps what the hold pays.
++    const bool own_prism = prism ? prism->is_self : prism_dominant(world, world.me()) && keeps_gems(world, pathing);
++    if (!wins && (retaining_gems(world, pathing) || (own_prism && !enemy_may_see(world, here)))) {
+         // A bag kept off the altar: only Prism rides home, when the shop and heal there outweigh
+         // the rounds the trip costs.
+         if (world.me().facts().passive != Passive::gem_focus || !shops_at_home(world) || winning_bag(world)
+diff -ruN bots/charybdis/src/economy/farm.cc bots/variants/mo7-sat-s1/src/economy/farm.cc
+--- bots/charybdis/src/economy/farm.cc	2026-11-11 18:57:47.565021889 +0000
++++ bots/variants/mo7-sat-s1/src/economy/farm.cc	2026-11-11 19:50:23.897465685 +0000
+@@ -2321,8 +2321,10 @@
+     // clear ends we join it as crew, if we can afford its fire; after, a free tile beside the claimers'
+     // makes us its sole holder (sole_capture_holder) at their payout, else it is left to us once cleared
+     // (left_for_prism) for a whole hold of ours. A group the claimers fill is not taken: its hold can't be
+-    // handed over. Posted as the carry ('G', 'L'), so a turn off the way withdraws it.
+-    if (keeps && !banks_bag && !memory.banking && !enemy_seen(world) && my_health() >= params::hurt_health_fraction * max_health) {
++    // handed over. Posted as the carry ('G', 'L'), so a turn off the way withdraws it. Not owed to a dominant
++    // Prism (prism_dominant), as 'G' and 'L' are not (prism_carries).
++    if (keeps && !banks_bag && !memory.banking && !enemy_seen(world) && my_health() >= params::hurt_health_fraction * max_health
++        && !prism_dominant(world, world.me())) {
+         const int bag = static_cast<int>(my_gems()), winning = static_cast<int>(cambc::constants::winning_gems);
+         std::array<int, 8> asked;
+         int n_asked = 0;
+diff -ruN bots/charybdis/src/model/comms.cc bots/variants/mo7-sat-s1/src/model/comms.cc
+--- bots/charybdis/src/model/comms.cc	2026-11-11 18:57:47.565021889 +0000
++++ bots/variants/mo7-sat-s1/src/model/comms.cc	2026-11-11 20:06:12.844362813 +0000
+@@ -185,7 +185,7 @@
+     receive_support(world);
+     state.fresh = changes(L, bits);
+     if (state.fresh & L.bag_bits)
+-        if (const int body = bag_body(L, bits); body != world.me().index) detail::posts.bags[body] = 4 * bag_fours(L, bits);
++        if (const int body = bag_body(L, bits); body != world.me().index) detail::posts.bags[body] = bag_post_step * bag_fours(L, bits);
+     // An ally in sight's payload is as of the same turn as its field, and never capped.
+     for (const auto& a : world.allies) {
+         if (a.is_self || a.index >= L.team) continue;
+@@ -274,7 +274,7 @@
+     // teammate can miss a bag overwritten before its next turn: each in turn re-posts its own.
+     const int bag_by = bag_body(L, bits);
+     const bool bag_fresh = (state.fresh & L.bag_bits) && bag_by != me;
+-    const int fours = std::min(127, (detail::posts.my_bag + 3) / 4);
++    const int fours = std::min(bag_post_most / bag_post_step, (detail::posts.my_bag + bag_post_step - 1) / bag_post_step);
+     const bool bag_reminder = (round + 1) % L.team == me && (bag_by != me || bag_fours(L, bits) != fours);
+     if (!bag_fresh && (fours != state.posted_bag || bag_reminder)) {
+         L.bag.set(bits, static_cast<std::uint64_t>(fours * L.team + me));
+diff -ruN bots/charybdis/src/model/comms.h bots/variants/mo7-sat-s1/src/model/comms.h
+--- bots/charybdis/src/model/comms.h	2026-11-11 18:57:47.566328225 +0000
++++ bots/variants/mo7-sat-s1/src/model/comms.h	2026-11-11 20:06:07.190763478 +0000
+@@ -26,7 +26,8 @@
+ // The gems we carry, posted when it changes.
+ void bag(int gems);
+ // The gems an ally (by index) carries as it last posted, rounded up to a multiple of 4 and capped
+-// at 508 (ours exact); 0 if never or while dead.
++// at bag_post_most (ours exact); 0 if never or while dead.
++inline constexpr int bag_post_step = 4, bag_post_most = bag_post_step * 127;
+ inline int bag_of(const World& world, int ally) {
+     const auto& a = world.allies[ally];
+     if (a.is_self) return detail::posts.my_bag;

@@ -1,0 +1,172 @@
+diff --git a/bots/charybdis/src/bot_parts.h b/bots/variants/cal-h/src/bot_parts.h
+index ef6d2f189..2a7a12c08 100644
+--- a/bots/charybdis/src/bot_parts.h
++++ b/bots/variants/cal-h/src/bot_parts.h
+@@ -218,22 +218,39 @@ struct HomeTrip {
+ // heal turn), the walk `out` from spawn and any wait for its respawn `respawn` rounds away, less
+ // `value`, what the stop is worth as HomeTrip prices it (the heal, and the next emblem if our gold
+ // completes it). Never below the channel.
++// Carrying, the choice also prices the bag's exposure: `exposure` rounds for each round it spends off
++// our ground (the bag's loss to a death, bag_swing x bag in rounds of our gem income, at the carrier
++// death hazard a round; 0 empty-handed). The channel stands where we are (`side`, home_side's measure
++// of it), the walk out runs from spawn (side 1) and the walk from here to the group's side.
+ struct FarmRecall {
+     int channel = 0, hurt = 0;
+-    float value = 0;
++    float value = 0, exposure = 0, side = 1;
+     float rounds(int out, int respawn) const {
+         if (out == unreachable) return static_cast<float>(unreachable);
+         const int arrive = std::max(channel + hurt + out, respawn);
+         return std::max(static_cast<float>(channel), static_cast<float>(arrive) - value);
+     }
+-    // rounds() when sooner than the walk of `walk` steps, else unreachable. Not when the walk too
+-    // arrives before the respawn (the recall only waits it out, and walking keeps us free to act),
+-    // nor for a wait farm would not take.
+-    float sooner(int out, int respawn, int walk) const {
++    // The share of a walk off our ground (side below 0.5), its side taken to run linearly from a to b.
++    static float off_share(float a, float b) {
++        const float lo = std::min(a, b), hi = std::max(a, b);
++        if (hi < 0.5f) return 1.0f;
++        if (lo >= 0.5f) return 0.0f;
++        return (0.5f - lo) / (hi - lo);
++    }
++    // The bag's exposure by way of spawn less the walk's, in rounds, to a group at `group_side`.
++    float exposed(int out, int walk, float group_side) const {
++        if (!(exposure > 0)) return 0.0f;
++        const float recall = (side < 0.5f ? static_cast<float>(channel) : 0.0f) + static_cast<float>(out) * off_share(1.0f, group_side);
++        return exposure * (recall - static_cast<float>(walk) * off_share(side, group_side));
++    }
++    // rounds() when, with the bag's exposure, sooner than the walk of `walk` steps, else unreachable.
++    // Not when the walk too arrives before the respawn (the recall only waits it out, and walking
++    // keeps us free to act), nor for a wait farm would not take.
++    float sooner(int out, int respawn, int walk, float group_side) const {
+         if (out == unreachable || walk == unreachable || respawn >= walk || respawn - (channel + hurt + out) > params::max_wait)
+             return static_cast<float>(unreachable);
+         const float via = rounds(out, respawn);
+-        return via < static_cast<float>(walk) ? via : static_cast<float>(unreachable);
++        return via + exposed(out, walk, group_side) < static_cast<float>(walk) ? via : static_cast<float>(unreachable);
+     }
+ };
+ 
+@@ -296,6 +313,7 @@ float home_free(const World& world, int g, int range, float survivable);
+ float shielded_clear(float damage, float rounds, float shield, float ready_in = 0);
+ float home_ground(const StaticMap& map, int g, bool first_turn);
+ float home_side(const StaticMap& map, int g, bool first_turn);
++float ground_side(const World& world, vec2 p);
+ float spell_output(const ChampionBelief& c);
+ float basic_output(const ChampionBelief& c);
+ float spell_clear_rounds(const StaticMap& map, int g, const CampBelief& belief, int range, float spells, float basic);
+@@ -357,6 +375,7 @@ bool keep_guard_lock(const World& world, int a);
+ bool guard_turn(const World& world, Pathing& pathing, Safety& safety, Memory& memory, const Pathing::GuardState& strike_guard);
+ 
+ // economy/bank.cc
++float carrier_hazard();
+ bool channelling();
+ extern bool recall_feint;
+ bool channel_held();
+diff --git a/bots/charybdis/src/economy/bank.cc b/bots/variants/cal-h/src/economy/bank.cc
+index bf77ad9d2..b2645be75 100644
+--- a/bots/charybdis/src/economy/bank.cc
++++ b/bots/variants/cal-h/src/economy/bank.cc
+@@ -1391,7 +1391,9 @@ bool recall_to_farm(const World& world, Pathing& pathing, Safety& safety, const
+     const int respawn = c.state == CampState::respawning ? std::max(0, c.respawn_round - world.round) : 0;
+     const auto r = farm_recall(world, pathing, static_cast<int>(my_channel_time()));
+     const int walk = centre->at(here);
+-    const float via = r.sooner(pathing.centre_to_spawn(g), respawn, walk);
++    const int out = pathing.centre_to_spawn(g);
++    const float group_side = r.exposure > 0 ? home_side(world.map(), g, false) : 1.0f;
++    const float via = r.sooner(out, respawn, walk, group_side);
+     bool kept = via < static_cast<float>(unreachable);
+     // A bag to bank after the group, as farm's loop prices it: the walk on to an altar then needs no second stop.
+     if (kept && my_gems() > 0 && banks_bag(world, pathing)) {
+@@ -1402,7 +1404,7 @@ bool recall_to_farm(const World& world, Pathing& pathing, Safety& safety, const
+         healed.heal = healed.emblem = 0, healed.hurt = 0;
+         const int to = pathing.centre_to_altar(g), capture = capture_rounds(world);
+         const float back = t.rounds(to, capture, 0), back_healed = healed.rounds(to, capture, 0);
+-        kept = via + back_healed < static_cast<float>(walk + std::max(0, respawn - walk)) + back;
++        kept = via + back_healed + r.exposed(out, walk, group_side) < static_cast<float>(walk + std::max(0, respawn - walk)) + back;
+     }
+     if (!kept) {
+         debug_block({ std::printf("RFWHY %d %u walk %d out %d respawn %d channel %d hurt %d value %.1f\n", world.round, my_handle(),
+diff --git a/bots/charybdis/src/economy/camps.cc b/bots/variants/cal-h/src/economy/camps.cc
+index b2b85588c..9321aae54 100644
+--- a/bots/charybdis/src/economy/camps.cc
++++ b/bots/variants/cal-h/src/economy/camps.cc
+@@ -638,6 +638,14 @@ float home_side(const StaticMap& map, int g, bool first_turn) {
+     return side;
+ }
+ 
++// home_side's measure at a tile; 1 where either spawn's walk does not reach it (own_ground's).
++float ground_side(const World& world, vec2 p) {
++    const auto& map = world.map();
++    const int us = map.from_ally_spawn().at(p), them = map.enemy_spawn_steps(p);
++    if (us == unreachable || them == unreachable) return 1.0f;
++    return us + them > 0 ? static_cast<float>(them) / static_cast<float>(us + them) : 0.5f;
++}
++
+ // home_ground's weights as read so far, 1 until then (it is at most 1), by group: the first 256 and 4
+ // lanes past them, for farm's PreUpper.
+ std::array<float, 260>& home_weights() {
+diff --git a/bots/charybdis/src/economy/farm.cc b/bots/variants/cal-h/src/economy/farm.cc
+index 7e911ce58..6073015c5 100644
+--- a/bots/charybdis/src/economy/farm.cc
++++ b/bots/variants/cal-h/src/economy/farm.cc
+@@ -1971,13 +1971,15 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+         // By way of spawn when sooner (`steps` stays the walk: the help radius and the walk's search
+         // cap read it). `reach`: rounds until we are there, the stop's value not taken off; `there`:
+         // and until it is back.
+-        float via = recall_out && steps_known != unreachable ? via_recall.sooner(spawn_steps(g), respawn, steps)
++        // The bag's exposure (FarmRecall::exposed) only chooses the way: `via` stays its rounds.
++        const float group_side = via_recall.exposure > 0 ? home_side(map, g, opening) : 1.0f;
++        float via = recall_out && steps_known != unreachable ? via_recall.sooner(spawn_steps(g), respawn, steps, group_side)
+                                                              : static_cast<float>(unreachable);
+         // Carrying, by way of spawn only while that stays sooner with the trip on to an altar.
+         if (to_altar && via < static_cast<float>(unreachable)) {
+             const float back = (wins ? healed_winning : healed_home)->rounds(walk, capture, static_cast<std::uint32_t>(static_cast<float>(known.gold_in) * paid));
+             const float healed = back < static_cast<float>(unreachable) ? back + static_cast<float>(known.chained_tribute) : 0.0f;
+-            if (via + healed < static_cast<float>(steps + wait) + bank) via += healed - bank;
++            if (via + healed + via_recall.exposed(spawn_steps(g), steps, group_side) < static_cast<float>(steps + wait) + bank) via += healed - bank;
+             else via = static_cast<float>(unreachable);
+         }
+         const bool by_spawn = via < static_cast<float>(unreachable);
+@@ -2446,11 +2448,23 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+     }
+     // As the loop priced it; recall_to_farm keeps the turn-end recall while it stays sooner.
+     if (recall_out && steps_data[best] != unreachable && chosen.mode != 'T' && chosen.mode != 'G' && chosen.mode != 'L' && chosen.mode != 'Q'
+-        && via_recall.sooner(spawn_steps(best), respawn_in(world.camps[best]), best_steps) < static_cast<float>(unreachable)
++        && via_recall.sooner(spawn_steps(best), respawn_in(world.camps[best]), best_steps, via_recall.exposure > 0 ? home_side(map, best, opening) : 1.0f)
++               < static_cast<float>(unreachable)
+         && (!to_altar || routed[best])) {
+         memory.recall_farm = best;
+         debug_block({ std::printf("RFCHOOSE %d %u %d %d %d %d gems %u bank %d\n", round, my_handle(), best, best_steps, spawn_steps(best),
+                                   static_cast<int>(via_recall.value), my_gems(), static_cast<int>(banks_bag)); });
++        debug_block({
++            // The bag's exposure chose the recall: by time alone it walks.
++            if (via_recall.exposure > 0) {
++                const int out = spawn_steps(best), respawn = respawn_in(world.camps[best]);
++                const float via = via_recall.rounds(out, respawn);
++                const float extra = via_recall.exposed(out, best_steps, home_side(map, best, opening));
++                if (!(via < static_cast<float>(best_steps)))
++                    std::printf("EXPFLIP %d %u g%d bag %u walk %d via %.1f extra %.1f exp %.3f side %.2f\n", round, my_handle(), best, my_gems(), best_steps,
++                                via, extra, via_recall.exposure, via_recall.side);
++            }
++        });
+     }
+     if constexpr (repricing) return true;
+     if (map.any_group_hop() && beyond_walk(world, pathing, best) && (in_pocket || cross(best))) return true;
+diff --git a/bots/charybdis/src/economy/shop.cc b/bots/variants/cal-h/src/economy/shop.cc
+index 9df537cef..01df95936 100644
+--- a/bots/charybdis/src/economy/shop.cc
++++ b/bots/variants/cal-h/src/economy/shop.cc
+@@ -641,6 +641,11 @@ HomeTrip home_trip(const World& world, Pathing& pathing, int channel, bool wins)
+ // gold completes it; nothing once the end is close.
+ FarmRecall farm_recall(const World& world, Pathing& pathing, int channel) {
+     FarmRecall r{channel, my_health() < my_max_health() ? 1 : 0, 0.0f};
++    if (const auto bag = my_gems(); bag > 0) {
++        // As the bank floor prices a carried gem, in rounds of our income.
++        r.exposure = carrier_hazard() * params::bag_swing * static_cast<float>(bag) / gem_income_rate();
++        r.side = ground_side(world, my_position());
++    }
+     if (closing(world, pathing)) return r;
+     r.value = heal_rounds_now(world);
+     if (shops_at_home(world))

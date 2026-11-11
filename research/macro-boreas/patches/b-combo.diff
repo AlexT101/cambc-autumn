@@ -1,0 +1,804 @@
+diff -ruN bots/charybdis/src/bot.cc bots/variants/b-combo/src/bot.cc
+--- bots/charybdis/src/bot.cc	2026-11-11 18:57:45.034923804 +0000
++++ bots/variants/b-combo/src/bot.cc	2026-11-11 20:03:35.564736823 +0000
+@@ -485,6 +485,17 @@
+     if (!my_can_attack() || !my_can_cast()) pathing.settle_guard(), see_stuns(world, safety), safety.refresh();
+     // The guard was placed around the tile we started on: the goal steps from where the search left us.
+     if (my_position() != world.turn_start && (my_can_move() || my_can_cast())) guard_steps(world, pathing, safety);
++    // Our Prism ends no turn where an enemy Prism's stun burst kills us (Safety::burst_lethal), a hold
++    // included: with the walk left after the search (a cast or ranged attack spends it), it retreats.
++    if (world.me().facts().passive == Passive::gem_focus && my_can_move() && safety.burst_lethal(my_position())) {
++        debug_block({
++            const auto b = safety.stun_burst(my_position());
++            std::printf("BLR %d %u %d %d %c %d %d %d\n", world.round, my_handle(), my_position().x, my_position().y, static_cast<char>(decision),
++                        static_cast<int>(b.damage), static_cast<int>(my_health()), static_cast<int>(holding));
++        });
++        retreat(world, pathing, safety, memory);
++        return;
++    }
+     if (holding) {
+         hold_capture(world, memory, attacked);
+         return;
+@@ -743,6 +754,21 @@
+     memory.health = world.me().alive ? my_health() : 0;
+     if (world.me().alive) note_income_end(world);
+     upkeep.camp_turns += camp_hits() != camp_hits_before;
++    debug_block({
++        if (!world.is_stale() && world.me().alive && world.me().facts().passive == Passive::gem_focus && fuel_ok(end_reserve + 20000)) {
++            const vec2 h = my_position();
++            const auto b = safety.stun_burst(h);
++            std::printf("PB %d %u %d %d %c %d %d %d %d", world.round, my_handle(), h.x, h.y, static_cast<char>(decision), static_cast<int>(b.damage),
++                        static_cast<int>(my_health()), static_cast<int>(safety.lethal(h)), b.dist);
++            for (const auto& e : world.enemies)
++                if (e.alive && e.facts().passive == Passive::gem_focus)
++                    std::printf(" e%u:v%d:t%d:d%d:a%d:n%d:c%d:k%d:r%d,%d:f%d", static_cast<std::uint32_t>(e.handle), e.visible, e.tracked,
++                                dist(h, e.pos), world.round - e.pos_round, e.tracked && !e.visible ? static_cast<int>(board_count(e.possible)) : -1,
++                                !e.visible && safety.credible_unseen(e), turns_before_ours(world, e), e.ready_round[0] - world.round,
++                                e.ready_round[1] - world.round, static_cast<int>(e.focus));
++            std::printf("\n");
++        }
++    });
+     debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), static_cast<char>(decision), memory.farm_group, memory.claim); });
+ }
+ 
+diff -ruN bots/charybdis/src/combat/abilities.cc bots/variants/b-combo/src/combat/abilities.cc
+--- bots/charybdis/src/combat/abilities.cc	2026-11-11 18:57:45.035159367 +0000
++++ bots/variants/b-combo/src/combat/abilities.cc	2026-11-11 21:06:00.050694773 +0000
+@@ -78,19 +78,19 @@
+ // hit_worth, and for damage short of a kill off its spawn, the recall it cancels.
+ float hit_worth_of(const World& world, const ChampionBelief& e, float damage, float health, bool on_spawn) {
+     const float v = hit_worth(damage, health, on_spawn, params::gem_value * static_cast<float>(pair_gems(world, e)),
+-                              partner_bound(world, e), std::max(e.max_health, health));
++                              partner_bound(world, e), std::max(e.max_health, health), pair_life(world, e));
+     return damage > 0 && damage < health - 0.01f && !on_spawn && recall_kept(e) ? v + params::recall_value : v;
+ }
+ 
+ } // namespace
+ 
+-float hit_worth(float damage, float health, bool spawn, float bag, float partner, float full) {
++float hit_worth(float damage, float health, bool spawn, float bag, float partner, float full, float life) {
+     if (health <= 0) return 0;
+-    if (damage >= health - 0.01f) return kill_distance(health, full, bag);
++    if (damage >= health - 0.01f) return kill_distance(health, full, bag, life);
+     if (spawn) return 0;
+     const float left = std::min(health, partner), useful = useful_damage(damage, health, partner);
+     // The rest still costs the body its own health, as any damage short of a kill does.
+-    return params::chip_value * (damage - useful) + kill_distance(left, full, bag) - kill_distance(left - useful, full, bag);
++    return params::chip_value * (damage - useful) + kill_distance(left, full, bag, life) - kill_distance(left - useful, full, bag, life);
+ }
+ 
+ float kill_stops(const World& world, const ChampionBelief& e) {
+diff -ruN bots/charybdis/src/combat/abilities.h bots/variants/b-combo/src/combat/abilities.h
+--- bots/charybdis/src/combat/abilities.h	2026-11-11 18:57:45.035400690 +0000
++++ bots/variants/b-combo/src/combat/abilities.h	2026-11-11 21:06:00.050874265 +0000
+@@ -13,21 +13,22 @@
+ 
+ // What taking a target at `health` of `full` (with `bag` on it) down to a kill is worth: a hit is
+ // worth the fall in this, the same summed in any order. From full health it is the kill's worth,
+-// full + life + bag; damage counts params::chip_value of itself plus a share of the rest growing as
+-// the square root of the health taken off, so damage on a weak target counts most.
+-inline float kill_distance(float health, float full, float bag) {
++// full + life + bag (`life`: pair_life, two for Cassi and Issac); damage counts params::chip_value of
++// itself plus a share of the rest growing as the square root of the health taken off, so damage on a
++// weak target counts most.
++inline float kill_distance(float health, float full, float bag, float life) {
+     if (health <= 0) return 0;
+     full = std::max(full, health);
+-    const float rest = (1.0f - params::chip_value) * full + params::life_value + bag;
++    const float rest = (1.0f - params::chip_value) * full + life + bag;
+     return params::chip_value * health + rest * std::sqrt(health / full);
+ }
+ 
+-// What `damage` to a champion at `health` of `full` (bag and Cassi/Issac partner_bound given) is
+-// worth: the fall in kill_distance. A kill takes the bag, both bags for Cassi and Issac, who die
+-// together; other damage on its spawn heals at its turn end. On a pair the kill runs through the
+-// weaker body we can strike: damage on the other counts its chip, and the rest of its worth only
+-// once it takes that body below the bound.
+-float hit_worth(float damage, float health, bool spawn, float bag, float partner, float full);
++// What `damage` to a champion at `health` of `full` (bag, life and Cassi/Issac partner_bound given) is
++// worth: the fall in kill_distance. A kill takes the bag and life, both bags and lives for Cassi and
++// Issac, who die together; other damage on its spawn heals at its turn end. On a pair the kill runs
++// through the weaker body we can strike: damage on the other counts its chip, and the rest of its
++// worth only once it takes that body below the bound.
++float hit_worth(float damage, float health, bool spawn, float bag, float partner, float full, float life);
+ 
+ // The best enemy-hitting cast this turn, if worth it. An excludes-walking cast must also be worth
+ // `walk`, the walk it forgoes, unless it stuns every visible enemy that could reach us next turn.
+diff -ruN bots/charybdis/src/combat/fight.cc bots/variants/b-combo/src/combat/fight.cc
+--- bots/charybdis/src/combat/fight.cc	2026-11-11 18:57:45.035400690 +0000
++++ bots/variants/b-combo/src/combat/fight.cc	2026-11-11 21:06:00.050979246 +0000
+@@ -253,16 +253,23 @@
+         int rank = 0;  // the group it is tried in, after HomeWalk's: the plan's rank, or without a plan, damage now
+         bool dashes = false; // ranked as a walk then a dash (walk_dash_deferred): this turn does not end here
+         bool held = false;   // on a sole Prism's hold (`held`)
++        float burst = 0;     // our Prism: an enemy Prism's stun burst (Safety::stun_burst), counted in `damage`
++        bool burst_lethal = false;
+     };
+     Unwritten<Option, 8> scratch;
+     auto& options = scratch.a;
+     int n = 0;
+     bool clear = false;
++    // Our Prism's steps count the turn an enemy Prism's stun hands back (Safety::stun_burst), as
++    // lethal() does: the one-turn tally misses it, and retreat steps into its cast range killed us.
++    bool prism = false;
++    if (world.me().facts().passive == Passive::gem_focus)
++        for (const auto& e : world.enemies) prism |= e.alive && (e.visible || e.tracked) && e.facts().passive == Passive::gem_focus;
+     // An option is summed only to its first damage until it may rank first: one with damage ranks
+     // after every clear step.
+     const auto price = [&](Option& o) {
+         if (o.t.left) safety.finish(o.t, o.p, world.me().taken);
+-        o.damage = o.t.damage, o.stuns = o.t.stuns;
++        o.damage = std::max(o.t.damage, o.burst), o.stuns = o.t.stuns || o.burst > 0;
+         o.eff = o.damage - (fixc_bush_threatened && o.bush == 0 ? params::fixc::bush_margin * my_health_and_shield(world) : 0.0f);
+     };
+     const auto add = [&](bool longer) {
+@@ -275,12 +282,17 @@
+             if (longer && safety.touched(p, world.me().taken)) continue;
+             const auto t = longer ? Safety::Tally{} : safety.tally(p, world.me().taken);
+             // A stun alone, with no damage, still takes our next turn while the pursuers close in.
+-            const bool reached = t.damage > 0 || t.hits;
++            bool reached = t.damage > 0 || t.hits;
+             int gap = unreachable;
+             for (const auto& e : world.enemies)
+                 if (e.alive && e.visible) gap = std::min(gap, dist(p, e.pos));
+             options[n++] = {p, t.damage, t.stuns, s, gap, pathing.pull(p), false, t};
+             auto& o = options[n - 1];
++            if (prism && (o.burst = safety.stun_burst(p).damage) > 0) {
++                o.burst_lethal = safety.burst_lethal(p);
++                o.damage = std::max(o.damage, o.burst), o.stuns = true;
++                reached = true;
++            }
+             o.bush = fixc_bush_rank(world, p);
+             o.held = held && test(*held, p);
+             o.eff = o.damage - (fixc_bush_threatened && o.bush == 0 ? params::fixc::bush_margin * my_health_and_shield(world) : 0.0f);
+@@ -337,6 +349,14 @@
+     // reached, then tried in `by`'s order. Without a plan: HomeWalk's, the clear, then the rest.
+     std::array<std::uint8_t, 8> order, group, last;
+     for (int i = 0; i < n; ++i) order[i] = static_cast<std::uint8_t>(i);
++    const auto burst_trace = [&](const Option& o) {
++        debug_block({
++            int bursts = 0, lethal = 0;
++            for (int i = 0; i < n; ++i) bursts += options[i].burst > 0, lethal += options[i].burst_lethal;
++            if (bursts) std::printf("DUR %d %u %d,%d->%d,%d n%d b%d l%d chosen b%d l%d tally%d home%d rank%d\n", world.round, my_handle(), here.x, here.y, o.p.x, o.p.y, n, bursts,
++                                    lethal, static_cast<int>(o.burst), static_cast<int>(o.burst_lethal), static_cast<int>(o.t.damage), static_cast<int>(o.home), o.rank);
++        });
++    };
+     std::stable_sort(order.begin(), order.begin() + n, [&](int a, int b) {
+         const auto &x = options[a], &y = options[b];
+         return x.home != y.home ? x.home : x.rank < y.rank;
+@@ -351,6 +371,11 @@
+         for (; e < n && options[order[e]].home == lead_home && options[order[e]].rank == lead_rank; ++e) {
+             auto& o = options[order[e]];
+             if (o.home || o.t.left) price(o);
++            // HomeWalk's survival misses the burst too.
++            if (!o.dashes && o.burst_lethal) {
++                last[lasts++] = order[e];
++                continue;
++            }
+             if (plan.active() && !o.home && o.damage > 0 && !o.dashes) {
+                 if (life < 0) life = my_health_and_shield(world);
+                 if (o.damage >= life) {
+@@ -362,12 +387,12 @@
+         }
+         std::stable_sort(group.begin(), group.begin() + m, by_index);
+         for (int i = 0; i < m; ++i)
+-            if (pathing.try_move(options[group[i]].p)) return;
++            if (pathing.try_move(options[group[i]].p)) return burst_trace(options[group[i]]);
+         g = e;
+     }
+     std::stable_sort(last.begin(), last.begin() + lasts, by_index);
+     for (int i = 0; i < lasts; ++i)
+-        if (pathing.try_move(options[last[i]].p)) return;
++        if (pathing.try_move(options[last[i]].p)) return burst_trace(options[last[i]]);
+     pathing.step_towards(home);
+ }
+ 
+@@ -858,8 +883,8 @@
+         if (!preyable(world, safety, e, here, range, held)) continue;
+         if (!strength) strength = std::max(1.0f, my_strength() * world.me().damage_scale());
+         const float turns = static_cast<float>(std::max(0, dist(here, e.pos) - range)) + effective_hp(e) / *strength;
+-        // Turns per gem a kill is worth: the life (abilities' life_value, in gems) and the bag.
+-        const float cost = turns / (params::life_value / params::gem_value + static_cast<float>(pair_gems(world, e) + held));
++        // Turns per gem a kill is worth: the lives (pair_life, in gems) and the bag.
++        const float cost = turns / (pair_life(world, e) / params::gem_value + static_cast<float>(pair_gems(world, e) + held));
+         int i = n++;
+         for (; i > 0 && order[i - 1].first > cost; --i) order[i] = order[i - 1];
+         order[i] = {cost, &e};
+@@ -982,6 +1007,7 @@
+     if (searched && !my_can_move()) return false;
+     const auto* target = prey(world, pathing, safety);
+     if (!target) return false;
++    debug_block({ std::printf("PAIR-PREY %d %u lives %d\n", world.round, static_cast<unsigned>(world.me().handle), pair_lives(world, *target)); });
+     trace_verdict(world, pathing, *target, 'P');
+     note_engaged(static_cast<std::uint32_t>(target->handle));
+     decision = Branch::chase;
+diff -ruN bots/charybdis/src/combat/guard.cc bots/variants/b-combo/src/combat/guard.cc
+--- bots/charybdis/src/combat/guard.cc	2026-11-11 18:57:45.035400690 +0000
++++ bots/variants/b-combo/src/combat/guard.cc	2026-11-11 20:02:58.528252238 +0000
+@@ -796,6 +796,32 @@
+     return made.tiles;
+ }
+ 
++// Our Prism's work steps end on no tile beside us where an enemy Prism's stun burst kills us
++// (Safety::burst_lethal): only the strike search's priced fights take one. Bit i for directions[i];
++// once a tile and Safety, for the guard and its cover. Prism has no dash: single steps only.
++unsigned burst_out(const World& world, Safety& safety, vec2 here) {
++    if (world.me().facts().passive != Passive::gem_focus) return 0;
++    static struct {
++        std::uint32_t generation = 0;
++        vec2 here{-1, -1};
++        unsigned tiles = 0;
++    } made;
++    if (made.generation == Safety::generation() && made.here == here) return made.tiles;
++    made.generation = Safety::generation(), made.here = here, made.tiles = 0;
++    bool any = false;
++    for (const auto& e : world.enemies) any |= e.alive && (e.visible || e.tracked) && e.facts().passive == Passive::gem_focus;
++    if (!any) return 0;
++    const auto& open = world.map().open_for_us;
++    for (int i = 0; i < 8; ++i) {
++        const vec2 q = here + directions[i];
++        if (in_bounds(q) && test(open, q) && safety.burst_lethal(q)) made.tiles |= 1u << i;
++    }
++    debug_block({
++        if (made.tiles) std::printf("BLG %d %u %d %d %x %d\n", world.round, my_handle(), here.x, here.y, made.tiles, static_cast<int>(safety.burst_lethal(here)));
++    });
++    return made.tiles;
++}
++
+ const bitboard* work_guard(const World& world, Safety& safety, vec2 here, int radius) {
+     const auto& in = work_guard_inputs;
+     auto& pathing = *in.pathing;
+@@ -816,16 +842,18 @@
+                         edit(), set_tile(out, q, false);
+     const unsigned kept = keep_out(world, pathing, safety, here, in.damage);
+     for (unsigned left = kept; left; left &= left - 1) edit(), set_tile(out, here + directions[std::countr_zero(left)]);
++    const unsigned burst = burst_out(world, safety, here);
++    for (unsigned left = burst; left; left &= left - 1) edit(), set_tile(out, here + directions[std::countr_zero(left)]);
+     if (in.avoid) edit(), out |= *in.avoid;
+     if (!copied) return strikes;
+-    return kept || !out.is_empty() ? &out : nullptr;
++    return kept || burst || !out.is_empty() ? &out : nullptr;
+ }
+ 
+ // work_guard's cover: step_guard's, and the tiles keep_out sets.
+ const bitboard* work_cover(const World& world, Safety& safety, vec2 here, int radius) {
+     const auto& in = work_guard_inputs;
+     const bitboard* strikes = in.strikes_known ? in.strikes : step_guard_cover(world, safety, here, radius);
+-    const unsigned kept = keep_out(world, *in.pathing, safety, here, in.damage);
++    const unsigned kept = keep_out(world, *in.pathing, safety, here, in.damage) | burst_out(world, safety, here);
+     if (!kept && !in.avoid) return strikes;
+     static bitboard cover{cambc::uninitialized};
+     if (strikes) copy_into(*strikes, cover);
+diff -ruN bots/charybdis/src/combat/plan.cc bots/variants/b-combo/src/combat/plan.cc
+--- bots/charybdis/src/combat/plan.cc	2026-11-11 18:57:45.035400690 +0000
++++ bots/variants/b-combo/src/combat/plan.cc	2026-11-11 21:06:00.051198529 +0000
+@@ -51,6 +51,7 @@
+     float taken; // damage it takes per point of our Strength
+     float full;  // max health with the shield
+     float stop;  // a kill's worth beyond hit_worth (kill_stops)
++    float life;  // pair_life
+ };
+ 
+ using Healths = std::array<float, max_foes>;
+@@ -101,7 +102,7 @@
+         // A shield absorbs before health: to kill, the hits must go through both.
+         b.foes[b.n++] = {&e, e.pos, health + shield, e.retaliation() * world.me().taken, partner_bound(world, e),
+                          params::gem_value * static_cast<float>(pair_gems(world, e)), test(enemy_spawn, e.pos), e.taken,
+-                         e.max_health + shield, kill_stops(world, e)};
++                         e.max_health + shield, kill_stops(world, e), pair_life(world, e)};
+     }
+     if (b.n == 0) return false;
+     b.health = my_health();
+@@ -123,7 +124,7 @@
+         if (h[i] <= 0 || dist(b.here, f.pos) > b.range) continue;
+         const auto worth = [&](const Foe& o, float health) {
+             const float d = b.strength * o.taken;
+-            return hit_worth(d, health, o.spawn, o.bag, o.partner, o.full) + (d >= health - 0.01f ? o.stop : 0.0f);
++            return hit_worth(d, health, o.spawn, o.bag, o.partner, o.full, o.life) + (d >= health - 0.01f ? o.stop : 0.0f);
+         };
+         float value = worth(f, h[i]), retaliation = f.retaliation;
+         if (b.splash)
+@@ -227,7 +228,7 @@
+     vec2 pos;
+     float health = 0, shield = 0; // a foe's health with its shield, and the shield
+     float full = 0;               // a foe's max health with its shield
+-    float retaliation = 0, partner = no_partner_bound, bag = 0;
++    float retaliation = 0, partner = no_partner_bound, bag = 0, life = params::life_value;
+     float taken = 1; // damage it takes per point dealt (a Durability emblem)
+     bool foe = true, spawn = false, stunnable = false, recall = false;
+     float stun = 0;                             // Marcella's armed attack's stun
+@@ -737,6 +738,12 @@
+         const int k = u[t].link;
+         return partner_hit && h[k] > 0 && partner_d >= h[k] - 0.01f && d < h[t] - 0.01f;
+     }
++    // An area cast on `foes` from `slot` kills t's lower-index partner, whose kill already counts
++    // t's: centre_value leaves h unchanged as it sums, so moot alone would count the pair twice.
++    bool dies_with_partner(int t, std::uint32_t foes, int slot) const {
++        const int k = u[t].link;
++        return k >= 0 && k < t && (foes >> k & 1) && h[k] > 0 && u[k].spell[slot] >= h[k] - 0.01f;
++    }
+ 
+     [[gnu::always_inline]] bool hit_unit(int t, Node& s);
+     [[gnu::always_inline]] bool spell_unit(const Spell& sp, int t, Node& s);
+@@ -1098,10 +1105,10 @@
+         const float stun = a.stuns ? stun_worth(world, e, raw > 0) : 0.0f;
+         const float back = raw > 0 ? e.retaliation() * world.me().taken : 0.0f;
+         const bool suicidal = back >= health && back > 0;
+-        const float bag = params::gem_value * static_cast<float>(pair_gems(world, e)), bound = partner_bound(world, e);
++        const float bag = params::gem_value * static_cast<float>(pair_gems(world, e)), bound = partner_bound(world, e), life = pair_life(world, e);
+         for (auto p : positions_within(e.possible, here, a.reach())) {
+             if (n_unseen == max_unseen) break;
+-            const float worth = hit_worth(std::min(raw * e.taken, hp), hp, test(enemy_spawn, p), bag, bound, e.max_health) + stun - back;
++            const float worth = hit_worth(std::min(raw * e.taken, hp), hp, test(enemy_spawn, p), bag, bound, e.max_health, life) + stun - back;
+             plan_tables.unseen[n_unseen++] = {p, 1.0f / static_cast<float>(count), worth, suicidal};
+         }
+     }
+@@ -1277,6 +1284,7 @@
+         x.taken = e.taken;
+         x.partner = partner_bound(world, e);
+         x.bag = params::gem_value * static_cast<float>(pair_gems(world, e));
++        x.life = pair_life(world, e);
+         x.spawn = test(enemy_spawn, e.pos);
+         x.stunnable = !stunned && e.facts().passive != Passive::stun_immune;
+         x.recall = recall;
+@@ -1376,7 +1384,7 @@
+     const auto splashed = [&](int k) { return splash && k != t && dist(u[k].pos, x.pos) <= 1; };
+     if (x.foe) {
+         const bool m = x.link >= 0 && moot(t, d, splashed(x.link), dealt(x.link));
+-        if (!m) value += hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full);
++        if (!m) value += hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full, x.life);
+         if (!m && s.armed && x.stunnable && !(s.stunned >> t & 1)) value += x.stun, s.stunned |= static_cast<std::uint16_t>(1u << t);
+         retaliation += x.retaliation;
+     } else {
+@@ -1389,7 +1397,7 @@
+             const auto& o = u[j];
+             if (o.foe) {
+                 const bool m = o.link >= 0 && moot(j, dealt(j), splashed(o.link) && o.link > j, dealt(o.link));
+-                if (!m) value += hit_worth(dealt(j), h[j], o.spawn, o.bag, partner(j), o.full);
++                if (!m) value += hit_worth(dealt(j), h[j], o.spawn, o.bag, partner(j), o.full, o.life);
+                 retaliation += o.retaliation;
+             }
+             lose(j, dealt(j), s);
+@@ -1420,7 +1428,7 @@
+     const float d = x.spell[sp.slot];
+     const float back = d > 0 ? x.retaliation : 0.0f;
+     if (x.suicidal[sp.slot] || (back > 0 && s.hurt + back >= health)) return false;
+-    float v = hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full) - back;
++    float v = hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full, x.life) - back;
+     if (d > 0 && d < h[t] - 0.01f && !x.spawn && x.recall) v += params::recall_value;
+     if (x.spell_stun[sp.slot] > 0 && !(s.stunned >> t & 1)) v += x.spell_stun[sp.slot], s.stunned |= static_cast<std::uint16_t>(1u << t);
+     if (d <= 0 && v <= 0) return false;
+@@ -1444,8 +1452,8 @@
+         if (h[t] <= 0) continue;
+         const float d = x.spell[slot];
+         if (d > 0) v -= x.retaliation, back += x.retaliation;
+-        if (x.link >= 0 && moot(t, d, x.link > t && (c.foes >> x.link & 1), u[x.link].spell[slot])) continue;
+-        v += hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full);
++        if (x.link >= 0 && (moot(t, d, x.link > t && (c.foes >> x.link & 1), u[x.link].spell[slot]) || dies_with_partner(t, c.foes, slot))) continue;
++        v += hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full, x.life);
+         if (d > 0 && d < h[t] - 0.01f && !x.spawn && x.recall) v += params::recall_value;
+         if (!(s.stunned >> t & 1)) v += x.spell_stun[slot];
+     }
+@@ -1463,7 +1471,8 @@
+         const int t = std::countr_zero(m);
+         const auto& x = u[t];
+         if (h[t] > 0 && x.spell_stun[slot] > 0
+-            && !(x.link >= 0 && moot(t, x.spell[slot], x.link > t && (c.foes >> x.link & 1), u[x.link].spell[slot])))
++            && !(x.link >= 0 && (moot(t, x.spell[slot], x.link > t && (c.foes >> x.link & 1), u[x.link].spell[slot])
++                                 || dies_with_partner(t, c.foes, slot))))
+             s.stunned |= static_cast<std::uint16_t>(1u << t);
+     }
+     for (std::uint32_t m = c.foes; m; m &= m - 1) {
+@@ -1487,7 +1496,7 @@
+         if (h[t] <= 0) continue;
+         struck |= x.land > 0 || x.land_stun > 0;
+         const bool m = x.link >= 0 && moot(t, x.land, x.link > t && dist(L, u[x.link].pos) <= land_radius, u[x.link].land);
+-        if (!m) value += hit_worth(x.land, h[t], x.spawn, x.bag, partner(t), x.full);
++        if (!m) value += hit_worth(x.land, h[t], x.spawn, x.bag, partner(t), x.full, x.life);
+         if (!m && x.land_stun > 0 && !(s.stunned >> t & 1)) value += x.land_stun, s.stunned |= static_cast<std::uint16_t>(1u << t);
+         retaliation += x.land > 0 ? x.retaliation : 0.0f;
+         lose(t, x.land, s);
+@@ -2331,6 +2340,9 @@
+                 if (x.foe) attack_champion(x.belief->handle);
+                 else throw_if_stale(), self_acted(), cambc::self().attack(world.map().groups[x.group].camp(x.member));
+                 ok = true;
++                debug_block({
++                    if (x.foe) std::printf("PAIR-STRIKE %d %u a lives %d\n", world.round, static_cast<unsigned>(world.me().handle), pair_lives(world, *x.belief));
++                });
+                 out.attacked = true;
+                 out.moved |= !S.melee;
+             } catch (const cambc::error&) {
+@@ -2353,6 +2365,10 @@
+         case Op::spell:
+             try {
+                 ok = a.unit >= 0 ? cast_slot_on(a.slot, S.u[a.unit].belief->handle) : cast_slot(a.slot, a.tile);
++                debug_block({
++                    if (ok && a.unit >= 0)
++                        std::printf("PAIR-STRIKE %d %u s lives %d\n", world.round, static_cast<unsigned>(world.me().handle), pair_lives(world, *S.u[a.unit].belief));
++                });
+                 out.moved |= ok && S.spells[a.slot].excl;
+             } catch (const cambc::error&) {
+             }
+diff -ruN bots/charybdis/src/combat/self_abilities.cc bots/variants/b-combo/src/combat/self_abilities.cc
+--- bots/charybdis/src/combat/self_abilities.cc	2026-11-11 18:57:45.035400690 +0000
++++ bots/variants/b-combo/src/combat/self_abilities.cc	2026-11-11 21:06:00.051457082 +0000
+@@ -398,6 +398,7 @@
+         float partner; // Cassi or Issac: partner_bound
+         float taken;   // damage it takes per point of our Strength (a Durability emblem)
+         float full, bag, stop; // max health with the shield; hit_worth's bag; kill_stops
++        float life;            // pair_life
+     };
+     static std::vector<Seen> seen; // kept across calls: allocating costs more than the work
+     seen.clear();
+@@ -411,18 +412,19 @@
+             const float retaliation = passive == Passive::retaliation ? retaliation_share * live.focus : 0.0f;
+             const bool stunnable = stunnable_only && passive != Passive::stun_immune && !stun_pending(c);
+             // A shield must be hit through before health: counted as health.
+-            float shield = 0, taken = 1, partner = no_partner_bound, full = live.max_health, bag = 0, stop = 0;
++            float shield = 0, taken = 1, partner = no_partner_bound, full = live.max_health, bag = 0, stop = 0, life = params::life_value;
+             for (const auto& e : world.enemies) {
+                 if (!e.alive || !e.visible) continue;
+                 if (e.pos == p) {
+                     if (kind.has(AbilityKind::shield) && e.shield > 0) shield = shield_value(c);
+                     taken = e.taken;
+                     bag = params::gem_value * static_cast<float>(pair_gems(world, e));
++                    life = pair_life(world, e);
+                     stop = kill_stops(world, e);
+                     partner = partner_bound(world, e);
+                 }
+             }
+-            seen.push_back({c, p, health + shield, retaliation, stunnable, partner, taken, full + shield, bag, stop});
++            seen.push_back({c, p, health + shield, retaliation, stunnable, partner, taken, full + shield, bag, stop, life});
+         } catch (const cambc::error&) {
+         }
+     }
+@@ -433,7 +435,7 @@
+     // As the strike search values a hit.
+     const auto worth = [&](const Seen& s) {
+         const float dealt = strength * s.taken;
+-        return hit_worth(dealt, s.health, test(enemy_spawn, s.pos), s.bag, s.partner, s.full) + (dealt >= s.health - 0.01f ? s.stop : 0.0f);
++        return hit_worth(dealt, s.health, test(enemy_spawn, s.pos), s.bag, s.partner, s.full, s.life) + (dealt >= s.health - 0.01f ? s.stop : 0.0f);
+     };
+     std::optional<cambc::handle_champion_t> best;
+     float best_value = 0, best_health = 0, best_pair = 0;
+diff -ruN bots/charybdis/src/model/comms.cc bots/variants/b-combo/src/model/comms.cc
+--- bots/charybdis/src/model/comms.cc	2026-11-11 18:57:45.038989246 +0000
++++ bots/variants/b-combo/src/model/comms.cc	2026-11-11 21:06:00.052598607 +0000
+@@ -21,6 +21,9 @@
+ //   ally      0 = none, else 1 + cell * 4 team + 4 ally index + round mod 4 (params::comms_ally): a
+ //             c x c square (c odd: 1, 3 or 5, the narrowest that fits) centred on the record's tile;
+ //             left out when it does not fit
++//   prism     0 = none, else 1 + (cell * k + which) * 4 + round mod 4 (params::comms_prism): the latest
++//             sighting of an enemy Prism (which: among the enemy's k Prisms) in a c x c cell (c in 1, 2,
++//             3, 5, the narrowest that fits); laid out only with a Prism on each side and when it fits
+ //   then free bits
+ // Each ally's priority payload (turn_order.h) also carries its claim + 1 in its low 8 bits, and
+ // support_mailbox.h's intents above them.
+@@ -50,6 +53,11 @@
+     BitField ally;
+     std::uint64_t ally_bits = 0;
+     int cell = 1, cells_y = 1;
++    bool prism_on = false;
++    BitField prism;
++    std::uint64_t prism_bits = 0;
++    int prism_cell = 1, prism_cells_y = 1, prism_kinds = 0;
++    std::array<int, 8> prism_enemy{}; // enemy index by `which`
+     int period(int g) const { return camp_offset[g + 1] - camp_offset[g]; }
+ };
+ 
+@@ -90,6 +98,30 @@
+             L.ally_on = true;
+             break;
+         }
++    if (params::comms_prism) {
++        bool ours = false;
++        for (const auto& a : world.allies) ours |= a.facts().passive == Passive::gem_focus;
++        L.prism_kinds = 0;
++        for (const auto& e : world.enemies)
++            if (e.facts().passive == Passive::gem_focus && L.prism_kinds < 8) L.prism_enemy[static_cast<std::size_t>(L.prism_kinds++)] = e.index;
++        if (ours && L.prism_kinds > 0)
++            for (const int c : {1, 2, 3, 5}) {
++                const auto cells = static_cast<std::uint64_t>((map.width + c - 1) / c) * static_cast<std::uint64_t>((map.height + c - 1) / c);
++                const int width = width_of(cells * static_cast<std::uint64_t>(L.prism_kinds) * 4 + 1);
++                if (shift + width > 64) continue;
++                L.prism_cell = c, L.prism_cells_y = (map.height + c - 1) / c;
++                L.prism = field(width);
++                L.prism_on = true;
++                break;
++            }
++        debug_block({
++            if (ours && L.prism_kinds > 0)
++                std::printf("INTEL-LAY %d on %d c %d kinds %d bits %d %dx%d team %d ally_w %d healer %d\n", world.round, L.prism_on ? 1 : 0, L.prism_cell,
++                            L.prism_kinds, shift, map.width, map.height, L.team, std::popcount(L.ally.mask),
++                            static_cast<int>(std::count_if(world.allies.begin(), world.allies.end(), [](const auto& a) { return a.facts().heals(); })));
++        });
++    }
++    L.prism_bits = L.prism.mask;
+     L.ally_bits = L.ally.mask;
+     L.bag_bits = L.bag.mask;
+     L.camp_bits = L.camp.mask;
+@@ -163,7 +195,7 @@
+ std::uint64_t changes(const Layout& L, std::uint64_t bits) {
+     const auto x = bits ^ state.last;
+     const auto whole = [x](std::uint64_t mask) { return (x & mask) ? mask : 0; };
+-    return whole(L.bag_bits) | whole(L.camp_bits) | whole(L.ally_bits);
++    return whole(L.bag_bits) | whole(L.camp_bits) | whole(L.ally_bits) | whole(L.prism_bits);
+ }
+ 
+ // A nonzero capture record's group, and the respawn round it encodes: the first from our previous
+@@ -175,6 +207,26 @@
+     return {g, base + ((code - L.camp_offset[static_cast<std::size_t>(g)] - base % period) % period + period) % period};
+ }
+ 
++// Written since our previous receive, so in the rounds from it on: its round mod 4 then dates it
++// exactly unless we missed 3 or more turns.
++void receive_prism(World& world, const Layout& L, std::uint64_t code) {
++    const int round = world.round;
++    const int posted = round - ((round - static_cast<int>(code & 3)) & 3);
++    const auto rest = code >> 2, kinds = static_cast<std::uint64_t>(L.prism_kinds);
++    const int which = static_cast<int>(rest % kinds), cell = static_cast<int>(rest / kinds), c = L.prism_cell;
++    if (posted < state.last_round || round - posted > params::comms_prism_age) return;
++    const int enemy = L.prism_enemy[static_cast<std::size_t>(which)];
++    if (enemy < 0 || enemy >= static_cast<int>(world.enemies.size())) return;
++    const auto& e = world.enemies[static_cast<std::size_t>(enemy)];
++    const vec2 at{std::min(cell / L.prism_cells_y * c + c / 2, world.map().width - 1), std::min(cell % L.prism_cells_y * c + c / 2, world.map().height - 1)};
++    const float health = e.max_health > 0 ? std::clamp(e.health / e.max_health, 0.0f, 1.0f) : 1.0f;
++    [[maybe_unused]] const bool applied = world.note_sighting(enemy, at, posted, health, c / 2);
++    debug_block({
++        std::printf("INTEL-READ %d posted %d enemy %d at %d,%d c %d applied %d vis %d d %d pos_round %d\n", round, posted, enemy, e.pos.x, e.pos.y, c,
++                    applied ? 1 : 0, e.visible ? 1 : 0, dist(e.pos, world.me().pos), e.pos_round);
++    });
++}
++
+ } // namespace
+ 
+ [[gnu::flatten]] void receive(World& world) {
+@@ -200,6 +252,8 @@
+                                                             std::min(cell % L.cells_y * L.cell + h, world.map().height - 1)},
+                                                            round - ((round - kind) & 3)};
+     }
++    if (const auto v = L.prism.get(bits); L.prism_on && (state.fresh & L.prism_bits) && v != 0 && world.me().facts().passive == Passive::gem_focus)
++        receive_prism(world, L, v - 1);
+     if (const auto record = L.camp.get(bits); (state.fresh & L.camp_bits) && record != 0) {
+         const auto [g, respawn] = decode_capture(L, record);
+         world.note_capture(g, respawn);
+@@ -269,6 +323,26 @@
+         }
+     }
+ 
++    // Only our Prism reads it, so only while one lives; the Prism sees for itself.
++    if (L.prism_on && world.me().alive && world.me().facts().passive != Passive::gem_focus) {
++        bool reader = false;
++        for (const auto& a : world.allies) reader |= a.alive && a.facts().passive == Passive::gem_focus;
++        for (int w = 0; reader && w < L.prism_kinds; ++w) {
++            const int enemy = L.prism_enemy[static_cast<std::size_t>(w)];
++            if (enemy < 0 || enemy >= static_cast<int>(world.enemies.size())) continue;
++            const auto& e = world.enemies[static_cast<std::size_t>(enemy)];
++            if (!e.alive || !e.visible || e.stats_round != round || !in_bounds(e.pos)) continue;
++            const int c = L.prism_cell;
++            const auto cell = static_cast<std::uint64_t>(e.pos.x / c * L.prism_cells_y + e.pos.y / c);
++            const auto v = 1 + ((cell * static_cast<std::uint64_t>(L.prism_kinds) + static_cast<std::uint64_t>(w)) << 2 | static_cast<std::uint64_t>(round & 3));
++            if (v != L.prism.get(bits)) {
++                L.prism.set(bits, v), dirty = true;
++                debug_block({ std::printf("INTEL-POST %d enemy %d at %d,%d d_me %d\n", round, enemy, e.pos.x, e.pos.y, dist(e.pos, my_position())); });
++            }
++            break;
++        }
++    }
++
+     // Bags change at captures, kills, deaths and tributes. A bag not yet read at our previous turn
+     // may not have reached every teammate: ours waits. Turn order changes every round, so a
+     // teammate can miss a bag overwritten before its next turn: each in turn re-posts its own.
+diff -ruN bots/charybdis/src/model/safety.cc bots/variants/b-combo/src/model/safety.cc
+--- bots/charybdis/src/model/safety.cc	2026-11-11 18:57:45.040159142 +0000
++++ bots/variants/b-combo/src/model/safety.cc	2026-11-11 20:16:41.675343694 +0000
+@@ -3550,6 +3550,18 @@
+ }
+ 
+ bool Safety::lethal(vec2 p) {
++    // Our Prism also counts the turn an enemy Prism's stun hands back (burst_lethal).
++    if (world_.me().facts().passive != Passive::gem_focus) return one_turn_lethal(p);
++    if (one_turn_lethal(p)) return true;
++    const bool burst = burst_lethal(p);
++    debug_block({
++        static int last = -1;
++        if (burst && last != world_.round) last = world_.round, std::printf("BLL %d %u %d %d\n", world_.round, my_handle(), p.x, p.y);
++    });
++    return burst;
++}
++
++bool Safety::one_turn_lethal(vec2 p) {
+     if (own_health_ < 0) own_health_ = my_health() + (world_.me().shield_slot >= 0 ? shield_value(world_.me().handle) : 0.0f);
+     // A turn ended on our spawn heals to full before any enemy acts (rules rounds.turn_end).
+     const float health = test(world_.map().ally_spawn, p) ? own_health_ - my_health() + my_max_health() : own_health_;
+@@ -3566,4 +3578,61 @@
+     return worst_damage(p, taken) >= health;
+ }
+ 
++Safety::Burst Safety::stun_burst(vec2 p) {
++    Burst out;
++    // The lost turn still ends, healing us on our spawn (rules abilities.stun): there the burst holds
++    // only for a Prism with two turns before ours, both before that turn end.
++    const bool spawn = test(world_.map().ally_spawn, p);
++    for (auto left = live_enemies(); left; left &= left - 1) {
++        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
++        const auto& f = e.facts();
++        if (f.passive != Passive::gem_focus || gone(e)) continue;
++        int stun = -1, ground = -1;
++        for (int s = 0; s < 2; ++s) {
++            const auto& a = f.abilities[static_cast<std::size_t>(s)];
++            if (a.kind != AbilityKind::damage) continue;
++            if (a.stuns && a.target == Targeting::unit) stun = s;
++            else if (a.target == Targeting::ground) ground = s;
++        }
++        if (stun < 0) continue;
++        const int turns = turns_before_ours(world_, e);
++        if (turns == 0 || (spawn && turns < 2)) continue;
++        // Only a stun on its first turn before ours hands it a turn before our next: one after a walk
++        // lands on its second, the last before ours (teams alternate), and one_turn_lethal prices it.
++        const int cast = f.abilities[static_cast<std::size_t>(stun)].range(), basic = f.attack_range();
++        int d;
++        if (e.visible) d = dist(p, acts_from(e));
++        else {
++            if (!possible_within(e, p, cast) || !credible_unseen(e)) continue;
++            // As Threat::at counts an unseen enemy: out to unseen_radius of its possible tiles.
++            const auto& x = foe(e);
++            const int radius = std::min(cast, unseen_radius(x.strike.reach, x.tiles));
++            if (!possible_within(e, p, radius)) continue;
++            int lo = 0;
++            d = radius;
++            while (lo < d) {
++                const int mid = (lo + d) / 2;
++                if (possible_within(e, p, mid)) d = mid;
++                else lo = mid + 1;
++            }
++        }
++        const int t1 = next_turn_round(world_, e);
++        if (d > cast || !e.ability_ready(stun, t1)) continue;
++        const float focus = hit_focus(e), hit = hit_strength(e);
++        // The stun with a basic attack, then the ground spell with another on the turn handed back.
++        float most = f.abilities[static_cast<std::size_t>(stun)].multiplier * focus + (d <= basic ? 2 * hit : 0.0f);
++        if (ground >= 0 && e.ability_ready(ground, t1 + 1)) most += f.abilities[static_cast<std::size_t>(ground)].multiplier * focus;
++        most *= world_.me().taken;
++        if (most > out.damage) out = {most, e.index, d};
++    }
++    return out;
++}
++
++bool Safety::burst_lethal(vec2 p) {
++    if (own_health_ < 0) own_health_ = my_health() + (world_.me().shield_slot >= 0 ? shield_value(world_.me().handle) : 0.0f);
++    const float health = test(world_.map().ally_spawn, p) ? own_health_ - my_health() + my_max_health() : own_health_;
++    const auto b = stun_burst(p);
++    return b.enemy >= 0 && b.damage >= health;
++}
++
+ } // namespace aph
+diff -ruN bots/charybdis/src/model/safety.h bots/variants/b-combo/src/model/safety.h
+--- bots/charybdis/src/model/safety.h	2026-11-11 18:57:45.040989272 +0000
++++ bots/variants/b-combo/src/model/safety.h	2026-11-11 20:16:48.856036034 +0000
+@@ -494,9 +494,23 @@
+     // the seen enemies alone unless `unseen`.
+     int turns_to_harm_idle(const ChampionBelief& c, vec2 p, int horizon, float keep, bool unseen);
+     // Could the credible threats and camps kill us at p before our next turn? Against our health
+-    // and shield now: Ren's retaliation and our shield cast this turn count once refreshed.
++    // and shield now: Ren's retaliation and our shield cast this turn count once refreshed. Our Prism
++    // also counts an enemy Prism's stun burst (burst_lethal).
+     bool lethal(vec2 p);
++    bool one_turn_lethal(vec2 p); // lethal() within each enemy's own turns before ours
+     bool unseen_beyond(vec2 p);
++    // An enemy Prism's stun takes our next turn, so it casts again before we act (rules abilities.stun):
++    // the stun, the ground spell on the turn handed back and a basic attack with each, from a known
++    // Prism (seen, or unseen and credible) whose stun is ready and that starts its first turn before
++    // ours within cast range of p. By our Durability; lethal() counts one turn.
++    struct Burst {
++        float damage = 0;
++        int enemy = -1; // the Prism's index, -1: none
++        int dist = -1;  // Chebyshev from it (unseen: its nearest possible tile)
++    };
++    Burst stun_burst(vec2 p);
++    // stun_burst(p) at least our health and shield, as lethal() reads them.
++    bool burst_lethal(vec2 p);
+ 
+     // Live members of awake (or maybe awake) groups, bar those read asleep that nobody else is near
+     // enough to wake, with where they would attack us from.
+diff -ruN bots/charybdis/src/model/turn_order.cc bots/variants/b-combo/src/model/turn_order.cc
+--- bots/charybdis/src/model/turn_order.cc	2026-11-11 18:57:45.040989272 +0000
++++ bots/variants/b-combo/src/model/turn_order.cc	2026-11-11 21:06:00.051554733 +0000
+@@ -454,7 +454,8 @@
+         const auto offer = [&](float v) {
+             if (can_act_before(world, their, packed(v))) wish.offer(kill, v);
+         };
+-        const float value = params::turn_life_value + params::turn_gem_value * static_cast<float>(pair_gems(world, *e));
++        const float value = params::turn_life_value * static_cast<float>(pair_lives(world, *e))
++                            + params::turn_gem_value * static_cast<float>(pair_gems(world, *e));
+         const float kill_value = e->acted ? value : unacted_share * value;
+         // Read at the real distance only for an offer that would win: one or two a turn.
+         if (const auto p = packed(kill_value); (wish.band < kill || kill_value > wish.value) && can_act_before(world, their, p)) {
+diff -ruN bots/charybdis/src/model/world.cc bots/variants/b-combo/src/model/world.cc
+--- bots/charybdis/src/model/world.cc	2026-11-11 18:57:45.041989285 +0000
++++ bots/variants/b-combo/src/model/world.cc	2026-11-11 21:06:00.052893991 +0000
+@@ -2086,10 +2086,18 @@
+     });
+ }
+ 
+-void World::note_sighting(int enemy_index, vec2 pos, int seen_round, float health) {
+-    if (enemy_index < 0 || enemy_index >= static_cast<int>(enemies.size()) || !in_bounds(pos)) return;
++bool World::note_sighting(int enemy_index, vec2 pos, int seen_round, float health, int spread) {
++    if (enemy_index < 0 || enemy_index >= static_cast<int>(enemies.size()) || !in_bounds(pos)) return false;
+     auto& b = enemies[enemy_index];
+-    if (!b.alive || b.visible || seen_round <= b.pos_round) return;
++    if (!b.alive || b.visible || seen_round <= b.pos_round) return false;
++    // It stood on an open tile of the cell: `pos` is one of them, so never a wall.
++    static bitboard cell{cambc::uninitialized};
++    const vec2 centre = pos;
++    if (spread > 0) {
++        copy_into(within(map().open_for_them, pos, spread), cell);
++        if (board_empty(cell)) return false;
++        if (!test(cell, pos)) pos = first_tile(cell);
++    }
+     b.health = health * b.max_health;
+     b.scale = damage_scale(b.facts().passive, b.health, b.max_health) * b.dealt;
+     b.pos = pos;
+@@ -2097,7 +2105,14 @@
+     b.pos_source = Source::comms;
+     // The poster's turn in that round is unknown: from the round's start, its turns that round count.
+     fix(b, pos, {seen_round, -1});
++    if (spread > 0) {
++        copy_into(cell, b.possible);
++        b.possible_box.add(centre, spread);
++        b.fixed_tile = {-1, -1};
++        if (b.facts().has_dash()) copy_into(cell, b.undashed);
++    }
+     track(b);
++    return true;
+ }
+ 
+ void World::camp_moved(std::size_t g) {
+diff -ruN bots/charybdis/src/model/world.h bots/variants/b-combo/src/model/world.h
+--- bots/charybdis/src/model/world.h	2026-11-11 18:57:45.041989285 +0000
++++ bots/variants/b-combo/src/model/world.h	2026-11-11 21:06:00.053118283 +0000
+@@ -647,9 +647,9 @@
+     // After our actions: note a group we cleared standing on it, so held from this round.
+     void note_turn_end();
+ 
+-    // Merge a teammate's sighting (from comms), with health as a share of max; ignored if not
+-    // fresher than ours.
+-    void note_sighting(int enemy_index, vec2 pos, int round, float health);
++    // Merge a teammate's sighting (from comms), with health as a share of max; ignored (false) if not
++    // fresher than ours. With `spread`, it is somewhere within that of pos.
++    bool note_sighting(int enemy_index, vec2 pos, int round, float health, int spread = 0);
+     // The sighting comms::receive merges after the next update, if any: that enemy is fixed then,
+     // so the update does not track it first.
+     struct Sighting {
+@@ -850,6 +850,16 @@
+     return c.gems + (p && p->alive ? p->gems : 0);
+ }
+ 
++// The lives its death takes: both for Cassi and Issac, out together for the respawn.
++inline int pair_lives(const World& world, const ChampionBelief& c) {
++    const auto* p = linked_partner(world, c);
++    return p && p->alive ? 2 : 1;
++}
++
++inline float pair_life(const World& world, const ChampionBelief& c) {
++    return params::life_value * static_cast<float>(pair_lives(world, c));
++}
++
+ // Many bots start a recall at every turn end and cancel it next turn unless wanted: only one kept
+ // through a turn is likely to complete.
+ inline bool kept_recall(cambc::handle_champion_t c, int full = static_cast<int>(cambc::constants::recall_time)) {
+diff -ruN bots/charybdis/src/params.h bots/variants/b-combo/src/params.h
+--- bots/charybdis/src/params.h	2026-11-11 18:57:45.041989285 +0000
++++ bots/variants/b-combo/src/params.h	2026-11-11 21:06:00.053222435 +0000
+@@ -48,6 +48,11 @@
+ // Each ally but the healers posts its own position in turn, in the shared bytes' free bits, for
+ // Willow's follow (support.cc); off on maps where it does not fit (comms.cc).
+ inline constexpr bool comms_ally = true;
++// Non-Prism allies post their latest sighting of an enemy Prism in the shared bytes' free bits, for our
++// Prism alone to track it (comms.cc); off on maps where it does not fit.
++inline constexpr bool comms_prism = true;
++// The oldest such sighting our Prism applies, in rounds: past track_horizon it would be untracked anyway.
++inline constexpr int comms_prism_age = 2;
+ // tools/draftlab/parity.py's copies only: print the model draft's features and team in draft round 0
+ // (debug builds), to compare with features.mjs and model.mjs.
+ constexpr bool draft_parity = false;

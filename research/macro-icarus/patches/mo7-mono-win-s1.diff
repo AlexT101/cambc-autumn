@@ -1,0 +1,532 @@
+diff -ruN bots/charybdis/src/bot.h bots/variants/mo7-mono-win-s1/src/bot.h
+--- bots/charybdis/src/bot.h	2026-11-11 18:57:47.561978199 +0000
++++ bots/variants/mo7-mono-win-s1/src/bot.h	2026-11-11 20:46:11.246172493 +0000
+@@ -42,6 +42,7 @@
+     // of its reach for the crew; the crew's output as last priced; for the traces, since when we
+     // work it and the damage taken since.
+     int mono_group = -1, mono_staged = -1, mono_since = -1;
++    int mono_ring = -1, mono_ring_group = -1; // since when we wait at its ring with no stand we can hold (farm's mono_exposed)
+     float mono_output = 0, mono_taken = 0;
+     vec2 ward{-1, -1};    // our latest ward
+     vec2 bushes_watched{-1, -1}; // a tile whose bushes in ward reach are all in our cluster or our ward's
+diff -ruN bots/charybdis/src/bot_parts.h bots/variants/mo7-mono-win-s1/src/bot_parts.h
+--- bots/charybdis/src/bot_parts.h	2026-11-11 18:57:47.561978199 +0000
++++ bots/variants/mo7-mono-win-s1/src/bot_parts.h	2026-11-11 21:23:48.363254816 +0000
+@@ -522,6 +522,19 @@
+ // step out of reach far enough it is nearer and takes the hits. Then whether we are trapped
+ // (camp_trapped's role): while the hits until then, and one more, would take us to 0. -1 otherwise.
+ int mono_trapped(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, float health);
++// Adds to `out` the tiles where a live striker of farm Monolith g would hit us first (no visible ally strictly
++// nearer it; ties count against us) for more than our health and shield take on the walk behind the nearest
++// ally or out of its reach, a phase a step (mono_trapped's count). False, `out` untouched, unless g is a live farm Monolith.
++bool mono_exposed(const World& world, int g, bitboard& out);
++// The enemy's weakness window, in rounds left: while its Prism is dead, or two of its bodies are (the second
++// longest wait); unreachable when it drafted no Prism. Respawns read from liveness (respawn_earliest).
++int enemy_window(const World& world);
++// Farm Monolith g's clear is under way: a striker below its full health (camps never regenerate), or awake
++// with us or an ally in sight in reach.
++bool mono_engaged(const World& world, int g);
++// A Monolith operation off Monolith-only maps starts (is proposed or joined) only once engaged or inside the
++// enemy's weakness window with `rounds` of clear and the capture's rounds left; any other group always.
++bool mono_may_start(const World& world, int g, float rounds);
+ 
+ // economy/farm.cc
+ int walk_range(const World& world, int g);
+diff -ruN bots/charybdis/src/combat/support.cc bots/variants/mo7-mono-win-s1/src/combat/support.cc
+--- bots/charybdis/src/combat/support.cc	2026-11-11 18:57:47.562184732 +0000
++++ bots/variants/mo7-mono-win-s1/src/combat/support.cc	2026-11-11 20:46:23.849311164 +0000
+@@ -392,7 +392,17 @@
+         if (crowd > best || (crowd == best && d < best_d)) best = crowd, best_d = d, target = &a, at = pos[a.index];
+     }
+     if (!target || test(world.map().ally_spawn, at)) return false;
+-    if (dist(here, at) <= follow_dist) {
++    // Nor where a farm Monolith would hit us first for longer than we last walking out (mono_exposed).
++    static bitboard exposed{cambc::uninitialized};
++    bool near_mono = false;
++    for (int g = 0; g < static_cast<int>(world.map().groups.size()); ++g) {
++        const auto& G = world.map().groups[g];
++        if (!G.has_monolith || dist(here, G.centre) > G.threat_radius() + follow_dist + 1) continue;
++        if (!near_mono) clear_board(exposed);
++        near_mono |= mono_exposed(world, g, exposed);
++    }
++    const bool stand_exposed = near_mono && test(exposed, here);
++    if (dist(here, at) <= follow_dist && !stand_exposed) {
+         const int g = comms::claim_of(world, target->index);
+         if (g >= 0 && my_can_attack() && attack_camp(world, [&](int h) { return h == g && world.camps[h].awake != Awake::asleep; }) >= 0) {
+             // Early, the reset's hit unless the heal lands.
+@@ -402,7 +412,9 @@
+         }
+         return false;
+     }
+-    const bitboard goals = within(world.map().open_for_us, at, follow_dist);
++    static bitboard goals{cambc::uninitialized};
++    copy_into(within(world.map().open_for_us, at, follow_dist), goals);
++    if (near_mono) drop(goals, exposed);
+     if (board_empty(goals)) return false;
+     world.throw_if_stale();
+     if (!pathing.step_towards(goals)) return false;
+diff -ruN bots/charybdis/src/economy/capture.cc bots/variants/mo7-mono-win-s1/src/economy/capture.cc
+--- bots/charybdis/src/economy/capture.cc	2026-11-11 18:57:47.564021876 +0000
++++ bots/variants/mo7-mono-win-s1/src/economy/capture.cc	2026-11-11 20:45:37.646748798 +0000
+@@ -451,7 +451,7 @@
+     return e.eta = task(team_walk_to(world, pathing, h, at)) + on;
+ }
+ 
+-enum class Leave { no, claimed, near };
++enum class Leave { no, claimed, near, full };
+ 
+ // A group's cleared episode (its geometry_version): the round we first asked of it, whether we left
+ // it for a Prism that had not claimed it, and whether that leave has lapsed.
+@@ -508,10 +508,14 @@
+             // Short of fuel for the field, a leave under way stands: lapsing it would hand the group back for good.
+             if (eta < 0) return left.left && !held ? Leave::near : Leave::no;
+             if (eta > remaining) return Leave::no;
++            // A Monolith left empty where an enemy may see it can be taken: it is held for Prism instead.
++            if (G.has_monolith && enemy_may_see(world, G.centre)) return Leave::no;
+             if (!held) return Leave::near;
+             const int rounds = c.payout_round() - world.round;
+             if (eta - slack >= rounds) return Leave::near;
+-            if (eta + slack < rounds && test(G.tiles(), my_position())) kept_group = g, kept_since = c.held_since;
++            // A full Monolith hold is not kept: it passes to Prism only by our stepping off (below).
++            if (eta + slack < rounds && test(G.tiles(), my_position()) && !(G.has_monolith && free_tiles(G.tiles()).is_empty()))
++                kept_group = g, kept_since = c.held_since;
+             return Leave::no;
+         }
+         // No walk is shorter than the crow's: most groups are out of reach before a field is read.
+@@ -521,6 +525,12 @@
+         // Left already, claimed now: a Prism nearer than our hold's payout would call us back to begin it.
+         if (!held && left.left && !left.lapsed) return Leave::claimed;
+         const int rounds = held ? c.payout_round() - world.round : capture_rounds(world) - 1 + std::max(1, walk_from(my_position()));
++        // A Monolith hold with no tile free for Prism (often its one tile) cannot pass to it: it is left once Prism
++        // stands a step from it, and stays left (Leave::full) while Prism comes, its own hold paying it whole.
++        const bool full = G.has_monolith && held && free_tiles(G.tiles()).is_empty();
++        if (full && walk + slack <= 1) return Leave::full;
++        // Left empty for longer where an enemy may see it, a Monolith can be taken: held for Prism instead.
++        if (full || (G.has_monolith && enemy_may_see(world, G.centre))) return Leave::no;
+         if (walk - slack >= rounds) return Leave::claimed;
+         if (held && walk + slack < rounds && test(G.tiles(), my_position())) kept_group = g, kept_since = c.held_since;
+         return Leave::no;
+@@ -536,13 +546,13 @@
+     if (g < 0 || world.me().facts().passive == Passive::gem_focus) return false;
+     const auto& G = world.map().groups[g];
+     const auto& c = world.camps[g];
+-    if (G.gems <= 0 || G.has_monolith || (c.state != CampState::cleared && !cleared_now)) return false;
++    if (G.gems <= 0 || (G.has_monolith && world.map().monolith_only) || (c.state != CampState::cleared && !cleared_now)) return false;
+     static std::vector<LeftRecord> records;
+     if (records.size() != world.map().groups.size()) records.assign(world.map().groups.size(), LeftRecord{});
+     auto& left = records[static_cast<std::size_t>(g)];
+     if (left.version != c.geometry_version) left = LeftRecord{c.geometry_version, world.round};
+     const Leave leave = leave_for_prism(world, pathing, g, left);
+-    if (leave == Leave::near) left.left = true;
++    if (leave == Leave::near || leave == Leave::full) left.left = true;
+     if (leave == Leave::no && left.left) left.lapsed = true;
+     return leave != Leave::no;
+ }
+@@ -829,7 +839,7 @@
+ // Prism keeping its gems (keeps_gems) may hold G's capture from off its tiles: sole_capture_holder's
+ // tests of us, read before we get there. In `goal` the free tiles no camp hits.
+ bool prism_carries(const World& world, Safety& safety, const CampGroup& G, bitboard& goal) {
+-    if (G.gems <= 0 || G.has_monolith || enemy_seen(world) || test(G.tiles(), my_position())) return false;
++    if (G.gems <= 0 || (G.has_monolith && world.map().monolith_only) || enemy_seen(world) || test(G.tiles(), my_position())) return false;
+     const auto& map = world.map();
+     const int bag = static_cast<int>(my_gems());
+     if (my_health() < params::hurt_health_fraction * my_max_health()
+@@ -852,7 +862,7 @@
+ // holder and the allies step off (yield_capture) with the tiles never empty; after it, they have
+ // left it to us (left_for_prism). In `timer` the rounds to the payout.
+ bool prism_takeover(const World& world, Safety& safety, const CampGroup& G, int& timer, bitboard& goal) {
+-    if (G.gems <= 0 || G.has_monolith || enemy_seen(world) || test(G.tiles(), my_position()) || sole_capture_holder(world, G)) return false;
++    if (G.gems <= 0 || (G.has_monolith && world.map().monolith_only) || enemy_seen(world) || test(G.tiles(), my_position()) || sole_capture_holder(world, G)) return false;
+     bool held = false;
+     for (const auto& a : world.allies) {
+         if (a.is_self || !a.alive || !a.visible || !test(G.tiles(), a.pos)) continue;
+diff -ruN bots/charybdis/src/economy/crew.cc bots/variants/mo7-mono-win-s1/src/economy/crew.cc
+--- bots/charybdis/src/economy/crew.cc	2026-11-11 18:57:47.564021876 +0000
++++ bots/variants/mo7-mono-win-s1/src/economy/crew.cc	2026-11-11 21:23:48.363098704 +0000
+@@ -292,6 +292,27 @@
+         while (j < n_base) pool[n++] = base[j++];
+         share_damage(pool.data(), n, p);
+     };
++    // A Monolith takes the whole team, and its clear's trips home fall with every member: expected, every free
++    // ally is priced in at once (each pricing ~2k fuel), up to the cap.
++    if (expect && farm_monolith(world, g)) {
++        const vec2 centre = world.map().groups[g].centre;
++        std::array<std::pair<int, int>, 16> free{};
++        int n_free = 0;
++        for (std::uint32_t b = crew_available_bits(world, allies, g); b; b &= b - 1) {
++            const auto& a = allies.at[static_cast<std::size_t>(std::countr_zero(b))];
++            free[n_free++] = {dist(a.a->pos, centre), a.a->index};
++        }
++        std::sort(free.begin(), free.begin() + n_free);
++        for (int i = 0; i < n_free && 1 + plan.claimers + plan.n_expected < cap; ++i) {
++            const int slot = free[i].second;
++            plan.expected[plan.n_expected++] = slot;
++            const auto& a = allies.at[static_cast<std::size_t>(slot)];
++            plan.output += crew_output(a);
++            if (a.a->alive && in_time(a)) joins |= 1u << slot;
++        }
++        price(plan);
++        return plan;
++    }
+     price(plan);
+     if (!expect || plan.trips == 0) return plan;
+     // Nearest first, while each one more still saves the crew a trip.
+@@ -350,6 +371,63 @@
+     return health + my_live_shield(world) <= dps * static_cast<float>(phases);
+ }
+ 
++int enemy_window(const World& world) {
++    bool prism = false;
++    int prism_left = 0, first = 0, second = 0; // the two longest waits of dead bodies
++    for (const auto& e : world.enemies) {
++        const int left = e.alive ? 0 : std::max(0, e.respawn_earliest - world.round);
++        if (e.facts().passive == Passive::gem_focus) prism = true, prism_left = std::max(prism_left, left);
++        if (left > first) second = first, first = left;
++        else if (left > second) second = left;
++    }
++    return prism ? std::max(prism_left, second) : unreachable;
++}
++
++bool mono_engaged(const World& world, int g) {
++    const auto& G = world.map().groups[g];
++    const auto& c = world.camps[g];
++    if (c.state != CampState::alive) return false;
++    for (std::size_t i = 0; i < G.members.size(); ++i)
++        if (G.members[i].strength > 0 && c.health[i] < G.members[i].max_health) return true;
++    if (c.awake != Awake::awake) return false;
++    if (crew_in_reach(world, g, my_position(), world.me().facts().attack_range())) return true;
++    for (const auto& a : world.allies)
++        if (!a.is_self && a.alive && a.visible && crew_in_reach(world, g, a.pos, a.facts().attack_range())) return true;
++    return false;
++}
++
++bool mono_may_start(const World& world, int g, float rounds) {
++    return !farm_monolith(world, g) || mono_engaged(world, g)
++           || static_cast<float>(enemy_window(world)) >= rounds + static_cast<float>(capture_rounds(world));
++}
++
++bool mono_exposed(const World& world, int g, bitboard& out) {
++    if (!farm_monolith(world, g) || world.camps[g].state != CampState::alive) return false;
++    const auto& G = world.map().groups[g];
++    const auto& c = world.camps[g];
++    const float life = my_health_and_shield(world);
++    static bitboard square{cambc::uninitialized};
++    for (std::size_t i = 0; i < G.members.size(); ++i) {
++        const auto& m = G.members[i];
++        if (m.strength <= 0 || c.health[i] <= 0) continue;
++        int cover = unreachable;
++        for (const auto& a : world.allies)
++            if (!a.is_self && a.alive && a.visible && a.channel != Channel::teleport && !real_recall(a) && test(G.threat(), a.pos)) // mono_trapped's cover
++                cover = std::min(cover, dist(a.pos, m.pos));
++        // From d away, as mono_trapped counts, min(cover, reach) + 1 - d phases of its fire before a step a phase
++        // takes us behind the nearest ally or out of its reach: lethal for d up to min(cover, reach) + 1 - life / fire.
++        const float fire = m.strength * camp_hit_factor();
++        const int behind = std::min(cover, m.reach);
++        const float lethal = static_cast<float>(behind + 1) - life / fire;
++        const float r = std::min(static_cast<float>(behind), std::floor(lethal));
++        if (r < 0) continue;
++        clear_board(square);
++        draw_square(square, m.pos, r);
++        out |= square;
++    }
++    return true;
++}
++
+ } // namespace
+ 
+ } // namespace aph
+diff -ruN bots/charybdis/src/economy/farm.cc bots/variants/mo7-mono-win-s1/src/economy/farm.cc
+--- bots/charybdis/src/economy/farm.cc	2026-11-11 18:57:47.565021889 +0000
++++ bots/variants/mo7-mono-win-s1/src/economy/farm.cc	2026-11-11 21:23:58.803335789 +0000
+@@ -219,17 +219,22 @@
+         if (g < 0 || g >= static_cast<int>(map.groups.size())) continue;
+         const auto& G = map.groups[g];
+         const auto& c = world.camps[g];
+-        if (c.state != CampState::cleared || c.state_round != world.round || G.has_monolith || G.gems + G.gold == 0
++        if (c.state != CampState::cleared || c.state_round != world.round) continue;
++        // A Monolith is a Prism's keeping its bag, whose hold the allies there yield (sole_capture_holder).
++        const bool prism_mono = G.has_monolith && !map.monolith_only && world.me().facts().passive == Passive::gem_focus
++                                && keeps_gems(world, pathing) && keeps_bag(world, world.me(), G.gems);
++        if ((G.has_monolith && !prism_mono) || G.gems + G.gold == 0
+             || test(G.tiles(), here) || sole_capture_holder(world, G) || enemy_on(world, G.tiles()) || left_for_prism(world, pathing, g))
+             continue;
+         // A holder already there yields to us if our hold pays more (value_holder).
+-        const bool outvalues = outvalues_holders(world, G);
+-        if (allies_on(world, G.tiles()) >= holders(G) && !outvalues) continue;
++        const bool outvalues = !prism_mono && outvalues_holders(world, G);
++        if (!prism_mono && allies_on(world, G.tiles()) >= holders(G) && !outvalues) continue;
+         const int steps = steps_to(G, here);
+         if (steps > params::pick_up_radius) continue;
+         bool ours = true;
+         const bool shy = holders(G) == 1 && hold_shy(world, world.me());
+         for (const auto& a : world.allies) {
++            if (prism_mono) break;
+             if (a.is_self || !a.alive || !a.visible || comms::claim_of(world, a.index) != g) continue;
+             const int d = steps_to(G, a.pos);
+             // Cassi and Issac leave it to any other claimer in pick-up reach.
+@@ -976,15 +981,36 @@
+         last_per_gold = per_gold, last_tribute_gold = tribute_gold, ++gold_context;
+     // A Prism keeping its gems (keeps_gems) gains carried_bonus on each gem of a capture it takes part in,
+     // at its takeover price: every pick type, the carries' 'G' and 'L' too. Applied past the kept facts,
+-    // which hold none of it. Not on a Monolith or a capture that wins. keeps_bag only tightens with the
++    // which hold none of it. Not on a capture that wins. keeps_bag only tightens with the
+     // gems, so `keep_most`, a gem's at 1, bounds every group's: the prunes add it to the gems' price as
+     // tribute_gold is.
+     const bool keeper = keeps;
+     const float keeper_price = keeper ? prices(world).per_gold : 0.0f;
+     const float keep_most = keeper && short_by > 1 ? carried_bonus(world, world.me(), 1, keeper_price) : 0.0f;
++    // A Monolith's capture lands whole on the team's Prism (sole_capture_holder), so every member prices its
++    // gems with that Prism's Focus: ours as keeper, else a living Prism ally's keeps_bag as the team reads it, one
++    // seen lately (crew_seen_rounds) that claims the group or stands within carry_reach of it (it comes for the
++    // hold, 'Q', 'G' or 'L'). `mono_most` bounds it as keep_most does; the prunes leave Monolith groups out while
++    // it is on (mono_kept).
++    const ChampionBelief* mono_prism = keeper ? &world.me() : nullptr;
++    if (!mono_prism && !map.monolith_only)
++        for (const auto& a : world.allies)
++            if (!a.is_self && a.alive && a.facts().passive == Passive::gem_focus && (a.visible || a.pos_round >= world.round - params::crew_seen_rounds))
++                mono_prism = &a;
++    const float mono_price = mono_prism ? prices(world).per_gold : 0.0f;
++    const float mono_most = mono_prism && !map.monolith_only && short_by > 1 ? carried_bonus(world, *mono_prism, 1, mono_price) : 0.0f;
++    const bool mono_elsewhere = mono_prism && !mono_prism->is_self; // the Focus is the Prism ally's, not ours
+     const auto keep_bonus = [&](const CampGroup& G) __attribute__((always_inline)) {
+-        return keep_most > 0 && G.gems > 0 && G.gems < short_by && !G.has_monolith ? carried_bonus(world, world.me(), G.gems, keeper_price) : 0.0f;
++        if (G.has_monolith) {
++            if (!(mono_most > 0 && G.gems > 0 && G.gems < short_by)) return 0.0f;
++            if (mono_prism->is_self || comms::claim_of(world, mono_prism->index) == static_cast<int>(&G - groups.data())
++                || steps_to(G, mono_prism->pos) <= carry_reach())
++                return carried_bonus(world, *mono_prism, G.gems, mono_price);
++            return 0.0f;
++        }
++        return keep_most > 0 && G.gems > 0 && G.gems < short_by ? carried_bonus(world, world.me(), G.gems, keeper_price) : 0.0f;
+     };
++    const auto mono_kept = [&](int g) __attribute__((always_inline)) { return mono_most > 0 && groups[g].has_monolith; };
+     const float bound_tribute = tribute_gold + keep_most;
+     const float spells = world.me().facts().ranged ? spell_output(world.me()) : 0.0f, basic = std::max(1.0f, basic_output(world.me()));
+     auto& last_clearing = memo.last_clearing;
+@@ -1225,6 +1251,9 @@
+     // an enemy in sight stands near it: a crew there walks into a fight, not a clear.
+     const auto may_expect = [&](int g) {
+         if (g < static_cast<int>(memory.crew_ban.size()) && memory.crew_ban[g] > world.round) return false;
++        // Our Monolith gather that has had its wait (mono_engage), or is worked: its crew is the claimers come.
++        if (g == memory.mono_group && (memory.mono_staged == -2 || (memory.mono_staged >= 0 && world.round - memory.mono_staged >= params::mono_max_wait)))
++            return false;
+         for (const auto& e : world.enemies)
+             if (e.alive && e.visible && dist(e.pos, groups[g].centre) <= params::crew_enemy_radius) return false;
+         return true;
+@@ -1739,16 +1768,16 @@
+         // best_value moves only with best, from 0.
+         if (can_bound && !pull.on && threshold() != tested_value) tested_value = threshold(), stop = stop_from(k);
+         if (k >= stop) {
+-            while (k < evaluated && !is_claimed(g = (*order)[k]) && !held(g) && !(hops && map.may_hop(g)) && (!banks_bag || altar_below(g))) ++k;
++            while (k < evaluated && !is_claimed(g = (*order)[k]) && !held(g) && !mono_kept(g) && !(hops && map.may_hop(g)) && (!banks_bag || altar_below(g))) ++k;
+             if (k == evaluated) break;
+         }
+         if ((pre_pruned && barred()) || (pre_banked && best >= 0)) pre_bounds(g);
+-        if (pre_pruned && barred() && (pre_upper[g] < bar_lt() || (pre_valued && best >= 0 && pre_value[g] < best_value))) continue;
++        if (pre_pruned && barred() && !mono_kept(g) && (pre_upper[g] < bar_lt() || (pre_valued && best >= 0 && pre_value[g] < best_value))) continue;
+         if (pre_claims && is_claimed(g) && (best >= 0 || shared >= 0) && g != farm_group && g != memory.claim && g != memory.mono_group) {
+             const float most = claim_most(g);
+             if ((best >= 0 && most < best_value) || (shared >= 0 && most < shared_value)) continue;
+         }
+-        if (pre_banked && best >= 0
++        if (pre_banked && best >= 0 && !mono_kept(g)
+             && ((pre_upper[g] < std::min(best_value, from_altar_value) && pre_alt[g] < from_altar_value)
+                 || (pre_test[g] <= best_value && pre_test_alt[g] <= from_altar_value)
+                 || (pre_old[g] < std::min(best_value, from_altar_value) && pre_old_alt[g] < from_altar_value)))
+@@ -1770,6 +1799,10 @@
+         // A Monolith with an enemy in sight near it is not taken up: our crew would clear it for
+         // them. Unless the enemy already stands in its reach, taking the hits.
+         if (group.has_monolith && g != memory.claim && belief.state != CampState::cleared && mono_contested(world, g)) continue;
++        // Nor one set aside (a ring we could hold no stand from, or a proposal no ally joined): alone it is no one's.
++        if (group.has_monolith && belief.state != CampState::cleared && g < static_cast<int>(memory.crew_ban.size()) && memory.crew_ban[g] > round
++            && !map.monolith_only)
++            continue;
+         const bool claimed = is_claimed(g);
+         // Carrying, compare whole trips: the gems score only after the walk to an altar and the
+         // tribute. Empty-handed, only a capture that wins counts that walk, as no later one shares
+@@ -1778,7 +1811,7 @@
+         // Later turns: the same bound before facts, the fastest clear and steps, for every group (the
+         // facts' weighted worth while they hold). The fastest it reads is the one the facts keep.
+         if constexpr (!opening) {
+-            if (tight && !banks_bag && !wins && !claimed && barred() && g != farm_group && prunable(g) && (!hop_any || map.group_hop(g) < 0)) {
++            if (tight && !banks_bag && !wins && !claimed && barred() && g != farm_group && prunable(g) && !mono_kept(g) && (!hop_any || map.group_hop(g) < 0)) {
+                 if (const int near = dist(here, group.centre); !may_help(group, belief, near)) {
+                     auto& kf = group_facts[g];
+                     float worth;
+@@ -1799,7 +1832,7 @@
+         // A first turn's facts cost a few hundred fuel a group. Empty-handed and short of the win
+         // no walk to an altar is in the trip, and the weight is at most 1: a group the rated bound
+         // rules out from as close as the Chebyshev distance needs none.
+-        if (rated && !banks_bag && !wins && !claimed && barred() && g != farm_group && prunable(g) && (!hop_any || map.group_hop(g) < 0)) {
++        if (rated && !banks_bag && !wins && !claimed && barred() && g != farm_group && prunable(g) && !mono_kept(g) && (!hop_any || map.group_hop(g) < 0)) {
+             if (const int near = dist(here, group.centre); !may_help(group, belief, near)
+                 && unweighed_beaten(group, belief, g, static_cast<float>(near + near_wait(belief, near))))
+                 continue;
+@@ -1847,7 +1880,8 @@
+         }
+         if (known.version != belief.version || known.fastest_strength != strength)
+             known.version = belief.version, known.fastest_strength = strength, known.fastest = fastest_clear(world, g, strength);
+-        const float bonus = keep_bonus(group);
++        // A cleared Monolith's Focus is the Prism ally's to come for: our hold of it only keeps it till then.
++        const float bonus = group.has_monolith && mono_elsewhere && belief.state == CampState::cleared ? 0.0f : keep_bonus(group);
+         // Ren's for the rated prunes; its plain ones keep the fastest.
+         const float exposed = exposure(g) * (pull.on && home_side(map, g, opening) < 0.5f ? pull.deny_scale : 1.0f);
+         const float quickest = rated && reflect > 0 ? reflected_clear(world, g, strength, reflect) : known.fastest;
+@@ -2037,7 +2071,8 @@
+             float others_claiming = 0;
+             // The Focus on the weighted gems, held for the capture's rounds; in the bounds, its rate
+             // over the trip and the hold alone.
+-            float carry = carried, hold = carry > 0 ? cap_rounds : 0.0f;
++            // A Monolith's Focus held by the Prism ally: no capture rounds of ours.
++            float carry = carried, hold = carry > 0 && !(group.has_monolith && mono_elsewhere) ? cap_rounds : 0.0f;
+             const float carry_most = carry > 0 ? rate(world, carry, trip + hold) : 0.0f;
+             const auto beaten_claimed = [&](float most) __attribute__((always_inline)) {
+                 most = (most + carry_most) * (op && memory.claim == g ? crew_hold(g) : 1.0f) * 1.0001f;
+@@ -2066,6 +2101,8 @@
+             const float others = op ? plan.output - strength : crew.output;
+             // A capture that wins the game is the team's, not a share: what counts is how soon.
+             const float rounds = health_left / (strength + others), part = wins ? 1.0f : strength * rounds / health;
++            // A Monolith operation is joined only once engaged or inside the enemy's weakness window (mono_may_start).
++            if (op && !mono_may_start(world, g, rounds)) continue;
+             const float damage = op ? crew_share(plan, reach) : 0.0f;
+             const int trips = op ? extra_trips(damage, budget, usable_health) : 0;
+             // Kited, we take the hits alone: our share of them must fit the health we spare. Unless we
+@@ -2082,7 +2119,9 @@
+                 return hits;
+             };
+             // The Focus is ours only if the clear leaves us fit to keep the bag (keeps_bag's health).
+-            if (carry > 0 && my_health() - (kite_hit ? kite_hits() : damage) < params::hurt_health_fraction * max_health) carry = 0, hold = 0;
++            // A Monolith's lands on the Prism ally whatever our health: our part of it, as of the rest.
++            if (group.has_monolith && mono_elsewhere) carry *= part;
++            else if (carry > 0 && my_health() - (kite_hit ? kite_hits() : damage) < params::hurt_health_fraction * max_health) carry = 0, hold = 0;
+             // No capture rounds but a keeping Prism's: the claimer holds it, and the crew moves on once it is cleared.
+             // A crew we are in holds us against small pulls: one member leaving shrinks it for the rest.
+             const float value = rate(world, plain * part + carry, trip + rounds + hold + trips_home(static_cast<float>(trips)))
+@@ -2213,9 +2252,15 @@
+                 }
+                 // These are plan_crew's claimers and available allies: with none, its crew is us alone.
+                 if (members == 0) may_beat = false;
++                debug_block({
++                    if (group.has_monolith && round % 25 == 0 && !may_beat)
++                        std::printf("MONO BOUND %d %u g%d worth %.0f members %d claimers %.0f all %.0f most %.4f best %.4f floor %.4f\n", round, my_handle(), g,
++                                    worth, members, claimers, all, most, best_value, floor_value);
++                });
+             }
+             const CrewPlan plan = may_beat ? plan_crew(world, crew_allies_now(), g, strength, expect, crew_cap(g)) : CrewPlan{};
+-            if (may_beat && plan.output > strength && !too_late(plan.rounds)) {
++            // A Monolith operation is proposed only once engaged or inside the enemy's weakness window (mono_may_start).
++            if (may_beat && plan.output > strength && !too_late(plan.rounds) && mono_may_start(world, g, plan.rounds)) {
+                 const float part = wins ? 1.0f : strength / plan.output;
+                 const int my_trips = extra_trips(crew_share(plan, reach), budget, usable_health);
+                 // Held while ours, as a crew's share is; a fresh proposal with an op of an ally's under
+@@ -2225,9 +2270,9 @@
+                 const float crew_value = rate(world, worth * part, trip + plan.rounds + capture + trips_home(static_cast<float>(my_trips))) * hold;
+                 debug_block({
+                     if (group.has_monolith && round % 25 == 0)
+-                        std::printf("MONO VALUE %d %u g%d worth %.0f part %.2f trip %.0f rounds %.0f trips %d home %.0f crew %d+%d output %.0f value %.4f best-so-far %.4f\n",
++                        std::printf("MONO VALUE %d %u g%d worth %.0f part %.2f trip %.0f rounds %.0f trips %d home %.0f crew %d+%d output %.0f value %.4f best-so-far %.4f bonus %.2f per-gold %.3f prism %d\n",
+                                     round, my_handle(), g, worth, part, trip, plan.rounds, my_trips, trips_home(1), plan.claimers, plan.n_expected,
+-                                    plan.output, crew_value, best_value);
++                                    plan.output, crew_value, best_value, bonus, per_gold, mono_prism ? (mono_prism->is_self ? 2 : 1) : 0);
+                 });
+                 if (crew_value > value) {
+                     value = crew_value, late = false, spell = false;
+@@ -2334,7 +2379,7 @@
+             asked[static_cast<std::size_t>(n_asked++)] = g;
+             const auto& G = groups[g];
+             const auto& c = world.camps[g];
+-            if (c.state != CampState::alive || G.gems <= 0 || G.has_monolith || steps_to(G, here) > reach || enemy_on(world, G.tiles())
++            if (c.state != CampState::alive || G.gems <= 0 || (G.has_monolith && map.monolith_only) || steps_to(G, here) > reach || enemy_on(world, G.tiles())
+                 || (kited(g) && kite_owns(world, g)) || siege_declines(world, g)
+                 || world.score.ally + bag + G.gems >= winning
+                 || rounds_left(world) <= tribute_turns(bag + G.gems, world.me().fast_tribute) + map.width + map.height + endgame_margin)
+@@ -2347,7 +2392,8 @@
+                 output += camp_output(b), ++claimers;
+                 if (b.visible) worked = worked || crew_in_reach(world, g, b.pos, b.facts().attack_range());
+             }
+-            if (!worked || !(output > 0) || claimers >= static_cast<int>(G.members.size())) continue;
++            // A full Monolith passes to us by its holders stepping off (leave_for_prism), not by a free tile.
++            if (!worked || !(output > 0) || (claimers >= static_cast<int>(G.members.size()) && !farm_monolith(world, g))) continue;
+             float health = 0;
+             for (std::size_t i = 0; i < G.members.size(); ++i) health += std::max(0.0f, c.health[i]);
+             if (!(health > 0)) continue;
+@@ -2434,8 +2480,9 @@
+     if (farm_monolith(world, best) && memory.claim == best) {
+         if (memory.mono_group != best) {
+             memory.mono_group = best, memory.mono_staged = -1, memory.mono_since = round, memory.mono_taken = 0;
+-            debug_block({ std::printf("MONO START %d %u g%d %c expected %d output %.0f trips %d hp %.0f/%.0f\n", round, my_handle(), best,
+-                                      chosen.mode, chosen.expected, chosen.output, chosen.trips, my_health(), max_health); });
++            debug_block({ std::printf("MONO START %d %u g%d %c expected %d output %.0f trips %d hp %.0f/%.0f window %d engaged %d\n", round, my_handle(), best,
++                                      chosen.mode, chosen.expected, chosen.output, chosen.trips, my_health(), max_health,
++                                      enemy_window(world), static_cast<int>(mono_engaged(world, best))); });
+         }
+         if (chosen.output > 0) memory.mono_output = chosen.output;
+     } else if (memory.mono_group >= 0) {
+@@ -2552,6 +2599,45 @@
+         walk_on(best);
+         return true;
+     }
++    // A Monolith hits the nearest champion in its reach: our stands are those where an ally in sight is nearer it,
++    // or where we outlast its fire on the walk out (mono_exposed). With none, we wait just out of its reach for one.
++    static bitboard exposed{cambc::uninitialized}, safe_stands{cambc::uninitialized}, unexposed{cambc::uninitialized};
++    clear_board(exposed);
++    const bool mono_live = mono_exposed(world, best, exposed);
++    const auto off_exposed = [&](const bitboard& goals) -> const bitboard& {
++        if (!mono_live) return goals;
++        copy_into(goals, unexposed);
++        drop(unexposed, exposed);
++        return unexposed;
++    };
++    if (mono_live) {
++        copy_into(*tiles, safe_stands);
++        drop(safe_stands, exposed);
++        if (board_empty(safe_stands)) {
++            // A crew none of whose stands we can hold waits only mono_max_wait at the ring (mono_engage's wait):
++            // then the operation is set aside for crew_ban_rounds, as one no ally joins.
++            if (memory.mono_ring < 0 || memory.mono_ring_group != best) memory.mono_ring = round, memory.mono_ring_group = best;
++            else if (round - memory.mono_ring >= params::mono_max_wait && best < static_cast<int>(memory.crew_ban.size())) {
++                memory.crew_ban[best] = round + params::crew_ban_rounds;
++                memory.mono_ring = -1;
++                debug_block({ std::printf("MONO RINGBAIL %d %u g%d\n", round, my_handle(), best); });
++            }
++            const auto& G = groups[best];
++            const auto& c = world.camps[best];
++            static bitboard ring{cambc::uninitialized};
++            clear_board(ring);
++            for (std::size_t i = 0; i < G.members.size(); ++i)
++                if (c.health[i] > 0 && G.members[i].strength > 0) draw_square(ring, G.members[i].pos, static_cast<float>(G.reach + 1));
++            ring &= map.standable;
++            drop(ring, G.threat());
++            if (zone) drop(ring, *zone);
++            debug_block({ std::printf("MONO EXPOSED %d %u g%d hp %.0f in-threat %d\n", round, my_handle(), best, my_health(), static_cast<int>(test(G.threat(), here))); });
++            if (!test(ring, here) && !pathing.step_towards(ring, zone, best_steps + max_detour, G.centre)) walk_on(best);
++            return true;
++        }
++        memory.mono_ring = -1;
++        tiles = &safe_stands;
++    }
+     // Stands on our spawn where a camp phase leaves us above the safe line cost no health: the turn end
+     // heals (home_stands), so they are walked to first. In range off them, a step onto one beside us
+     // is worth taking before the attack (a ranged attack: rules turn.ranged) while the camps fire on
+@@ -2619,7 +2705,7 @@
+     const bool searched = funded();
+     bool walked = searched ? pathing.step_towards(off_zone(goals), zone, cap, groups[best].centre)
+                                  || (to_home && funded() && pathing.step_towards(off_zone(*tiles), zone, cap, groups[best].centre))
+-                                 || (!burning && funded() && pathing.step_towards_within(off_zone(groups[best].adjacent()), zone, cap, groups[best].centre))
++                                 || (!burning && funded() && pathing.step_towards_within(off_zone(off_exposed(groups[best].adjacent())), zone, cap, groups[best].centre))
+                            : (note_shortcut("farm-no-route"), !burning && walk_on(best));
+     if (!walked && burning && my_can_attack() && attack_camp(world, [&](int g) { return g == best; }) >= 0) reset_and_attack_camp(world, best);
+     // The way round live camps past the cap, or no way: the approach search finds which (live_steps).
+diff -ruN bots/charybdis/src/economy/siege.cc bots/variants/mo7-mono-win-s1/src/economy/siege.cc
+--- bots/charybdis/src/economy/siege.cc	2026-11-11 18:57:47.565021889 +0000
++++ bots/variants/mo7-mono-win-s1/src/economy/siege.cc	2026-11-11 21:24:07.551460823 +0000
+@@ -123,7 +123,8 @@
+         const bool join = !map.monolith_only && !seal && c.state == CampState::alive && c.awake != Awake::asleep
+                           && (enemy_in_reach(world, g) || (memory.siege && memory.claim == g));
+         const bool burst = !map.monolith_only && !seal && !join && c.state == CampState::alive
+-                           && siege_load(world, g).health <= power() * static_cast<float>(params::burst_rounds);
++                           && siege_load(world, g).health <= power() * static_cast<float>(params::burst_rounds)
++                           && mono_may_start(world, g, siege_load(world, g).health / power()); // started in a weakness window
+         const bool home = !seal && !join && home_siege(world, g);
+         if (!map.monolith_only && !seal && !join && !burst && !home && c.state != CampState::cleared) return;
+         const int wait = c.state == CampState::respawning ? c.respawn_round - world.round : 0;

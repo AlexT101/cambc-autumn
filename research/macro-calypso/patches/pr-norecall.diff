@@ -1,0 +1,48 @@
+diff --git a/bots/charybdis/src/economy/bank.cc b/bots/variants/pr-norecall/src/economy/bank.cc
+index bf77ad9d2..b9db576d1 100644
+--- a/bots/charybdis/src/economy/bank.cc
++++ b/bots/variants/pr-norecall/src/economy/bank.cc
+@@ -1379,6 +1379,7 @@ bool recall_outruns(Safety& safety, int turns) {
+ // prices it (FarmRecall::sooner), it still beats the walk (carrying, with the bag's trip on to an altar
+ // too) and no enemy can cancel it.
+ bool recall_to_farm(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, int g) {
++    if (world.me().facts().passive == Passive::gem_focus) return false; // ablation (pr-norecall)
+     if (g < 0 || g != memory.farm_group || g >= static_cast<int>(world.camps.size()) || memory.siege) return false;
+     const vec2 here = my_position();
+     if (safety.threatened(here) || !recall_outruns(safety)) {
+diff --git a/bots/charybdis/src/economy/capture.cc b/bots/variants/pr-norecall/src/economy/capture.cc
+index 2213b254c..05525780e 100644
+--- a/bots/charybdis/src/economy/capture.cc
++++ b/bots/variants/pr-norecall/src/economy/capture.cc
+@@ -935,6 +935,7 @@ bool contesting(const World& world) {
+ // Recall from a capture we hold (holding_capture), timed to land home the turn it pays: the gems
+ // skip the walk when an altar is nearer by way of home, and the stop heals and shops.
+ bool capture_recall(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
++    if (world.me().facts().passive == Passive::gem_focus) return false; // ablation (pr-norecall)
+     const vec2 here = my_position();
+     if (safety.threatened(here)) return false;
+     const int g = world.map().group_at(here);
+diff --git a/bots/charybdis/src/economy/farm.cc b/bots/variants/pr-norecall/src/economy/farm.cc
+index 7e911ce58..04a8bc4c7 100644
+--- a/bots/charybdis/src/economy/farm.cc
++++ b/bots/variants/pr-norecall/src/economy/farm.cc
+@@ -1023,7 +1023,9 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+     // way. Not where the recall would be cancelled or not started, nor out of a pocket (its own way).
+     // Carrying too (a recall keeps the gems), with the bag's walk to an altar then from the group.
+     // While repricing, our own recall is the one channelling.
+-    const bool recall_out = !in_pocket && !stunned_turn && !memory.siege
++    // Ablation (pr-norecall): Prism travels to groups only on foot.
++    const bool no_travel_recall = world.me().facts().passive == Passive::gem_focus;
++    const bool recall_out = !no_travel_recall && !in_pocket && !stunned_turn && !memory.siege
+                             && !test(map.ally_spawn, here) && (repricing || !channelling()) && !safety.threatened(here)
+                             && recall_outruns(safety, repricing ? static_cast<int>(my_channel_time()) : recall_turns(world));
+     const FarmRecall via_recall = recall_out ? farm_recall(world, pathing, repricing ? static_cast<int>(my_channel_time()) : recall_turns(world)) : FarmRecall{};
+@@ -1270,7 +1272,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+     };
+     // After the tribute, the walk out from the altar or a recall and the walk from spawn.
+     const auto altar_out = [&](int g, int walk) __attribute__((always_inline)) {
+-        if (walk == unreachable) return walk;
++        if (walk == unreachable || no_travel_recall) return walk;
+         const int out = spawn_steps(g);
+         return out == unreachable ? walk : std::min(walk, recall_turns(world) + out);
+     };

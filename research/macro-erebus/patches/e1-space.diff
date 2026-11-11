@@ -1,0 +1,359 @@
+diff -ruN bots/variants/charybdis-ref/src/bot.cc bots/variants/e1-space/src/bot.cc
+--- bots/variants/charybdis-ref/src/bot.cc	2026-11-11 18:57:46.618025681 +0000
++++ bots/variants/e1-space/src/bot.cc	2026-11-11 19:41:04.181365770 +0000
+@@ -641,6 +641,9 @@
+     const auto strikes = [&] { return alive && (my_can_attack() || my_can_cast()); };
+     if (room(reveal_least, strikes) && alive && see_revealed(world, pathing, safety)) search.chose = false;
+     if (!support_owned && room(strike_least, strikes) && strike_after(world, pathing, safety).searched) note_search(true);
++    // Under the turn's guard, before it is cleared. A contested hold is kept: leaving lets theirs pay.
++    if (!tight && alive && !(decision == Branch::hold && (holding_capture(world, pathing) || contesting(world))))
++        prism_space_step(world, pathing, safety);
+     pathing.set_guard(nullptr);
+     if constexpr (debug_fights)
+         if (world.me().alive && !test(world.map().ally_spawn, start) && fuel_ok(end_reserve + 15000))
+@@ -687,6 +690,7 @@
+     search.chose = false;
+     struck = searched = false;
+     support_owned = support_requested = support_offered = support_retreat = end_ward = end_tight = false;
++    spacing_read = false;
+     comms::support_intent(world.round, false);
+     siege_group() = -1;
+     turn_acts = {};
+diff -ruN bots/variants/charybdis-ref/src/bot_parts.h bots/variants/e1-space/src/bot_parts.h
+--- bots/variants/charybdis-ref/src/bot_parts.h	2026-11-11 18:57:46.618240524 +0000
++++ bots/variants/e1-space/src/bot_parts.h	2026-11-11 19:25:36.785283809 +0000
+@@ -325,6 +325,17 @@
+ const bitboard* prism_hold_seen(const World& world, bool on_too);
+ void strike_guard_known(const Pathing& pathing, vec2 here);
+ 
++// combat/spacing.cc: our Prism ends no turn where the enemy Prism could hit it before our next turn.
++// The tiles within `radius` of `here` (never `here`) a step of our Prism keeps off: in that reach and
++// no farther out of it than `here`. Null if none, or we are no Prism.
++const bitboard* prism_spacing(const World& world, Safety& safety, vec2 here, int radius);
++// Prism ally a standing at `at` is in that reach.
++bool prism_in_reach(const World& world, Safety& safety, const ChampionBelief& a, vec2 at);
++// Our Prism still in that reach with its walk unspent: the step that widens the gap most. True if taken.
++bool prism_space_step(const World& world, Pathing& pathing, Safety& safety);
++// A guard worked out this turn read prism_spacing's tiles (the SPACE trace).
++inline bool spacing_read = false;
++
+ // combat/fight.cc
+ bool attack_enemy(const World& world);
+ float recall_line(const World& world, Safety& safety);
+diff -ruN bots/variants/charybdis-ref/src/combat/guard.cc bots/variants/e1-space/src/combat/guard.cc
+--- bots/variants/charybdis-ref/src/combat/guard.cc	2026-11-11 18:57:46.618475567 +0000
++++ bots/variants/e1-space/src/combat/guard.cc	2026-11-11 19:27:19.166698501 +0000
+@@ -691,8 +691,10 @@
+     return a.alive && a.visible ? prism_hold_tiles(world, on_too) : nullptr;
+ }
+ 
+-// The tiles held_step_guard adds: a sole Prism holder's (prism_hold_tiles), set by guard_steps.
++// The tiles held_step_guard adds: a sole Prism holder's (prism_hold_tiles), or our Prism's spacing
++// (prism_spacing), set by guard_steps.
+ const bitboard* step_held_tiles = nullptr;
++bool step_held_spacing = false;
+ // `guard` with step_held_tiles, in `out`.
+ const bitboard* with_held_tiles(const bitboard* guard, bitboard& out) {
+     if (!guard || !step_held_tiles) return guard ? guard : step_held_tiles;
+@@ -710,6 +712,7 @@
+                              ? fp.m > 0
+                              : step_guard_cover(world, safety, here, radius) != nullptr;
+     const bitboard* strikes = covered ? step_guard(world, safety, here, radius) : nullptr;
++    spacing_read |= step_held_spacing;
+     return with_held_tiles(strikes, out);
+ }
+ const bitboard* held_step_cover(const World& world, Safety& safety, vec2 here, int radius) {
+@@ -740,7 +743,10 @@
+     for (int s = 0; s < 2; ++s)
+         if (self.facts().abilities[s].kind == AbilityKind::dash && self.ability_ready(s, world.round) && my_can_cast()) radius = dash_range;
+     // In a fight too, no step ends on a group Prism holds alone (prism_hold_tiles), as the work guard keeps.
+-    if (enemy_seen(world) && (step_held_tiles = prism_hold_seen(world, false)))
++    // Our Prism has no such hold to keep off (prism_hold_tiles), but its spacing, unseen enemy Prism too.
++    step_held_tiles = enemy_seen(world) ? prism_hold_seen(world, false) : nullptr;
++    step_held_spacing = !step_held_tiles && (step_held_tiles = prism_spacing(world, safety, my_position(), radius));
++    if (step_held_tiles)
+         pathing.defer_guard(held_step_guard, safety, my_position(), radius, held_step_cover);
+     else pathing.defer_guard(step_guard, safety, my_position(), radius, step_guard_cover);
+ }
+@@ -759,6 +765,7 @@
+     bool strikes_known = false; // `strikes` is step_guard's from our tile and radius, worked out already
+     const bitboard* strikes = nullptr;
+     const bitboard* avoid = nullptr; // an awake home Monolith's reach off our spawn (home_reach_avoid)
++    const bitboard* spacing = nullptr; // our Prism's (prism_spacing)
+ };
+ WorkGuard work_guard_inputs;
+ 
+@@ -817,6 +824,7 @@
+     const unsigned kept = keep_out(world, pathing, safety, here, in.damage);
+     for (unsigned left = kept; left; left &= left - 1) edit(), set_tile(out, here + directions[std::countr_zero(left)]);
+     if (in.avoid) edit(), out |= *in.avoid;
++    if (in.spacing) edit(), out |= *in.spacing, spacing_read = true;
+     if (!copied) return strikes;
+     return kept || !out.is_empty() ? &out : nullptr;
+ }
+@@ -826,12 +834,13 @@
+     const auto& in = work_guard_inputs;
+     const bitboard* strikes = in.strikes_known ? in.strikes : step_guard_cover(world, safety, here, radius);
+     const unsigned kept = keep_out(world, *in.pathing, safety, here, in.damage);
+-    if (!kept && !in.avoid) return strikes;
++    if (!kept && !in.avoid && !in.spacing) return strikes;
+     static bitboard cover{cambc::uninitialized};
+     if (strikes) copy_into(*strikes, cover);
+     else clear_board(cover);
+     for (unsigned left = kept; left; left &= left - 1) set_tile(cover, here + directions[std::countr_zero(left)]);
+     if (in.avoid) cover |= *in.avoid;
++    if (in.spacing) cover |= *in.spacing;
+     return &cover;
+ }
+ 
+@@ -867,7 +876,7 @@
+     const bool known = !held.fn && held.radius >= radius;
+     // Already in the avoided reach off spawn, any way out is ours.
+     if (avoid && test(*avoid, my_position())) avoid = nullptr;
+-    work_guard_inputs = {&pathing, damage, radius, known, known ? held.guard : nullptr, avoid};
++    work_guard_inputs = {&pathing, damage, radius, known, known ? held.guard : nullptr, avoid, prism_spacing(world, safety, my_position(), radius)};
+     pathing.defer_guard(work_guard, safety, my_position(), radius, work_cover);
+ }
+ 
+diff -ruN bots/variants/charybdis-ref/src/combat/spacing.cc bots/variants/e1-space/src/combat/spacing.cc
+--- bots/variants/charybdis-ref/src/combat/spacing.cc	1970-01-01 00:00:00.000000000 +0000
++++ bots/variants/e1-space/src/combat/spacing.cc	2026-11-11 19:41:15.091150793 +0000
+@@ -0,0 +1,180 @@
++// Prism spacing: our Prism ends no turn where the enemy Prism could hit it before our next turn,
++// unless ours is clearly stronger or theirs cannot strike. At near-equal Focus the Prism landing the
++// first Prism-on-Prism hit wins most exchanges, so we wait at the edge of its reach for it to walk in.
++// The steps' guards (guard.cc) keep off the tiles, a sole Prism's hold is left (capture.cc), and a
++// Prism left inside with its walk unspent steps out (act()). The reach is Chebyshev: a ground target
++// may be any tile, so walls do not shorten it.
++#include "../bot_parts.h"
++
++namespace aph {
++
++namespace {
++
++// The enemy Prism an ally Prism keeps from, and how far it reaches before that ally's next turn.
++struct PrismFoe {
++    const ChampionBelief* e = nullptr;
++    int reach = 0;
++};
++
++// Its ready damaging spells' farthest tile (the ground spell's 3x3: 5), one more when it gets two
++// turns (a walk, then the cast). Its turns are read against our next turn; for another ally, taken
++// at two. The window after next counts too, as up to two turns we meet one step nearer: with equal
++// ranks its turns alternate 2, 0, 2, so a free turn would walk us to where a step out is too short,
++// and a spell back from cooldown there would catch us the same way.
++PrismFoe prism_foe(const World& world, Safety& safety, const ChampionBelief& a) {
++    if (a.facts().passive != Passive::gem_focus || !a.alive) return {};
++    const float focus = a.is_self ? my_record().focus : a.focus;
++    const float health = a.is_self ? my_health() : a.health;
++    for (const auto& e : world.enemies) {
++        if (!e.alive || e.facts().passive != Passive::gem_focus) continue;
++        // Unseen, only while its possible tiles are few enough for Safety to count it.
++        if (!e.visible && !safety.credible_unseen(e)) continue;
++        // Less a turn a stun takes, and none while a teleport channels through them.
++        const int turns = a.is_self ? turns_before_ours(world, e) : 2;
++        // Cooldowns read while seen; unseen, projected as if it cast nothing out of sight.
++        const int next = next_turn_round(world, e), twice = turns >= 2 ? 1 : 0;
++        int reach = -1;
++        float combo = 0;
++        for (int s = 0; s < 2; ++s) {
++            const auto& f = e.facts().abilities[s];
++            if (f.kind != AbilityKind::damage) continue;
++            combo += f.multiplier;
++            if (turns > 0 && e.ability_ready(s, next + twice)) reach = std::max(reach, f.reach() + twice);
++            if (e.ability_ready(s, next + 1)) reach = std::max(reach, f.reach());
++        }
++        // Its Focus as last seen.
++        if (reach < 0 || focus >= params::prism_space_focus_ratio * e.focus
++            || combo * e.focus * e.dealt * a.taken < params::prism_space_health_share * health)
++            return {};
++        return {&e, reach};
++    }
++    return {}; // a team picks each champion once
++}
++
++// Ours, kept while the beliefs and Safety hold.
++const PrismFoe& own_foe(const World& world, Safety& safety) {
++    static struct {
++        int round = -1;
++        std::uint32_t generation = 0, observations = 0;
++        PrismFoe foe;
++    } made;
++    if (made.round != world.round || made.generation != Safety::generation() || made.observations != world.observations)
++        made = {world.round, Safety::generation(), world.observations, prism_foe(world, safety, world.me())};
++    return made.foe;
++}
++
++// Within r of where e may act from: a seen teleport's landing, else its tile; unseen, its possible tiles.
++bool foe_within(const ChampionBelief& e, vec2 p, int r) {
++    return e.visible ? dist(p, enemy_reach::origin(e)) <= r : possible_within(e, p, r);
++}
++// The distance from p to the nearest of them, cap + 1 beyond cap.
++int foe_gap(const ChampionBelief& e, vec2 p, int cap) {
++    if (e.visible) return std::min(dist(p, enemy_reach::origin(e)), cap + 1);
++    if (!possible_within(e, p, cap)) return cap + 1;
++    int r = 0;
++    while (r < cap && !possible_within(e, p, r)) ++r;
++    return r;
++}
++
++const bitboard* prism_spacing(const World& world, Safety& safety, vec2 here, int radius) {
++    if (world.me().facts().passive != Passive::gem_focus) return nullptr;
++    static struct {
++        int round = -1;
++        std::uint32_t generation = 0, observations = 0;
++        vec2 here{-1, -1};
++        int radius = 0;
++        const bitboard* out = nullptr;
++    } made;
++    if (made.round == world.round && made.generation == Safety::generation() && made.observations == world.observations
++        && made.here == here && made.radius == radius)
++        return made.out;
++    if (!fuel_ok(act_reserve)) return nullptr;
++    made = {world.round, Safety::generation(), world.observations, here, radius, nullptr};
++    radius = std::min(radius, 2); // a Prism has no dash: always 1
++    const auto& foe = own_foe(world, safety);
++    if (!foe.e) return nullptr;
++    // Already inside, a step that widens the gap is free, else one that keeps it (our back to a wall,
++    // or an unseen Prism on several sides): every way out guarded would freeze us in reach.
++    const int gap = foe_gap(*foe.e, here, foe.reach);
++    const auto& open = world.map().open_for_us;
++    std::array<int, 25> gaps; // (dx + 2) + 5 (dy + 2)
++    bool wider = gap > foe.reach;
++    for (int dy = -radius; dy <= radius; ++dy)
++        for (int dx = -radius; dx <= radius; ++dx) {
++            const vec2 q{here.x + dx, here.y + dy};
++            int& g = gaps[static_cast<std::size_t>(dx + 2 + 5 * (dy + 2))];
++            g = q == here || !in_bounds(q) || !test(open, q) ? -1 : foe_gap(*foe.e, q, foe.reach);
++            wider |= g > gap;
++        }
++    const int bound = std::min(foe.reach, wider ? gap : gap - 1);
++    static bitboard board{cambc::uninitialized};
++    bool any = false;
++    for (int dy = -radius; dy <= radius; ++dy)
++        for (int dx = -radius; dx <= radius; ++dx) {
++            if (const int g = gaps[static_cast<std::size_t>(dx + 2 + 5 * (dy + 2))]; g < 0 || g > bound) continue;
++            if (!any) clear_board(board), any = true;
++            set_tile(board, {here.x + dx, here.y + dy});
++        }
++    return made.out = any ? &board : nullptr;
++}
++
++bool prism_in_reach(const World& world, Safety& safety, const ChampionBelief& a, vec2 at) {
++    if (a.facts().passive != Passive::gem_focus) return false;
++    const PrismFoe foe = a.is_self ? own_foe(world, safety) : prism_foe(world, safety, a);
++    return foe.e && foe_within(*foe.e, at, foe.reach);
++}
++
++bool prism_space_step(const World& world, Pathing& pathing, Safety& safety) {
++    if (world.me().facts().passive != Passive::gem_focus || !world.me().alive) return false;
++    const auto& foe = own_foe(world, safety);
++    if (!foe.e) return false;
++    const vec2 here = my_position();
++    const int gap = foe_gap(*foe.e, here, foe.reach);
++    bool stepped = false;
++    // Our spawn heals us at the turn end, and want_home never leaves it.
++    // Only under a guard placed this turn (guard_steps, guard_work): a retreat that chose to stand left none.
++    const auto held = pathing.held_guard();
++    if (gap <= foe.reach && (held.guard || held.fn) && my_can_move() && !channelling() && !test(world.map().ally_spawn, here)
++        && fuel_ok(act_reserve)) {
++        struct Option {
++            vec2 p;
++            int gap;
++            float camps;
++        };
++        std::array<Option, 8> options;
++        int n = 0;
++        const auto& blocked = pathing.blocked();
++        for (const auto d : directions) {
++            const vec2 q = here + d;
++            if (!in_bounds(q) || test(blocked, q)) continue;
++            if (const int g = foe_gap(*foe.e, q, foe.reach); g >= gap) options[static_cast<std::size_t>(n++)] = {q, g, safety.camp_damage(q)};
++        }
++        // A step keeping the gap only where none widens it (prism_spacing's guard leaves those open then).
++        bool wider = false;
++        for (int i = 0; i < n; ++i) wider |= options[static_cast<std::size_t>(i)].gap > gap;
++        if (wider) n = static_cast<int>(std::remove_if(options.begin(), options.begin() + n, [&](const Option& o) { return o.gap == gap; }) - options.begin());
++        // Out of reach first, then off camp fire, then the widest gap.
++        std::stable_sort(options.begin(), options.begin() + n, [&](const Option& a, const Option& b) {
++            const bool ao = a.gap > foe.reach, bo = b.gap > foe.reach;
++            if (ao != bo) return ao;
++            if (a.camps != b.camps) return a.camps < b.camps;
++            return a.gap > b.gap;
++        });
++        // The guard placed for the turn still holds: no step onto a lost stand.
++        for (int i = 0; i < n && !stepped; ++i) stepped = pathing.try_move(options[static_cast<std::size_t>(i)].p);
++    }
++    debug_block({
++        const int start = foe_gap(*foe.e, world.turn_start, foe.reach);
++        const int end = stepped ? foe_gap(*foe.e, my_position(), foe.reach) : gap;
++        // Why a Prism left in reach did not step: 1 walk spent, 2 cast, 4 channelling, 8 on our spawn, 16 seen foe.
++        const int why = (my_can_move() ? 0 : 1) | (my_can_cast() ? 0 : 2) | (channelling() ? 4 : 0)
++                        | (test(world.map().ally_spawn, my_position()) ? 8 : 0) | (foe.e->visible ? 16 : 0);
++        std::printf("SPACE %d %u %d %d %d %d %d %d %d\n", world.round, my_handle(), foe.reach, start, gap, end, spacing_read ? 1 : 0,
++                    stepped ? 1 : 0, why);
++    });
++    return stepped;
++}
++
++} // namespace
++
++} // namespace aph
+diff -ruN bots/variants/charybdis-ref/src/economy/capture.cc bots/variants/e1-space/src/economy/capture.cc
+--- bots/variants/charybdis-ref/src/economy/capture.cc	2026-11-11 18:57:46.621333924 +0000
++++ bots/variants/e1-space/src/economy/capture.cc	2026-11-11 19:27:33.299827606 +0000
+@@ -324,7 +324,7 @@
+     if (g < 0 || enemy_on(world, G.tiles())) return true;
+     const auto& c = world.camps[g];
+     if (c.holder != team::ally) return true;
+-    if (!hold_safety) return true;
++    if (!hold_safety || prism_in_reach(world, *hold_safety, a, at)) return true;
+     struct Kept {
+         int round = -1;
+         std::uint32_t generation = 0, observations = 0;
+@@ -370,7 +370,9 @@
+             || (a.channel == Channel::recall && a.channel_end_round <= world.round + 1)
+             || world.score.ally + a.gems + G.gems >= winning
+             || rounds_left(world) <= tribute_turns(a.gems + G.gems, a.fast_tribute) + map.width + map.height + endgame_margin
+-            || (seen && prism_hold_threatened(world, a, G)))
++            || (seen && prism_hold_threatened(world, a, G))
++            // An unseen enemy Prism's reach (prism_spacing) too, on the hold itself.
++            || (!seen && hold_safety && test(G.tiles(), position_of(a)) && prism_in_reach(world, *hold_safety, a, position_of(a))))
+             continue;
+         return &a;
+     }
+@@ -573,6 +575,8 @@
+                        + endgame_slack > rounds_left(world))
+             return false;
+     }
++    // Our Prism ends no turn in the enemy Prism's reach (prism_spacing), on any hold.
++    if (hold_safety && prism_in_reach(world, *hold_safety, world.me(), here)) return false;
+     // Prism stays while a lower-id holder leaves; the last holder never yields to a remote ally.
+     const auto* prism = sole_capture_holder(world, G);
+     if (prism && prism->is_self) return true;
+diff -ruN bots/variants/charybdis-ref/src/params.h bots/variants/e1-space/src/params.h
+--- bots/variants/charybdis-ref/src/params.h	2026-11-11 18:57:46.624009729 +0000
++++ bots/variants/e1-space/src/params.h	2026-11-11 19:25:49.896458944 +0000
+@@ -70,6 +70,11 @@
+ // Below this share of max health a champion, ours or an enemy, is hurt: ours retreat from smaller
+ // packs, no longer count their own ground as safe from pursuit, and are healed for any gain.
+ inline constexpr float hurt_health_fraction = 0.4532513f;
++// Prism spacing (combat/spacing.cc), from 1,024 mirror games: at this Focus over the enemy Prism's or more, the
++// larger Prism wins the exchange whoever opens; nor is an enemy Prism kept from whose two spells together deal
++// under this share of our health.
++inline constexpr float prism_space_focus_ratio = 1.25f;
++inline constexpr float prism_space_health_share = 1.0f / 3;
+ // Below the recall line, stay to finish a camp whose remaining damage is under this share of our health.
+ inline constexpr float finish_camp_health_fraction = 0.6881714f;
+ // Camp damage counted against the health we can spare when choosing a camp (below 1: bolder).
+diff -ruN bots/variants/charybdis-ref/src/unity.cpp bots/variants/e1-space/src/unity.cpp
+--- bots/variants/charybdis-ref/src/unity.cpp	2026-11-11 18:57:46.624009729 +0000
++++ bots/variants/e1-space/src/unity.cpp	2026-11-11 19:27:33.300003729 +0000
+@@ -8,6 +8,7 @@
+ #include "economy/camps.cc"
+ #include "economy/home.cc"
+ #include "combat/guard.cc"
++#include "combat/spacing.cc"
+ #include "combat/fight.cc"
+ #include "economy/bank.cc"
+ #include "economy/capture.cc"

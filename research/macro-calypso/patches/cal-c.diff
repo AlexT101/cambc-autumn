@@ -1,0 +1,627 @@
+diff --git a/bots/charybdis/src/bot.cc b/bots/variants/cal-c/src/bot.cc
+index 06a678a17..5b8743f78 100644
+--- a/bots/charybdis/src/bot.cc
++++ b/bots/variants/cal-c/src/bot.cc
+@@ -504,6 +504,14 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+             if (avoid) copy_into(*avoid, both), both |= *held, avoid = &both;
+             else avoid = held;
+         }
++        // Nor do they enter an outgunning enemy Prism's reach, ours or a bag's (prism_war::zone_bound).
++        if (const bitboard* zone = prism_war::avoid(world, my_position())) {
++            static bitboard with_zone{cambc::uninitialized};
++            // Copied: the deferred guard reads it later in the turn, when a new observe may redraw the zone.
++            if (avoid) copy_into(*avoid, with_zone), with_zone |= *zone;
++            else copy_into(*zone, with_zone);
++            avoid = &with_zone;
++        }
+         guard_work(world, pathing, safety, memory.damage, avoid);
+     }
+     if (banks_bag(world, pathing)) {
+diff --git a/bots/charybdis/src/bot_parts.h b/bots/variants/cal-c/src/bot_parts.h
+index ef6d2f189..b80620965 100644
+--- a/bots/charybdis/src/bot_parts.h
++++ b/bots/variants/cal-c/src/bot_parts.h
+@@ -307,6 +307,41 @@ bool awake_over(const World& world, int g, vec2 p);
+ bool finishing_camp(const World& world);
+ bool finishing_camp(const World& world, vec2 p); // as if we stood at p
+ 
++// combat/prism_war.cc: our living Prism against the enemy's, which we have seen (its known bag: exact in
++// sight, else its last sighting's; ours: exact in sight, else as posted). It outguns ours when its bag is
++// bigger, ours dominates it when ours is; neither at equal bags, or while both are under params::brake_bag.
++namespace prism_war {
++enum class Posture : std::uint8_t { none, outgunned, dominant };
++struct Reading {
++    const ChampionBelief* ours = nullptr;
++    const ChampionBelief* enemy = nullptr;
++    int our_bag = 0, enemy_bag = 0;
++    Posture posture = Posture::none;
++};
++const Reading& reading(const World& world);
++bool outgunned(const World& world);
++// While outgunned: we keep out of its threat zone, being our Prism or carrying params::brake_bag or more.
++bool zone_bound(const World& world);
++// Its threat zone while outgunned (the tiles it may hit next turn from where it may be), null without one.
++const bitboard* zone(const World& world);
++bool in_zone(const World& world, vec2 p);
++// The tiles the work's steps keep off while zone_bound: the zone, or inside it the tiles nearer it than here.
++const bitboard* avoid(const World& world, vec2 here);
++// Every tile working group g needs (its camp tiles cleared, else attack range of a member) is in the zone.
++bool blocks_group(const World& world, int g);
++// Our outgunned Prism stands in the zone: it leaves (want_home).
++bool flee(const World& world, vec2 here);
++// Our outgunned Prism's winning tribute at `altar`, reached in `arrive` turns, would be in its reach
++// before the channel's `turns` end; holds_tribute: at every altar, from here.
++bool threatens_tribute(const World& world, int altar, int arrive, int turns);
++bool holds_tribute(const World& world);
++// e is the enemy Prism outgunning us, our Prism: we leave its stop to the others.
++bool spares(const World& world, const ChampionBelief& e);
++// The enemy Prism ours dominates, our Prism's priority prey while seen within params::track_horizon and
++// in prey's sight range; null otherwise.
++const ChampionBelief* hunt(const World& world, vec2 here);
++} // namespace prism_war
++
+ // combat/fixc.cc (research/ladder-scrims-2026-11-06/fix-combat.md)
+ int fixc_bush_rank(const World& world, vec2 p);
+ bool fixc_bush_threat(const World& world, Safety& safety);
+diff --git a/bots/charybdis/src/combat/fight.cc b/bots/variants/cal-c/src/combat/fight.cc
+index 40ea4f33e..e3c6884e6 100644
+--- a/bots/charybdis/src/combat/fight.cc
++++ b/bots/variants/cal-c/src/combat/fight.cc
+@@ -565,6 +565,8 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
+     if (world.me().facts().heals() && !holding_capture(world, pathing) && !contesting(world) && exposure_here(world, safety).enemy
+         && !willow_stands(world))
+         return true;
++    // Our Prism outgunned in the enemy Prism's reach loses the duel and its bag: it leaves before contact.
++    if (prism_war::flee(world, here)) return true;
+     return stand_lost_at(world, safety, hold);
+ }
+ 
+@@ -830,20 +832,29 @@ const ChampionBelief* prey(const World& world, Pathing& pathing, Safety& safety)
+     // Willow holds no fight (want_home), but early (willow_stands): a chase walks it into reach only to leave next turn.
+     if (world.me().facts().heals() && !willow_early(world)) return nullptr;
+     const vec2 here = my_position();
+-    const std::uint32_t lost_sight = lost_prey(world, here);
++    // The enemy Prism ours dominates comes first, out of sight too while tracked (prism_war::hunt).
++    const ChampionBelief* hunted = prism_war::hunt(world, here);
++    const std::uint32_t lost_sight = lost_prey(world, here) | (hunted && !hunted->visible ? 1u << hunted->index : 0u);
+     if (!enemy_seen(world) && !lost_sight) return nullptr;
+     const int range = world.me().facts().attack_range();
+-    // want_home kept us in a fight we press: a lost play-out here would only hand the turn to the
+-    // farm, walking off mid-fight from a hurter enemy, not take us out of danger.
+-    if (const auto* p = pressed(world)) {
+-        int held = 0;
+-        if (preyable(world, safety, *p, here, range, held) && !escapes(world, pathing, *p)) return p;
+-    }
+-    // A teammate's pressed fight is joined as our own.
+-    if (const auto* p = team_pressed(world)) {
+-        int held = 0;
+-        if (preyable(world, safety, *p, here, range, held) && !escapes(world, pathing, *p)) return p;
+-    }
++    const auto pressed_fights = [&]() -> const ChampionBelief* {
++        // want_home kept us in a fight we press: a lost play-out here would only hand the turn to the
++        // farm, walking off mid-fight from a hurter enemy, not take us out of danger.
++        if (const auto* p = pressed(world)) {
++            int held = 0;
++            if (preyable(world, safety, *p, here, range, held) && !escapes(world, pathing, *p)) return p;
++        }
++        // A teammate's pressed fight is joined as our own.
++        if (const auto* p = team_pressed(world)) {
++            int held = 0;
++            if (preyable(world, safety, *p, here, range, held) && !escapes(world, pathing, *p)) return p;
++        }
++        return nullptr;
++    };
++    // Hunting, the pressed fights wait for the hunt's own fight (`pressed_asked` once asked).
++    bool pressed_asked = !hunted, cut = false;
++    if (!hunted)
++        if (const auto* p = pressed_fights()) return p;
+     std::optional<float> strength; // read once a candidate needs it
+     // Cassi or Issac falling takes the other body and both bags: a won fight that costs us is lost.
+     const bool linked = partner(world) != nullptr;
+@@ -859,12 +870,12 @@ const ChampionBelief* prey(const World& world, Pathing& pathing, Safety& safety)
+         if (!strength) strength = std::max(1.0f, my_strength() * world.me().damage_scale());
+         const float turns = static_cast<float>(std::max(0, dist(here, e.pos) - range)) + effective_hp(e) / *strength;
+         // Turns per gem a kill is worth: the life (abilities' life_value, in gems) and the bag.
+-        const float cost = turns / (params::life_value / params::gem_value + static_cast<float>(pair_gems(world, e) + held));
++        const float cost = &e == hunted ? -1.0f : turns / (params::life_value / params::gem_value + static_cast<float>(pair_gems(world, e) + held));
+         int i = n++;
+         for (; i > 0 && order[i - 1].first > cost; --i) order[i] = order[i - 1];
+         order[i] = {cost, &e};
+     }
+-    if (n == 0) return nullptr;
++    if (n == 0) return hunted ? pressed_fights() : nullptr;
+     const auto live = my_record();
+     const auto state = cambc::champion_state::from_bits_retain(live.state);
+     const bool can_move = state.contains(cambc::champion_state::can_move);
+@@ -911,8 +922,13 @@ const ChampionBelief* prey(const World& world, Pathing& pathing, Safety& safety)
+     for (int i = 0; i < n; ++i) {
+         if (!fuel_ok(safety.fight_cost_estimate() + reserve)) {
+             note_shortcut("prey-cut-short");
++            cut = true;
+             break;
+         }
++        if (!pressed_asked && (i > 0 || order[0].second != hunted)) {
++            pressed_asked = true;
++            if (const auto* p = pressed_fights()) return p;
++        }
+         const auto& target = *order[i].second;
+         const auto key = safety.fight_key(target.pos);
+         std::uint32_t delayed = 0;
+@@ -953,6 +969,7 @@ const ChampionBelief* prey(const World& world, Pathing& pathing, Safety& safety)
+         } else {
+             if (!fuel_ok(safety.fight_cost_estimate() + reserve)) {
+                 note_shortcut("prey-cut-short");
++                cut = true;
+                 break;
+             }
+             t = safety.chase_trade(key, delayed, cooldowns, cast_available, linked, late);
+@@ -973,7 +990,7 @@ const ChampionBelief* prey(const World& world, Pathing& pathing, Safety& safety)
+         if (u < n_unasked) unasked[u].target = &target;
+         else unasked[n_unasked++] = {fight, &target, t};
+     }
+-    return nullptr;
++    return pressed_asked || cut ? nullptr : pressed_fights();
+ }
+ 
+ bool chase(const World& world, Pathing& pathing, Safety& safety) {
+@@ -983,6 +1000,17 @@ bool chase(const World& world, Pathing& pathing, Safety& safety) {
+     const auto* target = prey(world, pathing, safety);
+     if (!target) return false;
+     trace_verdict(world, pathing, *target, 'P');
++    debug_block({
++        static int hunted_round = -2;
++        if (target == prism_war::hunt(world, my_position())) {
++            if (hunted_round < world.round - 1) {
++                const auto& r = prism_war::reading(world);
++                std::printf("PWHUNT %d %u %d %d %d %d\n", world.round, my_handle(), r.our_bag, r.enemy_bag, dist(my_position(), target->pos),
++                            target->visible ? 1 : 0);
++            }
++            hunted_round = world.round;
++        }
++    });
+     note_engaged(static_cast<std::uint32_t>(target->handle));
+     decision = Branch::chase;
+     if constexpr (debug_fights) log_fight("FC", world, safety, target->pos, safety.fight(target->pos), static_cast<int>(target->handle));
+@@ -1056,7 +1084,7 @@ const ChampionBelief* stoppable_winning_tribute(const World& world) {
+     std::optional<Moment> win;
+     for (const auto& e : world.enemies)
+         if (enemy_tribute_wins(world, e) && e.facts().passive != Passive::stun_immune
+-            && dist(self.pos, e.pos) <= self.ready_stun_reach(world.round, walk)) {
++            && dist(self.pos, e.pos) <= self.ready_stun_reach(world.round, walk) && !prism_war::spares(world, e)) {
+             if (!winning_bag(world)) return &e;
+             if (!win) win = win_lands(world);
+             if (turn_start(world, e, e.channel_end_round) < *win) return &e;
+@@ -1129,7 +1157,8 @@ const ChampionBelief* game_ender(const World& world) {
+ // A stop that cancels the ender's channel: a stun ready for our next turn, or a lock for its altar. Only that stop
+ // decides the game before the channel lands; a walking ender, or a channel we can only damage, is fought as priced.
+ bool holds_hard_stop(const World& world, const ChampionBelief& e) {
+-    if (e.channel != Channel::tribute) return false;
++    // Our outgunned Prism stopping the enemy Prism hands it our bag too: the others stop it.
++    if (e.channel != Channel::tribute || prism_war::spares(world, e)) return false;
+     if (e.facts().passive != Passive::stun_immune && world.me().ready_stun_reach(world.round + 1) >= 0) return true;
+     return tribute_altar(world, e.pos) >= 0 && carried_locks() > 0;
+ }
+diff --git a/bots/variants/cal-c/src/combat/prism_war.cc b/bots/variants/cal-c/src/combat/prism_war.cc
+new file mode 100644
+index 000000000..def96c2a2
+--- /dev/null
++++ b/bots/variants/cal-c/src/combat/prism_war.cc
+@@ -0,0 +1,261 @@
++// The Prism war: our Prism against the enemy's. Prism's Focus grows 1.5 a carried gem, so the duel goes
++// to the bigger bag, and the killer takes the loser's whole bag. Read once a turn from World's beliefs;
++// the systems that decide each thing ask it (want_home, the work guard, farm, the tribute, the game-ender
++// stop, prey).
++#include "../bot_parts.h"
++
++namespace aph {
++
++namespace {
++
++namespace prism_war {
++
++// Tiles from which the enemy Prism can hit our tile before our next turn: its walk this turn and its
++// stun's range (the ground spell's 3x3 reaches as far without the walk). Its spells exclude walking,
++// so the step is a margin for a turn order that gives it two turns before our next.
++constexpr int zone_reach = 1 + ability_range;
++// Past this many rounds unseen and untracked, the square it may be in (one tile a round) is wider than
++// our own sight, which sees it coming farther out than it reaches: no zone.
++constexpr int stale_rounds = vision_radius;
++
++int ally_prism_index(const World& world) {
++    static const int index = [&] {
++        for (const auto& a : world.allies)
++            if (a.facts().passive == Passive::gem_focus) return a.index;
++        return -1;
++    }();
++    return index;
++}
++
++int enemy_prism_index(const World& world) {
++    static const int index = [&] {
++        for (const auto& e : world.enemies)
++            if (e.facts().passive == Passive::gem_focus) return e.index;
++        return -1;
++    }();
++    return index;
++}
++
++struct State {
++    int round = -1;
++    std::uint32_t observations = 0, gems = 0;
++    Reading reading;
++    // E's tiles (`shape`) and the boards drawn around them, each on first ask this key.
++    enum class Shape : std::uint8_t { none, square, possible } shape = Shape::none;
++    vec2 centre{-1, -1};
++    int base = 0; // the square's radius before any reach: its rounds unseen past tracking
++    bool zone_made = false, inner_made = false, deeper_made = false;
++    int inner_k = -1, deeper_k = -1;
++    bitboard zone{cambc::uninitialized}, inner{cambc::uninitialized}, deeper{cambc::uninitialized}, scratch{cambc::uninitialized};
++    // holds_tribute's answer, from `held_at`.
++    vec2 held_at{-1, -1};
++    bool held = false;
++};
++State state;
++Posture traced = Posture::none; // our Prism's last posture traced
++
++// The tiles within k of where E may be, into out.
++void draw(const State& s, const ChampionBelief& e, int k, bitboard& out) {
++    if (s.shape == State::Shape::possible) {
++        square_dilate(e.possible, k, out);
++        return;
++    }
++    clear_board(out);
++    out.draw_chebyshev(s.centre, static_cast<float>(s.base + k));
++}
++
++const Reading& read_now(const World& world) {
++    const std::uint32_t gems = world.me().alive ? my_gems() : 0;
++    auto& s = state;
++    if (s.round == world.round && s.observations == world.observations && s.gems == gems) return s.reading;
++    s.round = world.round, s.observations = world.observations, s.gems = gems;
++    s.zone_made = s.inner_made = s.deeper_made = false;
++    s.held_at = {-1, -1};
++    s.shape = State::Shape::none;
++    Reading r;
++    const int ours = ally_prism_index(world), theirs = enemy_prism_index(world);
++    if (ours >= 0 && theirs >= 0) {
++        const auto& a = world.allies[static_cast<std::size_t>(ours)];
++        const auto& e = world.enemies[static_cast<std::size_t>(theirs)];
++        // An enemy Prism we never saw has no known bag: no reading.
++        if (a.alive && e.alive && e.stats_round >= 0) {
++            r.ours = &a, r.enemy = &e;
++            r.our_bag = a.is_self ? static_cast<int>(gems) : a.visible ? a.gems : comms::bag_of(world, a.index);
++            r.enemy_bag = e.gems;
++            // Equal bags decide nothing, and below a bag worth chasing (brake_bag) on both sides the Focus
++            // between them is too small to decide the duel.
++            if (std::max(r.our_bag, r.enemy_bag) >= params::brake_bag && r.enemy_bag != r.our_bag)
++                r.posture = r.enemy_bag > r.our_bag ? Posture::outgunned : Posture::dominant;
++        }
++    }
++    s.reading = r;
++    if (r.enemy && r.posture == Posture::outgunned) {
++        const auto& e = *r.enemy;
++        if (e.visible) s.shape = State::Shape::square, s.centre = enemy_reach::origin(e), s.base = 0;
++        else if (e.tracked) s.shape = State::Shape::possible;
++        else if (const int age = world.round - e.pos_round; age <= stale_rounds) s.shape = State::Shape::square, s.centre = e.pos, s.base = age;
++    }
++    if (const Posture now = r.posture; ours == world.self_index && now != traced) {
++        debug_block({
++            std::printf("PWAR %d %u %d %d %c\n", world.round, my_handle(), r.our_bag, r.enemy_bag,
++                        now == Posture::outgunned ? 'O' : now == Posture::dominant ? 'D' : '-');
++        });
++        traced = now;
++    }
++    return s.reading;
++}
++
++// Our Prism itself.
++bool is_ours(const Reading& r) { return r.ours && r.ours->is_self; }
++
++} // namespace prism_war
++
++const prism_war::Reading& prism_war::reading(const World& world) { return read_now(world); }
++
++bool prism_war::outgunned(const World& world) { return read_now(world).posture == Posture::outgunned; }
++
++bool prism_war::zone_bound(const World& world) {
++    const auto& r = read_now(world);
++    if (r.posture != Posture::outgunned || !world.me().alive) return false;
++    return is_ours(r) ? params::prism_war_avoid : params::prism_war_ally_avoid && static_cast<int>(my_gems()) >= params::brake_bag;
++}
++
++const bitboard* prism_war::zone(const World& world) {
++    read_now(world);
++    auto& s = state;
++    if (s.shape == State::Shape::none) return nullptr;
++    if (!s.zone_made) draw(s, *s.reading.enemy, zone_reach, s.zone), s.zone_made = true;
++    return &s.zone;
++}
++
++bool prism_war::in_zone(const World& world, vec2 p) {
++    const auto* z = zone(world);
++    return z && in_bounds(p) && test(*z, p);
++}
++
++const bitboard* prism_war::avoid(const World& world, vec2 here) {
++    if (!zone_bound(world)) return nullptr;
++    const auto* z = zone(world);
++    if (!z || !in_bounds(here) || !test(*z, here)) return z;
++    // Inside it, no step nearer to it: the tiles within d - 1 of where it may be, d ours.
++    auto& s = state;
++    const auto& e = *s.reading.enemy;
++    int d = zone_reach;
++    if (s.shape == State::Shape::possible) {
++        while (d > 0 && possible_within(e, here, d - 1)) --d;
++    } else {
++        d = std::max(0, dist(here, s.centre) - s.base);
++    }
++    if (d <= 0) return nullptr;
++    if (!s.deeper_made || s.deeper_k != d - 1) draw(s, e, d - 1, s.deeper), s.deeper_made = true, s.deeper_k = d - 1;
++    return &s.deeper;
++}
++
++bool prism_war::blocks_group(const World& world, int g) {
++    if (!zone_bound(world)) return false;
++    const auto* z = zone(world);
++    if (!z) return false;
++    auto& s = state;
++    const auto& G = world.map().groups[static_cast<std::size_t>(g)];
++    // A capture stands on the camp tiles; a clear stands within attack range of a member: every such
++    // tile is in the zone once the members are within zone_reach - range of where it may be.
++    const bool cleared = world.camps[static_cast<std::size_t>(g)].state == CampState::cleared;
++    const bitboard* core = z;
++    if (!cleared) {
++        const int k = zone_reach - world.me().facts().attack_range();
++        if (k < 0) return false;
++        if (!test(*z, G.centre)) return false;
++        if (!s.inner_made || s.inner_k != k) draw(s, *s.reading.enemy, k, s.inner), s.inner_made = true, s.inner_k = k;
++        core = &s.inner;
++    }
++    if (!test(*core, G.centre)) return false;
++    // tiles & ~core
++    or_into(G.tiles(), *core, s.scratch);
++    xor_into(s.scratch, *core, s.scratch);
++    return board_empty(s.scratch);
++}
++
++bool prism_war::flee(const World& world, vec2 here) {
++    if constexpr (!params::prism_war_avoid) return false;
++    const auto& r = read_now(world);
++    if (r.posture != Posture::outgunned || !is_ours(r) || !in_zone(world, here)) return false;
++    debug_block({
++        static int last = -1;
++        if (last != world.round) {
++            last = world.round;
++            std::printf("PWLEAVE %d %u %d %d %d,%d %d,%d %d\n", world.round, my_handle(), r.our_bag, r.enemy_bag, here.x, here.y,
++                        r.enemy->pos.x, r.enemy->pos.y, world.round - r.enemy->pos_round);
++        }
++    });
++    return true;
++}
++
++bool prism_war::threatens_tribute(const World& world, int altar, int arrive, int turns) {
++    if constexpr (!params::prism_war_hold_tribute) return false;
++    const auto& r = read_now(world);
++    if (altar < 0 || r.posture != Posture::outgunned || !is_ours(r) || !winning_bag(world)) return false;
++    const auto& e = *r.enemy;
++    // Its earliest turn within zone_reach of a tribute tile, as the crow flies, having walked a tile a
++    // round since it was last seen. Unseen past the zone's staleness, where it is is no reading.
++    const int submit = static_cast<int>(cambc::constants::submit_gems_range);
++    const int age = e.visible ? 0 : world.round - e.pos_round;
++    if (!e.visible && !e.tracked && age > stale_rounds) return false;
++    const int theirs = dist(enemy_reach::origin(e), world.map().altars[static_cast<std::size_t>(altar)].pos) - submit - zone_reach - age;
++    return theirs <= arrive + turns;
++}
++
++bool prism_war::holds_tribute(const World& world) {
++    if constexpr (!params::prism_war_hold_tribute) return false;
++    const auto& r = read_now(world);
++    if (r.posture != Posture::outgunned || !is_ours(r) || !winning_bag(world)) return false;
++    auto& s = state;
++    const vec2 here = my_position();
++    if (s.held_at == here) return s.held;
++    s.held_at = here;
++    const int submit = static_cast<int>(cambc::constants::submit_gems_range);
++    const int turns = tribute_turns(world, static_cast<int>(my_gems()));
++    const auto& altars = world.map().altars;
++    // Short of the game's last rounds, every altar not locked against us is in its reach before the channel ends.
++    bool held = false;
++    for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
++        if (world.altars[static_cast<std::size_t>(a)].enemy_lock) continue;
++        const int arrive = std::max(0, dist(here, altars[static_cast<std::size_t>(a)].pos) - submit);
++        if (rounds_left(world) <= arrive + turns + endgame_margin || !threatens_tribute(world, a, arrive, turns)) {
++            held = false;
++            break;
++        }
++        held = true;
++    }
++    s.held = held;
++    if (held) {
++        debug_block({
++            static int last = -1;
++            if (last != world.round) {
++                last = world.round;
++                std::printf("PWHOLD %d %u %d %d %d\n", world.round, my_handle(), r.our_bag, r.enemy_bag, turns);
++            }
++        });
++    }
++    return held;
++}
++
++bool prism_war::spares(const World& world, const ChampionBelief& e) {
++    if constexpr (!params::prism_war_no_ender) return false;
++    const auto& r = read_now(world);
++    return r.posture == Posture::outgunned && is_ours(r) && r.enemy == &e;
++}
++
++const ChampionBelief* prism_war::hunt(const World& world, vec2 here) {
++    if constexpr (!params::prism_war_hunt) return nullptr;
++    const auto& r = read_now(world);
++    if (r.posture != Posture::dominant || !is_ours(r)) return nullptr;
++    const auto& e = *r.enemy;
++    // Seen within the horizon past which it could be anywhere, and as near as prey looks.
++    if (!e.visible && !(e.tracked && world.round - e.pos_round <= params::track_horizon)) return nullptr;
++    if (dist(here, e.pos) > vision_radius) return nullptr;
++    return &e;
++}
++
++} // namespace
++
++} // namespace aph
+diff --git a/bots/charybdis/src/economy/bank.cc b/bots/variants/cal-c/src/economy/bank.cc
+index bf77ad9d2..4fb27875e 100644
+--- a/bots/charybdis/src/economy/bank.cc
++++ b/bots/variants/cal-c/src/economy/bank.cc
+@@ -893,8 +893,11 @@ bool closing_now(const World& world, Pathing& pathing) {
+ }
+ 
+ // Prism keeps the gems it carries or gains for their Focus, until its bag wins or the game closes.
++// A winning bag too while an outgunning enemy Prism could stop its channel at every altar (prism_war::holds_tribute,
++// which keeps the bag's last rounds): a winning bag always reads as closing.
+ bool keeps_gems(const World& world, Pathing& pathing) {
+-    return world.me().facts().passive == Passive::gem_focus && !winning_bag(world) && !closing(world, pathing);
++    return world.me().facts().passive == Passive::gem_focus
++           && ((!winning_bag(world) && !closing(world, pathing)) || prism_war::holds_tribute(world));
+ }
+ 
+ bool retaining_gems(const World& world, Pathing& pathing) { return my_gems() > 0 && keeps_gems(world, pathing); }
+@@ -915,6 +918,18 @@ bool tribute_ok(const World& world, Safety& safety, const Memory& memory, int tu
+     return turns <= rounds_left(world) && (any_risk(world, turns) || tribute_safe(safety, memory, turns));
+ }
+ 
++// A winning tribute an outgunning enemy Prism could reach before its channel ends is not started at altar a,
++// short of the game's last rounds (prism_war::threatens_tribute). One under way is judged as any other.
++bool tribute_held(const World& world, int a) {
++    const int turns = tribute_turns(world, static_cast<int>(my_gems()));
++    if (a < 0 || rounds_left(world) <= turns + endgame_margin || !prism_war::threatens_tribute(world, a, 0, turns)) return false;
++    debug_block({
++        static int last = -1;
++        if (last != world.round) last = world.round, std::printf("PWHOLDA %d %u %u %d\n", world.round, my_handle(), my_gems(), turns);
++    });
++    return true;
++}
++
+ // At an unlocked altar in reach. The caller judged the turn's start tile safe; anywhere else, at an
+ // altar carry_bag gave up waiting at, or at one believed locked (the caller skipped it), is judged again.
+ bool submit_here(const World& world, Safety& safety, Memory& memory) {
+@@ -925,6 +940,7 @@ bool submit_here(const World& world, Safety& safety, Memory& memory) {
+     for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
+         if (dist(here, altars[a].pos) > cambc::constants::submit_gems_range) continue;
+         if (world.altars[a].enemy_lock && enemy_lock_live(altars[a].pos)) continue;
++        if (tribute_held(world, a)) continue;
+         const bool avoided = a == memory.avoid_altar && world.round < memory.avoid_until;
+         if ((avoided || world.altars[a].enemy_lock || here != world.turn_start)
+             && !tribute_ok(world, safety, memory, tribute_turns(world, my_gems())))
+@@ -1325,7 +1341,7 @@ bool mite_tribute_habit(const World& world, Pathing& pathing, Safety& safety, co
+     const vec2 here = my_position();
+     if (here.x < 0) return false;
+     const int a = altar_here(world, here);
+-    if (a < 0 || enemy_lock_live(world.map().altars[a].pos) || retaining_gems(world, pathing)) return false;
++    if (a < 0 || enemy_lock_live(world.map().altars[a].pos) || retaining_gems(world, pathing) || tribute_held(world, a)) return false;
+     if (tribute_turns(world, my_gems()) > rounds_left(world)) return false;
+     if (want_home(world, pathing, safety, memory)) return false;
+     throw_if_stale();
+@@ -1339,7 +1355,7 @@ bool mite_tribute_habit(const World& world, Pathing& pathing, Safety& safety, co
+ 
+ bool can_tribute_safely(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
+     if (retaining_gems(world, pathing)) return false;
+-    if (!can_tribute_here(world)) return false;
++    if (!can_tribute_here(world) || tribute_held(world, altar_here(world, my_position()))) return false;
+     return tribute_ok(world, safety, memory, tribute_turns(world, my_gems()));
+ }
+ 
+diff --git a/bots/charybdis/src/economy/farm.cc b/bots/variants/cal-c/src/economy/farm.cc
+index 7e911ce58..9c93e9a4c 100644
+--- a/bots/charybdis/src/economy/farm.cc
++++ b/bots/variants/cal-c/src/economy/farm.cc
+@@ -1733,6 +1733,10 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+     // By group, whether the loop priced it by way of spawn (read for the best only).
+     static std::vector<std::uint8_t> routed;
+     if (static_cast<int>(routed.size()) != n_groups) routed.assign(n_groups, 0);
++    const bool zone_bound = prism_war::zone_bound(world) && prism_war::zone(world);
++    int zone_blocked = 0;
++    bool zone_blocked_choice = false;
++    (void)zone_blocked, (void)zone_blocked_choice;
+     int k = 0;
+     for (; k < evaluated && room(); ++k) {
+         int g = order ? (*order)[k] : (first + k) % n_groups;
+@@ -1767,6 +1771,11 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+             || (belief.state != CampState::cleared && kited(g) && kite_owns(world, g)) || siege_declines(world, g)
+             || (belief.state == CampState::cleared && left_for_prism(world, pathing, g)))
+             continue;
++        // Worked only from inside an outgunning enemy Prism's reach, by our Prism or a bag (prism_war::zone_bound).
++        if (zone_bound && prism_war::blocks_group(world, g)) {
++            debug_block({ ++zone_blocked, zone_blocked_choice |= g == farm_group; });
++            continue;
++        }
+         // A Monolith with an enemy in sight near it is not taken up: our crew would clear it for
+         // them. Unless the enemy already stands in its reach, taking the hits.
+         if (group.has_monolith && g != memory.claim && belief.state != CampState::cleared && mono_contested(world, g)) continue;
+@@ -2254,7 +2263,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+             // A payout is at most capture_time rounds away, so no longer walk arrives before it (takeover_worth).
+             const int least = steps_to(G, here); // no walk to its tiles is shorter
+             if (least >= cambc::constants::capture_time || allies_on(world, G.tiles()) == 0 || !may_take_over(world, G)
+-                || left_for_prism(world, pathing, g))
++                || left_for_prism(world, pathing, g) || (zone_bound && prism_war::blocks_group(world, g)))
+                 return;
+             int timer = 0;
+             const float gain = takeover_gain(world, G, timer);
+@@ -2278,7 +2287,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+         world.each_cleared([&](int g) {
+             const auto& G = groups[g];
+             const int least = steps_to(G, here); // no walk to its tiles is shorter
+-            if (G.gems <= 0 || least > reach) return;
++            if (G.gems <= 0 || least > reach || (zone_bound && prism_war::blocks_group(world, g))) return;
+             const bool held = allies_on(world, G.tiles()) > 0;
+             // Left empty: our carry pick, or our claim that an ally's claim keeps out of the loop.
+             if (!held && (g != memory.claim || world.camps[g].holder == team::enemy || (memo.carry_group != g && !claimed_by_ally(g)))) return;
+@@ -2336,7 +2345,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+             const auto& c = world.camps[g];
+             if (c.state != CampState::alive || G.gems <= 0 || G.has_monolith || steps_to(G, here) > reach || enemy_on(world, G.tiles())
+                 || (kited(g) && kite_owns(world, g)) || siege_declines(world, g)
+-                || world.score.ally + bag + G.gems >= winning
++                || world.score.ally + bag + G.gems >= winning || (zone_bound && prism_war::blocks_group(world, g))
+                 || rounds_left(world) <= tribute_turns(bag + G.gems, world.me().fast_tribute) + map.width + map.height + endgame_margin)
+                 continue;
+             float output = 0;
+@@ -2420,6 +2429,10 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+                         chosen.mode, chosen.trips, chosen.tank, chosen.expected, chosen.output, chosen.damage, my_health(), max_health);
+         }
+     });
++    debug_block({
++        if (zone_blocked > 0)
++            std::printf("PWBLOCK %d %u %d %d g%d g%d\n", round, my_handle(), zone_blocked, zone_blocked_choice ? 1 : 0, farm_group, best);
++    });
+     if constexpr (!repricing) memo.carry_group = best >= 0 && (chosen.mode == 'G' || chosen.mode == 'L' || chosen.mode == 'Q') ? best : -1, memo.carry_round = round;
+     if (best < 0) {
+         if constexpr (repricing) return true;
+diff --git a/bots/charybdis/src/params.h b/bots/variants/cal-c/src/params.h
+index bf58f52b1..e1be5fc51 100644
+--- a/bots/charybdis/src/params.h
++++ b/bots/variants/cal-c/src/params.h
+@@ -305,4 +305,13 @@ inline constexpr float weight = 1.5f;
+ inline constexpr int steps = 6;
+ } // namespace open_plan
+ 
++// The Prism war (combat/prism_war.cc), part by part: our outgunned Prism keeps out of the enemy Prism's reach (farm,
++// work steps, early leave); so do our allies carrying brake_bag or more; our winning tribute waits while it could be
++// stopped; our outgunned Prism leaves the stop of its game-ending tribute to the others; our dominant Prism hunts it.
++inline constexpr bool prism_war_avoid = true;
++inline constexpr bool prism_war_ally_avoid = true;
++inline constexpr bool prism_war_hold_tribute = true;
++inline constexpr bool prism_war_no_ender = true;
++inline constexpr bool prism_war_hunt = true;
++
+ } // namespace aph::params
+diff --git a/bots/charybdis/src/unity.cpp b/bots/variants/cal-c/src/unity.cpp
+index e876fd4a2..8a085dff8 100644
+--- a/bots/charybdis/src/unity.cpp
++++ b/bots/variants/cal-c/src/unity.cpp
+@@ -7,6 +7,7 @@
+ #include "economy/shop.cc"
+ #include "economy/camps.cc"
+ #include "economy/home.cc"
++#include "combat/prism_war.cc"
+ #include "combat/guard.cc"
+ #include "combat/fight.cc"
+ #include "economy/bank.cc"

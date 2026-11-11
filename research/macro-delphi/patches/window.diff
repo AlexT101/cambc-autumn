@@ -1,0 +1,107 @@
+diff -ruN charybdis-ref/src/bot.cc window/src/bot.cc
+--- charybdis-ref/src/bot.cc	2026-11-11 18:57:46.061505870 +0000
++++ window/src/bot.cc	2026-11-11 21:26:13.051261895 +0000
+@@ -375,6 +375,7 @@
+     comeback::cooked(world); // every turn: the cook's hysteresis reads each round's scores
+     // Last turn's, for continue_recall: kept only while that recall is, else farm sets it again.
+     const int recall_farm = std::exchange(memory.recall_farm, -1);
++    debug_block({ window_trace(world); });
+     if (!world.me().alive || !banks_bag(world, pathing)) memory.banking = false;
+     if (!world.me().alive) {
+         if (recall_farm >= 0) {
+diff -ruN charybdis-ref/src/bot_parts.h window/src/bot_parts.h
+--- charybdis-ref/src/bot_parts.h	2026-11-11 18:57:46.061731273 +0000
++++ window/src/bot_parts.h	2026-11-11 21:26:13.051145304 +0000
+@@ -394,6 +394,8 @@
+ bool closing(const World& world, Pathing& pathing);
+ bool closing_now(const World& world, Pathing& pathing);
+ bool keeps_gems(const World& world, Pathing& pathing);
++bool prism_window(const World& world, Pathing& pathing);
++void window_trace(const World& world); // debug_block only
+ bool retaining_gems(const World& world, Pathing& pathing);
+ bool banks_bag(const World& world, Pathing& pathing);
+ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, int h, const Field* goal = nullptr, bool bold = false);
+diff -ruN charybdis-ref/src/economy/bank.cc window/src/economy/bank.cc
+--- charybdis-ref/src/economy/bank.cc	2026-11-11 18:57:46.064002492 +0000
++++ window/src/economy/bank.cc	2026-11-11 21:33:22.357881790 +0000
+@@ -881,20 +881,71 @@
+     return kept;
+ }
+ 
+-bool closing_now(const World& world, Pathing& pathing) {
++// Our way to an altar: a walk, else a recall and the walk from spawn; unreachable if neither.
++static int altar_trip(const World& world, Pathing& pathing) {
+     const auto& field = pathing.to_any_altar();
+-    int walk = field.at(my_position());
+-    // No walk out of here: recall home and walk from there.
+-    if (walk == unreachable) {
+-        const int out = field.at(recall_landing(world));
+-        walk = out == unreachable ? 0 : recall_turns(world) + out;
++    const int walk = field.at(my_position());
++    if (walk != unreachable) return walk;
++    const int out = field.at(recall_landing(world));
++    return out == unreachable ? unreachable : recall_turns(world) + out;
++}
++
++bool closing_now(const World& world, Pathing& pathing) {
++    const int trip = altar_trip(world, pathing);
++    return bag_rounds_left(world) <= (trip == unreachable ? 0 : trip) + tribute_turns(world, my_gems()) + endgame_margin;
++}
++
++namespace {
++struct WindowSeen {
++    int opened = -1, respawn = -1, bag = 0, last = -1; // last: the last round prism_window held
++    bool started = false;
++} window_seen;
++} // namespace
++
++// Every enemy Prism is dead, so neither its Focus-scaled stun nor its duel for the gems' Focus is in
++// play, and a bag worth a bank (bankable_bag) can reach an altar and finish its tribute before the
++// earliest respawn: Prism banks it.
++bool prism_window(const World& world, Pathing& pathing) {
++    if (my_gems() == 0) return false;
++    int respawn = -1;
++    for (const auto& e : world.enemies) {
++        if (e.facts().passive != Passive::gem_focus) continue;
++        if (e.alive || e.respawn_earliest < 0) return false;
++        respawn = respawn < 0 ? e.respawn_earliest : std::min(respawn, e.respawn_earliest);
++    }
++    if (respawn < 0) return false;
++    const int trip = altar_trip(world, pathing), channel = tribute_turns(world, my_gems());
++    if (trip == unreachable || world.round + trip + channel > respawn || bankable_bag(world, pathing) == 0) return false;
++    if (window_seen.opened < 0) {
++        window_seen = {world.round, respawn, static_cast<int>(my_gems()), world.round, false};
++        debug_block({ std::printf("WINDOW-OPEN %d %u bag=%u respawn_in=%d trip=%d channel=%d\n", world.round, my_handle(), my_gems(),
++                                  respawn - world.round, trip, channel); });
++    }
++    window_seen.last = world.round;
++    return true;
++}
++
++void window_trace(const World& world) {
++    if (window_seen.opened < 0) return;
++    const bool tributing = my_state().contains(cambc::champion_state::submitting_gems);
++    const char* end = nullptr;
++    if (!world.me().alive) end = "WINDOW-DIED";
++    else if (window_seen.started && !tributing) end = my_gems() == 0 ? "WINDOW-BANKED" : "WINDOW-CANCELLED";
++    else if (!window_seen.started && world.round > window_seen.last + 1) end = "WINDOW-LAPSED";
++    else if (!window_seen.started && tributing) {
++        window_seen.started = true;
++        std::printf("WINDOW-START %d %u bag=%u respawn_in=%d\n", world.round, my_handle(), my_gems(), window_seen.respawn - world.round);
+     }
+-    return bag_rounds_left(world) <= walk + tribute_turns(world, my_gems()) + endgame_margin;
++    if (!end) return;
++    std::printf("%s %d %u bag=%u opened=%d respawn=%d\n", end, world.round, my_handle(), my_gems(), window_seen.opened, window_seen.respawn);
++    window_seen = {};
+ }
+ 
+-// Prism keeps the gems it carries or gains for their Focus, until its bag wins or the game closes.
++// Prism keeps the gems it carries or gains for their Focus, until its bag wins, the game closes or
++// the enemy Prism's death opens a window to bank (prism_window).
+ bool keeps_gems(const World& world, Pathing& pathing) {
+-    return world.me().facts().passive == Passive::gem_focus && !winning_bag(world) && !closing(world, pathing);
++    return world.me().facts().passive == Passive::gem_focus && !winning_bag(world) && !closing(world, pathing)
++           && !prism_window(world, pathing);
+ }
+ 
+ bool retaining_gems(const World& world, Pathing& pathing) { return my_gems() > 0 && keeps_gems(world, pathing); }
