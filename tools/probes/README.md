@@ -51,6 +51,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 | `economy.bonuses` with Marcella's passive gold (Treasure on her tribute gold) | `probe-marcella-gold` |
 | `economy.emblems` (2.0.0; re-run on cambc 5.0.0, Skirmish x1.10): Capture (alone, and joining an ally's capture; `capture_state()` each round), Tribute channel lengths (bags 14/21/28/56), Skirmish and Collectors on basic, unit and ground damage to champions and camps; emblem `passive_magnitude`s | `probe-emblems-v2` (`run.sh <join_delay>`; team B is the no-emblem control) |
 | `combat.modifiers`, `altar_locks`, `economy.health_purchase` | `probe-misc`, `probe-misc-b` |
+| `altar_locks.effect` with an own lock: placing it cancels our ally's running channel too; our tributes there start and score afterwards, the enemy's are refused (each attempt one of the five hits) | `probe-lock-own`, `probe-lock-own-b` (scenario 6, 00packs, 170 rounds) |
 | `rounds.turn_start`, buffs, shields, Marcella, Ren, Prism, Vendetta, Varg passives | `probe-effects`, `probe-effects-b` |
 | Varg's splash from a camp target | `probe-varg-splash` |
 | Heart of Ruin's landing on unseen enemies | `probe-hor-unseen` |
@@ -77,6 +78,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 - Gold bonuses also apply to Marcella's tribute gold: with a Treasure emblem she gets 2.4 per gem (29 gems: +69.6), and the fraction carries over. The gold is credited when the channel completes, together with the gems, not at its start (`probe-marcella-gold`).
 - Errors: a duplicate own pick is error 14; a second pick in one draft turn, or a draft-memory write in play, is error 18; reading an unseen unit's details is error 97; `remaining_channel_time()` while not channelling is error 115; `shadow_cast` from an opaque tile is error 5.
 - `is_ready()` reports an attack reset as castable while the attack is unspent, when the cast would fail.
+- `ability::damage_amount()` with no target (`sdk_champion_ability_damage`) is Focus x multiplier with Collectors but without Skirmish; `damage_amount(target)` (`sdk_champion_ability_damage_against`) adds Skirmish and equals the damage dealt to a target without Durability (`probe-ability-damage-query`).
 - `bitboard::shadow_cast` with walls and the other bush clusters opaque reproduces engine vision exactly.
 - `bitboard::positions()` lists tiles in 8x8 blocks (row order inside each), not row order: a 3x3 spawn on (6..8,6..8) reads (6,6) (7,6) (6,7) (7,7) (8,6) (8,7) (6,8) (7,8) (8,8) (`probe-recall-land`).
 - Bitboard raw storage: word `(y / 8) * chunk_stride + x / 8`, bit `(y % 8) * 8 + x % 8`; `chunk_stride` is `chunked_width` rounded up to even (33: 5 -> 6, 71: 9 -> 10, 100: 13 -> 14, 60: 8 -> 8), and there are no rows past `chunked_height`. Distance fields have no stride column: value `(y / 8) * chunked_width + x / 8` chunks of 64. Padding (edge-chunk bits past width/height, plus the stride column) never reaches a map tile through host ops (`probe-padding`):
