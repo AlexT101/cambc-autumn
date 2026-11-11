@@ -243,3 +243,40 @@ p1's on these suites.
     changes the Prism's gem:gold weight only where `per_gold` differs from about 0.18, and on J.
   - Next step: test it with a Focus premium gated on `prism_dominant`. Or combine it with a future change that hands
     the Prism more joins (where the J piece matters most).
+
+## C2 = M4-a2, the Prism collects an ally's clear in progress (macro4-handfc)
+
+- **Merged:** economy/farm.cc, a 'Q' pick after the 'G'/'L' carry loop, valued as the base's carries (C1 and C3
+  are not kept).
+  - Candidates: each ally's claimed gem group, alive, within `carry_reach`, not a Monolith. The B2 gates apply:
+    `enemy_seen`, `enemy_may_see` at any member, hurt line, win, time. The main loop's kite and siege skips apply
+    too.
+  - It must be worked (hit last round, or a visible claimer within attack reach), and the claimers must leave a tile
+    free. K3 is not merged, so a full group could not be handed to the Prism.
+  - `clear = health / claimers' camp_output`, and `ours = clear + capture_rounds`.
+    - There before the clear ends: we join as crew, only if `affordable`.
+    - There before the ally's payout: B1 makes us sole holder, valued over `ours`.
+    - Otherwise: the base's claimed leave hands the cleared group over, valued over `walk + capture_rounds`.
+  - Worth `gems + per_gold x gold`, as 'G'/'L'.
+  - A 'Q' pick posts a crew claim (as macro4) and sets `memo.carry_group`, so off-way branches withdraw it
+    (`drop_carry_claim`). 'Q' is kept out of recall-to-farm like 'T', 'G' and 'L'.
+  - One claim per turn, so 'Q' and 'J' cannot both take a group: J wins on value as before.
+- **Audit** (on the first build, on C3; the rebase onto p1 only drops `keep_bonus` from the worth). Fixed:
+  - the main loop's `kited && kite_owns` and `siege_declines` skips were missing (a kited big group could draw the
+    Prism onto its attack tiles);
+  - `memory.crew` was only set for an arrival before the clear. A non-crew claim made the next turn's loop price the
+    ally's group as our own clear, so it is now always crew, as in macro4;
+  - the claim was never withdrawn on mend, shop or bank, now handled through `carry_group`.
+
+  Risks noted: allies' crew plans count our output even when we arrive after the clear; `ours` assumes no Capture
+  emblem; no stickiness on 'Q'.
+- **Debug batch:** 'Q' picks 2.97 a game, in 335 of 512 games. Other Prism picks are near p1's
+  (S 14.76, J 12.93, G 1.22, L 1.58).
+- **A/Bs (40,960 each, s-720001..080):**
+  - vs ocean-main: **59.15%** (CI 58.7-59.6); paired against p1 +0.54 (CI +0.06..+1.03, z 2.2). OOF CAND 250,629,
+    p1's 247,857.
+  - vs charybdis-base: **52.43%** (CI 52.0-52.9); paired +0.22 (CI -0.27..+0.72).
+  - vs charybdis-p1: **50.91%** (CI 50.4-51.4).
+- **Decision: accepted** (the first phase-2 change). The lower bound against p1 is above 50%, and the results
+  against ocean-main and base are above p1's on the same games. Committed into bots/charybdis without the
+  debug-only pick trace.

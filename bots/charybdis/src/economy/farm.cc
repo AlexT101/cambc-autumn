@@ -2284,6 +2284,54 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             }
         });
     }
+    // Keeping our gems, as Prism: an ally's clear under way of a gem group within carry_reach ('Q'), worked
+    // (hit last round, or a claimer in reach), the whole capture ours as for 'G' and 'L'. There before the
+    // clear ends we join it as crew, if we can afford its fire; after, a free tile beside the claimers'
+    // makes us its sole holder (sole_capture_holder) at their payout, else it is left to us once cleared
+    // (left_for_prism) for a whole hold of ours. A group the claimers fill is not taken: its hold can't be
+    // handed over. Posted as the carry ('G', 'L'), so a turn off the way withdraws it.
+    if (keeps && !banks_bag && !memory.banking && !enemy_seen(world) && my_health() >= params::hurt_health_fraction * max_health) {
+        const int bag = static_cast<int>(my_gems()), winning = static_cast<int>(cambc::constants::winning_gems);
+        std::array<int, 8> asked;
+        int n_asked = 0;
+        for (const auto& a : world.allies) {
+            if (a.is_self || !a.alive) continue;
+            const int g = comms::claim_of(world, a.index);
+            if (g < 0 || g >= n_groups || n_asked == static_cast<int>(asked.size()) || std::find(asked.begin(), asked.begin() + n_asked, g) != asked.begin() + n_asked)
+                continue;
+            asked[static_cast<std::size_t>(n_asked++)] = g;
+            const auto& G = groups[g];
+            const auto& c = world.camps[g];
+            if (c.state != CampState::alive || G.gems <= 0 || G.has_monolith || steps_to(G, here) > reach || enemy_on(world, G.tiles())
+                || (kited(g) && kite_owns(world, g)) || siege_declines(world, g)
+                || world.score.ally + bag + G.gems >= winning
+                || rounds_left(world) <= tribute_turns(bag + G.gems, world.me().fast_tribute) + map.width + map.height + endgame_margin)
+                continue;
+            float output = 0;
+            int claimers = 0;
+            bool worked = c.last_damaged_round >= round - 1;
+            for (const auto& b : world.allies) {
+                if (b.is_self || !b.alive || comms::claim_of(world, b.index) != g) continue;
+                output += camp_output(b), ++claimers;
+                if (b.visible) worked = worked || crew_in_reach(world, g, b.pos, b.facts().attack_range());
+            }
+            if (!worked || !(output > 0) || claimers >= static_cast<int>(G.members.size())) continue;
+            float health = 0;
+            bool seen = false;
+            for (std::size_t i = 0; i < G.members.size(); ++i) health += std::max(0.0f, c.health[i]), seen |= enemy_may_see(world, G.members[i].pos);
+            if (seen || !(health > 0) || !fuel_ok(full_field_cost_estimate() + loop_reserve())) continue;
+            const int walk = pathing.to_group(g).at(here);
+            if (walk == unreachable || walk > reach) continue;
+            const float clear = health / output, ours = clear + static_cast<float>(capture_rounds(false));
+            if (static_cast<float>(walk) < clear && !affordable(g)) continue;
+            const float rounds = static_cast<float>(walk) < ours ? ours : static_cast<float>(walk + capture_rounds(world));
+            const int gems = std::min(G.gems + (prospector ? prospected(G.cluster_gems, 1) : 0), short_by);
+            const int gold = G.gold + (prospector ? prospected(G.cluster_gold, 1) : 0);
+            const float value = rate(world, static_cast<float>(gems) + per_gold * static_cast<float>(gold), rounds);
+            if (value > best_value)
+                best = g, best_steps = walk, best_value = value, best_spell = false, best_priced = Priced{'Q'};
+        }
+    }
     if (banks_bag && (best < 0 || best_value <= from_altar_value)) return false;
     if (banks_bag && attack_in_range()) return true;
     if (world.is_stale()) return true;
@@ -2294,6 +2342,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
     memory.crew = false;
     bool spell = best >= 0 && best_spell;
     Priced chosen = best_priced;
+    if (chosen.mode == 'Q') memory.crew = true; // the claim an ally's leave_for_prism reads; the clear's crew if we come in time
     if (shared >= 0 && (best < 0 || shared_value > best_value)) {
         best = shared, best_steps = shared_steps, memory.claim = shared, memory.crew = true, spell = false, chosen = shared_priced;
         if (prev_claim != shared || !prev_crew) {
@@ -2335,7 +2384,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
                         chosen.mode, chosen.trips, chosen.tank, chosen.expected, chosen.output, chosen.damage, my_health(), max_health);
         }
     });
-    if constexpr (!repricing) memo.carry_group = best >= 0 && (chosen.mode == 'G' || chosen.mode == 'L') ? best : -1, memo.carry_round = round;
+    if constexpr (!repricing) memo.carry_group = best >= 0 && (chosen.mode == 'G' || chosen.mode == 'L' || chosen.mode == 'Q') ? best : -1, memo.carry_round = round;
     if (best < 0) {
         if constexpr (repricing) return true;
         // Cut short before weighing even last turn's choice: walk on towards it, as its crew if we were.
@@ -2360,7 +2409,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
         memory.mono_group = -1, memory.mono_staged = -1;
     }
     // As the loop priced it; recall_to_farm keeps the turn-end recall while it stays sooner.
-    if (recall_out && steps_data[best] != unreachable && chosen.mode != 'T' && chosen.mode != 'G' && chosen.mode != 'L'
+    if (recall_out && steps_data[best] != unreachable && chosen.mode != 'T' && chosen.mode != 'G' && chosen.mode != 'L' && chosen.mode != 'Q'
         && via_recall.sooner(spawn_steps(best), respawn_in(world.camps[best]), best_steps) < static_cast<float>(unreachable)
         && (!to_altar || routed[best])) {
         memory.recall_farm = best;

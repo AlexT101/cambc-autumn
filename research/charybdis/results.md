@@ -39,3 +39,4 @@ Details in merge-log.md. "vs p1" is the candidate against charybdis-p1 directly.
 | C3 | M6-bc carried_bonus pricing, swap for gold_part | 59.0 (58.5-59.4) | 52.3 (51.8-52.7) | 50.3 (49.8-50.8) | extended |
 | C3 (81,920, s-720001..160) | same; p1 there: 58.68 / 51.96 | 59.06 | 52.14 | 50.31 (49.97-50.65) | rejected: level; fuel-optimization candidate |
 | C6 | M5-f route tie-break | - | - | - | not built: trace shows 0.014 transit splits/game |
+| C2 | M4-a2 Prism collects an ally's clear in progress ('Q') | 59.15 (58.7-59.6) | 52.43 (52.0-52.9) | 50.91 (50.4-51.4) | **accepted** |
