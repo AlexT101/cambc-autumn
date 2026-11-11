@@ -322,6 +322,7 @@ bool pack_covers(const World& world, Safety& safety, vec2 p, int r);
 void guard_steps(const World& world, Pathing& pathing, Safety& safety);
 void guard_work(const World& world, Pathing& pathing, Safety& safety, float damage, const bitboard* avoid);
 void reguard_willow(const World& world, Pathing& pathing, Safety& safety);
+const bitboard* prism_hold_seen(const World& world, bool on_too);
 void strike_guard_known(const Pathing& pathing, vec2 here);
 
 // combat/fight.cc
@@ -383,6 +384,7 @@ bool sealed_in(const World& world, Pathing& pathing, vec2 p);
 bool wake_ring(const World& world, Pathing& pathing, Safety& safety);
 int altar_steps(const World& world, Pathing& pathing, vec2 p, int altar);
 int bank_floor(const World& world, Pathing& pathing);
+int bank_floor_most(const World& world);
 void note_carriers(const World& world);
 int bankable_bag(const World& world, Pathing& pathing);
 bool altars_sealed(const World& world, Pathing& pathing);

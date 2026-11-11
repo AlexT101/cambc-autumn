@@ -363,6 +363,14 @@ bool search_strikes(World& world, Pathing& pathing, Safety& safety, const Memory
     return planned.attacked;
 }
 
+// yield_capture steps only off a cleared group's tile: most turns need none of its tests.
+bool on_cleared_group(const World& world) {
+    const vec2 here = my_position();
+    if (!in_bounds(here)) return false;
+    const int g = world.map().group_at(here);
+    return g >= 0 && world.camps[g].state == CampState::cleared;
+}
+
 void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     comeback::cooked(world); // every turn: the cook's hysteresis reads each round's scores
     // Last turn's, for continue_recall: kept only while that recall is, else farm sets it again.
@@ -465,7 +473,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     guard_steps(world, pathing, safety);
     if (join_marcella_capture(world, pathing, safety, memory)) return;
     // Off a sole Prism's hold with an enemy in sight, the strike search still has our attack and casts.
-    const bool yielded = yield_capture(world, pathing, safety, memory);
+    const bool yielded = on_cleared_group(world) && yield_capture(world, pathing, safety, memory);
     if (yielded && !yielded_in_sight()) return;
     if (yielded) guard_steps(world, pathing, safety);
     if (take_capture_handoff(world, pathing, safety, memory)) return;
@@ -491,7 +499,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         static const bool near = home_monolith_map(world);
         const bitboard* avoid = near ? home_reach_avoid(world, memory) : nullptr;
         // Nor do they end on a group Prism holds alone: at its payout they would split it.
-        if (const bitboard* held = prism_hold_tiles(world)) {
+        if (const bitboard* held = prism_hold_seen(world, false)) {
             static bitboard both{cambc::uninitialized};
             if (avoid) copy_into(*avoid, both), both |= *held, avoid = &both;
             else avoid = held;
@@ -526,7 +534,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     }
     if (willow_follow(world, pathing, safety)) return;
     farm(world, pathing, safety, memory);
-    yield_capture(world, pathing, safety, memory, true);
+    if (on_cleared_group(world)) yield_capture(world, pathing, safety, memory, true);
 }
 
 // Recalling every turn end and cancelling next turn when not wanted makes a wanted recall a

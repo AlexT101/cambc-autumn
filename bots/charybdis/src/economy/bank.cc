@@ -760,23 +760,56 @@ int bank_floor(const World& world, Pathing& pathing) {
     const float trip = static_cast<float>(there + tribute_turns(world, 1) + back);
     const float rate = gem_income_rate();
     const float q = rate * std::sqrt(2.0f * trip / (carrier_hazard() * params::bag_swing));
-    const int most = std::max(gems_per_tribute_turn, std::min(gems_short(world), gems_per_tribute_turn * bag_rounds_left(world)));
-    return kept = std::clamp(static_cast<int>(std::lround(q)), gems_per_tribute_turn, most);
+    return kept = std::clamp(static_cast<int>(std::lround(q)), gems_per_tribute_turn, bank_floor_most(world));
 }
 
-// The bag a tribute could score: one no altar is usable for is held back, and we farm and shop as
-// if empty-handed.
-int bankable_bag(const World& world, Pathing& pathing) {
-    const int bag = static_cast<int>(my_gems());
+// bank_floor's bounds: at least a tribute turn's gems, at most this.
+int bank_floor_most(const World& world) {
+    return std::max(gems_per_tribute_turn, std::min(gems_short(world), gems_per_tribute_turn * bag_rounds_left(world)));
+}
+
+namespace {
+
+// bankable_bag uncached. `crystal`: whether it read our crystals, which a teleport spends with nothing
+// else in its key moving.
+int bankable_bag_now(const World& world, Pathing& pathing, int bag, bool& crystal) {
     if (bag == 0 || !altar_usable(world, pathing, bag, my_health())) return 0;
-    if (bag < bank_floor(world, pathing) && !winning_bag(world) && !closing(world, pathing)) return 0;
+    // bank_floor only within its bounds, each test before the dearer ones.
+    if (!winning_bag(world) && bag < bank_floor_most(world) && (bag < gems_per_tribute_turn || bag < bank_floor(world, pathing))
+        && !closing(world, pathing))
+        return 0;
     if (world.round < ring_refused_until && altar_steps(world, pathing, my_position(), -1) == unreachable) return 0;
     // Only a crystal reaches an altar and we can neither use nor buy one: farm the gold first. A
     // recall out of a pocket to a spawn with a walk to one banks it. Altars' hops come first.
-    if (!world.map().hops().empty() && world.map().hops()[0].altar >= 0 && altar_steps(world, pathing, my_position(), -1) == unreachable && !carries_crystal()
-        && !can_buy_crystal() && altar_steps(world, pathing, recall_landing(world), -1) == unreachable)
+    if (!world.map().hops().empty() && world.map().hops()[0].altar >= 0 && altar_steps(world, pathing, my_position(), -1) == unreachable
+        && (crystal = true, !carries_crystal()) && !can_buy_crystal() && altar_steps(world, pathing, recall_landing(world), -1) == unreachable)
         return 0;
     return bag;
+}
+
+} // namespace
+
+// The bag a tribute could score: one no altar is usable for is held back, and we farm and shop as
+// if empty-handed. Asked several times a turn, so kept while its inputs hold: the world's beliefs
+// move only with an observation, our items with gold, the rest is ours or in the key.
+int bankable_bag(const World& world, Pathing& pathing) {
+    struct Key {
+        std::uint32_t round, observations, gems, gold;
+        float health;
+        int refused;
+        vec2 here;
+        bool operator==(const Key&) const = default;
+    };
+    static Key last{~0u};
+    static int kept = 0;
+    const int bag = static_cast<int>(my_gems());
+    if (bag == 0) return 0;
+    const Key key{static_cast<std::uint32_t>(world.round), world.observations, my_gems(), my_gold(), my_health(), ring_refused_until, my_position()};
+    if (key == last) return kept;
+    bool crystal = false;
+    kept = bankable_bag_now(world, pathing, bag, crystal);
+    last = crystal ? Key{~0u} : key;
+    return kept;
 }
 
 // No altar is usable for the team's largest bag (an unseen ally's as posted).

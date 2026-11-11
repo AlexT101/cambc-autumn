@@ -678,6 +678,19 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
     return any ? &guard : nullptr;
 }
 
+// prism_hold_tiles, asked only while our one Prism ally (a team picks each champion once) is in sight:
+// without it, it answers null, and most teams have none.
+const bitboard* prism_hold_seen(const World& world, bool on_too) {
+    static const int prism = [&] {
+        for (const auto& a : world.allies)
+            if (!a.is_self && a.facts().passive == Passive::gem_focus) return a.index;
+        return -1;
+    }();
+    if (prism < 0) return nullptr;
+    const auto& a = world.allies[static_cast<std::size_t>(prism)];
+    return a.alive && a.visible ? prism_hold_tiles(world, on_too) : nullptr;
+}
+
 // The tiles held_step_guard adds: a sole Prism holder's (prism_hold_tiles), set by guard_steps.
 const bitboard* step_held_tiles = nullptr;
 // `guard` with step_held_tiles, in `out`.
@@ -691,7 +704,12 @@ const bitboard* with_held_tiles(const bitboard* guard, bitboard& out) {
 // which would have spared its fights.
 const bitboard* held_step_guard(const World& world, Safety& safety, vec2 here, int radius) {
     static bitboard out{cambc::uninitialized};
-    const bitboard* strikes = step_guard_cover(world, safety, here, radius) ? step_guard(world, safety, here, radius) : nullptr;
+    // The cover route() or the plan search just worked out from the same inputs is the one we would.
+    const auto& fp = first_pass;
+    const bool covered = fp.valid && fp.here == here && fp.radius == radius && fp.generation == Safety::generation()
+                             ? fp.m > 0
+                             : step_guard_cover(world, safety, here, radius) != nullptr;
+    const bitboard* strikes = covered ? step_guard(world, safety, here, radius) : nullptr;
     return with_held_tiles(strikes, out);
 }
 const bitboard* held_step_cover(const World& world, Safety& safety, vec2 here, int radius) {
@@ -722,7 +740,7 @@ void guard_steps(const World& world, Pathing& pathing, Safety& safety) {
     for (int s = 0; s < 2; ++s)
         if (self.facts().abilities[s].kind == AbilityKind::dash && self.ability_ready(s, world.round) && my_can_cast()) radius = dash_range;
     // In a fight too, no step ends on a group Prism holds alone (prism_hold_tiles), as the work guard keeps.
-    if (enemy_seen(world) && (step_held_tiles = prism_hold_tiles(world)))
+    if (enemy_seen(world) && (step_held_tiles = prism_hold_seen(world, false)))
         pathing.defer_guard(held_step_guard, safety, my_position(), radius, held_step_cover);
     else pathing.defer_guard(step_guard, safety, my_position(), radius, step_guard_cover);
 }
@@ -837,7 +855,7 @@ void guard_work(const World& world, Pathing& pathing, Safety& safety, float dama
     // Willow keeps her stations' guard (support.cc, guard_steps), and the work's steps keep off a
     // group Prism holds alone (prism_hold_tiles), as everyone's do.
     if (world.me().facts().heals()) {
-        if ((willow_held = prism_hold_tiles(world))) pathing.defer_guard(willow_held_guard, safety, my_position(), 1);
+        if ((willow_held = prism_hold_seen(world, false))) pathing.defer_guard(willow_held_guard, safety, my_position(), 1);
         return;
     }
     const auto& self = world.me();

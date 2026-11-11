@@ -95,35 +95,51 @@ bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Fiel
     const auto& exit = *way;
     const int out = exit.at(here);
     const auto& blocked = pathing.blocked();
-    std::optional<vec2> best;
-    float best_damage = 0;
-    int best_home = 0;
-    bool best_lethal = false;
-    for (auto d : directions) {
-        const vec2 p = here + d;
+    // The steps down by damage, then steps home, ties in compass order: the first not lethal is the
+    // best, else the first. lethal (~1k a tile) is read only down to it.
+    struct Step {
+        int k;
+        float damage;
+        int steps;
+    };
+    Unwritten<Step, 8> sorted;
+    auto& down = sorted.a;
+    int n = 0;
+    for (int k = 0; k < 8; ++k) {
+        const vec2 p = here + directions[k];
         if (!in_bounds(p) || test(blocked, p) || exit.at(p) != out - 1) continue;
-        const bool lethal = safety.lethal(p);
-        const float damage = safety.damage_bound(p, false, world.me().taken) + exit_hits(exit, safety, p);
-        const int steps = home.at(p);
-        const bool better = !best || (lethal != best_lethal ? !lethal : damage < best_damage || (damage == best_damage && steps < best_home));
-        if (better) best = p, best_damage = damage, best_home = steps, best_lethal = lethal;
+        const Step s{k, safety.damage_bound(p, false, world.me().taken) + exit_hits(exit, safety, p), home.at(p)};
+        int i = n++;
+        for (; i > 0 && (s.damage < down[i - 1].damage || (s.damage == down[i - 1].damage && s.steps < down[i - 1].steps)); --i) down[i] = down[i - 1];
+        down[i] = s;
     }
-    if (!best) return false;
-    if (const float life = my_health_and_shield(world); best_lethal && safety.camp_damage(*best, true, true) < life) {
+    if (n == 0) return false;
+    std::array<std::int8_t, 8> lethal_at; // by direction, -1 unread
+    lethal_at.fill(-1);
+    int best = 0;
+    bool best_lethal = true;
+    for (int i = 0; i < n && best_lethal; ++i) {
+        const int k = down[i].k;
+        lethal_at[k] = safety.lethal(here + directions[k]);
+        if (!lethal_at[k]) best = k, best_lethal = false;
+    }
+    if (best_lethal) best = down[0].k;
+    const vec2 to = here + directions[best];
+    if (const float life = my_health_and_shield(world); best_lethal && safety.camp_damage(to, true, true) < life) {
         // retreat_step's steps: none farther from home, or farther ones untouched. A bound below our
         // health ranks the step ahead of the lethal ones there.
         const int at = home.at(here);
-        for (auto d : directions) {
-            const vec2 p = here + d;
+        for (int k = 0; k < 8; ++k) {
+            const vec2 p = here + directions[k];
             if (!in_bounds(p) || test(blocked, p) || home.at(p) == unreachable) continue;
-            if ((home.at(p) <= at || !safety.touched(p, world.me().taken)) && !safety.lethal(p)
-                && safety.damage_bound(p, false, world.me().taken) < life) {
+            if ((home.at(p) <= at || !safety.touched(p, world.me().taken)) && safety.damage_bound(p, false, world.me().taken) < life
+                && !(lethal_at[k] >= 0 ? lethal_at[k] == 1 : safety.lethal(p))) {
                 deferred = true;
                 return false;
             }
         }
     }
-    return pathing.try_move(*best);
+    return pathing.try_move(to);
 }
 
 // A step home whose walk onto our spawn survives, or none: a turn ended there heals to full before
@@ -203,7 +219,7 @@ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Fi
     const vec2 here = my_position();
     // Of equally safe steps, one off a group Prism holds alone: at its payout we would split it.
     // Beside its tiles, a homeward step off them first (descend: no detour, no make_way).
-    const bitboard* held = prism_hold_tiles(world, true);
+    const bitboard* held = prism_hold_seen(world, true);
     bool beside_held = false;
     if (held)
         for (const auto d : directions) beside_held |= in_bounds(here + d) && test(*held, here + d);

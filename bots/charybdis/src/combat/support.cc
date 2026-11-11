@@ -527,7 +527,7 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
     const auto here_risk = support_exposure(world, safety, here);
     const int work = willow ? comms::claim_of(world, mate->index) : memory.farm_group;
     // Willow staying on a group Prism holds alone splits its payout: the formation only steps off it.
-    const bitboard* held = willow ? prism_hold_tiles(world, true) : nullptr;
+    const bitboard* held = willow ? prism_hold_seen(world, true) : nullptr;
     const bool on_held = held && test(*held, here);
     if (willow && !ready && here_risk.safe() && !on_held && stationary_support_output(world, work)) {
         support_owned = true;

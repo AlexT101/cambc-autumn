@@ -2277,10 +2277,17 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
     if (keeps && !banks_bag && !memory.banking) {
         world.each_cleared([&](int g) {
             const auto& G = groups[g];
-            if (G.gems <= 0 || steps_to(G, here) > reach) return;
+            const int least = steps_to(G, here); // no walk to its tiles is shorter
+            if (G.gems <= 0 || least > reach) return;
             const bool held = allies_on(world, G.tiles()) > 0;
             // Left empty: our carry pick, or our claim that an ally's claim keeps out of the loop.
             if (!held && (g != memory.claim || world.camps[g].holder == team::enemy || (memo.carry_group != g && !claimed_by_ally(g)))) return;
+            const int gems = std::min(G.gems + (prospector ? prospected(G.cluster_gems, 1) : 0), short_by);
+            const int gold = G.gold + (prospector ? prospected(G.cluster_gold, 1) : 0);
+            const float worth = static_cast<float>(gems) * (1.0f + keep_bonus(G)) + per_gold * static_cast<float>(gold);
+            // The fewest rounds it can take (a payout comes after our arrival): no better than the best, and not
+            // the best already, it is not picked (a worth's rate falls with its rounds).
+            if (best != g && worth >= 0 && !(rate(world, worth, static_cast<float>(least + (held ? 1 : capture_rounds(world)))) > best_value)) return;
             int timer = 0;
             if (held ? !prism_takeover(world, safety, G, timer, goal) : !prism_carries(world, safety, G, goal)) return;
             if (!fuel_ok(full_field_cost_estimate() + loop_reserve())) return;
@@ -2299,11 +2306,9 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             if (walk > reach) return;
             // A holder whose recall lands before we arrive leaves the tiles empty for a whole hold of ours.
             const bool in_time = held && walk < timer && holders_stay(world, G, round + walk);
-            const int gems = std::min(G.gems + (prospector ? prospected(G.cluster_gems, 1) : 0), short_by);
-            const int gold = G.gold + (prospector ? prospected(G.cluster_gold, 1) : 0);
             // No more than the loop's bound on a cleared group: the walk is at least the crow's.
             const int rounds = in_time ? timer : walk + capture_rounds(world);
-            const float value = rate(world, static_cast<float>(gems) * (1.0f + keep_bonus(G)) + per_gold * static_cast<float>(gold), static_cast<float>(rounds));
+            const float value = rate(world, worth, static_cast<float>(rounds));
             // Our pick already, taken over as the carry for its goal and the carry's stickiness.
             if (value > best_value || (best == g && !in_time)) {
                 best = g, best_steps = walk, best_value = std::max(value, best_value), best_spell = false, best_priced = Priced{in_time ? 'G' : 'L'};
@@ -2344,18 +2349,22 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             }
             if (!worked || !(output > 0) || claimers >= static_cast<int>(G.members.size())) continue;
             float health = 0;
-            bool seen = false;
-            for (std::size_t i = 0; i < G.members.size(); ++i) health += std::max(0.0f, c.health[i]), seen |= enemy_may_see(world, G.members[i].pos);
-            if (seen || !(health > 0) || !fuel_ok(full_field_cost_estimate() + loop_reserve())) continue;
-            const int walk = pathing.to_group(g).at(here);
-            if (walk == unreachable || walk > reach) continue;
+            for (std::size_t i = 0; i < G.members.size(); ++i) health += std::max(0.0f, c.health[i]);
+            if (!(health > 0)) continue;
             const float clear = health / output, ours = clear + static_cast<float>(capture_rounds(false));
-            if (static_cast<float>(walk) < clear && !affordable(g)) continue;
-            const float rounds = static_cast<float>(walk) < ours ? ours : static_cast<float>(walk + capture_rounds(world));
             const int gems = std::min(G.gems + (prospector ? prospected(G.cluster_gems, 1) : 0), short_by);
             const int gold = G.gold + (prospector ? prospected(G.cluster_gold, 1) : 0);
-            const float value = rate(world, static_cast<float>(gems) * (1.0f + keep_bonus(G)) + per_gold * static_cast<float>(gold), rounds);
-            if (value > best_value)
+            const float worth = static_cast<float>(gems) * (1.0f + keep_bonus(G)) + per_gold * static_cast<float>(gold);
+            // Its rounds grow with the walk, at least the crow's: no better than the best then, it is not picked.
+            const auto rounds_at = [&](int walk) { return static_cast<float>(walk) < ours ? ours : static_cast<float>(walk + capture_rounds(world)); };
+            if (worth >= 0 && !(rate(world, worth, rounds_at(steps_to(G, here))) > best_value)) continue;
+            bool seen = false;
+            for (const auto& m : G.members) seen |= enemy_may_see(world, m.pos);
+            if (seen || !fuel_ok(full_field_cost_estimate() + loop_reserve())) continue;
+            const int walk = pathing.to_group(g).at(here);
+            if (walk == unreachable || walk > reach) continue;
+            const float value = rate(world, worth, rounds_at(walk));
+            if (value > best_value && !(static_cast<float>(walk) < clear && !affordable(g)))
                 best = g, best_steps = walk, best_value = value, best_spell = false, best_priced = Priced{'Q'};
         }
     }
