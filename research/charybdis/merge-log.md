@@ -30,3 +30,19 @@ charybdis-base vs ocean-main-b7c87cf: **56.9%** of 20,480 (CI 56.3-57.6). OOF tu
   - vs ocean-main: **57.9%** (CI 57.2-58.6); OOF CAND 125,278, REF 109,620.
   - vs charybdis-base: **51.1%** (CI 50.4-51.7).
 - **Decision: accepted.** Above 50% against base, and 57.9 >= 56.9 against ocean.
+
+## K2a = M2-d, no lethal camp flight (macro2-lstep)
+
+- **Merged:** macro2-lstep's two combat/fight.cc hunks alone (`flee_camps` gains `bool& deferred`, prefers a
+  non-lethal step, and defers to `retreat_step` when only lethal exits are left and a surviving retreat step exists;
+  its caller in `retreat`, with the debug-only `LSTEP` trace). `patch -p2`, offsets only. Built on K1.
+- **Audit:** no bugs. Hunks identical to the source; none of macro2's other pieces leaked in. The base's own
+  `retreat_step` changes (held-tile descend branches) are unreachable after a deferral, since a deferral needs camp
+  damage at `here`, which puts `here` in `avoid`; only the base's `held` sort key remains, which reorders equal-damage
+  steps and cannot put a lethal step first. Inherited risk (no fix): the prediction of `retreat_step`'s step can
+  miss on the bush bonus, walk-dash options or a failed `try_move`, as in macro2.
+- **A/Bs (20,480 each):**
+  - vs ocean-main: **58.2%** (CI 57.5-58.8); OOF CAND 126,328, REF 110,118.
+  - vs charybdis-base: **51.4%** (CI 50.7-52.1).
+- **Decision: accepted.** A bug fix, and it also passes the gain rule (51.4 > 51.1 against base, 58.2 >= 57.9 against
+  ocean); the steps are within noise of each other.

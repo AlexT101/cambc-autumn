@@ -83,8 +83,10 @@ float exit_hits(const Field& field, Safety& safety, vec2 p) {
 // while a recall started outside its reach goes home untouched. Distance as the crow flies would
 // aim at exits across holes, and pricing the walk at one tile's rate would trade steps back and
 // forth between two camps' reach: only steps down count, ranked by the hits on their whole walk
-// out, then steps home.
-bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
+// out, then steps home. A step the threats could kill us on goes after the rest. If only those are
+// left and enemies, not the camps alone, make them lethal, a step retreat_step would take whose bound
+// leaves us alive beats any camp hit: `deferred` is set and retreat_step ranks every step.
+bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Field& home, bool& deferred) {
     if (!my_can_move()) return false;
     const vec2 here = my_position();
     if (safety.camp_damage(here) <= 0) return false;
@@ -96,14 +98,32 @@ bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Fiel
     std::optional<vec2> best;
     float best_damage = 0;
     int best_home = 0;
+    bool best_lethal = false;
     for (auto d : directions) {
         const vec2 p = here + d;
         if (!in_bounds(p) || test(blocked, p) || exit.at(p) != out - 1) continue;
+        const bool lethal = safety.lethal(p);
         const float damage = safety.damage_bound(p, false, world.me().taken) + exit_hits(exit, safety, p);
         const int steps = home.at(p);
-        if (!best || damage < best_damage || (damage == best_damage && steps < best_home)) best = p, best_damage = damage, best_home = steps;
+        const bool better = !best || (lethal != best_lethal ? !lethal : damage < best_damage || (damage == best_damage && steps < best_home));
+        if (better) best = p, best_damage = damage, best_home = steps, best_lethal = lethal;
     }
-    return best && pathing.try_move(*best);
+    if (!best) return false;
+    if (const float life = my_health_and_shield(world); best_lethal && safety.camp_damage(*best, true, true) < life) {
+        // retreat_step's steps: none farther from home, or farther ones untouched. A bound below our
+        // health ranks the step ahead of the lethal ones there.
+        const int at = home.at(here);
+        for (auto d : directions) {
+            const vec2 p = here + d;
+            if (!in_bounds(p) || test(blocked, p) || home.at(p) == unreachable) continue;
+            if ((home.at(p) <= at || !safety.touched(p, world.me().taken)) && !safety.lethal(p)
+                && safety.damage_bound(p, false, world.me().taken) < life) {
+                deferred = true;
+                return false;
+            }
+        }
+    }
+    return pathing.try_move(*best);
 }
 
 // A step home whose walk onto our spawn survives, or none: a turn ended there heals to full before
@@ -1429,7 +1449,13 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     const bool walk_dash = walk_dash_deferred(world) && my_can_cast();
     if (!walk_dash && reset_and_attack_enemy(world)) see_kills(world, pathing, safety);
     else see_stuns(world, safety); // Heart of Ruin's landing
-    if (!flee_camps(world, pathing, safety, pathing.to_ally_spawn())) retreat_step(world, pathing, safety, pathing.to_ally_spawn());
+    if (bool deferred = false; !flee_camps(world, pathing, safety, pathing.to_ally_spawn(), deferred)) {
+        const vec2 from = my_position();
+        retreat_step(world, pathing, safety, pathing.to_ally_spawn());
+        if (deferred) {
+            debug_block({ std::printf("LSTEP %d %u %d,%d %d,%d\n", world.round, my_handle(), from.x, from.y, my_position().x, my_position().y); });
+        }
+    }
     // The dash put off for the walk, from its tile (from here if the walk was refused: put off once a turn).
     if (walk_dash && my_can_cast() && dash_away(world, pathing, safety, pathing.to_ally_spawn(), dead)) see_again(world, pathing, safety);
     // A walk to a hole line's edge can bring a dash out of the camps' reach in reach.
