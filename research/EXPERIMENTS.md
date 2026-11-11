@@ -59,6 +59,59 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 - A map class that gains post hoc needs its own held-out run before anything is built on it (big groups, 2026-11-11):
   bg-golem was +4.3 ±3.8 on 236 maps of one class out of 14 looked at, and -2.5 ±1.2 on 2,027 untouched maps of it.
 
+## (ocean = 506, 2026-11-11) Comms slots: every ally's tile fits in the claim fields for free; alone it is level, and counting a told claimer in its group's crew is +0.2 at 100k (+0.46 at 200k)
+
+Note, encodings, traces and the live read: [comms/README.md](ideas-2026-11-11/comms/README.md). Code:
+`ideas-2026-11-11/comms/cm2-dev.patch` on `variants/oc-dfuel-506` (`bots/variants/cm2-dev`, every knob off,
+`bench.py` wide 52/52 identical); `mkarm.py` freezes arms.
+
+- **Encoding** (`params::comms_slots`): a claim changes in 8.5% of turns, so each ally's claim field, widened to
+  (64 - bag - camp) / team bits (7 in a team of 6), carries its claim on change (held two turns, refreshed every 8
+  rounds) and its tile otherwise. Mode 1 posts a 2D cell (side median 6), mode 3 posts x and y on alternate tile
+  frames at cell side 1-3 with a reserved code after a jump, mode 2 alternates claim and tile by round (the
+  one-round-latency idea). An unseen ally's tile no older than 3 rounds: 16% of pairs today, 96% (modes 1, 2), 81%
+  (mode 3, error median 1). Mode 2 reads 4.2% of unseen claims a round late and has fewer tile frames than mode 1.
+- **Why it is level alone**: a teammate is in sight in 40% of pairs, and the unseen ones are a median 18 tiles away
+  (27% within 12). An unseen claimer is 6+ tiles from its group's centre 54% of the time, which is the one fact the
+  crew count can use.
+- **Consumers**: `told_arrival_rounds` (farm arrival from the told tile), `told_late` (late claimers join on
+  arrival), `told_crew` (an unseen claimer told to be as near its group as we are counts in the crew), `told_pull`
+  (pathing pull to the told tile).
+
+Results against `oc-dfuel-506`: fresh ladder-v2 panels A, B, C (seeds 3611000-3611119, 10,240 maps each), both
+sides, arm and base each against `spar-dvn1..4-Flp4` and `spar-dvn1..4-Mt3qro`, paired by map, side and body
+(`comms/batch.py`, `replays/ab/cmb-*`). The last row is the reworked `tools/fgate.py` (unmetered run-time bodies,
+its own maps), an independent read.
+
+| arm | fuel | panels | paired diff, points (95% CI) | games | Fish | Mite | OOF turns a game (base) |
+|---|---|---|---|---|---|---|---|
+| cm2-s2 (alternate) | 200k | A | +0.13 (-0.36..+0.62) | 40,960 | +0.05 ±0.67 | +0.21 ±0.71 | 0.05 (0.05) |
+| cm2-s1 (cells) | 200k | A | +0.06 (-0.30..+0.42) | 40,960 | +0.07 ±0.49 | +0.05 ±0.51 | 0.05 (0.05) |
+| cm2-s3 (split) | 200k | A | -0.00 (-0.36..+0.35) | 40,960 | -0.27 ±0.50 | +0.26 ±0.50 | 0.05 (0.05) |
+| cm2-s3a (s3 + arrival) | 200k | A | +0.04 (-0.34..+0.41) | 40,960 | -0.24 ±0.52 | +0.32 ±0.53 | 0.05 (0.05) |
+| cm2-s3p (s3 + pull) | 200k | A | +0.00 (-0.50..+0.50) | 40,960 | -0.22 ±0.68 | +0.22 ±0.72 | 0.05 (0.05) |
+| cm2-s3l (s3a + late) | 200k | C | +0.11 (-0.26..+0.48) | 40,960 | +0.16 ±0.51 | +0.06 ±0.54 | 0.05 (0.05) |
+| cm2-s1c (s1 + arrival, late, crew) | 200k | C | +0.23 (-0.23..+0.68) | 40,960 | -0.05 ±0.63 | +0.51 ±0.66 | 0.06 (0.05) |
+| cm2-s3c (s3a + late + crew) | 200k | A+B+C | +0.40 (+0.14..+0.66) | 122,880 | +0.28 ±0.36 | +0.52 ±0.38 | 0.05 (0.05) |
+| cm2-s3c | 200k | B+C (held out) | +0.41 (+0.09..+0.73) | 81,920 | +0.25 ±0.44 | +0.57 ±0.46 | 0.05 (0.05) |
+| **cm2-s3k (s3a + crew)** | 200k | A+B+C | **+0.46 (+0.20..+0.72)** | 122,880 | +0.35 ±0.36 | +0.57 ±0.38 | 0.05 (0.05) |
+| cm2-s3c | 100k | A+B+C | +0.26 (-0.02..+0.53) | 122,880 | +0.11 ±0.38 | +0.40 ±0.40 | 6.24 (5.99) |
+| **cm2-s3k** | 100k | A+B+C | **+0.20 (-0.07..+0.47)** | 122,880 | -0.02 ±0.38 | +0.41 ±0.40 | 6.22 (5.99) |
+| **cm2-s3k**, fgate | 100k | 16 batches | **+0.20 ±0.25** (50.20%, 49.95-50.44) | 327,680 | +0.17 ±0.34 | +0.22 ±0.36 | - |
+
+- Plumbing alone, alternation, arrival timing, late claimers and pull: level. Willow's follow reads told tiles
+  five times as often and gains nothing measurable.
+- `told_crew` is the consumer that pays; `told_late` on top adds nothing (s3k = s3c), and cells do as well as
+  split tiles (s1c), so the crew count needs presence, not precision.
+- At 100k the two independent reads agree at +0.20 (together about +0.20 ±0.18): real, small, half the 200k figure,
+  with 0.23 more out-of-fuel turns a game. In the 50-50.5 zone; not merged, not live-tested. A fuel pass on s3k
+  was not done.
+- Live side read (512 v115 games, `comms/live_converge.py`): after a fight starts Fish's and Mite's far teammates
+  close 1.1-1.35 tiles more over 8 rounds than before it, ours 0.7-1.0. Neither runs a strong help call we lack;
+  what differs is who stands close before the fight (allies within 5 of the champion hit: Fish 1.76, ours 1.37).
+- Measured, not built: 14 times a game a champion returns to a group it believed alive and finds it cleared
+  (2.5-3 for its own claim); teammates' clears could be posted in spare tile frames.
+
 ## (ocean = 506, 2026-11-11) Big camp groups: Fish and Mite clear Golem groups early with the whole team and we don't; copying the team clear loses on every map class
 
 Notes and scripts: [ideas-2026-11-11/biggroups/diagnosis.md](ideas-2026-11-11/biggroups/diagnosis.md). Candidates are
