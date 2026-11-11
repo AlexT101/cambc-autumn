@@ -17414,3 +17414,17 @@ Results against oc-comms-507: no candidate, no gate.
 - Real Fish kills our pair early as often as its body does (0.35 against 0.31 a game); its excess is on Prism and Willow (0.21 against 0.10, 0.20 against 0.09). No reading prices either lower against Fish.
 - Nearest leads, neither clear: Willow against Mite (+4 to +7 in three readings), Heart of Ruin against Fish (-1 to -7).
 - A live pair cannot read a nudge: 15% of cells changed is about 38 cells an opponent, ±20 points on them.
+
+## (charybdis, 2026-11-11) Charybdis and ocean against astraeus, 40k games each: charybdis 75.9%, ocean 69.0%
+
+`py tools/ab.py charybdis astraeus --no-test-draft --suites ladder,maps/suites/merged/chy-ast` (both own drafts; fast runner, slot weight 10, 2m52s), `replays/ab/chy-vs-ast-40k/`. Maps: the 128 ladder maps plus fresh `--mix ladder-v2` seeds 5300000-5300077 (19,968 maps), both sides.
+
+| suite | charybdis win rate (95% CI) of n |
+|---|---|
+| all | 75.9% (75.5-76.3) of 40,192 |
+| ladder | 75.4% (69.8-80.3) of 256 |
+| fresh ladder-v2 | 75.9% (75.5-76.3) of 39,936 |
+
+- No failed matches, broken or capped drafts. Out-of-fuel turns: charybdis 207,620 in 26,481 games (5.2 a game), astraeus 139,909 in 22,185 (3.5 a game).
+
+Ocean (`bots/ocean`, 507) against astraeus on the same 40,192 games and setup (`replays/ab/oc-vs-ast-40k/`, 2m58s): **69.0% (68.5-69.4)**; ladder 72.3% (66.5-77.4) of 256, fresh 69.0% (68.5-69.4) of 39,936. Out-of-fuel turns: ocean 197,400 in 25,868 games (4.9 a game), astraeus 154,381 in 22,989. No failed matches, broken or capped drafts. Charybdis's lead over ocean on these maps, read through astraeus: +6.9 points.

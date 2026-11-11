@@ -984,3 +984,6 @@ re-measured"; used).
 **draft18 (charybdis draft lab, 2026-11-11):** `--mix ladder-v2`, in `suites/fresh/fresh-{seed}`:
 - 3300000-3300099, 25,600 maps: the lab's training pool (`replays/draftlab/draft18`).
 - 3310000-3310079, 20,480 maps, held out from the lab (its `holdout`): for judging its header.
+
+**Charybdis vs astraeus (2026-11-11):** `--mix ladder-v2`, under `suites/chy-ast/fresh-{seed}`, symlinked into `merged/chy-ast`:
+- 5300000–5300077, 19,968 maps: `bots/charybdis` and `bots/ocean` each against `bots/astraeus` (own drafts), with the ladder maps, `replays/ab/chy-vs-ast-40k/` and `oc-vs-ast-40k/` (used).
