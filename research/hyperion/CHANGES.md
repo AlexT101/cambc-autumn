@@ -4675,4 +4675,5 @@ Fixes 1, 2 and 4 of [macro-atlas](../macro-atlas/NOTES.md), each a gap a 1,000-g
 Against `variants/charybdis-ref` (= 515, the same code as 516 for play), real 100k fuel, own drafts, 61,440 games on
 fresh `ladder-v2` seeds 92000-92119: **50.4% (CI ~50.0-50.8)**; out-of-fuel turns +6.4% (366k vs 344k). At 2x fuel
 50.5% of 10,240 (dev). Fixes 3, 5 and the press stay out: they hold their gain only at 2x fuel; see the
-[fuel handoff](../macro-atlas/HANDOFF-fuel.md).
+[fuel handoff](../macro-atlas/HANDOFF-fuel.md). Frozen as
+`variants/charybdis-cb9f86d` (= bots/charybdis).
