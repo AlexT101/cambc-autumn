@@ -591,8 +591,8 @@ Directories of relative symlinks (`../../fresh/fresh-<seed>/<map>`) merging many
 | `oc5-panel2` | 2560 | 546300-546309 | SPSA run oc5's second panel set (astraeus, proteus) |
 | `mc2-screen` | 10240 | 546400-546439 | oc-mapcond2 screen at 2x fuel (ocean) |
 | `retreat-911000b` | 5120 | 911000-911019 | escape planner (CHANGES 478) |
-| `retreat-911000` | 5120 | 911000-911019 | broken links (one `..` too many): use `retreat-911000b`; safe to delete |
-| `retreat-911` | 5376 | 911000-911019 and 9110 | stray (its glob caught `fresh-9110`); safe to delete |
+| `retreat-911000` | 5120 | 911000-911019 | broken links (one `..` too many), deleted 2026-11-11: use `retreat-911000b` |
+| `retreat-911` | 5376 | 911000-911019 and 9110 | stray (its glob caught `fresh-9110`), deleted 2026-11-11 |
 | `esc2-dev` | 20480 | 1700000-1700079 | escape planner after 478: oc-esc-478's reference A/B and fo-lean (used) |
 | `esc2-held` | 30720 | 1701000-1701119 | escape planner merge (CHANGES 480), held out; also cv-v2 against oc-cl2-seat5m (CHANGES 481) |
 | `plan2-dev` | 20480 | 1702000-1702079 | chase verdict (CHANGES 481): cv-final-v2 (used) |
