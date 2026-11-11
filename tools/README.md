@@ -303,6 +303,13 @@ py tools/version_record.py 50                        # our version 50's record p
   is live or selected, and restarts a dead runner with `live_restart_runner.sh`. Its state dir (`LIVE_SCHED_DIR`,
   default `~/tmp-offload/handoff/sched`) holds `state.json`, `sched.log`, `gates.jsonl`, `refsets.json` (the ref set
   per opponent new gates use; read each loop), `build/`, and the `STOP` / `PAUSE` / `HOLD` files.
+- **live_r6_campaign.py** handles only the explicitly authorized existing-v113 Mite-r6 bridge followed by the
+  prepared whole-506 Fish-r2/Mite-r6 gate. Ops installs a hash-bound `r6-campaign.json` after v114 drains and the
+  authorized reference transaction. It selects existing113 without uploading, tracks its52 new Mite groups
+  separately from historical113 completion, verifies prepared source/SDK/WASM/mask/smoke provenance, then uploads
+  that artifact without a build fallback. Upload intent is persisted before the call; an ambiguous interrupted
+  upload holds for reconciliation instead of uploading twice. Wrong pins, outside selections, dropped/suspect
+  groups or missing collected replays hold; read-only API rate limits wait. It never repins or extends itself.
 - **version_record.py** needs the website cookie (`%APPDATA%/cambc/web-cookie.txt`, as fetch_replays.py): the API shows submission versions only with it. `--kind`, `--json FILE` for per-game rows.
 
 ## Draft lab: tools/draftlab

@@ -126,6 +126,15 @@ def refsets():
 
 def gate_refsets(candidate):
     """Null-a pairs with historical v98; ordinary arms keep the global testing pins."""
+    if candidate.get('required_refsets'):
+        required = candidate['required_refsets']
+        if refsets() != required:
+            raise ValueError('candidate required testing pins are not active; no fallback')
+        _, _, finished, _, refs = ls.state()
+        for opp, source in candidate['required_sources'].items():
+            if refs.get((required[opp], ls.TEAMS[opp][0])) != source or source not in finished:
+                raise ValueError(f'candidate requires completed exact {opp} snapshot {source}')
+        return {opp: required[opp] for opp in candidate.get('opponents', required)}
     if candidate.get('kind') == 'queue' and candidate.get('label') == 'v87-null-a':
         _, _, finished, _, refs = ls.state()
         for opp, refset in NULL_A_REFS.items():
@@ -138,10 +147,12 @@ def gate_refsets(candidate):
 
 def plan_gate(version, rsets):
     for part, prio in (('core', 99), ('ext', 90)):
-        for opp in ('fish', 'mite'):
+        for opp in rsets:
             rc, out = sh([sys.executable, 'tools/ladder_scrims.py', 'plan', '--version', str(version), '--sets', part,
                           '--opps', opp, '--refset', rsets[opp], '--priority', str(prio)], cwd=R)
             log(f'plan v{version} {part} {opp} {rsets[opp]}: rc {rc} {out.strip()[-120:]}')
+            if rc:
+                raise RuntimeError(f'failed planning v{version} {part} {opp}')
 
 
 def gate(v):
@@ -449,9 +460,11 @@ def runner_alive():
 
 
 def main():
+    from live_r6_campaign import Campaign
     log(f'scheduler start pid {os.getpid()}')
     version_check = VersionCheck(ls, H, log, wake)
     opponent_detector = OpponentDetector(ls, save, log, wake, now)
+    campaign = Campaign(sys.modules[__name__], opponent_detector)
     while not (H / 'STOP').exists():
         try:
             st = load()
@@ -460,6 +473,9 @@ def main():
                 sh([str(R / 'tools/live_restart_runner.sh')])
             if VERSION_CHECK and version_check.tick(st):
                 time.sleep(15)
+                continue
+            if campaign.tick(st):
+                time.sleep(30)
                 continue
             if not outside_check(st):   # live is not ours: neither report nor submit
                 time.sleep(120)
