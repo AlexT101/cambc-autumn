@@ -59,6 +59,44 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 - A map class that gains post hoc needs its own held-out run before anything is built on it (big groups, 2026-11-11):
   bg-golem was +4.3 ±3.8 on 236 maps of one class out of 14 looked at, and -2.5 ±1.2 on 2,027 untouched maps of it.
 
+## (ocean = 506, 2026-11-11) One-site overruns: early fights lost to real packs, a snowball that runs both ways; the bodies fight too weakly to test a fix, none built
+
+Write-up, tables and tools: [ideas-2026-11-11/overruns/README.md](ideas-2026-11-11/overruns/README.md). Analysis
+of live v115's 520 scrims against Fish r2 and Mite r6 and of 506's 512 local games against Flp4 / Mt3q. No bot
+change and no games played.
+
+- **The 38 overrun losses** (badmaps class): our first champion dies at round 86 (median), before any of theirs in
+  35 of 41 games; by round 300 it is 4.0 deaths to 0.7 and 1,018 gold to 2,087; 20.8 deaths to 3.6 by the end.
+- **It runs both ways.** Games with 12+ deaths on one side and at most half on the other: we are overrun 30
+  (Fish) and 24 (Mite) times, and overrun them 35 and 35. Against the bodies: 8 and 11 against 69 and 52. No map
+  feature marks the class (live win rate 70% on one-altar maps, 67% on two).
+- **Half are fixed cells, opponent-specific:** gold_rush against Fish 0 of 22 over v105-v115 but 22 of 24 against
+  Mite; swirl against Mite 2 of 24 but 18 of 22 against Fish; stampede, fragment, boss_battle (Mite), crater,
+  ribs, sunburst (Fish). With Fish's exact picks the local result is the reverse on the same maps (stampede live
+  33 deaths to 3, locally 7 to 9 and a win; guardians live 27 to 7, locally 6 to 17).
+- **Where the early fights go** (net kills for us per engagement up to round 250, bodies within 8 at the first
+  hit): Fish hits first with the numbers -0.40 of 136 (Flp4 body +0.03 of 141); any engagement where they have the
+  numbers -0.12 of 575 against Fish, 0.00 against Mite, +0.13 and +0.14 against the bodies. Fish's first target
+  dies 38% of the time (the body's 16%, ours in the mirrored case 16%) with 2.6 attackers on it (2.1).
+- **Not the cause:** focus (top target takes 92-93% of a multi-attacker round for Fish, Mite and both bodies) and
+  stun time on the victim (1.3-1.4 rounds in all four).
+- **Body fidelity for fights.** Rounds a game with 4+ of them on one of ours: Fish 0.38, Flp4 0.19; Mite 0.17,
+  Mt3q 0.12. With 4+ of ours on one of them: 0.16 live against Fish, 0.47 against Flp4. Their Heart of Ruin dies
+  early 0.24 times a game live, 0.55 as a body. Entering an engagement outnumbered pays locally and costs live, so
+  the local reads that set our give-way constants measured the bodies.
+- **No candidate.** The change the replays point at (give way to a closing pack sooner, and off our own half) reads
+  negative against the bodies by construction; its live ceiling is about +1 point against Fish (0.27 kills a
+  game in outnumbered engagements, a third avoidable) and nothing against Mite.
+
+Results against oc-dfuel-506:
+
+| gate | result |
+|---|---|
+| none | no candidate built, no games played |
+
+Verdict: no general cause of our own and no fix a local gate can read. Carry forward: a Fish body that converts
+numbers into kills (targets in the README), then the pack zone's margin as the first arm.
+
 ## (ocean = 506, 2026-11-11) Keeping a hoarding Prism alive: it dies fighting on after a second enemy arrives; an earlier retreat line cuts the deaths 13-18% and the win rate stays level; eight arms, none passes
 
 Notes and scripts: [ideas-2026-11-11/badmaps/README.md](ideas-2026-11-11/badmaps/README.md) ("Prism's hoard"). Arms are copies of
