@@ -56,6 +56,65 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   r400) cost her teammates 230. Check kills and team totals before building an arm from a rate.
 - A risk change can win the mirror and nothing else (nuke guard, 2026-11-08): +0.22 held out over 149k, panel -0.02.
   The v84 pattern again: a risk or greed change needs its panel H1 before it ships.
+- A map class that gains post hoc needs its own held-out run before anything is built on it (big groups, 2026-11-11):
+  bg-golem was +4.3 ±3.8 on 236 maps of one class out of 14 looked at, and -2.5 ±1.2 on 2,027 untouched maps of it.
+
+## (ocean = 506, 2026-11-11) Big camp groups: Fish and Mite clear Golem groups early with the whole team and we don't; copying the team clear loses on every map class
+
+Notes and scripts: [ideas-2026-11-11/biggroups/diagnosis.md](ideas-2026-11-11/biggroups/diagnosis.md). Candidates are
+copies of `variants/oc-dfuel-506` (= ocean 506); `bots/variants/` is not tracked, so each one's diff is in
+`ideas-2026-11-11/biggroups/patches/`. Maps, logs and decoded replays: `~/tmp-offload/biggroups/`.
+
+**Diagnosis** (520 v115 scrims against Fish and Mite):
+- On the 35 ladder maps with a Golem and gem-cluster group, Fish capture one by round 200 0.43 times a game and Mite
+  0.47; we do 0.06-0.11. They bring 4-5 champions (mean 4.2 and 4.0), wake it at rounds 45-130 and clear in about 22
+  rounds with two tanks sharing the hits. On geodes (0/4) their Golem captures are 486-587 of about 1,040 gems.
+- We don't because crew pricing counts only free allies within 11 tiles, so a Golem is priced with 1-2 bodies and
+  loses to small camps (first Golem pick in a geodes trace: round 199, "expected 1"). The draft's opening plan puts
+  every hit on one tank, so it fails any Golem clear and most Elk clears.
+- It converts weakly for them. On the 11 ladder maps with a rich Golem group (clusters pay at least what the Golem
+  does) they take 94 gems from those groups by round 300 to our 34, and we win 68.2% of 44 against 65.1% elsewhere.
+  When they took a Golem group by round 200 and we didn't, we still win 61% against Fish and 73% against Mite.
+- Maps where Golem, Monolith and herd groups hold 60%+ of the gem supply are our weak class: 53.6% of 56 on 13 ladder
+  maps against about 66% elsewhere. The losses there are four different failures: no early Golem clear (geodes), the
+  Monolith capture lost after we deal half the damage (rows, gold_rush, famine; they capture first in 52 of 164 games
+  to our 34), the kite on a shared herd waking it every 52 rounds and clearing nothing (stampede: 1,266 gems a game
+  to our 44), and the 48-wolf herd (the_pack).
+- The local Fish and Mite bodies don't take these groups (0.02-0.03 early captures a game against the real teams'
+  0.14-0.15), so a local run prices our clear but not a race for a shared group.
+
+**Arms.** All three start from the teammate's `macro2-heavy` (a team-throughput plan for Golem groups: the nearest
+k allies that minimise champion-rounds per gem, staged like a Monolith; 48.6% of 869 in its own mirror), restricted
+to Golem groups so Monolith play is 506's:
+- `bg-golem`: any Golem group.
+- `bg-rich`: only a Golem group whose gem clusters pay at least what its strikers do.
+- `bg-clean`: bg-rich, launched only when the planned crew absorbs the hits with no trip home; otherwise 506's pricing.
+
+Results against oc-dfuel-506 (paired by map and body, each versus `spar-dvn1-Flp4` and `spar-dvn1-Mt3q`, fresh
+ladder-v2 maps, both sides, 200k fuel, release; no errors):
+
+| arm | maps | arm win% | 506 win% | delta, points (95% CI) of n games | Fish body | Mite body |
+|---|---|---|---|---|---|---|
+| bg-golem, all fresh maps | 4,096 | 77.7 | 78.2 | -0.57 ±0.48 of 16,384 | -0.27 ±0.68 | -0.87 ±0.68 |
+| bg-golem, maps with a Golem group | 1,331 | 75.4 | 77.0 | -1.60 ±1.45 of 5,324 | -0.64 ±2.04 | -2.55 ±2.05 |
+| bg-golem, no Golem or Monolith (arm inert) | 2,007 | 79.6 | 79.7 | -0.09 ±0.14 of 8,028 | -0.10 ±0.22 | -0.07 ±0.18 |
+| bg-golem, Golem group and big groups hold 60%+ of gems (post hoc) | 236 | 75.0 | 70.7 | +4.34 ±3.75 of 944 | +4.87 ±5.04 | +3.81 ±5.56 |
+| bg-golem, the same class held out | 2,027 | 72.8 | 75.3 | -2.49 ±1.16 of 8,108 | -2.24 ±1.56 | -2.74 ±1.72 |
+| bg-rich, rich-Golem maps | 1,282 | 77.4 | 80.6 | -3.16 ±1.47 of 5,128 | -2.26 ±2.00 | -4.06 ±2.15 |
+| bg-clean, rich-Golem maps | 1,282 | 77.8 | 80.6 | -2.75 ±1.44 of 5,128 | -1.83 ±1.93 | -3.67 ±2.13 |
+
+All three lose; none goes to a live test. The one positive class did not hold on maps no run had played.
+
+**Why it loses** (rich-Golem maps, Mite body, 400 paired games, bg-rich minus 506): the first rich capture comes at
+round 212 against 355 and rich-group gems by round 300 are +70, but other captures by round 300 are -3.0, gold -83 and
+deaths +0.43 (0.39 of them to the Golem); by round 600 gems are -11 and gold -193. An early clear takes 3.9 champions
+a median 32 rounds from wake and costs 0.48 deaths. Each extra rich clear costs us 5-6 small captures; Fish and Mite
+pay about 2 because their team already moves packed. bg-clean removes the bad fights and loses the same, so the cost
+is the gathering, not the fight.
+
+Not done: no 100k run (no arm earned one), no live test, `macro2-heavy` verbatim against the bodies (killed for
+compute), the opening plan's one-tank damage model (unchanged and unmeasured), and no arm for the Monolith capture,
+the shared-herd kite or the wolf herd.
 
 ## (ocean = 506, 2026-11-11) Bad maps (wheel and the ladder tail): the losses are Prism's hoard dying, one-site overruns and big groups; five fixes built, none wins on fresh maps
 
