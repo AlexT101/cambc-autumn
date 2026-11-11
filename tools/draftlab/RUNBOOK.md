@@ -128,7 +128,7 @@ it is sized on a guessed 0.005 s a game (0.03 on stock cambc). The last batches 
 node tools/draftlab/model.mjs gain --lab replays/draftlab/draft5      # predicted win %: current draft vs the model's
 node tools/draftlab/model.mjs compare --lab replays/draftlab/draft5 --old replays/draftlab/draft3-cheap/model.json
 node tools/draftlab/model.mjs cpp --lab replays/draftlab/draft5       # writes bots/astraeus/src/draft/draft_model.h
-node tools/draftlab/native.mjs --lab replays/draftlab/draft5 maps maps/gen       # C++ vs JS parity, no games
+node tools/draftlab/native.mjs --lab replays/draftlab/draft5 maps maps/suites/legacy/gen# C++ vs JS parity, no games
 py tools/draftlab/parity.py --lab replays/draftlab/draft5 maps --jobs 4           # in-game parity
 py tools/draftlab/firstturn.py --sample replays/draftlab/draft5/maps.jsonl   # first-turn fuel, if the header names sight_gap or narrow
 ```

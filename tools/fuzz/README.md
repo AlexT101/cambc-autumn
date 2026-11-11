@@ -6,7 +6,7 @@ It is a bug finder, not a benchmark: a high score says "look at this map", not "
 ```
 py tools/fuzz/fuzz.py run NAME                                   # 400 maps, climb 8 of the worst, 4 generations
 py tools/fuzz/fuzz.py run NAME --screen 600 --ref astraeus --climb 10 --gens 5 --children 12 --shrink 2
-py tools/fuzz/fuzz.py run NAME --screen 0 --include maps/gen --climb 0   # score an existing set only
+py tools/fuzz/fuzz.py run NAME --screen 0 --include maps/suites/legacy/gen --climb 0   # score an existing set only
 py tools/fuzz/fuzz.py report NAME [--top 30]                     # rewrite report.md/json
 py tools/fuzz/fuzz.py rescore NAME                               # after editing score.py: recompute from analysis/, no games
 py tools/fuzz/fuzz.py vs NAME astraeus [--top 10]                # head-to-head on the worst maps, both sides

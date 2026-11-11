@@ -4,7 +4,7 @@
 astraeus has no draft_counters table since CHANGES 178-182, so counters must be empty.
 
 - Each vehicle bot carries one candidate per pick count, since a map only reads its own pick count's draft.
-- jobs_for(picks) is every map of that pick count (ladder, maps/gen, maps/gen-s1), both sides, in a fixed shuffled
+- jobs_for(picks) is every map of that pick count (ladder, maps/suites/legacy/gen, maps/suites/legacy/gen-s1), both sides, in a fixed shuffled
   order, so a prefix is a screening sample. Each (map, side) faces one fixed opponent, so candidates' results are
   paired and compare() reports the paired difference from INCUMBENT.
 - The source bot is DS_SRC (default bots/astraeus). BOT_TAG hashes its src/ (but the draft tables) and the pools'
@@ -86,10 +86,10 @@ def map_pools():
         if m:
             pools[int(m.group(2))].append(str(ROOT / "maps" / f"{m.group(1)}.map26a"))
     for suite in ("gen", "gen-s1"):
-        idx = json.loads((ROOT / "maps" / suite / "index.json").read_text(encoding="utf-8"))
+        idx = json.loads((ROOT / "maps" / "suites" / "legacy" / suite / "index.json").read_text(encoding="utf-8"))
         for m in idx["maps"]:
             p = (m.get("spec") or {}).get("picks") or (m.get("metrics") or {}).get("picks")
-            pools[int(p)].append(str(ROOT / "maps" / suite / m["file"]))
+            pools[int(p)].append(str(ROOT / "maps" / "suites" / "legacy" / suite / m["file"]))
     cache.parent.mkdir(parents=True, exist_ok=True)
     cache.write_text(json.dumps(pools, indent=1))
     return pools
@@ -149,7 +149,7 @@ def tree_tag():
                 for name in ("draft_three", "draft_four", "draft_five"):
                     data = re.sub(ARRAY.format(name=name).encode(), rb"\1\3", data, count=1, flags=re.S)
             h.update(f.relative_to(SRC_BOT).as_posix().encode() + b"\0" + data)
-    for d in (ROOT / "maps", ROOT / "maps" / "gen", ROOT / "maps" / "gen-s1"):
+    for d in (ROOT / "maps", ROOT / "maps" / "suites" / "legacy" / "gen", ROOT / "maps" / "suites" / "legacy" / "gen-s1"):
         for f in sorted(d.glob("*.map26a")):
             h.update(f"{d.name}/{f.name}".encode() + b"\0" + f.read_bytes())
     return h.hexdigest()[:8]

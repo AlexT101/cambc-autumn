@@ -1,15 +1,17 @@
-"""Full A/B of two bots through run_batched.py: ladder, generated and fresh-seed maps, both sides.
+"""Full A/B of two bots through run_batched.py: the ladder maps and any suites of generated maps, both sides.
 
-    py tools/ab.py orch/my-branch main --name my-change
+    py tools/ab.py orch/my-branch main --name my-change --suites maps/suites/merged/SET
     py tools/ab.py astraeus baselines/v94 --no-test-draft
-    py tools/ab.py main HEAD~1 --no-test-draft --suites ladder,gen
+    py tools/ab.py main HEAD~1 --no-test-draft --suites ladder,maps/suites/merged/SET
     py tools/ab.py astraeus variants/astraeus-38aa25c --no-test-draft --sprt --sprt-stop low
 
 CAND and REF are each a git ref (branch, sha, main), whose bots/<--bot> (default ocean) is materialised with
 git archive into bots/variants/ab-<name>-<cand|ref>-<sha7>/ with params::test_draft switched on, or a bot
 directory under bots/ (astraeus) used as it is. An archived bot (--bot archives/hyperion) is also found where
 it was before retirement (bots/hyperion; hyperion was bots/hecate before 2026-10-21). Wins are CAND's.
-Suites: ladder (maps/), gen (maps/gen), fresh (every maps/gen-s*/), or any directory of maps.
+Suites: ladder (maps/, the default: a quick check only), any directory of maps, or the legacy gen (maps/suites/legacy/gen)
+and fresh (every maps/suites/legacy/gen-s*/), the 512-map default before 2026-11-11. Judge a change on 20k+ games of fresh
+suites (maps/suites/) or with tools/fgate.py.
 
 --sprt plays the maps in a seeded random order and stops every suite once a sequential probability ratio test
 decides between H0 (CAND's win rate is P0) and H1 (it is P1), on maps both of whose games have finished, all
@@ -141,10 +143,10 @@ def suites(tokens):
         elif token == "gen":
             out.append(("gen", ["--gen"]))
         elif token == "fresh":
-            dirs = sorted(d for d in (ROOT / "maps").glob("gen-s*") if d.is_dir())
+            dirs = sorted(d for d in (ROOT / "maps" / "suites" / "legacy").glob("gen-s*") if d.is_dir())
             out += [(f"fresh/{d.name}", ["--maps-dir", str(d)]) for d in dirs]
             if not dirs:
-                notes.append("fresh: no maps/gen-s*/ directories, skipped")
+                notes.append("fresh: no maps/suites/legacy/gen-s*/ directories, skipped")
         elif Path(token).is_dir():
             out.append((Path(token).resolve().name, ["--maps-dir", str(Path(token).resolve())]))
         else:
@@ -288,8 +290,9 @@ def main():
     parser.add_argument("--name", help="Run name (default: <cand>-vs-<ref>); results in replays/ab/<name>/")
     parser.add_argument("--threads", type=int, default=cpu_slots.SIZE,
                         help=f"Most concurrent matches, as CPU slots allow (default: all {cpu_slots.SIZE})")
-    parser.add_argument("--suites", default="ladder,gen,fresh",
-                        help="Comma-separated: ladder, gen, fresh, or directories of maps (default: all three)")
+    parser.add_argument("--suites",
+                        help="Comma-separated: ladder, directories of maps, or the legacy gen and fresh "
+                        "(default: ladder alone, a quick check)")
     parser.add_argument("--bot", default="ocean",
                         help="The bot a git ref builds, a name under bots/ (default: ocean; e.g. archives/hyperion)")
     parser.add_argument("--no-test-draft", action="store_true",
@@ -340,6 +343,10 @@ def main():
             cpu_slots._lock(run_lock)
         except OSError:
             raise ValueError(f"another ab.py is running --name {name}; wait for it or pick another name") from None
+        if args.suites is None:
+            args.suites = "ladder"
+            print("note: --suites not given, so only the 256 ladder games: a quick check, not a judgement "
+                  "(pass --suites maps/suites/... for 20k+ games, or use tools/fgate.py)", file=sys.stderr, flush=True)
         plan, notes = suites([t.strip() for t in args.suites.split(",") if t.strip()])
         if not plan:
             raise ValueError("No suites to play")

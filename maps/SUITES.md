@@ -5,7 +5,7 @@ Index of what is under `maps/` (2026-11-05). Everything below `maps/suites/` and
 ## Top level
 
 - The 128 ladder maps (`*.map26a`): `cambc run --map NAME` and the `ladder` suite only look directly under `maps/`, and mutation maps draw their source from them.
-- `gen/` (seed 6001) and `gen-s1/` (6002): the standard `ab.py` suites (`gen`, `fresh` = every `maps/gen-s*`). Remake: `node tools/mapgen/mapgen.mjs suite --mix varied-v1` (`maps/gen`) and `--seed 6002 --mix varied-v1 --out maps/gen-s1`.
+- `suites/legacy/gen/` (seed 6001) and `suites/legacy/gen-s1/` (6002), `maps/gen` and `maps/gen-s1` until 2026-11-11: `ab.py`'s default suites before then (`gen`, `fresh` = every `maps/suites/legacy/gen-s*`), kept so past results can be reproduced. Remake: `node tools/mapgen/mapgen.mjs suite --mix varied-v1` (gen) and `suite gen-s1 --seed 6002 --mix varied-v1`.
 - `gen-bench/`: tracked in git (`tools/fuel/bench.py`'s set). The edge-case maps (7x3 to 256x256) once in `fall-custom/` are in `more_maps/fall-custom/`.
 - `suites/`: everything else, by family (below).
 

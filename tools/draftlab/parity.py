@@ -6,7 +6,7 @@ FEATFUEL lines its draft bot prints in draft round 0 from the replays' team stdo
 features.mjs (every feature in model.mjs FEATURES, the map key) and model.mjs teams (the team in pick order). Its DRAFTTURN line
 says whether the draft analysis still finished in round 0 (the model's fuel comes first).
 
-    py tools/draftlab/parity.py --lab replays/draftlab/night1 maps maps/gen [--jobs 4] [--max 60]
+    py tools/draftlab/parity.py --lab replays/draftlab/night1 maps maps/suites/legacy/gen [--jobs 4] [--max 60]
 
 Exit code 0 when every map matches. Output in replays/draftlab/parity/<timestamp>/ (manifest, replays, report.txt).
 """

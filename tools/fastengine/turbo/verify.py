@@ -5,8 +5,8 @@ compare CPU time.
         [--suites ladder,gen,fresh] [--maps N] [--debug] [--jobs 4] [--cpus 2-5] [--chunk 100]
         [--rounds N] [--fuel N] [--env K=V ...]
 
-BOT_A and BOT_B are names under bots/ or paths. Suites are as tools/ab.py's: ladder (maps/*.map26a), gen (maps/gen),
-fresh (every maps/gen-s*/), or directories of maps; --maps keeps the first N of each. Every map is played from both
+BOT_A and BOT_B are names under bots/ or paths. Suites are as tools/ab.py's: ladder (maps/*.map26a), gen (maps/suites/legacy/gen),
+fresh (every maps/suites/legacy/gen-s*/), or directories of maps; --maps keeps the first N of each. Every map is played from both
 sides with `cambc run-batch` (--release unless --debug: ab.py plays debug builds), stock and turbo alternating by
 chunk of --chunk games (in alternating order) so drift cancels, under `taskset -c CPUS`. Run from the repo root.
 """
@@ -29,9 +29,9 @@ def suite_maps(token, limit):
     if token == "ladder":
         dirs = [("ladder", sorted((ROOT / "maps").glob("*.map26a")))]
     elif token == "gen":
-        dirs = [("gen", sorted((ROOT / "maps" / "gen").glob("*.map26a")))]
+        dirs = [("gen", sorted((ROOT / "maps" / "suites" / "legacy" / "gen").glob("*.map26a")))]
     elif token == "fresh":
-        dirs = [(d.name, sorted(d.rglob("*.map26a"))) for d in sorted((ROOT / "maps").glob("gen-s*")) if d.is_dir()]
+        dirs = [(d.name, sorted(d.rglob("*.map26a"))) for d in sorted((ROOT / "maps" / "suites" / "legacy").glob("gen-s*")) if d.is_dir()]
     else:
         d = Path(token).resolve()
         dirs = [(d.name, sorted(d.rglob("*.map26a")))]

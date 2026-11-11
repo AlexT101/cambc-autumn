@@ -25,7 +25,7 @@ Comment only counterintuitive behaviour or reasoning, concisely.
 
 ## Testing
 
-- **Judge a change** with `py tools/ab.py CAND REF` against a frozen baseline. Its default suites are 1280 games (the 128 ladder maps, `maps/gen`, `maps/gen-s1`, both sides), noise about ±1.5 points, so changes ship on 20k+ games of fresh suites (`--suites`) or `fgate.py`. There are no feature flags; single maps and small samples are noise, and local games are deterministic, so reruns add nothing.
+- **Judge a change** with `py tools/ab.py CAND REF --suites DIR,...` against a frozen baseline, on 20k+ games of fresh suites (`maps/suites/`), or with `fgate.py`; noise is about ±1.5 points at 1280 games. Without `--suites` it plays only the 256 ladder games, a quick check. There are no feature flags; single maps and small samples are noise, and local games are deterministic, so reruns add nothing.
 - **A/Bs play release builds** (`debug_block` compiled out, as on the platform; ~15% less CPU a game). `ab.py --debug` plays debug builds when you need their traces; compare only like with like.
 - **SPRT screens on one suite share their first games** unless each run passes its own `--sprt-seed` (default 0), so their early H1s aren't independent: give each screen its own seed and confirm held out.
 - **Use the fast runner by default** (Linux x86-64, cambc 5.0.1): build [fastrunner](tools/fastengine/runner/) once (`cd tools/fastengine/runner && ./setup_vendor.sh && cargo build --release`), then prefix every `ab.py`, `solo.py` or `run_batched.py` with `CAMBC_BIN=$PWD/tools/fastengine/runner/fastrunner FASTRUNNER_MODE=native` for ~4.7x the games an hour. Replays, fuel and stdout match stock cambc's. Run stock (unset `CAMBC_BIN`) only for debug drawings (`team-?.debug` is empty under fastrunner) or on another platform. Processes still show as `cambc run-batch`: the runner preloads `libfastrunner.so` into it. Differences and numbers: [RUNNER.md](research/fastengine/RUNNER.md).
@@ -35,7 +35,7 @@ Comment only counterintuitive behaviour or reasoning, concisely.
 - **`--mix ladder-v2`** matches the ladder better than `ladder` (gem balls, group shapes) and is preferred for new programmes; `ladder` stays the default, and the two don't share win rates.
 - **Labs** fit the draft (`tools/draftlab`), constants (`tools/tune`) and emblem choices (`tools/emblab`) from many games. Run them sparingly, each as a deliberate decision: they risk overfit and only help when the bot has changed significantly since the last fit.
 - **Record** results in [research/EXPERIMENTS.md](research/EXPERIMENTS.md), which also lists what already won or lost.
-- `cambc run --map NAME` finds only maps directly under `maps/`, by full name (`00interlock`); pass `maps/gen/<file>.map26a` for generated ones.
+- `cambc run --map NAME` finds only maps directly under `maps/`, by full name (`00interlock`); pass a path (`maps/suites/.../<file>.map26a`) for generated ones.
 
 ## Overfit
 

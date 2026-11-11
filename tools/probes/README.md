@@ -12,7 +12,7 @@ cambc run tools/probes/<A> tools/probes/<B> --map <map> --rounds <N> --fuel 5000
 - Each probe's source header gives its run command and scenario switches; `run.sh` scripts take `<scenario> <map> <rounds>`.
 - Logs are the `PROBE` lines in `team-a.stdout` / `team-b.stdout` inside the `.repl26a` zip; strip NULs with `tr -d '\000'` before grepping.
 - To compare engine versions, run each probe under each cambc binary: `pip download cambc==X --no-deps` fetches an old wheel, whose `cambc-X.data/scripts/cambc` runs as is (`CAMBC_NO_UPDATE_CHECK=1` silences its upgrade notice).
-- Map names need their prefix (`00interlock`); generated maps go by path (`maps/gen/<file>.map26a`). `makemap.mjs` (in `probe-corner`, `probe-denial`) builds custom maps through the engine's map builder.
+- Map names need their prefix (`00interlock`); generated maps go by path (`maps/suites/.../<file>.map26a`). `makemap.mjs` (in `probe-corner`, `probe-denial`) builds custom maps through the engine's map builder.
 
 ## Which probe checks what
 

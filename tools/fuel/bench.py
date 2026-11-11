@@ -71,7 +71,7 @@ def bot_path(name):
 
 
 def map_key(m):
-    """A map's name in results and game directories: a path's stem, so maps/gen/x.map26a is x."""
+    """A map's name in results and game directories: a path's stem, so maps/suites/legacy/gen/x.map26a is x."""
     return Path(m).stem if m.endswith(".map26a") else m
 
 

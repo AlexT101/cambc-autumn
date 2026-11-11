@@ -1,4 +1,4 @@
-"""CAND's win % per map class in an A/B: joins each match with its map's entry in maps/gen*/index.json.
+"""CAND's win % per map class in an A/B: joins each match with its map's entry in the maps/ index.json files.
 
     py tools/ab_classes.py <ab name or batch dir>... [--by preset,access] [--min 4] [--list CLASS=VALUE]
 

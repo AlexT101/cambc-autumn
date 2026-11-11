@@ -10,7 +10,7 @@ import { MapError, createEngine } from './wasm.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
-// The stress plan, and the stored pool in maps/gen: [preset, count] or [{ mutate: 'random' }, count]. Each entry is
+// The stress plan, and the stored pool in maps/suites/legacy/gen: [preset, count] or [{ mutate: 'random' }, count]. Each entry is
 // oversampled and the most mutually different candidates kept; `suite --mix varied` reweighs the counts per seed. About a sixth is ladder-like (presets close to the ladder, and
 // ladder maps under random edits), a quarter designed scenarios (design.mjs), a quarter exotic
 // shapes, interiors and economies, and a third the quirks, topology and scenario families.
@@ -66,7 +66,7 @@ const MIXES = {
   'varied-v1': { plan: PLAN, calib: 1, counts: 'varied', select: 'diverse', over: 3 },
   'fixed-v1': { plan: PLAN, calib: 1, counts: 'fixed', select: 'diverse', over: 3 },
 };
-const SUITES = { gen: { dir: 'maps/gen', seed: 6001 }, 'gen-s1': { dir: 'maps/gen-s1', seed: 6002 } };
+const SUITES = { gen: { dir: 'maps/suites/legacy/gen', seed: 6001 }, 'gen-s1': { dir: 'maps/suites/legacy/gen-s1', seed: 6002 } };
 const LADDER_DIR = path.join(ROOT, 'maps');
 
 // The metric space of `diversity`, the nearest-ladder distance and the diverse pick.
@@ -493,7 +493,7 @@ function suiteCounts(plan, seed, mix, over) {
 const seedList = spec => String(spec).split(',').flatMap(r => { const [a, b = a] = r.split('-').map(Number); return Array.from({ length: b - a + 1 }, (_, k) => a + k); });
 
 async function suite(opts) {
-  // Rebuilding maps/gen or gen-s1 (no --out) defaults to the mix they were made with, so the A/B suites keep their maps.
+  // Rebuilding the legacy gen or gen-s1 (no --out) defaults to the mix they were made with, so the A/B suites keep their maps.
   const name = opts._[0] ?? 'gen', mix = opts.mix ?? (opts.out ? 'ladder' : 'varied-v1'), m = MIXES[mix];
   if (!SUITES[name]) throw new Error(`unknown suite ${name}; one of ${Object.keys(SUITES).join(', ')}`);
   if (!m) throw new Error(`unknown --mix ${mix}; one of ${Object.keys(MIXES).join(', ')}`);
@@ -640,14 +640,14 @@ const USAGE = `usage: node tools/mapgen/mapgen.mjs <command>
       K1's chunks into K2, e.g. walls~bushes*0.5), doors+N, gaps+N (dash-only cuts across narrow
       passages), vaults+N (wall a group or altar in: crystal only), camps *F (rescale distance from
       spawn), camps|altars +N/-N, econ=rich|poor|gold|gems (retype camps), picks=N, altars=mid
-  suite [NAME] [--out DIR] [--seed S] [--oversample K] [--jobs N] [--mix MIX]   rebuild maps/gen (or NAME: gen-s1),
+  suite [NAME] [--out DIR] [--seed S] [--oversample K] [--jobs N] [--mix MIX]   rebuild maps/suites/legacy/gen (or NAME: gen-s1),
       or with --out a fresh suite. MIX: ladder (the default with --out: LADDER_PLAN, ladder-like presets and
       mutations at fixed counts, the first candidates kept, calibration 2); ladder-v2 (the same under
       calibration 3, nearer the ladder: preferred for new programmes); paradigms (12 layouts the ladder mixes
       lack, paradigms.mjs, under calibration 3's ladder rates otherwise); varied (the stress PLAN, families and
       presets reweighed per seed) or fixed (the PLAN's counts), both keeping the most different;
       varied-v1, fixed-v1: those under calibration 1, byte for byte the suites of before 2026-11-05
-      (varied-v1 is the default without --out, so maps/gen and gen-s1 rebuild as they were)
+      (varied-v1 is the default without --out, so maps/suites/legacy/gen and gen-s1 rebuild as they were)
       (only changed files are rewritten); candidates in N processes (default 48, at most cores - 2). Several
       suites at once share the threads: --seed 3001-3004,3010 --out maps/suites/fresh/fresh-{seed}
   check FILE... [--show] [--json]           validate maps (any .map26a) and print metrics

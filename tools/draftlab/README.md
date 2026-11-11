@@ -162,7 +162,7 @@ on 3 picks); off that fallback Vesper Vale may be drafted.
 node tools/draftlab/model.mjs cpp --lab replays/draftlab/draft3-cheap    # regenerate src/draft_model.h after a refit
 node tools/draftlab/model.mjs cpp --lab replays/draftlab/draft2 --counters --out DIR/src/draft/draft_model.h
 node tools/draftlab/model.mjs teams --lab replays/draftlab/draft3-cheap  # the deployed team per map (or --features FILE)
-node tools/draftlab/native.mjs --lab replays/draftlab/draft3-cheap maps maps/gen [--src DIR/src/draft]   # offline parity, no games (zig or c++)
+node tools/draftlab/native.mjs --lab replays/draftlab/draft3-cheap maps maps/suites/legacy/gen [--src DIR/src/draft]   # offline parity, no games (zig or c++)
 py tools/draftlab/parity.py --lab replays/draftlab/draft3-cheap maps --jobs 4      # in-game parity, round 0 only
 py tools/draftlab/parity.py --lab replays/draftlab/draft2 --bot DIR --counters maps   # a --counters build
 ```

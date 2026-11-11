@@ -2,7 +2,7 @@
 // model.mjs: builds tools/draftlab/native_main.cc natively (zig or c++), feeds it decoded map files and
 // compares the map key, every feature in FEATURES (the model's or not) and the chosen team (the --lab model's).
 // No games; the JS features take ~0.1 s a map.
-//   node tools/draftlab/native.mjs --lab replays/draftlab/night1 maps [maps/gen ...] [--show 5] [--src DIR]
+//   node tools/draftlab/native.mjs --lab replays/draftlab/night1 maps [maps/suites/legacy/gen ...] [--show 5] [--src DIR]
 // The bot's own walking fields come from the engine (draft.cc engine_walk); this checks our BFS
 // instead, so the in-game check (parity.py) is still the last word.
 import fs from 'node:fs';
@@ -45,7 +45,7 @@ async function main() {
   }
   if (!lab || !inputs.length) { console.error('usage: node tools/draftlab/native.mjs --lab DIR MAPS_OR_DIRS... [--show N] [--src DIR]'); return 2; }
   const files = [];
-  // Not recursive (maps/ holds maps/gen*/): name each directory.
+  // Not recursive (maps/ holds suite dirs): name each directory.
   for (const p of inputs.map(q => path.resolve(ROOT, q)))
     if (fs.statSync(p).isDirectory()) files.push(...fs.readdirSync(p).sort().filter(f => f.endsWith('.map26a')).map(f => path.join(p, f)));
     else files.push(p);

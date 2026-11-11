@@ -47,9 +47,9 @@ def suite_maps(token, limit):
     if token == "ladder":
         maps = sorted((ROOT / "maps").glob("*.map26a"))
     elif token == "gen":
-        maps = sorted((ROOT / "maps" / "gen").glob("*.map26a"))
+        maps = sorted((ROOT / "maps" / "suites" / "legacy" / "gen").glob("*.map26a"))
     elif token == "gen-s1":
-        maps = sorted((ROOT / "maps" / "gen-s1").rglob("*.map26a"))
+        maps = sorted((ROOT / "maps" / "suites" / "legacy" / "gen-s1").rglob("*.map26a"))
     else:
         maps = sorted(Path(token).resolve().rglob("*.map26a"))
     return maps[:limit] if limit else maps

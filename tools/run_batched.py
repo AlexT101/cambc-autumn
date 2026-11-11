@@ -30,7 +30,7 @@ import oof  # noqa: E402
 
 
 ROOT = Path(__file__).resolve().parents[1]
-GEN_DIR = ROOT / "maps" / "gen"
+GEN_DIR = ROOT / "maps" / "suites" / "legacy" / "gen"  # the old A/B suite (seed 6001, --mix varied-v1)
 FROZEN = ROOT / "replays" / "frozen"
 # Top-level entries of a bot directory that are build output, not source.
 BUILD_OUTPUT = {".cambc", "build", "target", ".cache", "compile_commands.json"}
@@ -72,7 +72,7 @@ def nonnegative_int(value):
 
 def find_maps(maps_dir, gen=None, gen_seed=0):
     """Maps under maps_dir (skipping the map sets in subdirectories of maps/ below it, so maps/ alone
-    is the ladder), or with --gen all generated maps in maps/gen (gen=0) or a seeded sample of gen of them."""
+    is the ladder), or with --gen all generated maps in maps/suites/legacy/gen (gen=0) or a seeded sample of gen of them."""
     if gen is not None:
         pool = sorted(p.resolve() for p in GEN_DIR.glob("*.map26a"))
         if not pool:
@@ -324,7 +324,7 @@ def main():
     parser.add_argument("--maps-dir", type=Path,
                         help="Recursively find all .map26a files here (default: maps/ without its subdirectories, the ladder)")
     parser.add_argument("--gen", nargs="?", type=nonnegative_int, const=0, metavar="N",
-                        help="Instead, play the generated maps in maps/gen (node tools/mapgen/mapgen.mjs suite): "
+                        help="Instead, play the generated maps in maps/suites/legacy/gen (node tools/mapgen/mapgen.mjs suite): "
                         "all of them, or N sampled by --gen-seed")
     parser.add_argument("--gen-seed", type=nonnegative_int, default=0, help="Seed for choosing --gen N maps (default: 0)")
     parser.add_argument("--output", type=Path, help="New results directory (default: replays/batch-TIMESTAMP)")

@@ -16,7 +16,7 @@ python3 tools/tune/tune.py apply --run R --out bots/variants/BOT-R # a copy with
   A patched candidate plays byte-identical replays and fuel to a fresh build of the same values (checked 2026-11-03:
   0.4 s against 15.7 s for the native compile). Its cache files are deleted after its batch (`patch.forget`).
 - **Games.** Release builds (`--release`, as the platform). Each iteration draws `maps_per_iter` maps from the pool
-  (default ladder, `maps/gen`, `maps/gen-s1`, `maps/suites/fresh/fresh-92001..92100`), plays each against every opponent with a
+  (default ladder, `maps/suites/legacy/gen`, `maps/suites/legacy/gen-s1`, `maps/suites/fresh/fresh-92001..92100`), plays each against every opponent with a
   random side, and every candidate plays exactly those games (common random numbers). All of an iteration's games are
   one `fastrunner run-batch` holding a CPU slot per game, so other jobs keep their fair share (`CAMBC_SLOT_WEIGHT`
   scales ours). Per-game stats come from `--statistics` camstats (`cambc summary`); replays are deleted.
