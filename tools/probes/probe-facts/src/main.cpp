@@ -1,4 +1,4 @@
-// probe-facts: hyperion's champion table (bots/hyperion/src/champions.h, transcribed from cambc-rules.yaml)
+// probe-facts: hyperion's champion table (bots/archives/hyperion/src/champions.h, transcribed from cambc-rules.yaml)
 // against the engine's champion designs. On its first play turn it prints "facts mismatch <name>: ..."
 // for each champion that differs, then "facts checked: N mismatches". Its draft picks are left random.
 //   cambc run tools/probes/probe-facts tools/probes/probe-facts --map corners --rounds 1 -o <dir>
@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <string>
 #include <variant>
-#include "../../../../bots/hyperion/src/champions.h"
+#include "../../../../bots/archives/hyperion/src/champions.h"
 
 namespace aph {
 

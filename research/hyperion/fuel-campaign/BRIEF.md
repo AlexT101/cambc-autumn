@@ -66,7 +66,7 @@ with `zipfile` (`team-a.stdout`/`team-b.stdout`, strip NULs): `OOF round phase`,
   `tools/probes/README.md`) for a narrow question; it must update `cambc-rules.yaml` and the probes README table.
 - Comment only counterintuitive behaviour, concisely; match the surrounding code style.
 - Commit on your worktree branch (small commits, one idea each), no push. Don't edit `bots/baselines/` or
-  `bots/hyperion`. Don't edit CHANGES.md/EXPERIMENTS.md (the merge agent does).
+  `bots/archives/hyperion`. Don't edit CHANGES.md/EXPERIMENTS.md (the merge agent does).
 
 ## Report (your final message)
 

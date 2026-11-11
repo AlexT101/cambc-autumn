@@ -13,7 +13,7 @@ The compiler flags come from the bot's compile_commands.json (written by its fir
 SDK's standard flags are used.
 
   python3 tools/htb/htbcheck.py                 every bot with .htb files
-  python3 tools/htb/htbcheck.py htb-starter     just these bots
+  python3 tools/htb/htbcheck.py archives/htb-starter   just these bots
 Exit status: 0 when every bot is clean, 1 when any has errors.
 """
 

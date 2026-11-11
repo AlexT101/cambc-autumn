@@ -3,8 +3,9 @@ const cp = require('child_process'), path = require('path'), fs = require('fs');
 const rpc = require('vscode-jsonrpc/node');
 let ROOT = __dirname;
 while (!fs.existsSync(path.join(ROOT, 'cambc.toml')) && path.dirname(ROOT) !== ROOT) ROOT = path.dirname(ROOT);
-// the example bot: the first bots/<bot>/bot.htb with the starter's play_turn (htb-starter, or starter-cpp here)
-const file = fs.readdirSync(path.join(ROOT, 'bots')).map((b) => path.join(ROOT, 'bots', b, 'bot.htb'))
+// the example bot: the first bots/<bot>/bot.htb or bots/archives/<bot>/bot.htb with the starter's play_turn (htb-starter)
+const botDirs = (dir) => fs.existsSync(dir) ? fs.readdirSync(dir).map((b) => path.join(dir, b)) : [];
+const file = [...botDirs(path.join(ROOT, 'bots')), ...botDirs(path.join(ROOT, 'bots', 'archives'))].map((d) => path.join(d, 'bot.htb'))
   .find((f) => fs.existsSync(f) && fs.readFileSync(f, 'utf8').includes('void play_turn() {'));
 console.log('testing', path.relative(ROOT, file));
 const clangd = fs.existsSync('/opt/homebrew/opt/llvm/bin/clangd') ? '/opt/homebrew/opt/llvm/bin/clangd' : 'clangd';

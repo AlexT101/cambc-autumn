@@ -112,7 +112,7 @@ named in the per-suite logs, for `oof_bot.py` / the census. The merge agent judg
 - Comment only counterintuitive behaviour, concisely; match the surrounding code's style. `farm_turn` is flattened
   (`[[gnu::flatten]]`): changes there shift codegen across every turn, so bench every set.
 - Commit on your branch (one idea per commit), never push, never merge into fuel3-orch or main. Don't edit
-  `bots/baselines/`, `bots/hyperion` or `bots/hecate`. Don't edit CHANGES.md or EXPERIMENTS.md (the merge agent does).
+  `bots/baselines/`, `bots/archives/hyperion` or `bots/hecate`. Don't edit CHANGES.md or EXPERIMENTS.md (the merge agent does).
   Append findings, dropped attempts with numbers and open leads to `research/hyperion/fuel-campaign-3/NOTES.md` on
   your branch under a `## <your area>` heading.
 

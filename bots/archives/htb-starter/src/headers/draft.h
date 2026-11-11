@@ -6,5 +6,5 @@
 #include <string_view>
 #include <vector>
 
-#line 6 "bots/htb-starter/draft.htb"
+#line 6 "bots/archives/htb-starter/draft.htb"
 void play_draft();

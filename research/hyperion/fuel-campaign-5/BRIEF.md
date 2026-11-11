@@ -124,7 +124,7 @@ Four campaigns ran before this one; most obvious ideas were tried. Read the part
   (`[[gnu::flatten]]`): changes there shift codegen across every turn, so bench every set.
 - Commit on your branch (one idea per commit, messages ending `Co-Authored-By: Claude Opus 5.5
   <noreply@anthropic.com>`), never push, never merge into fuel5-orch or main. Don't edit `bots/baselines/`,
-  `bots/hyperion`, `bots/hecate` or `bots/archives/demeter`. Don't edit CHANGES.md or EXPERIMENTS.md (the merge agent does).
+  `bots/archives/hyperion`, `bots/hecate` or `bots/archives/demeter`. Don't edit CHANGES.md or EXPERIMENTS.md (the merge agent does).
   Append findings, dropped attempts with numbers and open leads to `research/hyperion/fuel-campaign-5/NOTES.md` on
   your branch under a `## <your area>` heading.
 

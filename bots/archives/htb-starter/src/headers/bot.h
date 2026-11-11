@@ -10,14 +10,14 @@
 #include <utility>
 #include <vector>
 
-#line 11 "bots/htb-starter/bot.htb"
+#line 11 "bots/archives/htb-starter/bot.htb"
 using cambc::vec2;
 
-#line 12 "bots/htb-starter/bot.htb"
+#line 12 "bots/archives/htb-starter/bot.htb"
 using cambc::team;
 
 // Per-champion state survives between turns. Pick one stat and keep buying it.
-#line 15 "bots/htb-starter/bot.htb"
+#line 15 "bots/archives/htb-starter/bot.htb"
 class Bot {
     int chosen_stat = -1;
 
@@ -91,24 +91,24 @@ public:
 
 };
 
-#line 88 "bots/htb-starter/bot.htb"
+#line 88 "bots/archives/htb-starter/bot.htb"
 int distance(vec2 a, vec2 b);
 
-#line 92 "bots/htb-starter/bot.htb"
+#line 92 "bots/archives/htb-starter/bot.htb"
 cambc::bitboard tiles_around(vec2 position, int radius);
 
 // Combine terrain and visible occupants using native bitboard operations.
-#line 100 "bots/htb-starter/bot.htb"
+#line 100 "bots/archives/htb-starter/bot.htb"
 cambc::bitboard blocked_tiles();
 
-#line 108 "bots/htb-starter/bot.htb"
+#line 108 "bots/archives/htb-starter/bot.htb"
 bool move_towards_closest(cambc::bitboard goals);
 
 // Compute the attack mask once, rather than once per visible target.
-#line 136 "bots/htb-starter/bot.htb"
+#line 136 "bots/archives/htb-starter/bot.htb"
 template<class Targets>
 bool attack_first_in_range(const Targets& targets);
 
 // Attack a camp already in range, otherwise move toward the nearest camp tiles.
-#line 151 "bots/htb-starter/bot.htb"
+#line 151 "bots/archives/htb-starter/bot.htb"
 void farm_camps();

@@ -6,9 +6,10 @@ const cache = new Map();   // file -> { mtime, lines }
 
 function generatedRoot(file) {   // the project root when `file` is hgen output, else null
   const parts = file.split(path.sep), i = parts.lastIndexOf('bots');
-  if (i < 0 || i + 2 >= parts.length) return null;
-  const inside = parts[i + 2];
-  return inside === 'src' || (inside === '.cambc' && parts[i + 3] === 'hgen') ? parts.slice(0, i).join(path.sep) : null;
+  const j = i + (parts[i + 1] === 'archives' ? 3 : 2);   // past bots/<bot> or bots/archives/<bot>
+  if (i < 0 || j >= parts.length) return null;
+  const inside = parts[j];
+  return inside === 'src' || (inside === '.cambc' && parts[j + 1] === 'hgen') ? parts.slice(0, i).join(path.sep) : null;
 }
 
 // { file, line } (0-based line) for a 0-based line of a generated file, or null when it isn't one / has no marker above.

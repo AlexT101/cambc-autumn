@@ -5,8 +5,8 @@
     py tools/ab.py main HEAD~1 --no-test-draft --suites ladder,gen
     py tools/ab.py astraeus variants/astraeus-38aa25c --no-test-draft --sprt --sprt-stop low
 
-CAND and REF are each a git ref (branch, sha, main), whose bots/hyperion (bots/hecate before the
-2026-10-21 rename) is materialised with git archive into bots/variants/ab-<name>-<cand|ref>-<sha7>/
+CAND and REF are each a git ref (branch, sha, main), whose bots/archives/hyperion (bots/hyperion
+before its 2026-11-11 retirement, bots/hecate before the 2026-10-21 rename) is materialised with git archive into bots/variants/ab-<name>-<cand|ref>-<sha7>/
 with params::test_draft switched on, or a bot directory under bots/ (astraeus) used as it is. Wins are CAND's.
 Suites: ladder (maps/), gen (maps/gen), fresh (every maps/gen-s*/), or any directory of maps.
 
@@ -75,13 +75,13 @@ def materialise(side, role, name, test_draft):
     """Write the bot at side's commit into a variant directory, rewriting only changed files
     so its build cache stays incremental."""
     sha = side["sha"]
-    # Commits before the 2026-10-21 rename have the bot at bots/hecate.
-    for bot in ("bots/hyperion", "bots/hecate"):
+    # Commits before the 2026-11-11 retirement have the bot at bots/hyperion; before the 2026-10-21 rename, bots/hecate.
+    for bot in ("bots/archives/hyperion", "bots/hyperion", "bots/hecate"):
         data = git("archive", "--format=tar", f"{sha}:{bot}", binary=True)
         if data:
             break
     else:
-        raise ValueError(f"git archive found neither bots/hyperion nor bots/hecate at {side['spec']} ({sha[:7]})")
+        raise ValueError(f"git archive found none of bots/archives/hyperion, bots/hyperion, bots/hecate at {side['spec']} ({sha[:7]})")
     files = {}
     with tarfile.open(fileobj=io.BytesIO(data)) as tar:
         for member in tar.getmembers():

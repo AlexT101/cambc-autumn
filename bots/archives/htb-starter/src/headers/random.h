@@ -6,9 +6,9 @@
 #include <random>
 
 // WASI randomness is always zero in matches, so seed from our spawn and this champion's start.
-#line 6 "bots/htb-starter/random.htb"
+#line 6 "bots/archives/htb-starter/random.htb"
 std::uint32_t random_seed();
 
 // Seed once; keep the generator across turns.
-#line 17 "bots/htb-starter/random.htb"
+#line 17 "bots/archives/htb-starter/random.htb"
 unsigned random_number(unsigned limit);

@@ -3,7 +3,7 @@
 Build a copy of hyperion with `debug_fights = true` (src/util.h), play batches with replays as
 bot 1, extract them, then:
 
-    py tools/run_batched.py variants/hyperion-cal hyperion --gen
+    py tools/run_batched.py variants/hyperion-cal archives/hyperion --gen
     node tools/replay/extract.mjs replays/batch-X
     py tools/replay/fight_calibration.py replays/batch-X [more batches...] [--by FIELD,...]
 

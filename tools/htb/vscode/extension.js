@@ -18,14 +18,25 @@ function findClangd() {
   return 'clangd';
 }
 
-// The bot folder (bots/<bot>) holding a file, and the project root above it.
+// The bot folder (bots/<bot> or bots/archives/<bot>) holding a file.
 function botDirOf(file) {
-  for (let d = path.dirname(file); d !== path.dirname(d); d = path.dirname(d)) if (path.basename(path.dirname(d)) === 'bots') return d;
+  for (let d = path.dirname(file); d !== path.dirname(d); d = path.dirname(d)) {
+    const up = path.dirname(d);
+    if (path.basename(up) === 'archives' && path.basename(path.dirname(up)) === 'bots') return d;
+    if (path.basename(up) === 'bots' && path.basename(d) !== 'archives') return d;
+  }
   return null;
 }
 
+// The project root above a bot folder.
+function rootOf(bot) {
+  let root = path.dirname(bot);
+  while (path.basename(root) !== 'bots') root = path.dirname(root);
+  return path.dirname(root);
+}
+
 function runHgen(bot) {
-  const root = path.dirname(path.dirname(bot));
+  const root = rootOf(bot);
   const hgen = [path.join(root, 'tools', 'htb', 'hgen.py'), path.join(root, 'tools', 'hgen.py')].find((p) => fs.existsSync(p));
   if (!hgen) { out.appendLine(`no tools/htb/hgen.py under ${root}`); return Promise.resolve(); }
   const python = vscode.workspace.getConfiguration('htb').get('python') || (process.platform === 'win32' ? 'py' : 'python3');

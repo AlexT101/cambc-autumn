@@ -119,7 +119,7 @@ def write_if_changed(path, data):
     return True
 
 
-def make_variant(source="hyperion", draft=None, name=None):
+def make_variant(source="archives/hyperion", draft=None, name=None):
     """Create or refresh the variant; return (directory, manifest)."""
     source = bot_dir(source)
     given = parse_draft(draft)
@@ -170,7 +170,7 @@ def make_variant(source="hyperion", draft=None, name=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("draft", help="Comma-separated champions in pick order, e.g. varg,willow,ryth")
-    parser.add_argument("--source", default="hyperion", help="Bot name under bots/, or a path (default: hyperion)")
+    parser.add_argument("--source", default="archives/hyperion", help="Bot name under bots/, or a path (default: archives/hyperion)")
     parser.add_argument("--name", help="Variant directory name (default: <source>-<champions>[-pad])")
     args = parser.parse_args()
     try:

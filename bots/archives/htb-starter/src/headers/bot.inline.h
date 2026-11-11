@@ -4,9 +4,9 @@
 #pragma once
 
 // Compute the attack mask once, rather than once per visible target.
-#line 136 "bots/htb-starter/bot.htb"
+#line 136 "bots/archives/htb-starter/bot.htb"
 template <class Targets> bool attack_first_in_range(const Targets& targets)
-#line 137 "bots/htb-starter/bot.htb"
+#line 137 "bots/archives/htb-starter/bot.htb"
 {
     auto& me = cambc::self();
     if (targets.empty() || !me.can_attack()) return false;

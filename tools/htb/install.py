@@ -107,7 +107,7 @@ def main():
         print("   macOS: brew install llvm    Windows: winget install LLVM.LLVM    Linux: sudo apt install clangd")
         ok = False
 
-    print("\nNext: reload VS Code (Developer: Reload Window) and open an .htb file, e.g. bots/htb-starter/bot.htb."
+    print("\nNext: reload VS Code (Developer: Reload Window) and open an .htb file, e.g. bots/archives/htb-starter/bot.htb."
           if ok else "\nFix the items marked x, then run this again.")
     return 0 if ok else 1
 

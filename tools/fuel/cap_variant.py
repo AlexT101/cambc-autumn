@@ -5,8 +5,8 @@ budget through the debug-build import fuel_adjust (a negative delta charges; one
 the other bot gets the whole --fuel while this one plays as if at --cap. Debug builds only:
 run_batched.py and ab.py never pass --release.
 
-  py tools/fuel/cap_variant.py hyperion --run-fuel 10000000        # bots/variants/hyperion-cap100000-at10000000/
-  py tools/ab.py main variants/hyperion-cap100000-at10000000 --fuel 10000000
+  py tools/fuel/cap_variant.py astraeus --run-fuel 10000000        # bots/variants/astraeus-cap100000-at10000000/
+  py tools/ab.py astraeus variants/astraeus-cap100000-at10000000 --no-test-draft --fuel 10000000
 
 Keep --run-fuel at or below ~30M: at 100M an instance that works and is charged every turn traps
 ("all fuel consumed") near round 1000 and the engine restarts it, losing its state. 10M is already

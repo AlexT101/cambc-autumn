@@ -108,7 +108,7 @@ Frozen copy: `MAIN/.claude/worktrees/fuel4/bots/variants/astraeus-fc4b` (copy it
 - Comment only counterintuitive behaviour, concisely; match the surrounding style. `farm_turn` is flattened
   (`[[gnu::flatten]]`): changes there shift codegen across every turn, so bench every set.
 - Commit on your branch (one idea per commit), never push, never merge into fuel4-orch or main. Don't edit
-  `bots/baselines/`, `bots/hyperion`, `bots/hecate` or `bots/archives/demeter`. Don't edit CHANGES.md or EXPERIMENTS.md (the
+  `bots/baselines/`, `bots/archives/hyperion`, `bots/hecate` or `bots/archives/demeter`. Don't edit CHANGES.md or EXPERIMENTS.md (the
   merge agent does). Append findings, dropped attempts with numbers and open leads to
   `research/hyperion/fuel-campaign-4/NOTES.md` on your branch under a `## <your area>` heading.
 

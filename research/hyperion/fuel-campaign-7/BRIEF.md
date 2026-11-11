@@ -104,7 +104,7 @@ turns: stand check ~21.8k (`stand_reach` 7.9k, `stand_trade` 10.4k of which the 
   ideas as one-line open items.
 - Comment only counterintuitive behaviour, concisely; match the surrounding style.
 - Commit on your branch (one idea per commit, messages ending `Co-Authored-By: Claude Opus 5.5
-  <noreply@anthropic.com>`); never push, never touch `main`. Don't edit `bots/baselines/`, `bots/hyperion`, other
+  <noreply@anthropic.com>`); never push, never touch `main`. Don't edit `bots/baselines/`, `bots/archives/hyperion`, other
   bots, CHANGES.md or EXPERIMENTS.md (the merge agent does). Append findings, dropped attempts with numbers and open
   leads to `research/hyperion/fuel-campaign-7/NOTES.md` on your branch under `## <your area>`.
 

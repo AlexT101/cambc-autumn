@@ -25,7 +25,7 @@ py tools/ab.py main HEAD~1 --no-test-draft --suites ladder,gen # each on its own
 py tools/ab.py astraeus variants/astraeus-38aa25c --no-test-draft --sprt --sprt-stop low  # stop a loser early
 ```
 
-- **CAND / REF:** a git ref, whose `bots/hyperion` (`bots/hecate` in commits before the 2026-10-21 rename) is exported with `git archive` (never the working tree) to `bots/variants/ab-<name>-<cand|ref>-<sha7>/` with `params::test_draft` on; or a bot under `bots/`, used as is. Run it from the primary checkout (worktree branches resolve there).
+- **CAND / REF:** a git ref, whose `bots/archives/hyperion` (`bots/hyperion` before its 2026-11-11 retirement, `bots/hecate` before the 2026-10-21 rename) is exported with `git archive` (never the working tree) to `bots/variants/ab-<name>-<cand|ref>-<sha7>/` with `params::test_draft` on; or a bot under `bots/`, used as is. Run it from the primary checkout (worktree branches resolve there).
 - **Options:** `--name`, `--threads` (all CPU slots), `--suites` (default `ladder,gen,fresh`: `maps/`, `maps/gen/`, each `maps/gen-s*/`; or a directory of maps), `--no-test-draft`, `--fuel N`, `--debug` (below), `--keep-replays N` (below). The suites play at once, sharing the CPU slots (one after another on Windows).
 - **Release builds** (the default; `--debug` plays debug builds instead): both bots are built and played as the platform plays them, with `debug_block` compiled out (`run_batched.py --release`: `cambc build --release`, `run-batch --release`). A game costs ~15% less CPU than in debug builds (2026-11-08, ocean vs oc-base29, 12 ladder games on one core: 201 against 236 us a round) and its stdout drops from ~700 KB to almost nothing. Its games differ from debug builds' (a debug block costs fuel), so compare only release with release; use `--debug` when you need the bots' traces (decision lines, `SHORTCUT`, `OOF` phases). Bots print no `OOF` lines in release builds, so the out-of-fuel counts are the fast runner's (each match's `oof_turns` in `results.json`); stock cambc gives none, and the summary then reports an `oof_error`. The runner counts every play turn that ended out of fuel, slightly more than the bots' lines (one per overrun that finished, so two in a row read as one and a game's last is missed): 187 against 172 turns on those 12 debug games.
 - **Replay bound:** each suite keeps only its first 1000 finished games' replays (`--keep-replays N`; `0` keeps all, as an agent extracting a whole batch needs). A later game's replay is deleted as soon as it finishes, after its out-of-fuel, handoff and capped-draft lines are appended to the batch's `pruned-stdout.jsonl` (fsynced first); its match in `results.json` then has `"replay": null` and `"pruned": "<stem>.repl26a"`. `tools/fuel/oof.py` reads that file for any missing replay, so the summary's OOF counts and `oof.py BATCH` cover every game. Failed games' replays are always kept. On 2026-11-08 unbounded SPRT screens (~200 KB a game, ~140 GB/h) filled the 993 GB root disk and crashed ~25 runs. Batches from runs started before the bound, or from other callers named `batch-*-ab-*`, are thinned to their oldest 1000 replays by `py tools/replay_thin.py` (the replay janitor runs it every 15 min; only replays `results.json` lists, 10+ min old, same sidecar first). It skips directories holding `.keep` (pin a batch whose replays you need) or an `oofj.jsonl` (a janitor of its own deletes those). Whole-batch replay readers (`extract.mjs` on a batch, `ab_farm.py`, `solo.py`, `census/`) see only the kept games unless the run passed `--keep-replays 0` or its batch has a `.keep`.
@@ -170,7 +170,7 @@ node tools/mapgen/mapgen.mjs gen classic --seed 3 --calib 1        # calibration
 
 ## Map fuzzing: tools/fuzz
 
-`py tools/fuzz/fuzz.py run NAME [--screen 400] [--ref hyperion] [--climb 8 --gens 4] [--shrink 2]` hunts for maps on which astraeus farms pathologically against bots/idle.
+`py tools/fuzz/fuzz.py run NAME [--screen 400] [--ref astraeus] [--climb 8 --gens 4] [--shrink 2]` hunts for maps on which astraeus farms pathologically against bots/idle.
 - **Maps:** every preset in `mapgen list` plus `mutate random`, each played from both sides through run_batched.py.
 - **Score,** from the extracted replays (higher is worse):
   - gem rate against the typical rate for the map's offer;
@@ -210,7 +210,7 @@ matrix.py plays one batch per distinct pair (`--bot` rows, `--vs-bot` columns; i
 ## Fuel: tools/fuel
 
 ```
-py tools/fuel/bench.py run astraeus --out replays/fuel/base.json          # 16 games vs hyperion, 8 maps, 100M fuel
+py tools/fuel/bench.py run astraeus --out replays/fuel/base.json          # 16 games vs astraeus, 8 maps, 100M fuel
 py tools/fuel/bench.py compare replays/fuel/base.json replays/fuel/x.json  # identical replays, fuel change
 py tools/fuel/stats.py BASE.json CAND.json [...]                          # headline numbers side by side: mean, p99, max, >100k, round 1, OOF, shortcuts
 py tools/fuel/bench.py run astraeus --fuel 0 --out replays/fuel/real.json # the real budget: shortcuts and lost turns
@@ -220,8 +220,8 @@ py tools/fuel/oof.py replays/batch-A replays/batch-B                      # out-
 py tools/fuel/oof_bot.py replays/batch-A replays/batch-B                  # the same without shared-gem maps, by round, finish gap, run size
 py tools/fuel/census/batch_oof.py --bot 1 replays/batch-A                 # one bot's: first-in-streak, by round, phase, branch, map
 py tools/replay/debug_lines.py SRCH-PASS -- replays/batch-A               # any debug_block line prefix per bot (--show N)
-py tools/fuel/cap_variant.py hyperion --run-fuel 10000000                 # a copy that charges itself back to 100k a turn
-py tools/ab.py main variants/hyperion-cap100000-at10000000 --fuel 10000000 # so only CAND gets 10M
+py tools/fuel/cap_variant.py astraeus --run-fuel 10000000                 # a copy that charges itself back to 100k a turn
+py tools/ab.py astraeus variants/astraeus-cap100000-at10000000 --no-test-draft --fuel 10000000 # so only CAND gets 10M
 ```
 
 - **bench.py:** plays on the fast runner when it is built (`CAMBC_BIN` if it names one, else `tools/fastengine/runner/fastrunner` here or in the primary checkout; `FASTRUNNER_MODE` defaults to native): all games in one `run-batch` taking a CPU slot per game, each game's draft and winner from its `.camstat`. Its JSONs and bundles equal stock's (2026-11-03, astraeus vs astraeus-fc4b: oof and `--set wide --test-draft`, 100M and `--fuel 0`, 200 games; every bundle member but `.debug` identical) at a quarter of the CPU (~2.5x wall). `--stock`, or `CAMBC_BIN` naming another cambc, plays a `cambc run` per game; games failing on the fast runner are replayed that way. A built fast runner that does not answer (a cambc it was not ported to) stops it with an error instead of a silent stock run (`--stock` or `FASTRUNNER_ALLOW_STOCK=1` plays stock). `--maps` takes ladder names or paths; `--set wide` is 26 maps (12 ladder, the 14 in `maps/gen-bench/`); `--test-draft` gives both bots the ladder test compositions; `all` counts play turns from round 2. Fuel campaigns keep their sets and baselines in `replays/fuel/fc<N>/` (`bench.sh`, `ab.sh`, `<set>set.txt`, `base-<set>-{100M,real}.json`; brief and findings in `research/hyperion/fuel-campaign-<N>/`).
@@ -513,7 +513,7 @@ python3 tools/antire/fuel_delta.py GAMES_A GAMES_B       # per-turn fuel of B - 
 
 ## .htb bots: tools/htb
 
-C++ bots written like Java (methods inside classes, no headers); `hgen.py` generates the bot's `src/`. Example `bots/htb-starter`; details in [htb/README.md](htb/README.md).
+C++ bots written like Java (methods inside classes, no headers); `hgen.py` generates the bot's `src/`. Example `bots/archives/htb-starter`; details in [htb/README.md](htb/README.md).
 
 ```
 py tools/htb/install.py          # once: generate and build every .htb bot, install the VS Code extension

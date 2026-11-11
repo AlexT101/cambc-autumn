@@ -1,7 +1,7 @@
 """Map fuzzing: find maps on which our bot farms pathologically against bots/idle, then hill-climb them with
 mapgen mutations into more extreme (and, with --shrink, simpler) maps. Output: replays/fuzz/<name>/.
 
-    py tools/fuzz/fuzz.py run NAME [--screen 400] [--climb 8 --gens 4 --children 10] [--shrink 2] [--ref hyperion]
+    py tools/fuzz/fuzz.py run NAME [--screen 400] [--climb 8 --gens 4 --children 10] [--shrink 2] [--ref astraeus]
     py tools/fuzz/fuzz.py report NAME [--top 20]
     py tools/fuzz/fuzz.py rescore NAME                 # recompute scores after editing score.py, no games
     py tools/fuzz/fuzz.py vs NAME BOT [--top 10]       # head-to-head on the worst maps, both sides

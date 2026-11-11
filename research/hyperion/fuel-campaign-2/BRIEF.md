@@ -107,7 +107,7 @@ real-budget OOF are the honest worst-case measures.
 - Comment only counterintuitive behaviour, concisely; match the surrounding code's style. `farm_turn` is flattened
   (`[[gnu::flatten]]`): changes there shift codegen across every turn, so bench the whole set.
 - Commit on your branch (one idea per commit), never push, never merge into fuel-orch or main. Don't edit
-  `bots/baselines/` or `bots/hyperion`. Don't edit CHANGES.md or EXPERIMENTS.md (the merge agent does); do append your
+  `bots/baselines/` or `bots/archives/hyperion`. Don't edit CHANGES.md or EXPERIMENTS.md (the merge agent does); do append your
   findings, dropped attempts with numbers and open leads to `research/hyperion/fuel-campaign-2/NOTES.md` on your branch
   under a `## <your area>` heading.
 
