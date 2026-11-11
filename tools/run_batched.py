@@ -411,8 +411,23 @@ def main():
     live = sys.stdout.isatty()
 
     last_write = [0.0]
+    # Replays past --keep-replays, thinned in one group before each results.json write: a group costs one fsync where
+    # a replay at a time cost one a game (about 30 games/s a suite). Thinning before the write keeps a written
+    # results.json from listing a replay that is then deleted.
+    thinning = []
+
+    def thin_pending():
+        present = [(result, replay) for result, replay in thinning if replay.exists()]
+        thinning.clear()
+        if present:
+            oof.thin(output, [replay for _, replay in present])
+        for result, replay in present:
+            if not replay.exists():
+                seconds = result.pop("seconds")  # "pruned" keeps its place before "seconds"
+                result.update(replay=None, pruned=replay.name, seconds=seconds)
 
     def write_results():
+        thin_pending()
         report = {"bots": [str(p) for p in bots], "experiment_config": config_proof, "game_timeout": args.game_timeout, "fuel": args.fuel, "release": args.release, "timeout": args.timeout,
                   "gen": args.gen, "gen_seed": args.gen_seed if args.gen else None,
                   "one_side": args.one_side, "side_seed": args.side_seed if args.one_side else None,
@@ -429,10 +444,12 @@ def main():
                 sleep(0.02)
         last_write[0] = perf_counter()
 
-    def record(result):
+    def record(result, prune=None):
         nonlocal errors
         with lock:
             records.append(result)
+            if prune is not None:
+                thinning.append((result, prune))
             if "error" in result:
                 errors += 1
                 outcome = f"ERROR: {result['error']}"
@@ -484,18 +501,17 @@ def main():
             if oof_turns is not None:
                 # By bot: order[0] played team A.
                 result["oof_turns"] = [oof_turns[order.index(0)], oof_turns[order.index(1)]]
+        prune = None
         if args.no_replays:
             replay.unlink(missing_ok=True)
         elif args.keep_replays and result["replay"] and failure is None:
             with lock:
                 kept[0] += 1
-                over = kept[0] > args.keep_replays
-            if over and oof.thin(output, [replay]):
-                result["replay"] = None
-                result["pruned"] = replay.name
+                if kept[0] > args.keep_replays:
+                    prune = replay
         result["seconds"] = round(seconds, 3)
         finished.add(stem)
-        record(result)
+        record(result, prune)
 
     def run(batch, manifest, held, stream, jobs=None):
         """Play `batch` (stems, all in `manifest`) in one run-batch, a match per held slot (or with `jobs`, the
