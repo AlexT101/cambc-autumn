@@ -4472,7 +4472,7 @@ First-turn fuel on the 1456 (unlimited first turn): p50 4.22M -> 3.67M, p90 6.92
 In the bench bundles the draft turn's max is 8.91M -> 7.80M on the heavy maps and 6.92M -> 6.30M on wide.
 Frozen as `variants/oc-dfuel-506` (= bots/ocean).
 
-## 507: Teammates post their tile in the claim fields; an unseen claimer's told tile counts in its group's crew (ocean, 2026-11-11)
+## 507-ocean: Teammates post their tile in the claim fields; an unseen claimer's told tile counts in its group's crew (ocean, 2026-11-11)
 
 `params::comms_slots`, in `model/comms.cc` and `economy/crew.cc` (`ideas-2026-11-11/comms/cm2-k3.patch` on 506: 70
 lines added, 10 removed, 6 files):
