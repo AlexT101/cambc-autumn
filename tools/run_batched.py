@@ -260,21 +260,22 @@ def build_bots(cli, bots, env, log, warm_map, release=False, configured_ref=Fals
     def build(bot):
         clear_copied_cache(bot)
         print(f"Building {bot.name}...", flush=True)
-        reservation = cpu_slots.acquire(1) if configured_ref else []
-        try:
-            with cpu_slots.exclusive(bot.parent / "build.lock"):
-                built = subprocess.run([cli, "build", str(bot), *(["--release"] if release else [])], cwd=ROOT, env=({**env, "CMAKE_BUILD_PARALLEL_LEVEL": "1"} if configured_ref else env),
-                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8",
-                                       errors="replace")
-                if not built.returncode and not configured_ref and not cambc_env.warm(cli, bot, warm_map, ["--release"] if release else []):
-                    built.stdout += f"Warming {bot.name}'s compile cache failed; its first matches compile it\n"
-        finally:
-            cpu_slots.release(reservation)
+        with cpu_slots.exclusive(bot.parent / "build.lock"):
+            built = subprocess.run([cli, "build", str(bot), *(["--release"] if release else [])], cwd=ROOT, env=({**env, "CMAKE_BUILD_PARALLEL_LEVEL": "1"} if configured_ref else env),
+                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8",
+                                   errors="replace")
+            if not built.returncode and not configured_ref and not cambc_env.warm(cli, bot, warm_map, ["--release"] if release else []):
+                built.stdout += f"Warming {bot.name}'s compile cache failed; its first matches compile it\n"
         return built
 
     unique = list(dict.fromkeys(bots))
-    with ThreadPoolExecutor(len(unique)) as pool:
-        results = list(pool.map(build, unique))
+    # cpu_slots membership is process-global: reserve once outside the build threads.
+    reservation = cpu_slots.acquire(len(unique), least=1) if configured_ref else []
+    try:
+        with ThreadPoolExecutor(len(reservation) if configured_ref else len(unique)) as pool:
+            results = list(pool.map(build, unique))
+    finally:
+        cpu_slots.release(reservation)
     with log.open("w", encoding="utf-8") as stream:
         for built in results:
             stream.write(built.stdout)

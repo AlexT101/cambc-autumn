@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 from types import SimpleNamespace
+import threading
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import experiment_config as ec
 import run_batched as rb
@@ -36,4 +37,15 @@ class ConfigTests(unittest.TestCase):
      else:rb.prepare_experiment_cache('runner',Path(td)/'manifest',[],env,Path(td)/'log')
     self.assertEqual(events,[('release',4),('prepare',16),('release',16)])
     self.assertEqual(env['FASTRUNNER_BUILT'],'1')
+ def test_cpp_reservation_occurs_on_coordinator_and_bounds_build_threads(self):
+  with tempfile.TemporaryDirectory() as td:
+   main=threading.get_ident();calls=[]
+   def acquire(n,least):
+    self.assertEqual(threading.get_ident(),main);self.assertEqual(n,2);return ['one-slot']
+   def build(argv,**kwargs):
+    self.assertEqual(kwargs['env']['CMAKE_BUILD_PARALLEL_LEVEL'],'1');calls.append(threading.get_ident())
+    return SimpleNamespace(returncode=0,stdout='built')
+   with patch.object(rb.cpu_slots,'acquire',side_effect=acquire),patch.object(rb.cpu_slots,'release') as release,patch.object(rb.subprocess,'run',side_effect=build),patch.object(rb.cambc_env,'warm') as warm:
+    result=rb.build_bots('runner',[Path(td)/'a',Path(td)/'b'],{},Path(td)/'log',Path(td)/'map',True,True)
+   self.assertIsNone(result);self.assertEqual(len(calls),2);self.assertEqual(len(set(calls)),1);warm.assert_not_called();release.assert_called_once_with(['one-slot'])
 if __name__=='__main__':unittest.main()

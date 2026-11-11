@@ -3,7 +3,7 @@
   "library_sha256": "ab72e0e5eda3d2b9094b27345ca8521299e37bcec972c4f382349623212608fd",
   "source_sha256": {
     "/home/ubuntu/cambc-autumn/tools/ab.py": "9e28ad97f57c5444f30fd428a5ff6a91007ed52ca342830cb48afab3609407a3",
-    "/home/ubuntu/cambc-autumn/tools/run_batched.py": "2f45f1f166d3665defe8b82fb59204d772239787b688872bbcc0434c58a701a2",
+    "/home/ubuntu/cambc-autumn/tools/run_batched.py": "1d3f341fbc8c4adb240405a8ef97107060bbcc49937f576280f1de9ba1421c13",
     "/home/ubuntu/cambc-autumn/tools/experiment_config.py": "d357e7091c004ce60363e06ba88fcb3046d506cbdaf00fc95ed97b2f31b7457b",
     "/home/ubuntu/cambc-autumn/tools/fastengine/runner/src/scenario.rs": "482dd7b9d42874ab68116d5834cb7079168b750693c56354e49e8b50e0c27750",
     "/home/ubuntu/cambc-autumn/tools/fastengine/runner/src/bundle.rs": "48f1867523fc3bc9922a4ad513ed969a8bc714df6a9580a5d5e395a55f79a2a7",
@@ -127,7 +127,7 @@
   },
   "unit_tests": {
     "rust": 4,
-    "python": 3
+    "python": 4
   },
   "scored_strength_claim": false,
   "shared_library_replaced": false,
@@ -157,5 +157,6 @@
         "ref": 0
       }
     }
-  }
+  },
+  "resource_followup": "C++ slots acquired on coordinator once; build thread count equals actual granted slots; dedicated fixture passed. No guest/native code change."
 }
