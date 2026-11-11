@@ -148,6 +148,24 @@ bool hold_shy(const World& world, const ChampionBelief& a) {
     return p && p->alive;
 }
 
+// A healthy Prism keeps its bag for Focus with `gems` more in it: short of the win, and early enough to bank
+// it later. Else the bag goes to an altar, and a hurt one leaves a hold. Read from a's visible bag and health
+// and the team's score, so allies agree.
+bool keeps_bag(const World& world, const ChampionBelief& a, int gems) {
+    const auto& map = world.map();
+    return a.facts().passive == Passive::gem_focus && a.health >= params::hurt_health_fraction * a.max_health
+           && world.score.ally + a.gems + gems < static_cast<int>(cambc::constants::winning_gems)
+           && rounds_left(world) > tribute_turns(a.gems + gems, a.fast_tribute) + map.width + map.height + endgame_margin;
+}
+
+// Gems one gem in a's kept bag is worth beyond itself, at `price` gems a gold: Prism's prism_focus_per_gem
+// Focus a gem is what prism_focus_per_gem / growth Focus shards would buy, at shard_price gold each.
+float carried_bonus(const World& world, const ChampionBelief& a, int gems, float price) {
+    if (!keeps_bag(world, a, gems)) return 0.0f;
+    const float shards = cambc::constants::passive_abilities::prism_focus_per_gem / a.facts().focus.growth;
+    return std::max(0.0f, price) * shards * static_cast<float>(shard_price);
+}
+
 // What a's lone hold of G pays the team, in gems at `price` a gold: its share with a Prospector
 // emblem's extra, gems past the win dropped, the gold at its bonuses and Marcella's gold on the gems.
 float holder_value(const World& world, const ChampionBelief& a, const CampGroup& G, float price) {

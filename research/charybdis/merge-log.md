@@ -384,3 +384,36 @@ p1's on these suites.
   base. In phase 1, K2b (with M2-b, on K2a) was level. Without M2-b, and on C2, it gains: M2-b's added caution
   probably cancelled the other two. Merged into bots/charybdis without the debug-only MEDIC and HOLDCAST traces (the
   release build is the same size as the candidate's).
+
+## C3r = C3 re-ported onto the accepted state (C2 + C10)
+
+- **Port:** chy2-C3's diff against p1 (bot_parts.h, economy/capture.cc, economy/farm.cc), applied to charybdis
+  (C2 + C10). The last farm.cc hunk landed at a +49 offset (the 'Q' block). The debug-only PPICK trace was dropped.
+  The 'Q' pick's worth gains `gems x keep_bonus(G)`, as 'G'/'L' do (C2's first build, on C3, had the same).
+- **Audit:** no bugs.
+  - The hunks are identical to chy2-C3's, and no `gold_part` is left.
+  - `keep_bonus` is in scope at 'Q', and 'Q''s own gates cover `keeps_bag`'s.
+  - 'Q' needs no prune bound, since it is valued after the main loop.
+  - Optional, not applied: 'Q''s crew arrival counts the full premium without J's health gate, which drops the carry
+    when the expected camp damage would put the Prism below the hurt line. That is a next step.
+- **Debug batch:** 62.7% against ocean (C10: 56.8%, C2: 60.5%, all on the same 512 games).
+- **A/Bs, s-720001..080 (40,960 each), paired against C10 (chy2-C8ac) on the same games:**
+  - vs ocean-main: **60.4%** (CI 59.9-60.9), paired +1.15 (CI +0.57..+1.73, z 3.9).
+  - vs charybdis-base: **53.0%** (CI 52.5-53.5), paired -0.05.
+  - vs charybdis-p1: **51.4%** (CI 50.9-51.9), paired -0.16 (CI -0.76..+0.45).
+- **Extension, s-720081..160 (40,960 more each; C10 measured there too):**
+  - vs ocean: C3r 59.8%, C10 59.6%, paired +0.24;
+  - vs base: 53.4% against 53.0%, paired +0.36;
+  - vs p1: 51.3% against 51.2%, paired +0.06.
+- **Pooled, 81,920 games, paired against C10:**
+  - vs ocean-main: **60.12%** against 59.43%, **+0.70** (CI +0.29..+1.11, z 3.33).
+  - vs charybdis-base: **53.19%** against 53.04%, +0.16 (CI -0.27..+0.58).
+  - vs charybdis-p1: **51.32%** against 51.37%, -0.05 (CI -0.48..+0.38).
+  - OOF turns: +1% on C10's.
+- **Decision: accepted, by user decision.** The user prefers C3 because it drops the base's crude `gold_part`
+  halving: keep it if it holds a clear gain against ocean with p1 and base level. Both hold. It does not meet the
+  standing later-change rule against p1 (-0.05, level), so the acceptance rests on the ocean gain and on replacing a
+  hand-set rule with a derived price. The earlier C3 fuel flag is withdrawn.
+- **Note:** against our own forks (p1, base) C3 is level, while against ocean it gains about 0.7. A plausible reason
+  is that p1 and base share the Prism-carry economy, so they lose little to a better-priced Prism. Ocean doesn't
+  share it, so it is the better ladder proxy here, but that is an inference.

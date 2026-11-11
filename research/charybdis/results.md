@@ -48,3 +48,11 @@ Details in merge-log.md. "vs p1" is the candidate against charybdis-p1 directly.
 | C8 M2-b | two casts on a double turn | - | - | - | dropped by user decision: adds caution; level in K2b and alone on macro2 |
 | C9 (on C2) | K3 hand-over of full and single-tile holds | 59.1 (58.6-59.6); -0.05 | 52.8 (52.3-53.3); +0.35 | 50.9 (50.4-51.4); +0.02 | rejected: level vs p1 |
 | C10 (on C2) | M2-c + M2-a hold cast, Willow heal order | 59.3 (58.8-59.7); +0.10 | 53.1 (52.6-53.5); +0.62 | 51.5 (51.0-52.0); +0.61 | **accepted** |
+| C3r (on C2 + C10) | C3 re-ported, 'Q' with the premium | 60.4 (59.9-60.9); vs C10 +1.15 | 53.0 (52.5-53.5); -0.05 | 51.4 (50.9-51.9); -0.16 | extended |
+| C3r (81,920, s-720001..160) | C10 there: 59.43 / 53.04 / 51.37 | 60.12; **+0.70 (+0.29..+1.11)** | 53.19; +0.16 | 51.32; -0.05 | **accepted (user decision)** |
+
+## Phase-2 result
+
+Accepted: C2, C10 and C3r on p1. Final state = `bots/charybdis`, frozen as `bots/variants/charybdis-p2`. On
+s-720001..160 (81,920 games each): **60.12%** against ocean-main-b7c87cf, **53.19%** against charybdis-base and
+**51.32%** against charybdis-p1. p1 itself scored 58.68% against ocean and 51.96% against base on the same suites.

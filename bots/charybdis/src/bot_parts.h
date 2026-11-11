@@ -418,6 +418,8 @@ bool big_group(const CampGroup& G);
 int holders(const CampGroup& G);
 const ChampionBelief* sole_capture_holder(const World& world, const CampGroup& G);
 const ChampionBelief* value_holder(const World& world, const CampGroup& G);
+bool keeps_bag(const World& world, const ChampionBelief& a, int gems);
+float carried_bonus(const World& world, const ChampionBelief& a, int gems, float price);
 bool outvalues_holders(const World& world, const CampGroup& G);
 bool takes_over(const World& world);
 bool may_take_over(const World& world, const CampGroup& G);
