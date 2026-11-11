@@ -310,6 +310,13 @@ py tools/version_record.py 50                        # our version 50's record p
   that artifact without a build fallback. Upload intent is persisted before the call; an ambiguous interrupted
   upload holds for reconciliation instead of uploading twice. Wrong pins, outside selections, dropped/suspect
   groups or missing collected replays hold; read-only API rate limits wait. It never repins or extends itself.
+- **live_opponent_campaign.py**, **live_panel_evidence.py** and **live_panel_observations.py** implement the
+  explicitly reviewed conditional113/whole506 fourteen-opponent panel. They are inert without `live-panel.json`
+  or before the r6 campaign completes. The complete primary Fish/Mite paired-map results determine entry;
+  existing own submissions are reselected, each new opponent's first validated capture is frozen for both arms,
+  and reports remain separate by opponent without conditioning on draft choices. Sparse same-own-version hourly
+  observations update detector snapshots only. See `research/ideas-2026-11-11/live-opponent-panel.md` for fixed
+  scope, quota estimate, recovery barriers and the prospective closeness rule.
 - **version_record.py** needs the website cookie (`%APPDATA%/cambc/web-cookie.txt`, as fetch_replays.py): the API shows submission versions only with it. `--kind`, `--json FILE` for per-game rows.
 
 ## Draft lab: tools/draftlab

@@ -461,10 +461,12 @@ def runner_alive():
 
 def main():
     from live_r6_campaign import Campaign
+    from live_opponent_campaign import Panel
     log(f'scheduler start pid {os.getpid()}')
     version_check = VersionCheck(ls, H, log, wake)
     opponent_detector = OpponentDetector(ls, save, log, wake, now)
     campaign = Campaign(sys.modules[__name__], opponent_detector)
+    panel = Panel(sys.modules[__name__], opponent_detector)
     while not (H / 'STOP').exists():
         try:
             st = load()
@@ -475,6 +477,9 @@ def main():
                 time.sleep(15)
                 continue
             if campaign.tick(st):
+                time.sleep(30)
+                continue
+            if panel.tick(st):
                 time.sleep(30)
                 continue
             if not outside_check(st):   # live is not ours: neither report nor submit
