@@ -1,0 +1,99 @@
+diff -ru -x .cambc -x compile_commands.json -x READY variants/chy18-cm2k3/src/bot_parts.h variants/gp-stand/src/bot_parts.h
+--- variants/chy18-cm2k3/src/bot_parts.h	2026-11-11 21:02:52.430957541 +0000
++++ variants/gp-stand/src/bot_parts.h	2026-11-11 22:57:11.257624110 +0000
+@@ -377,6 +377,12 @@
+ int gems_short(const World& world, int horizon = static_cast<int>(cambc::constants::max_rounds));
+ const ChampionBelief* partner(const World& world);
+ int bag_at_stake(const World& world);
++// Each team's standing in the race to the win: tributed gems and the bags its living bodies carry, which
++// score once tributed (ours as seen, else as posted; theirs as last seen).
++struct Standing {
++    int ally = 0, enemy = 0;
++};
++Standing standing(const World& world);
+ AltarWalk& altar_walk();
+ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w);
+ const AltarAccess& altar_access(const World& world, Pathing& pathing);
+diff -ru -x .cambc -x compile_commands.json -x READY variants/chy18-cm2k3/src/economy/altar_guard.cc variants/gp-stand/src/economy/altar_guard.cc
+--- variants/chy18-cm2k3/src/economy/altar_guard.cc	2026-11-11 18:39:54.000000000 +0000
++++ variants/gp-stand/src/economy/altar_guard.cc	2026-11-11 22:57:24.866200237 +0000
+@@ -51,11 +51,12 @@
+     return world.score.ally + best >= static_cast<int>(cambc::constants::winning_gems);
+ }
+ 
+-// Scores are read by every body alike, so the team agrees without comms.
++// Standings (bank.cc standing): scores every body reads alike, plus bags as seen or posted.
+ bool guarding(const World& world) {
+     static bool on = false;
+-    const int lead = world.score.enemy - world.score.ally;
+-    if (!on) on = world.score.enemy >= params::altar_enemy_min && lead >= params::altar_gap;
++    const Standing s = standing(world);
++    const int lead = s.enemy - s.ally;
++    if (!on) on = s.enemy >= params::altar_enemy_min && lead >= params::altar_gap;
+     else if (lead < params::altar_gap_off) on = false;
+     return (on || escorting(world)) && guarded_altar(world) >= 0;
+ }
+diff -ru -x .cambc -x compile_commands.json -x READY variants/chy18-cm2k3/src/economy/bank.cc variants/gp-stand/src/economy/bank.cc
+--- variants/chy18-cm2k3/src/economy/bank.cc	2026-11-11 18:39:54.000000000 +0000
++++ variants/gp-stand/src/economy/bank.cc	2026-11-11 22:57:28.321684059 +0000
+@@ -203,6 +203,15 @@
+ 
+ const ChampionBelief* partner(const World& world) { return linked_partner(world, world.me()); }
+ 
++Standing standing(const World& world) {
++    Standing s{world.score.ally, world.score.enemy};
++    for (const auto& a : world.allies)
++        if (a.alive) s.ally += a.is_self ? static_cast<int>(my_gems()) : a.visible ? a.gems : comms::bag_of(world, a.index);
++    for (const auto& e : world.enemies)
++        if (e.alive) s.enemy += e.gems;
++    return s;
++}
++
+ // What a death would hand over: both bags for Cassi and Issac (an unseen partner's as posted).
+ int bag_at_stake(const World& world) {
+     const auto* p = partner(world);
+diff -ru -x .cambc -x compile_commands.json -x READY variants/chy18-cm2k3/src/economy/comeback.cc variants/gp-stand/src/economy/comeback.cc
+--- variants/chy18-cm2k3/src/economy/comeback.cc	2026-11-11 18:39:54.000000000 +0000
++++ variants/gp-stand/src/economy/comeback.cc	2026-11-11 22:57:21.092433260 +0000
+@@ -1,6 +1,6 @@
+ // Cooked comebacks (research/ideas-2026-11-05/comeback.md): while far behind, normal play rarely wins,
+ // so a gambit that lifts the comeback rate pays even if it loses more of the games already lost.
+-// The cook comes from the scores (every body reads the same); while it lasts, farm's mirror pull and
++// The cook comes from the standings (scores plus carried bags, bank.cc standing); while it lasts, farm's mirror pull and
+ // denial (economy/farm.cc mirror_pull) and accept_lost's snipe are on.
+ #include "../bot_parts.h"
+ 
+@@ -24,7 +24,9 @@
+ void refresh(const World& world) {
+     if (cook.round == world.round) return;
+     cook.round = world.round;
+-    const int us = world.score.ally, them = world.score.enemy, lead = them - us;
++    // Standings, not scores: a hoarding Prism keeps our score low while the race is level.
++    const Standing s = standing(world);
++    const int us = s.ally, them = s.enemy, lead = them - us;
+     cook.on = cook.on ? lead >= P::gap_off : them >= P::enemy_min && lead >= P::gap;
+ }
+ 
+diff -ru -x .cambc -x compile_commands.json -x READY variants/chy18-cm2k3/src/params.h variants/gp-stand/src/params.h
+--- variants/chy18-cm2k3/src/params.h	2026-11-11 21:02:52.431412607 +0000
++++ variants/gp-stand/src/params.h	2026-11-11 22:57:24.866317998 +0000
+@@ -222,8 +222,8 @@
+ // comes as the target weakens (kill_distance).
+ inline constexpr float chip_value = 0.24669105f;
+ 
+-// Altar control (economy/altar_guard.cc) on one-altar maps: guarding starts at enemy tributed >=
+-// altar_enemy_min and enemy - ours >= altar_gap, and stops below altar_gap_off; it also holds while a body
++// Altar control (economy/altar_guard.cc) on one-altar maps: guarding starts at enemy standing (tributed
++// plus carried) >= altar_enemy_min and enemy - ours >= altar_gap, and stops below altar_gap_off; it also holds while a body
+ // of ours carries a winning bag. The altar_guards strongest bodies guard, leaving at least
+ // altar_farmers_min farming, on stand tiles within altar_stand_radius of the altar, and fight enemies
+ // within altar_leash of it.
+@@ -252,7 +252,7 @@
+ inline constexpr float efficiency_power = 1.4653788f;
+ 
+ // Cooked comebacks (economy/comeback.cc, research/ideas-2026-11-05/comeback.md): while the enemy has at least
+-// enemy_min tributed and leads by gap (cooked until the lead falls below gap_off), farm's mirror pull counts a
++// enemy_min standing (tributed plus carried) and leads by gap (cooked until the lead falls below gap_off), farm's mirror pull counts a
+ // group's walk as steps - pull_lam * max(0, steps - pull_c * mirror_steps), mirror_steps from the mirror of our
+ // tile; enemy-side groups' worth weighs 1 + deny_w; and a lost chase is taken against a carrier of bar_bag or more
+ // while we last bar turns, with the other allies (up to two) within pack_radius.

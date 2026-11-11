@@ -17534,3 +17534,27 @@ are in `bots/variants/ch517-*`, gitignored). `ch517-pf` is 517 plus `remaining-a
   OOF +0.38 a game) while driving only ~11 turns a game: the fights it starts are played short of fuel. Making the
   press cheaper does not pay; it would need fight turns (the guard's sims, prey's chase fights) that fit 100k.
 - Nothing kept: fixes 3 and 5 are level at 100k, not worth their fuel.
+
+## (charybdis = chy18-cm2k3, 2026-11-11) Gem price and the race: gold priced to the enemy's win in standings is +0.20 (ZONE); the cook on standings and the enemy clock alone do not help; wheel is lost in the ring, not in the price
+
+Note, data and arms: [ideas-2026-11-11/gemprice/README.md](ideas-2026-11-11/gemprice/README.md) (diffs in `patches/`).
+The user's leads on wheel: the gem/gold price reading the enemy's state, crystals, `min_bank` from map features.
+
+- **Diagnosis** (chy18-cm2k3 on wheel x24 noise seeds and 13 weak maps x8, both bodies, 200k): wheel 31% against Mt3q,
+  92% against Flp4; the Mite body never hops on wheel. Losses are lost races in standing (tributed + carried: ~370
+  against ~640 in wins when Mite reaches 600), made in the ring before 600 (gem-cluster captures 22 against Mite's 46;
+  18% of champion-rounds in the ring against 30%; 17% dead against 10%). Late, half our captures are outside gold
+  groups. `per_gold`'s horizon reads the enemy only as gems to the win; charybdis's hoard makes its tributed rate
+  under-read our pace; the comeback cook (scores only) fires in 64% of our wins against Mt3q.
+- Results against chy18-cm2k3 (`tools/fgate.py --fuel 200000 --screen`, pool batches from 0, unmetered Flp4 / Mt3q):
+
+| arm | change | win% (95% CI) | maps | Fish | Mite | OOF a game (REF 0.047) | verdict |
+|---|---|---|---|---|---|---|---|
+| gp-race | `gems_share` in standings: need = 1000 - our standing at our standing pace, until the round limit or the enemy's win at its standing pace; hump on standings | 50.20% (49.99-50.42) | 40,960 | +0.08 ±0.29 | +0.33 ±0.32 | 0.048 | ZONE |
+| gp-stand | comeback cook and altar guard on standings | 49.87% (49.64-50.10) | 20,480 | +0.27 ±0.29 | -0.53 ±0.35 | 0.047 | no gain, closed |
+| gp-horizon | only the enemy's win (standing pace) caps `gems_share`'s horizon | 49.70% (49.43-49.98) | 20,480 | -0.47 ±0.36 | -0.13 ±0.41 | 0.048 | loses, closed |
+
+- Mechanism on wheel against Mt3q (48 games each): late captures (enemy 600+) 28.0 -> 17.0 a game with gp-race, of
+  outside gold groups 9.4 -> 4.3; wheel wins 15 -> 17 of 48 (noise). No arm fixes wheel. Crystal uses 0 for all.
+- Not built: crystal hops (untestable locally on wheel; `bm-tp` lost), draft-time `min_bank` (charybdis's EOQ floor
+  already sets it in play; CHANGES 461 lost live). No 100k read: the 200k result is a zone, not a reviewed gain.
