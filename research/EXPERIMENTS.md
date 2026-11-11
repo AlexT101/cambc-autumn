@@ -17205,3 +17205,22 @@ Throughput. A gate's rate is its share of the slot pool, so the two were timed s
 - `run_batched.py` handles finished games one at a time, and each pruned replay costs an fsync (`oof.thin`): about 30 games/s a suite whatever the machine. A 5,376-game suite a run capped a batch at 376k games/h, so a run now plays its batch as eight 320-map suites. The cap applies to every large `ab.py` suite past `--keep-replays`; thinning replays in groups would lift it.
 
 Not carried over: a compiled opponent pair a block and compile-ahead (only in `--blocks`); ladder maps as half the games; metered bodies; the 1,024-map pool replayed every 8 blocks; from the conditional-batch506 protocol its seals and reviews, eight fixed seed/salt pairs, the single fixed final read, the 120 s watchdog (600 s here: wall time on a loaded box) and the wait for all 16 slots before cache preparation, which never ends once a group's fair share is under 16.
+
+## (ocean, 2026-11-11) Pack zone margin on 506: fewer enemy-started fights, no local win; pg-z8 built for a live read
+
+[research/ideas-2026-11-11/packgive](ideas-2026-11-11/packgive/README.md). The pack zone counts members from `pack_margin` tiles beyond their one-turn reach (1 two-turn reach, 3 the edge of sight), to stop the farm walk into a pack still closing (live Fish: 136 fights it starts with the numbers at -0.40 kills each; the step towards the pack is a farm step in 59 of 76 traced).
+
+Results against oc-dfuel-506 (`fgate.py --fuel 200000 --first-batch 35`, fresh ladder-v2 maps, Flp4/Mt3q bodies):
+
+| gate | win% (95% CI) of n | enemy-started outnumbering fights a game (2,048 release games; base 0.364) |
+|---|---|---|
+| `pg-z6` (margin 1) fresh, 200k | 49.87% (49.35-50.39) of 7,680 maps | 0.328 (-10%) |
+| `pg-z7` (margin 2) fresh, 200k | 49.41% (48.88-49.95) of 7,680 maps | 0.299 (-18%) |
+| `pg-z8` (margin 3) fresh, 200k | 48.21% (47.66-48.76) of 7,680 maps | 0.260 (-29%) |
+| `pg-p` (pursuers counted on our own ground) fresh, 200k | 49.38% (48.84-49.91) of 7,680 maps | -20% on 508 debug games |
+| `pg-z6p` (both) fresh, 200k | 49.17% (48.62-49.71) of 7,680 maps | -18% on 508 |
+| `pg-z8a` (margin 3, zone off our half too) fresh, 200k | 48.15% (47.48-48.82) of 5,120 maps | -29% on 508 |
+
+- The fights that remain are unchanged (first target dies as often); the loss is ceded camps (enemy captures by 300 +0.3 to +0.7 a game for `pg-z8`), no collapse in our gold or captures, no fuel cost (out-of-fuel turns a game 5.19 base, 5.26 `pg-z8`).
+- A margin only for members seen stepping nearer (`pg-c8`, `pg-c6`) does nothing: distance kept avoids the fights, not reacting to the approach.
+- Nothing ships on local evidence. `pg-z8` is the arm for a live pair, as a measurement: only its effect (about -0.14 fights a game, -9 outnumbered rounds on our half) is within reach of 512 live games. `tools/packmetrics.py live 115 NEW --pair` reads it.
