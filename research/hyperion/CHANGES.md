@@ -4655,4 +4655,5 @@ from. The `world.h` comment on `turn_start` said the opposite of the code and is
 Skirmish comment (+10%, not 5%). Review item H5 / E10 in [findings-2026-11-11](../charybdis/findings-2026-11-11.md).
 
 bench.py replays at 100M are identical: 16/16 default, 52/52 `--set wide`, 52/52 `--set wide --test-draft`. Total fuel
--0.01%: about 0.5% of turns are cheaper by ~0.9k; the rest are a few fuel dearer.
+-0.01%: about 0.5% of turns are cheaper by ~0.9k; the rest are a few fuel dearer. Frozen as
+`variants/charybdis-3e040a9` (= bots/charybdis).
