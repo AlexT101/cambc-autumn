@@ -243,7 +243,7 @@ game on 1,024 fresh maps (seeds 1212020-023), base 0.251 on 2,000 games, arms on
 
 ## (ocean = 506, 2026-11-11) Comms slots: every ally's tile fits in the claim fields for free; alone it is level, and counting a told claimer in its group's crew is +0.2 at 100k (+0.46 at 200k)
 
-Shipped as CHANGES 507: `cm2-k3`, frozen as `variants/oc-comms-507`.
+Shipped as CHANGES 507-ocean: `cm2-k3`, frozen as `variants/oc-comms-507`.
 
 Note, encodings, traces and the live read: [comms/README.md](ideas-2026-11-11/comms/README.md). Code:
 `ideas-2026-11-11/comms/cm2-dev.patch` on `variants/oc-dfuel-506` (`bots/variants/cm2-dev`, every knob off,
@@ -17480,3 +17480,18 @@ Verdict: nothing reaches 50.5 or is established above 50; stronger nudges lose i
 candidate. The fitted residual's own in-sample claim on the cells it changes is +0.05 logit, +0.2 points overall:
 it reorders near-ties. Don't retry a champion-value nudge on this model; a per-opponent draft needs a new mechanism.
 Details: [ideas-2026-11-11/chynudge/README.md](ideas-2026-11-11/chynudge/README.md).
+
+## (charybdis = chy-draft18, 2026-11-11) Comms slots ported to charybdis: +0.30 ±0.22 against the bodies (ZONE); charybdis itself is +4.75 on ocean 506 there
+
+Note: [chyport/README.md](ideas-2026-11-11/chyport/README.md). `tools/fgate.py`, 100k, unplayed fresh maps
+(pool batches 32-34 and 38-50; the pool grew to 53 batches), unmetered Flp4 / Mt3q.
+
+- `variants/chy18-cm2k3` (chy-draft18 + ocean's 507-ocean; charybdis's Prism leave reads the slot's cell with
+  the slack from the cell size) against chy-draft18: 50.30% (50.08-50.53) of 327,680, Fish +0.37 ±0.30, Mite
+  +0.24 ±0.33; low LLR +8.2, high -6.2, so ZONE. Out-of-fuel turns 6.11 a game against 6.14. Head to head 49.87%
+  (49.18-50.55) of 20,480.
+- `variants/chy18-cm2k3n` (the leave not reading slot cells): 50.30% (50.08-50.52), the same games but for 1.4%.
+- chy-draft18 against oc-dfuel-506 on the bodies: 54.75% (53.99-55.50) of 40,960, LIVE BAR H1; Fish +4.59
+  ±1.01, Mite +4.90 ±1.09; 81.3% against 76.5% of games won; out-of-fuel turns 6.17 a game against 5.90. The
+  mirror's 60.3% is not only a mirror effect.
+- Not merged here: a zone gain, left to the coordinator, user and teammate.
