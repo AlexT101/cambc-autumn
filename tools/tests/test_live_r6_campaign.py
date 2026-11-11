@@ -46,6 +46,7 @@ class CampaignTests(unittest.TestCase):
         self.platform(114)
         self.c.tick(self.st)
         self.assertEqual(self.s.sh.call_args.args[0], ['cambc', 'submissions', 'activate', '113'])
+        self.s.submissions_json.assert_called_once()
         self.platform(114, 113)
         self.s.sh.reset_mock()
         self.c.tick(self.st)
@@ -89,6 +90,18 @@ class CampaignTests(unittest.TestCase):
         self.c.tick(self.st)
         self.s.hold.assert_called_once()
         self.s.sh.assert_not_called()
+
+    def test_upload_reads_once_under_lock_and_persists_intent_before_call(self):
+        self.st['r6_campaign']['phase']='upload506'
+        self.platform(113)
+        def upload(*args,**kwargs):
+            self.assertEqual(self.st['r6_campaign']['phase'],'upload_intent')
+            return 0,'uploaded'
+        self.s.sh.side_effect=upload
+        with patch.object(self.c,'progress',return_value=True):
+            self.c.tick(self.st)
+        self.s.submissions_json.assert_called_once()
+        self.assertEqual(self.st['r6_campaign']['phase'],'wait506')
 
     def test_uploaded_inactive_version_recovered_by_exact_note(self):
         self.st['r6_campaign'].update(phase='upload_intent', upload_note='unique506')

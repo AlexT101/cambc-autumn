@@ -104,7 +104,7 @@ class Campaign:
             raise ValueError(f'outside selection during campaign: live{live} selected{selected}')
         return live == target and selected == target, selected
 
-    def activate(self, st, d, old, target, next_phase):
+    def activate(self, st, old, target, next_phase):
         with self.s.ls.live_lock(self.s.ls.DATA):
             _, created, finished, _, _ = self.s.ls.state()
             if any(e['group'] not in finished for e in created.values()):
@@ -144,14 +144,12 @@ class Campaign:
             state = st['r6_campaign']
             if state['plan_sha256'] != digest:
                 raise ValueError('active campaign plan changed')
-            try:
-                d = self.s.submissions_json()
-            except self.s.ls.CambcError as e:
-                self.s.log(f'campaign submissions read deferred: {e}')
-                return True
             phase = state['phase']
+            # Mutating phases read once under the creation lock, immediately
+            # before the action; a discarded preliminary read only adds429 risk.
+            d = None if phase in ('activate113', 'activate506', 'upload506') else self.s.submissions_json()
             if phase == 'activate113':
-                self.activate(st, d, 114, 113, 'bridge')
+                self.activate(st, 114, 113, 'bridge')
             elif phase == 'bridge':
                 if not self.selection(d, 113, 113)[0]:
                     return True
@@ -162,7 +160,6 @@ class Campaign:
                     self.s.wake(record)
                     self.save(st, 'upload506', bridge_result=record)
             elif phase == 'upload506':
-                self.selection(d, 113, 113)
                 if not self.progress(113, {'mite': 'r6'}):
                     return True
                 with self.s.ls.live_lock(self.s.ls.DATA):
@@ -196,7 +193,7 @@ class Campaign:
                     return True
                 self.save(st, 'activate506', version506=row['version'])
             elif phase == 'activate506':
-                self.activate(st, d, 113, state['version506'], 'main506')
+                self.activate(st, 113, state['version506'], 'main506')
             elif phase == 'main506':
                 v = state['version506']
                 self.selection(d, v, v)
