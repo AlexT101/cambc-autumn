@@ -1,0 +1,139 @@
+diff -ru -x .cambc -x compile_commands.json oc-dfuel-506/src/bot_parts.h bm-psr/src/bot_parts.h
+--- oc-dfuel-506/src/bot_parts.h	2026-11-10 06:04:35.528841570 +0000
++++ bm-psr/src/bot_parts.h	2026-11-11 11:47:47.427616084 +0000
+@@ -374,6 +374,8 @@
+ int gems_short(const World& world, int horizon = static_cast<int>(cambc::constants::max_rounds));
+ const ChampionBelief* partner(const World& world);
+ int bag_at_stake(const World& world);
++bool dear_fall(const World& world);
++float threat_line(const World& world);
+ AltarWalk& altar_walk();
+ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w);
+ const AltarAccess& altar_access(const World& world, Pathing& pathing);
+diff -ru -x .cambc -x compile_commands.json oc-dfuel-506/src/combat/fight.cc bm-psr/src/combat/fight.cc
+--- oc-dfuel-506/src/combat/fight.cc	2026-11-10 22:00:43.302051592 +0000
++++ bm-psr/src/combat/fight.cc	2026-11-11 11:47:47.435846665 +0000
+@@ -387,9 +387,9 @@
+     const auto line = [&] {
+         for (const auto& e : world.enemies)
+             if (e.alive && e.visible && enemy_reach::within(world, e, enemy_reach::origin(e), p, Strike::max_reach + params::threat_radius))
+-                return params::recall_health_fraction;
++                return threat_line(world);
+         if (world.round == world.first_round && !enemy_within_strike(world, p, params::threat_radius)) return params::safe_recall_health_fraction;
+-        return safety.may_reach_within(p, params::threat_radius) ? params::recall_health_fraction : params::safe_recall_health_fraction;
++        return safety.may_reach_within(p, params::threat_radius) ? threat_line(world) : params::safe_recall_health_fraction;
+     };
+     safety.recall_line_share = line();
+     safety.recall_line_at = p, safety.recall_line_known = true;
+@@ -441,7 +441,7 @@
+ bool drawn_home(const World& world, Safety& safety, HoldAt& hold) {
+     const float health = my_health();
+     // Either line is at most recall_health_fraction: above it, no line needs working out.
+-    if (health < params::recall_health_fraction * my_max_health() && health < recall_line(world, safety, hold.p) * my_max_health()
++    if (health < threat_line(world) * my_max_health() && health < recall_line(world, safety, hold.p) * my_max_health()
+         && !finishing_camp(world, hold.p) && !hold.keeps_us(safety))
+         return true;
+     return outmatched(world, safety, hold) && !hold.keeps_us(safety);
+@@ -478,7 +478,7 @@
+     if (reach.hit || pursued) safety.stand_walks(p, params::pursuit_steps, reach);
+     const auto roster = safety.stand_roster(p, reach, pursued ? params::pursuit_steps : 0, unseen);
+     if (roster.key == Safety::no_fight) return false;
+-    const bool falls = partner(world) != nullptr || lethal();
++    const bool falls = partner(world) != nullptr || (params::dear_fall_fights && dear_fall(world)) || lethal();
+     const auto t = safety.stand_trade(roster, falls);
+     return t.lost || (falls && t.self_falls);
+ }
+@@ -793,7 +793,8 @@
+     }
+     std::optional<float> strength; // read once a candidate needs it
+     // Cassi or Issac falling takes the other body and both bags: a won fight that costs us is lost.
+-    const bool linked = partner(world) != nullptr;
++    const bool pair = partner(world) != nullptr;
++    const bool linked = pair || (params::dear_fall_fights && dear_fall(world));
+     // Best first (ties in index order), so fights are simulated only up to the first won.
+     Unwritten<std::pair<float, const ChampionBelief*>, 8> candidates;
+     auto& order = candidates.a;
+@@ -912,7 +913,7 @@
+                 }
+             });
+         }
+-        if ((!t.lost && !(linked && t.self_falls)) || (!linked && comeback::accept_lost(world, t, target))) {
++        if ((!t.lost && !(linked && t.self_falls)) || (!pair && comeback::accept_lost(world, t, target))) {
+             if (u < n_unasked) unasked[u] = unasked[--n_unasked];
+             if (escapes(world, pathing, target)) continue;
+             return &target;
+diff -ru -x .cambc -x compile_commands.json oc-dfuel-506/src/combat/guard.cc bm-psr/src/combat/guard.cc
+--- oc-dfuel-506/src/combat/guard.cc	2026-11-09 22:24:31.470410417 +0000
++++ bm-psr/src/combat/guard.cc	2026-11-11 11:47:47.438043145 +0000
+@@ -158,7 +158,10 @@
+             our_health += ((a.is_self ? health : a.health) + a.shield) / a.taken;
+             our_damage += output(a);
+         }
+-    pz.ours = (home ? params::home_retreat_ratio : params::hurt_retreat_ratio) * our_health * our_damage;
++    // A bag raises what our fall hands over: the ratio falls by the body's share of that stake.
++    const float body = pz.max_health + params::life_value;
++    const float stake = params::stake_ratio ? body / (body + params::gem_value * static_cast<float>(pz.bag)) : 1.0f;
++    pz.ours = (home ? params::home_retreat_ratio : params::hurt_retreat_ratio) * stake * our_health * our_damage;
+     pz.n = n;
+     return pz;
+ }
+@@ -526,7 +529,7 @@
+         if (const auto now = fuel(); now <= placing) costliest = std::max(placing - now, costliest - costliest / 8);
+     };
+     if (!shared) g.expose_here(here);
+-    const bool linked = partner(world) != nullptr;
++    const bool linked = partner(world) != nullptr || (params::dear_fall_fights && dear_fall(world));
+     // Unless the list filled up, the foes hold every visible threat that could hit a tile this near.
+     const bool all_listed = n < static_cast<int>(g.foes.size());
+     // The tiles more exposed than ours by `bound`, and who would fight on each by it.
+@@ -723,7 +726,7 @@
+ // What the work guard reads alike for every tile beside ours: whether any of them can be drawn home.
+ // Below recall_health_fraction a recall line may be above us; a pack's zone needs members near.
+ bool may_draw_home(const World& world, Safety& safety, vec2 here) {
+-    if (my_health() < params::recall_health_fraction * my_max_health()) return true;
++    if (my_health() < threat_line(world) * my_max_health()) return true;
+     if (!safety.live_enemies()) return false;
+     const std::uint32_t near = may_be_near(world, safety, here, pack_radius + 1);
+     // The members within reach of any tile beside us: fewer never outmatch where these do not (in floats too).
+diff -ru -x .cambc -x compile_commands.json oc-dfuel-506/src/economy/bank.cc bm-psr/src/economy/bank.cc
+--- oc-dfuel-506/src/economy/bank.cc	2026-11-10 03:27:12.032823697 +0000
++++ bm-psr/src/economy/bank.cc	2026-11-11 11:47:47.428007619 +0000
+@@ -210,6 +210,20 @@
+     return static_cast<int>(my_gems()) + other;
+ }
+ 
++bool dear_fall(const World& world) {
++    const int bag = bag_at_stake(world);
++    switch (params::dear_fall_mode) {
++    case 1: return bag >= params::brake_bag;
++    case 2: return params::gem_value * static_cast<float>(bag) >= my_max_health() + params::life_value;
++    case 3: return bag >= params::brake_bag && world.me().facts().passive == Passive::gem_focus;
++    default: return false;
++    }
++}
++
++float threat_line(const World& world) {
++    return params::dear_fall_line && dear_fall(world) ? std::max(params::recall_health_fraction, params::hurt_health_fraction) : params::recall_health_fraction;
++}
++
+ AltarWalk& altar_walk() {
+     static AltarWalk w;
+     return w;
+diff -ru -x .cambc -x compile_commands.json oc-dfuel-506/src/params.h bm-psr/src/params.h
+--- oc-dfuel-506/src/params.h	2026-11-09 22:24:31.475410479 +0000
++++ bm-psr/src/params.h	2026-11-11 11:47:47.427437221 +0000
+@@ -130,6 +130,14 @@
+ // A bag this big (a tribute of two turns or more) is worth chasing: it counts as hurt above, and
+ // makes our own ground no refuge from pursuit.
+ inline constexpr int brake_bag = 19;
++// A carrier whose fall hands over more than a fight wins (bank.cc dear_fall): 1 a brake_bag, 2 a bag worth more
++// than its body and life, 3 a brake_bag it keeps (Prism). It takes no fight it falls in (dear_fall_fights), as
++// Cassi and Issac do, and its recall line under threat is the hurt line (dear_fall_line).
++inline constexpr int dear_fall_mode = 3;
++inline constexpr bool dear_fall_fights = false;
++inline constexpr bool dear_fall_line = true;
++// The pack retreat ratio falls by the body's share of what our fall hands over (guard.cc pack_members_of).
++inline constexpr bool stake_ratio = true;
+ // In our own half, give way to packs at this ratio: an enemy pack there has come to fight.
+ inline constexpr float home_retreat_ratio = 2.1740904f;
+ // Leave before contact when the visible enemies within this many steps of their reach would win

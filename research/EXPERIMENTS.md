@@ -59,6 +59,46 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 - A map class that gains post hoc needs its own held-out run before anything is built on it (big groups, 2026-11-11):
   bg-golem was +4.3 ±3.8 on 236 maps of one class out of 14 looked at, and -2.5 ±1.2 on 2,027 untouched maps of it.
 
+## (ocean = 506, 2026-11-11) Keeping a hoarding Prism alive: it dies fighting on after a second enemy arrives; an earlier retreat line cuts the deaths 13-18% and the win rate stays level; eight arms, none passes
+
+Notes and scripts: [ideas-2026-11-11/badmaps/README.md](ideas-2026-11-11/badmaps/README.md) ("Prism's hoard"). Arms are copies of
+`variants/oc-dfuel-506` built by `ideas-2026-11-11/badmaps/tools/mkarms.py`; their code is one patch
+(`patches/bm-dear-fall.patch`) with four switches in `params.h`.
+
+**What the 131 live deaths with 40+ gems have in common** (384 v115 scrims with Prism, `tools/prism2.py`):
+- It dies fighting, not fleeing: 106 attacked or cast at a champion in the last six rounds, 91 were closing on the
+  nearest enemy (10 opening).
+- The fight starts healthy and even (107 at 75%+ health; median one enemy and one ally within 6, alone in a third),
+  then a second enemy arrives (median 2 within 6 from five rounds out) and health runs 100, 82, 61, 44, 15%.
+- Killers are melee divers: Marcella 37, Vesper 28, Heart of Ruin 26, Vendetta 15. Monsters matter in 12.
+- Health under 50% with an enemy within 6 happens 1.15 times a game, ends in death within 8 rounds 23% of the time
+  and precedes 100 of the 131, with a median of 4 rounds left.
+- In the code only Cassi and Issac refuse a won fight they fall in; a hoard counts as hurt for the pack retreat, but
+  the pack must be 3.3 times our strength, and the hoard's Focus raises Prism's own strength.
+
+**Results against oc-dfuel-506** (fresh ladder-v2 seeds 1212000-019, 5,120 maps, both sides, `--fuel 200000`, bodies
+`spar-dvn1-Flp4` and `spar-dvn1-Mt3q`, paired difference in points; deaths are big-bag (40+) Prism deaths per Prism
+game on 1,024 fresh maps (seeds 1212020-023), base 0.251 on 2,000 games, arms on 4,096 except bm-pf-a on 2,000):
+
+| arm | change | both bodies | Fish body | Mite body | deaths | verdict |
+|---|---|---|---|---|---|---|
+| bm-pf-a | a carrier of 19+ gems takes no fight it falls in | 78.61% of 20,480; -0.27 ±0.39 | -0.04 ±0.54 | -0.50 ±0.55 | 0.261 | level, deaths unchanged |
+| bm-pf-b | the same when the bag is worth more than body and life | 78.78%; -0.09 ±0.25 | -0.10 ±0.35 | -0.09 ±0.36 | 0.235 | level, deaths unchanged |
+| bm-pr | a 19+ carrier under threat goes home at the hurt line (45%, not 32%) | 78.95%; +0.07 ±0.49 | +0.64 ±0.65 | -0.51 ±0.73 | 0.218 | level, deaths -13% |
+| bm-pfr | bm-pf-a and bm-pr | 78.58%; -0.30 ±0.54 | +0.16 ±0.73 | -0.75 ±0.79 | 0.211 | level |
+| bm-pfr-p | bm-pfr, Prism only | 78.83%; -0.04 ±0.39 | +0.20 ±0.53 | -0.28 ±0.57 | 0.206 | level, deaths -18% |
+| bm-pr-p | the hurt line alone, Prism only | 78.76%; -0.11 ±0.33 | +0.00 ±0.44 | -0.22 ±0.49 | 0.219 | level, deaths -13% |
+| bm-ps | pack retreat ratio times body / (body + bag) | 78.17%; -0.70 ±0.53 | -0.53 ±0.73 | -0.88 ±0.77 | 0.213 | loses |
+| bm-psr | bm-ps and the Prism hurt line | 78.28%; -0.60 ±0.55 | -0.12 ±0.76 | -1.07 ±0.80 | 0.206 | loses |
+
+- `oc506-bagfF` (Willow follows the bag) on the same 1,024 maps: 0.226 deaths, within noise of base (±0.03).
+- The fight model does not foresee Prism's fall, so refusing fights it falls in changes nothing. The retreat line
+  fires with about 4 rounds left and saves about one death in six. Leaving sooner (the stake-scaled pack ratio) cuts
+  no more deaths and costs 0.7 points: it gives up fights and ground for every carrier.
+- Prism loses 34 gems a game to deaths against these bodies; the arms save 2-3 of them. No arm passes, no 100k arm
+  or second half was run, and none is put forward for a live pair.
+- Not tried: an escort for the hoard (an ally staying within reach of a Prism over some bag) and the one-site overruns.
+
 ## (ocean = 506, 2026-11-11) Comms slots: every ally's tile fits in the claim fields for free; alone it is level, and counting a told claimer in its group's crew is +0.2 at 100k (+0.46 at 200k)
 
 Note, encodings, traces and the live read: [comms/README.md](ideas-2026-11-11/comms/README.md). Code:

@@ -141,8 +141,24 @@ is in [EXPERIMENTS.md](../../EXPERIMENTS.md) under "Bad maps".
 
 - The user's ladder table (wheel 0 of 14) could not be rebuilt exactly: `cambc matches list` returned 503 and
   the archive is thin after 11-10. The wheel record here is from scrims and the archive to 11-10.
-- Keeping a hoarding Prism alive: the largest single cause found, and every banking fix for it loses locally.
-  A retreat rule for a low-health Prism with a large bag and an enemy in sight was not built.
+- Keeping a hoarding Prism alive: tried below ("Prism's hoard"), eight arms, none passes. An escort for the hoard
+  was not built.
 - One-site overruns (38 of 176 losses, e.g. ribs 0/4) and the out-farmed tail (rushbait, the_pack,
   yellow_brick_road, vault, the_line) were classified but not decoded.
 - No 100k arms (no 200k gain to confirm), no live tests, and the runtime-configured bodies were not used.
+
+## Prism's hoard (second job, 2026-11-11)
+
+Diagnosis of the 131 live deaths with 40+ gems (`tools/prism2.py`, output `~/tmp-offload/badmaps/an/prism2.pkl`),
+the eight arms and their results are in [EXPERIMENTS.md](../../EXPERIMENTS.md) under "Keeping a hoarding Prism alive".
+In short: Prism dies fighting on after a second enemy joins an even fight; an earlier retreat line (45% health
+under threat) cuts the deaths 13-18% with a level win rate; refusing fights it falls in does nothing because the
+fight model does not foresee the fall; leaving sooner for packs loses 0.7 points.
+
+- Arms: `tools/mkarms.py NAME MODE FIGHTS LINE [STAKE]` copies `oc-dfuel-506`, applies the code in
+  `patches/bm-dear-fall.patch` (that file is `bm-psr`: mode 3, fights off, line on, stake on) and builds.
+  bm-pf-a 1/on/off, bm-pf-b 2/on/off, bm-pr 1/off/on, bm-pfr 1/on/on, bm-pfr-p 3/on/on, bm-pr-p 3/off/on,
+  bm-ps 0/off/off/on, bm-psr 3/off/on/on.
+- Runs: `tools/run12.sh`, `tools/run13.sh` (mechanism batch `replays/ab/bm12-mech-*` with replays extracted to
+  `~/tmp-offload/badmaps/extm/`, then fresh half A `replays/ab/bm11-f200a-*`); `tools/prism3.py` makes the death table.
+- The mechanism batch reused seeds 1212020-023 (already played by bm-nb-d); the paired read is on 1212000-019.
