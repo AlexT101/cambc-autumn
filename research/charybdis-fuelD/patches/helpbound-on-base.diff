@@ -1,0 +1,22 @@
+--- a/src/economy/farm.cc
++++ b/src/economy/farm.cc
+@@ -577,8 +577,8 @@
+         v128_t rated_most = crew_rated(w, trip, fastest, most);
+         if (p.other_part < 1.0f)
+             rated_most = wasm_f32x4_pmax(rated_most, rate_of(wasm_f32x4_mul(w, other_part), wasm_f32x4_add(wasm_f32x4_add(trip, cap), wasm_f32x4_mul(fastest, other_part))));
+-        const v128_t helped = wasm_v128_and(striker, wasm_i32x4_le(near, help));
+-        const v128_t unbounded = wasm_v128_or(helped, wasm_i32x4_ge(wasm_v128_load(&t.gems[g]), short_by));
++        // Only an ally's claim can trigger help; pre_bounds leaves every such group unpruned.
++        const v128_t unbounded = wasm_i32x4_ge(wasm_v128_load(&t.gems[g]), short_by);
+         const v128_t bound = wasm_v128_bitselect(inf, rated_most, unbounded);
+         wasm_v128_store(&p.out[g], bound);
+         // The bound is linear in the worth. inf x a weight of 0 is NaN, which prunes nothing.
+@@ -1684,7 +1684,7 @@
+         };
+         const int lo = g & ~3;
+         if (lo < 256)
+-            for (auto bits = claimed_bits[lo >> 6] >> (lo & 63) & 15; bits; bits &= bits - 1)
++            for (auto bits = ally_claims[lo >> 6] >> (lo & 63) & 15; bits; bits &= bits - 1)
+                 if (const int h = lo + std::countr_zero(bits); h < n_groups) unpruned(h);
+         for (const int h : pre_kept)
+             if ((h & ~3) == lo) unpruned(h);

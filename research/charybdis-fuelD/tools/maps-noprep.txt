@@ -1,0 +1,11 @@
+00corners
+00lanes
+00monolith
+00swirl
+01boss-battle
+maps/gen-bench/gen-chambers-102106111.map26a
+maps/gen-bench/gen-chambers-102206117.map26a
+maps/gen-bench/gen-classic-102100000.map26a
+maps/gen-bench/gen-hourglass-102205812.map26a
+maps/gen-bench/gen-labyrinth-102106300.map26a
+maps/gen-bench/gen-monolith-heavy-102107600.map26a

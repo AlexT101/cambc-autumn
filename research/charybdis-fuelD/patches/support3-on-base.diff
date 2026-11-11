@@ -1,0 +1,187 @@
+diff -ruN bots/variants/chary-fuelD-base/src/bot_parts.h bots/variants/chary-fuelD-support3/src/bot_parts.h
+--- bots/variants/chary-fuelD-base/src/bot_parts.h	2026-11-11 15:52:13.381912537 +0000
++++ bots/variants/chary-fuelD-support3/src/bot_parts.h	2026-11-11 16:24:27.818244365 +0000
+@@ -86,6 +86,8 @@
+ };
+ // Cached per origin and World::observations.
+ struct Stations {
++    unsigned known = 0, camps_known = 0;
++    bool enemies = false;
+     std::array<Station, 9> tiles; // ours first
+     bitboard guard;               // the stations an enemy is likely to hit
+     vec2 origin{-1, -1};
+diff -ruN bots/variants/chary-fuelD-base/src/combat/support.cc bots/variants/chary-fuelD-support3/src/combat/support.cc
+--- bots/variants/chary-fuelD-base/src/combat/support.cc	2026-11-11 15:52:13.382285192 +0000
++++ bots/variants/chary-fuelD-support3/src/combat/support.cc	2026-11-11 16:24:27.818391147 +0000
+@@ -36,46 +36,44 @@
+     return risk;
+ }
+ 
+-// Worked out on first need after we move or see again. Its guard board stays at one address: a
+-// guard Pathing holds reads the latest.
+-const Stations& stations(const World& world, Safety& safety, vec2 here) {
++// Positions share the enemy bound, but a turn staying here need not price its neighbours.
++const Station& station(const World& world, Safety& safety, vec2 here, int k, bool camps = true) {
+     auto& s = stations_cache();
+-    if (s.observations == world.observations && s.origin == here) return s;
+-    world.throw_if_stale();
+-    // Keyed only once complete: a read that throws part-way leaves nothing to reuse.
+-    s.origin = {-1, -1};
+-    clear_board(s.guard);
+-    const bool enemies = safety.credible_enemy_may_hit_within(here, 1);
+-    for (int k = 0; k < 9; ++k) {
+-        auto& tile = s.tiles[k];
++    if (s.observations != world.observations || s.origin != here) {
++        world.throw_if_stale();
++        s.origin = {-1, -1};
++        clear_board(s.guard);
++        s.known = s.camps_known = 0;
++        s.enemies = safety.credible_enemy_may_hit_within(here, 1);
++        world.throw_if_stale();
++        s.observations = world.observations;
++        s.origin = here;
++    }
++    auto& tile = s.tiles[k];
++    if (!(s.known >> k & 1)) {
++        world.throw_if_stale();
+         tile.p = k == 0 ? here : here + directions[k - 1];
+         tile.open = in_bounds(tile.p) && test(world.map().open_for_us, tile.p);
+-        // Ranged threats shadowcast from the candidate; an opaque origin is invalid.
+-        tile.risk = tile.open ? exposure_at(world, safety, tile.p, enemies) : SupportExposure{};
++        tile.risk = {tile.open && s.enemies && safety.threat_at(tile.p), false};
+         if (tile.risk.enemy) set_tile(s.guard, tile.p);
++        world.throw_if_stale();
++        s.known |= 1u << k;
+     }
+-    world.throw_if_stale();
+-    s.observations = world.observations;
+-    s.origin = here;
+-    return s;
++    if (camps && !(s.camps_known >> k & 1)) {
++        tile.risk.camp = tile.open && !tile.risk.enemy && camp_may_hit(world, tile.p);
++        world.throw_if_stale();
++        s.camps_known |= 1u << k;
++    }
++    return tile;
++}
++
++const Stations& stations(const World& world, Safety& safety, vec2 here) {
++    for (int k = 0; k < 9; ++k) station(world, safety, here, k, false);
++    return stations_cache();
+ }
+ 
+-// stations(here).tiles[0].risk alone, for when no step or guard read follows this turn: after
+-// Willow's walk, or at the turn's end.
+ SupportExposure exposure_here(const World& world, Safety& safety) {
+-    const vec2 here = my_position();
+-    if (const auto& s = stations_cache(); s.observations == world.observations && s.origin == here) return s.tiles[0].risk;
+-    static struct {
+-        std::uint32_t observations = 0;
+-        vec2 p{-1, -1};
+-        SupportExposure risk;
+-    } memo;
+-    if (memo.observations != world.observations || memo.p != here) {
+-        const bool open = in_bounds(here) && test(world.map().open_for_us, here);
+-        memo.risk = open ? exposure_at(world, safety, here, safety.credible_enemy_may_hit_within(here, 1)) : SupportExposure{};
+-        memo.observations = world.observations, memo.p = here;
+-    }
+-    return memo.risk;
++    return station(world, safety, my_position(), 0).risk;
+ }
+ 
+ // Early, healthy, with a visible ally within willow_stand_ally: the fight simulation, not the enemy's reach alone,
+@@ -94,9 +92,11 @@
+ }
+ 
+ SupportExposure support_exposure(const World& world, Safety& safety, vec2 p) {
+-    if (const vec2 here = my_position(); world.me().facts().heals() && dist(p, here) <= 1)
+-        for (const auto& tile : stations(world, safety, here).tiles)
+-            if (tile.p == p) return tile.risk;
++    if (const vec2 here = my_position(); world.me().facts().heals() && dist(p, here) <= 1) {
++        if (p == here) return station(world, safety, here, 0).risk;
++        for (int k = 0; k < 8; ++k)
++            if (p == here + directions[k]) return station(world, safety, here, k + 1).risk;
++    }
+     return exposure_at(world, safety, p);
+ }
+ 
+@@ -230,9 +230,8 @@
+     const HealTarget* best_target = nullptr;
+     int best_cost = unreachable;
+     const auto mate = heal_mate(world);
+-    const auto& tiles = stations(world, safety, here).tiles;
+     for (int k = 1; k < 9; ++k) {
+-        const auto& tile = tiles[k];
++        const auto& tile = station(world, safety, here, k);
+         if (!station_legal(pathing, tile, here) || !ok(tile)) continue;
+         const int g = world.map().group_at(tile.p);
+         if (g >= 0 && world.camps[g].state == CampState::cleared) continue;
+@@ -260,7 +259,7 @@
+     if (n == 0 || heal_lands_from(world, here, views, n)) return false;
+     world.throw_if_stale();
+     guard_steps(world, pathing, safety);
+-    if (!stations(world, safety, here).tiles[0].risk.safe()) return false;
++    if (!station(world, safety, here, 0).risk.safe()) return false;
+     // An equal-distance step gives up a turn of progress for the heal.
+     const vec2 best = heal_station(world, pathing, safety, here, views, n, [&](const Station& tile) {
+         const int steps = field.at(tile.p);
+@@ -337,7 +336,7 @@
+     n = static_cast<int>(std::remove_if(views.begin(), views.begin() + n,
+                                         [&](const HealView& v) { return !(v.target.gain > forgone * basic); }) - views.begin());
+     if (n == 0 || immediate_camp_finish(world, here, basic, reset_ready, farm_group)) return false;
+-    if (!quiet(stations(world, safety, here).tiles[0].risk, here)) return false;
++    if (!quiet(station(world, safety, here, 0).risk, here)) return false;
+     const vec2 best = heal_station(world, pathing, safety, here, views, n, [&](const Station& tile) { return quiet(tile.risk, tile.p); },
+                                    [](const Station&) { return 0; });
+     world.throw_if_stale();
+@@ -521,13 +520,13 @@
+             support_retreat = !recovered_for_work(world, safety, memory);
+             return false;
+         }
+-    } else {
+-        formation_view = heal_viewers(world, mate->pos, heal_range(healer));
+     }
+     const auto here_risk = support_exposure(world, safety, here);
+     const int work = willow ? comms::claim_of(world, mate->index) : memory.farm_group;
+     // Willow staying on a group Prism holds alone splits its payout: the formation only steps off it.
+-    const bitboard* held = willow ? prism_hold_seen(world, true) : nullptr;
++    const int here_group = world.map().group_at(here);
++    const bitboard* held = willow && here_group >= 0 && world.camps[here_group].state == CampState::cleared
++                              ? prism_hold_seen(world, true) : nullptr;
+     const bool on_held = held && test(*held, here);
+     if (willow && !ready && here_risk.safe() && !on_held && stationary_support_output(world, work)) {
+         support_owned = true;
+@@ -537,6 +536,7 @@
+         decision = Branch::willow_support;
+         return true;
+     }
++    if (willow) formation_view = heal_viewers(world, mate->pos, heal_range(healer));
+     const Field* work_route = nullptr;
+     if (willow && !ready && work >= 0 && work < static_cast<int>(world.map().groups.size())
+         && memory.farm_group == work && pathing.approach_ready(work, walk_range(world, work)))
+@@ -577,13 +577,20 @@
+                 || (!in_range && dist(p, mate->pos) >= dist(here, mate->pos))) continue;
+         } else if (willow && gain <= 0 && (active_clear || formation_expired
+                                           || (!in_range && dist(p, mate->pos) >= dist(here, mate->pos)))) continue;
+-        if (!(p == here ? here_risk : support_exposure(world, safety, p)).safe()) continue;
+-        const int home = pathing.to_ally_spawn().at(p);
+-        // Staying, tried first, keeps ties; between steps, the one nearer home wins.
++        // A tile that cannot win the formation's ranking needs no safety query.
+         const bool better = chosen && (!best_target || heal_before(*chosen, *best_target, heal_mate_now));
+         const bool tie = chosen ? best_target && !heal_before(*best_target, *chosen, heal_mate_now) : !best_target;
+-        if (!found || better || (tie && gap < best_gap) || (tie && gap == best_gap && best != here && home < best_home))
+-            found = true, best = p, best_target = chosen, best_gap = gap, best_home = home;
++        int home = -1;
++        if (found && !better) {
++            if (!tie || gap > best_gap || (gap == best_gap && best == here)) continue;
++            if (gap == best_gap) {
++                home = pathing.to_ally_spawn().at(p);
++                if (home >= best_home) continue;
++            }
++        }
++        if (!(p == here ? here_risk : support_exposure(world, safety, p)).safe()) continue;
++        if (home < 0) home = pathing.to_ally_spawn().at(p);
++        found = true, best = p, best_target = chosen, best_gap = gap, best_home = home;
+     }
+     if (!found) return abandon_recovery();
+     const auto commit_support = [&] {

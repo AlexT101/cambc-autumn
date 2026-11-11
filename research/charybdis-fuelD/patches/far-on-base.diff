@@ -1,0 +1,27 @@
+diff -ruN bots/variants/chary-fuelD-base/src/model/safety.cc bots/variants/chary-fuelD-far/src/model/safety.cc
+--- bots/variants/chary-fuelD-base/src/model/safety.cc	2026-11-11 15:52:13.385612608 +0000
++++ bots/variants/chary-fuelD-far/src/model/safety.cc	2026-11-11 16:20:59.555062733 +0000
+@@ -3257,6 +3257,7 @@
+     const auto& spawn = world_.map().near_enemy_spawn;
+     for (auto left = seen_enemies() & ~(key == no_fight ? 0u : key >> 16); left; left &= left - 1) {
+         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
++        if (dist(p, acts_from(e)) > Strike::max_reach + params::pursuit_steps) continue;
+         if (gone(e) || test(spawn, e.pos)) continue;
+         const int reach = fight_reach(e);
+         if (reach < 0 || dist(p, acts_from(e)) - reach > params::pursuit_steps) continue;
+@@ -3429,6 +3430,7 @@
+     const auto& spawn = world_.map().near_enemy_spawn;
+     for (auto left = seen_enemies(); left; left &= left - 1) {
+         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
++        if (dist(p, acts_from(e)) > Strike::max_reach + farthest) continue;
+         if (gone(e)) continue;
+         const int reach = fight_reach(e);
+         if (reach < 0 || dist(p, acts_from(e)) - reach > farthest) continue;
+@@ -3514,6 +3516,7 @@
+     us.camp = camp_damage(p, false) / world_.me().taken; // hurt() applies c's Durability, camp_damage() ours
+     for (auto left = seen_enemies(); left; left &= left - 1) {
+         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
++        if (dist(p, acts_from(e)) > Strike::max_reach + horizon - 1) continue;
+         if (gone(e)) continue;
+         const int reach = fight_reach(e);
+         if (reach < 0 || dist(p, acts_from(e)) - reach >= horizon) continue;

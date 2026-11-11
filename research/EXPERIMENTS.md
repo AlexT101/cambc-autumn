@@ -9,6 +9,25 @@ Win rates are against the bot's previous version, all maps from both sides at th
 used 390-582 games. Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## Charybdis fuel D (2026-11-11; not shipped)
+
+Against `556463738`, explored support-station laziness, camp-fire partitioning,
+movement guards, exact arithmetic/field reuse and earlier stale-turn recovery.
+The combined screen showed -5.25% exhaustion, but **4,096 independent development
+games gave 22,629 → 22,677 exhausted turns (+0.21%, paired 95% CI -4.59..+5.23%)**.
+Recorded shortcuts fell 1.43% (CI -3.09..+0.27%). **10% target unmet; no bot changes
+retained.** The user requested wrap-up before further ideas. No release gate or
+reserved fresh confirmation was run.
+
+Wide bench identities were 47/52 own and 52/52 test drafts for the bundle without
+recovery. Support and nearby-group span differences disappear in paired copies
+without next-turn preparation. Conditional all-champion/large-group coverage
+still has one difference after removing all warm-up, isolated to deferred
+movement-guard construction: do not call that change exact. Generic caches,
+extra bounds, flatten removal and repeated Ren pre-prunes gave no useful gain.
+Patches, the full experiment matrix, conditional diagnosis, source fingerprints
+and reproduction are in [the report](charybdis-fuelD/README.md).
+
 ## Charybdis fuel C (2026-11-11)
 
 Against `1178688e9`, retained the exact simulation/camp/dash changes in CHANGES 514.

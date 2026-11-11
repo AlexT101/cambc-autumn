@@ -1,0 +1,142 @@
+diff -ruN bots/variants/chary-fuelD-base/src/combat/plan.cc bots/variants/chary-fuelD-campobs/src/combat/plan.cc
+--- bots/variants/chary-fuelD-base/src/combat/plan.cc	2026-11-11 15:52:13.382285192 +0000
++++ bots/variants/chary-fuelD-campobs/src/combat/plan.cc	2026-11-11 16:26:31.534953122 +0000
+@@ -2329,7 +2329,7 @@
+             try {
+                 const auto& x = S.u[a.unit];
+                 if (x.foe) attack_champion(x.belief->handle);
+-                else throw_if_stale(), self_acted(), cambc::self().attack(world.map().groups[x.group].camp(x.member));
++                else throw_if_stale(), self_acted(), ++hit_generation, cambc::self().attack(world.map().groups[x.group].camp(x.member));
+                 ok = true;
+                 out.attacked = true;
+                 out.moved |= !S.melee;
+diff -ruN bots/variants/chary-fuelD-base/src/combat/self_abilities.cc bots/variants/chary-fuelD-campobs/src/combat/self_abilities.cc
+--- bots/variants/chary-fuelD-base/src/combat/self_abilities.cc	2026-11-11 15:52:13.382285192 +0000
++++ bots/variants/chary-fuelD-campobs/src/combat/self_abilities.cc	2026-11-11 16:26:31.534700499 +0000
+@@ -517,7 +517,7 @@
+     if (!refunded && engagement_near(world, here, f.basic_reach() + (f.ranged ? 0 : 1))) return false;
+     if (!cast(reset)) return false;
+     try {
+-        self_acted(), cambc::self().attack(*best);
++        self_acted(), ++hit_generation, cambc::self().attack(*best);
+     } catch (const cambc::error&) {
+     }
+     ++camp_hits();
+diff -ruN bots/variants/chary-fuelD-base/src/economy/bank.cc bots/variants/chary-fuelD-campobs/src/economy/bank.cc
+--- bots/variants/chary-fuelD-base/src/economy/bank.cc	2026-11-11 15:52:13.384334080 +0000
++++ bots/variants/chary-fuelD-campobs/src/economy/bank.cc	2026-11-11 16:26:31.535140955 +0000
+@@ -113,7 +113,7 @@
+         if (lock.is_enemy() && lock.position() == p) {
+             throw_if_stale();
+             try {
+-                self_acted(), me.attack(lock);
++                self_acted(), ++hit_generation, me.attack(lock);
+                 return true;
+             } catch (const cambc::error&) {
+                 return false;
+@@ -1151,7 +1151,7 @@
+                     tried_attack = true;
+                     throw_if_stale();
+                     try {
+-                        self_acted(), cambc::self().attack(map.groups[m.g].camp(m.i));
++                        self_acted(), ++hit_generation, cambc::self().attack(map.groups[m.g].camp(m.i));
+                         ++camp_hits();
+                         return true;
+                     } catch (const cambc::error&) {
+diff -ruN bots/variants/chary-fuelD-base/src/economy/camps.cc bots/variants/chary-fuelD-campobs/src/economy/camps.cc
+--- bots/variants/chary-fuelD-base/src/economy/camps.cc	2026-11-11 15:52:13.384334080 +0000
++++ bots/variants/chary-fuelD-campobs/src/economy/camps.cc	2026-11-11 16:26:31.535242636 +0000
+@@ -68,7 +68,7 @@
+ bool attack_camp_target(const World& world, const CampAttackTarget& target) {
+     throw_if_stale();
+     try {
+-        self_acted(), cambc::self().attack(world.map().groups[target.group].camp(target.member));
++        self_acted(), ++hit_generation, cambc::self().attack(world.map().groups[target.group].camp(target.member));
+         ++camp_hits();
+         return true;
+     } catch (const cambc::error&) {
+diff -ruN bots/variants/chary-fuelD-base/src/model/world.cc bots/variants/chary-fuelD-campobs/src/model/world.cc
+--- bots/variants/chary-fuelD-base/src/model/world.cc	2026-11-11 15:52:13.386285247 +0000
++++ bots/variants/chary-fuelD-campobs/src/model/world.cc	2026-11-11 16:28:50.140649861 +0000
+@@ -1727,17 +1727,17 @@
+     // Each a copy of one start belief, held in SIMD locals, and its slices: constructing each wrote
+     // every field (~110 fuel a group), and a memcpy is a memory.copy at a fuel a byte.
+     camps.resize(groups);
+-    static_assert(sizeof(CampBelief) == 104 && std::is_trivially_copyable_v<CampBelief>);
++    static_assert(sizeof(CampBelief) == 112 && std::is_trivially_copyable_v<CampBelief>);
+     const CampBelief start;
+     const auto* from = reinterpret_cast<const unsigned char*>(&start);
+     const v128_t s0 = wasm_v128_load(from), s1 = wasm_v128_load(from + 16), s2 = wasm_v128_load(from + 32);
+     const v128_t s3 = wasm_v128_load(from + 48), s4 = wasm_v128_load(from + 64), s5 = wasm_v128_load(from + 80);
+-    const v128_t s6 = wasm_v128_load64_zero(from + 96);
++    const v128_t s6 = wasm_v128_load(from + 96);
+     auto* to = reinterpret_cast<unsigned char*>(camps.data());
+     for (std::size_t g = 0; g < groups; ++g, to += sizeof(CampBelief)) {
+         wasm_v128_store(to, s0), wasm_v128_store(to + 16, s1), wasm_v128_store(to + 32, s2);
+         wasm_v128_store(to + 48, s3), wasm_v128_store(to + 64, s4), wasm_v128_store(to + 80, s5);
+-        wasm_v128_store64_lane(to + 96, s6, 0);
++        wasm_v128_store(to + 96, s6);
+         auto& c = *reinterpret_cast<CampBelief*>(to);
+         const auto size = group[g].members.size();
+         c.health = StaticArray<float>(health_pool, health_used, size);
+@@ -2570,6 +2570,14 @@
+ // member read asleep then that still is. Damage or a stun wakes every asleep member, which sleeps again
+ // no sooner than 3 camp phases on, so no member's health has changed. Most visible groups, most turns.
+ bool World::camp_settled(const CampGroup& G, CampBelief& c) {
++    if (c.state_round == round && c.state == CampState::alive && c.seen_hits == hit_generation) {
++        const int width = map().width;
++        for (std::size_t i = 0; i < G.members.size(); ++i) {
++            const auto p = G.members[i].pos;
++            if (camp_tile_seen[p.x + p.y * width] && c.health_round[i] != round) return false;
++        }
++        return true;
++    }
+     if (c.state_round != round - 1) return false;
+     const bool respawning = c.state == CampState::respawning && c.respawn_round == c.read_respawn && round < c.respawn_round;
+     if (!respawning && !(c.state == CampState::alive && c.awake == Awake::asleep && c.witness >= 0)) return false;
+@@ -2807,6 +2815,7 @@
+         c.held_since = -1;
+         c.occupants = 0;
+     }
++    c.seen_hits = hit_generation;
+ }
+ 
+ // A hold first seen at our turn began after our previous one: last round if a holder on the tiles
+diff -ruN bots/variants/chary-fuelD-base/src/model/world.h bots/variants/chary-fuelD-campobs/src/model/world.h
+--- bots/variants/chary-fuelD-base/src/model/world.h	2026-11-11 15:52:13.386285247 +0000
++++ bots/variants/chary-fuelD-campobs/src/model/world.h	2026-11-11 16:26:31.535338107 +0000
+@@ -578,6 +578,7 @@
+ enum class Awake : std::uint8_t { asleep, awake, unknown };
+ 
+ struct CampBelief {
++    std::uint32_t seen_hits = 0;
+     CampState state = CampState::alive;
+     int state_round = 0;     // last round the state was seen; 0 = the start-of-game assumption
+     int respawn_round = -1;  // while respawning
+diff -ruN bots/variants/chary-fuelD-base/src/util.h bots/variants/chary-fuelD-campobs/src/util.h
+--- bots/variants/chary-fuelD-base/src/util.h	2026-11-11 15:52:13.387285261 +0000
++++ bots/variants/chary-fuelD-campobs/src/util.h	2026-11-11 16:26:31.534533827 +0000
+@@ -317,6 +317,7 @@
+     bool walked = false;
+ };
+ inline TurnActs turn_acts;
++inline std::uint32_t hit_generation = 1;
+ // Enemy champions (bits by handle) we chased or struck this turn, and on our previous turn.
+ inline std::uint32_t engaged = 0, engaged_before = 0;
+ inline void note_engaged(std::uint32_t handle) {
+@@ -325,6 +326,7 @@
+ inline bool engaged_last_turn(std::uint32_t handle) { return handle < 32 && (engaged_before >> handle & 1u); }
+ inline bool count_cast(int slot, std::int32_t cast) {
+     turn_acts.casts[slot] += cast != 0;
++    hit_generation += cast != 0;
+     return cast != 0;
+ }
+ // ability.use(): at `tile`, or {-1, -1} for none. False for a newly revealed hidden blocker.
+@@ -356,6 +358,7 @@
+ inline void attack_champion(cambc::handle_champion_t target) {
+     throw_if_stale();
+     self_acted();
++    ++hit_generation;
+     ok(cambc::detail::sdk_attack(static_cast<std::uint32_t>(cambc::detail::entity_kind::champion), static_cast<std::uint32_t>(target)));
+     note_engaged(static_cast<std::uint32_t>(target));
+ }

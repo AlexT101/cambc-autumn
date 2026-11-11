@@ -1,0 +1,27 @@
+--- a/src/model/safety.cc
++++ b/src/model/safety.cc
+@@ -3063,7 +3063,23 @@
+ }
+ 
+ float Safety::camp_damage(vec2 p, bool worst, bool next) {
+-    if (!members_known_) find_members();
++    if (!members_known_) {
++        bool near = false;
++        world_.each_stirring([&](int g) {
++            const auto& group = world_.map().groups[g];
++            if (!near && group.strength > 0) near = in_square(p, group.centre, group.threat_radius());
++        });
++        if (!near) {
++            // Taking a camp hit can spare a low-health ally even outside every camp's reach.
++            for (const auto& a : world_.allies)
++                if (!a.is_self && a.alive && a.visible && a.acted && a.health + a.shield <= max_group_strength(world_) * a.taken) {
++                    near = true;
++                    break;
++                }
++            if (!near) return 0;
++        }
++        find_members();
++    }
+     const std::span<const CampHit> members{members_.data(), static_cast<std::size_t>(camp_total_)};
+     if (members.empty()) return 0;
+     next = next && worst;

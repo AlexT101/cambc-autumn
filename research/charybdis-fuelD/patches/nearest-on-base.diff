@@ -1,0 +1,53 @@
+diff -ruN bots/variants/chary-fuelD-base/src/model/safety.cc bots/variants/chary-fuelD-nearest/src/model/safety.cc
+--- bots/variants/chary-fuelD-base/src/model/safety.cc	2026-11-11 15:52:13.385612608 +0000
++++ bots/variants/chary-fuelD-nearest/src/model/safety.cc	2026-11-11 15:57:12.624694905 +0000
+@@ -2264,6 +2264,10 @@
+         Others() {}
+     } others;
+     int n = -1;
++#if defined(__wasm_simd128__)
++    alignas(16) std::int8_t other_x[16], other_y[16];
++    v128_t others_valid;
++#endif
+     const int next = world_.round + 1;
+     int self_slot = -1;
+     // Turn order matters only to an other a step nearer than a member's reach so far.
+@@ -2308,6 +2312,13 @@
+                     n < static_cast<int>(others.at.size()) && !gone(o))
+                     others.at[n++] = {o.pos, &o, -1, -2};
+             if (camp_factor_ <= 0) camp_factor_ = camp_hit_factor();
++#if defined(__wasm_simd128__)
++            for (int i = 0; i < 16; ++i) {
++                other_x[i] = i < n ? static_cast<std::int8_t>(others.at[i].pos.x) : 0;
++                other_y[i] = i < n ? static_cast<std::int8_t>(others.at[i].pos.y) : 0;
++            }
++            others_valid = wasm_i8x16_lt(wasm_i8x16_const(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15), wasm_i8x16_splat(n));
++#endif
+         }
+         const float w = c.awake == Awake::awake ? 1.0f : unknown_camp_weight;
+         // Only others this near a group's box can bring a member's reach below the group's:
+@@ -2452,6 +2463,24 @@
+             // tie: the reach had we acted first, so reach <= tie <= reach + 1 and no other lies
+             // between them. Both are plain minima: an other with d - 1 >= reach lowers neither.
+             int reach = m.reach, tie = m.reach;
++#if defined(__wasm_simd128__)
++            if (n >= 3) {
++                const v128_t dx = wasm_i8x16_abs(wasm_i8x16_sub(wasm_v128_load(other_x), wasm_i8x16_splat(m.pos.x)));
++                const v128_t dy = wasm_i8x16_abs(wasm_i8x16_sub(wasm_v128_load(other_y), wasm_i8x16_splat(m.pos.y)));
++                const v128_t distances = wasm_v128_or(wasm_i8x16_max(dx, dy), wasm_v128_not(others_valid));
++                v128_t least = wasm_u8x16_min(distances, wasm_i8x16_shuffle(distances, distances, 8,9,10,11,12,13,14,15,0,1,2,3,4,5,6,7));
++                least = wasm_u8x16_min(least, wasm_i8x16_shuffle(least, least, 4,5,6,7,0,1,2,3,12,13,14,15,8,9,10,11));
++                least = wasm_u8x16_min(least, wasm_i8x16_shuffle(least, least, 2,3,0,1,6,7,4,5,10,11,8,9,14,15,12,13));
++                least = wasm_u8x16_min(least, wasm_i8x16_shuffle(least, least, 1,0,3,2,5,4,7,6,9,8,11,10,13,12,15,14));
++                const int d = wasm_u8x16_extract_lane(least, 0);
++                if (d <= reach) {
++                    reach = tie = d;
++                    // Only the nearest champions can lower the reach; their order breaks a distance tie.
++                    for (unsigned tied = wasm_i8x16_bitmask(wasm_i8x16_eq(distances, least)); tied; tied &= tied - 1)
++                        if (first(others.at[std::countr_zero(tied)])) { --reach; break; }
++                }
++            } else
++#endif
+             for (int k = 0; k < k_near; ++k) {
+                 auto& o = others.at[near[k]];
+                 if (const int d = dist(o.pos, m.pos); d - 1 < reach) reach = std::min(reach, d - first(o)), tie = std::min(tie, d);

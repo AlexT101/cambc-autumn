@@ -1,0 +1,20 @@
+--- a/src/economy/farm.cc
++++ b/src/economy/farm.cc
+@@ -70,14 +70,9 @@
+ bool step_onto_cleared(const World& world, Pathing& pathing, int g) {
+     if (!my_can_move()) return false;
+     const auto& G = world.map().groups[g];
+-    for (std::size_t i = 0; i < G.members.size(); ++i) {
+-        try {
+-            if (G.camp(static_cast<int>(i)).is_alive()) return false;
+-        } catch (const cambc::error&) {
+-            return false;
+-        }
+-    }
+-    // Our belief has the group alive still: the SDK's reads above find it cleared.
++    // A group's lifecycle answers for every member, including those outside our view.
++    std::uint32_t state = 0;
++    if (cambc::detail::sdk_camp_group_state(G.handle, &state) != 0 || (state != 2 && state != 3)) return false;
+     if (sole_capture_holder(world, G) || (allies_on(world, G.tiles()) >= holders(G) && !outvalues_holders(world, G))
+         || left_for_prism(world, pathing, g, true))
+         return false;

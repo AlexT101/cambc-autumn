@@ -1,0 +1,40 @@
+--- a/src/economy/camps.cc
++++ b/src/economy/camps.cc
+@@ -464,15 +464,10 @@
+ // With the same living set, checking neighbouring keys settles whether the old order still
+ // sorts. A new tie is rebuilt so its geometry tie-break is applied; an existing tie stays ordered.
+ [[gnu::noinline]] bool order_holds(const CampGroup& group, const CampBelief& belief, bool fresh, CampLeft* sorted, int n) {
+-    int living = 0;
+-    for (std::size_t i = 0; i < group.members.size(); ++i)
+-        living += (fresh ? group.members[i].max_health : belief.health[i]) > 0;
+-    if (living != n) return false;
+     float previous_old = 0;
+     for (int i = 0; i < n; ++i) {
+         auto& c = sorted[i];
+         const float hp = fresh ? group.members[c.member].max_health : belief.health[c.member];
+-        if (!(hp > 0)) return false;
+         if (i > 0) {
+             const auto& p = sorted[i - 1];
+             const float x = p.strength * hp, y = c.strength * p.health;
+@@ -553,7 +548,8 @@
+     // pool (zeroed for free, where allocating and filling cost per group): a group asked again on a
+     // later call or turn reuses its sort without a copy. Past the pool, one spare part is shared.
+     struct Sorted {
+-        std::uint32_t version;
++        std::uint32_t version, geometry;
++        bool fresh;
+         int range, n, at; // range 0: never built; `at`: its part of the pool, from 1
+     };
+     static std::array<std::array<Sorted, 2>, 256> table;
+@@ -576,8 +572,10 @@
+     CampLeft* const sorted = slot == &spare_slot ? spare.data() : pool.data() + (slot->at - 1);
+     if (slot->range != range || slot->version != belief.version) {
+         const bool fresh = belief.state == CampState::respawning;
+-        const bool same_order = slot->range == range && order_holds(group, belief, fresh, sorted, slot->n);
++        const bool same_order = slot->range == range && slot->geometry == belief.geometry_version && slot->fresh == fresh
++                                && order_holds(group, belief, fresh, sorted, slot->n);
+         slot->version = belief.version, slot->range = range;
++        slot->geometry = belief.geometry_version, slot->fresh = fresh;
+         if (!same_order) {
+             int living = 0;
+             for (std::size_t i = 0; i < group.members.size(); ++i) {

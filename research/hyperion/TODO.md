@@ -207,6 +207,14 @@ Each needs an A/B (check EXPERIMENTS first). Bundle removals and keep them if le
 
 ## Fuel
 
+Charybdis fuel D (2026-11-11): **10% exhaustion target remains open; nothing shipped**.
+The larger 4,096-game development test was +0.21% exhausted turns and -1.43%
+recorded shortcuts, both intervals spanning zero. Before reusing its candidate
+patches, resolve/exclude the deferred-guard conditional replay difference and
+audit nearby-group span lifetimes. [Report and rejected ideas](../charybdis-fuelD/README.md).
+Confirmation seeds 4711110–4711117 remain unused.
+
+
 Latest census: fuel-campaign-3 [NOTES.md](fuel-campaign-3/NOTES.md) "Where late run-outs go now" (strike search in
 88% of fight-set first run-outs, Heart of Ruin 60% of them; on a late set farm 45%). The 2026-10-29 profiles behind
 items 2-7 (sim, search, want_home, prey, turn-order costs) are in [OPEN-ITEMS.md](fuel-campaign/OPEN-ITEMS.md);
