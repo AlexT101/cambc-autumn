@@ -70,3 +70,12 @@ tables that already exist instead of a second pass.
 - On main: [patches/final-charybdis.diff](patches/final-charybdis.diff) is the whole ATLAS change against charybdis
   515; [patches/remaining-after-517.diff](patches/remaining-after-517.diff) is what is left.
 - The trace analysis that found each gap: [NOTES.md](NOTES.md), "Lethal-reach analysis".
+
+## Outcome (2026-11-11)
+
+Tried; nothing shipped. See EXPERIMENTS.md, "The rest of ATLAS (fixes 3, 5, the press) at the real budget". Against
+517 at 100k on 20,480 fresh games: fixes 3 + 5 alone 50.04% (2x: 50.2), everything with a sim-free press 49.64%
+(2x: 50.7), the press sim kept with prey's reserve 48.7% of 8,525. The press's sims are its main cost and its OOF
+tail, but even without them it loses at 100k: the fights it starts run short of fuel (more step-guard and prey cuts).
+Profiling scripts: [fuel-profile/](fuel-profile/README.md). Untried leads: a press that also budgets the fights it
+starts (or a cheaper guard and prey fight on press turns); one press sim a turn shared across recomputes.

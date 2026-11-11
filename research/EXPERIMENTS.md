@@ -17509,3 +17509,28 @@ cheaper, 250k dearer by a few fuel. Not run at the real budget: too small to mov
 - pooled 50.4% of 61,440 (~50.0-50.8), OOF +6.4%. At 2x fuel it was 50.5% of 10,240 (macro-dev).
 Merged onto 516 unchanged (one `world.h` line placed by hand around 516's rewritten comment); release and debug
 builds pass. Not re-run on 516: 516 is fuel-only with identical replays at 100M.
+
+## (charybdis, 2026-11-11) The rest of ATLAS (fixes 3, 5, the press) at the real budget: no version beats 517
+Follow-up to [HANDOFF-fuel.md](macro-atlas/HANDOFF-fuel.md). Every A/B: CAND against `variants/charybdis-cb9f86d`
+(517), own drafts, fast runner, fresh `ladder-v2` seeds 471200-471239 (10,240 maps, 20,480 games; the CAND copies
+are in `bots/variants/ch517-*`, gitignored). `ch517-pf` is 517 plus `remaining-after-517.diff` as given.
+- **Profile** (debug copies with per-turn fuel scopes, 512 games at 100k against 517, `bench.py --fuel 0`): OOF turns
+  5.20 a game for 517, 6.60 for pf. Extra fuel a game: the press ~1.47M (its fight sim 0.65M, 63 sims a game at ~10k
+  each in debug; `pack_damage` 0.15M), fix 3 ~0.33M (`stunner_near` on every `lethal()`, and the stun path skipping
+  the ceiling/bound filter), fix 5 ~0.09M; decide's total is unchanged (anytime work absorbs it). The press's cost is
+  in the tail: >10k on 18.6% of OOF turns (p99 44k) against 5.7% of heavy turns, about 1.3 a game, the size of the OOF
+  increase.
+- **Exact cuts did not cut**: a stunner cache, a follow-up ceiling restoring the bound filter on stun tiles, and
+  reordering press()'s cheap tests first made `lethal()` dearer per call (886 -> 1,062) and press() no cheaper; the
+  cache also filled per-enemy memos earlier and broke bench identity (199/200). Dropped.
+- **Press sim with prey's reserve** (`ch517-pr`, `fight_cost_estimate + search_cost_estimate(16) + end_reserve`): OOF
+  6.17 a game in the profile; **48.7% of 8,525** (stopped).
+- **Fixes 3 and 5 only** (`ch517-np`: press off, fixes 2 and 4 without the diff's floors, as 517 ships them):
+  **50.04% of 20,480** (49.3-50.7), OOF 139.8k vs 125.5k (+11%); at 2x fuel 50.2% of 20,480.
+- **All, press without its fight sim** (`ch517-ns`: pressed only when the pack's damage over the window covers its
+  health; never for Cassi/Issac): **49.64% of 20,480** (48.9-50.3), OOF 147.2k vs 126.7k (+16%); at 2x fuel **50.7%**.
+- Without sims the press costs little fuel itself, yet moves -1.1 from 2x to 100k while fixes 3 and 5 move -0.2. In a
+  debug run (512 games) it raises the fight gates' cuts over np (`step-guard-entry` +8.5%, `prey-cut-short` +11%,
+  OOF +0.38 a game) while driving only ~11 turns a game: the fights it starts are played short of fuel. Making the
+  press cheaper does not pay; it would need fight turns (the guard's sims, prey's chase fights) that fit 100k.
+- Nothing kept: fixes 3 and 5 are level at 100k, not worth their fuel.
