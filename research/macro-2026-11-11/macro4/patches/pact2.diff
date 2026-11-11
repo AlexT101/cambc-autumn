@@ -1,0 +1,552 @@
+diff -ruN '--exclude=.cambc' bots/ocean/src/bot.cc bots/variants/macro4-pact2/src/bot.cc
+--- bots/ocean/src/bot.cc	2026-11-11 01:36:29.699546229 +0000
++++ bots/variants/macro4-pact2/src/bot.cc	2026-11-11 02:26:43.267330126 +0000
+@@ -467,8 +467,13 @@
+     if (yield_capture(world, pathing, safety, memory)) return;
+     if (take_capture_handoff(world, pathing, safety, memory)) return;
+     const bool contested = contesting(world);
+-    const bool holding = holding_capture(world, pathing) || contested;
++    bool holding = holding_capture(world, pathing) || contested;
++    // The pact: a join outranks a hold that pays after the join's walk (pursuit_steps), never a contest.
++    if (!contested && (!holding || hold_rounds(world, pathing, my_position()) > params::pursuit_steps) && pact_join(world, pathing, safety))
++        holding = false;
+     const bool attacked = strikes && search_strikes(world, pathing, safety, memory, holding, contested);
++    // The search walks towards the pact's aim when it strikes nothing.
++    if (pact_target(world) && (my_position() != world.turn_start || attacked)) pact_went = true;
+     decision = holding ? Branch::hold : attacked ? Branch::attack : decision;
+     if (!cambc::self().is_alive()) return;
+     if (!my_can_attack() || !my_can_cast()) pathing.settle_guard(), see_stuns(world, safety), safety.refresh();
+@@ -488,13 +493,22 @@
+         static const bool near = home_monolith_map(world);
+         guard_work(world, pathing, safety, memory.damage, near ? home_reach_avoid(world, memory) : nullptr);
+     }
+-    if (banks_bag(world, pathing)) {
++    if (banks_bag(world, pathing) && !pact_target(world)) {
+         carry_bag(world, pathing, safety, memory, attacked, strike_guard);
+         return;
+     }
+     // Banked inside a camp ring: the turn-end recall is the way out (continue_recall keeps it).
+     if (sealed_in(world, pathing, my_position())) return;
+     if (wake_ring(world, pathing, safety)) return;
++    // A join overrides the bag (below the brake), the shop, the contest, the siege and the farm; not an altar guard.
++    if (!guarding(world) && pact_chase(world, pathing, safety, strike_guard)) {
++        pact_went = true;
++        return;
++    }
++    if (banks_bag(world, pathing)) {
++        carry_bag(world, pathing, safety, memory, attacked, strike_guard);
++        return;
++    }
+     // After the search the goal takes only what the search left and could not price: its walk, camp
+     // work, a travel dash (a dash the search plays only before a strike). A ranged attack spent the walk.
+     if (my_can_move() && wants_shop(world, pathing, safety, memory)) {
+@@ -590,7 +604,7 @@
+     if (decision != Branch::wait_altar) memory.wait_altar = -1;
+     // A turn without siege() (a fight, a heal) keeps the siege while our claim stays on it; a chase
+     // or a bag takes us away from it.
+-    if (!sieged && (memory.claim != claim || decision == Branch::chase || banks_bag(world, pathing))) {
++    if (!sieged && (memory.claim != claim || decision == Branch::chase || decision == Branch::join || banks_bag(world, pathing))) {
+         memory.siege = false;
+         memory.staged_since = -1;
+     }
+@@ -632,6 +646,22 @@
+     if (cut) note_shortcut("turn-end-short");
+ }
+ 
++// The pact's engaged post: we struck an enemy champion, chased, or a visible enemy can strike our tile
++// on a turn it takes before our next. Never while we retreat or mend: teammates would count us as
++// converging on a fight we are leaving.
++bool pact_engaged(const World& world) {
++    if (!world.me().alive || decision == Branch::retreat || decision == Branch::mend || decision == Branch::recall_kept) return false;
++    if (decision == Branch::chase) return true;
++    for (const auto& e : world.enemies)
++        if (e.alive && static_cast<std::uint32_t>(e.handle) < 32 && (hit_champions >> static_cast<std::uint32_t>(e.handle) & 1u)) return true;
++    const vec2 here = my_position();
++    // Short of fuel the posts go out without it: a strike not yet worked out costs more than they do.
++    if (here.x < 0 || !fuel_ok(posts_cost + strike_least)) return false;
++    for (const auto& e : world.enemies)
++        if (e.alive && e.visible && turns_before_ours(world, e) > 0 && strike(e, next_turn_round(world, e)).hits(dist(here, e.pos))) return true;
++    return false;
++}
++
+ void play_turn(World& world, Pathing& pathing, Memory& memory) {
+     Safety safety{world};
+     pathing.use_safety(&safety);
+@@ -659,6 +689,8 @@
+     turn_acts = {};
+     engaged_before = memory.round == world.round - 1 ? engaged : 0;
+     engaged = 0;
++    hit_champions = 0;
++    pact_went = false;
+     const int camp_hits_before = camp_hits();
+     if (world.me().alive) note_upkeep(world, safety, memory.damage), note_income_start(world);
+     stunned_turn = record && my_stunned(cambc::champion_state::from_bits_retain(record->state));
+@@ -703,6 +735,16 @@
+     comms::claim(memory.claim);
+     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);
+     comms::chasing(world.round, world.me().alive && decision == Branch::chase);
++    if (!world.is_stale()) {
++        const bool engaged_post = pact_engaged(world);
++        const bool joining_post = world.me().alive && pact_went && pact_target(world) != nullptr;
++        comms::contact(world.round, engaged_post, joining_post);
++        debug_block({
++            if (engaged_post || joining_post)
++                std::printf("PACT %s %d %u %c %d\n", engaged_post ? (joining_post ? "EJ" : "E") : "JP", world.round, my_handle(),
++                            static_cast<char>(decision), pact_target(world) ? static_cast<int>(pact_target(world)->handle) : -1);
++        });
++    }
+     if (!world.is_stale()) publish_turn_order(world, comms::priority_payload(world));
+     memory.live_claim = live_claim;
+     memory.round = world.round;
+diff -ruN '--exclude=.cambc' bots/ocean/src/bot_parts.h bots/variants/macro4-pact2/src/bot_parts.h
+--- bots/ocean/src/bot_parts.h	2026-11-11 01:36:29.699676391 +0000
++++ bots/variants/macro4-pact2/src/bot_parts.h	2026-11-11 02:27:23.152225709 +0000
+@@ -40,6 +40,7 @@
+ enum class Branch : char {
+     none = '-',
+     chase = 'C',
++    join = 'J',           // walking to join an engaged teammate's fight (the pact)
+     attack = 'A',
+     retreat = 'R',
+     farm = 'F',
+@@ -65,6 +66,7 @@
+ bool stunned_turn = false; // stunned at this turn's start
+ bool struck = false;       // the strike search ran this turn
+ bool searched = false;     // and priced every enemy we see: none its own moves revealed
++bool pact_went = false;    // we walked or struck towards this turn's pact join (posted as joining)
+ // The Prism-Willow support code chose this turn: the wrap-up's strike, heal, shield and recall stay out.
+ bool support_owned = false;
+ // For the turn end's comms::support_intent: Prism waits on a heal (requested) or Willow can give
+@@ -336,6 +338,12 @@
+ vec2 chase_aim(const World& world, Pathing& pathing, Safety& safety);
+ // A successful chase keeps its guard; a failed one restores the work guard.
+ bool chase_with_guard(const World& world, Pathing& pathing, Safety& safety, const Pathing::GuardState& guard);
++// The pact's join (research/macro-2026-11-11/briefs/A-pact.md): this round's target in a visible
++// engaged teammate's fight that our joining wins and that is lost without us, worked out on the
++// round's first call; pact_target reads it. pact_chase walks to it as chase does, keeping `guard`.
++const ChampionBelief* pact_join(const World& world, Pathing& pathing, Safety& safety);
++const ChampionBelief* pact_target(const World& world);
++bool pact_chase(const World& world, Pathing& pathing, Safety& safety, const Pathing::GuardState& guard);
+ const ChampionBelief* stoppable_winning_tribute(const World& world);
+ bool ally_stops(const World& world, const ChampionBelief& e);
+ const ChampionBelief* game_ender(const World& world);
+diff -ruN '--exclude=.cambc' bots/ocean/src/combat/fight.cc bots/variants/macro4-pact2/src/combat/fight.cc
+--- bots/ocean/src/combat/fight.cc	2026-11-11 01:36:29.699776662 +0000
++++ bots/variants/macro4-pact2/src/combat/fight.cc	2026-11-11 02:35:37.822356769 +0000
+@@ -714,9 +714,94 @@
+     });
+ }
+ 
++namespace {
++// This round's pact join (pact_join): the enemy we walk to and the engaged teammate whose fight it is.
++struct Pact {
++    int round = -1;
++    const ChampionBelief* target = nullptr;
++    int handle = -1; // the target's, kept into the next round
++};
++Pact pact;
++} // namespace
++
++const ChampionBelief* pact_target(const World& world) {
++    return pact.round == world.round && pact.target && pact.target->alive && pact.target->visible ? pact.target : nullptr;
++}
++
++// The pact (research/macro-2026-11-11/briefs/A-pact.md): free of our own fight and bag, we join a
++// visible teammate posting an engagement (comms::ally_engaged_post) within chasing_ally_radius when its
++// fight, played with us arriving after our walk, is not lost and we do not fall in it: piling onto every
++// fight the team wins makes its kills faster and safer. The fight is the roster at the teammate's tile
++// (its allies near it, joiners and engaged counted from farther) against the enemies that hit it; our
++// walk is to the nearest of them we can strike within pursuit_steps + 1 turns. Worked out once a
++// round; nearest teammates first, up to the first join.
++const ChampionBelief* pact_join(const World& world, Pathing& pathing, Safety& safety) {
++    if (pact.round == world.round) return pact_target(world);
++    // Last turn's join (its target is in engaged_before) goes on: it is judged afresh, not as our own fight.
++    const std::uint32_t joined = pact.round == world.round - 1 && pact.handle >= 0 && pact.handle < 32 ? 1u << pact.handle : 0u;
++    pact = {world.round, nullptr, -1};
++    const auto& self = world.me();
++    // Our own fight (pressed, chase_aim) comes first: an enemy we struck or chased last turn, other than
++    // the join's (engaged_before also holds the teammates we healed or shielded). A bag at the brake
++    // goes home; Willow holds no fight.
++    std::uint32_t own = 0;
++    for (const auto& e : world.enemies)
++        if (e.alive && static_cast<std::uint32_t>(e.handle) < 32) own |= engaged_before & ~joined & 1u << static_cast<std::uint32_t>(e.handle);
++    if (!self.alive || own || (self.facts().heals() && !willow_early(world)) || !my_can_move() || bag_at_stake(world) >= params::brake_bag)
++        return nullptr;
++    const vec2 here = my_position();
++    const int reach = strike(self, world.round).reach;
++    if (reach < 0) return nullptr;
++    Unwritten<std::pair<int, const ChampionBelief*>, 8> near;
++    auto& order = near.a;
++    int n = 0;
++    for (const auto& a : world.allies)
++        if (n < static_cast<int>(order.size()) && !a.is_self && a.alive && a.visible && dist(here, a.pos) <= safety_params::chasing_ally_radius
++            && comms::ally_engaged_post(world, a)) {
++            int i = n++;
++            for (; i > 0 && order[i - 1].first > dist(here, a.pos); --i) order[i] = order[i - 1];
++            order[i] = {dist(here, a.pos), &a};
++        }
++    if (n == 0) return nullptr;
++    const int range = self.facts().attack_range();
++    for (int k = 0; k < n; ++k) {
++        const auto& a = *order[k].second;
++        const auto key = safety.fight_key(a.pos);
++        if (key == Safety::no_fight) continue; // our bit is always in it (fighting_allies)
++        // The enemy of its fight we strike first, the hurtest of equal walks: our arrival is our walk to it.
++        const ChampionBelief* target = nullptr;
++        int arrives = 0;
++        for (auto left = key >> 16; left; left &= left - 1) {
++            const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
++            if (!e.alive || !e.visible || test(world.map().near_enemy_spawn, e.pos)) continue;
++            const int walk = std::max(0, dist(here, e.pos) - reach);
++            if (!target || walk < arrives || (walk == arrives && e.health * target->max_health < target->health * e.max_health))
++                target = &e, arrives = walk;
++        }
++        if (!target || arrives > params::pursuit_steps + 1 || pack_covers(world, safety, target->pos, range)) continue;
++        if (!fuel_ok(safety.fight_cost_estimate() + search_reserve)) {
++            note_shortcut("pact-cut-short");
++            break;
++        }
++        const auto late = safety.late(a.pos, key);
++        const Trade with = safety.join_trade(key, arrives, late);
++        const bool join = !with.lost && !with.self_falls;
++        // The without-us field reads -1: it is not played.
++        debug_block({
++            std::printf("PACT %c %d %u %u %u %d %d %d %d %d\n", join ? 'J' : 'j', world.round, my_handle(), static_cast<std::uint32_t>(a.handle),
++                        static_cast<std::uint32_t>(target->handle), std::popcount(key >> 16), arrives, -1, with.lost ? 1 : 0,
++                        with.self_falls ? 1 : 0);
++        });
++        if (!join || escapes(world, pathing, *target, escape::chase_cost_estimate() + search_reserve)) continue;
++        pact.target = target, pact.handle = static_cast<int>(target->handle);
++        return target;
++    }
++    return nullptr;
++}
++
+ // Where the strike search's walk heads when it strikes nothing: the nearest visible enemy we
+ // chased or struck on our previous turn that prey could still take, else {-1, -1}. The search
+-// walks first, and chase gets no walk after one.
++// walks first, and chase gets no walk after one. A pact join (pact_join) aims at its target.
+ vec2 chase_aim(const World& world, Pathing& pathing, Safety& safety) {
+     vec2 aim{-1, -1};
+     if (world.me().facts().heals() && !willow_early(world)) return aim;
+@@ -726,6 +811,8 @@
+     // The strike search runs after these verdicts: a build must leave it a full search's fuel. Under prey's
+     // flat gate, turns that built here ran out ~8x as often as prey's (chase-verdict.md "Fuel gate").
+     const auto need = escape::chase_cost_estimate() + search_reserve;
++    // pact_join chose only with no fight of our own but its own last turn's.
++    if (const auto* t = pact_target(world)) return t->pos;
+     // A teammate's pressed fight when we have none of our own.
+     if (!engaged_before) {
+         if (const auto* t = team_pressed(world); t && preyable(world, safety, *t, here, range, held) && !escapes(world, pathing, *t, need))
+@@ -923,15 +1010,12 @@
+     return nullptr;
+ }
+ 
+-bool chase(const World& world, Pathing& pathing, Safety& safety) {
+-    // After the strike search, chase only walks: the search priced and passed on its dash and casts,
+-    // and strike_after makes the hits from where the walk ends.
+-    if (searched && !my_can_move()) return false;
+-    const auto* target = prey(world, pathing, safety);
+-    if (!target) return false;
+-    trace_verdict(world, pathing, *target, 'P');
++namespace {
++
++// chase()'s walk and hits on `target`, as `branch`.
++bool chase_at(const World& world, Pathing& pathing, Safety& safety, const ChampionBelief* target, Branch branch) {
+     note_engaged(static_cast<std::uint32_t>(target->handle));
+-    decision = Branch::chase;
++    decision = branch;
+     if constexpr (debug_fights) log_fight("FC", world, safety, target->pos, safety.fight(target->pos), static_cast<int>(target->handle));
+     const int range = world.me().facts().attack_range();
+     // Out of sight it is wherever it could be: a step onto one of those tiles shows it, or finds it
+@@ -958,6 +1042,18 @@
+     return hit || !stuck;
+ }
+ 
++} // namespace
++
++bool chase(const World& world, Pathing& pathing, Safety& safety) {
++    // After the strike search, chase only walks: the search priced and passed on its dash and casts,
++    // and strike_after makes the hits from where the walk ends.
++    if (searched && !my_can_move()) return false;
++    const auto* target = prey(world, pathing, safety);
++    if (!target) return false;
++    trace_verdict(world, pathing, *target, 'P');
++    return chase_at(world, pathing, safety, target, Branch::chase);
++}
++
+ bool chase_with_guard(const World& world, Pathing& pathing, Safety& safety, const Pathing::GuardState& guard) {
+     const auto work_guard = pathing.held_guard();
+     pathing.restore_guard(guard);
+@@ -965,6 +1061,17 @@
+     strike_guard_known(pathing, my_position());
+     pathing.restore_guard(work_guard);
+     return false;
++}
++
++bool pact_chase(const World& world, Pathing& pathing, Safety& safety, const Pathing::GuardState& guard) {
++    const auto* target = pact_target(world);
++    if (!target || (searched && !my_can_move())) return false;
++    const auto work_guard = pathing.held_guard();
++    pathing.restore_guard(guard);
++    if (chase_at(world, pathing, safety, target, Branch::join)) return true;
++    strike_guard_known(pathing, my_position());
++    pathing.restore_guard(work_guard);
++    return false;
+ }
+ 
+ // A champion's turn start in `round`, where its channel completes.
+diff -ruN '--exclude=.cambc' bots/ocean/src/combat/guard.cc bots/variants/macro4-pact2/src/combat/guard.cc
+--- bots/ocean/src/combat/guard.cc	2026-11-11 01:36:29.699776662 +0000
++++ bots/variants/macro4-pact2/src/combat/guard.cc	2026-11-11 02:09:33.952834958 +0000
+@@ -153,8 +153,13 @@
+     }
+     if (n == 0) return pz;
+     float our_health = 0, our_damage = 0;
++    // An ally posting contact (comms::ally_in_contact) is converging on the fight: counted from as far
++    // as the fight roster counts it.
++    constexpr int contact_radius = std::max(params::pack_ally_radius, safety_params::chasing_ally_radius);
+     for (const auto& a : world.allies)
+-        if (a.alive && (a.is_self || (a.visible && dist(here, a.pos) <= params::pack_ally_radius))) {
++        if (a.alive
++            && (a.is_self
++                || (a.visible && dist(here, a.pos) <= (comms::ally_in_contact(world, a) ? contact_radius : params::pack_ally_radius)))) {
+             our_health += ((a.is_self ? health : a.health) + a.shield) / a.taken;
+             our_damage += output(a);
+         }
+diff -ruN '--exclude=.cambc' bots/ocean/src/model/comms.cc bots/variants/macro4-pact2/src/model/comms.cc
+--- bots/ocean/src/model/comms.cc	2026-11-11 01:36:29.701706267 +0000
++++ bots/variants/macro4-pact2/src/model/comms.cc	2026-11-11 02:27:23.174868541 +0000
+@@ -125,9 +125,13 @@
+ bool support_intent_value = false;
+ int chasing_round = -1;
+ bool chasing_value = false;
+-// Above the claim (0-7) and support mailbox (8-10): the chase bit, then its posting round mod 4.
++int contact_round = -1;
++bool engaged_value = false, joining_value = false;
++// Above the claim (0-7) and support mailbox (8-10): the chase bit, then the posting round mod 4 (set
++// with any of chase, engaged or joining), then the engaged and joining bits.
+ constexpr int chase_shift = 11;
+-static_assert(support_mailbox::payload_shift + 3 <= chase_shift && chase_shift + 3 <= priority_payload_bits);
++constexpr int engaged_shift = chase_shift + 3, joining_shift = chase_shift + 4;
++static_assert(support_mailbox::payload_shift + 3 <= chase_shift && joining_shift + 1 <= priority_payload_bits);
+ 
+ static_assert(support_mailbox::protected_mate == 0 && support_mailbox::healer == 1); // support_pair's order
+ 
+@@ -308,22 +312,37 @@
+ 
+ void chasing(int round, bool v) { chasing_round = round, chasing_value = v; }
+ 
+-// Posted this round (it acted before us) or last (it acts after us); older is stale.
+-bool ally_chasing(const World& world, const ChampionBelief& a) {
++// An ally's contact bits among `bits` (by shift), posted this round (it acted before us) or last (it
++// acts after us); older is stale.
++static bool ally_posted(const World& world, const ChampionBelief& a, std::uint32_t bits) {
+     if (a.is_self || !a.alive) return false;
+     const auto p = payload_of(world, a);
+-    if (p < 0 || !(p >> chase_shift & 1)) return false;
++    if (p < 0 || !(static_cast<std::uint32_t>(p) & bits)) return false;
+     return ((world.round - static_cast<int>(p >> (chase_shift + 1) & 3)) & 3) <= 1;
+ }
+ 
++bool ally_chasing(const World& world, const ChampionBelief& a) { return ally_posted(world, a, 1u << chase_shift); }
++
++bool ally_engaged_post(const World& world, const ChampionBelief& a) {
++    return ally_posted(world, a, 1u << chase_shift | 1u << engaged_shift);
++}
++
++bool ally_in_contact(const World& world, const ChampionBelief& a) {
++    return ally_posted(world, a, 1u << chase_shift | 1u << engaged_shift | 1u << joining_shift);
++}
++
++void contact(int round, bool engaged, bool joining) { contact_round = round, engaged_value = engaged, joining_value = joining; }
++
+ std::uint32_t priority_payload(const World& world) {
+     auto payload = static_cast<std::uint32_t>(detail::posts.mine + 1);
+     const auto pair = support_pair(world);
+     if (pair[0] && pair[1] && (pair[0]->is_self || pair[1]->is_self))
+         payload |= support_mailbox::encode(world.round, support_mailbox::publish_value(world.round, support_intent_round, support_intent_value,
+                                                                                      pair[0]->alive && pair[1]->alive));
+-    if (chasing_round == world.round && chasing_value)
+-        payload |= 1u << chase_shift | static_cast<std::uint32_t>(world.round & 3) << (chase_shift + 1);
++    std::uint32_t posted = 0;
++    if (chasing_round == world.round && chasing_value) posted |= 1u << chase_shift;
++    if (contact_round == world.round) posted |= (engaged_value ? 1u << engaged_shift : 0u) | (joining_value ? 1u << joining_shift : 0u);
++    if (posted) payload |= posted | static_cast<std::uint32_t>(world.round & 3) << (chase_shift + 1);
+     return payload;
+ }
+ 
+diff -ruN '--exclude=.cambc' bots/ocean/src/model/comms.h bots/variants/macro4-pact2/src/model/comms.h
+--- bots/ocean/src/model/comms.h	2026-11-11 01:36:29.702681349 +0000
++++ bots/variants/macro4-pact2/src/model/comms.h	2026-11-11 02:27:23.174022740 +0000
+@@ -45,7 +45,13 @@
+ // this round or last.
+ void chasing(int round, bool chasing);
+ bool ally_chasing(const World& world, const ChampionBelief& a);
+-// Our priority payload: the claim, support intents and chase bit posted this turn.
++// The pact's contact state, posted beside the chase bit: `engaged` (we struck an enemy champion this
++// turn, or a visible one can hit our tile before our next turn), `joining` (we walk to join an engaged
++// teammate's fight). Read as the chase bit is: an ally in sight, posted this round or last.
++void contact(int round, bool engaged, bool joining);
++bool ally_engaged_post(const World& world, const ChampionBelief& a); // engaged or chasing
++bool ally_in_contact(const World& world, const ChampionBelief& a);   // engaged, chasing or joining
++// Our priority payload: the claim, support intents, chase bit and contact state posted this turn.
+ std::uint32_t priority_payload(const World& world);
+ // The group an ally (by index) claims, -1 for none or while it is dead.
+ inline int claim_of(const World& world, int ally) {
+diff -ruN '--exclude=.cambc' bots/ocean/src/model/escape.cc bots/variants/macro4-pact2/src/model/escape.cc
+--- bots/ocean/src/model/escape.cc	2026-11-11 01:36:29.702681349 +0000
++++ bots/variants/macro4-pact2/src/model/escape.cc	2026-11-11 02:11:57.681378923 +0000
+@@ -7,6 +7,7 @@
+ #ifdef __wasm_simd128__
+ #include <wasm_simd128.h>
+ #endif
++#include "comms.h"
+ #include "enemy_reach.h"
+ #include "pathing.h"
+ #include "safety.h"
+@@ -269,6 +270,9 @@
+     // map's symmetry takes the field's tiles to the runner's.
+     const std::uint16_t* field = nullptr;
+     bool flip_x = false, flip_y = false;
++    // Ours only: tiles within 1 of a visible teammate posting contact nearer than home (the pact), goals
++    // as home's: we retreat into help, not away from it.
++    Rows help{};
+ };
+ 
+ void Plan::build(const World& world, Pathing& pathing, Safety& safety) {
+@@ -284,6 +288,19 @@
+     if (race.steps == unreachable || race.steps == 0) return;
+     origin_ = {here.x - radius, here.y - radius};
+     race.at = span_of(origin_);
++    {
++        alignas(16) std::uint16_t rows[16] = {};
++        bool any = false;
++        for (const auto& a : world.allies) {
++            if (a.is_self || !a.alive || !a.visible || dist(here, a.pos) >= race.steps || !comms::ally_in_contact(world, a)) continue;
++            const int lo = std::max(0, a.pos.x - 1 - origin_.x), hi = std::min(side - 1, a.pos.x + 1 - origin_.x);
++            if (lo > hi) continue;
++            const auto bits = static_cast<std::uint16_t>(((1u << (hi - lo + 1)) - 1) << lo);
++            for (int y = std::max(0, a.pos.y - 1 - origin_.y); y <= std::min(side - 1, a.pos.y + 1 - origin_.y); ++y) rows[y] |= bits, any = true;
++            debug_block({ std::printf("PACT H %d %u %u %d %d\n", world.round, my_handle(), static_cast<std::uint32_t>(a.handle), dist(here, a.pos), race.steps); });
++        }
++        if (any) std::memcpy(&race.help, rows, sizeof rows);
++    }
+ 
+     // The pursuers, merged by kind.
+     for (const auto& e : world.enemies) {
+@@ -527,6 +544,10 @@
+     else if (!race.flip_y) goal_rows<true, false>(race.field, walk_, origin_, near, slack, goal, slack_goal_);
+     else if (!race.flip_x) goal_rows<false, true>(race.field, walk_, origin_, near, slack, goal, slack_goal_);
+     else goal_rows<true, true>(race.field, walk_, origin_, near, slack, goal, slack_goal_);
++    if (race.ours) {
++        const Rows help = race.help & walk_;
++        goal |= help, slack_goal_ |= help;
++    }
+     run(goal, pass_[0]);
+     active_ = true;
+ }
+diff -ruN '--exclude=.cambc' bots/ocean/src/model/safety.cc bots/variants/macro4-pact2/src/model/safety.cc
+--- bots/ocean/src/model/safety.cc	2026-11-11 01:36:29.702681349 +0000
++++ bots/variants/macro4-pact2/src/model/safety.cc	2026-11-11 02:27:23.173951209 +0000
+@@ -777,10 +777,17 @@
+             const auto& a = world.allies[i];
+             if (!a.alive) continue;
+             if (a.is_self) self |= 1u << i;
+-            // An ally posting a chase joins from farther, after its walk (walk_allies_in).
++            // An ally posting a chase, an engagement or a join joins from farther, after its walk
++            // (walk_allies_in): every member of a local fight counts the others alike.
+             else if (a.visible) {
+-                const int r = comms::ally_chasing(world, a) ? chasing_ally_radius : fight_ally_radius;
++                const bool contact = comms::ally_in_contact(world, a);
++                const int r = contact ? chasing_ally_radius : fight_ally_radius;
+                 seen |= 1u << i, x0[i] = a.pos.x - r, y0[i] = a.pos.y - r, side[i] = static_cast<unsigned>(2 * r);
++                debug_block({
++                    if (contact && !comms::ally_chasing(world, a))
++                        std::printf("PACT R %d %u %u %c %d\n", world.round, my_handle(), static_cast<std::uint32_t>(a.handle),
++                                    comms::ally_engaged_post(world, a) ? 'e' : 'j', dist(world.me().pos, a.pos));
++                });
+             }
+         }
+     }
+@@ -3306,6 +3313,26 @@
+     if (const auto after = fuel(); after < before) costliest_fight_ = std::max(costliest_fight_, before - after);
+     world_.throw_if_stale();
+     return t;
++}
++
++Trade Safety::join_trade(std::uint32_t key, int arrives, std::uint32_t late) {
++    world_.throw_if_stale();
++    if (key == no_fight) return {};
++    if (arrives <= 0) return fight_of(key, true, late, false);
++    Side us, them;
++    fill(us, world_, world_.allies, key & 0xFFFFu, made_);
++    if (us.self >= 0) us.fighters[us.self].arrives_at = std::max(us.fighters[us.self].arrives_at, arrives);
++    build();
++    const auto enemies = (key >> 16 | late_mask(late)) & threat_mask_;
++    fill(them, world_, world_.enemies, enemies, made_);
++    if (late) join_late(them, enemies, late);
++    walk_allies_in(world_, us, key & 0xFFFFu, enemies);
++    world_.throw_if_stale();
++    const auto before = fuel();
++    const auto t = trade(us, them, true, true, false);
++    if (const auto after = fuel(); after < before) costliest_fight_ = std::max(costliest_fight_, before - after);
++    world_.throw_if_stale();
++    return t;
+ }
+ 
+ [[gnu::noinline]] void Safety::count_champions() {
+diff -ruN '--exclude=.cambc' bots/ocean/src/model/safety.h bots/variants/macro4-pact2/src/model/safety.h
+--- bots/ocean/src/model/safety.h	2026-11-11 01:36:29.703430199 +0000
++++ bots/variants/macro4-pact2/src/model/safety.h	2026-11-11 02:09:43.788861390 +0000
+@@ -39,7 +39,7 @@
+ // An awake camp we have not watched for 2 rounds may have fallen asleep.
+ inline constexpr float unknown_camp_weight = 0.5f;
+ inline constexpr int fight_ally_radius = 4;
+-inline constexpr int chasing_ally_radius = 7; // an ally posting a chase (comms::ally_chasing)
++inline constexpr int chasing_ally_radius = 7; // an ally posting a chase or contact (comms::ally_in_contact)
+ } // namespace safety_params
+ 
+ // What an enemy could do to one tile before our next turn.
+@@ -402,6 +402,10 @@
+     // (Trade::lost_known).
+     Trade chase_trade(std::uint32_t key, std::uint32_t delayed, const std::array<int, 2>& self_cooldowns, bool can_cast, bool falls = true,
+                       std::uint32_t late = 0);
++    // The pact's join: the fight of `key` (our bit in it) with `late` enemies walking in, we arriving
++    // after `arrives` turns of walking as walk_allies_in delays allies. Played to the end: lost and
++    // self_falls are both known.
++    Trade join_trade(std::uint32_t key, int arrives, std::uint32_t late);
+     // Who would fight at p: bit i of the low half for allies[i], of the high half for enemies[i];
+     // no_fight if no threat hits p.
+     static constexpr std::uint32_t no_fight = ~0u;
+diff -ruN '--exclude=.cambc' bots/ocean/src/util.h bots/variants/macro4-pact2/src/util.h
+--- bots/ocean/src/util.h	2026-11-11 01:36:29.704430212 +0000
++++ bots/variants/macro4-pact2/src/util.h	2026-11-11 02:26:43.262130588 +0000
+@@ -319,6 +319,9 @@
+ inline TurnActs turn_acts;
+ // Enemy champions (bits by handle) we chased or struck this turn, and on our previous turn.
+ inline std::uint32_t engaged = 0, engaged_before = 0;
++// Champions (bits by handle) we hit with a basic attack or unit cast this turn: heals and shields on
++// teammates included, so readers test enemy handles.
++inline std::uint32_t hit_champions = 0;
+ inline void note_engaged(std::uint32_t handle) {
+     if (handle < 32) engaged |= 1u << handle;
+ }
+@@ -341,7 +344,8 @@
+     static std::int32_t cast;
+     ok(cambc::detail::sdk_cast(static_cast<std::uint32_t>(slot), static_cast<std::uint32_t>(cambc::detail::entity_kind::champion),
+                                static_cast<std::uint32_t>(target), -1, -1, &cast));
+-    if (cast) note_engaged(static_cast<std::uint32_t>(target));
++    if (cast && static_cast<std::uint32_t>(target) < 32) note_engaged(static_cast<std::uint32_t>(target)), hit_champions |= 1u << static_cast<std::uint32_t>(target);
++    else if (cast) note_engaged(static_cast<std::uint32_t>(target));
+     return count_cast(slot, cast);
+ }
+ inline bool cast_slot_on(int slot, cambc::handle_camp_t target) {
+@@ -358,6 +362,7 @@
+     self_acted();
+     ok(cambc::detail::sdk_attack(static_cast<std::uint32_t>(cambc::detail::entity_kind::champion), static_cast<std::uint32_t>(target)));
+     note_engaged(static_cast<std::uint32_t>(target));
++    if (static_cast<std::uint32_t>(target) < 32) hit_champions |= 1u << static_cast<std::uint32_t>(target);
+ }
+ // Turn ends left of our channel.
+ inline std::int32_t my_channel_time() {

@@ -1,0 +1,183 @@
+diff -ruN charybdis-p1/src/bot_parts.h chy2-C1b/src/bot_parts.h
+--- charybdis-p1/src/bot_parts.h	2026-11-11 10:38:02.919033781 +0000
++++ chy2-C1b/src/bot_parts.h	2026-11-11 11:56:58.220312172 +0000
+@@ -450,6 +450,12 @@
+ bool contest_capture(const World& world, Pathing& pathing, Memory& memory);
+ void hold_capture(const World& world, Memory& memory, bool attacked);
+ 
++// economy/hub.cc
++float hub_premium(const World& world, const ChampionFacts& prism);
++float hub_factor(const World& world, float rho, float ours, float theirs);
++float champion_gem_rate(const World& world);
++float hub_net(const World& world, float rho, float gems, float ours, float theirs);
++
+ // economy/crew.cc
+ bool farms_gold(const World& world, const ChampionBelief& a);
+ // A crew's clear of a group: its camp output (ours included), its camp damage before anyone's
+diff -ruN charybdis-p1/src/economy/capture.cc chy2-C1b/src/economy/capture.cc
+--- charybdis-p1/src/economy/capture.cc	2026-11-11 08:52:46.039864219 +0000
++++ chy2-C1b/src/economy/capture.cc	2026-11-11 11:56:58.221930413 +0000
+@@ -503,7 +503,23 @@
+         // Left already, claimed now: a Prism nearer than our hold's payout would call us back to begin it.
+         if (!held && left.left && !left.lapsed) return Leave::claimed;
+         const int rounds = held ? c.payout_round() - world.round : capture_rounds(world) - 1 + std::max(1, walk_from(my_position()));
+-        if (walk - slack >= rounds) return Leave::claimed;
++        if (walk - slack >= rounds) {
++            // Our payout given up for Prism's later hold: only while its premium pays the team for Prism's
++            // rounds on it (hub_net), as Prism's 'L' pick asks.
++            if (held) {
++                const float theirs = static_cast<float>(std::max(rounds, walk + capture_rounds(a.fast_capture)));
++                if (!(hub_net(world, hub_premium(world, a.facts()), static_cast<float>(G.gems), static_cast<float>(rounds), theirs) > 0)) {
++                    debug_block({
++                        static int last_g = -1, last_since = -1;
++                        if (last_g != g || last_since != c.held_since)
++                            std::printf("C1 KEEP %d %u g%d rounds %d walk %d gems %d\n", world.round, my_handle(), g, rounds, walk, G.gems);
++                        last_g = g, last_since = c.held_since;
++                    });
++                    return Leave::no;
++                }
++            }
++            return Leave::claimed;
++        }
+         if (held && walk + slack < rounds && test(G.tiles(), my_position())) kept_group = g, kept_since = c.held_since;
+         return Leave::no;
+     }
+diff -ruN charybdis-p1/src/economy/farm.cc chy2-C1b/src/economy/farm.cc
+--- charybdis-p1/src/economy/farm.cc	2026-11-11 05:57:31.006110283 +0000
++++ chy2-C1b/src/economy/farm.cc	2026-11-11 12:03:59.289861833 +0000
+@@ -2276,6 +2276,27 @@
+             const int gold = G.gold + (prospector ? prospected(G.cluster_gold, 1) : 0);
+             // No more than the loop's bound on a cleared group: the walk is at least the crow's.
+             const int rounds = in_time ? timer : walk + capture_rounds(world);
++            // An ally that gives up its payout `timer` rounds away for ours `rounds` away (left_for_prism):
++            // only while the gems' Focus premium pays the team for our rounds on it (hub_net), as the ally's
++            // leave asks. Holders all recalling away before the payout leave it to us regardless.
++            if (held && walk >= timer) {
++                bool stays = false;
++                for (const auto& a : world.allies)
++                    if (!a.is_self && a.alive && a.visible && test(G.tiles(), a.pos)
++                        && !(a.channel == Channel::recall && visible_record(a.handle) && kept_recall(a.handle, a.recall_turns())
++                             && a.channel_end_round < round + timer))
++                        stays = true;
++                if (stays && !(hub_net(world, hub_premium(world, world.me().facts()), static_cast<float>(G.gems), static_cast<float>(timer),
++                                       static_cast<float>(std::max(timer, rounds))) > 0)) {
++                    debug_block({
++                        static int last_g = -1, last_since = -1;
++                        if (last_g != g || last_since != world.camps[g].held_since)
++                            std::printf("C1 NOGATE %d %u g%d timer %d walk %d gems %d\n", round, my_handle(), g, timer, walk, gems);
++                        last_g = g, last_since = world.camps[g].held_since;
++                    });
++                    return;
++                }
++            }
+             const float value = rate(world, static_cast<float>(gems) + per_gold * static_cast<float>(gold), static_cast<float>(rounds));
+             // Our pick already, taken over as the carry for its goal and the carry's stickiness.
+             if (value > best_value || (best == g && !in_time)) {
+diff -ruN charybdis-p1/src/economy/hub.cc chy2-C1b/src/economy/hub.cc
+--- charybdis-p1/src/economy/hub.cc	1970-01-01 00:00:00.000000000 +0000
++++ chy2-C1b/src/economy/hub.cc	2026-11-11 11:56:58.214776798 +0000
+@@ -0,0 +1,81 @@
++// A carried gem's Focus, priced as team-marginal value (macro4's hub): every gem a Prism carries adds
++// Focus to both its damage spells until tributed, so a gem in Prism's bag is worth more than the same gem
++// in another ally's. Farm's 'G' and 'L' carry picks and leave_for_prism's claimed hand-over read it.
++#include "../bot_parts.h"
++
++namespace aph {
++
++namespace {
++
++// Gems per camp health point over the map's gem groups: farm_step_value's exchange rate.
++float camp_gem_density(const StaticMap& map) {
++    static float density = -1;
++    if (density < 0) {
++        float gems = 0, health = 0;
++        for (const auto& g : map.groups) {
++            if (g.gems == 0 || (g.has_monolith && !map.monolith_only)) continue;
++            gems += static_cast<float>(g.gems);
++            for (const auto& m : g.members) health += m.max_health;
++        }
++        density = health > 0 ? gems / health : 0.0f;
++    }
++    return density;
++}
++
++// The damage a round one carried gem adds: its Focus times the damage spells' multipliers, each cast
++// once a cooldown.
++float gem_damage_rate(const ChampionFacts& f) {
++    float multipliers = 0;
++    for (const auto& a : f.abilities)
++        if (a.kind == AbilityKind::damage) multipliers += a.multiplier;
++    return cambc::constants::passive_abilities::prism_focus_per_gem * multipliers / static_cast<float>(ability_cooldown);
++}
++
++// Extra gems of output per gem Prism carries. A gem stays carried until the bag must leave for an
++// altar: the round limit or the race's end (race_left), less the last trip sole_capture_holder keeps
++// back. Its extra damage d a round, at the map's gems per health point, is discounted by the farm's
++// own horizon h (rate's 1 + r / h): the sum over t < H of d / (1 + t / h) is d h ln(1 + H / h).
++float hub_premium(const World& world, const ChampionFacts& prism) {
++    const auto& map = world.map();
++    const float h = cycle_horizon(map);
++    const int carried = std::min(rounds_left(world), race_left(world)) - (map.width + map.height + endgame_margin);
++    if (carried <= 0) return 0;
++    const float rho = gem_damage_rate(prism) * camp_gem_density(map) * h * std::log1p(static_cast<float>(carried) / h);
++    return std::clamp(rho, 0.0f, params::hub_rho_most);
++}
++
++// A group's worth to the team, carried to Prism, over its worth in an ally's bag: the ally's payout
++// `ours` rounds away, Prism's `theirs`, each discounted as rate() does (1 + r / h).
++float hub_factor(const World& world, float rho, float ours, float theirs) {
++    const float h = cycle_horizon(world.map());
++    return std::max(1.0f, (1.0f + rho) * (h + ours) / (h + theirs));
++}
++
++// The gems one of our champions earns a round, as the team has so far: its score and living bags
++// over the rounds played, per champion (its dead rounds included). Prism's rounds on a carry are
++// worth this elsewhere.
++float champion_gem_rate(const World& world) {
++    static int round = -1;
++    static float r = 0;
++    if (round == world.round) return r;
++    round = world.round;
++    int gems = world.score.ally;
++    for (const auto& a : world.allies) {
++        if (!a.alive && !a.is_self) continue;
++        gems += a.is_self ? static_cast<int>(my_gems()) : a.visible ? a.gems : comms::bag_of(world, a.index);
++    }
++    // The score is the game's, so the rounds are too, not this instance's.
++    const int played = std::max(1, world.round);
++    r = world.allies.empty() ? 0.0f : static_cast<float>(gems) / static_cast<float>(played) / static_cast<float>(world.allies.size());
++    return r;
++}
++
++// The team's gain, in gems, from `gems` going to Prism rather than staying in an ally's bag: the premium
++// (hub_factor) less the rounds Prism spends on them (`theirs`, its walk and hold) at a champion's rate.
++float hub_net(const World& world, float rho, float gems, float ours, float theirs) {
++    return gems * (hub_factor(world, rho, ours, theirs) - 1.0f) - theirs * champion_gem_rate(world);
++}
++
++} // namespace
++
++} // namespace aph
+diff -ruN charybdis-p1/src/params.h chy2-C1b/src/params.h
+--- charybdis-p1/src/params.h	2026-11-11 10:38:02.919470467 +0000
++++ chy2-C1b/src/params.h	2026-11-11 11:56:58.219357599 +0000
+@@ -70,6 +70,8 @@
+ // Below this share of max health a champion, ours or an enemy, is hurt: ours retreat from smaller
+ // packs, no longer count their own ground as safe from pursuit, and are healed for any gain.
+ inline constexpr float hurt_health_fraction = 0.4532513f;
++// The most a gem carried by Prism is worth over the same gem in another bag, in extra gems (hub_premium).
++inline constexpr float hub_rho_most = 2.0f;
+ // Below the recall line, stay to finish a camp whose remaining damage is under this share of our health.
+ inline constexpr float finish_camp_health_fraction = 0.6881714f;
+ // Camp damage counted against the health we can spare when choosing a camp (below 1: bolder).
+diff -ruN charybdis-p1/src/unity.cpp chy2-C1b/src/unity.cpp
+--- charybdis-p1/src/unity.cpp	2026-11-11 06:40:38.537695491 +0000
++++ chy2-C1b/src/unity.cpp	2026-11-11 11:56:58.218251944 +0000
+@@ -11,6 +11,7 @@
+ #include "combat/fight.cc"
+ #include "economy/bank.cc"
+ #include "economy/capture.cc"
++#include "economy/hub.cc"
+ #include "economy/crew.cc"
+ #include "economy/farm.cc"
+ #include "economy/siege.cc"

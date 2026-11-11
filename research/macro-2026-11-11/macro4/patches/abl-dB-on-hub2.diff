@@ -1,0 +1,159 @@
+diff -ru '--exclude=.cambc' bots/variants/macro4-hub2/src/bot_parts.h bots/variants/macro4-dB/src/bot_parts.h
+--- bots/variants/macro4-hub2/src/bot_parts.h	2026-11-11 03:05:42.070837909 +0000
++++ bots/variants/macro4-dB/src/bot_parts.h	2026-11-11 03:30:34.145756586 +0000
+@@ -445,6 +445,11 @@
+     bool on() const { return prism && rho > 0; }
+ };
+ float hub_premium(const World& world, const ChampionFacts& prism);
++// hub_premium for a Prism of either team, else 0: its bag is also its Focus.
++float carry_premium(const World& world, const ChampionBelief& c);
++// What a kill takes from c's team, in enemy health points: its bag (both of Cassi and Issac) at
++// gem_value, a Prism's at its premium too.
++float bag_worth(const World& world, const ChampionBelief& c);
+ bool hold_threatened(const World& world, vec2 p);
+ const Hub& team_hub(const World& world);
+ int hub_steps(const World& world, Pathing& pathing, const Hub& hub, int g);
+diff -ru '--exclude=.cambc' bots/variants/macro4-hub2/src/combat/abilities.cc bots/variants/macro4-dB/src/combat/abilities.cc
+--- bots/variants/macro4-hub2/src/combat/abilities.cc	2026-11-11 01:36:29.699676391 +0000
++++ bots/variants/macro4-dB/src/combat/abilities.cc	2026-11-11 03:30:14.254519453 +0000
+@@ -77,7 +77,7 @@
+ 
+ // hit_worth, and for damage short of a kill off its spawn, the recall it cancels.
+ float hit_worth_of(const World& world, const ChampionBelief& e, float damage, float health, bool on_spawn) {
+-    const float v = hit_worth(damage, health, on_spawn, params::gem_value * static_cast<float>(pair_gems(world, e)),
++    const float v = hit_worth(damage, health, on_spawn, bag_worth(world, e),
+                               partner_bound(world, e), std::max(e.max_health, health));
+     return damage > 0 && damage < health - 0.01f && !on_spawn && recall_kept(e) ? v + params::recall_value : v;
+ }
+diff -ru '--exclude=.cambc' bots/variants/macro4-hub2/src/combat/fight.cc bots/variants/macro4-dB/src/combat/fight.cc
+--- bots/variants/macro4-hub2/src/combat/fight.cc	2026-11-11 01:36:29.699776662 +0000
++++ bots/variants/macro4-dB/src/combat/fight.cc	2026-11-11 03:30:14.254608274 +0000
+@@ -805,8 +805,8 @@
+         if (!preyable(world, safety, e, here, range, held)) continue;
+         if (!strength) strength = std::max(1.0f, my_strength() * world.me().damage_scale());
+         const float turns = static_cast<float>(std::max(0, dist(here, e.pos) - range)) + effective_hp(e) / *strength;
+-        // Turns per gem a kill is worth: the life (abilities' life_value, in gems) and the bag.
+-        const float cost = turns / (params::life_value / params::gem_value + static_cast<float>(pair_gems(world, e) + held));
++        // Turns per gem a kill is worth: the life (abilities' life_value, in gems) and the bag (bag_worth).
++        const float cost = turns / (params::life_value / params::gem_value + bag_worth(world, e) / params::gem_value + static_cast<float>(held));
+         int i = n++;
+         for (; i > 0 && order[i - 1].first > cost; --i) order[i] = order[i - 1];
+         order[i] = {cost, &e};
+diff -ru '--exclude=.cambc' bots/variants/macro4-hub2/src/combat/plan.cc bots/variants/macro4-dB/src/combat/plan.cc
+--- bots/variants/macro4-hub2/src/combat/plan.cc	2026-11-11 01:36:29.699776662 +0000
++++ bots/variants/macro4-dB/src/combat/plan.cc	2026-11-11 03:30:14.254770216 +0000
+@@ -100,7 +100,7 @@
+         }
+         // A shield absorbs before health: to kill, the hits must go through both.
+         b.foes[b.n++] = {&e, e.pos, health + shield, e.retaliation() * world.me().taken, partner_bound(world, e),
+-                         params::gem_value * static_cast<float>(pair_gems(world, e)), test(enemy_spawn, e.pos), e.taken,
++                         bag_worth(world, e), test(enemy_spawn, e.pos), e.taken,
+                          e.max_health + shield, kill_stops(world, e)};
+     }
+     if (b.n == 0) return false;
+@@ -244,6 +244,17 @@
+     Grid legal = 0, cast_legal = 0; // where our attack, or a unit cast, reaches and sees it
+ };
+ 
++// DUEL focus: the search hits the foe carrying the most (bag_worth), with another foe it could have
++// picked. Debug builds only.
++[[maybe_unused]] void trace_focus(const World& world, const Unit* u, int foes, int target, const char* how) {
++    if (foes < 2 || target >= foes || u[target].bag <= 0) return;
++    for (int i = 0; i < foes; ++i)
++        if (u[i].bag > u[target].bag) return;
++    const auto& e = *u[target].belief;
++    std::printf("DUEL focus %d %u %s target %u bag %d prism %d foes %d\n", world.round, my_handle(), how, static_cast<unsigned>(e.handle),
++                pair_gems(world, e), static_cast<int>(e.facts().passive == Passive::gem_focus), foes);
++}
++
+ struct Centre {
+     vec2 tile;
+     std::uint16_t foes = 0;
+@@ -1098,7 +1109,7 @@
+         const float stun = a.stuns ? stun_worth(world, e, raw > 0) : 0.0f;
+         const float back = raw > 0 ? e.retaliation() * world.me().taken : 0.0f;
+         const bool suicidal = back >= health && back > 0;
+-        const float bag = params::gem_value * static_cast<float>(pair_gems(world, e)), bound = partner_bound(world, e);
++        const float bag = bag_worth(world, e), bound = partner_bound(world, e);
+         for (auto p : positions_within(e.possible, here, a.reach())) {
+             if (n_unseen == max_unseen) break;
+             const float worth = hit_worth(std::min(raw * e.taken, hp), hp, test(enemy_spawn, p), bag, bound, e.max_health) + stun - back;
+@@ -1276,7 +1287,7 @@
+         x.retaliation = e.retaliation() * world.me().taken;
+         x.taken = e.taken;
+         x.partner = partner_bound(world, e);
+-        x.bag = params::gem_value * static_cast<float>(pair_gems(world, e));
++        x.bag = bag_worth(world, e);
+         x.spawn = test(enemy_spawn, e.pos);
+         x.stunnable = !stunned && e.facts().passive != Passive::stun_immune;
+         x.recall = recall;
+@@ -2328,6 +2339,7 @@
+         case Op::attack:
+             try {
+                 const auto& x = S.u[a.unit];
++                debug_block({ if (x.foe) trace_focus(world, S.u.data(), S.foes, a.unit, "attack"); });
+                 if (x.foe) attack_champion(x.belief->handle);
+                 else throw_if_stale(), self_acted(), cambc::self().attack(world.map().groups[x.group].camp(x.member));
+                 ok = true;
+@@ -2352,6 +2364,7 @@
+             break;
+         case Op::spell:
+             try {
++                debug_block({ if (a.unit >= 0) trace_focus(world, S.u.data(), S.foes, a.unit, "spell"); });
+                 ok = a.unit >= 0 ? cast_slot_on(a.slot, S.u[a.unit].belief->handle) : cast_slot(a.slot, a.tile);
+                 out.moved |= ok && S.spells[a.slot].excl;
+             } catch (const cambc::error&) {
+diff -ru '--exclude=.cambc' bots/variants/macro4-hub2/src/combat/self_abilities.cc bots/variants/macro4-dB/src/combat/self_abilities.cc
+--- bots/variants/macro4-hub2/src/combat/self_abilities.cc	2026-11-11 01:36:29.699776662 +0000
++++ bots/variants/macro4-dB/src/combat/self_abilities.cc	2026-11-11 03:30:14.254910208 +0000
+@@ -414,7 +414,7 @@
+                 if (e.pos == p) {
+                     if (kind.has(AbilityKind::shield) && e.shield > 0) shield = shield_value(c);
+                     taken = e.taken;
+-                    bag = params::gem_value * static_cast<float>(pair_gems(world, e));
++                    bag = bag_worth(world, e);
+                     stop = kill_stops(world, e);
+                     partner = partner_bound(world, e);
+                 }
+@@ -446,6 +446,17 @@
+         if (!best || value > best_value || (value == best_value && (pair < best_pair || (pair == best_pair && t.health < best_health))))
+             best = t.c, best_value = value, best_health = t.health, best_pair = pair;
+     }
++    debug_block({
++        // DUEL focus: the target carries the most, with another in reach.
++        const Seen* chosen = nullptr;
++        int in_range = 0;
++        float most = 0;
++        for (const auto& t : seen)
++            if (dist(here, t.pos) <= range) ++in_range, most = std::max(most, t.bag), chosen = best && t.c == *best ? &t : chosen;
++        if (chosen && in_range >= 2 && chosen->bag > 0 && chosen->bag >= most)
++            std::printf("DUEL focus %d %u basic target %u prism %d foes %d\n", world.round, my_handle(), static_cast<unsigned>(chosen->c),
++                        static_cast<int>(facts(static_cast<cambc::champion_type>(identity_of(chosen->c).type)).passive == Passive::gem_focus), in_range);
++    });
+     return best;
+ }
+ 
+diff -ru '--exclude=.cambc' bots/variants/macro4-hub2/src/economy/hub.cc bots/variants/macro4-dB/src/economy/hub.cc
+--- bots/variants/macro4-hub2/src/economy/hub.cc	2026-11-11 03:05:42.070780928 +0000
++++ bots/variants/macro4-dB/src/economy/hub.cc	2026-11-11 03:30:34.145792076 +0000
+@@ -45,6 +45,20 @@
+     return std::clamp(rho, 0.0f, params::hub_rho_most);
+ }
+ 
++float carry_premium(const World& world, const ChampionBelief& c) {
++    if (c.facts().passive != Passive::gem_focus) return 0;
++    // One Prism kit, and the premium reads only the round and our race: once a round.
++    static int round = -1;
++    static float rho = 0;
++    if (round != world.round) round = world.round, rho = hub_premium(world, c.facts());
++    return rho;
++}
++
++float bag_worth(const World& world, const ChampionBelief& c) {
++    const int gems = pair_gems(world, c);
++    return gems <= 0 ? 0.0f : params::gem_value * static_cast<float>(gems) * (1.0f + carry_premium(world, c));
++}
++
+ // A visible enemy that could act on p before a hold begun now pays: within the capture's rounds of
+ // acting there (enemy_reach's distance less its act range), a dash further for a dasher. Prism's holds
+ // only: the Marcella and Tavi holders keep sole_capture_holder's enemy_seen gate.

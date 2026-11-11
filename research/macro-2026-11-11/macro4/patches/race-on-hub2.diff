@@ -1,0 +1,165 @@
+diff -ru macro4-hub2f/src/bot.cc macro4-race/src/bot.cc
+--- macro4-hub2f/src/bot.cc	2026-11-11 01:36:29.699546229 +0000
++++ macro4-race/src/bot.cc	2026-11-11 04:37:29.565704883 +0000
+@@ -365,6 +365,7 @@
+ 
+ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     comeback::cooked(world); // every turn: the cook's hysteresis reads each round's scores
++    race_track(world);
+     // Last turn's, for continue_recall: kept only while that recall is, else farm sets it again.
+     const int recall_farm = std::exchange(memory.recall_farm, -1);
+     if (!world.me().alive || !banks_bag(world, pathing)) memory.banking = false;
+diff -ru macro4-hub2f/src/bot_parts.h macro4-race/src/bot_parts.h
+--- macro4-hub2f/src/bot_parts.h	2026-11-11 03:05:42.070837909 +0000
++++ macro4-race/src/bot_parts.h	2026-11-11 04:37:29.565363518 +0000
+@@ -444,7 +444,10 @@
+     float rho = 0;
+     bool on() const { return prism && rho > 0; }
+ };
+-float hub_premium(const World& world, const ChampionFacts& prism);
++// `bag`: our Prism's. Once the enemy Prism has been seen, it follows the Focus race (race_enemy_bag).
++float hub_premium(const World& world, const ChampionFacts& prism, int bag);
++// Every turn: the enemy Prism's bag as seen, and their score's jumps.
++void race_track(const World& world);
+ bool hold_threatened(const World& world, vec2 p);
+ const Hub& team_hub(const World& world);
+ int hub_steps(const World& world, Pathing& pathing, const Hub& hub, int g);
+diff -ru macro4-hub2f/src/economy/farm.cc macro4-race/src/economy/farm.cc
+--- macro4-hub2f/src/economy/farm.cc	2026-11-11 03:05:42.070624196 +0000
++++ macro4-race/src/economy/farm.cc	2026-11-11 04:37:29.565594391 +0000
+@@ -2242,7 +2242,7 @@
+     bool collect_joins = false; // an ally's clear under way: we come as its crew
+     if (!banks_bag && !memory.banking && world.me().facts().passive == Passive::gem_focus && !held_by_channel(world.me())
+         && my_health() >= params::hurt_health_fraction * max_health) {
+-        const float rho = hub_premium(world, world.me().facts());
++        const float rho = hub_premium(world, world.me().facts(), static_cast<int>(my_gems()));
+         const int winning = static_cast<int>(cambc::constants::winning_gems), carried = static_cast<int>(my_gems());
+         const int fresh = capture_rounds(false), ours_fresh = capture_rounds(world.me().fast_capture);
+         // A freed holder's rounds, priced as the takeover above prices them.
+diff -ru macro4-hub2f/src/economy/hub.cc macro4-race/src/economy/hub.cc
+--- macro4-hub2f/src/economy/hub.cc	2026-11-11 03:05:42.070780928 +0000
++++ macro4-race/src/economy/hub.cc	2026-11-11 04:56:15.653296737 +0000
+@@ -32,15 +32,55 @@
+     return cambc::constants::passive_abilities::prism_focus_per_gem * multipliers / static_cast<float>(ability_cooldown);
+ }
+ 
++// The enemy Prism's bag, for the Focus race: `bag` from `round` (a reading in sight at its stats round,
++// none while dead, which it respawns without, or what race_track leaves after a tribute). `empty`: the
++// round its bag was last known empty, -1 unknown; `rate`: its gems a round from then to its latest
++// reading, -1 until one. `score`: their score at our last update, -1 before it.
++struct RaceTrack {
++    bool seen = false; // read in sight at least once
++    int bag = 0, round = -1, read_round = -1, empty = -1, score = -1;
++    float rate = -1;
++};
++RaceTrack prism_race;
++
++// The gems an enemy champion earns a round, as their team has been seen to: their score and the
++// living bags as last read (the Prism's as tracked), over the rounds played, per champion
++// (champion_gem_rate's, theirs).
++float enemy_gem_rate(const World& world) {
++    if (world.enemies.empty()) return 0;
++    int gems = world.score.enemy;
++    for (const auto& e : world.enemies)
++        if (e.alive) gems += e.facts().passive == Passive::gem_focus ? prism_race.bag : e.gems;
++    return static_cast<float>(gems) / static_cast<float>(std::max(1, world.round)) / static_cast<float>(world.enemies.size());
++}
++
++const ChampionBelief* enemy_prism(const World& world) {
++    for (const auto& e : world.enemies)
++        if (e.facts().passive == Passive::gem_focus) return &e;
++    return nullptr;
++}
++
++// The enemy Prism's bag now, -1 never seen: the tracked bag grown since at its own observed rate, else
++// at enemy_gem_rate.
++float race_enemy_bag(const World& world) {
++    const auto* prism = enemy_prism(world);
++    if (!prism_race.seen || !prism) return -1;
++    if (!prism->alive) return 0;
++    const float rate = prism_race.rate >= 0 ? prism_race.rate : enemy_gem_rate(world);
++    return static_cast<float>(prism_race.bag) + rate * static_cast<float>(world.round - prism_race.round);
++}
++
+ // Extra gems of output per gem Prism carries. A gem stays carried until the bag must leave for an
+ // altar: the round limit or the race's end (race_left), less the last trip sole_capture_holder keeps
+ // back. Its extra damage d a round, at the map's gems per health point, is discounted by the farm's
+ // own horizon h (rate's 1 + r / h): the sum over t < H of d / (1 + t / h) is d h ln(1 + H / h).
+-float hub_premium(const World& world, const ChampionFacts& prism) {
++float hub_premium(const World& world, const ChampionFacts& prism, int bag) {
+     const auto& map = world.map();
+     const float h = cycle_horizon(map);
+     const int carried = std::min(rounds_left(world), race_left(world)) - (map.width + map.height + endgame_margin);
+     if (carried <= 0) return 0;
++    // Behind the enemy Prism's bag, once seen, the Focus race is theirs: no premium on feeding ours.
++    if (const float theirs = race_enemy_bag(world); theirs >= 0 && theirs > static_cast<float>(bag)) return 0;
+     const float rho = gem_damage_rate(prism) * camp_gem_density(map) * h * std::log1p(static_cast<float>(carried) / h);
+     return std::clamp(rho, 0.0f, params::hub_rho_most);
+ }
+@@ -62,6 +102,57 @@
+ // What threatens a hold of Prism's at p: an enemy that may see it (enemy_may_see) or reach it in time.
+ bool hold_threatened(const World& world, vec2 p) { return enemy_may_see(world, p) || hold_reached(world, p); }
+ 
++// Whether an unseen enemy may have been tributing: some tile it may stand on is within 1 of an altar.
++bool could_tribute(const World& world, const ChampionBelief& e) {
++    static bitboard tributes;
++    static bool built = false;
++    if (!built) {
++        for (const auto& a : world.map().altars) tributes |= a.tribute_tiles();
++        built = true;
++    }
++    return !e.tracked || !(e.possible & tributes).is_empty();
++}
++
++void race_track(const World& world) {
++    // Their score's jump since our last update, less the bags World saw land (update_scores empties the
++    // bags whose tributes it can attribute, and a bag read in sight is its own): the rest is unexplained.
++    static std::array<int, 16> last_gems{};
++    int jump = prism_race.score >= 0 ? world.score.enemy - prism_race.score : 0;
++    prism_race.score = world.score.enemy;
++    const ChampionBelief* prism = nullptr;
++    for (std::size_t i = 0; i < world.enemies.size() && i < last_gems.size(); ++i) {
++        const auto& e = world.enemies[i];
++        if (e.facts().passive == Passive::gem_focus) prism = &e;
++        else if (e.alive) jump -= std::max(0, last_gems[i] - e.gems);
++        last_gems[i] = e.gems;
++    }
++    if (!prism) return;
++    auto& t = prism_race;
++    if (!prism->alive) {
++        t.bag = 0, t.round = t.empty = world.round;
++    } else if (prism->stats_round > t.read_round) {
++        // A reading, in sight now or after a move last turn (observe()).
++        t.seen = true, t.bag = prism->gems, t.round = t.read_round = prism->stats_round;
++        if (t.bag == 0) t.empty = t.round;
++        else if (t.empty >= 0 && t.round > t.empty) t.rate = static_cast<float>(t.bag) / static_cast<float>(t.round - t.empty);
++    } else if (prism->gems < t.bag) {
++        t.bag = prism->gems, t.round = t.empty = world.round; // World gave it a tribute
++    } else if (t.seen && jump > 0 && could_tribute(world, *prism)
++               && std::none_of(world.enemies.begin(), world.enemies.end(), [&](const ChampionBelief& e) {
++                      return &e != prism && e.alive && !e.visible && could_tribute(world, e);
++                  })) {
++        // A tribute no other bag explains, with no other unseen enemy that may have made it (their bags
++        // as last read are often short of what they carry), takes up to the jump from what we believe it
++        // carries. Not known empty: its rate is read only from known-empty starts.
++        t.bag = static_cast<int>(std::max(0.0f, race_enemy_bag(world) - static_cast<float>(jump))), t.round = world.round;
++    }
++    debug_block({
++        if (t.seen && world.round % 50 == 0)
++            std::printf("RACE %d %u enemy %.0f bag %d@%d read %d empty %d rate %.2f alive %d\n", world.round, my_handle(), race_enemy_bag(world), t.bag,
++                        t.round, t.read_round, t.empty, t.rate, prism->alive ? 1 : 0);
++    });
++}
++
+ const Hub& team_hub(const World& world) {
+     static Hub hub;
+     static int round = -1;
+@@ -88,7 +179,7 @@
+     if (!in_bounds(at) || at_round < world.round - window) return hub;
+     hub.prism = prism, hub.at = at;
+     hub.bag = prism->visible ? prism->gems : comms::bag_of(world, prism->index);
+-    hub.rho = hub_premium(world, prism->facts());
++    hub.rho = hub_premium(world, prism->facts(), hub.bag);
+     return hub;
+ }
+ 

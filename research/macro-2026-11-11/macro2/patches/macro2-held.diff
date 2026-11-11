@@ -1,0 +1,697 @@
+diff -ruN -x .cambc -x compile_commands.json bots/variants/ocean-ref-b7c87cf/src/combat/fight.cc bots/variants/macro2-held/src/combat/fight.cc
+--- bots/variants/ocean-ref-b7c87cf/src/combat/fight.cc	2026-11-11 01:36:28.907079743 +0000
++++ bots/variants/macro2-held/src/combat/fight.cc	2026-11-11 07:54:20.648732568 +0000
+@@ -265,7 +265,9 @@
+     for (int i = 0; i < n; ++i) {
+         auto& o = options[i];
+         const int now = hit_now(o);
+-        o.rank = plan.active() ? escape::rank(now + plan.after_walk(o.p, false), now + plan.after_walk(o.p, !safe)) : o.home ? 0 : now;
++        // A step hit now by a single cast: that cast is spent for the plan's later turns.
++        const auto later = [&](bool slack) { return now > 0 ? plan.after_hit(o.p, slack) : plan.after_walk(o.p, slack); };
++        o.rank = plan.active() ? escape::rank(now + later(false), now + later(!safe)) : o.home ? 0 : now;
+         // The plan's walk_dash bounds the real one from below: only a step it already ranks first is checked.
+         if (walk_dash && plan.active() && escape::rank(plan.walk_dash(o.p, false), plan.walk_dash(o.p, !safe)) < o.rank)
+             if (const int r = walk_dash_rank(world, pathing, plan, o.p, !safe); r < o.rank) o.rank = r, o.dashes = true;
+diff -ruN -x .cambc -x compile_commands.json bots/variants/ocean-ref-b7c87cf/src/combat/self_abilities.cc bots/variants/macro2-held/src/combat/self_abilities.cc
+--- bots/variants/ocean-ref-b7c87cf/src/combat/self_abilities.cc	2026-11-11 01:36:28.907420057 +0000
++++ bots/variants/macro2-held/src/combat/self_abilities.cc	2026-11-11 04:54:08.837148849 +0000
+@@ -8,6 +8,7 @@
+ #include "../champions.h"
+ #include "../emblems.h"
+ #include "../params.h"
++#include "../model/comms.h"
+ #include "../model/escape.h"
+ #include "../model/pathing.h"
+ #include "../model/safety.h"
+@@ -753,14 +754,35 @@
+     return gain >= least_ || health <= damage(a, pos, 1);
+ }
+ 
++float heal_value(const World& world, const ChampionBelief& a, vec2 pos, float gain, float max_health) {
++    const int field = world.map().from_ally_spawn().at(pos);
++    const auto steps = static_cast<float>(field != unreachable ? field : dist(pos, world.map().ally_spawn_centre));
++    const float usable = max_health * (1 - params::recall_health_fraction);
++    return usable > 0 ? gain / usable * heal_trip(a.recall_turns(), steps, steps) : 0.0f;
++}
++
++HealMate heal_mate(const World& world) {
++    const auto pair = support_pair(world);
++    if (!pair[0] || !pair[1] || !pair[1]->is_self) return {};
++    return {pair[0], comms::support_request(world)};
++}
++
++bool heal_before(const HealTarget& x, const HealTarget& y, const HealMate& mate) {
++    const auto rank = [&](const HealTarget& t) { return t.urgent ? (t.ally == mate.ally ? 3 : 2) : t.ally == mate.ally && mate.waiting ? 1 : 0; };
++    if (const int rx = rank(x), ry = rank(y); rx != ry) return rx > ry;
++    return x.value != y.value ? x.value > y.value : x.fraction < y.fraction;
++}
++
+ std::optional<HealTarget> heal_target(const World& world, const ChampionBelief& a, float amount, HealGate* gate, bool step) {
+     if (a.is_self || !a.alive || !a.visible || test(world.map().ally_spawn, a.pos)) return std::nullopt;
+     const auto* live = visible_record(a.handle);
+     if (!live) return std::nullopt;
+-    const HealTarget t{&a, {live->x, live->y}, std::min(amount, live->max_health - live->health), live->health / live->max_health};
++    HealTarget t{&a, {live->x, live->y}, std::min(amount, live->max_health - live->health), live->health / live->max_health};
+     const float health = live->health;
+     if (t.gain <= 0 || ((step || !gate) && !worth_healing(amount, t.gain, t.fraction))) return std::nullopt;
+     if (kept_recall(a.handle, a.recall_turns()) || (gate && !gate->worth(a, t.pos, t.gain, health))) return std::nullopt;
++    t.value = heal_value(world, a, t.pos, t.gain, live->max_health);
++    t.urgent = gate && gate->urgent(a, t.pos, health);
+     return t;
+ }
+ 
+@@ -773,12 +795,13 @@
+     const int range = world.me().facts().abilities[heal].range();
+     struct Candidate {
+         cambc::handle_champion_t c;
+-        const ChampionBelief* a;
+-        vec2 pos;
+-        float gain, fraction, health;
++        HealTarget t;
++        float health;
+     };
+     std::array<Candidate, 8> found;
+     int n = 0;
++    HealGate gate(world, safety, here, range, amount);
++    const auto mate = heal_mate(world);
+     // Read live: allies come into sight as we move.
+     for (auto p : positions_within(live_champion_tiles(team::ally), here, range)) {
+         if (p == here || test(world.map().ally_spawn, p) || n == static_cast<int>(found.size())) continue;
+@@ -793,17 +816,21 @@
+                 if (o.handle == c) a = &o;
+             // One keeping a recall going will reach spawn and heal there.
+             if (!a || kept_recall(c, a->recall_turns())) continue;
+-            // Most restored first, then the lowest.
++            HealTarget t{a, p, gain, fraction, heal_value(world, *a, p, gain, live.max_health), gate.urgent(*a, p, health)};
+             int i = n++;
+-            for (; i > 0 && (found[i - 1].gain < gain || (found[i - 1].gain == gain && found[i - 1].fraction > fraction)); --i) found[i] = found[i - 1];
+-            found[i] = {c, a, p, gain, fraction, health};
++            for (; i > 0 && heal_before(t, found[i - 1].t, mate); --i) found[i] = found[i - 1];
++            found[i] = {c, t, health};
+         } catch (const cambc::error&) {
+         }
+     }
+-    HealGate gate(world, safety, here, range, amount);
+     for (int i = 0; i < n; ++i) {
+         try {
+-            if (gate.worth(*found[i].a, found[i].pos, found[i].gain, found[i].health) && cast_slot_on(heal, found[i].c)) return true;
++            const auto& t = found[i].t;
++            if (gate.worth(*t.ally, t.pos, t.gain, found[i].health) && cast_slot_on(heal, found[i].c)) {
++                debug_block({ std::printf("MEDIC %d %u target %d value %.2f gain %.0f urgent %d\n", world.round,
++                                          static_cast<std::uint32_t>(world.me().handle), t.ally->index, t.value, t.gain, t.urgent); });
++                return true;
++            }
+         } catch (const cambc::error&) {
+         }
+     }
+diff -ruN -x .cambc -x compile_commands.json bots/variants/ocean-ref-b7c87cf/src/combat/self_abilities.h bots/variants/macro2-held/src/combat/self_abilities.h
+--- bots/variants/ocean-ref-b7c87cf/src/combat/self_abilities.h	2026-11-11 01:36:28.907420057 +0000
++++ bots/variants/macro2-held/src/combat/self_abilities.h	2026-11-11 04:54:08.837239860 +0000
+@@ -80,6 +80,8 @@
+         : world_(world), safety_(safety), from_(from), radius_(radius), amount_(amount) {}
+     // A heal restoring `gain` to ally `a` at `pos` with `health`.
+     bool worth(const ChampionBelief& a, vec2 pos, float gain, float health);
++    // Every blow that may land before our next turn could fell it.
++    bool urgent(const ChampionBelief& a, vec2 pos, float health) { return health <= damage(a, pos, 1); }
+ private:
+     // What could hit `a` at p a round: camp hits, and `blow_share` of the enemy blows.
+     float damage(const ChampionBelief& a, vec2 p, float blow_share);
+@@ -109,7 +111,21 @@
+     const ChampionBelief* ally;
+     vec2 pos;
+     float gain, fraction; // what the heal restores, and the ally's health fraction before it
++    float value = 0;      // heal_value
++    bool urgent = false;  // HealGate::urgent, with a gate
+ };
++// Rounds of farm a heal restoring `gain` to `a` at `pos` saves: its share of a trip home (heal_trip
++// from pos's steps from our spawn) per usable health, as Prism's recovery prices it (support.cc).
++float heal_value(const World& world, const ChampionBelief& a, vec2 pos, float gain, float max_health);
++// Our protected mate when we are its healer, and whether it waits in its recovery for our heal.
++struct HealMate {
++    const ChampionBelief* ally = nullptr;
++    bool waiting = false;
++};
++HealMate heal_mate(const World& world);
++// x's heal before y's: one that may keep an ally from falling (the mate first among those), then the
++// mate while it waits for us, then the most rounds saved (heal_value), then the lowest ally.
++bool heal_before(const HealTarget& x, const HealTarget& y, const HealMate& mate);
+ // A visible ally off its spawn that a heal of `amount` is worth casting on (`gate`), or with `step`
+ // or no gate, also worth stepping for (worth_healing). One keeping a recall going will reach spawn
+ // and heal there.
+diff -ruN -x .cambc -x compile_commands.json bots/variants/ocean-ref-b7c87cf/src/combat/support.cc bots/variants/macro2-held/src/combat/support.cc
+--- bots/variants/ocean-ref-b7c87cf/src/combat/support.cc	2026-11-11 01:36:28.907420057 +0000
++++ bots/variants/macro2-held/src/combat/support.cc	2026-11-11 04:53:11.388884299 +0000
+@@ -221,14 +221,15 @@
+     return false;
+ }
+ 
+-// The neighbouring station `ok` accepts from which a heal lands best: the most restored, then on
+-// the lowest ally, then the least `cost`. `here` if none.
++// The neighbouring station `ok` accepts from which a heal lands best (heal_before), then the least
++// `cost`. `here` if none.
+ template <class Ok, class Cost>
+ vec2 heal_station(const World& world, Pathing& pathing, Safety& safety, vec2 here, const std::array<HealView, 8>& views,
+                   int n, Ok&& ok, Cost&& cost) {
+     vec2 best = here;
+-    float best_gain = 0, best_fraction = 0;
++    const HealTarget* best_target = nullptr;
+     int best_cost = unreachable;
++    const auto mate = heal_mate(world);
+     const auto& tiles = stations(world, safety, here).tiles;
+     for (int k = 1; k < 9; ++k) {
+         const auto& tile = tiles[k];
+@@ -239,9 +240,8 @@
+         for (int t = 0; t < n; ++t) {
+             const auto& target = views[t].target;
+             if (!support_view(views[t].viewers, target.pos, tile.p)) continue;
+-            if (target.gain != best_gain ? target.gain > best_gain
+-                : target.fraction != best_fraction ? target.fraction < best_fraction : c < best_cost)
+-                best = tile.p, best_gain = target.gain, best_fraction = target.fraction, best_cost = c;
++            if (!best_target || heal_before(target, *best_target, mate) || (!heal_before(*best_target, target, mate) && c < best_cost))
++                best = tile.p, best_target = &target, best_cost = c;
+         }
+     }
+     return best;
+@@ -548,7 +548,8 @@
+     const bool can_step = my_can_move();
+     vec2 best = here;
+     int best_gap = unreachable, best_home = unreachable;
+-    float best_gain = -1;
++    const HealTarget* best_target = nullptr;
++    const auto heal_mate_now = heal_mate(world);
+     bool found = false;
+     for (int k = -1; k < 8; ++k) {
+         const vec2 p = k < 0 ? here : here + directions[k];
+@@ -564,13 +565,10 @@
+         for (int t = 0; t < view_count; ++t) {
+             const auto& v = views[t].target;
+             if (!support_view(views[t].viewers, v.pos, p)) continue;
+-            const auto* chosen = target >= 0 ? &views[target].target : nullptr;
+-            if (!chosen || (v.gain != chosen->gain ? v.gain > chosen->gain
+-                            : v.fraction != chosen->fraction ? v.fraction < chosen->fraction
+-                            : v.ally == mate && comms::support_request(world)))
+-                target = t;
++            if (target < 0 || heal_before(v, views[target].target, heal_mate_now)) target = t;
+         }
+-        const float gain = target >= 0 ? views[target].target.gain : 0;
++        const HealTarget* chosen = target >= 0 ? &views[target].target : nullptr;
++        const float gain = chosen ? chosen->gain : 0;
+         if (willow && !ready) {
+             if (p == here || !work_route || work_route->at(p) >= work_route->at(here)
+                 || (!in_range && dist(p, mate->pos) >= dist(here, mate->pos))) continue;
+@@ -579,9 +577,10 @@
+         if (!(p == here ? here_risk : support_exposure(world, safety, p)).safe()) continue;
+         const int home = pathing.to_ally_spawn().at(p);
+         // Staying, tried first, keeps ties; between steps, the one nearer home wins.
+-        if (!found || gain > best_gain || (gain == best_gain && gap < best_gap)
+-            || (gain == best_gain && gap == best_gap && best != here && home < best_home))
+-            found = true, best = p, best_gain = gain, best_gap = gap, best_home = home;
++        const bool better = chosen && (!best_target || heal_before(*chosen, *best_target, heal_mate_now));
++        const bool tie = chosen ? best_target && !heal_before(*best_target, *chosen, heal_mate_now) : !best_target;
++        if (!found || better || (tie && gap < best_gap) || (tie && gap == best_gap && best != here && home < best_home))
++            found = true, best = p, best_target = chosen, best_gap = gap, best_home = home;
+     }
+     if (!found) return abandon_recovery();
+     const auto commit_support = [&] {
+diff -ruN -x .cambc -x compile_commands.json bots/variants/ocean-ref-b7c87cf/src/economy/capture.cc bots/variants/macro2-held/src/economy/capture.cc
+--- bots/variants/ocean-ref-b7c87cf/src/economy/capture.cc	2026-11-11 01:36:28.909050928 +0000
++++ bots/variants/macro2-held/src/economy/capture.cc	2026-11-11 07:19:29.617028523 +0000
+@@ -728,7 +728,29 @@
+     if (const int hit = attack_camp(world, free_hit); hit >= 0) {
+         cast_at_camp(world, hit);
+         reset_and_attack_camp(world, hit);
++        return;
+     }
++    // No basic reaches one, but a cast may: the hold keeps us on this tile, so an excludes-walking
++    // cast forgoes no walk, and a ready slot not cast now loses the round (rules abilities.cooldown).
++    if (!my_can_cast()) return;
++    const vec2 here = my_position();
++    std::array<std::pair<int, int>, 16> near; // (distance, group): groups_near's vector is reused by camp_cast
++    int n = 0;
++    for (int g : world.map().groups_near(here, world.me().facts().cast_reach())) {
++        if (n == static_cast<int>(near.size())) break;
++        // Unlike free_hit, not an unknown wake state: from cast range it may hide strikers we would wake.
++        if (world.camps[g].state != CampState::alive || g == held
++            || !(groups[g].strength <= 0 || (world.camps[g].awake == Awake::awake && world.camps[g].asleep == 0)))
++            continue;
++        int d = unreachable;
++        const auto& ms = groups[g].members;
++        for (std::size_t i = 0; i < ms.size(); ++i)
++            if (world.camps[g].health[i] > 0) d = std::min(d, dist(here, ms[i].pos));
++        if (d != unreachable) near[n++] = {d, g};
++    }
++    std::sort(near.begin(), near.begin() + n);
++    for (int k = 0; k < n; ++k)
++        if (cast_at_camp(world, near[k].second)) return;
+ }
+ 
+ } // namespace
+diff -ruN -x .cambc -x compile_commands.json bots/variants/ocean-ref-b7c87cf/src/model/escape.cc bots/variants/macro2-held/src/model/escape.cc
+--- bots/variants/ocean-ref-b7c87cf/src/model/escape.cc	2026-11-11 01:36:28.910024080 +0000
++++ bots/variants/macro2-held/src/model/escape.cc	2026-11-11 07:56:15.217974232 +0000
+@@ -197,9 +197,17 @@
+     bool ranged = false;
+     int reach = 1;
+     int dash_turn = 0;  // first of its turns (1..horizon) a dash may fall in, 0: none
++    // The spell rule before (the HELD trace's, and the merge key): its two slots' farthest burst from its first ready turn.
+     int burst = 0;      // burst_reach, 0: none
+     int burst_turn = 0; // first of its turns its burst is ready, 0: not within the plan
+     bool blind = false; // the burst ignores bushes
++    // Its hitting slots ready within the plan, each a burst from its own ready turn.
++    struct Cast {
++        int reach = 0, turn = 0;
++        bool blind = false;
++    };
++    std::array<Cast, 2> cast{};
++    int casts = 0;
+     int delay = 0;      // its turns before it stands on `start`: one beyond the window enters at its edge
+     Rows start{};
+ };
+@@ -217,7 +225,7 @@
+             const int k = std::max(1, ready_round[static_cast<std::size_t>(slot)] - round + offset);
+             return k > horizon ? 0 : k;
+         };
+-        Pursuers kind{f.ranged, f.basic_reach(), 0, 0, 0, false, out, {}};
++        Pursuers kind{f.ranged, f.basic_reach(), 0, 0, 0, false, {}, 0, out, {}};
+         if (const int slot = f.slot_of(AbilityKind::dash); slot >= 0) kind.dash_turn = ready_turn(slot);
+         // Its dash, once ready, brings it in dash_range tiles sooner.
+         if (kind.dash_turn > 0) kind.delay = std::min(kind.delay, std::max(kind.dash_turn, kind.delay - dash_range));
+@@ -231,9 +239,21 @@
+         if (const int slot = resets && f.ranged ? f.slot_of(AbilityKind::attack_reset) : -1; slot >= 0)
+             if (const int k = ready_turn(slot); k > 0 && f.basic_reach() + 1 > kind.burst)
+                 kind.burst = f.basic_reach() + 1, kind.burst_turn = k, kind.blind = false;
+-        for (int i = 0; i < n; ++i) {
++        for (int s = 0; s < 2; ++s) {
++            const auto& a = f.abilities[s];
++            const int k = ready_turn(s);
++            if (k == 0) continue;
++            if (a.hits_enemies()) {
++                const int v = a.kind == AbilityKind::dash ? (f.ranged ? 0 : 1) + a.reach() : a.reach() + (a.excludes_walking ? 0 : 1);
++                kind.cast[kind.casts++] = {v, k, a.target != Targeting::unit};
++            } else if (resets && f.ranged && a.kind == AbilityKind::attack_reset) {
++                kind.cast[kind.casts++] = {f.basic_reach() + 1, k, false};
++            }
++        }
++        // A burst class holds one champion, whose casts are its own (a side has at most 6 bodies).
++        for (int i = 0; i < n && kind.casts == 0; ++i) {
+             const auto& o = of[i];
+-            if (o.ranged == kind.ranged && o.reach == kind.reach && o.dash_turn == kind.dash_turn && o.burst == kind.burst
++            if (o.casts == 0 && o.ranged == kind.ranged && o.reach == kind.reach && o.dash_turn == kind.dash_turn && o.burst == kind.burst
+                 && o.burst_turn == kind.burst_turn && o.blind == kind.blind && o.delay == kind.delay)
+                 return &of[i].start;
+         }
+@@ -441,6 +461,9 @@
+ }
+ }
+ 
++template <bool Dash>
++inline void run_pass(const Rows& goal, const Rows& walk, const Rows& path, const Hits& hits, int dash_turn, Plan::Pass& out, bool skip_first);
++
+ // The terrain, the hit layers and the goals, then the full pass: active once it ran.
+ void Plan::finish(Pathing& pathing, Race& race) {
+     chase_ = !race.ours;
+@@ -468,21 +491,28 @@
+     const Rows walk_them = walkable & theirs, path_them = crossable & theirs;
+     const bool bushes = !none_set(bush);
+ 
+-    // Where each turn ends hit.
+-    for (auto& h : hit_) h = Rows{};
++    // Where each turn ends hit: `basic` by basic attacks, and each ready slot's cast by its own layer.
++    std::array<Rows, horizon + 1> basic{}, old{}; // old: the spell rule before, for the HELD trace
++    hits_.spells = 0;
+     const Rows open = ~bush;
+     for (int c = 0; c < race.kinds.n; ++c) {
+         const auto& kind = race.kinds.of[c];
++        std::array<Rows, horizon + 1>* own[2] = {};
++        for (int i = 0; i < kind.casts; ++i) {
++            // Past the layers (never with 6 bodies a side), a cast hits every turn like a basic attack.
++            own[i] = hits_.spells < max_spells ? &hits_.spell[hits_.spells++] : &basic;
++            if (own[i] != &basic) own[i]->fill(Rows{});
++        }
+         // `near`: grow(from), which the walk reuses.
+-        const auto strike = [&](int k, const Rows& from, const Rows& near, int reach, bool blind) {
++        const auto strike = [&](Rows& hit, const Rows& from, const Rows& near, int reach, bool blind) {
+             const Rows reached = reach == 1 ? near : widen(near, reach);
+             if (!bushes || blind) {
+-                hit_[k] |= reached;
++                hit |= reached;
+                 return;
+             }
+             // Off bushes from anywhere it stands; a bush tile only from a bush tile.
+-            hit_[k] |= reached & open;
+-            if (const Rows hidden = from & bush; !none_set(hidden)) hit_[k] |= grow_by(hidden, reach) & bush;
++            hit |= reached & open;
++            if (const Rows hidden = from & bush; !none_set(hidden)) hit |= grow_by(hidden, reach) & bush;
+         };
+         // `moved`: where it may stand, dash spent or not; `walked`: dash unspent. They are equal until its
+         // first dash turn, and from then on its dash landings hold `walked`, so a ranged pursuer's dash
+@@ -495,15 +525,19 @@
+             if (k == kind.delay + 1) walked |= kind.start, moved |= kind.start;
+             if (!known) near_moved = grow(moved);
+             if (!split) near_walked = near_moved;
+-            // A spell is cast once, but on whichever turn suits it: its first two ready turns count.
+-            if (kind.burst > 0 && (k == kind.burst_turn || k == kind.burst_turn + 1)) strike(k, moved, near_moved, kind.burst, kind.blind);
++            // A ready slot stays ready until cast: its reach counts on every turn from then (its one hit is run's).
++            for (int i = 0; i < kind.casts; ++i)
++                if (const auto& a = kind.cast[i]; k >= a.turn) strike((*own[i])[k], moved, near_moved, a.reach, a.blind);
++            debug_block({
++                if (kind.burst > 0 && (k == kind.burst_turn || k == kind.burst_turn + 1)) strike(old[k], moved, near_moved, kind.burst, kind.blind);
++            });
+             // A ranged pursuer shoots from where it stood, or after a dash from an undashed tile.
+             if (kind.ranged) {
+                 if (dash && !split) {
+                     const Rows shooters = moved | dash_landings(near_walked, path_them, walk_them);
+-                    strike(k, shooters, grow(shooters), kind.reach, false);
++                    strike(basic[k], shooters, grow(shooters), kind.reach, false);
+                 } else {
+-                    strike(k, moved, near_moved, kind.reach, false);
++                    strike(basic[k], moved, near_moved, kind.reach, false);
+                 }
+             }
+             walked = near_walked & walk_them, moved = near_moved & walk_them;
+@@ -514,11 +548,18 @@
+             known = !kind.ranged;
+             if (known) {
+                 near_moved = grow(moved);
+-                strike(k, moved, near_moved, kind.reach, false);
++                strike(basic[k], moved, near_moved, kind.reach, false);
+             }
+         }
+     }
+-    for (int k = 1; k <= horizon; ++k) hit_[k] &= ~spawn;
++    for (int k = 1; k <= horizon; ++k) hits_.base[k] = basic[k] & ~spawn;
++    // A cast that reaches nothing in the window needs no layer.
++    for (int c = 0; c < hits_.spells;) {
++        Rows any{};
++        for (int k = 1; k <= horizon; ++k) hits_.spell[c][k] &= ~spawn, any |= hits_.spell[c][k];
++        if (none_set(any)) hits_.spell[c] = hits_.spell[--hits_.spells];
++        else ++c;
++    }
+ 
+     // The goals.
+     const int near = std::max(0, race.steps - race.moves), slack = near + params::escape::slack_steps;
+@@ -529,37 +570,76 @@
+     else goal_rows<true, true>(race.field, walk_, origin_, near, slack, goal, slack_goal_);
+     run(goal, pass_[0]);
+     active_ = true;
++    debug_block({
++        // HELD: the verdict (our best walk's hits, or a chase runner's) changed from the spell rule before.
++        Hits was;
++        for (int k = 1; k <= horizon; ++k) was.base[k] = (basic[k] | old[k]) & ~spawn; // basic holds no casts then
++        Pass then;
++        if (dash_) run_pass<true>(goal, walk_, path_, was, dash_turn_, then, true);
++        else run_pass<false>(goal, walk_, path_, was, dash_turn_, then, true);
++        const int now = verdict(pass_[0]), before = verdict(then);
++        if (now != before) std::printf("HELD %d %u %d %d%s\n", round, handle, before, now, chase_ ? " chase" : "");
++    });
++}
++
++int Plan::verdict(const Pass& p) const {
++    if (chase_) return value(p.stood[0], p.stood[1], at);
++    const int d = dash_ ? 1 : 0;
++    int best = many;
++    for (int dy = -1; dy <= 1; ++dy)
++        for (int dx = -1; dx <= 1; ++dx) best = std::min(best, value(p.after[0][d], p.after[1][d], {at.x + dx, at.y + dy}));
++    return best;
+ }
+ 
+-// Backward over the turns: S_H is the goal; a turn k ending on a tile costs a hit there if hit_[k]
++// Backward over the turns: S_H is the goal; a turn k ending on a tile costs a hit there if hits.base[k]
+ // holds it; S_{k-1} is where a turn-k move (a walk, and with the dash kept and ready, a dash before
+ // or after it: approximated as a walk then a dash) reaches T_k, the tiles S_k leaves room for.
+-// s<j><d>: by hits allowed j and dash kept d (with Dash only; else d reads as 0).
+-template <bool Dash, bool One = true>
+-[[gnu::always_inline]] inline void run_pass(const Rows& goal, const Rows& walk, const Rows& path, const std::array<Rows, horizon + 1>& hits,
+-                                            int dash_turn, Plan::Pass& out, bool skip_first) {
+-    Rows s00 = goal, s10 = goal, s01 = goal, s11 = goal; // the goal holds walk tiles only
++// Layers by dash kept d (with Dash only; else d reads as 0): 0 no hits allowed, 1 one, and 2 + c no hits with
++// single-cast spell c spent (its reach free after, the other spells' not). A turn ending only in spell reach
++// costs the one hit when every spell there, cast, leaves layer 2 + c a way on: the enemy casts the worst.
++template <bool Dash>
++[[gnu::always_inline]] inline void run_pass(const Rows& goal, const Rows& walk, const Rows& path, const Hits& hits, int dash_turn, Plan::Pass& out,
++                                            bool skip_first) {
++    static_assert(horizon < ability_cooldown, "a slot cast in the plan is not ready again within it");
++    const int m = 2 + hits.spells;
++    Rows s[2 + max_spells][2], e[2 + max_spells][2];
++    for (int i = 0; i < m; ++i) s[i][0] = s[i][1] = goal; // the goal holds walk tiles only
++    // e: the tiles turn k may end on, by layer, from S_k.
++    const auto ends = [&](int k, int d) {
++        const Rows base = hits.base[k];
++        Rows any{}, two{};
++        for (int c = 0; c < hits.spells; ++c) two |= any & hits.spell[c][k], any |= hits.spell[c][k];
++        const Rows clear = ~(base | any);
++        Rows cast = any & ~base;
++        for (int c = 0; c < hits.spells; ++c) {
++            const Rows& own = hits.spell[c][k];
++            e[2 + c][d] = s[2 + c][d] & ~(base | two | (any & ~own));
++            cast &= ~own | s[2 + c][d];
++        }
++        e[0][d] = s[0][d] & clear;
++        e[1][d] = (s[1][d] & clear) | (s[0][d] & base) | cast;
++    };
+     for (int k = horizon; k >= 2; --k) {
+-        const Rows hit = hits[k], clear = ~hit;
+-        const Rows g0 = grow(s00 & clear), g1 = One ? grow((s10 & clear) | (s00 & hit)) : g0;
+-        if constexpr (Dash) {
+-            Rows k0 = s01 & clear, k1 = One ? (s11 & clear) | (s01 & hit) : k0;
+-            if (k >= dash_turn) {
++        ends(k, 0);
++        if constexpr (Dash) ends(k, 1);
++        for (int i = 0; i < m; ++i) {
++            const Rows g = grow(e[i][0]);
++            if constexpr (Dash) {
++                Rows kept = e[i][1];
+                 // The tiles a dash from lands in T (dash spent), stood on after this turn's walk.
+-                k0 |= dash_landings(g0, path, walk);
+-                if constexpr (One) k1 |= dash_landings(g1, path, walk);
++                if (k >= dash_turn) kept |= dash_landings(g, path, walk);
++                s[i][1] = grow(kept) & walk;
+             }
+-            s01 = grow(k0) & walk;
+-            s11 = One ? grow(k1) & walk : s01;
++            s[i][0] = g & walk;
+         }
+-        s00 = g0 & walk, s10 = g1 & walk;
+     }
+-    if constexpr (!Dash) s01 = s00, s11 = s10;
+-    out.after[0][0] = s00, out.after[1][0] = s10, out.after[0][1] = s01, out.after[1][1] = s11;
++    if constexpr (!Dash)
++        for (int i = 0; i < m; ++i) s[i][1] = s[i][0];
++    for (int j = 0; j < 2; ++j) out.after[j][0] = s[j][0], out.after[j][1] = s[j][1];
++    for (int c = 0; c < hits.spells; ++c) out.spent[c][0] = s[2 + c][0], out.spent[c][1] = s[2 + c][1];
++    ends(1, 0), ends(1, 1);
++    for (int j = 0; j < 2; ++j) out.landed[j] = e[j][0], out.stood[j] = e[j][1];
+     if (skip_first) { out.ready = true; return; }
+-    const Rows hit = hits[1], clear = ~hit;
+-    out.landed[0] = s00 & clear, out.landed[1] = (s10 & clear) | (s00 & hit);
+-    out.stood[0] = s01 & clear, out.stood[1] = (s11 & clear) | (s01 & hit);
+     for (int j = 0; j < 2; ++j) {
+         const Rows near_landed = grow(out.landed[j]);
+         out.dashed[j] = near_landed & walk;
+@@ -571,14 +651,8 @@
+ }
+ 
+ void Plan::run(const Rows& goal, Pass& out) const {
+-    // runner_hits caps at two: after a hit now, only a zero-hit future can change it.
+-    if (chase_ && runner_hit_now()) {
+-        if (dash_) run_pass<true, false>(goal, walk_, path_, hit_, dash_turn_, out, true);
+-        else run_pass<false, false>(goal, walk_, path_, hit_, dash_turn_, out, true);
+-    } else {
+-        if (dash_) run_pass<true>(goal, walk_, path_, hit_, dash_turn_, out, chase_ || !dash_now_);
+-        else run_pass<false>(goal, walk_, path_, hit_, dash_turn_, out, chase_ || !dash_now_);
+-    }
++    if (dash_) run_pass<true>(goal, walk_, path_, hits_, dash_turn_, out, chase_ || !dash_now_);
++    else run_pass<false>(goal, walk_, path_, hits_, dash_turn_, out, chase_ || !dash_now_);
+ }
+ 
+ void Plan::want_slack() {
+@@ -598,6 +672,18 @@
+     return value(ps.after[0][d], ps.after[1][d], p);
+ }
+ 
++int Plan::after_hit(vec2 p, bool slack) const {
++    const int walked = after_walk(p, slack);
++    const int x = p.x - origin_.x, y = p.y - origin_.y;
++    if (walked == 0 || x < 0 || y < 0 || x >= side || y >= side || get(hits_.base[1], y) >> x & 1) return walked;
++    const auto& ps = pass(slack);
++    const int d = dash_ ? 1 : 0;
++    bool spell = false, clean = true;
++    for (int c = 0; c < hits_.spells; ++c)
++        if (get(hits_.spell[c][1], y) >> x & 1) spell = true, clean = clean && (get(ps.spent[c][d], y) >> x & 1);
++    return spell && clean ? 0 : walked;
++}
++
+ int Plan::after_dash(vec2 p, bool slack) const { return value(pass(slack).dashed[0], pass(slack).dashed[1], p); }
+ 
+ int Plan::keep_dash(bool slack) const { return value(pass(slack).kept[0], pass(slack).kept[1], at); }
+@@ -608,9 +694,14 @@
+ 
+ int Plan::stood(vec2 p, bool slack) const { return value(pass(slack).stood[0], pass(slack).stood[1], p); }
+ 
+-bool Plan::runner_hit_now() const { return get(hit_[1], at.y - origin_.y) >> (at.x - origin_.x) & 1; }
++bool Plan::runner_hit_now() const {
++    Rows hit = hits_.base[1];
++    for (int c = 0; c < hits_.spells; ++c) hit |= hits_.spell[c][1];
++    return get(hit, at.y - origin_.y) >> (at.x - origin_.x) & 1;
++}
+ 
+-int Plan::runner_hits(bool slack) const { return std::min(many, (runner_hit_now() ? 1 : 0) + after_walk(at, slack)); }
++// Turn 1 ending on `at` with the dash as planned: stood reads as landed without one.
++int Plan::runner_hits(bool slack) const { return value(pass(slack).stood[0], pass(slack).stood[1], at); }
+ 
+ std::uint64_t chase_cost_estimate() { return chase_cost; }
+ 
+diff -ruN -x .cambc -x compile_commands.json bots/variants/ocean-ref-b7c87cf/src/model/escape.h bots/variants/macro2-held/src/model/escape.h
+--- bots/variants/ocean-ref-b7c87cf/src/model/escape.h	2026-11-11 01:36:28.910024080 +0000
++++ bots/variants/macro2-held/src/model/escape.h	2026-11-11 07:54:11.148623544 +0000
+@@ -45,6 +45,15 @@
+     Lanes v[2]{};
+ };
+ 
++// Where each plan turn k ends hit. Each hitting slot ready within the plan has a layer of its own: a ready slot
++// stays ready until cast, so its reach counts on every turn from its ready one, but it hits once.
++inline constexpr int max_spells = 12; // two slots for each of a side's at most 6 bodies
++struct Hits {
++    std::array<Rows, horizon + 1> base{}; // basic attacks
++    int spells = 0;
++    std::array<std::array<Rows, horizon + 1>, max_spells> spell{};
++};
++
+ class Plan {
+ public:
+     bool active() const { return active_; }
+@@ -53,6 +62,9 @@
+     // Hits on turns 2..horizon after a walk this turn that ends on p, the dash (if the plan has one)
+     // still to come. Off the window: many.
+     int after_walk(vec2 p, bool slack) const;
++    // after_walk for a walk to p hit this turn: a cast that reaches p now, and no basic attack, is taken as the hit
++    // and spent for turns 2..horizon.
++    int after_hit(vec2 p, bool slack) const;
+     // A dash now that lands on p, then this turn's walk: hits on turns 1..horizon.
+     int after_dash(vec2 p, bool slack) const;
+     // This turn's walk with the dash kept: hits on turns 1..horizon.
+@@ -94,6 +106,7 @@
+         Rows kept[2];   // this turn's walk without a dash, then S_1 (dash kept)
+         Rows landed[2], stood[2]; // turn 1 ending on the tile, then S_1: dash spent / kept
+         Rows walk_dashed[2];      // the tiles a dash from lands in `landed`: this turn's walk ends on them
++        Rows spent[max_spells][2]; // after, no hits allowed with cast c spent, by dash kept
+     };
+ 
+ private:
+@@ -101,13 +114,14 @@
+     void finish(Pathing& pathing, Race& race);
+     void run(const Rows& goal, Pass& out) const;
+     int value(const Rows& none, const Rows& one, vec2 p) const;
++    int verdict(const Pass& p) const; // the HELD trace's
+     const Pass& pass(bool slack) const { return pass_[slack && pass_[1].ready ? 1 : 0]; }
+ 
+     bool active_ = false, dash_ = false, dash_now_ = false, chase_ = false;
+     int dash_turn_ = 0; // our first turn (2..horizon) a planned dash may fall in
+     vec2 origin_{0, 0}; // the window's tile (0, 0)
+     Rows walk_{}, path_{}, slack_goal_{}; // our walk and landing tiles, the tiles a dash path of ours crosses
+-    std::array<Rows, horizon + 1> hit_{}; // [k]: tiles where a turn k ending there is hit
++    Hits hits_;
+     Pass pass_[2];
+ };
+ 
+diff -ruN -x .cambc -x compile_commands.json bots/variants/ocean-ref-b7c87cf/src/model/safety.cc bots/variants/macro2-held/src/model/safety.cc
+--- bots/variants/ocean-ref-b7c87cf/src/model/safety.cc	2026-11-11 01:36:28.910420095 +0000
++++ bots/variants/macro2-held/src/model/safety.cc	2026-11-11 07:19:29.614628332 +0000
+@@ -1067,6 +1067,20 @@
+     return strike_slots(c, slots);
+ }
+ 
++// Two turns cast both slots, one a turn (rules turn.cast): a slot ready on the first (`first`) and the
++// other by the second (`second`), each turn with its basic attack, raising `out` to that sum. `moved`:
++// the first turn acts from where it ends (moved_strike's).
++void add_two_casts(const ChampionBelief& c, unsigned first, unsigned second, bool moved, Strike& out) {
++    const auto& f = c.facts();
++    for (unsigned a = 0; a < 2; ++a) {
++        const unsigned b = 1 - a;
++        if (!(first >> a & 1) || !(second >> b & 1)) continue;
++        const Strike one = moved ? compute_strike(f, hit_strength(c), hit_focus(c), 1u << a, true) : strike_slots(c, 1u << a).value;
++        const Strike& two = strike_slots(c, 1u << b).value;
++        for (int d = 0; d <= std::min({one.reach, two.reach, out.reach}); ++d) out.damage[d] = std::max(out.damage[d], one.at(d) + two.at(d));
++    }
++}
++
+ } // namespace
+ 
+ const Strike& strike(const ChampionBelief& c, int turn_round) { return strike_memo(c, turn_round).value; }
+@@ -1123,7 +1137,8 @@
+     auto& m = memo[static_cast<unsigned>(c.index) & 7u];
+     if (!m.known || m.type != c.type || m.strength != s || m.focus != focus) {
+         const auto k = compute_strike(c.facts(), hs, hf, 3u);
+-        m = {c.type, s, focus, true, k.hits(0) ? k.at(0) + hs : 0.0f};
++        const float casts = compute_strike(c.facts(), hs, hf, 1u).at(0) + compute_strike(c.facts(), hs, hf, 2u).at(0); // add_two_casts'
++        m = {c.type, s, focus, true, k.hits(0) ? std::max(k.at(0) + hs, casts) : 0.0f};
+     }
+     return m.damage;
+ }
+@@ -1143,7 +1158,7 @@
+ 
+ // threat_strike() for an unseen enemy whose turn this round `possible` already holds: that turn's
+ // strike from where it ended, and with a second turn before ours (next round) either that turn's
+-// full strike or this one's and a second basic attack.
++// full strike, this one's and a second basic attack, or one slot's strike each turn.
+ const Strike& moved_strike(const World& world, const ChampionBelief& c, StrikeMemo& m, int round, int& turns) {
+     const auto& f = c.facts();
+     const float hs = hit_strength(c), hf = hit_focus(c);
+@@ -1163,6 +1178,7 @@
+         out.stuns[d] = s2.stuns[d] || st.stuns[d];
+     }
+     out.reach = std::max(s2.reach, st.reach);
++    add_two_casts(c, m.slots, m2.slots, true, out);
+     return out;
+ }
+ 
+@@ -1200,6 +1216,7 @@
+         out.stuns[d] = s2.stuns[std::max(0, d - 1)]; // s2.stuns holds from 0 out to some distance
+     }
+     out.reach = std::min(Strike::max_reach, s2.reach + 1);
++    add_two_casts(c, m.slots, m2.slots, false, out);
+     return out;
+ }
+ 
+@@ -1950,7 +1967,15 @@
+                         }
+                     }
+                 }
+-
++                // Both damage spells from here, one a turn (add_two_casts'), the unit one needing sight.
++                for (std::size_t a = 0; twice && a < 2; ++a) {
++                    const auto &x = f.abilities[a], &y = f.abilities[1 - a];
++                    if (!ready[a] || !ready2[1 - a] || x.kind != AbilityKind::damage || y.kind != AbilityKind::damage) continue;
++                    const bool sight = x.target == Targeting::unit || y.target == Targeting::unit;
++                    const int reach = std::min(x.reach(), y.reach());
++                    add(here, reach, sight, 0, x.multiplier + y.multiplier, x.stuns || y.stuns, false);
++                    add(here, std::min(range, reach), true, 1, x.multiplier + y.multiplier, x.stuns || y.stuns, false);
++                }
+             }
+         return table;
+     }();
+diff -ruN -x .cambc -x compile_commands.json bots/variants/ocean-ref-b7c87cf/src/model/safety.h bots/variants/macro2-held/src/model/safety.h
+--- bots/variants/ocean-ref-b7c87cf/src/model/safety.h	2026-11-11 01:36:28.910420095 +0000
++++ bots/variants/macro2-held/src/model/safety.h	2026-11-11 07:19:29.615989260 +0000
+@@ -91,8 +91,8 @@
+ // at a unit beside the tile. Damage as Strike's.
+ class Reach {
+ public:
+-    // Its next turn, or with `twice` its next two: a walk first, or a second basic attack. The second
+-    // turn falls in turn_round + 1, so a slot coming ready then counts for it.
++    // Its next turn, or with `twice` its next two: a walk first, a second basic attack, or both damage
++    // spells, one a turn. The second turn falls in turn_round + 1, so a slot coming ready then counts for it.
+     void build(const World& world, const ChampionBelief& e, int turn_round, bool twice);
+     Blow at(vec2 p) const;
+     bool geometry_ready() const { return geometry_ready_; }
+@@ -241,8 +241,8 @@
+ // A visible enemy yet to act this round whose strike covers one turn: it may land again before our
+ // next turn. False when its strike already spans two turns, or a stun or teleport takes this turn.
+ bool enemy_blow_repeats(const World& world, const ChampionBelief& e);
+-// strike(), widened when it has two turns before our next: a walk then the strike, or the strike
+-// and a second basic attack.
++// strike(), widened when it has two turns before our next: a walk then the strike, the strike and a
++// second basic attack, or one slot's strike each turn.
+ const Strike& threat_strike(const World& world, const ChampionBelief& c);
+ // Farthest enemy its basic attack can reach in one turn from where it stands, by a walk, a ranged
+ // champion's walk and reset, or a dash ready in `round` first.

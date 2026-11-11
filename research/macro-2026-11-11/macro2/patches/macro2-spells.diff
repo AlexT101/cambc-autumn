@@ -1,0 +1,294 @@
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/bot.cc macro2-spells/src/bot.cc
+--- ocean-ref-b7c87cf/src/bot.cc	2026-11-11 01:36:28.906846080 +0000
++++ macro2-spells/src/bot.cc	2026-11-11 06:18:31.222883702 +0000
+@@ -632,6 +632,19 @@
+     if (cut) note_shortcut("turn-end-short");
+ }
+ 
++// The live alive group with a live member nearest p within ability_range, or -1 (CAMPCAST trace).
++int live_group_near(const World& world, vec2 p, int* d = nullptr) {
++    int best = -1, best_d = ability_range + 1;
++    for (int g : world.map().groups_near(p, ability_range)) {
++        if (world.camps[g].state != CampState::alive) continue;
++        const auto& ms = world.map().groups[g].members;
++        for (std::size_t i = 0; i < ms.size(); ++i)
++            if (world.camps[g].health[i] > 0 && dist(p, ms[i].pos) < best_d) best = g, best_d = dist(p, ms[i].pos);
++    }
++    if (d) *d = best_d;
++    return best;
++}
++
+ void play_turn(World& world, Pathing& pathing, Memory& memory) {
+     Safety safety{world};
+     pathing.use_safety(&safety);
+@@ -660,6 +673,15 @@
+     engaged_before = memory.round == world.round - 1 ? engaged : 0;
+     engaged = 0;
+     const int camp_hits_before = camp_hits();
++    [[maybe_unused]] int ready_mask = 0;
++    [[maybe_unused]] const vec2 trace_start = world.me().pos;
++    debug_block({
++        camp_trace = {};
++        if (world.me().alive)
++            for (int s = 0; s < 2; ++s)
++                if (world.me().facts().abilities[s].hits_enemies())
++                    ready_mask |= (world.me().ability_ready(s, world.round) ? 3 : 1) << (2 * s);
++    });
+     if (world.me().alive) note_upkeep(world, safety, memory.damage), note_income_start(world);
+     stunned_turn = record && my_stunned(cambc::champion_state::from_bits_retain(record->state));
+     // A failed act still posts the claim, the bag and the health that next turn's damage reads; a
+@@ -709,6 +731,33 @@
+     memory.health = world.me().alive ? my_health() : 0;
+     if (world.me().alive) note_income_end(world);
+     upkeep.camp_turns += camp_hits() != camp_hits_before;
++    // CAMPCAST round handle type decision group strength slot0 slot1 camp-cast walked reasons: a slot
++    // is - (not a damage or stun slot), n (not ready at turn start), R (ready, not cast) or C (cast).
++    debug_block({
++        if (world.me().alive && ready_mask) {
++            int d0 = -1;
++            int g = live_group_near(world, trace_start, &d0);
++            if (g < 0 && my_position().x >= 0) g = live_group_near(world, my_position()), d0 = 9;
++            if (g >= 0) {
++                char slots[3] = {'-', '-', 0};
++                for (int s = 0; s < 2; ++s)
++                    if (const int m = ready_mask >> (2 * s) & 3; m) slots[s] = turn_acts.casts[s] ? 'C' : m == 3 ? 'R' : 'n';
++                // The farm target, and its nearest live member's distance from where the turn started.
++                const int tg = memory.claim >= 0 ? memory.claim : memory.farm_group;
++                int dt = 99;
++                if (tg >= 0 && tg < static_cast<int>(world.camps.size()) && world.camps[tg].state == CampState::alive) {
++                    const auto& ms = world.map().groups[tg].members;
++                    for (std::size_t i = 0; i < ms.size(); ++i)
++                        if (world.camps[tg].health[i] > 0) dt = std::min(dt, dist(trace_start, ms[i].pos));
++                }
++                std::printf("CAMPCAST %d %u %d %c %d %.0f %s %d %d d%d t%d:%d", world.round, static_cast<std::uint32_t>(world.me().handle),
++                            static_cast<int>(world.me().type), static_cast<char>(decision), g, world.map().groups[g].strength, slots,
++                            camp_trace.cast ? 1 : 0, turn_acts.walked || my_position() != trace_start ? 1 : 0, d0, tg, dt);
++                for (int i = 0; i < camp_trace.n; ++i) std::printf(" %s:%d", camp_trace.why[i], camp_trace.slot[i]);
++                std::printf("\n");
++            }
++        }
++    });
+     debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), static_cast<char>(decision), memory.farm_group, memory.claim); });
+ }
+ 
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/combat/abilities.cc macro2-spells/src/combat/abilities.cc
+--- ocean-ref-b7c87cf/src/combat/abilities.cc	2026-11-11 01:36:28.906986482 +0000
++++ macro2-spells/src/combat/abilities.cc	2026-11-11 06:30:56.501282233 +0000
+@@ -457,17 +457,23 @@
+ 
+ // `approach`: see cast_at_camp_on_approach.
+ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_value, bool approach = false) {
+-    if (!my_can_cast()) return {};
++    if (!my_can_cast()) return note_camp_cast("cast-spent"), Cast{};
+     const auto& f = world.me().facts();
+     const std::array<bool, 2> ready{castable(world, 0), castable(world, 1)};
+-    if (!ready[0] && !ready[1]) return {};
++    if (!ready[0] && !ready[1]) {
++        debug_block({
++            for (int s = 0; s < 2; ++s)
++                if (f.abilities[s].hits_enemies() && world.me().ability_ready(s, world.round)) note_camp_cast_in_debug("walked", s);
++        });
++        return {};
++    }
+     const bool stuns = (ready[0] && f.abilities[0].stuns) || (ready[1] && f.abilities[1].stuns);
+     const vec2 here = my_position();
+     const auto& g = world.map().groups[group];
+     const auto& belief = world.camps[group];
+     const bool harmless_approach = approach && g.strength <= 0;
+-    if ((g.has_monolith && group != siege_group()) || belief.state != CampState::alive) return {};
+-    if (engagement_near(world, here, f.cast_reach())) return {};
++    if ((g.has_monolith && group != siege_group()) || belief.state != CampState::alive) return note_camp_cast("not-alive-or-mono"), Cast{};
++    if (engagement_near(world, here, f.cast_reach())) return note_camp_cast("enemy-near"), Cast{};
+     // A ranged walk also spends the basic: require our native position to be unchanged.
+     const bool post_basic = !approach && !attackers_only && !my_can_attack() && !cast_walked(world);
+     bool all_visible = post_basic;
+@@ -525,7 +531,7 @@
+         members.push_back({i, m.pos, health, stun, harms});
+         if (approach && harms) harmful.push_back(m.pos);
+     }
+-    if (members.empty()) return {};
++    if (members.empty()) return note_camp_cast("no-member"), Cast{};
+     // A spell clear has no basic attack to finish an attacker under the usual floor: it would stand
+     // idle beside it for good. Every damage spell's raw exceeds the floor, so only finishing casts pass.
+     float floor_value = cast_cost;
+@@ -538,21 +544,41 @@
+     Cast best;
+     for (int s = 0; s < 2; ++s) {
+         const auto& a = f.abilities[s];
+-        if (!ready[s] || (harmless_approach && a.target != Targeting::ground)) continue;
++        if (!ready[s]) continue;
++        if (harmless_approach && a.target != Targeting::ground) {
++            note_camp_cast("approach-harmless-unit", s);
++            continue;
++        }
+         const float raw = raw_damage(s), dealt_raw = raw * dealt;
+         const bool finishes = sole_finish && !a.lands() && dealt_raw >= members[0].health;
+         const float floor = finishes ? 0.0f : any_value ? 1.0f : floor_value;
+         const auto worth = [&](const Member& m) { return std::min(dealt_raw, m.health) + (a.stuns ? m.stun : 0); };
+         if (a.target == Targeting::unit) {
++            [[maybe_unused]] bool in_range = false, valued = false;
+             for (const auto& m : members) {
+                 if ((approach && !m.harmful) || dist(here, m.pos) > a.range()) continue;
+-                if (const float v = worth(m); v >= floor && v > best.value) best = Cast{s, v, std::nullopt, g.camp(m.index), {}};
++                in_range = true;
++                if (const float v = worth(m); v >= floor && v > best.value) best = Cast{s, v, std::nullopt, g.camp(m.index), {}}, valued = true;
+             }
++            debug_block({
++                if (!in_range) note_camp_cast_in_debug(approach ? "unit-none-harmful-in-range" : "unit-none-in-range", s);
++                else if (!valued) {
++                    float top = 0;
++                    for (const auto& m : members)
++                        if (!(approach && !m.harmful) && dist(here, m.pos) <= a.range()) top = std::max(top, worth(m));
++                    note_camp_cast_in_debug(attackers_only ? "unit-below-attackers-floor" : "unit-below-floor", s * 10000 + static_cast<int>(top));
++                }
++            });
+             continue;
+         }
+         // A ground cast or a landing; a dash off a cleared group gives up its capture.
+         if (a.lands())
+-            if (const int at = world.map().group_at(here); at >= 0 && world.camps[at].state == CampState::cleared) continue;
++            if (const int at = world.map().group_at(here); at >= 0 && world.camps[at].state == CampState::cleared) {
++                note_camp_cast("landing-off-cleared", s);
++                continue;
++            }
++        [[maybe_unused]] const int before = best.slot;
++        [[maybe_unused]] const float before_value = best.value;
+         const int radius = a.lands() ? a.radius : ground_radius;
+         static std::vector<Target> targets;
+         targets.clear();
+@@ -580,6 +606,10 @@
+         } else {
+             best.offer(best_ground(s, floor, targets, here, a.range(), skip, approach && !harmless_approach ? &harmful : nullptr));
+         }
++        debug_block({
++            if (best.slot == before && best.value == before_value)
++                note_camp_cast_in_debug(a.lands() ? "landing-none" : approach && !harmless_approach ? "ground-not-two-harmful" : "ground-below-floor-or-skipped", s);
++        });
+     }
+     // A unit cast overkilling a harmless group's last health goes to another harmless group in range.
+     if (const int s = best.slot; s >= 0 && post_basic && !any_value && g.strength <= 0 && f.abilities[s].target == Targeting::unit) {
+@@ -608,6 +638,10 @@
+     const bool cast = selected.execute();
+     world.throw_if_stale();
+     camp_hits() += cast;
++    debug_block({
++        if (cast) camp_trace.cast = true;
++        if (selected.slot >= 0) note_camp_cast_in_debug(cast ? "CAST" : "exec-failed", selected.slot);
++    });
+     return cast;
+ }
+ 
+@@ -646,8 +680,9 @@
+     }
+ }
+ 
+-bool cast_at_camp(const World& world, int group, bool attackers_only, bool any_value) {
++bool cast_at_camp(const World& world, int group, bool attackers_only, bool any_value, int line) {
+     world.throw_if_stale();
++    note_camp_cast("@", line);
+     try {
+         return execute_camp_cast(world, camp_cast(world, group, attackers_only, any_value));
+     } catch (const cambc::error&) {
+@@ -661,26 +696,26 @@
+     if (const auto& f = world.me().facts(); !f.ranged || f.cast_reach() <= f.attack_range()
+         || (!world.me().ability_ready(0, world.round) && !world.me().ability_ready(1, world.round))
+         || !my_can_cast() || cast_walked(world))
+-        return false;
++        return note_camp_cast("appr-not-eligible"), false;
+     const auto& c = world.camps[group];
+     if (c.state != CampState::alive) return false;
+     const auto& map = world.map();
+     const auto& g = map.groups[group];
+     const bool harmless = g.strength <= 0;
+     // A harmless group is worth a cast only on two members; an attacker group only once awake.
+-    if (harmless ? g.members.size() <= 1 : c.awake != Awake::awake) return false;
++    if (harmless ? g.members.size() <= 1 : c.awake != Awake::awake) return note_camp_cast(harmless ? "appr-harmless-single" : "appr-asleep"), false;
+     const vec2 here = my_position();
+     const int range = world.me().facts().attack_range();
+     // Not once the basic attack reaches a member, nor from inside any monster's reach.
+     for (std::size_t i = 0; i < g.members.size(); ++i)
+         if ((harmless || c.health[i] > 0) && dist(here, g.members[i].pos) <= range && cambc::vision::has_camp(g.members[i].pos))
+-            return false;
++            return note_camp_cast("appr-in-basic-range"), false;
+     for (int other : map.groups_near(here, map.max_camp_reach)) {
+         if (world.camps[other].state != CampState::alive) continue;
+         const auto& members = map.groups[other].members;
+         for (std::size_t i = 0; i < members.size(); ++i)
+             if (world.camps[other].health[i] > 0 && members[i].strength > 0 && dist(here, members[i].pos) <= members[i].reach)
+-                return false;
++                return note_camp_cast("appr-in-monster-reach"), false;
+     }
+     try {
+         return execute_camp_cast(world, camp_cast(world, group, false, false, true));
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/combat/abilities.h macro2-spells/src/combat/abilities.h
+--- ocean-ref-b7c87cf/src/combat/abilities.h	2026-11-11 01:36:28.907079743 +0000
++++ macro2-spells/src/combat/abilities.h	2026-11-11 06:24:00.869031495 +0000
+@@ -42,8 +42,9 @@
+ 
+ // A damage or stun cast on the group being farmed, held while enemies are near.
+ // Call only when not walking this turn. `attackers_only`: target only members with Strength.
+-// `any_value`: even a cast worth less than usual, as on a group's last hit points.
+-bool cast_at_camp(const World& world, int group, bool attackers_only = false, bool any_value = false);
++// `any_value`: even a cast worth less than usual, as on a group's last hit points. `line`: the
++// caller's, for the debug CAMPCAST trace.
++bool cast_at_camp(const World& world, int group, bool attackers_only = false, bool any_value = false, int line = __builtin_LINE());
+ 
+ // A ranged caster's safe approach: a harmful unit target or at least two harmful ground targets.
+ bool cast_at_camp_on_approach(const World& world, int group);
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/economy/capture.cc macro2-spells/src/economy/capture.cc
+--- ocean-ref-b7c87cf/src/economy/capture.cc	2026-11-11 01:36:28.909050928 +0000
++++ macro2-spells/src/economy/capture.cc	2026-11-11 06:30:56.501516547 +0000
+@@ -728,7 +728,29 @@
+     if (const int hit = attack_camp(world, free_hit); hit >= 0) {
+         cast_at_camp(world, hit);
+         reset_and_attack_camp(world, hit);
++        return;
+     }
++    // No basic reaches one, but a cast may: the hold keeps us on this tile, so an excludes-walking
++    // cast forgoes no walk, and a ready slot not cast now loses the round (rules abilities.cooldown).
++    if (!my_can_cast()) return;
++    const vec2 here = my_position();
++    std::array<std::pair<int, int>, 16> near; // (distance, group): groups_near's vector is reused by camp_cast
++    int n = 0;
++    for (int g : world.map().groups_near(here, world.me().facts().cast_reach())) {
++        if (n == static_cast<int>(near.size())) break;
++        // Unlike free_hit, not an unknown wake state: from cast range it may hide strikers we would wake.
++        if (world.camps[g].state != CampState::alive || g == held
++            || !(groups[g].strength <= 0 || (world.camps[g].awake == Awake::awake && world.camps[g].asleep == 0)))
++            continue;
++        int d = unreachable;
++        const auto& ms = groups[g].members;
++        for (std::size_t i = 0; i < ms.size(); ++i)
++            if (world.camps[g].health[i] > 0) d = std::min(d, dist(here, ms[i].pos));
++        if (d != unreachable) near[n++] = {d, g};
++    }
++    std::sort(near.begin(), near.begin() + n);
++    for (int k = 0; k < n; ++k)
++        if (cast_at_camp(world, near[k].second)) return;
+ }
+ 
+ } // namespace
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/util.h macro2-spells/src/util.h
+--- ocean-ref-b7c87cf/src/util.h	2026-11-11 01:36:28.911420108 +0000
++++ macro2-spells/src/util.h	2026-11-11 06:30:56.476148881 +0000
+@@ -317,6 +317,20 @@
+     bool walked = false;
+ };
+ inline TurnActs turn_acts;
++// Debug trace of this turn's camp-cast attempts (CAMPCAST lines): each attempt's outcome, or why it
++// found nothing. Written and read only inside debug_block.
++struct CampCastTrace {
++    std::array<const char*, 12> why{};
++    std::array<int, 12> slot{};
++    int n = 0;
++    bool cast = false;
++};
++inline CampCastTrace camp_trace;
++// Unguarded, for calls already inside a debug_block (nested guards would misprice its fuel).
++inline void note_camp_cast_in_debug(const char* why, int slot = -1) {
++    if (camp_trace.n < static_cast<int>(camp_trace.why.size())) camp_trace.why[camp_trace.n] = why, camp_trace.slot[camp_trace.n++] = slot;
++}
++inline void note_camp_cast(const char* why, int slot = -1) { debug_block({ note_camp_cast_in_debug(why, slot); }); }
+ // Enemy champions (bits by handle) we chased or struck this turn, and on our previous turn.
+ inline std::uint32_t engaged = 0, engaged_before = 0;
+ inline void note_engaged(std::uint32_t handle) {

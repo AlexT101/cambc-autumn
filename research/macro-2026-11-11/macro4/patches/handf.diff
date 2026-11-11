@@ -1,0 +1,689 @@
+diff -ruN '--exclude=.cambc' bots/ocean/src/bot_parts.h bots/variants/macro4-handf/src/bot_parts.h
+--- bots/ocean/src/bot_parts.h	2026-11-11 01:36:29.699676391 +0000
++++ bots/variants/macro4-handf/src/bot_parts.h	2026-11-11 03:05:42.070837909 +0000
+@@ -433,6 +433,33 @@
+ bool contest_capture(const World& world, Pathing& pathing, Memory& memory);
+ void hold_capture(const World& world, Memory& memory, bool attacked);
+ 
++// economy/hub.cc
++// The team's gem hub as we see it this round: an allied Prism other than us, alive, out of a held
++// channel, healthy and claiming a group, at its best known tile (`at`) with its bag as seen or posted;
++// `rho`, hub_premium. None for Prism itself.
++struct Hub {
++    const ChampionBelief* prism = nullptr;
++    vec2 at{-1, -1};
++    int bag = 0;
++    float rho = 0;
++    bool on() const { return prism && rho > 0; }
++};
++float hub_premium(const World& world, const ChampionFacts& prism);
++bool hold_threatened(const World& world, vec2 p);
++const Hub& team_hub(const World& world);
++int hub_steps(const World& world, Pathing& pathing, const Hub& hub, int g);
++float hub_factor(const World& world, float rho, float ours, float theirs);
++float hub_payout(float ours, int steps, bool shared, bool fast);
++float champion_gem_rate(const World& world);
++float hub_net(const World& world, float rho, float gems, float ours, float theirs);
++// G's gems carried to Prism over in our bag, net of Prism's rounds on them (hub_net), as a multiplier
++// of at least 1: our payout `ours` rounds away, Prism `steps` away.
++float hub_gain(const World& world, const Hub& hub, const CampGroup& G, float ours, int steps, bool shared = true);
++bool hub_coming(const World& world, int g);
++bool hub_hands_at(const World& world, const CampGroup& G, int timer, int steps);
++const ChampionBelief* hub_hands_over(const World& world, Pathing& pathing, const CampGroup& G, int g);
++bool hub_awaited(const World& world, Pathing& pathing, const CampGroup& G, int g, int timer);
++
+ // economy/crew.cc
+ bool farms_gold(const World& world, const ChampionBelief& a);
+ // A crew's clear of a group: its camp output (ours included), its camp damage before anyone's
+diff -ruN '--exclude=.cambc' bots/ocean/src/economy/capture.cc bots/variants/macro4-handf/src/economy/capture.cc
+--- bots/ocean/src/economy/capture.cc	2026-11-11 01:36:29.701706267 +0000
++++ bots/variants/macro4-handf/src/economy/capture.cc	2026-11-11 05:22:25.882065890 +0000
+@@ -297,7 +297,7 @@
+ // (yield_capture): a healthy Prism on it, whose Focus grows with its bag; on 3 picks, Marcella on
+ // what Stellar cleared, or a Prospector Tavi on a pure-gold group. Null if none.
+ const ChampionBelief* sole_capture_holder(const World& world, const CampGroup& G) {
+-    if (enemy_seen(world)) return nullptr;
++    if (enemy_seen(world)) return nullptr; // q-gate: ocean's gate
+     if (G.gems <= 0) return prospector_gold_holder(world, G);
+     const auto& map = world.map();
+     const int winning = static_cast<int>(cambc::constants::winning_gems);
+@@ -404,12 +404,17 @@
+     if (g < 0 || world.camps[g].state != CampState::cleared) return false;
+     const auto& G = map.groups[g];
+     const auto* prism = sole_capture_holder(world, G);
++    bool handed = false; // to Prism coming for it, off the tiles (hub_hands_over)
+     if (!prism) {
+         // The value holder, once on a tile and its hold counting.
+         prism = value_holder(world, G);
+-        if (!prism || prism->is_self || !test(G.tiles(), prism->pos) || fresh_ally_capture(world, G) < 0) return false;
++        if (!prism || prism->is_self || !test(G.tiles(), prism->pos) || fresh_ally_capture(world, G) < 0) {
++            prism = hub_hands_over(world, pathing, G, g);
++            if (!prism) return false;
++            handed = true;
++        }
+     }
+-    if (prism->is_self || safety.any_threat() || safety.camp_damage(prism->pos) > 0) return false;
++    if (prism->is_self || safety.any_threat() || (!handed && safety.camp_damage(prism->pos) > 0)) return false;
+     // Tavi and Marcella take over a hold: leave only once ours is counting.
+     if ((prism->type == cambc::champion_type::tavi || prism->type == cambc::champion_type::marcella) && fresh_ally_capture(world, G) < 0)
+         return false;
+@@ -421,8 +426,14 @@
+                 memory.claim = memory.farm_group = -1;
+                 memory.crew = false;
+                 decision = Branch::farm;
+-            }))
++            })) {
++            debug_block({
++                if (prism->facts().passive == Passive::gem_focus)
++                    std::printf("%s %d %u g%d to %d gems %d rho %.2f\n", handed ? "HUB HAND" : "HUB YIELD", world.round, my_handle(), g, prism->index, G.gems,
++                                team_hub(world).rho);
++            });
+             return true;
++        }
+     }
+     return false;
+ }
+@@ -604,6 +615,8 @@
+     if (world.round + channel < payout) return false;
+     const auto& G = world.map().groups[g];
+     const bool wins = gem_share(world, G) >= gems_short(world);
++    // A recall would keep us on the tiles to the payout: Prism coming for it may take the hold (hub_hands_over).
++    if (!wins && hub_awaited(world, pathing, G, g, payout - world.round)) return false;
+     const auto* prism = sole_capture_holder(world, G);
+     if (!wins && (retaining_gems(world, pathing) || (prism && prism->is_self))) {
+         // A bag kept off the altar: only Prism rides home, when the shop and heal there outweigh
+diff -ruN '--exclude=.cambc' bots/ocean/src/economy/farm.cc bots/variants/macro4-handf/src/economy/farm.cc
+--- bots/ocean/src/economy/farm.cc	2026-11-11 01:36:29.701706267 +0000
++++ bots/variants/macro4-handf/src/economy/farm.cc	2026-11-11 05:51:07.152842928 +0000
+@@ -338,6 +338,7 @@
+     std::vector<float> worth_gold;
+     bool worth_prospector = false;
+     int banked_bag = 0; // bankable_bag, for the banking instance
++    int collected = -1; // Prism: the group of our latest pick that collects an ally's capture (hub.cc), -1 for none
+ };
+ FarmMemo& farm_memo() {
+     static FarmMemo memo;
+@@ -399,6 +400,7 @@
+     // less what the stop is worth; 0 where no recall arrives in time.
+     float bank_floor = 0;
+     float crew_most = 1; // the team's output over ours
++    float hub = 1;       // the most a group's worth is raised by carrying its gems to Prism (hub_gain)
+     float *out = nullptr, *alt = nullptr, *test = nullptr, *test_alt = nullptr, *old = nullptr, *old_alt = nullptr;
+     // Later turns: `out` at the weight, for the best alone (bar_lt's test reads the unweighted worth
+     // while the facts' context is stale).
+@@ -498,8 +500,8 @@
+         hx = wasm_i32x4_splat(p.here.x), hy = wasm_i32x4_splat(p.here.y), short_by = wasm_i32x4_splat(p.short_by);
+         help = wasm_i32x4_splat(params::help_radius);
+         one = wasm_f32x4_splat(1.0f), slack = wasm_f32x4_splat(1.0002f), horizon = wasm_f32x4_splat(p.horizon);
+-        cap = wasm_f32x4_splat(p.cap_rounds), exposure = wasm_f32x4_splat(params::max_exposure);
+-        most_exposure = wasm_f32x4_splat(exposure_most), most_scale = wasm_f32x4_splat(exposure_most / params::max_exposure);
++        cap = wasm_f32x4_splat(p.cap_rounds), exposure = wasm_f32x4_splat(params::max_exposure * p.hub);
++        most_exposure = wasm_f32x4_splat(exposure_most * p.hub), most_scale = wasm_f32x4_splat(exposure_most / params::max_exposure);
+         channel = wasm_f32x4_splat(static_cast<float>(p.via.channel)), value = wasm_f32x4_splat(p.via.value);
+         out_base = wasm_i32x4_splat(p.via.channel + p.via.hurt);
+         inf = wasm_f32x4_splat(std::numeric_limits<float>::infinity());
+@@ -719,6 +721,12 @@
+     if (farm_monolith(world, memory.farm_group) && memory.claim == memory.farm_group && mono_engage(memory.farm_group, memory.mono_output))
+         siege_group() = memory.farm_group;
+     const bool banks_bag = opening ? banking_now : banking;
++    // The gem hub (economy/hub.cc): an allied Prism collecting. A bag we bank chains captures into
++    // our own tribute, so only empty-handed or retaining. `hub_most` bounds hub_gain for the prunes.
++    const Hub* const hub_now = !banks_bag && team_hub(world).on() ? &team_hub(world) : nullptr;
++    const float hub_most = 1.0f; // hubQ ablation: hub_m is 1
++    // A cleared group Prism claims is its to hold: one we handed over (hub_hands_over) is not taken back.
++    const int hub_claim = team_hub(world).on() ? comms::claim_of(world, team_hub(world).prism->index) : -1;
+     // Groups in passing pay too (gold clusters are never chosen below), but not one whose clear
+     // costs more health than we can spare.
+     const auto affordable = [&](int g) __attribute__((always_inline)) {
+@@ -1022,6 +1030,7 @@
+     int best = -1, best_steps = unreachable, risky = -1, risky_steps = unreachable, shared = -1, shared_steps = unreachable;
+     bool best_spell = false;
+     float best_value = 0, risky_value = 0, shared_value = 0;
++    float best_hub = 1, shared_hub = 1; // for the traces: hub_gain of the best and the share
+     // How the best and the share were priced, for the traces and the proposal: mode (S alone, K
+     // kited, C crew, J joining), our extra trips home, the crew's tank, its expected allies, its output.
+     struct Priced {
+@@ -1464,7 +1473,7 @@
+     const auto unweighed_beaten = [&](const CampGroup& group, const CampBelief& belief, int g, float trip) __attribute__((always_inline)) {
+         const int gems = std::min(group.gems + (prospector ? prospected(group.cluster_gems, 1) : 0), short_by);
+         const int gold = group.gold + (prospector ? prospected(group.cluster_gold, 1) : 0);
+-        const float worth = static_cast<float>(gems) + per_gold * static_cast<float>(gold) + tribute_gold * static_cast<float>(gems);
++        const float worth = static_cast<float>(gems) * hub_most + per_gold * static_cast<float>(gold) + tribute_gold * static_cast<float>(gems);
+         // At version 0 every member is alive at full health: the bound needs no pass over them.
+         const float fastest = reflect > 0          ? reflected_clear(world, g, strength, reflect)
+                               : belief.version == 0 ? group.health / strength
+@@ -1522,7 +1531,7 @@
+         const int near = m.near - offset;
+         if (!banks_bag && near <= params::help_radius) return false;
+         const int gems = std::max(0, std::min(prospector ? m.gems_prospected : m.gems, short_by));
+-        const float worth = params::max_exposure * pull.deny_scale * (static_cast<float>(gems) * (1.0f + most_tribute)
++        const float worth = params::max_exposure * pull.deny_scale * hub_most * (static_cast<float>(gems) * (1.0f + most_tribute)
+                             + most_per_gold * static_cast<float>(prospector ? m.gold_prospected : m.gold));
+         const float via = via_bound(m.spawn_near, 0);
+         if (banks_bag) return rate(world, worth, std::max(0.0f, std::min(static_cast<float>(near), via) - bank_now) + cap_rounds) * 1.0001f < tested_value;
+@@ -1613,7 +1622,7 @@
+         p.banking = pre_banked, p.bank_now = bank_now, p.recall = pre_banked ? recall_turns(world) : 0;
+         // Shaved for fastest_clear's sum taken member by member.
+         p.health = pre_health = world.clear_health.data(), p.clear_scale = 0.9999f / strength, p.reflects = reflect > 0;
+-        p.crew_most = 1.0f / team_scale(), p.other_part = unclaimed_partner_output > 0 ? partner_part : 1.0f;
++        p.crew_most = 1.0f / team_scale(), p.other_part = unclaimed_partner_output > 0 ? partner_part : 1.0f, p.hub = hub_most;
+         p.weight = known_weights(n_groups);
+         p.out = pre_upper.data(), p.alt = pre_alt.data(), p.test = pre_test.data(), p.test_alt = pre_test_alt.data();
+         p.old = pre_old.data(), p.old_alt = pre_old_alt.data();
+@@ -1684,7 +1693,7 @@
+         const float gems = static_cast<float>(std::min(worth_gems[g], short_by));
+         const float worth = std::max(0.0f, gems + std::max(0.0f, per_gold) * worth_gold[g] + std::max(0.0f, tribute_gold) * gems);
+         const float weight = g < 256 ? home_weights()[static_cast<std::size_t>(g)] : 1.0f;
+-        return claim_bound(worth * exposure_most * weight, health, health / strength, trip) * 1.0002f;
++        return claim_bound(worth * exposure_most * weight * hub_most, health, health / strength, trip) * 1.0002f;
+     };
+     static const bool any_mono = [&] {
+         for (int g = 0; g < n_groups; ++g)
+@@ -1730,7 +1739,7 @@
+         // live big group our kite works is kite()'s: a lone farmer would wake it on the casters. A group
+         // whose siege stands we cannot hold even at full health this turn is no farm crew's either.
+         if ((group.has_monolith && map.monolith_only) || group.gems + group.gold == 0
+-            || (belief.state == CampState::cleared && (ally_holding(g) || belief.holder == team::enemy))
++            || (belief.state == CampState::cleared && (ally_holding(g) || belief.holder == team::enemy || (g == hub_claim && !test(group.tiles(), here))))
+             || (belief.state != CampState::cleared && kited(g) && kite_owns(world, g)) || siege_declines(world, g))
+             continue;
+         // A Monolith with an enemy in sight near it is not taken up: our crew would clear it for
+@@ -1749,10 +1758,10 @@
+                     auto& kf = group_facts[g];
+                     float worth;
+                     if (kf.context == context && !kf.sticky && kf.gold_context == gold_context) {
+-                        worth = kf.gems + kf.gold;
++                        worth = kf.gems * hub_most + kf.gold;
+                     } else {
+                         const float gems = static_cast<float>(std::min(worth_gems[g], short_by));
+-                        worth = gems + per_gold * worth_gold[g] + tribute_gold * gems;
++                        worth = gems * hub_most + per_gold * worth_gold[g] + tribute_gold * gems;
+                     }
+                     float fastest;
+                     if (kf.version == belief.version && kf.fastest_strength == strength) fastest = kf.fastest;
+@@ -1835,7 +1844,7 @@
+             const auto beaten_near = [&](bool by_rate) __attribute__((always_inline)) {
+                 const int near = dist(here, group.centre);
+                 if (in_pocket || !prunable(g) || may_help(group, belief, near) || (hop_any && map.group_hop(g) >= 0)) return false;
+-                const float worth = (known.gems + known.gold) * exposed;
++                const float worth = (known.gems * hub_most + known.gold) * exposed;
+                 // Banking by way of spawn, the loop prices the trip on to an altar healed, which can
+                 // undercut `bank`: that way takes no floor for it.
+                 const int respawn = respawn_in(belief);
+@@ -1956,7 +1965,14 @@
+         // A capture's gold that completes an emblem shortens the trip home (HomeTrip::rounds) though worth
+         // counts it too: floored, so a chain never costs less than nothing and every filter below agrees.
+         const float trip = std::max(0.0f, (by_spawn ? via : pulled_walk(steps) + static_cast<float>(wait)) - bank_now + bank);
+-        const float gems = known.gems * exposed, gold = known.gold * exposed, fastest = known.fastest;
++        // Its gems carried to Prism: Prism takes the hold if it can be there by our payout, or soon after
++        // (hub_gain). A winning capture is the team's at once.
++        float hub_m = 1;
++        if (false && hub_now && !wins && group.gems > 0) { // hubQ ablation: allies weigh no hub_gain
++            const float ours = static_cast<float>(there + capture) + (belief.state == CampState::cleared ? 0.0f : known.fastest);
++            hub_m = hub_gain(world, *hub_now, group, ours, hub_steps(world, pathing, *hub_now, g));
++        }
++        const float gems = known.gems * exposed * hub_m, gold = known.gold * exposed, fastest = known.fastest;
+         // Skip the costly clearing estimate for groups that cannot beat the best even with no
+         // clearing. A crew's share can.
+         if (!claimed && barred() && prunable(g)
+@@ -2043,7 +2059,7 @@
+                                    * (worked ? strength * rounds / health : strength / (strength + others));
+                 if (hits > spare_health) continue;
+             }
+-            shared = g, shared_value = value, shared_steps = steps;
++            shared = g, shared_value = value, shared_steps = steps, shared_hub = hub_m;
+             if (may_floor()) floor_value = value;
+             shared_priced = {'J', trips, plan.tank ? plan.tank->index : -1, plan.n_expected, strength + others, crew_share(plan, reach)};
+             continue;
+@@ -2092,7 +2108,7 @@
+                 continue;
+             }
+             if (value > best_value || (value == best_value && earlier(g, best)))
+-                best = g, best_value = value, best_steps = steps, best_spell = cast, best_priced = {cast ? 'K' : 'S', 0, -1, 0, strength, damage};
++                best = g, best_value = value, best_steps = steps, best_spell = cast, best_priced = {cast ? 'K' : 'S', 0, -1, 0, strength, damage}, best_hub = hub_m;
+             if (banks_bag && walk_out != unreachable) {
+                 const float via_altar = belief.state == CampState::respawning ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk_out) - bank_now) : 0.0f;
+                 from_altar_value = std::max(from_altar_value, rate(world, worth, static_cast<float>(walk_out) + cycle_bank + via_altar + rounds + capture));
+@@ -2190,7 +2206,7 @@
+         if (g == memory.mono_group) mono_seen = value;
+         if (late) continue;
+         if (value > best_value || (value == best_value && earlier(g, best)))
+-            best = g, best_value = value, best_steps = steps, best_spell = spell, best_priced = priced;
++            best = g, best_value = value, best_steps = steps, best_spell = spell, best_priced = priced, best_hub = hub_m;
+         if (banks_bag && walk_out != unreachable) from_altar_value = std::max(from_altar_value, altar_rate(share, clear_rounds, trips));
+     }
+     read_g = -1;
+@@ -2198,8 +2214,9 @@
+     need_zone();
+     // An ally's hold that pays more with us on it: the rounds we then hold free the holder, worth
+     // what our best cycle earns a round, so the walk is what it costs.
++    const float cycle_rate = best_value; // the loop's best, before any takeover or collection
+     if (!banks_bag && !memory.banking && evaluated == n_groups && takes_over(world)) {
+-        const float work_rate = best_value;
++        const float work_rate = cycle_rate;
+         world.each_cleared([&](int g) {
+             const auto& G = groups[g];
+             // A payout is at most capture_time rounds away, so no longer walk arrives before it (takeover_worth).
+@@ -2214,7 +2231,134 @@
+             const float worth = takeover_worth(gain, timer, walk, work_rate, hold);
+             if (!(worth > 0)) return;
+             const float value = rate(world, worth, static_cast<float>(walk + hold));
+-            if (value > best_value) best = g, best_steps = walk, best_value = value, best_spell = false, best_priced = Priced{'T'};
++            if (value > best_value) best = g, best_steps = walk, best_value = value, best_spell = false, best_priced = Priced{'T'}, best_hub = 1;
++        });
++    }
++    // Prism collecting (economy/hub.cc): an ally's capture of gems, held or soon cleared, taken over
++    // at their worth in our bag (hub_premium), for the walk and the rounds then held. The ally hands
++    // it over where hub_hands_at would, so only there. A group cleared and unheld is the loop's, but for
++    // our last collection: one handed over for us to hold afresh. Allies are known in sight, else by
++    // their posted tiles (comms_ally), as the hub knows us.
++    bool collect_joins = false; // an ally's clear under way: we come as its crew
++    if (!banks_bag && !memory.banking && world.me().facts().passive == Passive::gem_focus && !held_by_channel(world.me())
++        && my_health() >= params::hurt_health_fraction * max_health) {
++        const float rho = hub_premium(world, world.me().facts());
++        const int winning = static_cast<int>(cambc::constants::winning_gems), carried = static_cast<int>(my_gems());
++        const int fresh = capture_rounds(false), ours_fresh = capture_rounds(world.me().fast_capture);
++        // A freed holder's rounds, priced as the takeover above prices them.
++        const float work_rate = cycle_rate, price = prices(world).per_gold;
++        // An ally's tile in sight, else as last seen or posted within a capture's rounds.
++        const auto known_at = [&](const ChampionBelief& a, vec2& at) {
++            if (a.visible) return at = a.pos, true;
++            int at_round = a.pos_round;
++            at = a.pos;
++            if (vec2 told; params::comms_ally) {
++                int told_round = -1;
++                if (comms::told_ally(a.index, told, told_round) && told_round > at_round) at = told, at_round = told_round;
++            }
++            return in_bounds(at) && at_round >= world.round - fresh;
++        };
++        std::array<int, 24> asked;
++        int n_asked = 0;
++        const auto collect = [&](int g) {
++            if (rho <= 0 || g < 0 || g >= n_groups || n_asked == static_cast<int>(asked.size())
++                || std::find(asked.begin(), asked.begin() + n_asked, g) != asked.begin() + n_asked)
++                return;
++            asked[static_cast<std::size_t>(n_asked++)] = g;
++            const auto& G = groups[g];
++            const auto& c = world.camps[g];
++            if (G.gems <= 0 || G.has_monolith || G.gems >= short_by || test(G.tiles(), here) || c.holder == team::enemy || enemy_on(world, G.tiles())
++                || world.score.ally + carried + G.gems >= winning
++                || rounds_left(world) <= tribute_turns(carried + G.gems, world.me().fast_tribute) + map.width + map.height + endgame_margin)
++                return;
++            // The allies on its tiles or claiming it, where we know them to be.
++            bool held = allies_on(world, G.tiles()) > 0, worked = c.last_damaged_round >= world.round - 1;
++            float output = 0;
++            for (const auto& a : world.allies) {
++                if (a.is_self || !a.alive || comms::claim_of(world, a.index) != g) continue;
++                output += camp_output(a);
++                if (vec2 at; known_at(a, at)) {
++                    held = held || (!a.visible && steps_to(G, at) <= 2); // a posted tile is good to within 2
++                    worked = worked || crew_in_reach(world, g, at, a.facts().attack_range());
++                }
++            }
++            float ours = 0, clear = 0; // the ally's payout, and its clear's rounds left
++            int timer = -1;
++            bool unheld = false;
++            if (c.state == CampState::cleared) {
++                if (!held && g != memo.collected && g != memory.claim) return; // our claim once the ally left it to us
++                timer = held ? fresh_ally_capture(world, G) : -1;
++                unheld = !held;
++                ours = static_cast<float>(timer >= 1 ? timer : fresh);
++            } else if (c.state == CampState::alive) {
++                float health = 0;
++                for (std::size_t i = 0; i < G.members.size(); ++i) health += std::max(0.0f, c.health[i]);
++                if (!worked || !(output > 0) || !(health > 0)) return;
++                clear = health / output;
++                ours = clear + static_cast<float>(fresh);
++            } else {
++                return;
++            }
++            // What our hold pays the team over the ally's (takeover_gain's holder_value, so its gold and a
++            // pair's shyness), and the gems' premium: the ally would bank the same gems, so only the
++            // premium is ours to add (hub_factor - 1). Unheld, the group is ours alone to take.
++            const float gems = static_cast<float>(G.gems) * exposure(g);
++            float gain = 0;
++            if (!unheld) {
++                float held_value = 0;
++                bool any = false;
++                for (const auto& a : world.allies) {
++                    if (a.is_self || !a.alive || !((a.visible && test(G.tiles(), a.pos)) || comms::claim_of(world, a.index) == g)) continue;
++                    const float v = holder_value(world, a, G, price);
++                    if (!any || v > held_value) held_value = v, any = true;
++                }
++                if (any) gain = holder_value(world, world.me(), G, price) - held_value;
++            }
++            const float stick = g == farm_group ? stickiness : 1.0f;
++            // No payout of ours comes before the ally's or the soonest walk, and the ally is freed at most
++            // until its own payout: a bound before any field.
++            const float most = unheld ? (1.0f + rho) * gems + per_gold * static_cast<float>(G.gold) : rho * gems + gain + ours * work_rate;
++            const float soonest = unheld ? static_cast<float>(steps_to(G, here) + ours_fresh) : std::max(ours, static_cast<float>(steps_to(G, here)));
++            if (!(rate(world, std::max(0.0f, most), soonest) * stick > best_value)) return;
++            int walk = steps_data[g];
++            if (walk < 0) {
++                const Field* centre = pathing.from_centre(g);
++                if (!centre && fuel_ok(full_field_cost_estimate() + loop_reserve())) centre = pathing.centre_field(g);
++                walk = centre ? centre->at(here) : unreachable;
++            }
++            // A clear still under way when we arrive is joined as its crew: the rounds until its payout are in
++            // `theirs` whichever comes first, so the pick holds as we near it. Its fire then reaches us too:
++            // only a clear we can afford (as for a hit in passing).
++            if (walk == unreachable || hold_threatened(world, G.centre) || (static_cast<float>(walk) < clear && !affordable(g))) return;
++            float theirs, worth;
++            if (unheld) {
++                theirs = static_cast<float>(walk + ours_fresh); // nobody to hand it over: ours from arrival
++                worth = (1.0f + rho) * gems + per_gold * static_cast<float>(G.gold);
++            } else {
++                // Joining a multi-tile hold before its payout, the ally steps off once we stand on it
++                // (sole_capture_holder). Otherwise we hold afresh where the ally hands it over (hub_hands_over),
++                // as hub_hands_at judges it then: at once when we are due before its payout, else at its last turn.
++                theirs = hub_payout(ours, walk, G.members.size() > 1, world.me().fast_capture);
++                const bool late = !(G.members.size() > 1 && static_cast<float>(walk) < ours);
++                const bool at_once = static_cast<float>(walk) < ours;
++                const float at_last = static_cast<float>(std::max(1, walk - std::max(0, static_cast<int>(ours) - 1)) + ours_fresh);
++                if (late && !(hub_net(world, rho, static_cast<float>(G.gems), at_once ? ours : 1.0f, at_once ? hub_payout(ours, walk, false, world.me().fast_capture) : at_last) > 0.0f))
++                    return;
++                // The rounds the ally no longer stands on it once we do, at our work rate (takeover_worth's), from
++                // the end of its clear at the soonest.
++                const float freed = std::max(0.0f, ours - std::max(clear, static_cast<float>(walk)));
++                worth = gems * (hub_factor(world, rho, ours, theirs) - 1.0f) + gain + freed * work_rate;
++            }
++            const float value = rate(world, worth, theirs) * stick;
++            if (value > best_value)
++                best = g, best_steps = walk, best_value = value, best_spell = false, best_priced = Priced{'Q'}, best_hub = 1.0f + rho,
++                collect_joins = c.state != CampState::cleared;
++        };
++        for (const auto& a : world.allies)
++            if (!a.is_self && a.alive) collect(comms::claim_of(world, a.index));
++        if (memo.collected >= 0 && memo.collected < n_groups) collect(memo.collected);
++        world.each_cleared([&](int g) {
++            if (allies_on(world, groups[g].tiles()) > 0) collect(g);
+         });
+     }
+     if (banks_bag && (best < 0 || best_value <= from_altar_value)) return false;
+@@ -2227,8 +2371,9 @@
+     memory.crew = false;
+     bool spell = best >= 0 && best_spell;
+     Priced chosen = best_priced;
++    if (chosen.mode == 'Q') memory.crew = collect_joins;
+     if (shared >= 0 && (best < 0 || shared_value > best_value)) {
+-        best = shared, best_steps = shared_steps, memory.claim = shared, memory.crew = true, spell = false, chosen = shared_priced;
++        best = shared, best_steps = shared_steps, memory.claim = shared, memory.crew = true, spell = false, chosen = shared_priced, best_hub = shared_hub;
+         if (prev_claim != shared || !prev_crew) {
+             debug_block({ std::printf("CREW JOIN %d %u g%d tank %d trips %d output %.0f value %.4f\n", round, my_handle(), shared,
+                                       chosen.tank, chosen.trips, chosen.output, shared_value); });
+@@ -2236,13 +2381,13 @@
+     }
+     // Help does not pull a member off a Monolith operation.
+     if (help_group >= 0 && !(farm_monolith(world, best) && memory.claim == best))
+-        best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, spell = false, chosen = Priced{'H'};
++        best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, spell = false, chosen = Priced{'H'}, best_hub = 1;
+     if constexpr (!banking && !repricing && params::open_plan::weight <= 0) {
+         // A help call (an ally struggling at its group) keeps its pull.
+         if (const int planned = banks_bag || help_group >= 0 ? -1 : open_plan_choice(world, memory); planned >= 0 && planned != best) {
+             const int s = steps_data[planned];
+             best = planned, best_steps = s >= 0 && s != unreachable ? s : dist(here, groups[planned].centre);
+-            memory.claim = planned, memory.crew = claimed_by_ally(planned), spell = false, chosen = Priced{'P'};
++            memory.claim = planned, memory.crew = claimed_by_ally(planned), spell = false, chosen = Priced{'P'}, best_hub = 1;
+             debug_block({ std::printf("OPENPLAN step %d %u g%d k %d\n", round, my_handle(), planned, memory.open_step); });
+         }
+     }
+@@ -2267,7 +2412,20 @@
+             std::printf("CREW PICK %d %u g%d %c trips %d tank %d expected %d output %.0f damage %.0f hp %.0f/%.0f\n", round, my_handle(), memory.claim,
+                         chosen.mode, chosen.trips, chosen.tank, chosen.expected, chosen.output, chosen.damage, my_health(), max_health);
+         }
++        static int last_hub = -2;
++        if (best_hub > 1.0f && memory.claim >= 0 && memory.claim != last_hub) {
++            if (chosen.mode == 'Q')
++                std::printf("HUB COLLECT %d %u g%d steps %d gems %d state %d joins %d m %.2f value %.4f\n", round, my_handle(), memory.claim, best_steps,
++                            groups[memory.claim].gems, static_cast<int>(world.camps[memory.claim].state), static_cast<int>(collect_joins), best_hub,
++                            best_value);
++            else if (hub_now)
++                std::printf("HUB VALUE %d %u g%d %c steps %d gems %d prism %d at %d,%d steps %d rho %.2f m %.2f\n", round, my_handle(), memory.claim,
++                            chosen.mode, best_steps, groups[memory.claim].gems, hub_now->prism->index, hub_now->at.x, hub_now->at.y,
++                            hub_steps(world, pathing, *hub_now, memory.claim), hub_now->rho, best_hub);
++        }
++        last_hub = best_hub > 1.0f ? memory.claim : -2;
+     });
++    if constexpr (!repricing) memo.collected = best >= 0 && chosen.mode == 'Q' ? best : -1;
+     if (best < 0) {
+         if constexpr (repricing) return true;
+         // Cut short before weighing even last turn's choice: walk on towards it, as its crew if we were.
+@@ -2292,7 +2450,7 @@
+         memory.mono_group = -1, memory.mono_staged = -1;
+     }
+     // As the loop priced it; recall_to_farm keeps the turn-end recall while it stays sooner.
+-    if (recall_out && steps_data[best] != unreachable && chosen.mode != 'T'
++    if (recall_out && steps_data[best] != unreachable && chosen.mode != 'T' && chosen.mode != 'Q'
+         && via_recall.sooner(spawn_steps(best), respawn_in(world.camps[best]), best_steps) < static_cast<float>(unreachable)
+         && (!to_altar || routed[best])) {
+         memory.recall_farm = best;
+diff -ruN '--exclude=.cambc' bots/ocean/src/economy/hub.cc bots/variants/macro4-handf/src/economy/hub.cc
+--- bots/ocean/src/economy/hub.cc	1970-01-01 00:00:00.000000000 +0000
++++ bots/variants/macro4-handf/src/economy/hub.cc	2026-11-11 05:51:07.153025800 +0000
+@@ -0,0 +1,203 @@
++// The team's gem hub: an allied Prism. Every gem it carries adds Focus to both its damage spells until
++// it is tributed, so a gem Prism carries is worth more than the same gem in any other ally's bag.
++// Allies value gems Prism can collect at that premium, hold a cleared group until Prism takes it, and
++// Prism values collecting allies' captures.
++#include "../bot_parts.h"
++
++namespace aph {
++
++namespace {
++
++// Gems per camp health point over the map's gem groups: farm_step_value's exchange rate.
++float camp_gem_density(const StaticMap& map) {
++    static float density = -1;
++    if (density < 0) {
++        float gems = 0, health = 0;
++        for (const auto& g : map.groups) {
++            if (g.gems == 0 || (g.has_monolith && !map.monolith_only)) continue;
++            gems += static_cast<float>(g.gems);
++            for (const auto& m : g.members) health += m.max_health;
++        }
++        density = health > 0 ? gems / health : 0.0f;
++    }
++    return density;
++}
++
++// The damage a round one carried gem adds: its Focus times the damage spells' multipliers, each cast
++// once a cooldown.
++float gem_damage_rate(const ChampionFacts& f) {
++    float multipliers = 0;
++    for (const auto& a : f.abilities)
++        if (a.kind == AbilityKind::damage) multipliers += a.multiplier;
++    return cambc::constants::passive_abilities::prism_focus_per_gem * multipliers / static_cast<float>(ability_cooldown);
++}
++
++// Extra gems of output per gem Prism carries. A gem stays carried until the bag must leave for an
++// altar: the round limit or the race's end (race_left), less the last trip sole_capture_holder keeps
++// back. Its extra damage d a round, at the map's gems per health point, is discounted by the farm's
++// own horizon h (rate's 1 + r / h): the sum over t < H of d / (1 + t / h) is d h ln(1 + H / h).
++float hub_premium(const World& world, const ChampionFacts& prism) {
++    const auto& map = world.map();
++    const float h = cycle_horizon(map);
++    const int carried = std::min(rounds_left(world), race_left(world)) - (map.width + map.height + endgame_margin);
++    if (carried <= 0) return 0;
++    const float rho = gem_damage_rate(prism) * camp_gem_density(map) * h * std::log1p(static_cast<float>(carried) / h);
++    return std::clamp(rho, 0.0f, params::hub_rho_most);
++}
++
++// A visible enemy that could act on p before a hold begun now pays: within the capture's rounds of
++// acting there (enemy_reach's distance less its act range), a dash further for a dasher. Prism's holds
++// only: the Marcella and Tavi holders keep sole_capture_holder's enemy_seen gate.
++bool hold_reached(const World& world, vec2 p) {
++    if (!enemy_seen(world)) return false;
++    const int window = capture_rounds(false);
++    for (const auto& e : world.enemies) {
++        if (!e.alive || !e.visible) continue;
++        const auto who = enemy_reach::profile(e.facts());
++        if (enemy_reach::within(world, e, enemy_reach::origin(e), p, window + who.act + (who.dasher ? dash_range : 0))) return true;
++    }
++    return false;
++}
++
++// What threatens a hold of Prism's at p: an enemy that may see it (enemy_may_see) or reach it in time.
++bool hold_threatened(const World& world, vec2 p) { return enemy_may_see(world, p) || hold_reached(world, p); }
++
++const Hub& team_hub(const World& world) {
++    static Hub hub;
++    static int round = -1;
++    if (round == world.round) return hub;
++    round = world.round;
++    hub = Hub{};
++    if (world.me().facts().passive == Passive::gem_focus) return hub;
++    const ChampionBelief* prism = nullptr;
++    for (const auto& a : world.allies)
++        if (!a.is_self && a.alive && a.facts().passive == Passive::gem_focus) prism = &a;
++    // Collecting, not channelling, fleeing hurt (sole_capture_holder's fit_on), or between claims.
++    if (!prism || held_by_channel(*prism) || (prism->max_health > 0 && prism->health < params::hurt_health_fraction * prism->max_health)
++        || comms::claim_of(world, prism->index) < 0)
++        return hub;
++    // Where it is: in sight, else as last seen or posted within a capture's rounds (an older tile says
++    // little of where it will be for this hold).
++    const int window = capture_rounds(false);
++    vec2 at = prism->pos;
++    int at_round = prism->visible ? world.round : prism->pos_round;
++    if (vec2 told; !prism->visible) {
++        int told_round = -1;
++        if (params::comms_ally && comms::told_ally(prism->index, told, told_round) && told_round > at_round) at = told, at_round = told_round;
++    }
++    if (!in_bounds(at) || at_round < world.round - window) return hub;
++    hub.prism = prism, hub.at = at;
++    hub.bag = prism->visible ? prism->gems : comms::bag_of(world, prism->index);
++    hub.rho = hub_premium(world, prism->facts());
++    return hub;
++}
++
++// Prism's walk to group g from where we believe it is: the group's centre field there (as our own
++// steps are read), else the Chebyshev steps. A posted tile is only good to within 2 and may be a wall
++// the field never reaches: the Chebyshev steps then too.
++int hub_steps(const World& world, Pathing& pathing, const Hub& hub, int g) {
++    if (const auto* centre = pathing.from_centre(g))
++        if (const int steps = centre->at(hub.at); steps != unreachable) return steps;
++    return steps_to(world.map().groups[g], hub.at);
++}
++
++// A group's worth to the team, carried to Prism, over its worth in our bag: our payout `ours` rounds
++// away, Prism's (by joining, or holding afresh) `theirs`, each discounted as rate() does (1 + r / h).
++float hub_factor(const World& world, float rho, float ours, float theirs) {
++    const float h = cycle_horizon(world.map());
++    return std::max(1.0f, (1.0f + rho) * (h + ours) / (h + theirs));
++}
++
++// Prism's payout on G: with a free tile beside ours and Prism there before our payout, its hold joins
++// ours; otherwise (every tile held, or our payout past) it holds afresh on arrival. `fast`: its
++// Capture emblem.
++float hub_payout(float ours, int steps, bool shared, bool fast) {
++    const float fresh = static_cast<float>(steps + capture_rounds(fast));
++    return shared && static_cast<float>(steps) < ours ? ours : std::max(ours, fresh);
++}
++
++// The gems one of our champions earns a round, as the team has so far: its score and living bags
++// over the rounds played, per champion (its dead rounds included). Prism's rounds on a collection
++// are worth this elsewhere.
++float champion_gem_rate(const World& world) {
++    static int round = -1;
++    static float r = 0;
++    if (round == world.round) return r;
++    round = world.round;
++    int gems = world.score.ally;
++    for (const auto& a : world.allies) {
++        if (!a.alive && !a.is_self) continue;
++        gems += a.is_self ? static_cast<int>(my_gems()) : a.visible ? a.gems : comms::bag_of(world, a.index);
++    }
++    // The score is the game's, so the rounds are too, not this instance's.
++    const int played = std::max(1, world.round);
++    r = world.allies.empty() ? 0.0f : static_cast<float>(gems) / static_cast<float>(played) / static_cast<float>(world.allies.size());
++    return r;
++}
++
++// The team's gain, in gems, from `gems` going to Prism rather than staying in our bag: the premium
++// (hub_factor) less the rounds Prism spends on them (`theirs`, its walk and hold) at a champion's rate.
++float hub_net(const World& world, float rho, float gems, float ours, float theirs) {
++    return gems * (hub_factor(world, rho, ours, theirs) - 1.0f) - theirs * champion_gem_rate(world);
++}
++
++float hub_gain(const World& world, const Hub& hub, const CampGroup& G, float ours, int steps, bool shared) {
++    if (!hub.on() || G.gems <= 0 || G.has_monolith || steps == unreachable) return 1;
++    // As sole_capture_holder's Prism branch: not a hold that wins its bag or that it could not bank in time.
++    const auto& map = world.map();
++    if (world.score.ally + hub.bag + G.gems >= static_cast<int>(cambc::constants::winning_gems)
++        || rounds_left(world) <= tribute_turns(hub.bag + G.gems, hub.prism->fast_tribute) + map.width + map.height + endgame_margin)
++        return 1;
++    const float gems = static_cast<float>(G.gems);
++    const float net = hub_net(world, hub.rho, gems, ours, hub_payout(ours, steps, shared && G.members.size() > 1, hub.prism->fast_capture));
++    return 1.0f + std::max(0.0f, net) / gems;
++}
++
++// Prism claims our hold's group g: it is coming to take it.
++bool hub_coming(const World& world, int g) {
++    const auto& hub = team_hub(world);
++    return hub.on() && comms::claim_of(world, hub.prism->index) == g;
++}
++
++// Whether we would step off G, `timer` rounds from our payout, for Prism coming to hold it afresh
++// from `steps` away: it pays the team more than our payout (hub_gain, no tile shared) and no enemy
++// threatens the hold.
++bool hub_hands_at(const World& world, const CampGroup& G, int timer, int steps) {
++    const auto& hub = team_hub(world);
++    return hub.on() && hub_gain(world, hub, G, static_cast<float>(timer), steps, false) > 1.0f && !hold_threatened(world, my_position());
++}
++
++// On G's tile with our count running, Prism coming for it but not on a tile (sole_capture_holder's
++// yield): step off for it to hold afresh (hub_hands_at). While it may still join our hold (a free tile,
++// and there before our payout) we wait for that. On a single tile, with Prism due before our payout, its
++// hold is fresh whenever we leave and our rounds there buy nothing, so we leave now; a fuller multi-tile
++// hold it joins once one of us steps off. Otherwise we step off at the last turn before our payout, or
++// once it stands beside the tiles and every tile is ours: one due only after our payout may yet pick
++// another group, and our hold then still pays. Prism, else null.
++const ChampionBelief* hub_hands_over(const World& world, Pathing& pathing, const CampGroup& G, int g) {
++    if (!hub_coming(world, g)) return nullptr;
++    const auto& hub = team_hub(world);
++    const auto& prism = *hub.prism;
++    if (prism.visible && test(G.tiles(), prism.pos)) return nullptr;
++    const int timer = fresh_ally_capture(world, G);
++    if (timer < 1) return nullptr;
++    const bool full = free_tiles(G.tiles()).is_empty();
++    const bool beside = prism.visible && test(G.adjacent(), prism.pos) && full;
++    const bool single = G.members.size() == 1;
++    if (!beside && timer > 1 && !single) return nullptr;
++    const int steps = beside ? 1 : hub_steps(world, pathing, hub, g);
++    if (!beside && timer > 1 && !(steps < timer)) return nullptr;
++    return hub_hands_at(world, G, timer, steps) ? &prism : nullptr;
++}
++
++// A capture recall would keep us on G's tiles to its payout `timer` rounds away: not while Prism is
++// coming and we would hand the hold over at its last turn.
++bool hub_awaited(const World& world, Pathing& pathing, const CampGroup& G, int g, int timer) {
++    if (!hub_coming(world, g)) return false;
++    const int steps = hub_steps(world, pathing, team_hub(world), g);
++    return steps != unreachable && hub_hands_at(world, G, 1, std::max(1, steps - std::max(0, timer - 1)));
++}
++
++} // namespace
++
++} // namespace aph
+diff -ruN '--exclude=.cambc' bots/ocean/src/params.h bots/variants/macro4-handf/src/params.h
+--- bots/ocean/src/params.h	2026-11-11 01:36:29.703430199 +0000
++++ bots/variants/macro4-handf/src/params.h	2026-11-11 02:32:41.478028585 +0000
+@@ -70,6 +70,8 @@
+ // Below this share of max health a champion, ours or an enemy, is hurt: ours retreat from smaller
+ // packs, no longer count their own ground as safe from pursuit, and are healed for any gain.
+ inline constexpr float hurt_health_fraction = 0.4532513f;
++// The most a gem carried by Prism is worth over the same gem in another bag, in extra gems (hub_premium).
++inline constexpr float hub_rho_most = 2.0f;
+ // Below the recall line, stay to finish a camp whose remaining damage is under this share of our health.
+ inline constexpr float finish_camp_health_fraction = 0.6881714f;
+ // Camp damage counted against the health we can spare when choosing a camp (below 1: bolder).
+diff -ruN '--exclude=.cambc' bots/ocean/src/unity.cpp bots/variants/macro4-handf/src/unity.cpp
+--- bots/ocean/src/unity.cpp	2026-11-11 01:36:29.703430199 +0000
++++ bots/variants/macro4-handf/src/unity.cpp	2026-11-11 02:32:41.478262979 +0000
+@@ -11,6 +11,7 @@
+ #include "combat/fight.cc"
+ #include "economy/bank.cc"
+ #include "economy/capture.cc"
++#include "economy/hub.cc"
+ #include "economy/crew.cc"
+ #include "economy/farm.cc"
+ #include "economy/siege.cc"

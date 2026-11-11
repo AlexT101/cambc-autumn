@@ -58,6 +58,10 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
   The v84 pattern again: a risk or greed change needs its panel H1 before it ships.
 - A map class that gains post hoc needs its own held-out run before anything is built on it (big groups, 2026-11-11):
   bg-golem was +4.3 ±3.8 on 236 maps of one class out of 14 looked at, and -2.5 ±1.2 on 2,027 untouched maps of it.
+- Find the quantity that decides the game, then change who holds it, not how much is farmed (macro programme,
+  2026-11-11): Prism Focus decides Prism duels, and every winning macro change moved capture gems onto the Prism at
+  equal capture volume; redirecting the Prism, caution and structural farm redesigns all lost. Independent efforts
+  converge on the dominant lever, so a merge gains most from the orthogonal ones (EOQ bank floor, small fixes).
 
 ## (ocean = 506, 2026-11-11) Keeping a hoarding Prism alive: it dies fighting on after a second enemy arrives; an earlier retreat line cuts the deaths 13-18% and the win rate stays level; eight arms, none passes
 
@@ -252,6 +256,72 @@ sides, `--fuel 200000`; candidate and base each play the fixed bodies `spar-dvn1
   carriers more often than the bodies), but its expected size is under a point, below what a 500-game live gate resolves.
 - Not tried: keeping a hoarding Prism alive (131 deaths with 40+ gems in 384 live games, 113 with an enemy in sight
   two rounds earlier, median 15% health the round before), and the one-site overrun class.
+## (charybdis, 2026-11-11) Macro programme: six independent refactors of ocean, merged into charybdis (CHANGES 507-513)
+
+Six orchestrators each refactored ocean's macro alone for ~8 hours, each A/B against a frozen ocean 506
+(`ocean-ref-b7c87cf`) at 2x fuel, 10k+ games. Each one's best then played 40,960 games against ocean at the real
+budget (fresh ladder-v2 s-700001..080), the best became charybdis's base, and a planner, an auditor and two merge agents
+ported the rest change by change. Write-ups, logs, briefs and patches: research/macro-2026-11-11/macroN/ (branches
+`macroN-20261111`); merge record: research/charybdis/ (plan.md, plan-audit.md, merge-log.md, results.md, final.md;
+rejected candidates' diffs in patches/).
+
+| Orchestrator (angle) | Best | 2x fuel | Real budget, 40,960 | Idea |
+|---|---|---|---|---|
+| macro1 (evidence) | hold6 | 58.3 of 40,960 | **56.8** | Prism gem carry, never-diluted sole holds (CHANGES 507) |
+| macro5 (variation) | hold-sole2 | 57.0 of 39,936 | 56.2 | Prism as holder (Focus premium), stun-lock safety, co-holders step off |
+| macro4 (code structure) | handfc | 56.3 of 39,936 | 55.9 | Prism collects allies' clears, derived premium rho (510) |
+| macro6 (time) | carry3 | 55.8 of 51,200 | 55.3 | Focus-priced farm values (512) |
+| macro3 (adversary) | eoq2 | 53.1 of 30,720 | 52.3 | EOQ bank floor (508) |
+| macro2 (theory) | lstep | 50.8 of 71,680 | 50.7 | four rare-case fixes (509, 511) |
+
+Four of six found the Prism-carry lever independently; the Prism-less ~20% of games stayed at 50% in all of them.
+
+**Lost or level in the programme** (each 10k+ games against ocean at 2x fuel unless noted; tables with CIs in each
+macroN.md):
+- *Caution loses in proportion to the work it costs.* Prism banks its bag 36.9 / never keeps gems 32.7 (macro1);
+  banking to protect the Prism's bag 46.4, a more careful Prism 47.0 (macro5); pricing more heal trips for hurt carriers
+  -5 (macro4 dA); Prism stun reserved off camps 39 (macro2 duel); every champion avoids a dominant enemy Prism 45.3
+  (macro1); Lanchester posture 48.3, a stakes-aware carrier recall line 48.8 (macro6).
+- *Redirecting the Prism, rather than reallocating gems to it, is level or loses:* Focus in the Prism's own farm and
+  kill values 52.2 vs 54.6 (macro5 prismhold2), a clear model re-steering it -3.2 (macro4 aoe), hunting or yielding to
+  enemy Prisms, kill routing, the turn-order kill bid, a reaper: all level (macro1, macro5).
+- *Structural macro redesigns against the mirror:* exclusive farm claims 36.7 (macro5), a team plan 42.0, enemy-intent
+  farm valuation 47.1, and window/collapse/stack/linked/commit/hold/deny/deter/flow/pause/join 49.1-50.5 (macro3); a farm
+  claims refactor 52.3 vs 55.1 (macro1); farm race 44.8, chain lookahead 45.6, the Golem/Monolith programme 48.0-48.6,
+  lock sieges 46.8-47.6 (macro2).
+- *Saturated tuning:* any ref weight moved ±50% read 44-50 (macro5); the carry bonus x0.5/x2/x4 all below x1 (macro6);
+  the heal credit x0.5/x1.5 both below (macro4); eoq-hi/lo below the derived EOQ (macro3).
+- *Level refinements:* Prism life priced 2x (macro1 plife), end-tile exposure pricing (guard), hold3-5/hold7 (macro1);
+  follow-up end-position value 54.2/55.0 vs 56.0 (macro6); duel pieces, Willow and crew pricing, a race-aware premium
+  (macro4); joint fight verdicts, stand initiative, shop timing (macro2: shop EOQ 49.4).
+- *Untested leftovers:* macro6-mono (Monolith carry; 70 of 80 debug games identical), macro5-hold-sole3 (512-game smoke
+  51.8 vs sole2), macro3-eoq5 (53.1, level with eoq2): diffs in research/charybdis/patches/.
+
+**Merge** (real budget, `--no-test-draft`, fresh suites; paired = same maps and sides):
+- 2x fuel to real budget cost every best 0.1-1.5 points without changing the order; the base lost the most (58.3 ->
+  56.8).
+- Dropped by the planner as covered by the base: macro5's holder Focus premium, pick-up of held groups, threat-gated
+  yield and capture-recall step-off (its +2.2 hold-sole step); macro6's holder premium and 'T' takeover; macro4's
+  separate 'Q' for held groups, `hub_awaited`, multi-tile `hub_claim`.
+- Rejected after porting (diffs in research/charybdis/patches/rejected-*):
+  - K2b (hold cast + Willow + two casts on a double turn) on 509: level (51.4 vs 51.65 against 507). Without the two
+    casts (dropped by user decision: added caution) the pair won as 511.
+  - K3 / C9 hand-over of full and single-tile holds to the Prism: level twice (+0.02 against 509 on 510); fires ~0.26
+    a game. Next: let 'Q' take a full group through it, with its own pricing.
+  - C1 macro4's team-marginal carry value with the `hub_net` gate: 49.31 against 509. The holder-gain term cut the
+    base's carries ~45%; next: price the holder gain in gems only. C1b, the gate alone: 50.06, fires 0.26 a game.
+  - C4 macro5's stun-lock safety: -0.68 against ocean (CI -1.23..-0.12), out-of-fuel turns +15%.
+  - C5 macro3's eoq5 holding cost for chaining: level everywhere (34 decisions a game, same banks).
+  - C6 macro5's route tie-break: not built, 0.014 transit splits a game remain.
+  - C7 macro6-mono: dropped by user decision, untested.
+- Against forks that share the Prism economy (507, 509) a better-priced Prism wins little; against ocean it does (512:
+  -0.05 against 509, +0.70 against ocean).
+
+**Fuel** (CHANGES 513): charybdis has ~9% more out-of-fuel turns than ocean and ~1.7k more fuel a turn, almost all
+economy code; after 513 its additions cost ~0.6k an out-of-fuel turn. Left: `prism_hold_threatened` / `holding_capture`
+re-run `turns_to_harm_idle` (~4k) after every `Safety` generation bump, including our own attacks; a finer key counting
+Safety reads was identical but +0.6M fuel and was reverted. `dash_away` ~20k a call; `altars_sealed` misses
+`access_fire`'s round cache (~600). Out-of-fuel turns are highest for Ren, Heart of Ruin and Vesper, not Prism.
 
 ## (combat lab, 2026-11-11) ocean's fight model is calibrated against Fish and Mite too; nothing to correct
 

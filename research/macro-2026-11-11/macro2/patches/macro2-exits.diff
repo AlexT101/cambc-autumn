@@ -1,0 +1,539 @@
+diff -ruN -x .cambc -x compile_commands.json bots/variants/ocean-ref-b7c87cf/src/bot_parts.h bots/variants/macro2-exits/src/bot_parts.h
+--- bots/variants/ocean-ref-b7c87cf/src/bot_parts.h	2026-11-11 01:36:28.906986482 +0000
++++ bots/variants/macro2-exits/src/bot_parts.h	2026-11-11 07:42:54.605184842 +0000
+@@ -327,7 +327,7 @@
+ float recall_line(const World& world, Safety& safety);
+ float recall_line(const World& world, Safety& safety, vec2 p);
+ int hold_rounds(const World& world, Pathing& pathing, vec2 p);
+-bool hold_outlasts(Safety& safety, float damage, vec2 p, int rounds);
++bool hold_outlasts(const World& world, Pathing& pathing, Safety& safety, float damage, vec2 p, int rounds);
+ bool paying_soon(const World& world, Safety& safety, vec2 p, int turns);
+ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
+ // want_home's recall line and pack zone (drawn_home) at p, as if we stood there with last round's loss `damage`.
+diff -ruN -x .cambc -x compile_commands.json bots/variants/ocean-ref-b7c87cf/src/combat/fight.cc bots/variants/macro2-exits/src/combat/fight.cc
+--- bots/variants/ocean-ref-b7c87cf/src/combat/fight.cc	2026-11-11 01:36:28.907079743 +0000
++++ bots/variants/macro2-exits/src/combat/fight.cc	2026-11-11 07:58:28.915255978 +0000
+@@ -403,11 +403,21 @@
+ // (camps hit from out of sight, bush attackers stay unseen), and the enemies (the unseen from the
+ // tiles they may be on) and the camps cannot kill us by then even if we never act. Leaving forfeits the reward; staying risks only what
+ // this counts.
+-bool hold_outlasts(Safety& safety, float damage, vec2 p, int rounds) {
++// A kill that lands only on the enemy turn after our second past the payout needs those two turns'
++// moves to take us out of every pursuer's reach by then (escape::Plan::clear_exit): with no such
++// exit, the payout is our last.
++bool hold_outlasts(const World& world, Pathing& pathing, Safety& safety, float damage, vec2 p, int rounds) {
+     const int window = rounds + 1;
+     if (damage * static_cast<float>(window) >= my_health() || safety.lethal(p)) return false;
+     const int kill = safety.turns_to_kill_idle(p, window + 1);
+-    return kill == 0 || kill > window;
++    if (kill == 0) return true;
++    if (kill <= window) return false;
++    if (escape::plan(world, pathing, safety).clear_exit(p, window, window + 1)) return true;
++    debug_block({
++        std::printf("EXIT %d %u hold leave at %d,%d pays %d kill %d\n", world.round, static_cast<unsigned>(world.me().handle), p.x, p.y, rounds,
++                    kill);
++    });
++    return false;
+ }
+ 
+ namespace {
+@@ -427,7 +437,7 @@
+         return rounds_;
+     }
+     bool keeps_us(Safety& safety) {
+-        if (keeps < 0) keeps = rounds() >= 0 && hold_outlasts(safety, damage, p, rounds());
++        if (keeps < 0) keeps = rounds() >= 0 && hold_outlasts(world, pathing, safety, damage, p, rounds());
+         return keeps == 1;
+     }
+ };
+diff -ruN -x .cambc -x compile_commands.json bots/variants/ocean-ref-b7c87cf/src/combat/guard.cc bots/variants/macro2-exits/src/combat/guard.cc
+--- bots/variants/ocean-ref-b7c87cf/src/combat/guard.cc	2026-11-11 01:36:28.907079743 +0000
++++ bots/variants/macro2-exits/src/combat/guard.cc	2026-11-11 07:42:54.605103611 +0000
+@@ -770,7 +770,7 @@
+         for (int dy = -radius; dy <= radius; ++dy)
+             for (int dx = -radius; dx <= radius; ++dx)
+                 if (const vec2 q{here.x + dx, here.y + dy}; in_bounds(q) && test(*strikes, q))
+-                    if (const int rounds = hold_rounds(world, pathing, q); rounds >= 0 && hold_outlasts(safety, in.damage, q, rounds))
++                    if (const int rounds = hold_rounds(world, pathing, q); rounds >= 0 && hold_outlasts(world, pathing, safety, in.damage, q, rounds))
+                         edit(), set_tile(out, q, false);
+     const unsigned kept = keep_out(world, pathing, safety, here, in.damage);
+     for (unsigned left = kept; left; left &= left - 1) edit(), set_tile(out, here + directions[std::countr_zero(left)]);
+diff -ruN -x .cambc -x compile_commands.json bots/variants/ocean-ref-b7c87cf/src/combat/plan.cc bots/variants/macro2-exits/src/combat/plan.cc
+--- bots/variants/ocean-ref-b7c87cf/src/combat/plan.cc	2026-11-11 01:36:28.907420057 +0000
++++ bots/variants/macro2-exits/src/combat/plan.cc	2026-11-11 07:51:39.437685617 +0000
+@@ -202,6 +202,8 @@
+ constexpr float break_penalty = 1e5f;
+ // keep_bid's search: only plans that keep the bid.
+ bool keep_only = false;
++// keep_bid's ends dropped as lethal short of the kill (Search::bid_doomed), this turn.
++int bid_doomed_ends = 0;
+ 
+ enum class Op : std::uint8_t { walk, attack, reset, dash, spell, heal, shield };
+ struct Act {
+@@ -465,6 +467,9 @@
+     // The foe our kill bid binds this turn to, and the health a plan must leave it at most.
+     int bound = -1;
+     float bound_left = 0;
++    int bid_unit = -1; // the bid's target among the units, bound or not
++    Grid lethal_known = 0, lethal_cells = 0; // Safety::lethal by end cell, asked on first need
++    Grid bid_doomed(Grid ends, const Node& s);
+ 
+     Grid kept_has = 0;
+ 
+@@ -1295,6 +1300,7 @@
+     if (auto* b = const_cast<follow::Bid*>(follow::binding(world)))
+         for (int t = 0; t < foes; ++t) {
+             if (u[t].belief->index != b->target || u[t].spawn) continue;
++            bid_unit = t;
+             // The search after the goal's walk keeps what the first one dealt.
+             if (b->left_round != world.round) b->left_round = world.round, b->left = h[t] - std::min(0.9f * b->need, h[t]) + 0.01f;
+             if (h[t] > b->left) bound = t, bound_left = b->left;
+@@ -1604,6 +1610,13 @@
+             v -= break_penalty;
+         }
+     }
++    // With the walk left, retreat still steps off the end tile.
++    if (keep_only && bid_unit >= 0 && ends && !(s.walk && !s.excl)) {
++        const Grid doomed = bid_doomed(ends, s);
++        bid_doomed_ends += std::popcount(doomed);
++        ends &= ~doomed;
++        if (!ends) return;
++    }
+     const std::uint16_t r = ends ? removed(s) : 0;
+     each_bit(ends, [&](int c) {
+         ++offers;
+@@ -1646,6 +1659,41 @@
+     });
+ }
+ 
++// The ends Safety rates lethal to us where the bid leaves its target alive past our last turn before
++// it acts: this one, and the next unless it acts first (a stun of ours takes its turn). The next turn
++// counts our strike from the end with the slots this plan leaves ready.
++Grid Search::bid_doomed(Grid ends, const Node& s) {
++    const int t = bid_unit;
++    if (s.dead >> t & 1) return 0;
++    const auto& target = *u[t].belief;
++    const bool again = turns_before_ours(world, target) - (s.stunned >> t & 1) <= 0;
++    // A copy: lethal() below may reuse strike_with's storage.
++    Strike next;
++    if (again) {
++        const auto& self = world.me();
++        unsigned slots = 0;
++        for (int k = 0; k < 2; ++k)
++            if (self.ability_ready(k, world.round + 1)) slots |= 1u << k;
++        for (int k = 0; k < s.depth; ++k) {
++            const Act& a = stack[k];
++            const int used = a.op == Op::spell ? a.slot : a.op == Op::dash ? dash : a.op == Op::reset ? reset : -1;
++            if (used >= 0) slots &= ~(1u << used);
++        }
++        next = strike_with(self, slots);
++    }
++    Grid doomed = 0;
++    each_bit(ends, [&](int c) {
++        if (!(lethal_known >> c & 1)) {
++            lethal_known |= gbit(c);
++            if (safety.lethal(tile(c))) lethal_cells |= gbit(c);
++        }
++        if (!(lethal_cells >> c & 1)) return;
++        if (again && h[t] <= next.at(dist(tile(c), u[t].pos)) * u[t].taken) return;
++        doomed |= gbit(c);
++    });
++    return doomed;
++}
++
+ // Each end tile a leaf's moves can reach, offered once.
+ void Search::settle(const Node& s) {
+     if (s.owed) return;
+@@ -2482,6 +2530,7 @@
+ Planned keep_bid(const World& world, Pathing& pathing, Safety& safety) {
+     if (!follow::binding(world) || world.is_stale() || !strike_possible(world)) return {};
+     keep_only = true;
++    bid_doomed_ends = 0;
+     Planned out;
+     try {
+         out = plan_strikes(world, pathing, safety, Intent{});
+@@ -2490,6 +2539,11 @@
+         throw;
+     }
+     keep_only = false;
++    debug_block({
++        if (bid_doomed_ends > 0)
++            std::printf("EXIT %d %u bid %s doomed %d\n", world.round, static_cast<unsigned>(world.me().handle),
++                        out.attacked || out.moved ? "other" : "retreat", bid_doomed_ends);
++    });
+     return out;
+ }
+ 
+diff -ruN -x .cambc -x compile_commands.json bots/variants/ocean-ref-b7c87cf/src/combat/self_abilities.cc bots/variants/macro2-exits/src/combat/self_abilities.cc
+--- bots/variants/ocean-ref-b7c87cf/src/combat/self_abilities.cc	2026-11-11 01:36:28.907420057 +0000
++++ bots/variants/macro2-exits/src/combat/self_abilities.cc	2026-11-11 04:54:08.837148849 +0000
+@@ -8,6 +8,7 @@
+ #include "../champions.h"
+ #include "../emblems.h"
+ #include "../params.h"
++#include "../model/comms.h"
+ #include "../model/escape.h"
+ #include "../model/pathing.h"
+ #include "../model/safety.h"
+@@ -753,14 +754,35 @@
+     return gain >= least_ || health <= damage(a, pos, 1);
+ }
+ 
++float heal_value(const World& world, const ChampionBelief& a, vec2 pos, float gain, float max_health) {
++    const int field = world.map().from_ally_spawn().at(pos);
++    const auto steps = static_cast<float>(field != unreachable ? field : dist(pos, world.map().ally_spawn_centre));
++    const float usable = max_health * (1 - params::recall_health_fraction);
++    return usable > 0 ? gain / usable * heal_trip(a.recall_turns(), steps, steps) : 0.0f;
++}
++
++HealMate heal_mate(const World& world) {
++    const auto pair = support_pair(world);
++    if (!pair[0] || !pair[1] || !pair[1]->is_self) return {};
++    return {pair[0], comms::support_request(world)};
++}
++
++bool heal_before(const HealTarget& x, const HealTarget& y, const HealMate& mate) {
++    const auto rank = [&](const HealTarget& t) { return t.urgent ? (t.ally == mate.ally ? 3 : 2) : t.ally == mate.ally && mate.waiting ? 1 : 0; };
++    if (const int rx = rank(x), ry = rank(y); rx != ry) return rx > ry;
++    return x.value != y.value ? x.value > y.value : x.fraction < y.fraction;
++}
++
+ std::optional<HealTarget> heal_target(const World& world, const ChampionBelief& a, float amount, HealGate* gate, bool step) {
+     if (a.is_self || !a.alive || !a.visible || test(world.map().ally_spawn, a.pos)) return std::nullopt;
+     const auto* live = visible_record(a.handle);
+     if (!live) return std::nullopt;
+-    const HealTarget t{&a, {live->x, live->y}, std::min(amount, live->max_health - live->health), live->health / live->max_health};
++    HealTarget t{&a, {live->x, live->y}, std::min(amount, live->max_health - live->health), live->health / live->max_health};
+     const float health = live->health;
+     if (t.gain <= 0 || ((step || !gate) && !worth_healing(amount, t.gain, t.fraction))) return std::nullopt;
+     if (kept_recall(a.handle, a.recall_turns()) || (gate && !gate->worth(a, t.pos, t.gain, health))) return std::nullopt;
++    t.value = heal_value(world, a, t.pos, t.gain, live->max_health);
++    t.urgent = gate && gate->urgent(a, t.pos, health);
+     return t;
+ }
+ 
+@@ -773,12 +795,13 @@
+     const int range = world.me().facts().abilities[heal].range();
+     struct Candidate {
+         cambc::handle_champion_t c;
+-        const ChampionBelief* a;
+-        vec2 pos;
+-        float gain, fraction, health;
++        HealTarget t;
++        float health;
+     };
+     std::array<Candidate, 8> found;
+     int n = 0;
++    HealGate gate(world, safety, here, range, amount);
++    const auto mate = heal_mate(world);
+     // Read live: allies come into sight as we move.
+     for (auto p : positions_within(live_champion_tiles(team::ally), here, range)) {
+         if (p == here || test(world.map().ally_spawn, p) || n == static_cast<int>(found.size())) continue;
+@@ -793,17 +816,21 @@
+                 if (o.handle == c) a = &o;
+             // One keeping a recall going will reach spawn and heal there.
+             if (!a || kept_recall(c, a->recall_turns())) continue;
+-            // Most restored first, then the lowest.
++            HealTarget t{a, p, gain, fraction, heal_value(world, *a, p, gain, live.max_health), gate.urgent(*a, p, health)};
+             int i = n++;
+-            for (; i > 0 && (found[i - 1].gain < gain || (found[i - 1].gain == gain && found[i - 1].fraction > fraction)); --i) found[i] = found[i - 1];
+-            found[i] = {c, a, p, gain, fraction, health};
++            for (; i > 0 && heal_before(t, found[i - 1].t, mate); --i) found[i] = found[i - 1];
++            found[i] = {c, t, health};
+         } catch (const cambc::error&) {
+         }
+     }
+-    HealGate gate(world, safety, here, range, amount);
+     for (int i = 0; i < n; ++i) {
+         try {
+-            if (gate.worth(*found[i].a, found[i].pos, found[i].gain, found[i].health) && cast_slot_on(heal, found[i].c)) return true;
++            const auto& t = found[i].t;
++            if (gate.worth(*t.ally, t.pos, t.gain, found[i].health) && cast_slot_on(heal, found[i].c)) {
++                debug_block({ std::printf("MEDIC %d %u target %d value %.2f gain %.0f urgent %d\n", world.round,
++                                          static_cast<std::uint32_t>(world.me().handle), t.ally->index, t.value, t.gain, t.urgent); });
++                return true;
++            }
+         } catch (const cambc::error&) {
+         }
+     }
+diff -ruN -x .cambc -x compile_commands.json bots/variants/ocean-ref-b7c87cf/src/combat/self_abilities.h bots/variants/macro2-exits/src/combat/self_abilities.h
+--- bots/variants/ocean-ref-b7c87cf/src/combat/self_abilities.h	2026-11-11 01:36:28.907420057 +0000
++++ bots/variants/macro2-exits/src/combat/self_abilities.h	2026-11-11 04:54:08.837239860 +0000
+@@ -80,6 +80,8 @@
+         : world_(world), safety_(safety), from_(from), radius_(radius), amount_(amount) {}
+     // A heal restoring `gain` to ally `a` at `pos` with `health`.
+     bool worth(const ChampionBelief& a, vec2 pos, float gain, float health);
++    // Every blow that may land before our next turn could fell it.
++    bool urgent(const ChampionBelief& a, vec2 pos, float health) { return health <= damage(a, pos, 1); }
+ private:
+     // What could hit `a` at p a round: camp hits, and `blow_share` of the enemy blows.
+     float damage(const ChampionBelief& a, vec2 p, float blow_share);
+@@ -109,7 +111,21 @@
+     const ChampionBelief* ally;
+     vec2 pos;
+     float gain, fraction; // what the heal restores, and the ally's health fraction before it
++    float value = 0;      // heal_value
++    bool urgent = false;  // HealGate::urgent, with a gate
+ };
++// Rounds of farm a heal restoring `gain` to `a` at `pos` saves: its share of a trip home (heal_trip
++// from pos's steps from our spawn) per usable health, as Prism's recovery prices it (support.cc).
++float heal_value(const World& world, const ChampionBelief& a, vec2 pos, float gain, float max_health);
++// Our protected mate when we are its healer, and whether it waits in its recovery for our heal.
++struct HealMate {
++    const ChampionBelief* ally = nullptr;
++    bool waiting = false;
++};
++HealMate heal_mate(const World& world);
++// x's heal before y's: one that may keep an ally from falling (the mate first among those), then the
++// mate while it waits for us, then the most rounds saved (heal_value), then the lowest ally.
++bool heal_before(const HealTarget& x, const HealTarget& y, const HealMate& mate);
+ // A visible ally off its spawn that a heal of `amount` is worth casting on (`gate`), or with `step`
+ // or no gate, also worth stepping for (worth_healing). One keeping a recall going will reach spawn
+ // and heal there.
+diff -ruN -x .cambc -x compile_commands.json bots/variants/ocean-ref-b7c87cf/src/combat/support.cc bots/variants/macro2-exits/src/combat/support.cc
+--- bots/variants/ocean-ref-b7c87cf/src/combat/support.cc	2026-11-11 01:36:28.907420057 +0000
++++ bots/variants/macro2-exits/src/combat/support.cc	2026-11-11 04:53:11.388884299 +0000
+@@ -221,14 +221,15 @@
+     return false;
+ }
+ 
+-// The neighbouring station `ok` accepts from which a heal lands best: the most restored, then on
+-// the lowest ally, then the least `cost`. `here` if none.
++// The neighbouring station `ok` accepts from which a heal lands best (heal_before), then the least
++// `cost`. `here` if none.
+ template <class Ok, class Cost>
+ vec2 heal_station(const World& world, Pathing& pathing, Safety& safety, vec2 here, const std::array<HealView, 8>& views,
+                   int n, Ok&& ok, Cost&& cost) {
+     vec2 best = here;
+-    float best_gain = 0, best_fraction = 0;
++    const HealTarget* best_target = nullptr;
+     int best_cost = unreachable;
++    const auto mate = heal_mate(world);
+     const auto& tiles = stations(world, safety, here).tiles;
+     for (int k = 1; k < 9; ++k) {
+         const auto& tile = tiles[k];
+@@ -239,9 +240,8 @@
+         for (int t = 0; t < n; ++t) {
+             const auto& target = views[t].target;
+             if (!support_view(views[t].viewers, target.pos, tile.p)) continue;
+-            if (target.gain != best_gain ? target.gain > best_gain
+-                : target.fraction != best_fraction ? target.fraction < best_fraction : c < best_cost)
+-                best = tile.p, best_gain = target.gain, best_fraction = target.fraction, best_cost = c;
++            if (!best_target || heal_before(target, *best_target, mate) || (!heal_before(*best_target, target, mate) && c < best_cost))
++                best = tile.p, best_target = &target, best_cost = c;
+         }
+     }
+     return best;
+@@ -548,7 +548,8 @@
+     const bool can_step = my_can_move();
+     vec2 best = here;
+     int best_gap = unreachable, best_home = unreachable;
+-    float best_gain = -1;
++    const HealTarget* best_target = nullptr;
++    const auto heal_mate_now = heal_mate(world);
+     bool found = false;
+     for (int k = -1; k < 8; ++k) {
+         const vec2 p = k < 0 ? here : here + directions[k];
+@@ -564,13 +565,10 @@
+         for (int t = 0; t < view_count; ++t) {
+             const auto& v = views[t].target;
+             if (!support_view(views[t].viewers, v.pos, p)) continue;
+-            const auto* chosen = target >= 0 ? &views[target].target : nullptr;
+-            if (!chosen || (v.gain != chosen->gain ? v.gain > chosen->gain
+-                            : v.fraction != chosen->fraction ? v.fraction < chosen->fraction
+-                            : v.ally == mate && comms::support_request(world)))
+-                target = t;
++            if (target < 0 || heal_before(v, views[target].target, heal_mate_now)) target = t;
+         }
+-        const float gain = target >= 0 ? views[target].target.gain : 0;
++        const HealTarget* chosen = target >= 0 ? &views[target].target : nullptr;
++        const float gain = chosen ? chosen->gain : 0;
+         if (willow && !ready) {
+             if (p == here || !work_route || work_route->at(p) >= work_route->at(here)
+                 || (!in_range && dist(p, mate->pos) >= dist(here, mate->pos))) continue;
+@@ -579,9 +577,10 @@
+         if (!(p == here ? here_risk : support_exposure(world, safety, p)).safe()) continue;
+         const int home = pathing.to_ally_spawn().at(p);
+         // Staying, tried first, keeps ties; between steps, the one nearer home wins.
+-        if (!found || gain > best_gain || (gain == best_gain && gap < best_gap)
+-            || (gain == best_gain && gap == best_gap && best != here && home < best_home))
+-            found = true, best = p, best_gain = gain, best_gap = gap, best_home = home;
++        const bool better = chosen && (!best_target || heal_before(*chosen, *best_target, heal_mate_now));
++        const bool tie = chosen ? best_target && !heal_before(*best_target, *chosen, heal_mate_now) : !best_target;
++        if (!found || better || (tie && gap < best_gap) || (tie && gap == best_gap && best != here && home < best_home))
++            found = true, best = p, best_target = chosen, best_gap = gap, best_home = home;
+     }
+     if (!found) return abandon_recovery();
+     const auto commit_support = [&] {
+diff -ruN -x .cambc -x compile_commands.json bots/variants/ocean-ref-b7c87cf/src/economy/capture.cc bots/variants/macro2-exits/src/economy/capture.cc
+--- bots/variants/ocean-ref-b7c87cf/src/economy/capture.cc	2026-11-11 01:36:28.909050928 +0000
++++ bots/variants/macro2-exits/src/economy/capture.cc	2026-11-11 07:19:29.617028523 +0000
+@@ -728,7 +728,29 @@
+     if (const int hit = attack_camp(world, free_hit); hit >= 0) {
+         cast_at_camp(world, hit);
+         reset_and_attack_camp(world, hit);
++        return;
+     }
++    // No basic reaches one, but a cast may: the hold keeps us on this tile, so an excludes-walking
++    // cast forgoes no walk, and a ready slot not cast now loses the round (rules abilities.cooldown).
++    if (!my_can_cast()) return;
++    const vec2 here = my_position();
++    std::array<std::pair<int, int>, 16> near; // (distance, group): groups_near's vector is reused by camp_cast
++    int n = 0;
++    for (int g : world.map().groups_near(here, world.me().facts().cast_reach())) {
++        if (n == static_cast<int>(near.size())) break;
++        // Unlike free_hit, not an unknown wake state: from cast range it may hide strikers we would wake.
++        if (world.camps[g].state != CampState::alive || g == held
++            || !(groups[g].strength <= 0 || (world.camps[g].awake == Awake::awake && world.camps[g].asleep == 0)))
++            continue;
++        int d = unreachable;
++        const auto& ms = groups[g].members;
++        for (std::size_t i = 0; i < ms.size(); ++i)
++            if (world.camps[g].health[i] > 0) d = std::min(d, dist(here, ms[i].pos));
++        if (d != unreachable) near[n++] = {d, g};
++    }
++    std::sort(near.begin(), near.begin() + n);
++    for (int k = 0; k < n; ++k)
++        if (cast_at_camp(world, near[k].second)) return;
+ }
+ 
+ } // namespace
+diff -ruN -x .cambc -x compile_commands.json bots/variants/ocean-ref-b7c87cf/src/model/escape.cc bots/variants/macro2-exits/src/model/escape.cc
+--- bots/variants/ocean-ref-b7c87cf/src/model/escape.cc	2026-11-11 01:36:28.910024080 +0000
++++ bots/variants/macro2-exits/src/model/escape.cc	2026-11-11 07:58:28.915047105 +0000
+@@ -608,6 +608,20 @@
+ 
+ int Plan::stood(vec2 p, bool slack) const { return value(pass(slack).stood[0], pass(slack).stood[1], p); }
+ 
++bool Plan::clear_exit(vec2 p, int first, int last) const {
++    if (!active_ || chase_ || first < 1 || last < first || last > horizon) return true;
++    const int x = p.x - origin_.x, y = p.y - origin_.y;
++    if (x < 0 || y < 0 || x >= side || y >= side) return true;
++    Rows kept{}, spent{}; // where our turns end so far, dash kept or spent
++    put(kept, y, std::uint32_t{1} << x);
++    for (int k = first; k <= last; ++k) {
++        spent = grow(spent) & walk_;
++        kept = grow(kept) & walk_;
++        if (k == 1 ? dash_now_ : dash_ && k >= dash_turn_) spent |= dash_landings(grow(kept), path_, walk_);
++    }
++    return !none_set((kept | spent) & ~hit_[last]);
++}
++
+ bool Plan::runner_hit_now() const { return get(hit_[1], at.y - origin_.y) >> (at.x - origin_.x) & 1; }
+ 
+ int Plan::runner_hits(bool slack) const { return std::min(many, (runner_hit_now() ? 1 : 0) + after_walk(at, slack)); }
+diff -ruN -x .cambc -x compile_commands.json bots/variants/ocean-ref-b7c87cf/src/model/escape.h bots/variants/macro2-exits/src/model/escape.h
+--- bots/variants/ocean-ref-b7c87cf/src/model/escape.h	2026-11-11 01:36:28.910024080 +0000
++++ bots/variants/macro2-exits/src/model/escape.h	2026-11-11 07:58:28.915145037 +0000
+@@ -64,6 +64,10 @@
+     int landed(vec2 p, bool slack) const;
+     int stood(vec2 p, bool slack) const;
+     bool dash_now() const { return dash_now_; } // a dash of ours can be cast this turn
++    // Our turns first..last (1..horizon) from p, where the turn before them ended: whether their moves (a walk
++    // each, our dash once when ready, after a walk) can end turn `last` on a tile no pursuer reaches on its turn
++    // `last`. True when inactive or past the plan, where nothing is known to reach us.
++    bool clear_exit(vec2 p, int first, int last) const;
+     // The slack pass, worked out on first ask; until then the slack values read as the full ones.
+     void want_slack();
+     bool slack_ready() const { return pass_[1].ready; }
+diff -ruN -x .cambc -x compile_commands.json bots/variants/ocean-ref-b7c87cf/src/model/safety.cc bots/variants/macro2-exits/src/model/safety.cc
+--- bots/variants/ocean-ref-b7c87cf/src/model/safety.cc	2026-11-11 01:36:28.910420095 +0000
++++ bots/variants/macro2-exits/src/model/safety.cc	2026-11-11 07:19:29.614628332 +0000
+@@ -1067,6 +1067,20 @@
+     return strike_slots(c, slots);
+ }
+ 
++// Two turns cast both slots, one a turn (rules turn.cast): a slot ready on the first (`first`) and the
++// other by the second (`second`), each turn with its basic attack, raising `out` to that sum. `moved`:
++// the first turn acts from where it ends (moved_strike's).
++void add_two_casts(const ChampionBelief& c, unsigned first, unsigned second, bool moved, Strike& out) {
++    const auto& f = c.facts();
++    for (unsigned a = 0; a < 2; ++a) {
++        const unsigned b = 1 - a;
++        if (!(first >> a & 1) || !(second >> b & 1)) continue;
++        const Strike one = moved ? compute_strike(f, hit_strength(c), hit_focus(c), 1u << a, true) : strike_slots(c, 1u << a).value;
++        const Strike& two = strike_slots(c, 1u << b).value;
++        for (int d = 0; d <= std::min({one.reach, two.reach, out.reach}); ++d) out.damage[d] = std::max(out.damage[d], one.at(d) + two.at(d));
++    }
++}
++
+ } // namespace
+ 
+ const Strike& strike(const ChampionBelief& c, int turn_round) { return strike_memo(c, turn_round).value; }
+@@ -1123,7 +1137,8 @@
+     auto& m = memo[static_cast<unsigned>(c.index) & 7u];
+     if (!m.known || m.type != c.type || m.strength != s || m.focus != focus) {
+         const auto k = compute_strike(c.facts(), hs, hf, 3u);
+-        m = {c.type, s, focus, true, k.hits(0) ? k.at(0) + hs : 0.0f};
++        const float casts = compute_strike(c.facts(), hs, hf, 1u).at(0) + compute_strike(c.facts(), hs, hf, 2u).at(0); // add_two_casts'
++        m = {c.type, s, focus, true, k.hits(0) ? std::max(k.at(0) + hs, casts) : 0.0f};
+     }
+     return m.damage;
+ }
+@@ -1143,7 +1158,7 @@
+ 
+ // threat_strike() for an unseen enemy whose turn this round `possible` already holds: that turn's
+ // strike from where it ended, and with a second turn before ours (next round) either that turn's
+-// full strike or this one's and a second basic attack.
++// full strike, this one's and a second basic attack, or one slot's strike each turn.
+ const Strike& moved_strike(const World& world, const ChampionBelief& c, StrikeMemo& m, int round, int& turns) {
+     const auto& f = c.facts();
+     const float hs = hit_strength(c), hf = hit_focus(c);
+@@ -1163,6 +1178,7 @@
+         out.stuns[d] = s2.stuns[d] || st.stuns[d];
+     }
+     out.reach = std::max(s2.reach, st.reach);
++    add_two_casts(c, m.slots, m2.slots, true, out);
+     return out;
+ }
+ 
+@@ -1200,6 +1216,7 @@
+         out.stuns[d] = s2.stuns[std::max(0, d - 1)]; // s2.stuns holds from 0 out to some distance
+     }
+     out.reach = std::min(Strike::max_reach, s2.reach + 1);
++    add_two_casts(c, m.slots, m2.slots, false, out);
+     return out;
+ }
+ 
+@@ -1950,7 +1967,15 @@
+                         }
+                     }
+                 }
+-
++                // Both damage spells from here, one a turn (add_two_casts'), the unit one needing sight.
++                for (std::size_t a = 0; twice && a < 2; ++a) {
++                    const auto &x = f.abilities[a], &y = f.abilities[1 - a];
++                    if (!ready[a] || !ready2[1 - a] || x.kind != AbilityKind::damage || y.kind != AbilityKind::damage) continue;
++                    const bool sight = x.target == Targeting::unit || y.target == Targeting::unit;
++                    const int reach = std::min(x.reach(), y.reach());
++                    add(here, reach, sight, 0, x.multiplier + y.multiplier, x.stuns || y.stuns, false);
++                    add(here, std::min(range, reach), true, 1, x.multiplier + y.multiplier, x.stuns || y.stuns, false);
++                }
+             }
+         return table;
+     }();
+diff -ruN -x .cambc -x compile_commands.json bots/variants/ocean-ref-b7c87cf/src/model/safety.h bots/variants/macro2-exits/src/model/safety.h
+--- bots/variants/ocean-ref-b7c87cf/src/model/safety.h	2026-11-11 01:36:28.910420095 +0000
++++ bots/variants/macro2-exits/src/model/safety.h	2026-11-11 07:19:29.615989260 +0000
+@@ -91,8 +91,8 @@
+ // at a unit beside the tile. Damage as Strike's.
+ class Reach {
+ public:
+-    // Its next turn, or with `twice` its next two: a walk first, or a second basic attack. The second
+-    // turn falls in turn_round + 1, so a slot coming ready then counts for it.
++    // Its next turn, or with `twice` its next two: a walk first, a second basic attack, or both damage
++    // spells, one a turn. The second turn falls in turn_round + 1, so a slot coming ready then counts for it.
+     void build(const World& world, const ChampionBelief& e, int turn_round, bool twice);
+     Blow at(vec2 p) const;
+     bool geometry_ready() const { return geometry_ready_; }
+@@ -241,8 +241,8 @@
+ // A visible enemy yet to act this round whose strike covers one turn: it may land again before our
+ // next turn. False when its strike already spans two turns, or a stun or teleport takes this turn.
+ bool enemy_blow_repeats(const World& world, const ChampionBelief& e);
+-// strike(), widened when it has two turns before our next: a walk then the strike, or the strike
+-// and a second basic attack.
++// strike(), widened when it has two turns before our next: a walk then the strike, the strike and a
++// second basic attack, or one slot's strike each turn.
+ const Strike& threat_strike(const World& world, const ChampionBelief& c);
+ // Farthest enemy its basic attack can reach in one turn from where it stands, by a walk, a ranged
+ // champion's walk and reset, or a dash ready in `round` first.

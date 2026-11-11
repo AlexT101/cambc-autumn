@@ -1,0 +1,149 @@
+diff -ru bots/variants/ocean-ref-b7c87cf/src/economy/farm.cc bots/variants/macro6-posture/src/economy/farm.cc
+--- bots/variants/ocean-ref-b7c87cf/src/economy/farm.cc	2026-11-11 01:36:30.493907850 +0000
++++ bots/variants/macro6-posture/src/economy/farm.cc	2026-11-11 02:18:09.957630599 +0000
+@@ -385,7 +385,8 @@
+ // strikers unprunable there.
+ // - Exposure: max_exposure for `out` off banking (rated_below's, at its factor); exposure_most for the
+ //   bounds on the loop's own tests (`value`, banking's four). Banking, `old` and `old_alt` are a prune
+-//   of its own at max_exposure: the trip and walk out above with no floor, clear or weight.
++//   of its own at max_exposure: the trip and walk out above with no floor, clear or weight. Each
++//   exposure is times `lift`, the most the turn's posture raises a group.
+ struct PreUpper {
+     vec2 here;
+     int short_by, recall;
+@@ -399,6 +400,7 @@
+     // less what the stop is worth; 0 where no recall arrives in time.
+     float bank_floor = 0;
+     float crew_most = 1; // the team's output over ours
++    float lift = 1;
+     float *out = nullptr, *alt = nullptr, *test = nullptr, *test_alt = nullptr, *old = nullptr, *old_alt = nullptr;
+     // Later turns: `out` at the weight, for the best alone (bar_lt's test reads the unweighted worth
+     // while the facts' context is stale).
+@@ -498,8 +500,8 @@
+         hx = wasm_i32x4_splat(p.here.x), hy = wasm_i32x4_splat(p.here.y), short_by = wasm_i32x4_splat(p.short_by);
+         help = wasm_i32x4_splat(params::help_radius);
+         one = wasm_f32x4_splat(1.0f), slack = wasm_f32x4_splat(1.0002f), horizon = wasm_f32x4_splat(p.horizon);
+-        cap = wasm_f32x4_splat(p.cap_rounds), exposure = wasm_f32x4_splat(params::max_exposure);
+-        most_exposure = wasm_f32x4_splat(exposure_most), most_scale = wasm_f32x4_splat(exposure_most / params::max_exposure);
++        cap = wasm_f32x4_splat(p.cap_rounds), exposure = wasm_f32x4_splat(params::max_exposure * p.lift);
++        most_exposure = wasm_f32x4_splat(exposure_most * p.lift), most_scale = wasm_f32x4_splat(exposure_most / params::max_exposure);
+         channel = wasm_f32x4_splat(static_cast<float>(p.via.channel)), value = wasm_f32x4_splat(p.via.value);
+         out_base = wasm_i32x4_splat(p.via.channel + p.via.hurt);
+         inf = wasm_f32x4_splat(std::numeric_limits<float>::infinity());
+@@ -608,6 +610,19 @@
+     return m;
+ }
+ 
++// Lanchester's square law: a side's strength in a fight goes as its numbers squared. Every
++// champion's liveness is readable in or out of view, so both counts are known to all our bodies
++// (Cassi and Issac are two). Off our own ground a group is worth this times itself, below 1 when
++// outnumbered; 1 within the opening plan's horizon.
++float posture(const World& world) {
++    if (world.round <= params::open_plan::horizon) return 1.0f;
++    int us = 0, them = 0;
++    for (const auto& a : world.allies) us += a.alive;
++    for (const auto& e : world.enemies) them += e.alive;
++    const float ratio = static_cast<float>(us) / static_cast<float>(std::max(1, them));
++    return std::min(params::posture_cap, ratio * ratio);
++}
++
+ // The first turn has its own instance: its extra prunes would make every later call dearer. So
+ // do later turns' banking calls, out of line, past pick_up.
+ // `repricing`: only the pick, during our recall's channel, which may then go on to its
+@@ -847,6 +862,14 @@
+     if (holding_capture(world, pathing)) return true;
+     MirrorPull pull;
+     if constexpr (!opening) pull = mirror_pull(world);
++    // Off our own ground a group's worth is times the posture; `lift` is the most that and the
++    // pull's denial raise any group, for the bounds that see no group's side.
++    const float stance = opening ? 1.0f : posture(world);
++    const float lift = pull.deny_scale * std::max(1.0f, stance);
++    debug_block({
++        static float traced = 1.0f;
++        if (stance != traced) traced = stance, std::printf("POSTURE %d %u m %.2f\n", world.round, my_handle(), stance);
++    });
+     // steps less the pull's cut, from `mirror_steps` (a lower bound of them keeps the result one).
+     const auto pulled_steps = [&](float steps, float mirror_steps) __attribute__((always_inline)) {
+         if (!pull.on) return steps;
+@@ -1259,7 +1282,8 @@
+     };
+     int help_group = -1, help_steps = unreachable;
+     // Middle-band pricing: a group in the middle band is worth mid_exposure of itself. The prunes
+-    // below that take the weight as at most 1 scale by params::max_exposure, the bounds by exposure_most.
++    // below that take the weight as at most 1 scale by params::max_exposure, the bounds by exposure_most,
++    // each times `lift`.
+     const auto exposure_of = [&](int g) {
+         const float s = home_side(map, g, opening);
+         // Smoothstep over [bound - mid_edge, bound + mid_edge] at each bound, so near-identical groups weigh alike.
+@@ -1452,7 +1476,7 @@
+         };
+         const float near_trip = trip + cap_rounds;
+         // The slack covers float rounding where a clear takes exactly the fastest.
+-        worth *= params::max_exposure * pull.deny_scale;
++        worth *= params::max_exposure * lift;
+         if (crew > 0) { // crew_rate's
+             const float k = std::clamp(fastest / std::sqrt(near_trip * (horizon + near_trip)), 1.0f, crew);
+             return rated(worth / k, near_trip + fastest / k) * 1.0001f < bar_lt();
+@@ -1522,7 +1546,7 @@
+         const int near = m.near - offset;
+         if (!banks_bag && near <= params::help_radius) return false;
+         const int gems = std::max(0, std::min(prospector ? m.gems_prospected : m.gems, short_by));
+-        const float worth = params::max_exposure * pull.deny_scale * (static_cast<float>(gems) * (1.0f + most_tribute)
++        const float worth = params::max_exposure * lift * (static_cast<float>(gems) * (1.0f + most_tribute)
+                             + most_per_gold * static_cast<float>(prospector ? m.gold_prospected : m.gold));
+         const float via = via_bound(m.spawn_near, 0);
+         if (banks_bag) return rate(world, worth, std::max(0.0f, std::min(static_cast<float>(near), via) - bank_now) + cap_rounds) * 1.0001f < tested_value;
+@@ -1533,7 +1557,7 @@
+         const int walk = altar_out(g, pathing.centre_to_altar(g));
+         if (walk == unreachable) return true;
+         const int gems = std::max(0, std::min(worth_gems[g], short_by));
+-        const float worth = params::max_exposure * pull.deny_scale * (static_cast<float>(gems) * (1.0f + most_tribute) + most_per_gold * worth_gold[g]);
++        const float worth = params::max_exposure * lift * (static_cast<float>(gems) * (1.0f + most_tribute) + most_per_gold * worth_gold[g]);
+         return rate(world, worth, static_cast<float>(walk) + cap_rounds) * 1.0001f < tested_value;
+     };
+     // The first position the bound covers. It holds from there on (r_k rises, the most held falls),
+@@ -1613,7 +1637,7 @@
+         p.banking = pre_banked, p.bank_now = bank_now, p.recall = pre_banked ? recall_turns(world) : 0;
+         // Shaved for fastest_clear's sum taken member by member.
+         p.health = pre_health = world.clear_health.data(), p.clear_scale = 0.9999f / strength, p.reflects = reflect > 0;
+-        p.crew_most = 1.0f / team_scale(), p.other_part = unclaimed_partner_output > 0 ? partner_part : 1.0f;
++        p.crew_most = 1.0f / team_scale(), p.other_part = unclaimed_partner_output > 0 ? partner_part : 1.0f, p.lift = lift;
+         p.weight = known_weights(n_groups);
+         p.out = pre_upper.data(), p.alt = pre_alt.data(), p.test = pre_test.data(), p.test_alt = pre_test_alt.data();
+         p.old = pre_old.data(), p.old_alt = pre_old_alt.data();
+@@ -1684,7 +1708,7 @@
+         const float gems = static_cast<float>(std::min(worth_gems[g], short_by));
+         const float worth = std::max(0.0f, gems + std::max(0.0f, per_gold) * worth_gold[g] + std::max(0.0f, tribute_gold) * gems);
+         const float weight = g < 256 ? home_weights()[static_cast<std::size_t>(g)] : 1.0f;
+-        return claim_bound(worth * exposure_most * weight, health, health / strength, trip) * 1.0002f;
++        return claim_bound(worth * exposure_most * lift * weight, health, health / strength, trip) * 1.0002f;
+     };
+     static const bool any_mono = [&] {
+         for (int g = 0; g < n_groups; ++g)
+@@ -1813,8 +1837,12 @@
+         }
+         if (known.version != belief.version || known.fastest_strength != strength)
+             known.version = belief.version, known.fastest_strength = strength, known.fastest = fastest_clear(world, g, strength);
++        // No posture on a Monolith (its operation is the crew's siege) nor on an ally's capture under way.
++        const float posed = stance != 1.0f && !group.has_monolith && !(belief.state == CampState::cleared && belief.holder == team::ally)
++                                    && home_side(map, g, opening) < params::own_ground_share
++                                ? stance : 1.0f;
++        const float exposed = exposure(g) * (pull.on && home_side(map, g, opening) < 0.5f ? pull.deny_scale : 1.0f) * posed;
+         // Ren's for the rated prunes; its plain ones keep the fastest.
+-        const float exposed = exposure(g) * (pull.on && home_side(map, g, opening) < 0.5f ? pull.deny_scale : 1.0f);
+         const float quickest = rated && reflect > 0 ? reflected_clear(world, g, strength, reflect) : known.fastest;
+         const int walk = known.walk;
+         // From the altar after the tribute, the cycle may go out by way of spawn.
+diff -ru bots/variants/ocean-ref-b7c87cf/src/params.h bots/variants/macro6-posture/src/params.h
+--- bots/variants/ocean-ref-b7c87cf/src/params.h	2026-11-11 01:36:30.496440302 +0000
++++ bots/variants/macro6-posture/src/params.h	2026-11-11 02:09:44.237839799 +0000
+@@ -193,6 +193,9 @@
+ inline constexpr float mid_exposure = 1.3611484f;
+ inline constexpr float mid_edge = 0.055977345f;
+ inline constexpr float max_exposure = 1.2148346f;
++// Posture (economy/farm.cc posture): off our own ground (side share below own_ground_share) a
++// group's worth is times (our live bodies / theirs)^2, Lanchester's square law, at most this.
++inline constexpr float posture_cap = 2.0f;
+ 
+ // Values in enemy health points: a champion's life over its health, each gem it carries, a stopped
+ // tribute (besides its gems) and a cancelled recall or teleport.

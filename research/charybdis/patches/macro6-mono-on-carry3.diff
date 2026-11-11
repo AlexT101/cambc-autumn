@@ -1,0 +1,88 @@
+diff -ruN macro6/bots/variants/macro6-carry3/src/economy/capture.cc macro6/bots/variants/macro6-mono/src/economy/capture.cc
+--- macro6/bots/variants/macro6-carry3/src/economy/capture.cc	2026-11-11 02:39:16.130368790 +0000
++++ macro6/bots/variants/macro6-mono/src/economy/capture.cc	2026-11-11 06:35:31.181264957 +0000
+@@ -233,9 +233,24 @@
+     return n >= 2 && multiplier && best_value > low + 1e-3f ? best : nullptr;
+ }
+ 
+-// Our hold of G would pay more than that of every ally in sight on its tiles, and a tile is free.
++bool enemy_may_see(const World& world, vec2 p);
++
++// We are a Prism keeping its bag with G's gems, and on whichever free tile of G we reach would be its
++// sole_capture_holder as now seen: the rest step off (yield_capture), so a hold of several is ours alone.
++bool holds_whole(const World& world, const CampGroup& G) {
++    if (G.gems <= 0 || !keeps_bag(world, world.me(), G.gems) || enemy_seen(world)) return false;
++    for (const auto p : Tiles<64>{free_tiles(G.tiles())})
++        if (enemy_may_see(world, p)) return false;
++    return true;
++}
++
++// Our hold of G would pay more than that of every ally in sight on its tiles, and a tile is free. A
++// Monolith's hold of several only to a Prism that would take it whole, once its holders are all there:
++// short of them, farm's loop prices our joining it.
+ bool outvalues_holders(const World& world, const CampGroup& G) {
+-    if (G.has_monolith || G.gems + G.gold <= 0 || holders(G) != 1) return false;
++    if (G.gems + G.gold <= 0
++        || (G.has_monolith ? !holds_whole(world, G) || allies_on(world, G.tiles()) < holders(G) : holders(G) != 1))
++        return false;
+     const bool multiplier = multiplies(world, world.me(), G);
+     if (!multiplier && hold_shy(world, world.me())) return false;
+     const float mine = holder_value(world, world.me(), G, holder_gold_price);
+diff -ruN macro6/bots/variants/macro6-carry3/src/economy/farm.cc macro6/bots/variants/macro6-mono/src/economy/farm.cc
+--- macro6/bots/variants/macro6-carry3/src/economy/farm.cc	2026-11-11 03:05:33.052257823 +0000
++++ macro6/bots/variants/macro6-mono/src/economy/farm.cc	2026-11-11 06:35:31.181826855 +0000
+@@ -957,16 +957,20 @@
+     auto& gold_context = memo.gold_context;
+     if (gold_context == 0 || per_gold != last_per_gold || tribute_gold != last_tribute_gold)
+         last_per_gold = per_gold, last_tribute_gold = tribute_gold, ++gold_context;
+-    // A Prism keeping its bag is the holder holder_value prefers for a gem capture it takes part in: the
+-    // team gains carried_bonus on each of the capture's gems, at its takeover price. Applied past the kept
+-    // facts, which hold none of it. Not on a Monolith or a capture that wins. keeps_bag only tightens
+-    // with the gems, so `keep_most`, a gem's at 1, bounds every group's: the prunes add it to the
+-    // gems' price as tribute_gold is.
++    // A Prism keeping its bag is the holder holder_value prefers for a gem capture it takes part in, a
++    // Monolith's too (sole_capture_holder takes any group's whole hold): the team gains carried_bonus on
++    // each of the capture's gems, at its takeover price. Applied past the kept facts, which hold none of
++    // it. Not on a capture that wins. keeps_bag only tightens with the gems, so `keep_most`, a gem's at
++    // 1, bounds every group's: the prunes add it to the gems' price as tribute_gold is.
+     const bool keeper = world.me().facts().passive == Passive::gem_focus;
+     const float keeper_price = keeper ? prices(world).per_gold : 0.0f;
+     const float keep_most = keeper && short_by > 1 ? carried_bonus(world, world.me(), 1, keeper_price) : 0.0f;
+-    const auto keep_bonus = [&](const CampGroup& G) __attribute__((always_inline)) {
+-        return keep_most > 0 && G.gems > 0 && G.gems < short_by && !G.has_monolith ? carried_bonus(world, world.me(), G.gems, keeper_price) : 0.0f;
++    const auto keep_bonus = [&](int g) __attribute__((always_inline)) {
++        const auto& G = groups[g];
++        if (!(keep_most > 0 && G.gems > 0 && G.gems < short_by)) return 0.0f;
++        // The Focus needs us on a tile: a cleared group with none free (a lone Monolith's, held) pays us none.
++        if (world.camps[g].state == CampState::cleared && !test(G.tiles(), here) && free_tiles(G.tiles()).is_empty()) return 0.0f;
++        return carried_bonus(world, world.me(), G.gems, keeper_price);
+     };
+     const float bound_tribute = tribute_gold + keep_most;
+     debug_block({
+@@ -1704,7 +1708,7 @@
+         const float worth = std::max(0.0f, gems + std::max(0.0f, per_gold) * worth_gold[g] + std::max(0.0f, tribute_gold) * gems);
+         const float weight = g < 256 ? home_weights()[static_cast<std::size_t>(g)] : 1.0f;
+         // The join's Focus is no share: at most its rate over the trip and the hold (rate is linear in worth).
+-        const float carry = gems * keep_bonus(G) * exposure_most * weight;
++        const float carry = gems * keep_bonus(g) * exposure_most * weight;
+         return (claim_bound(worth * exposure_most * weight, health, health / strength, trip) + (carry > 0 ? rate(world, carry, trip + cap_rounds) : 0.0f))
+                * 1.0002f;
+     };
+@@ -1835,7 +1839,7 @@
+         }
+         if (known.version != belief.version || known.fastest_strength != strength)
+             known.version = belief.version, known.fastest_strength = strength, known.fastest = fastest_clear(world, g, strength);
+-        const float bonus = keep_bonus(group);
++        const float bonus = keep_bonus(g);
+         // Ren's for the rated prunes; its plain ones keep the fastest.
+         const float exposed = exposure(g) * (pull.on && home_side(map, g, opening) < 0.5f ? pull.deny_scale : 1.0f);
+         const float quickest = rated && reflect > 0 ? reflected_clear(world, g, strength, reflect) : known.fastest;
+@@ -2270,7 +2274,7 @@
+         best = shared, best_steps = shared_steps, memory.claim = shared, memory.crew = true, spell = false, chosen = shared_priced;
+         if (prev_claim != shared || !prev_crew) {
+             debug_block({ std::printf("CREW JOIN %d %u g%d tank %d trips %d output %.0f value %.4f carry %.3f\n", round, my_handle(), shared,
+-                                      chosen.tank, chosen.trips, chosen.output, shared_value, keep_bonus(groups[shared])); });
++                                      chosen.tank, chosen.trips, chosen.output, shared_value, keep_bonus(shared)); });
+         }
+     }
+     // Help does not pull a member off a Monolith operation.

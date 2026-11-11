@@ -56,3 +56,9 @@ Details in merge-log.md. "vs p1" is the candidate against charybdis-p1 directly.
 Accepted: C2, C10 and C3r on p1. Final state = `bots/charybdis`, frozen as `bots/variants/charybdis-p2`. On
 s-720001..160 (81,920 games each): **60.12%** against ocean-main-b7c87cf, **53.19%** against charybdis-base and
 **51.32%** against charybdis-p1. p1 itself scored 58.68% against ocean and 51.96% against base on the same suites.
+
+## Fuel pass
+
+Exact fuel cuts on p2 (CHANGES 513), no A/B: bench.py at 100M is 52/52 byte-identical on own and test drafts for
+both commits (c9e2de302 mean -1.1%, then 1178688e9 a further -0.4%). Agent A's paired 4,096-game measurement:
+out-of-fuel turns -5.4% (CI -8.2..-2.5), SHORTCUT lines -4.0%; agent B's: -1.3% (CI -4.3..+1.6). Details in final.md.

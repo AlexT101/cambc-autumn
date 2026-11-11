@@ -95,6 +95,28 @@ and others). C3r replaced `gold_part`.
 - **C10 also costs fuel:** OOF turns rose about 1%. The fuel-only fix the audit suggested (hoisting
   `engagement_near` out of the hold cast's group loop) is merged.
 
+## Fuel pass (CHANGES 513)
+
+Two fuel agents (A: economy, B: combat and model) cut exact fuel from what charybdis adds on top of ocean. Their
+commits, squashed onto p2: c9e2de302 (A's e26cb2939 + 0120a9986, B's 061dea44c + 3c6f3cef3) and 1178688e9 (A's
+5f3d4d043 + ace697375). Final state frozen as `bots/variants/charybdis-1178688`.
+
+| Check | c9e2de302 vs p2 | 1178688e9 vs c9e2de302 |
+|---|---|---|
+| bench.py 100M, own drafts | 52/52 identical, mean -1.1% | 52/52 identical, mean -0.4% |
+| bench.py 100M, test drafts | 52/52 identical, mean -1.1% | 52/52 identical, mean -0.3% |
+| bench.py real budget, mean fuel | -1.0% own / -2.2% test | - |
+
+- Agent A's paired 4,096-game held-out measurement (economy pass): out-of-fuel turns **-5.4% (CI -8.2..-2.5)**,
+  SHORTCUT lines -4.0%, mean fuel -1.2%. Agent B's (combat pass): out-of-fuel turns -1.3% (CI -4.3..+1.6).
+- The 52-game real-budget out-of-fuel counts are too few to read (p2 511/705, c9e2de302 479/716, 1178688e9 597/542,
+  own/test drafts).
+- No A/B was needed (byte-identical at 100M). charybdis's own additions now cost ~0.6k an out-of-fuel turn; what
+  remains is ocean's core (farm loop ~15k, `stand_lost_at` ~17.7k, `simulate` ~6.5k).
+- Leads not taken: memoise `prism_hold_threatened` / `holding_capture` across `Safety` generation bumps caused by our
+  own attacks (a finer key was identical but +0.6M fuel, reverted); `dash_away` ~20k a call; `turn_window` re-reads;
+  `altars_sealed` missing `access_fire`'s round cache (~600).
+
 ## Unexpected results, likely reasons and next steps
 
 - **C1 lost (49.3% vs p1)**, although macro4 gained with it.
@@ -123,5 +145,6 @@ and others). C3r replaced `gold_part`.
 
 - C3's first extension on s-720161..240 lost its OOF counts: a replay cleanup glob matched the running batches. The
   per-game results are intact.
-- s-720241..320 were generated for a second C3 extension that wasn't needed. They are unused, so still fresh.
+- s-720241..320 were generated for a second C3 extension that wasn't needed, so those seeds are still fresh (the
+  map dirs were deleted in cleanup; regenerate them by seed).
 - The decision rules came from merge2-brief.md, amended by user decisions: M2-b, C7 and C3r's acceptance.
