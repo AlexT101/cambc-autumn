@@ -1,12 +1,12 @@
 # Map suites
 
-Index of what is under `maps/` (2026-11-05). Everything below `maps/suites/` and every other folder except `fall-custom/` and `gen-bench/` is gitignored and can be remade from its seed with `tools/mapgen/mapgen.mjs`; `index.json` in each generated suite records its `seed` and `mix`.
+Index of what is under `maps/` (2026-11-05). Everything below `maps/suites/` and every other folder except `gen-bench/` is gitignored and can be remade from its seed with `tools/mapgen/mapgen.mjs`; `index.json` in each generated suite records its `seed` and `mix`.
 
 ## Top level
 
 - The 128 ladder maps (`*.map26a`): `cambc run --map NAME` and the `ladder` suite only look directly under `maps/`, and mutation maps draw their source from them.
 - `gen/` (seed 6001) and `gen-s1/` (6002): the standard `ab.py` suites (`gen`, `fresh` = every `maps/gen-s*`). Remake: `node tools/mapgen/mapgen.mjs suite --mix varied-v1` (`maps/gen`) and `--seed 6002 --mix varied-v1 --out maps/gen-s1`.
-- `fall-custom/`, `gen-bench/`: tracked in git (`gen-bench` is `tools/fuel/bench.py`'s set).
+- `gen-bench/`: tracked in git (`tools/fuel/bench.py`'s set). The edge-case maps (7x3 to 256x256) once in `fall-custom/` are in `more_maps/fall-custom/`.
 - `suites/`: everything else, by family (below).
 
 ## suites/fresh/
@@ -642,6 +642,8 @@ The draft and emblem labs' `config.json` and `maps.jsonl` were rewritten to the 
 `teacher-20261106/` contains 20 fresh ladder-mix suites, seeds 861001–861020,
 256 maps each. `astraeus-teacher-v1-10k` samples 5,000 of their 5,120 maps with
 seed 861000 and plays both sides. Its exact selection and hashes are in
+The `teacher-*-20261106/` dirs were deleted on 2026-11-11; remake them from the seeds below.
+
 `replays/ab/astraeus-teacher-v1-10k/teacher.json`.
 
 `teacher-confirm-20261106/` contains 20 new ladder-mix suites, seeds

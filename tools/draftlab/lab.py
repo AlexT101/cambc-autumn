@@ -35,7 +35,7 @@ PUBLISHED_SIZE = (28, 100)  # smallest and largest side of a published map (camb
 # draft_model.h), in batch 0 (explore_mix) and after (mix).
 # The pool is fresh suites no A/B or earlier lab has used: from 2026-11-03 fresh-77000..77195 (50,176 maps; draft3 and
 # emblem round 3 played fresh-9100..9280). Never fresh-9001..9004 or 9501..9520.
-POOL = ["maps/*.map26a", "maps/fall-custom", "maps/suites/fresh/fresh-770[0-9][0-9]", "maps/suites/fresh/fresh-771[0-8][0-9]", "maps/suites/fresh/fresh-7719[0-5]"]
+POOL = ["maps/*.map26a", "more_maps/fall-custom", "maps/suites/fresh/fresh-770[0-9][0-9]", "maps/suites/fresh/fresh-771[0-8][0-9]", "maps/suites/fresh/fresh-7719[0-5]"]
 DEFAULTS = {
     "seed": 1, "pool": POOL,
     "holdout": [f"maps/suites/fresh/fresh-{s}" for s in range(9300, 9380)], "pick_shares": {"3": 0.33, "4": 0.33, "5": 0.34},
@@ -155,7 +155,7 @@ def pool_files(cfg):
 
 def write_maps(lab, cfg):
     print(node(HERE / "features.mjs", *pool_files(cfg), "--out", lab / "maps.jsonl"))
-    # Only published sizes (cambc-rules.yaml map.size): fall-custom's edge-case maps (7x3 to 256x256) stay on disk
+    # Only published sizes (cambc-rules.yaml map.size): more_maps/fall-custom's edge-case maps (7x3 to 256x256) stay on disk
     # for tests, out of the labs.
     rows = jsonl(lab / "maps.jsonl")
     keep = [r for r in rows if min(r["W"], r["H"]) >= PUBLISHED_SIZE[0] and max(r["W"], r["H"]) <= PUBLISHED_SIZE[1]]

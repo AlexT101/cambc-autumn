@@ -41,7 +41,6 @@ sdk/templates/ocaml/
 #   p1a-b1..b6: fresh-147001..147120; p1b-*: fresh-148001..148180 (20 suites a set; EXPERIMENTS "Phase 1a/1b")
 #   p2-*: phase 2 bundle sets (EXPERIMENTS "Phase 2")
 maps/*/
-!maps/fall-custom/
 !maps/gen-bench/
 
 # Local oarena (github.com/frkns/local-oarena): its checkout, launcher and state; big-arm runs the team's
