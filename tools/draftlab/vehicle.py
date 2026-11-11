@@ -131,7 +131,13 @@ def src_hash(bot):
 
 
 def built(path):
-    return (Path(path) / ".cambc" / "build" / "bot-injected.wasm").is_file()
+    """A build newer than every source file: a run killed after writing a vehicle's new table but before its build
+    finished leaves the old wasm, and runners then rebuild it in every game (~10 s each, pipe-smoke 2026-11-11)."""
+    wasm = Path(path) / ".cambc" / "build" / "bot-injected.wasm"
+    if not wasm.is_file():
+        return False
+    built_at = wasm.stat().st_mtime
+    return all(f.stat().st_mtime <= built_at for f in (Path(path) / "src").rglob("*") if f.is_file())
 
 
 def build(path):

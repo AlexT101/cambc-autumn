@@ -9,7 +9,7 @@
 
 Everything lives in replays/draftlab/NAME/: config.json, maps.jsonl, prior.json, ladder.jsonl, games.jsonl (one row
 per finished game, never rewritten), model.json, report.md and batches/bNNN/."""
-import argparse, collections, glob, json, os, re, shutil, subprocess, sys, tempfile, threading, time
+import argparse, collections, glob, json, os, queue, re, shutil, subprocess, sys, tempfile, threading, time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -49,6 +49,8 @@ DEFAULTS = {
     # the other side of each game ("self": the source on both sides, every game before draft6); opponent_bots
     # {NAME: bot dir} are frozen bots whose vehicles draft from the plan's oppVehicles tables. max_games caps the run.
     "opponents": None, "opponent_bots": {}, "max_games": None,
+    # Batches prepared (planned, built, compiled) while one plays (run's pipeline); 1 before draft18's follow-up.
+    "ahead": 2,
 }
 
 
@@ -449,17 +451,29 @@ def fit_async(lab, search, slots=32):
     return FitJob(lab, search, slots)
 
 
+def vehicle_set(b, cfg):
+    """Batch b's vehicle set: one per batch alive at once (the playing one and `ahead` prepared), so no batch builds
+    over a playing one's. ahead 1 keeps the v/w parity sets; others' letters carry ahead, so a lab resumed under
+    another ahead never reuses a ready batch's set."""
+    ahead = cfg.get("ahead", 1)
+    return "vw"[b % 2] if ahead == 1 else f"{ahead}{'abcdefgh'[b % (ahead + 1)]}"
+
+
 def vehicle_names(lab_name, b, plan, cfg):
-    """Batch b's vehicles: two sets by parity, so one batch's vehicles build while the other's play. Plans from before
-    the overlap name theirs in games' vehicle_name (dl-<lab>-v<k>)."""
+    """Batch b's vehicles (vehicle_set). Plans from before the overlap name theirs in games' vehicle_name
+    (dl-<lab>-v<k>)."""
     if "vehicle_names" in plan:
         return plan["vehicle_names"]
-    return [f"dl-{lab_name}-{'v' if b % 2 == 0 else 'w'}{k}" for k in range(len(plan["vehicles"]))]
+    return [f"dl-{lab_name}-{vehicle_set(b, cfg)}{k}" for k in range(len(plan["vehicles"]))]
 
 
-def opp_vehicle_names(lab_name, b, plan):
-    """Batch b's opponent bots' vehicles (draft6), by parity as vehicle_names."""
-    return {o: [f"dl-{lab_name}-{o}-{'v' if b % 2 == 0 else 'w'}{k}" for k in range(len(vs))] for o, vs in plan.get("oppVehicles", {}).items()}
+def opp_vehicle_names(lab_name, b, plan, cfg):
+    """Batch b's opponent bots' vehicles (draft6), in vehicle_names' set; a plan names them in its games."""
+    if "opp_vehicle_names" in plan:
+        return plan["opp_vehicle_names"]
+    # A plan from before opp_vehicle_names (parity sets) is in its own vehicles' set.
+    vset = plan["vehicle_names"][0][len(f"dl-{lab_name}-"):-1] if plan.get("vehicle_names") else vehicle_set(b, cfg)
+    return {o: [f"dl-{lab_name}-{o}-{vset}{k}" for k in range(len(vs))] for o, vs in plan.get("oppVehicles", {}).items()}
 
 
 def ensure_vehicles(lab, b, plan, names, source, cfg=None):
@@ -467,7 +481,7 @@ def ensure_vehicles(lab, b, plan, names, source, cfg=None):
     runner's native mode with one round each, so the batch's first games don't wait for it."""
     paths = []
     jobs = [(source, name, entries) for name, entries in zip(names, plan["vehicles"])]
-    for o, onames in opp_vehicle_names(lab.name, b, plan).items():
+    for o, onames in opp_vehicle_names(lab.name, b, plan, cfg).items():
         jobs += [(ROOT / cfg["opponent_bots"][o], name, entries) for name, entries in zip(onames, plan["oppVehicles"][o])]
     for src, name, entries in jobs:
         path, changed = vehicle.make(src, name, [(e["key"], e["team"], e["comp"]) for e in entries])
@@ -488,8 +502,8 @@ def ensure_vehicles(lab, b, plan, names, source, cfg=None):
         log(lab, f"batch {b}: native compile {time.time() - t0:.0f} s")
 
 
-def prepare(lab, b, games, cfg, source, exclude=()):
-    """Plans batch b (games skip the unmerged batches in `exclude`) and builds its vehicles; marks it ready."""
+def plan_batch(lab, b, games, cfg, exclude=()):
+    """Plans batch b (games skip the unmerged batches in `exclude`) and names its vehicles: (bdir, plan, mode)."""
     mode = "adapt" if b >= cfg["explore_batches"] and (lab / "model.json").is_file() else "explore"
     bdir = lab / "batches" / f"b{b:03d}"
     bdir.mkdir(parents=True, exist_ok=True)
@@ -503,21 +517,33 @@ def prepare(lab, b, games, cfg, source, exclude=()):
         cpu_slots.release(held)
     plan = json.loads((bdir / "plan.json").read_text())
     names = vehicle_names(lab.name, b, plan, cfg)
-    plan["vehicle_names"] = names
-    onames = opp_vehicle_names(lab.name, b, plan)
+    onames = opp_vehicle_names(lab.name, b, plan, cfg)
+    plan["vehicle_names"], plan["opp_vehicle_names"] = names, onames
     for g in plan["games"]:
         g["vehicle_name"] = names[g["vehicle"]]
         if g.get("botA", "self") != "self" or g.get("botB", "self") != "self":
             g["vehicle_a"], g["vehicle_b"] = (names[g["vehicle"]] if g[s] == "self" else onames[g[s]][g["vehicle"]] for s in ("botA", "botB"))
     (bdir / "plan.json").write_text(json.dumps(plan))
-    ensure_vehicles(lab, b, plan, names, source, cfg)
+    return bdir, plan, mode
+
+
+def build_batch(lab, b, bdir, plan, mode, cfg, source):
+    """Builds and compiles batch b's vehicles, then marks it ready."""
+    ensure_vehicles(lab, b, plan, plan["vehicle_names"], source, cfg)
     (bdir / "ready").write_text(mode + "\n")
-    return bdir, mode
+    return bdir
+
+
+def prepare(lab, b, games, cfg, source, exclude=()):
+    """Plans batch b and builds its vehicles; marks it ready."""
+    bdir, plan, mode = plan_batch(lab, b, games, cfg, exclude)
+    return build_batch(lab, b, bdir, plan, mode, cfg, source), mode
 
 
 def run(args):
-    """Batches back to back: while batch b plays, a thread merges batch b-1, refits and prepares batch b+1 (plan,
-    vehicles, native compile), so the CPU slots never wait on the lab's own bookkeeping."""
+    """Batches back to back: while batch b plays, a planner thread merges batch b-1, refits and plans batch b+ahead,
+    whose vehicles then build and compile on their own thread, so the CPU slots never wait on the lab's own
+    bookkeeping."""
     lab = LABS / args.lab
     cfg = {**DEFAULTS, **json.loads((lab / "config.json").read_text())}
     for k in ("threads", "vehicles", "batch_games"):
@@ -561,13 +587,16 @@ def run(args):
             feed.close()
         return max(0.005, (time.time() - t0) / max(1, len(plan["games"])))
 
-    # Resume: batches planned but not merged play in order; a batch whose preparation was cut short is planned again.
+    # Resume: batches planned but not merged play in order; a batch whose preparation was cut short is planned again,
+    # with every unmerged batch after it (prepared batches finish out of order, and batch numbers must stay dense).
+    cut = False
     for bdir in batch_dirs(lab):
         if (bdir / "merged").is_file():
             continue
-        if not (bdir / "plan.json").is_file() or not ((bdir / "ready").is_file() or (bdir / "results.jsonl").is_file()):
-            log(lab, f"{bdir.name} was not ready: planning it again")
+        if cut or not (bdir / "plan.json").is_file() or not ((bdir / "ready").is_file() or (bdir / "results.jsonl").is_file()):
+            log(lab, f"{bdir.name} was not ready{' or follows one that was not' if cut else ''}: planning it again")
             shutil.rmtree(bdir)
+            cut = True
             continue
         b = int(bdir.name[1:])
         log(lab, f"resuming {bdir.name}")
@@ -587,38 +616,96 @@ def run(args):
             games = min(games, cfg["max_games"] - planned())
         return games if games >= min(400, cfg["batch_games"]) else 0
 
+    def games_of(bdir):
+        return len(json.loads((bdir / "plan.json").read_text())["games"])
+
+    # Pipeline (2026-11-11, after draft18): `ahead` batches are prepared while one plays. One planner thread merges,
+    # fits and plans in batch order (each plan needs the merges and fit before it, and excludes the batches planned
+    # but not merged); each plan's vehicles then build and compile on a thread of their own. With ahead 1 (the
+    # overlap before), merge + fit + plan + build + native compile (~8-11 min on 96 cores) outran a batch's play
+    # (~4.5 min), so every batch waited for the next; ahead 2 gives each preparation two batches' play.
+    ahead = max(1, cfg.get("ahead", 1))
     b = len(batch_dirs(lab))
     games = size(time.time())
     current = prepare(lab, b, games, cfg, source)[0] if games else None
-    while current:
-        after = {"next": None, "error": None}
-        t_start = time.time()
-        plan_games = len(json.loads((current / "plan.json").read_text())["games"])
+    ctx = {"per_game": per_game, "t_start": time.time(), "playing": b, "error": None}
+    stop = threading.Event()
+    tasks, futures, builders = queue.Queue(), {}, []
 
-        def background(b=b, current=current, prev=b - 1, t_start=t_start, plan_games=plan_games):
+    def est_start(k):
+        """When batch k should start: the playing batch's end plus the planned batches between."""
+        t = ctx["t_start"] + games_of(lab / "batches" / f"b{ctx['playing']:03d}") * ctx["per_game"]
+        return t + sum(games_of(lab / "batches" / f"b{j:03d}") * ctx["per_game"] for j in range(ctx["playing"] + 1, k))
+
+    def planner():
+        while (task := tasks.get()) is not None:
+            prev, k = task
+            fut = futures[k]
             try:
-                pdir = lab / "batches" / f"b{prev:03d}"
-                if prev >= 0 and pdir.is_dir() and not (pdir / "merged").is_file():
+                pdir = lab / "batches" / f"b{prev:03d}" if prev is not None and prev >= 0 else None
+                if pdir and pdir.is_dir() and not (pdir / "merged").is_file():
                     finish_batch(lab, prev, pdir, cfg, cfg["threads"])
                     fit_after(prev)
-                n = size(t_start + plan_games * per_game)
-                if n:
-                    after["next"] = prepare(lab, b + 1, n, cfg, source, exclude=[current])[0]
-            except BaseException as e:  # noqa: BLE001 - re-raised in the main thread
-                after["error"] = e
+                n = 0 if stop.is_set() or ctx["error"] else size(est_start(k))
+                if not n:
+                    stop.set()
+                    fut["done"].set()
+                    continue
+                exclude = [d for d in batch_dirs(lab) if int(d.name[1:]) < k and (d / "plan.json").is_file()
+                           and not (d / "merged").is_file()]
+                bdir, plan, mode = plan_batch(lab, k, n, cfg, exclude=exclude)
 
-        worker = threading.Thread(target=background, daemon=True)
-        worker.start()
-        per_game = play(b, current)
+                def build(k=k, bdir=bdir, plan=plan, mode=mode, fut=fut):
+                    try:
+                        fut["bdir"] = build_batch(lab, k, bdir, plan, mode, cfg, source)
+                    except BaseException as e:  # noqa: BLE001 - re-raised in the main thread
+                        fut["error"] = ctx["error"] = e
+                    fut["done"].set()
+
+                builders.append(threading.Thread(target=build, daemon=True))
+                builders[-1].start()
+            except BaseException as e:  # noqa: BLE001 - re-raised in the main thread
+                fut["error"] = ctx["error"] = e
+                fut["done"].set()
+
+    def enqueue(prev, k):
+        futures[k] = {"done": threading.Event(), "bdir": None, "error": None}
+        tasks.put((prev, k))
+
+    worker = threading.Thread(target=planner, daemon=True)
+    worker.start()
+    if current:
+        for i in range(1, ahead + 1):
+            enqueue(b - 1 if i == 1 else None, b + i)
+    first = b
+    while current:
+        ctx.update(t_start=time.time(), playing=b)
+        if b > first:
+            enqueue(b - 1, b + ahead)
+        per_game = ctx["per_game"] = play(b, current)
         log(lab, f"batch {b}: {per_game:.3f} s a game wall")
+        if ctx["error"]:
+            raise ctx["error"]
         t_wait = time.time()
-        worker.join()
+        fut = futures.pop(b + 1)
+        fut["done"].wait()
         if time.time() - t_wait > 5:
             log(lab, f"batch {b}: waited {time.time() - t_wait:.0f} s for batch {b + 1}'s preparation")
-        if after["error"]:
-            raise after["error"]
-        current, b = after["next"], b + 1
-    # The last batch played: merge it, then the final fit.
+        if fut["error"]:
+            raise fut["error"]
+        current, b = fut["bdir"], b + 1
+    # The last batch played: let the planner finish its merges, drop batches prepared past the end, merge the last.
+    stop.set()
+    tasks.put(None)
+    worker.join()
+    for t in builders:
+        t.join()
+    if ctx["error"]:
+        raise ctx["error"]
+    for k, fut in sorted(futures.items()):
+        if fut["bdir"]:
+            log(lab, f"{fut['bdir'].name}: prepared past the end, removed")
+            shutil.rmtree(fut["bdir"])
     last = lab / "batches" / f"b{b - 1:03d}"
     if b > 0 and last.is_dir() and not (last / "merged").is_file():
         finish_batch(lab, b - 1, last, cfg, cfg["threads"])
