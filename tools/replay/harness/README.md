@@ -42,7 +42,7 @@ Run everything from the repo root. Each step is idempotent or resumable, so afte
 
 ### 1. cambc 3.0.5
 
-The ladder ran engine v1_0_3, which ships with cambc 3.0.5, as does the repo's `cambc.toml`. Every harness script calls `cambc` from `PATH`; check with `cambc --version`. `setup_ws.py` still builds its own workspace, `replays/v38-top20/ws`, because it patches that workspace's SDK and cmake (below) and must not touch the tracked ones.
+The ladder ran engine v1_0_3, which ships with cambc 3.0.5 (the repo's `cambc.toml` has since moved to 5.0.1). Every harness script calls `cambc` from `PATH`; check with `cambc --version`. `setup_ws.py` still builds its own workspace, `replays/v38-top20/ws`, because it patches that workspace's SDK and cmake (below) and must not touch the tracked ones.
 
 On its first build, cambc downloads wasi-sdk-33, cmake-3.31.8 and ninja-1.12.1 into its cache: `%LOCALAPPDATA%\cambc` on Windows, `~/.cache/cambc` on Linux. Without a proxy this just works. Behind a TLS-intercepting proxy the downloader fails TLS; see [Toolchain behind a proxy](#toolchain-behind-a-proxy).
 
@@ -154,7 +154,7 @@ In Python: `L.use("v47")` after `import v38lib as L` (or `HARNESS_VERSION=v47`).
 
 ## v66
 
-v66 is the ladder submission `bots/baselines/v66` (byte-identical to `git archive 4a7c25f6 bots/astraeus`; `test_draft` off, so the bots play their own drafts). Its games ran on engine v2_0_0 (patch 2.0.0), and the harness runs them with cambc 4.0.0, as `tools/replay/engine/version.json` lists it. Its trace bot is `trace-bot-v66/`: the instrumentation ported onto v66's layout, plus events for v66's new logic ([TRACE_SCHEMA.md](trace-bot/TRACE_SCHEMA.md#v66-trace-bot-v66)). Data goes under `replays/v66/`, with bots `ws/bots/v66-release`, `v66-rec` and slots `v66-trace-s<N>`.
+v66 is the ladder submission, `git archive 4a7c25f6 bots/astraeus` (its frozen copy `bots/baselines/v66` was deleted on 2026-11-11; `test_draft` off, so the bots play their own drafts). Its games ran on engine v2_0_0 (patch 2.0.0), and the harness runs them with cambc 4.0.0, as `tools/replay/engine/version.json` lists it. Its trace bot is `trace-bot-v66/`: the instrumentation ported onto v66's layout, plus events for v66's new logic ([TRACE_SCHEMA.md](trace-bot/TRACE_SCHEMA.md#v66-trace-bot-v66)). Data goes under `replays/v66/`, with bots `ws/bots/v66-release`, `v66-rec` and slots `v66-trace-s<N>`.
 
 The manifest is built from `replays/v66-farm/*`, the version row's `folders`: 122 five-game unranked groups, 610 games (412 distinct replays) against Intercontinental Fish (170), Mite (185), Univardisty of Shingtonwash (145) and prism best girl (110). They were played from 2026-10-31 19:21Z to 2026-11-01 15:30Z.
 

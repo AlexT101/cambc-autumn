@@ -39,7 +39,7 @@ Round 1, ladder + gen only (652 games, quiet machine before a reboot): stock 15,
 
 ```
 cd tools/fastengine/runner && ./setup_vendor.sh && cargo build --release      # once (~3 min)
-tools/fastengine/runner/fastrunner run demeter astraeus --map 00ambush -o /tmp/out
+tools/fastengine/runner/fastrunner run ocean astraeus --map 00ambush -o /tmp/out
 tools/fastengine/runner/fastrunner run-batch MANIFEST --jobs 11                # cambc's manifest format
 CAMBC_BIN=$PWD/tools/fastengine/runner/fastrunner FASTRUNNER_MODE=native py tools/ab.py ...
 ```
@@ -414,9 +414,9 @@ runner-only options (`--slot-dir`, patched bots with no source), so a stock fall
 ## Reproducing
 
 ```
-python3 tools/fastengine/runner/scripts/compare.py demeter variants/astraeus-d7d9dab --out DIR \
+python3 tools/fastengine/runner/scripts/compare.py archives/demeter variants/astraeus-d7d9dab --out DIR \
     --suites ladder,gen --jobs 11 --cpus 1-11 --modes exact,native [--camstat] [--turbo /abs/turbo.so]
-CAMBC_SLOTS=11 taskset -c 1-11 py tools/ab.py demeter variants/astraeus-d7d9dab --suites ladder,gen   # stock
+CAMBC_SLOTS=11 taskset -c 1-11 py tools/ab.py archives/demeter variants/astraeus-d7d9dab --suites ladder,gen   # stock
 python3 tools/fastengine/runner/scripts/cmp_bundles.py A.repl26a B.repl26a ...
 FASTRUNNER_TRACE_FUEL=a.tr ... ; FASTRUNNER_MODE=native FASTRUNNER_TRACE_SITES=1 FASTRUNNER_TRACE_FUEL=b.tr ...
 samply record --save-only -o p.json.gz -- env LD_PRELOAD=.../libfastrunner.so FASTRUNNER_MAIN=1 cambc run-batch M

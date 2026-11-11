@@ -2,7 +2,7 @@
 
 ```
 python3 research/diana-2026-11-03/tunify.py bots/BOT [NAME...]   # once: chosen params.h constants -> a patchable block
-python3 tools/tune/tune.py init --run R --bot bots/BOT --opps variants/a,baselines/v67,... [--maps 64 --pairs 4]
+python3 tools/tune/tune.py init --run R --bot bots/BOT --opps variants/a,baselines/v94,... [--maps 64 --pairs 4]
 python3 tools/tune/tune.py run --run R --hours 6                  # resumes; touch replays/tune/R/STOP to end after a batch
 python3 tools/tune/tune.py status --run R
 python3 tools/tune/tune.py play --run R --games 4000              # current values vs defaults, one scored batch

@@ -1,6 +1,7 @@
 # Tools
 
-Run every script from the repo root.
+Run every script from the repo root. The tooling's unit tests (CPU slots, fresh-map gate, run-time opponents, live
+scheduler campaigns) are in `tools/tests/`: `python3 -m unittest discover -s tools/tests [-p test_NAME.py]`.
 
 ## Running games: the fast runner and CPU slots
 
@@ -20,13 +21,13 @@ CAMBC_BIN=$PWD/tools/fastengine/runner/fastrunner FASTRUNNER_MODE=native py tool
 
 ```
 py tools/ab.py orch/my-branch main --name my-change            # two git refs
-py tools/ab.py astraeus baselines/v66 --no-test-draft          # two bot directories
+py tools/ab.py astraeus baselines/v94 --no-test-draft          # two bot directories
 py tools/ab.py main HEAD~1 --no-test-draft --suites ladder,gen # each on its own draft
 py tools/ab.py astraeus variants/astraeus-38aa25c --no-test-draft --sprt --sprt-stop low  # stop a loser early
 ```
 
 - **CAND / REF:** a git ref, whose `bots/<--bot>` (default `ocean`; an archived bot such as `archives/hyperion` is also found at `bots/hyperion` in commits before its retirement, and hyperion at `bots/hecate` before 2026-10-21) is exported with `git archive` (never the working tree) to `bots/variants/ab-<name>-<cand|ref>-<sha7>/` with `params::test_draft` on; or a bot under `bots/`, used as is. Run it from the primary checkout (worktree branches resolve there).
-- **Options:** `--name`, `--threads` (all CPU slots), `--suites` (default `ladder,gen,fresh`: `maps/`, `maps/gen/`, each `maps/gen-s*/`; or a directory of maps), `--no-test-draft`, `--fuel N`, `--debug` (below), `--keep-replays N` (below). The suites play at once, sharing the CPU slots (one after another on Windows).
+- **Options:** `--name`, `--threads` (all CPU slots), `--suites` (default `ladder,gen,fresh`: `maps/`, `maps/gen/`, each `maps/gen-s*/`; or a directory of maps), `--bot` (above), `--no-test-draft`, `--fuel N`, `--debug` (below), `--keep-replays N` (below), `--game-timeout S` and `--experiment-config FILE` (the fresh-map gate's run-time opponents, `experiment_config.py` at the end). The suites play at once, sharing the CPU slots (one after another on Windows).
 - **Release builds** (the default; `--debug` plays debug builds instead): both bots are built and played as the platform plays them, with `debug_block` compiled out (`run_batched.py --release`: `cambc build --release`, `run-batch --release`). A game costs ~15% less CPU than in debug builds (2026-11-08, ocean vs oc-base29, 12 ladder games on one core: 201 against 236 us a round) and its stdout drops from ~700 KB to almost nothing. Its games differ from debug builds' (a debug block costs fuel), so compare only release with release; use `--debug` when you need the bots' traces (decision lines, `SHORTCUT`, `OOF` phases). Bots print no `OOF` lines in release builds, so the out-of-fuel counts are the fast runner's (each match's `oof_turns` in `results.json`); stock cambc gives none, and the summary then reports an `oof_error`. The runner counts every play turn that ended out of fuel, slightly more than the bots' lines (one per overrun that finished, so two in a row read as one and a game's last is missed): 187 against 172 turns on those 12 debug games.
 - **Replay bound:** each suite keeps only its first 1000 finished games' replays (`--keep-replays N`; `0` keeps all, as an agent extracting a whole batch needs). A later game's replay is deleted in batches, before each `results.json` write (a killed run can leave about a second of unlisted replays), after its out-of-fuel, handoff and capped-draft lines are appended to the batch's `pruned-stdout.jsonl` (fsynced first); its match in `results.json` then has `"replay": null` and `"pruned": "<stem>.repl26a"`. `tools/fuel/oof.py` reads that file for any missing replay, so the summary's OOF counts and `oof.py BATCH` cover every game. Failed games' replays are always kept. On 2026-11-08 unbounded SPRT screens (~200 KB a game, ~140 GB/h) filled the 993 GB root disk and crashed ~25 runs. Batches from runs started before the bound, or from other callers named `batch-*-ab-*`, are thinned to their oldest 1000 replays by `py tools/replay_thin.py` (the replay janitor runs it every 15 min; only replays `results.json` lists, 10+ min old, same sidecar first). It skips directories holding `.keep` (pin a batch whose replays you need) or an `oofj.jsonl` (a janitor of its own deletes those). Whole-batch replay readers (`extract.mjs` on a batch, `ab_farm.py`, `solo.py`, `census/`) see only the kept games unless the run passed `--keep-replays 0` or its batch has a `.keep`.
 - **Output:** CAND's win % with a 95% Wilson interval, overall and per suite, failed matches, out-of-fuel turns per bot and wall time; `replays/ab/<name>/` holds `summary.json`, `summary.md` and the logs. The exit code is non-zero if a match failed.
@@ -42,7 +43,7 @@ py tools/run_batched.py --watch         # progress of the newest batch, from ano
 ```
 
 - **`CAMBC_LOG_LIMIT=BYTES`** raises each team's stdout cap (run-batch `--log-limit`, 1 MiB by default) for heavily traced bots.
-- **Options:** `--threads N` (all CPU slots), `--one-side` (sides by `--side-seed`), `--maps-dir` (default `maps/`, skipping `maps/gen*/`), `--gen [N]` (`maps/gen/`, all or N by `--gen-seed`), `--fuel`, `--timeout SECONDS`, `--release` (as ab.py's), `--no-replays`, `--keep-replays N` (keep only the first N finished games' replays, as above; default all), `--shuffle SEED` (play the maps in a seeded random order, each map's two sides together, instead of slowest first).
+- **Options:** `--threads N` (all CPU slots), `--one-side` (sides by `--side-seed`), `--maps-dir` (default `maps/`, skipping `maps/gen*/`), `--gen [N]` (`maps/gen/`, all or N by `--gen-seed`), `--output DIR`, `--fuel`, `--timeout SECONDS`, `--game-timeout` and `--experiment-config` (as ab.py's), `--release` (as ab.py's), `--no-replays`, `--keep-replays N` (keep only the first N finished games' replays, as above; default all), `--shuffle SEED` (play the maps in a seeded random order, each map's two sides together, instead of slowest first).
 - **Output** in `replays/batch-TIMESTAMP/`: `results.json` (wins from bot 1's view, then per match; `winner` is the 0-based bot index; replaced whole after each match, so it is never half-written), `<n>-<map>-<12|21>.repl26a` (`12`: bot 1 is team A), `run.log` and `*.error.log`.
 
 ## Farming benchmark: solo.py and bots/idle
@@ -149,7 +150,7 @@ py tools/solo.py astraeus astraeus --suites ladder --one-side --maps 3   # smoke
   - Camp-plugged routes (kill to pass, like boss-battle) are `gated` in the index.
 - **Speed** (2026-10-29, 96 cores): a suite takes ~2 s (120 s before), ten ~9 s, and maps are byte-identical to the serial generator's. Candidates are made in child processes, slowest presets first; a designed map whose reach on foot is already under `min_reach` after its design step fails at once (atoll and archipelago failed most attempts there).
 - `maps/gen-bench/` holds the 14 generated maps of the fuel bench's wide set, kept from the older suites so fuel results stay comparable. No A/B suite reads it.
-- [mapgen.mjs](mapgen/mapgen.mjs) builds maps through the engine WASM's map builder, seeded. Presets, placement, validation and metrics are in [generate.mjs](mapgen/generate.mjs), playable-area shapes in [shapes.mjs](mapgen/shapes.mjs), and designers, brushes and cover prefabs in [design.mjs](mapgen/design.mjs).
+- [mapgen.mjs](mapgen/mapgen.mjs) builds maps through the engine WASM's map builder, seeded. Presets, placement, validation and metrics are in [generate.mjs](mapgen/generate.mjs), playable-area shapes in [shapes.mjs](mapgen/shapes.mjs), designers, brushes and cover prefabs in [design.mjs](mapgen/design.mjs), the tile grid in `grid.mjs` and the engine WASM loader in `wasm.mjs`.
 
 ```
 node tools/mapgen/mapgen.mjs list                                  # presets
@@ -188,7 +189,7 @@ node tools/mapgen/mapgen.mjs gen classic --seed 3 --calib 1        # calibration
   - `worst/*.map26a`, for `cambc run --map`;
   - `maps.jsonl`.
 - **Other commands:** `rescore` re-scores a run without replaying; `vs NAME BOT` plays the worst maps head-to-head.
-- Details in [fuzz/README.md](fuzz/README.md). A 600-map screen plus a 5-generation climb takes ~12 min on 80 slots and ~1.2 GB.
+- Details in [fuzz/README.md](fuzz/README.md); the metrics and score are `score.py`'s. A 600-map screen plus a 5-generation climb takes ~12 min on 80 slots and ~1.2 GB.
 
 ## Forced drafts: tools/variants
 
@@ -245,7 +246,9 @@ py tools/ab.py astraeus variants/astraeus-cap100000-at10000000 --no-test-draft -
   The `@slack.*` rows are the fuel left at decide's end on turns a gate cut and that still finished, by the gate's file.
   Check a change that adds ungated work against [budget-v87.txt](../research/fuelcap-2026-11-09/budget-v87.txt).
 - **Fight-simulation profile** (`tools/fuel/simprof/`): `patch_prof.py` instruments a copy (like the census), `an.py DIR` lists every `simulate()` of turns whose sims cost 8k+, by caller (`rep.py`, `sides.py`: summaries of the same).
-- **Per-site fuel profile** (`tools/fuel/fuelprof/`): exact wasmtime fuel by charge site from a patched copy of the native fastrunner (`setup.sh`; the main runner is untouched), symbolised by source line through a `-g` build (`symbolise.py`, `query.py`). It also writes the profile of turns that finished on 88k+ and of out-of-fuel episodes (`DIR/heavy`, `DIR/oof`). See setup.sh for use.
+- **Per-site fuel profile** (`tools/fuel/fuelprof/`): exact wasmtime fuel by charge site from a patched copy of the native fastrunner (`setup.sh`; the main runner is untouched), symbolised by source line through a `-g` build (`symbolise.py`, `query.py`; `wbodies.py` reads the wasm's function bodies). It also writes the profile of turns that finished on 88k+ and of out-of-fuel episodes (`DIR/heavy`, `DIR/oof`). See setup.sh for use.
+- **Fuel by wasm function** without a patched runner: `py tools/fuel/siteprof.py WASM TRACE... [--vs WASM2 TRACE2...]` reads the stock fastrunner's `FASTRUNNER_TRACE_SITES=1 FASTRUNNER_TRACE_FUEL=FILE` traces (native mode): the fuel between host calls, charged to the calling function (not inclusive).
+- `py tools/fuel/census/trace_scope.py DIR SCOPE`: per map, the fuel from entering a census scope to the next traced event, on traced out-of-fuel turns.
 - cap_variant.py: keep `--run-fuel` at or below 30M (at 100M instances trap near round 1000, `probe-fueladjust`); a turn that ran out resumes uncapped.
 
 Host prices (50x50, 2026-10-19):
@@ -333,9 +336,13 @@ node tools/draftlab/native.mjs --lab replays/draftlab/night1 maps  # C++ feature
 py tools/draftlab/parity.py --lab replays/draftlab/night1 maps     # the same in-game: one round per map
 ```
 
-astraeus drafts from the model (README's deployment section).
+astraeus, ocean and charybdis draft from lab models (README's deployment section). `init` freezes astraeus unless
+the lab's `config.json` names a `source` bot (draft18's is `bots/variants/charybdis-5564637`).
+`py tools/draftlab/ladder_prior.py --out LAB/prior.json ...` builds a prior from the per-day ladder archive;
+`py tools/draftlab/test_comps.py --prior LAB/prior.json --bot bots/BOT` rewrites a bot's `test_draft` compositions
+from one.
 Pieces other tools reuse: `vehicle.py` (bot copies with a per-map draft table, `freeze(sha)`), `features.mjs` (map
-features and the trainer's map key, bit for bit), `outcome.mjs` (each game's gems at checkpoints and champion
+features and the trainer's map key, bit for bit; `derived.mjs` its squared and product features), `outcome.mjs` (each game's gems at checkpoints and champion
 statistics, without a full extraction), `firstturn.py` (the model draft's first-turn fuel; `--need`: the whole first turn at unlimited fuel, the headroom report).
 
 ## Emblem lab: tools/emblab
@@ -361,6 +368,9 @@ node tools/emblab/ladder_emblems.mjs [replays/ladder]         # top teams' emble
 py tools/emblab/pilot.py --lab pilot                          # log checks and effect sizes before a main run
 ```
 
+Modules behind these: `evehicle.py` (the lab's vehicles), `structural.py` and `typed_r4.py` (round 5's structural
+and typed edits, for `edits.py build`), `mapdr.mjs` (map-keyed policies for `dfit.mjs --mapdr`).
+
 ## Constant tuning: tools/tune
 
 SPSA on a bot's params.h constants against a panel of opponents, scored by win, tributed gems and gold. Candidates
@@ -370,7 +380,7 @@ no compile; an iteration is one fast-runner batch, pipelined with scoring (~300 
 
 ```
 python3 research/diana-2026-11-03/tunify.py bots/BOT              # once: constants -> a patchable block
-python3 tools/tune/tune.py init --run R --bot bots/BOT --opps variants/a,baselines/v67
+python3 tools/tune/tune.py init --run R --bot bots/BOT --opps variants/a,baselines/v94
 python3 tools/tune/tune.py run --run R --hours 6                  # resumable; replays/tune/R/
 python3 tools/tune/tune.py status --run R
 python3 tools/tune/tune.py apply --run R --out bots/variants/NAME # a bot with the run's current constants
@@ -425,7 +435,7 @@ py tools/replay/osc_detect.py DIR... [--bot astraeus-trace] [--out replays/osc] 
 py tools/replay/osc_compare.py REF_OUT CAND_OUT...  # osc_detect outputs: episode turns by kind, OOF turns, paired bootstrap CI by game
 ```
 
-`engine.mjs` (the game's own engine WASM, snapshot decoder) is the library behind these. Schema and units: [replay/README.md](replay/README.md).
+`engine.mjs` (the game's own engine WASM, snapshot decoder) is the library behind these; the Python ones share the `analysis/` package (analyze.py's reports) and `narrative/` (narrate.py's timelines and fights). Schema and units: [replay/README.md](replay/README.md).
 
 ## Replay harness: tools/replay/harness
 
@@ -442,6 +452,8 @@ py tools/replay/harness/v38lib.py summary           # per-game trace availabilit
 py tools/replay/harness/pipeline.py --version v47   # v47: manifest from replay folders, then the whole chain
 py tools/replay/harness/pipeline.py --version v112  # a live version (cambc 5.0.1): scrim manifest to traced direct re-runs
 ```
+
+The pipeline's other scripts (`decode_all.mjs`, `extract_all.py`, `direct_batch.py`, `scrim_manifest.py`, ...) are in its README.
 
 ## Combat lab frame bank: tools/combatlab
 
@@ -461,6 +473,8 @@ node tools/combatlab/spotcheck.mjs replays/combatlab/NAME/frames.jsonl --n 40   
 - `labify.py SRC DST` (names under `bots/`) copies the bot with `./copybot` and patches in `lab.h`'s control block: a warm start, the decision outputs (branch, `want_home`, `stand_lost_at`, `plan_strikes`' choice) and inputs (strike bans, forced `want_home` / chase verdicts) that `fastrunner scenario --lab` reads and writes. Each patch anchor must match once, so a bot whose code moved fails loudly. Rebuild with `cambc build bots/DST`. Details in [RUNNER.md](../research/fastengine/RUNNER.md#lab-bots---lab).
 - `labify.py` also patches in `lab.h`'s forced-action block (`LabAct`, `lab_act_run` at the start of ocean's `decide`): a walk, dash, attack, cast or end of turn that `fastrunner forkgame` sets for a round, after which the bot plays the rest of the turn itself.
 - `fork_sweep.py` drives `fastrunner forkgame` (target-lab2's library, wasm engine). It plays real games, forks the full state at triggered rounds (`--trigger near:D,close:D,branch:CHARS,death:N,kill:N,every:K`), plays the bots' own line and every legal action of the deciding champion (× `--holds`) for `max(--marks)` rounds, and scores each arm. It writes `DIR/forks.jsonl` and `DIR/regret.jsonl` (each arm's value and parts, the best arm, and regret against ocean's own choice). `--analyze DIR --weights k=v,...` re-scores without replaying. Usage and results are in [lab2-notes.md](../research/combat-lab/lab2-notes.md), and the runner side is in [RUNNER.md](../research/fastengine/RUNNER.md#forks-of-real-games-fastrunner-forkgame-2026-11-08).
+- Fork analysis (each script's docstring has its usage): `fork_regret.py DIR...` writes a row per fork (ocean's action, every arm's scores net of noise); on those rows `fork_patterns.py` finds situation x action patterns on one half of the games and tests them on the other, `fork_branch_table.py` gives every action class's gain per predicate, `fork_rules.py` scores fixed one-arm rules, `fork_verdicts.py` the forced want_home / chase verdict arms, and `fork_examples.py` replays chosen forks with traces. `mapjson.mjs` decodes maps to JSON for them.
+- Scenario reports on `fastrunner scenario --lab --decisions` output: `alt_report.py` (ocean's strike-search choice against its next-best candidates, `--alt K`), `alt_replicate.py` (whether those gains replicate across opponents), `flip_report.py` (flipped want_home / chase verdicts, `--flip`). `labify_reply.py BOT DST` is labify.py plus a reply-model bot's feature block for `--hitlog`.
 
 ## Engine speed research: tools/fastengine
 
@@ -474,7 +488,8 @@ python3 tools/fastengine/runner/scripts/prof.py PROFILE.json.gz                 
 tools/fastengine/profile_games.sh OUTDIR "botA botB map"                             # samply profiles of stock cambc games; prof_analyze.py reads them
 ```
 
-- `fuelhook/`: an LD_PRELOAD hook counting every host-call fuel charge (import prices off a real game, unchanged).
+- `python3 tools/fastengine/runner/scripts/check_unlimited.py`: native unlimited fuel, side swapping and default parity against stock.
+- `fuelhook/`: an LD_PRELOAD hook counting every host-call fuel charge (import prices off a real game, unchanged); `hook_report.py` and `calls_report.py` tabulate its output, `make_tramp_table.py` builds its patch table.
 - `turbo/` (turbo.c, verify.py), `floor/` (wasmtime cache probes), `dlengine/` (cambc's engine loaded as a library):
   earlier routes to speed, kept for reference.
 
@@ -509,18 +524,20 @@ python3 tools/antire/fuel_delta.py GAMES_A GAMES_B       # per-turn fuel of B - 
 
 ## Docs: tools/docs-sync
 
-`cd tools/docs-sync && npm install && node sync.mjs` regenerates `docs/` (C++ only). Never edit `docs/` by hand.
+`cd tools/docs-sync && npm install && node sync.mjs` regenerates `docs/` (C++ only; `evaljs.mjs` reads the site bundle's data without running it). Never edit `docs/` by hand.
 
 ## .htb bots: tools/htb
 
 C++ bots written like Java (methods inside classes, no headers); `hgen.py` generates the bot's `src/`. Example `bots/archives/htb-starter`; details in [htb/README.md](htb/README.md).
 
 ```
-py tools/htb/install.py          # once: generate and build every .htb bot, install the VS Code extension
-py tools/htb/hgen.py <bot>       # regenerate src/ (no name: every .htb bot); --watch on save
+py tools/htb/install.py          # once: generate and build every .htb bot directly under bots/, install the VS Code extension
+py tools/htb/hgen.py <bot>       # regenerate src/ (e.g. archives/htb-starter; no name: every .htb bot directly under bots/, none now); --watch on save
 py tools/htb/htbcheck.py <bot>   # file:line:col errors, without a build
 py tools/htb/tests/run.py        # hgen's test suite: run after changing hgen
 ```
+
+`tools/htb/vscode/` is the VS Code extension's source.
 
 Run hgen before `cambc build`, `run` and `submit`, and commit `src/`.
 

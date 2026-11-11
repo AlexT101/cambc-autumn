@@ -1,6 +1,6 @@
 """SPSA tuning of a bot's constants against a panel of opponents, on the fast runner with no compiles.
 
-    py tools/tune/tune.py init --run NAME --bot bots/archives/diana --opps variants/astraeus-fc99b84,baselines/v67 [--pool ...]
+    py tools/tune/tune.py init --run NAME --bot bots/archives/diana --opps variants/astraeus-fc99b84,baselines/v94 [--pool ...]
     py tools/tune/tune.py run --run NAME [--hours H | --iters N]      # resumes; Ctrl-C or kill is safe between batches
     py tools/tune/tune.py status --run NAME                            # iterations, the current values, recent scores
     py tools/tune/tune.py apply --run NAME --out bots/diana-t1          # a copy of the bot with the current values built in

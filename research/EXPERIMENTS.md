@@ -5,8 +5,9 @@ Kept changes are in [hyperion/CHANGES.md](hyperion/CHANGES.md), not here. The un
 the per-round fuel details) is `git show 1d5ddf0:research/EXPERIMENTS.md`.
 
 Win rates are against the bot's previous version, all maps from both sides at the real fuel budget, unless noted.
-`tools/ab.py` runs 1094 games: ladder (70) + `maps/gen` (512) + fresh `maps/gen-s1` (512); results before 2026-10-21
-used 390-582 games. Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
+`tools/ab.py`'s default suites are 1280 games: ladder (256) + `maps/gen` (512) + `maps/gen-s1` (512); older entries
+used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 20k+ on fresh suites or `fgate.py`.
+Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
 ## Draft18 on charybdis (2026-11-11)

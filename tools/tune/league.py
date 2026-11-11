@@ -2,7 +2,7 @@
 agents, and fixed outside opponents, all on the fast runner with patched candidates (tune.py, patch.py).
 
     PY=<python with optuna>  # optuna and numpy (not the repo's venv)
-    $PY tools/tune/league.py init --run L --from-tune d1 [--opps variants/a,baselines/v67]   # main starts at d1's x
+    $PY tools/tune/league.py init --run L --from-tune d1 [--opps variants/a,baselines/v94]   # main starts at d1's x
     $PY tools/tune/league.py run --run L --hours 4                                          # resumable
     $PY tools/tune/league.py status --run L
 

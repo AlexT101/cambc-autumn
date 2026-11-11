@@ -249,7 +249,7 @@ An enemy in `kill` but not in the chosen `kl` is a kill that was considered and 
 
 ## v66 (`trace-bot-v66`)
 
-`tools/replay/harness/trace-bot-v66/src` is v66, the ladder submission: `bots/baselines/v66/src`, byte-identical to `git archive 4a7c25f6 bots/astraeus` (astraeus with the macro-4, crew-economics, value-holder, middle-band and fuel-campaign changes, CHANGES 235-268; `test_draft` off). It keeps v66's layout (`bot.cc`, `combat/`, `economy/`, `model/`, `draft/`, everything in one translation unit through `unity.cpp`). The instrumentation is `trace.h` and `trace.cc`, the latter included last in `unity.cpp`; the hooks follow the rules above.
+`tools/replay/harness/trace-bot-v66/src` is v66, the ladder submission: `git archive 4a7c25f6 bots/astraeus` (formerly frozen as `bots/baselines/v66`) (astraeus with the macro-4, crew-economics, value-holder, middle-band and fuel-campaign changes, CHANGES 235-268; `test_draft` off). It keeps v66's layout (`bot.cc`, `combat/`, `economy/`, `model/`, `draft/`, everything in one translation unit through `unity.cpp`). The instrumentation is `trace.h` and `trace.cc`, the latter included last in `unity.cpp`; the hooks follow the rules above.
 
 **Checked:** built `--release` with fuel unbounded (`--fuel 100000000`), it plays byte-identical replays to `bots/baselines/v66` (00ambush, 00monolith, 00anvil), and so does its debug build against v66's debug build (those three and 01gold-rush). At the real budget the release builds differ: the hooks change codegen, so fuel and the fuel-gated choices. That does not matter, because the harness runs the debug tracer on the recorder's fuel. In release builds `TRACE_SITE` compiles to nothing.
 

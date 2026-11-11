@@ -1,6 +1,6 @@
 # hyperion change log
 
-What is in hyperion and astraeus and why, oldest first. Entry numbers are stable because commits and research notes
+What is in hyperion, astraeus, ocean and charybdis and why, oldest first. Entry numbers are stable because commits and research notes
 cite them. Missing numbers are fuel-only work, bug fixes, cleanups, superseded and reverted changes, dropped in the
 2026-10-22 and 2026-11-02 trims: the untrimmed logs are `git show 1d5ddf0:research/hyperion/CHANGES.md` (to 81) and
 `git show a8b0b5c6:research/hyperion/CHANGES.md` (to 274).

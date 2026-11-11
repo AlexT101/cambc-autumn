@@ -1,6 +1,6 @@
 # hyperion: open work
 
-Open work for astraeus, by theme. Audit-level fixes (one function, one rule) are in [DIRECTIONS.md](DIRECTIONS.md);
+Open work for our bots (ocean, charybdis, astraeus), by theme. Audit-level fixes (one function, one rule) are in [DIRECTIONS.md](DIRECTIONS.md);
 results in [EXPERIMENTS.md](../EXPERIMENTS.md). Closed items are removed (last pruned 2026-11-02, through CHANGES
 288; earlier text is in git history). An item tried and dropped is closed too: remove it and record the result in
 EXPERIMENTS.
@@ -11,7 +11,8 @@ EXPERIMENTS.
   distance, measured rates) over tuned constants, fixed decision orders or special cases.
 - Logical changes stay even when level or slightly below 50%; drop only what is clearly worse (below ~47% over ~1100
   games) or wrong.
-- No new fuel gates. Make work cheap or bounded instead; the plan is [FUEL-GATES.md](FUEL-GATES.md).
+- Fuel-aware code is allowed when it wins by A/B (AGENTS.md "Fuel"); otherwise make work cheap or bounded. The gate
+  plan is [GATE-PLACEMENT.md](GATE-PLACEMENT.md).
 - Keep the teleport, Tavi and Willow code.
 
 ## Charybdis fuel target (2026-11-11)
@@ -37,10 +38,6 @@ CHANGES 496 (2026-11-10) meets the new **10% fewer OOF turns versus 495** target
 bench and -16.3% in release, with shortcuts -4.9%. It removes unused full damage bounds from support station
 checks, precomputes output coefficients and reuses explicit-mask strikes. The remaining tail work above is
 still open; details and failed experiments are in [fuel-2026-11-10-next](../fuel-2026-11-10-next/README.md).
-
-- **A fuel gate for the chase build** (CHANGES 481): +8% out-of-fuel turns, mostly the verdict `chase_aim()` builds
-  before the strike search with no gate of its own. Gate it on the fuel the search still needs, or reuse a teammate's
-  verdict. Being worked on; judge on `merged/plan3-dev`, reserved for it.
 
 ## Turn order and ally coordination (2026-11-02)
 
@@ -120,10 +117,6 @@ points; retry `--counters` only if a refit finds larger counters).
   those cheaper. Leans that change choices lost or were level in all four attempts (farm weights, stand radius,
   rallies); B's fight posts were level on 292. The lever left is execution: with an ally near, top teams' death
   rate at contact falls 16 -> 5% and their first strikes kill ~30%; ours stay ~18% and ~20% whatever the count.
-- **Next draft lab: `narrow` and `sight_gap`** (left out of CHANGES 261 on first-turn fuel: a dash-lattice at 9.17M
-  of 10M). Make them cheaper or relax the 8.5M bar, then A/B 25 features against 23; expect ~0.15 points
-  (EXPERIMENTS "Draft lab draft3").
-
 - **Spawn healing, open** (CHANGES 328, EXPERIMENTS "Healing on our own spawn"): out-of-fuel turns +8.5%, mostly
   unattributed (`stand_reach` builds ~500 and `min_camp_damage` ~570 more a call on 00lanes round 1). Not yet
   integrated: the draft's heal price (draft.cc, recall + walk), kite on shared-gem maps, Willow's heal value, groups
@@ -132,11 +125,12 @@ points; retry `--counters` only if a refit finds larger counters).
 
 ## Patch 4.0.0 (cambc 5.0.0, 2026-11-05)
 
-- Rules and stat tables are updated (CHANGES 389); nothing tuned for them yet. Pre-patch numbers that still steer play:
-  the draft model (`draft_model.h`, fit on pre-patch games) and per-pick-count tables, the emblem lab table
-  (CHANGES 233; Skirmish is now x1.10, Greed 40 shards' stats), diana's SPSA constants, and every A/B baseline.
+- Rules and stat tables are updated (CHANGES 389). Refit on 5.0.x since: every bot's draft model (draft5, CHANGES 402;
+  draft10, 502; draft18, 515); emblem lab rounds 4-5 ran on ocean (499, 504). Pre-patch numbers that still steer
+  play: the per-pick-count tables, the emblem lab table (CHANGES 233; Skirmish is now x1.10, Greed 40 shards' stats),
+  diana's SPSA constants (oc6's retune on oc-base29 was H0), and every A/B baseline.
 - Vendetta (900 health, 65 Strength), Vesper (35 Strength) and Marcella (weaker growth) are weaker; Stellar, Prism
-  (+15, +10 Focus) and Varg (+5 Strength) stronger; Heart of Ruin loses Focus. Re-run the draft lab on 5.0.0.
+  (+15, +10 Focus) and Varg (+5 Strength) stronger; Heart of Ruin loses Focus.
 
 ## Bugs
 

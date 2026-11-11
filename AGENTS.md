@@ -10,13 +10,13 @@ Always read `cambc-rules.yaml` if you haven't already. Your next message should 
 ## Bots
 
 C++ only.
-- **ocean** is our main bot: a stable version holding only changes we are committed to keeping. Try ideas in copies (`bots/variants/`) and commit to `bots/ocean` only what has passed its gate. Each shipped change is in [CHANGES.md](research/hyperion/CHANGES.md), tagged with its bot and date, with its evidence in [EXPERIMENTS.md](research/EXPERIMENTS.md); open work is in [TODO.md](research/hyperion/TODO.md). Frozen copies for A/Bs live in `bots/variants/`; the latest CHANGES entry for a bot names the copy that equals it.
+- **ocean** and **charybdis** are our main bots: stable versions holding only changes we are committed to keeping. charybdis (CHANGES 507-515) branched from ocean 506 with a Prism gem-carry macro and its own draft; ocean's later changes are not in it. Try ideas in copies (`bots/variants/`) and commit to a main bot only what has passed its gate. Each shipped change is in [CHANGES.md](research/hyperion/CHANGES.md), tagged with its bot and date, with its evidence in [EXPERIMENTS.md](research/EXPERIMENTS.md); open work is in [TODO.md](research/hyperion/TODO.md). Frozen copies for A/Bs live in `bots/variants/`; the latest CHANGES entry for a bot names the copy that equals it.
 - **astraeus** is our secondary bot and ocean's ancestor; changes sometimes move between the two.
 - The other bots are older experiments and baselines, kept for reference; retired ones are in `bots/archives/` (pass them as `archives/NAME`).
 - Their `src/`: `bot.cc` is the turn (`decide`); its branches are in `economy/` and `combat/`, sharing `bot_parts.h`; `model/` is the world, pathing and safety; `draft/` the draft. `unity.cpp` includes every `.cc`: a new one goes there.
 - `ab.py`'s git refs build `bots/ocean` (`--bot` picks another, e.g. `archives/hyperion`, which older commits also hold at `bots/hyperion`). To A/B a working tree, pass bot directories: the working one and a frozen copy of a commit's, e.g. `./copybot -r <sha> astraeus variants/astraeus-<sha7>`.
-- Drafts are compiled in. ocean drafts from draft10's F92 model (CHANGES 502), charybdis from draft18's (CHANGES 515); astraeus stays on draft5. With `params::test_draft` on, a bot plays ladder compositions (`tools/draftlab/test_comps.py`) in place of its own draft; every bot directory's is off.
-- The engine is cambc 5.0.1. Frozen baselines and `tools/replay/harness` trace bots keep their 2.0.0 stat tables.
+- Drafts are compiled in. ocean drafts from draft10's F92 model (CHANGES 502), charybdis from draft18's (CHANGES 515); astraeus stays on draft5. With `params::test_draft` on, a bot plays ladder compositions (`tools/draftlab/test_comps.py`) in place of its own draft; every committed bot's is off.
+- The engine is cambc 5.0.1.
 - `bots/baselines/` holds frozen A/B baselines: never edit them; delete one once current bots beat it ~80% of the time.
 - When copying a bot, leave out `.cambc/` (its CMake cache breaks the build): `./copybot SRC DST` does (`-f` replaces DST, `-r REF` copies a commit's).
 - `.htb` bots (`bots/archives/htb-starter`) are edited in their `.htb` files, never `src/`; run `py tools/htb/hgen.py <bot>` after.
@@ -25,7 +25,7 @@ Comment only counterintuitive behaviour or reasoning, concisely.
 
 ## Testing
 
-- **Judge a change** with `py tools/ab.py CAND REF` against a frozen baseline: 1280 games (the 128 ladder maps, `maps/gen`, `maps/gen-s1`, both sides), noise about ±1.5 points. There are no feature flags; single maps and small samples are noise, and local games are deterministic, so reruns add nothing.
+- **Judge a change** with `py tools/ab.py CAND REF` against a frozen baseline. Its default suites are 1280 games (the 128 ladder maps, `maps/gen`, `maps/gen-s1`, both sides), noise about ±1.5 points, so changes ship on 20k+ games of fresh suites (`--suites`) or `fgate.py`. There are no feature flags; single maps and small samples are noise, and local games are deterministic, so reruns add nothing.
 - **A/Bs play release builds** (`debug_block` compiled out, as on the platform; ~15% less CPU a game). `ab.py --debug` plays debug builds when you need their traces; compare only like with like.
 - **SPRT screens on one suite share their first games** unless each run passes its own `--sprt-seed` (default 0), so their early H1s aren't independent: give each screen its own seed and confirm held out.
 - **Use the fast runner by default** (Linux x86-64, cambc 5.0.1): build [fastrunner](tools/fastengine/runner/) once (`cd tools/fastengine/runner && ./setup_vendor.sh && cargo build --release`), then prefix every `ab.py`, `solo.py` or `run_batched.py` with `CAMBC_BIN=$PWD/tools/fastengine/runner/fastrunner FASTRUNNER_MODE=native` for ~4.7x the games an hour. Replays, fuel and stdout match stock cambc's. Run stock (unset `CAMBC_BIN`) only for debug drawings (`team-?.debug` is empty under fastrunner) or on another platform. Processes still show as `cambc run-batch`: the runner preloads `libfastrunner.so` into it. Differences and numbers: [RUNNER.md](research/fastengine/RUNNER.md).

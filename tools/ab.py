@@ -1,7 +1,7 @@
 """Full A/B of two bots through run_batched.py: ladder, generated and fresh-seed maps, both sides.
 
     py tools/ab.py orch/my-branch main --name my-change
-    py tools/ab.py astraeus baselines/v66 --no-test-draft
+    py tools/ab.py astraeus baselines/v94 --no-test-draft
     py tools/ab.py main HEAD~1 --no-test-draft --suites ladder,gen
     py tools/ab.py astraeus variants/astraeus-38aa25c --no-test-draft --sprt --sprt-stop low
 
