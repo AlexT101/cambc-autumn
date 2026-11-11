@@ -24,7 +24,7 @@ from time import perf_counter
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
-from ab import resolve, rel, slug, suites  # noqa: E402
+from ab import resolve, rel, slug, suites, test_draft_of  # noqa: E402
 import cpu_slots  # noqa: E402
 from run_batched import find_maps, GEN_DIR  # noqa: E402
 
@@ -141,6 +141,9 @@ def main():
     parser.add_argument("--suites", default="ladder,gen,fresh",
                         help="Comma-separated: ladder, gen, fresh, or directories of maps (default: all three)")
     parser.add_argument("--fuel", type=int, help="Fuel per turn, passed to run_batched.py --fuel")
+    parser.add_argument("--debug", dest="release", action="store_false",
+                        help="Debug builds, whose debug_block traces run, instead of release builds as the platform "
+                        "plays them (the default, as ab.py's); their games differ")
     parser.add_argument("--one-side", action="store_true", help="Play each map from one side (the same for both bots)")
     parser.add_argument("--maps", type=int, metavar="N", help="Only N maps per suite, sampled by --map-seed")
     parser.add_argument("--map-seed", type=int, default=0, help="Seed for --maps (default: 0)")
@@ -163,6 +166,11 @@ def main():
             plan = [(label, limit(label, extra, args.maps, args.map_seed, out_dir)) for label, extra in plan]
     except (ValueError, OSError) as error:
         parser.error(str(error))
+    drafts = [test_draft_of(side["path"]) for side in sides]
+    if None not in drafts and drafts[0] != drafts[1]:
+        notes.append(f"test_draft differs: CAND {'on' if drafts[0] else 'off'}, REF {'on' if drafts[1] else 'off'} "
+                     "(the drafts are matched only if this is deliberate)")
+        print(f"WARNING: {notes[-1]}", file=sys.stderr, flush=True)
     print(f"Solo {name}: CAND {sides[0]['spec']} vs REF {sides[1]['spec']}, each against idle", flush=True)
 
     batches, failed = [], []
@@ -176,6 +184,8 @@ def main():
                 command += ["--fuel", str(args.fuel)]
             if args.one_side:
                 command.append("--one-side")
+            if args.release:
+                command.append("--release")
             print(f"  {label} {role}: running, log {rel(log)}", flush=True)
             with log.open("w", encoding="utf-8") as stream:
                 code = subprocess.run(command, cwd=ROOT, stdout=stream, stderr=subprocess.STDOUT).returncode
@@ -221,7 +231,7 @@ def main():
     oof = {role: sum(v[role]["oof_turns"] for v in games.values() if role in v) for role in ("cand", "ref")}
     wall = perf_counter() - started
     summary = {"name": name, "started": stamp, "wall_seconds": round(wall, 1), "threads": args.threads,
-               "fuel": args.fuel, "one_side": args.one_side, "maps_per_suite": args.maps,
+               "fuel": args.fuel, "release": args.release, "one_side": args.one_side, "maps_per_suite": args.maps,
                "cand": {**sides[0], "path": rel(sides[0]["path"])}, "ref": {**sides[1], "path": rel(sides[1]["path"])},
                "pairs": len(pairs), "results": results, "oof_turns": oof, "flags": flags, "failed": failed,
                "notes": notes, "batches": [rel(b) for _, _, b, _ in batches],
@@ -231,7 +241,7 @@ def main():
     cols = [(label, results[label]) for label in results if len(results) > 2 or label == "total"]
     md = [f"# Solo {name}", "", f"CAND `{rel(sides[0]['path'])}`, REF `{rel(sides[1]['path'])}`, each against bots/idle.",
           f"Started {stamp}; {len(pairs)} paired games; {'one side' if args.one_side else 'both sides'}; "
-          f"fuel {args.fuel or 'default'}; wall {wall / 60:.1f} min.", "",
+          f"fuel {args.fuel or 'default'}; {'release' if args.release else 'debug'} builds; wall {wall / 60:.1f} min.", "",
           "Mean CAND - REF per map, bootstrap 95% CI over maps; the round to 1000 as a % change (negative is faster), "
           f"a game that never reaches it counting as round {CENSORED}.", "",
           "| Metric | " + " | ".join(f"{label} ({r['maps']} maps)" for label, r in cols) + " | CAND mean | REF mean |",

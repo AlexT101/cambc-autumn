@@ -75,6 +75,14 @@ def map_key(m):
     return Path(m).stem if m.endswith(".map26a") else m
 
 
+def build_lock(bot):
+    """An OS lock per bot directory. Benches build their bots in place (paths unchanged, so bundles stay comparable
+    with older JSONs), and concurrent ones share bots: astraeus, the default opponent, and the bench-td- copies."""
+    d = cpu_slots.DIR / "locks"
+    d.mkdir(exist_ok=True)
+    return cpu_slots.exclusive(d / f"bench-build-{hashlib.sha256(str(Path(bot).resolve()).encode()).hexdigest()[:16]}.lock")
+
+
 def with_test_draft(bot):
     """bot itself if its test_draft is on, else a copy under bots/variants/ with it on (no .cambc/;
     unchanged files are left alone so the copy's build stays incremental)."""
@@ -82,6 +90,11 @@ def with_test_draft(bot):
     if not TEST_DRAFT.search(params):
         return bot
     target = ROOT / "bots" / "variants" / f"bench-td-{re.sub(r'[^A-Za-z0-9._-]+', '-', bot.name)}"
+    with build_lock(target):
+        return write_copy(bot, target, params)
+
+
+def write_copy(bot, target, params):
     files = {}
     for f in bot.rglob("*"):
         rel = f.relative_to(bot)
@@ -105,7 +118,8 @@ def with_test_draft(bot):
 
 
 def build(bot):
-    r = subprocess.run(["cambc", "build", str(bot)], cwd=ROOT, capture_output=True, text=True)
+    with build_lock(bot):
+        r = subprocess.run(["cambc", "build", str(bot)], cwd=ROOT, capture_output=True, text=True)
     if r.returncode != 0:
         sys.exit(f"build failed for {bot}:\n{r.stdout[-2000:]}{r.stderr[-2000:]}")
 
@@ -325,6 +339,10 @@ def cmd_compare(args):
     a, b = json.loads(Path(args.a).read_text()), json.loads(Path(args.b).read_text())
     if Path(a["opp"]).name != Path(b["opp"]).name:
         sys.exit(f"different opponents: {a['opp']} vs {b['opp']}")
+    # Either makes every replay differ, which would read as a behaviour change.
+    for k in ("fuel", "test_draft"):
+        if a.get(k) != b.get(k):
+            print(f"WARNING: {k} differs: {a.get(k)} vs {b.get(k)}")
     key = lambda g: (g["map"], g["side"])
     ga = {key(g): g for g in a["games"] if "error" not in g}
     gb = {key(g): g for g in b["games"] if "error" not in g}

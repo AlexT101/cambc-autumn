@@ -25,6 +25,8 @@ class EntryTests(unittest.TestCase):
             args=['variants/cand','variants/ref','--fuel','200000','--ci','0','--max-seeds','17','--mite-body','Mt3qro',*extra]
             result={'unchanged':'paired statistics'};seen=[]
             class FG:
+                R=f'{TOOLS.parent}/'  # this tree: no worktree redirection
+                rname=staticmethod(lambda *a:'run');done=staticmethod(lambda n,games:False)
                 block_units=staticmethod(lambda *a:result)
                 def main(self):
                     seen.extend(sys.argv)

@@ -65,6 +65,15 @@ def resolve(spec):
     return {"spec": spec, "kind": "git", "sha": sha.strip()}
 
 
+def test_draft_of(bot):
+    """A bot directory's params::test_draft, or None when its params.h does not set it exactly once."""
+    try:
+        found = TEST_DRAFT.findall((Path(bot) / "src" / "params.h").read_text(encoding="utf-8"))
+    except OSError:
+        return None
+    return found[0][1] == "true" if len(found) == 1 else None
+
+
 def write_if_changed(path, data):
     if path.is_file() and path.read_bytes() == data:
         return
@@ -323,6 +332,14 @@ def main():
     try:
         sides = [resolve(args.cand), resolve(args.ref)]
         name = slug(args.name or f"{args.cand}-vs-{args.ref}")
+        # Held while this runs (the OS frees it on exit): a second run of the name would overwrite its variants,
+        # logs and summary.
+        (ROOT / "replays" / "ab" / name).mkdir(parents=True, exist_ok=True)
+        run_lock = open(ROOT / "replays" / "ab" / name / ".run.lock", "a+b")
+        try:
+            cpu_slots._lock(run_lock)
+        except OSError:
+            raise ValueError(f"another ab.py is running --name {name}; wait for it or pick another name") from None
         plan, notes = suites([t.strip() for t in args.suites.split(",") if t.strip()])
         if not plan:
             raise ValueError("No suites to play")
@@ -332,6 +349,12 @@ def main():
                 side["test_draft"] = not args.no_test_draft
     except (ValueError, OSError) as error:
         parser.error(str(error))
+    # A git ref gets test_draft on unless --no-test-draft, a directory plays as it is: a mix is easy to miss.
+    drafts = [test_draft_of(side["path"]) for side in sides]
+    if None not in drafts and drafts[0] != drafts[1]:
+        notes.append(f"test_draft differs: CAND {'on' if drafts[0] else 'off'}, REF {'on' if drafts[1] else 'off'} "
+                     "(the drafts are matched only if this is deliberate)")
+        print(f"WARNING: {notes[-1]}", file=sys.stderr, flush=True)
     out_dir = ROOT / "replays" / "ab" / name
     out_dir.mkdir(parents=True, exist_ok=True)
     print(f"A/B {name}: CAND {describe(sides[0])} vs REF {describe(sides[1])}", flush=True)
@@ -415,6 +438,8 @@ def main():
     counts = {}
     # --release: bots print no OOF lines, so out-of-fuel turns are the runner's, per match: (turns, games) by bot.
     runner_oof = {}
+    # The replays/frozen/<hash> copies each side played (run_batched.source_hash): what a cache of this run keys on.
+    frozen = {"cand": set(), "ref": set()}
     for label, batch, log, proc in runs:
         code = proc.wait()
         entry = {"suite": label, "batch": rel(batch), "log": rel(log), "exit": code,
@@ -430,6 +455,8 @@ def main():
                 entry["errors"] = 1
             results.append(entry)
             continue
+        for k, path in zip(("cand", "ref"), report.get("frozen") or ()):
+            frozen[k].add(Path(path).parent.name)
         # Only finished matches' replays: a killed game can leave a partial one. oof.count reads a pruned one's
         # saved lines.
         files = sorted(str(batch / Path(m.get("replay") or m["pruned"]).name) for m in report["matches"]
@@ -486,8 +513,9 @@ def main():
     lo, hi = wilson(wins, games)
     summary = {
         "name": name, "started": stamp, "wall_seconds": round(wall, 1), "threads": args.threads,
-        "fuel": args.fuel, "game_timeout": args.game_timeout, "experiment_config": ({"path": str(args.experiment_config.resolve()), "sha256": hashlib.sha256(args.experiment_config.read_bytes()).hexdigest()} if args.experiment_config else None), "release": args.release, "cand": {**sides[0], "path": rel(sides[0]["path"])},
-        "ref": {**sides[1], "path": rel(sides[1]["path"])}, "games": games, "cand_wins": wins,
+        "fuel": args.fuel, "game_timeout": args.game_timeout, "experiment_config": ({"path": str(args.experiment_config.resolve()), "sha256": hashlib.sha256(args.experiment_config.read_bytes()).hexdigest()} if args.experiment_config else None), "release": args.release,
+        "cand": {**sides[0], "path": rel(sides[0]["path"]), "frozen": sorted(frozen["cand"])},
+        "ref": {**sides[1], "path": rel(sides[1]["path"]), "frozen": sorted(frozen["ref"])}, "games": games, "cand_wins": wins,
         "cand_win_pct": round(100 * wins / games, 2) if games else None, "ci95": [round(lo, 2), round(hi, 2)],
         "errors": errors, "oof": oof_total, "early_losses": early, "handoff_failures": handoff, "capped_drafts": capped,
         "notes": notes,

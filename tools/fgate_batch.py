@@ -23,7 +23,7 @@ serve every candidate, so a changed bot needs a new dir.
   unless --first-batch J starts later, on maps earlier gates have not played (a held-out confirmation).
 - Results: gate-logs/fgate-<cand>--<ref><bodies><fuel>-batch.json, and a "Results against <ref>" table.
 """
-import argparse, fcntl, hashlib, importlib.util, json, math, os, random, subprocess, sys, time
+import argparse, fcntl, hashlib, importlib.util, json, math, os, random, re, subprocess, sys, time
 from pathlib import Path
 import numpy as np
 
@@ -42,6 +42,66 @@ def load(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
     return module
+
+
+def bot_dir(bot):
+    """A bot argument as ab.py resolves it: a name under bots/, or a path."""
+    return next((p for p in (ROOT / 'bots' / bot, Path(bot)) if (p / 'src').is_dir()), Path(bot))
+
+
+def read_summary(n):
+    try: return json.loads((ROOT / f'replays/ab/{n}/summary.json').read_text())
+    except (OSError, ValueError): return None
+
+
+# run_batched.py prints "Bot 1: DIR" and "  as .../replays/frozen/<hash>/<name>" into each suite's log.
+PLAYED = re.compile(r'^Bot 1: .*\n\s+as \S*/replays/frozen/([0-9a-f]{12})/', re.M)
+_played, _now, _unrecorded = {}, {}, set()
+
+
+def source_now(bot):
+    import run_batched
+    if bot not in _now: _now[bot] = run_batched.source_hash(bot_dir(bot))
+    return _now[bot]
+
+
+def played(n, x):
+    """The frozen copies (hashes) of bot 1 that run n played: its summary's record, or for a run from before ab.py
+    kept one, the copies its suite logs name, which are what it played."""
+    if x['cand'].get('frozen'): return set(x['cand']['frozen'])
+    key = (n, x.get('started'))
+    if key not in _played:
+        found = set()
+        for su in x.get('suites', []):
+            try: m = PLAYED.search((ROOT / su['log']).read_text(errors='replace'))
+            except OSError: continue
+            if m: found.add(m.group(1))
+        _played[key] = found
+    return _played[key]
+
+
+def check_source(n, x, bot):
+    """Stop the gate on a cached run of `bot` (bot 1 of run n, summary x) that played other source than bot's now."""
+    p = played(n, x)
+    if not p:
+        if n not in _unrecorded:
+            _unrecorded.add(n); print(f'note: {n} records no source and its logs are gone; reused unchecked', flush=True)
+        return
+    if p != {source_now(bot)}:
+        raise SystemExit(f'{n} played {bot} as replays/frozen/{"+".join(sorted(p))}, but its source (or sdk/cpp) now hashes '
+                         f'to {source_now(bot)}: give the changed bot a new dir, or delete replays/ab/{n} to replay it')
+
+
+def adopt(fg, rel):
+    """bots/REL here, copied from the checkout the gate's bodies are built in (dgate's R, the primary one) when only
+    that has it: the build markers are shared by every tree, so a worktree never builds a body itself."""
+    import run_batched, shutil
+    dst, src = ROOT / 'bots' / rel, Path(fg.dgate.R) / 'bots' / rel
+    if dst.is_dir() or not src.is_dir() or src.resolve() == dst.resolve(): return
+    staging = dst.parent / f'.{dst.name}-{os.getpid()}'
+    shutil.copytree(src, staging, ignore=lambda d, names: run_batched.BUILD_OUTPUT & set(names) if Path(d) == src else ())
+    try: staging.rename(dst)
+    except OSError: shutil.rmtree(staging, ignore_errors=True)  # another gate adopted it first
 
 
 def pool():
@@ -118,15 +178,16 @@ def suite(maps, n, j):
 def body(fg, version):
     """variants/rt-<version>: noise body 1 of that version with its seed and salt read at run time. Built once."""
     name = f'variants/rt-{version}'; dst = ROOT / 'bots' / name; mark = Path(fg.LOCKS) / f'built-rt-{version}'
+    adopt(fg, name)
     if mark.exists() and dst.is_dir(): return name
     os.makedirs(fg.LOCKS, exist_ok=True)
     with open(Path(fg.LOCKS) / f'build-rt-{version}', 'w') as fh:
         fcntl.flock(fh, fcntl.LOCK_EX)
         if not (mark.exists() and dst.is_dir()):
-            fg.build_seed(1); fg.build_body(1, version)
+            fg.build_seed(1); fg.build_body(1, version)  # in fg.R, where the shared markers say they are
             rb = load('fgate_runtime_body', ROOT / 'research/ideas-2026-11-11/conditional-batch506/runtime_body.py')
             if dst.exists(): raise SystemExit(f'{dst} exists without its marker {mark}: remove it and rerun')
-            rb.prepare(ROOT / f'bots/variants/spar-dvn1-{version}', dst)
+            rb.prepare(Path(fg.R) / f'bots/variants/spar-dvn1-{version}', dst)
             mark.touch()
     return name
 
@@ -199,6 +260,12 @@ def main(argv=None):
     os.environ.setdefault('CAMBC_BIN', str(ROOT / 'tools/fastengine/runner/fastrunner'))
     os.environ.setdefault('FASTRUNNER_MODE', 'native')
     fg = load('fgate_blocks', ROOT / 'research/ideas-2026-11-09/freshgate-tools/fgate.py')
+    # local.R names the primary checkout; in a worktree, read the cells from the summaries this tree's ab.py writes.
+    fg.local.R = f'{ROOT}/'
+    import ab
+    td = [ab.test_draft_of(bot_dir(b)) for b in (a.cand, a.ref)]
+    if td[0] != td[1]:
+        ap.error(f'test_draft differs (CAND {td[0]}, REF {td[1]}): a paired gate needs both bots on the same draft')
     for v, known in ((a.fish_body, ['Flp'] + fg.FISH_PATCHES), (a.mite_body, ['Mt3p'] + fg.MITE_PATCHES)):
         if v not in known: ap.error(f'unknown body {v}: one of {", ".join(known)}')
     bodies = {'F': a.fish_body, 'M': a.mite_body}
@@ -209,23 +276,27 @@ def main(argv=None):
     def rname(bot, o, j):
         return f'fb{fg.ENG}-{os.path.basename(bot.rstrip("/")).removeprefix("oc-")}-{bodies[o]}-m{a.batch_maps}b{j:03d}{fuel}'
 
-    def summary(n):
-        try: return json.loads((ROOT / f'replays/ab/{n}/summary.json').read_text())
-        except (OSError, ValueError): return None
+    summary = read_summary
 
-    def done(n, s):
+    def done(n, s, bot):
         x = summary(n)
-        return (x is not None and x['games'] + x['errors'] >= s['games'] and x.get('release') is True and x.get('cambc') == fg.CAMBC
-                and x.get('fuel') == a.fuel and (x.get('experiment_config') or {}).get('sha256') == s['sha'])
+        if not (x is not None and x['games'] + x['errors'] >= s['games'] and x.get('release') is True and x.get('cambc') == fg.CAMBC
+                and x.get('fuel') == a.fuel and (x.get('experiment_config') or {}).get('sha256') == s['sha']): return False
+        # Runs are cached by name, which a bot dir edited in place keeps.
+        check_source(n, x, bot)
+        return True
 
     class Runner(fg.dgate.Runner):
         def want(self, bot, o, j, s):
             n = rname(bot, o, j)
-            if done(n, s): return True
+            if done(n, s, bot): return True
             self.poll()
             if n in self.procs or len(self.procs) >= self.jobs or fg.dgate.running_elsewhere(n): return False
             # A run that ends without a complete summary is retried once, not forever.
             if self.tries.get(n, 0) >= 2: raise SystemExit(f'{n} failed twice (log {fg.LOGS}/{n}.log)')
+            import run_batched
+            if run_batched.source_hash(bot_dir(bot)) != source_now(bot):
+                raise SystemExit(f'{bot} changed during the gate: its runs so far played other source')
             lock = f'{fg.LOCKS}/{n}'
             try: os.close(os.open(lock, os.O_CREAT | os.O_EXCL))
             except FileExistsError:
@@ -254,7 +325,7 @@ def main(argv=None):
                     for o in 'FM':
                         for bot in (a.ref, a.cand): run.want(bot, o, jj, ss)
         names = [rname(bot, o, j) for o in 'FM' for bot in (a.cand, a.ref)]
-        if not all(done(n, s) for n in names):
+        if not all(done(rname(bot, o, j), s, bot) for o in 'FM' for bot in (a.cand, a.ref)):
             if a.no_run: break
             time.sleep(2); continue
         diff, flips = {'fresh': {}, 'L': {}}, 0

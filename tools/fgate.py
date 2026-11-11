@@ -31,6 +31,33 @@ def legacy_settings(argv):
     return settings.parse_args(argv)
 
 
+def worktree(fg,fb):
+    """In a worktree, play and read this tree's bots, runs and summaries (the gate's modules name the primary
+    checkout). Bodies are still built there, where the markers in the shared lock dir say they are, then copied."""
+    root=f'{fb.ROOT}/'
+    if root==fg.R: return
+    fg.R=fg.local.R=root
+    build=fg.build_version
+    def build_version(k):
+        fg.R=fg.dgate.R
+        try: build(k)
+        finally: fg.R=root
+        for o in 'FM': fb.adopt(fg,fg.mdir(k,o))
+    fg.build_version=build_version
+
+
+def checked_sources(fg,fb):
+    """A cached run is reused by name only if its bot played the source the bot has now (fgate_batch.check_source)."""
+    bots={}; rname,done=fg.rname,fg.done
+    def named(bot,*rest):
+        n=rname(bot,*rest); bots[n]=bot; return n
+    def checked(n,games):
+        if not done(n,games): return False
+        if n in bots: fb.check_source(n,fb.read_summary(n),bots[n])
+        return True
+    fg.rname,fg.done=named,checked
+
+
 def main():
     os.environ.setdefault('CAMBC_SLOTS','86')
     os.environ.setdefault('FASTRUNNER_MODE','native')
@@ -46,10 +73,13 @@ def main():
     resource,argv=parser.parse_known_args()
     if not 1<=resource.compile_workers<=32 or not 0<=resource.compile_lookahead<=32:
         parser.error('compile workers must be1..32 and lookahead0..32')
-    source=ahead.R/'research/ideas-2026-11-09/freshgate-tools/fgate.py'
+    import fgate_batch as fb
+    source=fb.ROOT/'research/ideas-2026-11-09/freshgate-tools/fgate.py'
     spec=importlib.util.spec_from_file_location('default_fgate',source)
     fg=importlib.util.module_from_spec(spec);spec.loader.exec_module(fg)
     sys.argv=[str(source),*argv]
+    worktree(fg,fb)
+    checked_sources(fg,fb)
     if '--help' in argv or '-h' in argv:print(__doc__)
     if resource.no_compile_ahead or os.environ.get('CAMBC_COMPILE_AHEAD','1')=='0' or '--no-run' in argv or '--help' in argv or '-h' in argv:
         fg.main();return

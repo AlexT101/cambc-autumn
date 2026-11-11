@@ -501,6 +501,9 @@ async function suite(opts) {
   // 'first' suites number an entry's candidates below 1000 (the plan has under 100 entries), 'diverse' ones below 100.
   const per = m.select === 'first' ? 1000 : 100, tries = (what, n) => Math.ceil(n * (typeof what === 'string' || m.select === 'first' ? over : 2));
   if (m.select === 'first' && def.plan.length >= 100) throw new Error('a first-select plan needs under 100 entries');
+  // Without --out the A/B suite is replaced in place: only its own seed and mix keep its maps.
+  if (!opts.out && ((opts.seed !== undefined && String(opts.seed) !== String(def.seed)) || mix !== 'varied-v1'))
+    throw new Error(`without --out this replaces ${def.dir} (seed ${def.seed}, --mix varied-v1) in place; pass --out DIR for a fresh suite`);
   if (seeds.length > 1 && !opts.out?.includes('{seed}')) throw new Error('several seeds need --out with {seed}, e.g. maps/suites/fresh/fresh-{seed}');
   // More than ~48 processes was slower on 96 cores (memory-bound, 2026-10-29): 10 suites in 9.2 s at 48, 10.3 at 94.
   const jobs = +(opts.jobs ?? Math.max(1, Math.min(48, os.availableParallelism() - 2))), tasks = [];

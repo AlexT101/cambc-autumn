@@ -8,6 +8,7 @@ numexpr to the number held, runs CMD and frees the slots when it exits. Without 
 starts a thread per core whatever else is running.
 """
 import os
+import signal
 import subprocess
 import sys
 
@@ -24,7 +25,15 @@ def main():
         n = str(len(held))
         env = dict(os.environ, OMP_NUM_THREADS=n, OPENBLAS_NUM_THREADS=n, MKL_NUM_THREADS=n, NUMEXPR_NUM_THREADS=n)
         print(f"pooled: {n} of {want} slots", file=sys.stderr, flush=True)
-        sys.exit(subprocess.run(sys.argv[3:], env=env).returncode)
+        proc = subprocess.Popen(sys.argv[3:], env=env)
+        # Their default ends pooled alone, freeing the slots while CMD runs on outside the pool: pass them on and wait.
+        for sig in (signal.SIGTERM, signal.SIGHUP):
+            signal.signal(sig, lambda signum, _: proc.send_signal(signum))
+        try:
+            code = proc.wait()
+        except KeyboardInterrupt:  # a terminal's Ctrl+C reached CMD too; a second one leaves without waiting
+            code = proc.wait()
+        sys.exit(code)
     finally:
         cpu_slots.release(held)
 

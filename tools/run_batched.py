@@ -7,6 +7,7 @@ tools/fastengine/runner/fastrunner, the whole batch goes to one fastrunner run-b
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor
+import contextlib
 from datetime import datetime
 import hashlib
 import json
@@ -104,18 +105,22 @@ def load_durations():
 
 def save_durations(records):
     """Merge this batch's slowest game per map into the cache; other maps keep their entries."""
-    durations = load_durations()
     batch = {}
     for r in records:
         if "error" not in r:
             key = map_key(Path(r["map"]))
             batch[key] = max(batch.get(key, 0), r["seconds"])
-    durations.update(batch)
+    # Concurrent batches end together (an A/B's suites): a torn read loads {} and its write would drop every other map.
+    tmp = DURATIONS.with_name(f"{DURATIONS.name}.{os.getpid()}.tmp")
     try:
         DURATIONS.parent.mkdir(parents=True, exist_ok=True)
-        DURATIONS.write_text(json.dumps(durations, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        with cpu_slots.exclusive(DURATIONS.with_name(f"{DURATIONS.name}.lock")):
+            durations = load_durations()
+            durations.update(batch)
+            tmp.write_text(json.dumps(durations, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            os.replace(tmp, DURATIONS)
     except OSError:
-        pass
+        tmp.unlink(missing_ok=True)
 
 
 def bot_path(value):
@@ -230,18 +235,27 @@ def clear_copied_cache(bot):
             return
 
 
+def source_hash(bot):
+    """The key of the bot's frozen copy: a hash of its source (build output aside) and the SDK."""
+    digest = hashlib.sha256()
+    for base in (Path(bot), ROOT / "sdk" / "cpp"):
+        for path in sorted(base.rglob("*")):
+            rel = path.relative_to(base)
+            if path.is_file() and not (base == Path(bot) and rel.parts[0] in BUILD_OUTPUT):
+                digest.update(rel.as_posix().encode() + b"\0" + path.read_bytes() + b"\0")
+    return digest.hexdigest()[:12]
+
+
 def freeze(bot):
     """A copy of the bot's source at replays/frozen/<hash of it and the SDK>/<name>. Every match of a
     batch starts its own run-batch, which rebuilds a bot whose source changed, so playing the copy keeps
     the whole batch on the source it started with; batches of the same source share the copy's build."""
-    digest = hashlib.sha256()
-    for base in (bot, ROOT / "sdk" / "cpp"):
-        for path in sorted(base.rglob("*")):
-            rel = path.relative_to(base)
-            if path.is_file() and not (base == bot and rel.parts[0] in BUILD_OUTPUT):
-                digest.update(rel.as_posix().encode() + b"\0" + path.read_bytes() + b"\0")
-    copy = FROZEN / digest.hexdigest()[:12] / bot.name
-    if not copy.is_dir():
+    copy = FROZEN / source_hash(bot) / bot.name
+    if copy.is_dir():
+        # Its last use, for tools/frozen_janitor.py.
+        with contextlib.suppress(OSError):
+            os.utime(copy)
+    else:
         copy.parent.mkdir(parents=True, exist_ok=True)
         staging = copy.parent / f".{bot.name}-{os.getpid()}"
         shutil.copytree(bot, staging, ignore=lambda d, names: BUILD_OUTPUT & set(names) if Path(d) == bot else ())
@@ -428,7 +442,7 @@ def main():
 
     def write_results():
         thin_pending()
-        report = {"bots": [str(p) for p in bots], "experiment_config": config_proof, "game_timeout": args.game_timeout, "fuel": args.fuel, "release": args.release, "timeout": args.timeout,
+        report = {"bots": [str(p) for p in bots], "frozen": [str(p) for p in played], "experiment_config": config_proof, "game_timeout": args.game_timeout, "fuel": args.fuel, "release": args.release, "timeout": args.timeout,
                   "gen": args.gen, "gen_seed": args.gen_seed if args.gen else None,
                   "one_side": args.one_side, "side_seed": args.side_seed if args.one_side else None,
                   "scheduled": len(jobs), "completed": len(records), "wins": wins, "early_losses": early,
