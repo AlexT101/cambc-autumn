@@ -7,7 +7,7 @@ from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
 from pathlib import Path, PurePosixPath
 
-from . import audits, camps, draft, economy, fights, gap, macro, params, sensitivity, tempo
+from . import audits, camps, draft, economy, fights, gap, losses, macro, params, sensitivity, tempo
 from .data import ANALYSIS, Game, load_index, load_map, resolve
 from .util import BOOT, CAVEAT, Report
 
@@ -19,11 +19,12 @@ REPORTS = {
     'economy': ('Economy and camp handling', economy),
     'camps': ('Camp values', camps),
     'macro': ('Macro: turns, gems, cohesion, control, losses', macro),
+    'losses': ('Loss episodes: where value is lost, clustered and priced', losses),
     'gap': ('Gap report', gap),
     'sensitivity': ('Threshold sensitivity', sensitivity),
 }
-EXTRACTORS = ['tempo', 'fights', 'audits', 'draft', 'economy', 'macro']
-DEFAULT_REPORTS = 'tempo,fights,audits,draft,economy,macro,camps,gap'
+EXTRACTORS = ['tempo', 'fights', 'audits', 'draft', 'economy', 'macro', 'losses']
+DEFAULT_REPORTS = 'tempo,fights,audits,draft,economy,macro,losses,camps,gap'
 
 
 def cluster_of(meta):
@@ -176,7 +177,7 @@ def main(argv=None):
     prim = resolve(args.sources or ['replays/ladder'], index)
     vs = resolve(args.vs, index) if args.vs else []
     dirs = list(dict.fromkeys(prim + vs))
-    needs = {'economy': {'economy'}, 'macro': {'macro'}, 'camps': set(), 'gap': set(EXTRACTORS)}
+    needs = {'economy': {'economy'}, 'macro': {'macro'}, 'losses': {'losses'}, 'camps': set(), 'gap': set(EXTRACTORS)}
     only = [r for r in EXTRACTORS if any(r in needs.get(rep, set(EXTRACTORS) - {'economy'}) for rep in reports)]
     data = extract_all(dirs, args.threads, P, only)
     t1 = time.time()

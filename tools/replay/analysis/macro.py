@@ -12,8 +12,8 @@ from .data import chebyshev
 from .util import boot_stat, by_cluster, fmt, mean, median, pct, quantile
 
 PHASES = [(1, 150, 'r1-150'), (151, 400, 'r151-400'), (401, 800, 'r401-800'), (801, 10**9, 'r801+')]
-# First match wins: dead, lost (stunned, out of fuel, bot error), fight (dealt or took champion damage), channels by
-# kind, camp (hit a camp), hold (still on a claimable group's tile), walk_bag / walk (moved, with / without gems),
+# First match wins: dead, fight (dealt or took champion damage), lost (stunned), channels by kind, camp (hit a camp),
+# walk_bag / walk (moved, with / without gems), lost (out of fuel or bot error, still), hold (still on a claimable group's tile),
 # spawn (still on own spawn), wait_camp (still within 3 of a respawning or live group's tiles without hitting it),
 # wait_altar (still within 2 of an altar), idle (alive, still, none of the above).
 CLASSES = ['dead', 'lost', 'fight', 'tribute', 'recall', 'teleport', 'camp', 'hold', 'walk_bag', 'walk', 'spawn', 'wait_camp',
@@ -145,6 +145,86 @@ def _window_sum(comp, a, b):
     return {k: sum(v[a:b + 1]) for k, v in comp.items()}
 
 
+def classify(g):
+    """Each champion-round's class (CLASSES, first match wins): {cid: [None] + [class of round r for r in 1..n]}.
+    Cached on the Game, so the reports that need it share one pass."""
+    if getattr(g, '_macro_cls', None) is not None:
+        return g._macro_cls
+    mp, n, R = g.map, g.n_rounds, g.rounds
+    champs = R['champions']
+    team_of = g.team_of
+    camp_hit, fight, moved_by_chan = set(), set(), set()
+    for e in g.events:
+        k = e['k']
+        if k in ('attack', 'cast'):
+            a, r = e['a'], e['r']
+            if e.get('cdmg'):
+                camp_hit.add((a, r))
+            ta = team_of.get(a)
+            for v, amt in e.get('dmg') or []:
+                if v in team_of and team_of[v] != ta and amt > 0:
+                    fight.add((a, r))
+                    fight.add((v, r))
+            for v in e.get('stun') or []:
+                if v in team_of and team_of[v] != ta:
+                    fight.add((a, r))
+                    fight.add((v, r))
+        elif k in ('recall_end', 'teleport_end', 'respawn'):
+            moved_by_chan.add((e['a'], e['r']))
+    grows = R['groups']
+    gi = 0
+    gstate = {}
+    near_cache = {}
+
+    def near_groups(p):
+        if p not in near_cache:
+            near_cache[p] = [grp['id'] for grp in mp.groups if any(chebyshev(p, q) <= 3 for q in grp['tiles'])]
+        return near_cache[p]
+    cls = {c['id']: [None] * (n + 1) for c in champs}
+    for i in range(n):
+        r = R['round'][i] if i < len(R['round']) else i + 1
+        while gi < len(grows) and grows[gi][0] <= r:
+            row = grows[gi]
+            gstate[row[1]] = row[2]
+            gi += 1
+        j = i - 1 if i > 0 else i
+        for c in champs:
+            cid, t = c['id'], c['team']
+            p1 = (c['x'][i], c['y'][i]) if c['alive'][i] and c['x'][i] is not None else None
+            p0 = (c['x'][j], c['y'][j]) if c['alive'][j] and c['x'][j] is not None else None
+            tc = c['turn'][i] if i < len(c['turn']) else 0
+            if tc == 4 or (p1 is None and p0 is None):
+                k = 'dead'
+            elif (cid, r) in fight:
+                k = 'fight'
+            elif tc == 5:
+                k = 'lost'
+            elif tc == 3:
+                ch_ = c['chan'][i] or (c['chan'][j] if j != i else 0)
+                k = {1: 'recall', 2: 'tribute', 3: 'teleport'}.get(ch_, 'recall')
+            elif (cid, r) in camp_hit:
+                k = 'camp'
+            elif p1 is not None and p0 is not None and p1 != p0 and (cid, r) not in moved_by_chan:
+                k = 'walk_bag' if (c['gems'][j] or 0) > 0 else 'walk'
+            elif tc in (6, 7):
+                # out of fuel or a bot error, still and without a hit: the turn was lost (some ladder bots run out of
+                # fuel every turn after acting, so a turn that moved or hit is classed by what it did)
+                k = 'lost'
+            elif p1 is not None and p1 in mp.group_tiles and gstate.get(mp.group_tiles[p1]) == 2:
+                k = 'hold'
+            elif mp.in_spawn(t, p1):
+                k = 'spawn'
+            elif p1 is not None and any(gstate.get(gid) in (1, 3) for gid in near_groups(p1)):
+                k = 'wait_camp'
+            elif p1 is not None and mp.altar_dist(p1) <= 2:
+                k = 'wait_altar'
+            else:
+                k = 'idle'
+            cls[cid][r] = k
+    g._macro_cls = cls
+    return cls
+
+
 def extract(g, P=None):
     P = P or params_mod.DEFAULTS
     RAD = P['radius']
@@ -168,39 +248,10 @@ def extract(g, P=None):
             brk = i + 1
     w0, w1 = brk + 1, min(n, brk + WIN)
 
-    # --- per (cid, round) event flags
-    camp_hit, fight, moved_by_chan = set(), set(), set()
-    for e in g.events:
-        k = e['k']
-        if k in ('attack', 'cast'):
-            a, r = e['a'], e['r']
-            if e.get('cdmg'):
-                camp_hit.add((a, r))
-            ta = team_of.get(a)
-            for v, amt in e.get('dmg') or []:
-                if v in team_of and team_of[v] != ta and amt > 0:
-                    fight.add((a, r))
-                    fight.add((v, r))
-            for v in e.get('stun') or []:
-                if v in team_of and team_of[v] != ta:
-                    fight.add((a, r))
-                    fight.add((v, r))
-        elif k in ('recall_end', 'teleport_end', 'respawn'):
-            moved_by_chan.add((e['a'], e['r']))
-
-    grows = R['groups']
-    gi = 0
-    gstate = {}
-    near_cache = {}
-
-    def near_groups(p):
-        if p not in near_cache:
-            near_cache[p] = [grp['id'] for grp in mp.groups if any(chebyshev(p, q) <= 3 for q in grp['tiles'])]
-        return near_cache[p]
+    cls = classify(g)   # cls[cid][r]
     fields = group_fields(mp)
     H = mp.H
 
-    cls = {cid: [None] * (n + 1) for cid in ids}   # cls[cid][r]
     turns = [[Counter() for _ in PHASES] for _ in (0, 1)]
     win_turns = [Counter(), Counter()]
     types = [defaultdict(Counter) for _ in (0, 1)]
@@ -217,47 +268,14 @@ def extract(g, P=None):
     for i in range(n):
         r = R['round'][i] if i < len(R['round']) else i + 1
         ph = _phase(r)
-        while gi < len(grows) and grows[gi][0] <= r:
-            row = grows[gi]
-            gstate[row[1]] = row[2]
-            gi += 1
-        j = i - 1 if i > 0 else i
-        pos_end, pos_start = {}, {}
+        pos_end = {}
         for c in champs:
-            cid = c['id']
             if c['alive'][i] and c['x'][i] is not None:
-                pos_end[cid] = (c['x'][i], c['y'][i])
-            if c['alive'][j] and c['x'][j] is not None:
-                pos_start[cid] = (c['x'][j], c['y'][j])
-        # classification
+                pos_end[c['id']] = (c['x'][i], c['y'][i])
         for c in champs:
             cid, t = c['id'], c['team']
-            tc = c['turn'][i] if i < len(c['turn']) else 0
-            p1, p0 = pos_end.get(cid), pos_start.get(cid)
-            if tc == 4 or (p1 is None and p0 is None):
-                k = 'dead'
-            elif (cid, r) in fight:
-                k = 'fight'
-            elif tc in (5, 6, 7):
-                k = 'lost'
-            elif tc == 3:
-                ch_ = c['chan'][i] or (c['chan'][j] if j != i else 0)
-                k = {1: 'recall', 2: 'tribute', 3: 'teleport'}.get(ch_, 'recall')
-            elif (cid, r) in camp_hit:
-                k = 'camp'
-            elif p1 is not None and p0 is not None and p1 != p0 and (cid, r) not in moved_by_chan:
-                k = 'walk_bag' if (c['gems'][j] or 0) > 0 else 'walk'
-            elif p1 is not None and p1 in mp.group_tiles and gstate.get(mp.group_tiles[p1]) == 2:
-                k = 'hold'
-            elif mp.in_spawn(t, p1):
-                k = 'spawn'
-            elif p1 is not None and any(gstate.get(gid) in (1, 3) for gid in near_groups(p1)):
-                k = 'wait_camp'
-            elif p1 is not None and mp.altar_dist(p1) <= 2:
-                k = 'wait_altar'
-            else:
-                k = 'idle'
-            cls[cid][r] = k
+            p1 = pos_end.get(cid)
+            k = cls[cid][r]
             turns[t][ph][k] += 1
             types[t][name_of[cid]][k] += 1
             if w0 <= r <= w1:
@@ -642,8 +660,8 @@ def render(ctx, rep):
     rep.p(f'Set: {ctx.describe()}. Sides: {A} vs {B} in the same game ({len(ents)} pairs). '
           + ('Paired by game: the focus team against its opponent.' if ctx.focus else 'Without --team each game is read winner against loser, which partly measures winning.'),
           'Every number is read from the replay alone (no bot traces). Turn classes are per champion-round, first match wins: '
-          'dead, lost (stunned/out of fuel/error), fight (dealt or took champion damage), tribute/recall/teleport channel, camp (hit a camp), '
-          'walk_bag/walk (moved, carrying gems or not), hold (still on a claimable group tile), spawn (still on own spawn), idle. '
+          'dead, fight (dealt or took champion damage), lost (stunned), tribute/recall/teleport channel, camp (hit a camp), '
+          'walk_bag/walk (moved, carrying gems or not), lost (out of fuel or bot error without moving or hitting), hold (still on a claimable group tile), spawn (still on own spawn), idle. '
           'Distances are Chebyshev unless noted; camp control uses walking distance. Differences are mean '
           f'{A} minus {B} with a 95% cluster-bootstrap CI over map pairs or ladder groups.')
 

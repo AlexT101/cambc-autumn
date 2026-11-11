@@ -162,7 +162,7 @@ Offline reports over the extracted tables: Markdown plus CSVs, no viewer. Python
 ```
 py tools/replay/analyze.py                                    # ladder (replays/ladder), default reports
 py tools/replay/analyze.py replays/batch-X --vs replays/ladder --team hyperion   # adds the gap report
-py tools/replay/analyze.py [SOURCES...] [--vs SOURCES...] [--team NAME] [--map NAME] [--since ISO] [--out DIR] [--reports tempo,fights,audits,draft,economy,macro,camps,gap,sensitivity] [--threads N] [--analysis DIR]
+py tools/replay/analyze.py [SOURCES...] [--vs SOURCES...] [--team NAME] [--map NAME] [--since ISO] [--out DIR] [--reports tempo,fights,audits,draft,economy,macro,losses,camps,gap,sensitivity] [--threads N] [--analysis DIR]
 ```
 
 - `--analysis DIR` (or `CAMBC_ANALYSIS=DIR`) reads an `extract.mjs --out DIR` cache instead of `replays/.analysis/`; reports then default to `DIR/reports/`.
@@ -187,6 +187,7 @@ Statistics:
 | `economy` | Rounds 1-300 economy of the focus team against its opponents and the --vs sets (all, winners, top 10 by win rate, their wins, low camp-ratio winners): camp DPS per map/preset and champion, camp damage taken/dealt by group type, victim activity and attackers, against the basic-attack minimum; time budget; capture sharing, bags, altar-trip overhead, captured-gem mix; shard mix; recalls and the recall-loop check (must stay 0). Cached in `replays/.analysis/cache/economy/`. The ladder only plays its 9 maps, so judge generated maps against `opponents`. |
 | `camps` | Static camp-group values for each map in the sources (from the extracted map files): hp, Strength, gems, gold, respawn, walk from spawn and from the altar, clear time and minimum damage for the Strengths in `params.py` (`camp_strength`), gems per 1k hp, per effort and per farm-and-tribute cycle. |
 | `macro` | How each side's champions played the map, paired by game (focus team against its opponent with `--team`, else winner against loser); see [Macro](#macro-analysismacropy-macro_cardpy). |
+| `losses` | Loss episodes priced in gems, clustered by situation and ranked against the opponent, with code areas and examples; see [Weaknesses](#weaknesses-loss-episodes-triage-ab-diff-analysislossespy-triagepy-abdiffpy). |
 | `gap` | Only with `--team` and `--vs`: every per-side metric (tempo, fights, audits, economy, macro) for the focus team against the comparison set and its game winners, per map and pooled, ranked by a robust z score; opponent-dependent metrics are flagged. |
 | `sensitivity` | Opt-in: headline numbers at a lower and higher value of each key constant. |
 
@@ -212,10 +213,11 @@ With `--team`, every number is the focus team against its opponent in the same g
   break rounds, so less of it is the result of winning), with the focus team's win rate when its value was higher or lower.
 - **By map family**: per map family (the name without its seed and `gen-` prefix) the focus win rate, the paired
   differences of the main metrics and the top cause of its losses.
-- **Where the turns go**: each champion-round gets one class, first match wins: dead; lost (stunned, out of fuel, bot error);
-  fight (dealt or took champion damage); tribute, recall or teleport channel (`turn` = channelling, so recall feints are not
-  recalls); camp (hit a camp); walk_bag / walk (moved, with or without gems at the start; recall, teleport and respawn arrivals
-  are not walks); hold (still on a claimable group tile); spawn (still on own spawn); wait_camp (still within 3 of a
+- **Where the turns go**: each champion-round gets one class, first match wins: dead; fight (dealt or took champion
+  damage); lost (stunned); tribute, recall or teleport channel (`turn` = channelling, so recall feints are not recalls);
+  camp (hit a camp); walk_bag / walk (moved, with or without gems at the start; recall, teleport and respawn arrivals are
+  not walks); lost (out of fuel or a bot error, still: Fish and Mite run out of fuel after acting on most turns, so an
+  out-of-fuel turn that moved or hit is classed by what it did, since 2026-11-11); hold (still on a claimable group tile); spawn (still on own spawn); wait_camp (still within 3 of a
   respawning or live group's tiles, not hitting it); wait_altar (still within 2 of an altar); idle. Whole game and per phase
   (r1-150, 151-400, 401-800, 801+). `mt_work` = camp + hold + tribute; `mt_wait` = both waits.
 - **What the walking was for**: walk legs (runs of walk rounds) by the class of the turn that ends them, and the
@@ -243,6 +245,126 @@ With `--team`, every number is the focus team against its opponent in the same g
 
 The per-side metrics also feed the `gap` report. `macro_stats.py` (winner against loser time shares and clear crews) and
 `turn_budget.py` (trace-based classes and branch earnings) remain for their own views.
+
+## Weaknesses: loss episodes, triage, A/B diff (analysis/losses.py, triage.py, abdiff.py)
+
+Turns a batch into ranked, priced weaknesses with example games, and one game into its turning points. Replay only, so
+any two bots compare; about 0.2 s a game on top of macro.
+
+```
+py tools/replay/analyze.py BATCH --reports losses --team NAME [--analysis DIR] [--threads N]   # the batch's weaknesses
+py tools/replay/triage.py GAME [GAME ...] --team NAME [--top 10] [--analysis DIR]            # one game's turning points
+py tools/replay/abdiff.py --a BATCH-A --a-team CAND --b BATCH-B --b-team REF [--out FILE]     # what changed between two batches
+```
+
+**Episodes** (`analysis/losses.py`). Each side's losses are cut into disjoint episodes, each priced in gems, so their
+costs add up. The earn rate prices time: the game's gems earned (capture shares and kill bags, both teams) per alive
+champion-round, about 0.3 on generated maps, so a 60-round death costs about 18 gems of time.
+
+| kind | what | cost |
+| --- | --- | --- |
+| `death` | killed by a champion (a Cassi & Issac pair once, both bags) | bag + killer's gold / 4 + dead rounds x earn rate |
+| `camp_death` | killed by a camp | bag + dead rounds x earn rate |
+| `camp_lost` | the enemy captured a group we had worked on: `stolen` (we dealt half its monster damage this cycle or more), `contested` (we hit or held it, or a hold was contested), or a group on our half we never touched (`invaded`) | the capture's gems + gold / 4 |
+| `stall` | 10+ rounds alive off spawn without walking, hitting, holding or channelling (idle, waiting by a camp or altar, on own spawn at full health) | rounds x earn rate |
+
+Tags, all from the replay at the start of the round the fatal damage began (the first hit of the run of champion damage,
+gaps of at most 2 rounds, before the death):
+
+- deaths: `doing` (the victim's macro turn class the round before: walking with gems, walking, farming, holding,
+  tributing, recalling, fighting = it dealt the first damage, waiting, idle, stunned/oof), numbers within 8 (`alone v1`,
+  `alone v2+`, `grouped, outnumbered`, `grouped, even+`; allies exclude the Cassi/Issac partner), warning (`unseen`,
+  `seen <6`, `seen 6+`: rounds the victim's own sight held one of its killers, gaps of 1 allowed), `approach` (its own walk
+  over the 5 rounds before closed on, held or opened the distance to where its killers stood), `heading` (toward an altar,
+  own spawn or elsewhere), half.
+- camps lost: why (`ours died`, `ours within 3, outheld`, `ours left, outnumbered`, `ours left at even numbers or
+  better`, from our and their champions within 8 of the tiles when they started holding); invaded: our nearest
+  champion's walking distance then and what it was doing.
+- stalls: `by a tributing ally` (an ally within 8 channelled a tribute for half the stall or more: guarding a long
+  tribute), else `facing enemies within 9` (an enemy that close for half of it: a standoff), else `farmable group in
+  reach` (a claimable or asleep group, not a Monolith, within 20 walking steps), else `nothing in reach`.
+
+**Counterfactuals**, checked against the rules (both assume the enemy would have acted the same):
+
+- *recall window*: a killer was in the victim's sight for 6+ rounds before the first hit with no damage or stun to it,
+  so a recall started at the window's start (5 turn ends; only damage or a stun cancels it) would have landed first.
+- *altar*: within 40 rounds before dying it stood within 1 of an altar the enemy had not locked, carrying at least half
+  the final bag, and a tribute started then (ceil(bag / 10) turn ends; only a stun cancels it) would have completed
+  before the death, with no stun on it in that span. Split by whether an enemy was within 8 then.
+
+**The `losses` report** (`losses.md`, CSVs `losses-*.csv`). With `--team`, the focus team against its opponent in the
+same games; without, each game's loser against its winner. Costs are per game; `excess` is focus minus opponent with a
+95% cluster-bootstrap CI over map pairs or ladder groups.
+
+- *Cost by kind*, also in the focus team's wins and losses.
+- *Top weaknesses*: clusters by champion and situation (deaths: champion, bag, doing; camps lost: kind, half, why;
+  stalls: champion, class, context), sorted by excess; clusters with under 4 focus episodes or 3 games go to the list
+  of single most expensive episodes. Each row: rates and costs both sides, the mix of secondary tags, the share of bag
+  gems a recall window / a clear altar would have saved, the code to look at (`CODE` in losses.py: file and function,
+  the same in ocean and charybdis) and the three costliest examples as `dir rROUND #champion (cost)`. Then the same
+  without the champion.
+- *Deaths by situation*: one tag at a time.
+- *Death hazard by activity*: rounds spent on each activity and deaths per 1000 of them, so a side that walks with gems
+  more is not blamed for walking more.
+- *Avoidable bag losses* (the counterfactuals, with the largest cases), *Bag exposure* (rounds carrying each bag size
+  per champion and deaths per 1000 such rounds: a bag-risk curve), *Fights lost* (engagements lost on net swing by
+  numbers, initiator and whether an ally 9-16 away never joined; these overlap deaths), and *losses against wins*.
+
+`losses.METRICS` (cost per 100 rounds by kind, bag gems lost, counterfactual gems) also feed the `gap` report.
+
+**triage.py**: one game for one team (default the loser): picks, the wealth lead every 100 rounds, the break round and
+its cause (macro.py), key macro metrics both sides, then its most expensive episodes in round order, each with the lead
+10 rounds before and 30 after, its last 20 rounds of turn classes run-length coded (`W` walking with gems, `w` walking,
+`c` camp, `h` hold, `T` tribute, `R` recall, `F` fight, `.` waiting by a camp, `:` by an altar, `_` idle, `s` spawn,
+`d` dead, `x` stunned or out of fuel), its tags, what the replay shows it could have done instead, and where to look;
+then the opponent's largest episodes and the worst fights. The header prints the replay path for `cambc view` and
+`narrate.py`.
+
+**abdiff.py**: two batches against the same opponent on the same maps (CAND vs X and REF vs X; e.g. two A/Bs sharing
+a reference, or one bot's batch before and after a change), paired by map and side. Every macro and losses metric and
+every episode cluster as A minus B with a 95% bootstrap CI over maps, sorted by |diff| / CI, plus "flip association":
+the mean difference in games A won and B lost minus that in games A lost and B won. Then the flipped games with their
+largest cluster differences, ready for triage.py. Different bots diverge from round 1, so per-game differences mix the
+change's effect with the chaos of a different game; read the means, not single games. Both batches must be in one
+analysis root (`extract.mjs --out DIR` on both).
+
+### How to find a weakness
+
+1. Extract the games into your own root: `node tools/replay/extract.mjs BATCH --out DIR` (about 1-4 s a game a
+   thread; an A/B keeps its first 1000 replays per suite, so pass `--keep-replays 0` when you play one to mine).
+   Games against a stronger opponent show the most: live scrims (`replays/ladder-scrims/<group>/*.zip` hold
+   `replay.repl26a`; unzip each into its own file first) or an A/B where our bot is the REF that loses.
+2. `py tools/replay/analyze.py BATCH --analysis DIR --reports losses,macro --team OURS --out REPORT`. Read
+   `losses.md`: *Cost by kind*, then *Top weaknesses*. A cluster is worth a look when its excess CI excludes 0 or its
+   cost is large; check *Death hazard by activity* before blaming an activity the bot simply does more of.
+3. Open three examples of the cluster with `py tools/replay/triage.py DIR --team OURS --analysis DIR`, and the
+   turn-level account with `narrate.py` (or `cambc view` on the printed replay). Confirm the tags: who was where, what
+   it saw, what it was doing. The detectors read positions, sight and events, not intent: a stall beside an ally may be
+   a deliberate escort, a death "walking with gems" may be a walk to the next camp, not to an altar (see `heading`).
+4. State the behaviour as "in situation Y the bot does X, costing Z gems a game", and find the branch in the `look
+   at` column (bot.cc decide calls them in order). To see the branch the bot took, play the game again as a debug
+   build (`ab.py --debug`, or `cambc run` without `--release`): ocean and charybdis print `D ROUND HANDLE BRANCH
+   FARM_GROUP CLAIM` every turn (`Branch` letters in `bot_parts.h`; `debug_lines.py D --show N -- BATCH` lists them,
+   `turn_budget.py` tabulates them). Debug games can diverge from release ones (fuel), so check the situation recurs.
+5. After a fix, A/B it as usual (`AGENTS.md`), then `abdiff.py` (or `--reports losses` on the A/B with CAND as the
+   team) to check that the targeted cluster fell and nothing else rose.
+
+Validation (2026-11-11; charybdis vs ocean, each against astraeus, and 351 live v115 scrims against Fish and Mite;
+every case read from the raw positions, sight lists, damage and group events):
+
+- death tags (doing, numbers, warning, approach): 11 of 11 matched what the raw rounds show.
+- recall windows: 4 of 4 real (a killer in sight for 9-56 rounds with no damage); in 2 an enemy came within 3 during
+  the window, where a recall would likely have drawn the attack, hence the closest-enemy split.
+- altar passes: 2 of 2 real, both with enemies 5-9 away, hence the enemies-within-8 split.
+- camps lost: stolen 2 of 2, invaded 2 of 2; contested 2 of 2 once "on the tiles, outheld" became "within 3, outheld"
+  (both were 2-3 tiles off the tiles).
+- stalls: of 11 opened, 4 were guarding a Prism's 100+ round tribute, 2 standoffs with an enemy pack 6-9 away and 1
+  idle beside an asleep Monolith (each now its own context, or excluded); of the 5 left as `farmable group in reach`, 3
+  were plainly idle with a free group 5-8 steps away and 2 were ambiguous (a Willow waiting beside a wounded ally, a pack
+  waiting by a Monolith about to respawn). Treat that context as candidates to open, not verdicts.
+- live replays exposed a macro.py bug: Fish and Mite run out of fuel after acting on most turns, and every such turn
+  was classed `lost`; out-of-fuel turns that moved or hit are now classed by what they did (0.02% of local
+  champion-rounds change).
 
 ## Belief audit (audit_beliefs.py)
 

@@ -425,6 +425,9 @@ py tools/replay/stalls.py <ab name or batch> --min 300 [--bot 1]       # champio
 node --test tools/replay/test_map.mjs                                # canonical/runtime camp mapping, self-mirrored camps and group identities
 py tools/replay/macro_stats.py replays/.analysis [--bot NAME] [--json OUT]   # time budget, camp clears and captures, winners vs losers
 py tools/replay/macro_card.py GAME [--analysis DIR]                     # one game's macro, both teams side by side
+py tools/replay/analyze.py batch-X --reports losses --team NAME       # loss episodes (deaths, camp deaths, camps lost, stalls) priced in gems, clustered, ranked against the opponent, with code areas
+py tools/replay/triage.py GAME --team NAME [--top 10]                 # one game's turning points: costliest episodes, what the champion did, the rule-checked alternative, where to look
+py tools/replay/abdiff.py --a BATCH-A --a-team CAND --b BATCH-B --b-team REF   # two batches on the same maps and opponent: behaviour and episode changes, and which go with flipped results
 py tools/replay/turn_budget.py batch-A batch-B [--by-bot]               # after extract.mjs: each turn's class and what it earns (reads the `D` trace lines of non-release builds)
 py tools/replay/walk_audit.py batch-X [--team NAME]                     # why champions walk: legs, detours, crews, recall cycles (solo games)
 py tools/replay/hold_metrics.py EXTRACT_DIR [...]                      # per bot: captures, hold resets by cause (walked off alive), pressured holds, deaths, A-B-A flips

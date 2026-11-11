@@ -20,6 +20,9 @@ DEFAULTS = {
     'macro_window': 100,  # rounds after the break round read as the loss window
     'macro_join': 3,  # a walk that ends this close to an ally who was beyond `radius` is a regroup
     'macro_every': 5,  # camp-control sampling period (rounds)
+    'stall_min': 10,  # losses: rounds still off spawn (idle, waiting) that count as a stall
+    'stall_reach': 20,  # losses: walking steps within which a claimable or asleep group makes a stall 'farmable'
+    'altar_look': 40,  # losses: rounds before a death searched for an altar the victim passed
 }
 
 SENSITIVITY = {
