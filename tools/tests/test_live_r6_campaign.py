@@ -111,6 +111,32 @@ class CampaignTests(unittest.TestCase):
         self.assertEqual(self.st['r6_campaign']['version506'], 115)
         self.s.sh.assert_not_called()
 
+    def test_owned_upload_selected_before_live_waits_and_recovers_without_upload(self):
+        self.st['r6_campaign'].update(phase='wait506', upload_note='unique506')
+        self.platform(113, 115, rows=[{'version':115,'note':'unique506','status':'building'}])
+        self.c.tick(self.st)
+        self.assertEqual(self.st['r6_campaign']['phase'],'wait506')
+        self.assertEqual(self.st['r6_campaign']['version506'],115)
+        self.s.hold.assert_not_called();self.s.sh.assert_not_called()
+        self.platform(115, 115, rows=[{'version':115,'note':'unique506','status':'active'}])
+        self.c.tick(self.st)
+        self.assertEqual(self.st['r6_campaign']['phase'],'activate506')
+        self.c.tick(self.st)
+        self.assertEqual(self.st['r6_campaign']['phase'],'main506')
+        self.s.sh.assert_not_called()
+
+    def test_uploaded_match_does_not_authorize_unrelated_selection(self):
+        self.st['r6_campaign'].update(phase='wait506', upload_note='unique506')
+        self.platform(113, 116, rows=[{'version':115,'note':'unique506','status':'building'}])
+        self.c.tick(self.st)
+        self.s.hold.assert_called_once();self.s.sh.assert_not_called()
+
+    def test_selected_new_version_without_exact_note_match_is_not_authorized(self):
+        self.st['r6_campaign'].update(phase='wait506', upload_note='unique506')
+        self.platform(113, 115, rows=[{'version':115,'note':'other-upload','status':'building'}])
+        self.c.tick(self.st)
+        self.s.hold.assert_called_once();self.s.sh.assert_not_called()
+
     def test_slow_build_waits_failed_build_holds(self):
         self.st['r6_campaign'].update(phase='wait506', upload_note='unique506')
         for status in ('queued', 'building'):

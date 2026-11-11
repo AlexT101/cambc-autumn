@@ -176,16 +176,23 @@ class Campaign:
                 else:
                     self.save(st, 'wait506')
             elif phase in ('upload_intent', 'wait506'):
-                self.selection(d, 113, 113)
                 matches = [x for x in d['submissions'] if x['version'] > 114
                            and x.get('note', '').strip() == state['upload_note']]
                 if len(matches) > 1:
                     raise ValueError('multiple campaign506 submissions; explicit reconciliation required')
                 if not matches:
+                    self.selection(d, 113, 113)
                     if phase == 'upload_intent':
                         self.s.hold('interrupted campaign upload has no identifiable submission; do not duplicate')
                     return True
                 row = matches[0]
+                if state.get('version506', row['version']) != row['version']:
+                    raise ValueError('campaign506 matched submission changed')
+                # Upload may select its own new version while113 is still live.
+                # Only the unique exact-note match is an authorized target.
+                self.selection(d, 113, row['version'])
+                if 'version506' not in state:
+                    self.save(st, version506=row['version'])
                 status = row.get('status', '').lower()
                 if any(x in status for x in ('fail', 'error')):
                     raise ValueError('campaign506 platform build failed')
