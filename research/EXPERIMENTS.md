@@ -17452,3 +17452,31 @@ Results against oc-comms-507: no candidate, no gate.
 - No failed matches, broken or capped drafts. Out-of-fuel turns: charybdis 207,620 in 26,481 games (5.2 a game), astraeus 139,909 in 22,185 (3.5 a game).
 
 Ocean (`bots/ocean`, 507) against astraeus on the same 40,192 games and setup (`replays/ab/oc-vs-ast-40k/`, 2m58s): **69.0% (68.5-69.4)**; ladder 72.3% (66.5-77.4) of 256, fresh 69.0% (68.5-69.4) of 39,936. Out-of-fuel turns: ocean 197,400 in 25,868 games (4.9 a game), astraeus 154,381 in 22,989. No failed matches, broken or capped drafts. Charybdis's lead over ocean on these maps, read through astraeus: +6.9 points.
+
+## (charybdis = chy-draft18, 2026-11-11) Per-opponent draft nudges: none helps against Fish's or Mite's body
+
+The ocean nudge (above, "Fish/Mite draft nudge on 506") covered one direction, toward each team's own picks, at
+15 / 30 / 50% of maps changed and the full copy. Here, on charybdis's draft18: that direction again (TF, TM), and
+directions fitted from outcomes (RF, RM: on draft18's 300k lab games against each body, what our champions and
+champion x 25 map features are worth beyond the model, the model's logit as offset; RB: both bodies together).
+The residual is real and opponent-specific in the lab's games (held-out log loss -31 / -21 1e-4 on the Fish / Mite
+games; fitted on the other bots -3.5 / -6.6). Each arm is `chy-draft18` with only `draft_model.h` changed, played
+only on the maps where its team changes, against its own opponent, paired with chy-draft18's games there. 200k
+fuel, release, `rt-Flp4` / `rt-Mt3q` (unmetered, a noise seed a map), both sides, 12,269 fresh ladder-v2 maps (seeds
+7111100-47). 129,628 games, no errors; unchanged-team games identical (1,792), planned teams drafted (3,552 replays).
+
+Results against chy-draft18 (changed cells: points on the maps whose team changes; win% = 50 + change over all maps):
+
+| nudge, strength | opponent | cells changed | changed cells (95% CI) | win% (95% CI) |
+|---|---|---:|---|---|
+| RF x1 / x2 / x4 | Fish | 32 / 54 / 80% | +0.67 (-0.40 to +1.73) / -0.47 (-1.29 to +0.34) / -2.59 (-3.28 to -1.89) | 50.21 (49.87-50.55) / 49.74 (49.30-50.18) / 47.94 (47.38-48.49) |
+| RB x1 / x2 | Fish | 29 / 50% | +0.92 (-0.16 to +2.00) / +0.07 (-0.76 to +0.90) | 50.27 (49.95-50.59) / 50.04 (49.62-50.45) |
+| TF light / strong | Fish | 17 / 56% | +0.69 (-0.70 to +2.07) / -0.25 (-1.00 to +0.50) | 50.11 (49.88-50.34) / 49.86 (49.44-50.28) |
+| RM x1 / x2 / x4 | Mite | 32 / 54 / 77% | -0.03 (-1.15 to +1.10) / -0.64 (-1.52 to +0.24) / -1.68 (-2.43 to -0.93) | 49.99 (49.63-50.36) / 49.66 (49.19-50.13) / 48.71 (48.13-49.29) |
+| RB x1 / x2 | Mite | 29 / 50% | -0.10 (-1.28 to +1.08) / -0.40 (-1.31 to +0.50) | 49.97 (49.62-50.32) / 49.80 (49.34-50.25) |
+| TM light / strong | Mite | 19 / 57% | -1.54 (-3.01 to -0.08) / -1.09 (-1.92 to -0.25) | 49.71 (49.44-49.98) / 49.38 (48.90-49.86) |
+
+Verdict: nothing reaches 50.5 or is established above 50; stronger nudges lose in every direction; no 100k run, no
+candidate. The fitted residual's own in-sample claim on the cells it changes is +0.05 logit, +0.2 points overall:
+it reorders near-ties. Don't retry a champion-value nudge on this model; a per-opponent draft needs a new mechanism.
+Details: [ideas-2026-11-11/chynudge/README.md](ideas-2026-11-11/chynudge/README.md).
