@@ -59,6 +59,38 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 - A map class that gains post hoc needs its own held-out run before anything is built on it (big groups, 2026-11-11):
   bg-golem was +4.3 ±3.8 on 236 maps of one class out of 14 looked at, and -2.5 ±1.2 on 2,027 untouched maps of it.
 
+## (ocean = 506, 2026-11-11) How real Fish wins early fights: the whole pack fights, on our half; the bodies neither attack nor defend like it; two chasing bodies move nothing, none adopted
+
+Write-up, tables and tools: [ideas-2026-11-11/fishfight/README.md](ideas-2026-11-11/fishfight/README.md). Live
+v115's 520 scrims against Fish r2 and Mite r6; 506 against Flp4 / Mt3q on the ladder maps (256 games each) and on
+gen + gen-s1 (1,024 each). No ocean candidate, no fgate games.
+
+- **Not micro.** Focus, stuns, damage in a round, pack compactness (mean pairwise distance 3.75 both), sight,
+  Strength, items and each body's hit rate by distance to the nearest enemy are the same for real Fish, Flp4 and
+  ocean.
+- **The pack is on the target.** The round before Fish's first hit, 1.65 of its bodies stand within 4 of the
+  target (Flp4 1.10, ocean 0.83); two or more do in 52% of its fights (18%). The target dies 9 / 30 / 43 / 56% of
+  the time with 0 / 1 / 2 / 3+ within 4.
+- **Everybody fights.** Fish's bodies within 8 hit a camp in the fight's first three rounds 11% of the time (Flp4
+  23%, ocean 27%). The gap is the back line: Cassi hits in 71% of the fights she is near and deals 213 an
+  engagement (body 52%, 127), Willow 56% (29%), Vendetta and Issac likewise; Heart of Ruin and Marcella already
+  match.
+- **On our half.** Three or more Fish bodies are on our half in 17.1% of rounds 30-100 before any kill (Flp4 8.5%,
+  Mite 8.5%, Mt3q 5.6%).
+- **The bodies do not defend like the real teams.** Fights we start outnumbered (1.7 a game): net -0.03 kills each
+  against Fish and +0.18 against Flp4 (Mite +0.02, Mt3q +0.20); the body's first target dies 15% against 8% and
+  the fight lasts 14.9 rounds against 10.7. All engagements to round 250: -0.21 kills a game against Fish, +0.48
+  against Flp4 (Mite -0.02, Mt3q +0.68). A local read of an offence change is flattered by about 0.7 kills a game.
+- **Bodies tried** (`spar-dvn1-Flp4h`: prey is any visible enemy whose fight is won; `Flp4f`: plus Fish's fitted
+  chase rule, side health over 1.24x and own over 44%). First target died, ladder / gen: Flp4 16% / 22%, Flp4h
+  28% / 23%, Flp4f 19% / 21% (live 38%); bodies within 4: 1.10-1.22 throughout (live 1.65). Flp4f drops the camp
+  (9%) and adds no attackers: a chase only walks, the strike search declines the hit. Neither adopted.
+
+Verdict: Fish's kills come from a team shape (one group with the pair and the healer, routed to the enemy's side,
+all of it fighting), not from a fight rule. A faithful body needs the pair's and Willow's caution out of the strike
+planner, farm routing onto our half, and leaving lost fights after about ten rounds; `fishfight/tools/cmp.py`
+prints the targets.
+
 ## (ocean = 506, 2026-11-11) One-site overruns: early fights lost to real packs, a snowball that runs both ways; the bodies fight too weakly to test a fix, none built
 
 Write-up, tables and tools: [ideas-2026-11-11/overruns/README.md](ideas-2026-11-11/overruns/README.md). Analysis
