@@ -1,6 +1,6 @@
 # Algorithm polyfills (ocean, 2026-11-06)
 
-The user's idea: `bots/fushia/src/algo/topk.h` replaces `std::sort` and `std::partial_sort` with versions that cost
+The user's idea: `bots/archives/fushia/src/algo/topk.h` replaces `std::sort` and `std::partial_sort` with versions that cost
 less fuel; look through ocean (`variants/oc-base10` = `bots/ocean`) for the same kind of saving: sorts, heaps, maps,
 allocation, BFS queues, per-turn scans, large memsets, float maths. Exact changes only (bench replays identical to
 oc-base10 at 100M).

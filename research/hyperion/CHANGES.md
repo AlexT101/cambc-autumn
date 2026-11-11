@@ -8,6 +8,9 @@ cite them. Missing numbers are fuel-only work, bug fixes, cleanups, superseded a
 - hyperion was named hecate until 2026-10-21. `bots/hecate` was items 1-31 and `bots/baselines/hyperion-v1` was
   items 1-81; both were deleted 2026-11-02 (`./copybot -r cde47ec6 hecate variants/hecate` restores one).
   `bots/baselines/v37` is ladder submission v37, the teammate's Khaos line after v36.
+- `bots/astraeus_teacher` (442-449), `bots/fish`, `bots/hermes` and `bots/ocean_manip` were deleted 2026-11-11, with
+  `tools/teacher_ab.py` (`./copybot -r 5d92828d0 fish variants/fish` restores one). river, river_ac, fushia, demeter,
+  diana, proteus and the ocean_tune copies moved to `bots/archives/` the same day.
 - Results are win rates against the bot before the change, all maps from both sides at the real fuel budget, unless
   noted. 1094-1164 games is ladder + `maps/gen` + `maps/gen-s1`; earlier entries used smaller suites, later ones
   10,240-game fresh suites. "Own drafts" means each bot on its own draft.
@@ -918,7 +921,7 @@ turns level. The reverse order (nearer acts earlier) lost 44.4%. (Measurement ag
 
 ## 294: demeter's pair-yield (astraeus, 2026-11-02)
 
-Ported from `bots/demeter` (astraeus e9c37971 + pair-yield, EXPERIMENTS "demeter reset"): the draft takes only teams
+Ported from `bots/archives/demeter` (astraeus e9c37971 + pair-yield, EXPERIMENTS "demeter reset"): the draft takes only teams
 with Cassi & Issac (two bodies for one pick); the pair's hold is worth `pair_hold_share` (0.5) of its value in the
 holder choice (`hold_shy`: a death of either takes both bodies and both bags), so it hands captures to any other ally on
 the tiles or in pick-up reach (`holder_value`, `outvalues_holders`, farm's pick-up); Cassi farms with the crew instead
@@ -2437,7 +2440,7 @@ builds). Real budget, wide set with test drafts: mean 54,375 (oc-r0 53,705), p99
 
 ## 405: SPSA-retuned constants (ocean, 2026-11-05)
 
-The 61 constants of SPSA run `replays/tune/oc2`'s final iteration (1288; `bots/ocean_tune` against astraeus, proteus
+The 61 constants of SPSA run `replays/tune/oc2`'s final iteration (1288; `bots/archives/ocean_tune` against astraeus, proteus
 and pre-tune ocean on the ladder maps, 1.98M games) replace ocean's defaults in `params.h`, still `constexpr` and as
 exact float32s. Unlike CHANGES 321's run it also tuned `crew_tank_line` and `max_exposure`, which are now their own
 values (0.320 and 1.215; `recall_health_fraction` 0.356, `mid_exposure` 1.361), and the four turn values `life_value`

@@ -15,7 +15,7 @@ draft5's, so draft5 is the lab's `current_lab` (the "current" team source = what
 **Opponents, mixed.** Each lab game picks the bot that plays the other side:
 - `self`: oc-base6 itself (both sides are ocean, as in every earlier lab), 1/3 of games;
 - `astraeus`: `bots/variants/astraeus-now-1106` (ocean reads ~53% against it), 1/3;
-- `proteus`: `bots/variants/panel-proteus` (frozen copy of bots/proteus; ocean ~63%), 1/3.
+- `proteus`: `bots/variants/panel-proteus` (frozen copy of bots/archives/proteus; ocean ~63%), 1/3.
 
 Left out: `bots/fish`. It read 23.6% against astraeus 37e1eb6, so games against it are mostly decided by play,
 not draft (little information per game), and its Fish-like draft would need its own non-table draft path

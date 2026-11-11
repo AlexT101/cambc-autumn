@@ -225,7 +225,7 @@ Notes on the table:
 
 ### Proven so far
 
-- **Compiled code.** Upstream wasmtime 49.0.2 with the config below compiles each of `bots/demeter`,
+- **Compiled code.** Upstream wasmtime 49.0.2 with the config below compiles each of `bots/archives/demeter`,
   `bots/astraeus` and `bots/hecate` to a serialized module byte-identical to the one in cambc's own compile cache:
   `.text`, the engine section and the whole artifact (`floor check-cache`). The config:
   - `consume_fuel(true)`;
@@ -569,13 +569,13 @@ cc -O2 -shared -fPIC -o /tmp/fuelhook.so tools/fastengine/fuelhook/fuelhook.c
 objdump -d ~/.local/share/uv/tools/cambc/bin/cambc --start-address=0x4000000 --stop-address=0x4200000 > /tmp/cambc-raw.dis
 python3 tools/fastengine/fuelhook/make_tramp_table.py /tmp/cambc.syms /tmp/cambc-raw.dis > /tmp/tramp.tsv
 FUELHOOK_TRAMPOLINES=/tmp/tramp.tsv FUELHOOK_CALLS=/tmp/calls.tsv FUELHOOK_OUT=/tmp/charges.tsv \
-  LD_PRELOAD=/tmp/fuelhook.so cambc run bots/demeter bots/demeter --map 00ambush --release -o /tmp/r
+  LD_PRELOAD=/tmp/fuelhook.so cambc run bots/archives/demeter bots/archives/demeter --map 00ambush --release -o /tmp/r
 python3 tools/fastengine/fuelhook/calls_report.py /tmp/cambc.syms /tmp/calls.tsv
 python3 tools/fastengine/fuelhook/hook_report.py /tmp/cambc.syms /tmp/charges.tsv
 
 # compiled-code identity, operator costs, host-call cost (wasmtime 49.0.2)
 cd tools/fastengine/floor && CARGO_TARGET_DIR=/tmp/floor cargo build --release && cd -
-/tmp/floor/release/fastengine-floor check-cache bots/demeter/.cambc/build-release/bot-injected.wasm .git/cambc-wasmtime/modules/wasmtime-49.0.2
+/tmp/floor/release/fastengine-floor check-cache bots/archives/demeter/.cambc/build-release/bot-injected.wasm .git/cambc-wasmtime/modules/wasmtime-49.0.2
 /tmp/floor/release/fastengine-floor costs .git/cambc-wasmtime/modules/wasmtime-49.0.2/<file>
 /tmp/floor/release/fastengine-floor bench-calls
 
@@ -585,7 +585,7 @@ python3 tools/fastengine/turbo/verify.py demeter variants/astraeus-d7d9dab --tur
   --suites ladder,gen,fresh [--debug] [--env TURBO_CHECK=1]
 # profile it (the patch keeps cambc's symbols for samply)
 LD_PRELOAD=/tmp/turbo.so samply record -r 10000 --save-only --unstable-presymbolicate -o /tmp/p.json.gz -- \
-  cambc run bots/demeter bots/demeter --map 00ambush --release -o /tmp/r
+  cambc run bots/archives/demeter bots/archives/demeter --map 00ambush --release -o /tmp/r
 
 # the native engine as a library
 cp ~/.local/share/uv/tools/cambc/bin/cambc /tmp/cambc-lib   # then clear DF_1_PIE in DT_FLAGS_1 (0x08000000)

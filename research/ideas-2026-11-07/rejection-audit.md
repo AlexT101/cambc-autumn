@@ -145,7 +145,7 @@ The rerun list is ranked by upper bound × prior, restricted to frozen pairs tha
 | Teacher retreat bundle | 80219ba6 | HoR teacher | lost | 20,000 paired | -0.24 [-0.43,-0.05] | a | |
 | astport2 own/enemy feint | oc-ap2-* | oc-base11 | level | 5-41k | -0.1 [-0.6,+0.4] | b | superseded: ocean now has 439/440 |
 | oc-draftfix | oc-draftfix | oc-base14 | not merged | 40,960 | 0.0 [-0.5,+0.5] | a | not rejected on win rate; capped drafts 290 -> 0 |
-| ocean_tune3 | bots/ocean_tune3 | astraeus | lost | 80,384 | -4.8 | a | |
+| ocean_tune3 | bots/archives/ocean_tune3 | astraeus | lost | 80,384 | -4.8 | a | |
 | Grouping/kill/channel/lock arms in ladder-scrims docs | (as above) | | | | | | same verdicts as EXPERIMENTS rows; not double-counted |
 
 ## Astraeus era (2026-11-02 to 2026-11-05)

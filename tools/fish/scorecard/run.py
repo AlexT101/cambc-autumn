@@ -1,8 +1,8 @@
 """One command: play CANDIDATE in Fish's role on the ladder maps, decode, score against Fish.
 
-  py tools/fish/scorecard/run.py fish                                  # bots/fish vs the frozen astraeus
-  py tools/fish/scorecard/run.py fish --name fish-r2 --opponent variants/astraeus-37e1eb6 --control control-ast37
-  py tools/fish/scorecard/run.py fish --batch replays/fish-scorecard/batches/fish-r2   # reuse played games
+  py tools/fish/scorecard/run.py CANDIDATE                             # a bot dir under bots/ vs the frozen astraeus
+  py tools/fish/scorecard/run.py CANDIDATE --name fish-r2 --opponent variants/astraeus-37e1eb6 --control control-ast37
+  py tools/fish/scorecard/run.py CANDIDATE --batch replays/fish-scorecard/batches/fish-r2   # reuse played games
 
 Steps: tools/run_batched.py CANDIDATE OPPONENT on the 128 ladder maps (maps/*.map26a), both sides, on
 the fast runner (into replays/fish-scorecard/batches/NAME; skipped with --batch or if it exists);

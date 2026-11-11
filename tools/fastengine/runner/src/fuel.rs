@@ -44,7 +44,7 @@ pub fn mode() -> Mode {
     })
 }
 
-/// Estimated guest fuel per host call in NoFuel mode (FASTRUNNER_FUEL_PER_CALL; default from demeter
+/// Estimated guest fuel per host call in NoFuel mode (FASTRUNNER_FUEL_PER_CALL; default from bots/archives/demeter
 /// games: (total - host-charged fuel) / host calls).
 pub fn per_call() -> u64 {
     static K: std::sync::OnceLock<u64> = std::sync::OnceLock::new();

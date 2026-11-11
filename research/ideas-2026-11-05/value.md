@@ -146,7 +146,7 @@ fushia for how they try to spread".
 **fushia.** Not a ladder team: big-arm's capture has no team of that name (teams table: only Rauschen, Kuchh_bhii
 match), and no archive day lists one. It is a bot in big-arm's checkout, `~/cambc-autumn/bots/fuchsia/` (excluded
 in big-arm's `.git/info/exclude`, so untracked; files dated 2026-10-24, big-arm at 05e475fb), the "fuchsia" of
-EXPERIMENTS (2026-10-28, demeter's camp targeting). Copied here unchanged, without build output, as `bots/fushia`;
+EXPERIMENTS (2026-10-28, demeter's camp targeting). Copied here unchanged, without build output, as `bots/archives/fushia`;
 it builds on cambc 5.0.0. Against oc-combo2 it wins 0.3% (v2-pan, 5,058 games, 62 matches failed): saturated, no use
 as a panel member. Its spreading is one rule, in `capture/capture.h`:
 - every ally scores each reward group in view for each capturer as `value / (steps + capture_time) x S / (S +

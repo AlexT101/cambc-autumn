@@ -1,7 +1,7 @@
 # Camp hits scored by damage prevented
 
 River scores camp hits, splashes, area spells, landings and stuns with one linear score
-(`CampFight::removed`, `camp_hit_worth` in `bots/river/map_info.htb`). The turn's first hit is planned by
+(`CampFight::removed`, `camp_hit_worth` in `bots/archives/river/map_info.htb`). The turn's first hit is planned by
 `plan_camp_attack` in `champions/shared/farm.htb`. Results: research/EXPERIMENTS.md, "river: camp attack planner".
 
 ## The score

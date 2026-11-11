@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Copy a bot under bots/, leaving out its build output (.cambc/ and the rest hold the source's absolute paths).
 
-    ./copybot astraeus demeter                      # bots/astraeus -> bots/demeter
-    ./copybot -f astraeus demeter                   # replace an existing bots/demeter
+    ./copybot astraeus my-bot                       # bots/astraeus -> bots/my-bot
+    ./copybot -f astraeus my-bot                    # replace an existing bots/my-bot
     ./copybot -r 1c0d627 astraeus variants/astraeus-1c0d627   # bots/astraeus as of a commit
 
 SRC and DST are names under bots/ (or paths starting with bots/). Nothing is renamed inside the copy."""

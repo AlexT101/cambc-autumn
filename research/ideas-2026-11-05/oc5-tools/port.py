@@ -1,7 +1,7 @@
 """Port a tune run's values into a plain copy of the tunified bot: every diana_tune reference becomes an exact float32
 (or int) constexpr, tune.h/tune.json go, safety.h's two are constexpr again and safety.cc's static_assert returns.
 
-    python3 port.py RUN SRC_BOT DST_BOT        # e.g. oc5 bots/ocean_tune5 bots/variants/oc-tuned5
+    python3 port.py RUN SRC_BOT DST_BOT        # e.g. oc5 bots/archives/ocean_tune5 bots/variants/oc-tuned5
 """
 import json, re, shutil, struct, sys
 from pathlib import Path

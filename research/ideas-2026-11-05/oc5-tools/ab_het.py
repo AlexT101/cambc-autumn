@@ -8,7 +8,7 @@ ROOT = Path('/home/ubuntu/cambc-autumn')
 H = json.load(open(sys.argv[1])); FEATS = H['feats']; mu, sd = np.array(H['mu']), np.array(H['sd'])
 F = json.load(open('/home/ubuntu/tmp-offload/tune5/mc/features.json'))
 cfg = json.load(open(ROOT / 'replays/tune/oc5/config.json')); st = json.load(open(ROOT / 'replays/tune/oc5/state.json'))
-spec = json.load(open(ROOT / 'bots/ocean_tune5/src/tune.json')); d = dict(spec['floats'] + spec['ints'])
+spec = json.load(open(ROOT / 'bots/archives/ocean_tune5/src/tune.json')); d = dict(spec['floats'] + spec['ints'])
 names = [r['name'] for r in H['rows']]
 dx = np.array([st['x'][n] - (d[n] - cfg['params'][n][0]) / (cfg['params'][n][1] - cfg['params'][n][0]) for n in names])
 G = np.array([np.mean(r['g']) for r in H['rows']]); W = np.array([r['W'] for r in H['rows']])

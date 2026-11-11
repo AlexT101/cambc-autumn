@@ -1,6 +1,6 @@
 """Turn chosen params.h constants into reads of one patchable block (diana_tune) in the wasm's data.
 
-    python3 research/diana-2026-11-03/tunify.py bots/diana [NAME...]   # default: TUNABLE below
+    python3 research/diana-2026-11-03/tunify.py bots/archives/diana [NAME...]   # default: TUNABLE below
 
 Each `inline constexpr float|int NAME = V;` becomes `inline const float& NAME = diana_tune.f[i];` (ints: .i[j]);
 the block starts with a 16-byte magic so tune.py can find and patch it in .cambc/build/bot-injected.wasm.
