@@ -685,6 +685,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     engaged_before = memory.round == world.round - 1 ? engaged : 0;
     engaged = 0;
     const int camp_hits_before = camp_hits();
+    note_carriers(world);
     if (world.me().alive) note_upkeep(world, safety, memory.damage), note_income_start(world);
     stunned_turn = record && my_stunned(cambc::champion_state::from_bits_retain(record->state));
     // A failed act still posts the claim, the bag and the health that next turn's damage reads; a

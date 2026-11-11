@@ -239,6 +239,7 @@ struct FarmRecall {
 
 // economy/shop.cc
 cambc::item_type emblem_of(int family, int stat);
+float gem_income_rate();
 void buy_lock();
 bool carries_crystal();
 bool can_buy_crystal();
@@ -381,6 +382,8 @@ const AltarAccess& altar_access(const World& world, Pathing& pathing);
 bool sealed_in(const World& world, Pathing& pathing, vec2 p);
 bool wake_ring(const World& world, Pathing& pathing, Safety& safety);
 int altar_steps(const World& world, Pathing& pathing, vec2 p, int altar);
+int bank_floor(const World& world, Pathing& pathing);
+void note_carriers(const World& world);
 int bankable_bag(const World& world, Pathing& pathing);
 bool altars_sealed(const World& world, Pathing& pathing);
 bool seals(const World& world, const AltarAccess& access, int g);

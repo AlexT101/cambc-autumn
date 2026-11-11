@@ -13,3 +13,11 @@ Suites /home/ubuntu/wt/charybdis-maps/s-700001..700080 (ladder-v2, fresh), both 
 | macro2-lstep (macro2-20261111) | 50.7 | 40960 | 50.2-51.2 | 50.8 of 71680 |
 
 Base: macro1-hold6 (highest; macro5 within a point but no simpler). bots/charybdis = macro1-hold6; frozen as bots/variants/charybdis-base (gitignored).
+
+## Phase 1 merges (normal fuel, `--no-test-draft`, release; suites s-710001..710040, ladder-v2, 20,480 games each unless noted)
+Details in merge-log.md.
+
+| Step | Changes | vs ocean-main | vs charybdis-base | Decision |
+|---|---|---|---|---|
+| (ref) charybdis-base | - | 56.9 (56.3-57.6) | - | - |
+| K1 | M3-a bank floor | 57.9 (57.2-58.6) | 51.1 (50.4-51.7) | accepted |

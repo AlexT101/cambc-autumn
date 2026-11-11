@@ -699,12 +699,77 @@ bool altar_usable(const World& world, Pathing& pathing, int bag, float health) {
     return a.any_open && camp_hit_factor() * access_fire(world, a) * static_cast<float>(tribute_turns(world, bag)) < health;
 }
 
+// Carrier deaths against carrying rounds, the whole team's: an ally's death is read for anyone, its
+// bag from vision or as posted. A champion carrying at one note and dead at the next died carrying.
+struct CarrierRecord {
+    std::array<bool, 8> alive{};
+    std::array<int, 8> bag{};
+    int round = -1;
+    float deaths = 0, rounds = 0;
+} carriers;
+
+void note_carriers(const World& world) {
+    auto& c = carriers;
+    if (world.round == c.round) return;
+    const int gap = c.round < 0 ? 0 : world.round - c.round;
+    for (const auto& a : world.allies) {
+        if (a.index >= 8) continue;
+        const auto i = static_cast<std::size_t>(a.index);
+        if (gap > 0 && c.alive[i] && c.bag[i] > 0) {
+            if (a.alive) c.rounds += static_cast<float>(gap);
+            else c.deaths += 1, c.rounds += 1; // died some round in the gap: a round's exposure
+        }
+        c.alive[i] = a.alive;
+        c.bag[i] = !a.alive ? 0 : a.is_self ? static_cast<int>(my_gems()) : a.visible ? a.gems : comms::bag_of(world, a.index);
+    }
+    c.round = world.round;
+}
+
+// The posterior mean of a carrier's death rate a round: a Gamma prior worth one death at
+// params::carrier_hazard, updated with the team's carrier deaths and rounds.
+float carrier_hazard() {
+    return (1 + carriers.deaths) / (1 / params::carrier_hazard + carriers.rounds);
+}
+
+// The smallest bag worth a bank trip, the economic order quantity sqrt(2 K D / h): a trip of T rounds
+// forgoes K = T D gems at our income D a round, and a gem carried costs h = hazard x swing a round.
+// T is the way there (a walk, or a recall and the walk from spawn), the tribute's one fixed turn (the
+// rest, a turn per 10 gems, is paid whatever the bag) and the way back out here. At least a tribute
+// turn's gems; at most the win, or what a tribute could still score in the rounds left.
+int bank_floor(const World& world, Pathing& pathing) {
+    static int round = -1;
+    static vec2 at{-1, -1};
+    static std::uint32_t gems = 0, observations = 0;
+    static int kept = 0;
+    const vec2 here = my_position();
+    if (world.round == round && here == at && my_gems() == gems && world.observations == observations) return kept;
+    round = world.round, at = here, gems = my_gems(), observations = world.observations;
+    const auto& field = pathing.to_any_altar();
+    const int recall = recall_turns(world), walk = field.at(here);
+    const auto via = [](int channel, int steps) { return steps == unreachable ? unreachable : channel + steps; };
+    int there = std::min(walk, via(recall, field.at(recall_landing(world))));
+    int back = std::min(walk, via(recall, pathing.to_ally_spawn().at(here)));
+    // Only a crystal crosses: at least the Chebyshev distance.
+    if (there == unreachable || back == unreachable) {
+        int near = unreachable;
+        for (const auto& a : world.map().altars)
+            near = std::min(near, std::max(0, dist(here, a.pos) - static_cast<int>(cambc::constants::submit_gems_range)));
+        if (there == unreachable) there = near;
+        if (back == unreachable) back = near;
+    }
+    const float trip = static_cast<float>(there + tribute_turns(world, 1) + back);
+    const float rate = gem_income_rate();
+    const float q = rate * std::sqrt(2.0f * trip / (carrier_hazard() * params::bag_swing));
+    const int most = std::max(gems_per_tribute_turn, std::min(gems_short(world), gems_per_tribute_turn * bag_rounds_left(world)));
+    return kept = std::clamp(static_cast<int>(std::lround(q)), gems_per_tribute_turn, most);
+}
+
 // The bag a tribute could score: one no altar is usable for is held back, and we farm and shop as
 // if empty-handed.
 int bankable_bag(const World& world, Pathing& pathing) {
     const int bag = static_cast<int>(my_gems());
     if (bag == 0 || !altar_usable(world, pathing, bag, my_health())) return 0;
-    if (bag < params::min_bank && !winning_bag(world) && !closing(world, pathing)) return 0;
+    if (bag < bank_floor(world, pathing) && !winning_bag(world) && !closing(world, pathing)) return 0;
     if (world.round < ring_refused_until && altar_steps(world, pathing, my_position(), -1) == unreachable) return 0;
     // Only a crystal reaches an altar and we can neither use nor buy one: farm the gold first. A
     // recall out of a pocket to a spawn with a walk to one banks it. Altars' hops come first.

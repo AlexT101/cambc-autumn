@@ -113,9 +113,12 @@ inline constexpr int pick_up_radius = 7;
 
 // Chain another capture onto a bag (Cassi's and Issac's together) only below this.
 inline constexpr int chain_bag_limit = 26;
-// A bag under this many gems is not banked (economy/bank.cc bankable_bag), but for a winning bag or a
-// closing game: Fish banks 25-50 at a time (research/ideas-2026-11-07/behaviour-gaps.md).
-inline constexpr int min_bank = 25;
+// The bank floor (economy/bank.cc bank_floor) holds a bag against its loss: a carrier dies at the
+// game's hazard a round (economy/bank.cc carrier_hazard, a posterior from this prior), and the killer
+// takes the bag, a swing of bag_swing times it. The prior is bag-carrier deaths per champion-round
+// alive with 25+ gems, measured on 10,240 macro3-base games.
+inline constexpr float carrier_hazard = 0.86e-3f;
+inline constexpr float bag_swing = 2.0f;
 
 // Cassi's or Issac's hold is worth this share of another ally's in the holder choice
 // (economy/capture.cc hold_shy): the pair hands captures to the rest of the team.

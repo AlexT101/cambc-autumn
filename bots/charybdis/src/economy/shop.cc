@@ -712,6 +712,11 @@ void note_income_end(const World& world) {
     return !awake;
 }
 
+// Our gems collected per turn alive, prior-weighted as income_rates.
+float gem_income_rate() {
+    return (income.gems + income_prior_gems) / (static_cast<float>(upkeep.turns) + prior_rounds_per_gem * income_prior_gems);
+}
+
 } // namespace
 
 } // namespace aph
