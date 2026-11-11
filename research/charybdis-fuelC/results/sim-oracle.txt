@@ -1,0 +1,2 @@
+pooled: 1 of 1 slots
+1000000 idle fights and 1000000 camp clears matched; 904233 mixed/harmless tails

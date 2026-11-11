@@ -1,0 +1,158 @@
+diff -ru bots/variants/ocean-ref-b7c87cf/src/economy/capture.cc bots/variants/macro6-carry/src/economy/capture.cc
+--- bots/variants/ocean-ref-b7c87cf/src/economy/capture.cc	2026-11-11 01:36:30.493907850 +0000
++++ bots/variants/macro6-carry/src/economy/capture.cc	2026-11-11 02:25:51.951359889 +0000
+@@ -69,7 +69,8 @@
+ 
+ // Gems a gold is worth when allies compare their holds (value_holder): one number for all, so that
+ // every ally names the same holder. Between gold bonuses and Marcella's tribute gold it cancels
+-// out, the gems being common to both; it weighs a Prospector emblem's extra gems and the holders' gold efficiencies.
++// out, the gems being common to both; it weighs a Prospector emblem's extra gems, the holders' gold efficiencies
++// and Prism's Focus (carried_bonus).
+ constexpr float holder_gold_price = 0.3f;
+ 
+ // An ally's gold bonuses: its items read only while it is in sight now (error 97 once our move
+@@ -148,8 +149,27 @@
+     return p && p->alive;
+ }
+ 
++// A healthy Prism keeps its bag for Focus with `gems` more in it: short of the win, and early enough to bank
++// it later. Else the bag goes to an altar, and a hurt one leaves a hold. Read from a's visible bag and health
++// and the team's score, so allies agree.
++bool keeps_bag(const World& world, const ChampionBelief& a, int gems) {
++    const auto& map = world.map();
++    return a.facts().passive == Passive::gem_focus && a.health >= params::hurt_health_fraction * a.max_health
++           && world.score.ally + a.gems + gems < static_cast<int>(cambc::constants::winning_gems)
++           && rounds_left(world) > tribute_turns(a.gems + gems, a.fast_tribute) + map.width + map.height + endgame_margin;
++}
++
++// Gems one gem in a's kept bag is worth beyond itself, at `price` gems a gold: Prism's prism_focus_per_gem
++// Focus a gem is what prism_focus_per_gem / growth Focus shards would buy, at shard_price gold each.
++float carried_bonus(const World& world, const ChampionBelief& a, int gems, float price) {
++    if (!keeps_bag(world, a, gems)) return 0.0f;
++    const float shards = cambc::constants::passive_abilities::prism_focus_per_gem / a.facts().focus.growth;
++    return std::max(0.0f, price) * shards * static_cast<float>(shard_price);
++}
++
+ // What a's lone hold of G pays the team, in gems at `price` a gold: its share with a Prospector
+-// emblem's extra, gems past the win dropped, the gold at its bonuses and Marcella's gold on the gems.
++// emblem's extra, gems past the win dropped, the gold at its bonuses and Marcella's gold on the gems,
++// and Prism's Focus on the gems it keeps.
+ float holder_value(const World& world, const ChampionBelief& a, const CampGroup& G, float price) {
+     // The team's score, not our bag (gems_short): allies must agree.
+     const int room = std::max(0, static_cast<int>(cambc::constants::winning_gems) - world.score.ally);
+@@ -157,14 +177,17 @@
+     const int gold = G.gold + (a.prospector ? prospected(G.cluster_gold, 1, true) : 0);
+     const float rate = ally_gold_paid(world, a);
+     // The gold goes further on the more efficient of us: x its relative efficiency (which holds its rate again).
+-    const float value = static_cast<float>(gems)
++    const float value = static_cast<float>(gems) * (1.0f + carried_bonus(world, a, gems, price))
+                         + price * rate * (static_cast<float>(gems) * a.facts().tribute_gold_per_gem() + static_cast<float>(gold))
+                               * relative_efficiency(world)[a.index & 63];
+     return hold_shy(world, a) ? params::pair_hold_share * value : value;
+ }
+ 
+-// Holders of G differ in what it pays: it has gold (priced by efficiency), or gems and a has Marcella's tribute gold.
+-bool multiplies(const ChampionBelief& a, const CampGroup& G) { return G.gold > 0 || (G.gems > 0 && a.facts().tribute_gold_per_gem() > 0); }
++// Holders of G differ in what it pays: it has gold (priced by efficiency), or gems and a has Marcella's
++// tribute gold or is a Prism keeping its bag.
++bool multiplies(const World& world, const ChampionBelief& a, const CampGroup& G) {
++    return G.gold > 0 || (G.gems > 0 && (a.facts().tribute_gold_per_gem() > 0 || keeps_bag(world, a, G.gems)));
++}
+ 
+ // For value_holder's ties: the more hurt holds, the healthier farms.
+ bool holds_before(const ChampionBelief& a, float va, const ChampionBelief& b, float vb) {
+@@ -202,7 +225,7 @@
+         if (!on && !test(G.adjacent(), p)) continue;
+         if (held_back(world, a, on)) continue;
+         const float v = holder_value(world, a, G, holder_gold_price);
+-        multiplier |= multiplies(a, G) || hold_shy(world, a);
++        multiplier |= multiplies(world, a, G) || hold_shy(world, a);
+         if (n++ == 0) low = v;
+         low = std::min(low, v);
+         if (!best || holds_before(a, v, *best, best_value)) best = &a, best_value = v;
+@@ -213,7 +236,7 @@
+ // Our hold of G would pay more than that of every ally in sight on its tiles, and a tile is free.
+ bool outvalues_holders(const World& world, const CampGroup& G) {
+     if (G.has_monolith || G.gems + G.gold <= 0 || holders(G) != 1) return false;
+-    const bool multiplier = multiplies(world.me(), G);
++    const bool multiplier = multiplies(world, world.me(), G);
+     if (!multiplier && hold_shy(world, world.me())) return false;
+     const float mine = holder_value(world, world.me(), G, holder_gold_price);
+     bool any = false, shy = false;
+@@ -312,11 +335,9 @@
+                     return &a;
+     }
+     for (const auto& a : world.allies) {
+-        if (a.facts().passive != Passive::gem_focus || !fit_on(a, G.tiles())
++        if (!keeps_bag(world, a, G.gems) || !fit_on(a, G.tiles())
+             || a.channel == Channel::tribute || a.channel == Channel::teleport
+             || (a.channel == Channel::recall && a.channel_end_round <= world.round + 1)
+-            || world.score.ally + a.gems + G.gems >= winning
+-            || rounds_left(world) <= tribute_turns(a.gems + G.gems, a.fast_tribute) + map.width + map.height + endgame_margin
+             || enemy_may_see(world, position_of(a)))
+             continue;
+         return &a;
+@@ -421,8 +442,10 @@
+                 memory.claim = memory.farm_group = -1;
+                 memory.crew = false;
+                 decision = Branch::farm;
+-            }))
++            })) {
++            debug_block({ std::printf("YIELD %d g%d to %d type %d\n", world.round, g, prism->index, static_cast<int>(prism->type)); });
+             return true;
++        }
+     }
+     return false;
+ }
+@@ -530,18 +553,23 @@
+     return true;
+ }
+ 
+-// A Marcella, or a champion with Vesper Vale's gold bonus or more, taking over the counting ally hold
+-// of G: what it gains the team in gems at our gold price, the holder's share raised to ours, and in
+-// `timer` the rounds to the payout; negative when not ours to take. Reads no walk, so the walk's
+-// field is built only for a group that passes (takeover_worth adds the walk). Callers first ask
+-// takes_over (per turn) and may_take_over.
++// A Marcella, a Prism (its bag's Focus), or a champion with Vesper Vale's gold bonus or more, taking
++// over the counting ally hold of G: what it gains the team in gems at our gold price, the holder's
++// share raised to ours, and in `timer` the rounds to the payout; negative when not ours to take. Reads
++// no walk, so the walk's field is built only for a group that passes (takeover_worth adds the walk).
++// Callers first ask takes_over (per turn) and may_take_over.
+ bool takes_over(const World& world) {
+     const float bonus = 1.0f + static_cast<float>(cambc::constants::passive_abilities::vesper_vale_bonus_gold_percent) / 100.0f;
+-    return world.me().facts().tribute_gold_per_gem() > 0 || gold_paid(world) >= bonus - 1e-3f;
++    return world.me().facts().tribute_gold_per_gem() > 0 || world.me().facts().passive == Passive::gem_focus
++           || gold_paid(world) >= bonus - 1e-3f;
+ }
+ 
++// Not a hold another ally keeps alone (sole_capture_holder): one naming us is ours to walk to. Prism
++// takes over for its bag's Focus alone: only a hold of gems it keeps.
+ bool may_take_over(const World& world, const CampGroup& G) {
+-    return !sole_capture_holder(world, G) && !enemy_on(world, G.tiles()) && outvalues_holders(world, G);
++    if (world.me().facts().passive == Passive::gem_focus && !(G.gems > 0 && keeps_bag(world, world.me(), G.gems))) return false;
++    const auto* sole = sole_capture_holder(world, G);
++    return (!sole || sole->is_self) && !enemy_on(world, G.tiles()) && outvalues_holders(world, G);
+ }
+ 
+ float takeover_gain(const World& world, const CampGroup& G, int& timer) {
+diff -ru bots/variants/ocean-ref-b7c87cf/src/economy/farm.cc bots/variants/macro6-carry/src/economy/farm.cc
+--- bots/variants/ocean-ref-b7c87cf/src/economy/farm.cc	2026-11-11 01:36:30.493907850 +0000
++++ bots/variants/macro6-carry/src/economy/farm.cc	2026-11-11 02:09:54.342015694 +0000
+@@ -232,7 +232,7 @@
+             // Cassi and Issac leave it to any other claimer in pick-up reach.
+             if (shy && !hold_shy(world, a) && d <= params::pick_up_radius) ours = false;
+             ours &= d > steps || (d == steps && a.index > world.me().index) || outvalues
+-                    || (holders(G) == 1 && (multiplies(world.me(), G) || (!shy && hold_shy(world, a)))
++                    || (holders(G) == 1 && (multiplies(world, world.me(), G) || (!shy && hold_shy(world, a)))
+                         && holder_value(world, world.me(), G, holder_gold_price) > holder_value(world, a, G, holder_gold_price) + 1e-3f);
+         }
+         if (!ours) continue;
+@@ -2214,6 +2214,8 @@
+             const float worth = takeover_worth(gain, timer, walk, work_rate, hold);
+             if (!(worth > 0)) return;
+             const float value = rate(world, worth, static_cast<float>(walk + hold));
++            debug_block({ std::printf("TAKEOVER %d %u g%d gain %.2f per_gold %.3f walk %d timer %d value %.4f best %.4f\n", round, my_handle(), g,
++                                      gain, prices(world).per_gold, walk, timer, value, best_value); });
+             if (value > best_value) best = g, best_steps = walk, best_value = value, best_spell = false, best_priced = Priced{'T'};
+         });
+     }

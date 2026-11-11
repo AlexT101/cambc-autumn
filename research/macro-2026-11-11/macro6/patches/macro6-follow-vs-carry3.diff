@@ -1,0 +1,658 @@
+diff -ru '--exclude=.cambc' '--exclude=compile_commands.json' macro6-carry3/src/bot_parts.h macro6-follow/src/bot_parts.h
+--- macro6-carry3/src/bot_parts.h	2026-11-11 01:36:30.491873194 +0000
++++ macro6-follow/src/bot_parts.h	2026-11-11 05:06:15.568678912 +0000
+@@ -519,6 +519,7 @@
+ bool kites_with_spells(const ChampionBelief& c);
+ bool kite_owns(const World& world, int g);
+ bool siege_declines(const World& world, int g);
++int siege_declined(const World& world); // the group siege_declines, or -1
+ 
+ // Willow before params::willow_fight_until.
+ inline bool willow_early(const World& world) { return world.round < params::willow_fight_until && world.me().facts().heals(); }
+diff -ru '--exclude=.cambc' '--exclude=compile_commands.json' macro6-carry3/src/economy/farm.cc macro6-follow/src/economy/farm.cc
+--- macro6-carry3/src/economy/farm.cc	2026-11-11 03:05:33.052257823 +0000
++++ macro6-follow/src/economy/farm.cc	2026-11-11 05:18:15.758640288 +0000
+@@ -258,14 +258,16 @@
+ // rounds, and no clear is quicker than the `fastest` (for Ren, reflected_clear). A clear shared
+ // with an unclaimed `partner` is quicker but pays only our part. With `crew` above 0, a crew of up
+ // to `crew` times our output may clear it, paying our part (crew_rate), partners included.
++// `follow`: the most a follow-up (FollowUp) adds to any job's worth, outside its weight and share.
+ bool rated_beaten(const World& world, float worth, float trip, float fastest, float strength, float partner, float best, float from_altar,
+-                  int walk, float cycle_bank, float crew) {
++                  int walk, float cycle_bank, float crew, float follow) {
+     const float cap = static_cast<float>(capture_rounds(world));
+     float bound = crew > 0 ? crew_rate(world, worth, trip + cap, fastest, 1.0f, crew) : rate(world, worth, trip + cap + fastest);
+     if (partner > 0 && crew <= 0) {
+         const float part = strength / (strength + partner);
+         bound = std::max(bound, rate(world, worth * part, trip + cap + fastest * part));
+     }
++    if (follow > 0) bound += rate(world, follow, trip + cap);
+     const float altar_base = static_cast<float>(walk) + cap + cycle_bank;
+     // The slack covers float rounding where a clear takes exactly the fastest.
+     return bound * 1.0001f < best
+@@ -400,6 +402,8 @@
+     // less what the stop is worth; 0 where no recall arrives in time.
+     float bank_floor = 0;
+     float crew_most = 1; // the team's output over ours
++    // Off banking, the follow-up's most (FollowUp's Δ): every bound adds its rate over the trip and capture.
++    float follow = 0;
+     float *out = nullptr, *alt = nullptr, *test = nullptr, *test_alt = nullptr, *old = nullptr, *old_alt = nullptr;
+     // Later turns: `out` at the weight, for the best alone (bar_lt's test reads the unweighted worth
+     // while the facts' context is stale).
+@@ -490,7 +494,7 @@
+     } t;
+     const std::int32_t *worth_gems, *worth_gold;
+     v128_t hx, hy, short_by, help, one, slack, horizon, cap, exposure, most_exposure, most_scale, channel, value, out_base, inf;
+-    v128_t crew_most, bank_now, zero, recall, clear, bank_floor, reflects, other_part, per_gold, tribute_gold;
++    v128_t crew_most, bank_now, zero, recall, clear, bank_floor, reflects, other_part, per_gold, tribute_gold, follow;
+ 
+     [[gnu::always_inline]] PreLanes(const PreUpper& p, const PreColumns& c)
+         : p{p.health, p.weight, p.out, p.alt, p.test, p.test_alt, p.value, p.old, p.old_alt, p.banking, p.recall_out, p.other_part},
+@@ -508,6 +512,7 @@
+         recall = wasm_i32x4_splat(p.recall), clear = wasm_f32x4_splat(p.clear_scale), bank_floor = wasm_f32x4_splat(p.bank_floor);
+         reflects = wasm_i32x4_splat(p.reflects ? -1 : 0), other_part = wasm_f32x4_splat(p.other_part);
+         per_gold = wasm_f32x4_splat(std::max(0.0f, p.per_gold)), tribute_gold = wasm_f32x4_splat(std::max(0.0f, p.tribute_gold));
++        follow = wasm_f32x4_splat(p.follow);
+     }
+ 
+     [[gnu::always_inline]] void block(int g) const {
+@@ -576,12 +581,121 @@
+         const v128_t helped = wasm_v128_and(striker, wasm_i32x4_le(near, help));
+         const v128_t unbounded = wasm_v128_or(helped, wasm_i32x4_ge(wasm_v128_load(&t.gems[g]), short_by));
+         const v128_t bound = wasm_v128_bitselect(inf, rated_most, unbounded);
+-        wasm_v128_store(&p.out[g], bound);
++        // The follow-up is outside the weight and any share: its own rate, from no fewer rounds.
++        const v128_t followed = rate_of(follow, wasm_f32x4_add(trip, cap));
++        wasm_v128_store(&p.out[g], wasm_f32x4_add(bound, followed));
+         // The bound is linear in the worth. inf x a weight of 0 is NaN, which prunes nothing.
+-        if (p.value) wasm_v128_store(&p.value[g], wasm_f32x4_mul(wasm_f32x4_mul(bound, most_scale), wasm_v128_load(&p.weight[g])));
++        if (p.value)
++            wasm_v128_store(&p.value[g], wasm_f32x4_add(wasm_f32x4_mul(wasm_f32x4_mul(bound, most_scale), wasm_v128_load(&p.weight[g])), followed));
+     }
+ };
+ 
++// A job's follow-up (semi-Markov, Dinkelbach): ending a job at group g leaves us there, and the best
++// next job h from g, worth W_h over r_gh = d(g, h) + c_h rounds, is worth W_h / (1 + r_gh / H) less
++// what our best rate from here, ρ, earns over those rounds. Its excess over 0 is δ_g, added to g's
++// worth; ρ makes it 0 from here, so it prices only where a job leaves us. W_h is the loop's worth
++// without home weight, stickiness or carry; c_h the capture and our fastest clear. The term falls
++// with r ≥ c_h, so Δ, its most at r = c_h, bounds every δ: each prune adds Δ's rate over its rounds.
++// By group (padded to 4 lanes): the map's columns once read, then the turn's (begin).
++struct FollowUp {
++    const StaticMap* map = nullptr;
++    int lanes = 0;
++    float rho = 0, most = 0, horizon = 1;
++    std::uint32_t turn = 0;
++    // Static: centre, index, gems and gold (with a Prospector emblem's extra: `pro_`), full health,
++    // exposure (0 for groups never a follow-up: a Monolith, nothing to take, or across a crystal hop).
++    std::vector<std::int32_t> x, y, id, gems, pro_gems, gold, pro_gold;
++    std::vector<float> full, exposure;
++    // The turn's: `off` (-1: cleared, claimed or another's), the respawn wait, W_h, c_h, the least
++    // rounds lo_h = wait + c_h and W_h / (1 + lo_h / H).
++    std::vector<std::int32_t> off;
++    std::vector<float> wait, worth, clear, lo, head;
++    std::vector<int> marked; // lanes `off` or `wait` set this turn
++    // By group: δ unlimited as of `turn` (`stamp`), and the most rounds of a positive term (`need`): a
++    // limit of at least that leaves it whole.
++    std::vector<std::uint32_t> stamp;
++    std::vector<float> delta, need;
++    template <class Exposure> [[gnu::noinline]] void read_map(const StaticMap& m, Exposure&& exposed) {
++        const int n = static_cast<int>(m.groups.size());
++        map = &m, lanes = (n + 3) & ~3;
++        for (auto* v : {&x, &y, &id, &gems, &pro_gems, &gold, &pro_gold, &off}) v->assign(lanes, 0);
++        for (auto* v : {&full, &exposure, &wait, &worth, &clear, &lo, &head}) v->assign(lanes, 0.0f);
++        stamp.assign(n, 0), delta.assign(n, 0), need.assign(n, 0);
++        marked.clear();
++        for (int g = 0; g < lanes; ++g) id[g] = g;
++        for (int g = 0; g < n; ++g) {
++            const auto& G = m.groups[g];
++            x[g] = G.centre.x, y[g] = G.centre.y, gems[g] = G.gems, gold[g] = G.gold;
++            pro_gems[g] = G.gems + prospected(G.cluster_gems, 1), pro_gold[g] = G.gold + prospected(G.cluster_gold, 1);
++            full[g] = G.health;
++            exposure[g] = G.has_monolith || G.gems + G.gold == 0 || (m.any_group_hop() && m.group_hop(g) >= 0) ? 0.0f : exposed(g);
++        }
++    }
++    // Last turn's marks undone, before this turn's (`mark_off`, `mark_wait`).
++    void unmark() {
++        for (const int g : marked) off[g] = 0, wait[g] = 0;
++        marked.clear();
++    }
++    void mark_off(int g) { off[g] = -1, marked.push_back(g); }
++    void mark_wait(int g, int rounds) { wait[g] = static_cast<float>(rounds), marked.push_back(g); }
++    // The turn's columns and ρ, the best rate(W_h, max(d(here, h), wait_h) + c_h), in one pass; then Δ.
++    [[gnu::noinline]] void begin(vec2 here, const float* health, int short_by, bool prospector, float gem_price, float per_gold, float cap, float strength) {
++        const std::int32_t *const gm = prospector ? pro_gems.data() : gems.data(), *const gd = prospector ? pro_gold.data() : gold.data();
++        const v128_t short_v = wasm_i32x4_splat(short_by), price = wasm_f32x4_splat(gem_price), per = wasm_f32x4_splat(per_gold);
++        const v128_t cap_v = wasm_f32x4_splat(cap), s = wasm_f32x4_splat(strength), zero = wasm_f32x4_splat(0.0f), one = wasm_f32x4_splat(1.0f);
++        const v128_t ax = wasm_i32x4_splat(here.x), ay = wasm_i32x4_splat(here.y), h = wasm_f32x4_splat(horizon);
++        v128_t best = zero;
++        for (int i = 0; i < lanes; i += 4) {
++            const v128_t w = wasm_f32x4_add(wasm_f32x4_mul(wasm_f32x4_convert_i32x4(wasm_i32x4_min(wasm_v128_load(&gm[i]), short_v)), price),
++                                            wasm_f32x4_mul(per, wasm_f32x4_convert_i32x4(wasm_v128_load(&gd[i]))));
++            const v128_t worth_v = wasm_v128_andnot(wasm_f32x4_pmax(zero, wasm_f32x4_mul(wasm_v128_load(&exposure[i]), w)), wasm_v128_load(&off[i]));
++            wasm_v128_store(&worth[i], worth_v);
++            // An unread member leaves clear_health 0: the full clear then.
++            const v128_t hp = wasm_v128_load(&health[i]);
++            const v128_t c = wasm_f32x4_add(cap_v, wasm_f32x4_div(wasm_v128_bitselect(hp, wasm_v128_load(&full[i]), wasm_f32x4_gt(hp, zero)), s));
++            wasm_v128_store(&clear[i], c);
++            const v128_t wt = wasm_v128_load(&wait[i]);
++            // scan's rounds at d = 0, operation for operation: max(0, wait) is wait.
++            const v128_t least = wasm_f32x4_add(wasm_f32x4_pmax(zero, wt), c);
++            wasm_v128_store(&lo[i], least);
++            wasm_v128_store(&head[i], wasm_f32x4_div(worth_v, wasm_f32x4_add(one, wasm_f32x4_div(least, h))));
++            const v128_t d = wasm_i32x4_max(wasm_i32x4_abs(wasm_i32x4_sub(wasm_v128_load(&x[i]), ax)), wasm_i32x4_abs(wasm_i32x4_sub(wasm_v128_load(&y[i]), ay)));
++            const v128_t r = wasm_f32x4_pmax(one, wasm_f32x4_add(wasm_f32x4_pmax(wasm_f32x4_convert_i32x4(d), wt), c));
++            best = wasm_f32x4_pmax(best, wasm_f32x4_div(worth_v, wasm_f32x4_mul(r, wasm_f32x4_add(one, wasm_f32x4_div(r, h)))));
++        }
++        rho = most_lane(best);
++        // Δ = max(0, max W_h / (1 + lo_h / H) - ρ lo_h): scan's term at its least rounds.
++        const v128_t r_rate = wasm_f32x4_splat(rho);
++        best = zero;
++        for (int i = 0; i < lanes; i += 4)
++            best = wasm_f32x4_pmax(best, wasm_f32x4_sub(wasm_v128_load(&head[i]), wasm_f32x4_mul(r_rate, wasm_v128_load(&lo[i]))));
++        most = most_lane(best);
++    }
++    static float most_lane(v128_t v) {
++        return std::max(std::max(wasm_f32x4_extract_lane(v, 0), wasm_f32x4_extract_lane(v, 1)), std::max(wasm_f32x4_extract_lane(v, 2), wasm_f32x4_extract_lane(v, 3)));
++    }
++    // max(0, max over the groups but `self` with r <= limit of W / (1 + r / H) - ρ r), r = max(d(at, h), wait_h) + c_h
++    // (the wait counted from now, not from the job's end: never fewer rounds than lo_h); `arg_rounds`: the largest
++    // r of a positive term.
++    [[gnu::noinline]] float scan(vec2 at, int self, float limit, float& arg_rounds) const {
++        const v128_t ax = wasm_i32x4_splat(at.x), ay = wasm_i32x4_splat(at.y), me = wasm_i32x4_splat(self);
++        const v128_t h = wasm_f32x4_splat(horizon), one = wasm_f32x4_splat(1.0f), r_rate = wasm_f32x4_splat(rho), lim = wasm_f32x4_splat(limit);
++        const v128_t zero = wasm_f32x4_splat(0.0f);
++        v128_t best = zero, far = zero;
++        for (int i = 0; i < lanes; i += 4) {
++            const v128_t d = wasm_i32x4_max(wasm_i32x4_abs(wasm_i32x4_sub(wasm_v128_load(&x[i]), ax)), wasm_i32x4_abs(wasm_i32x4_sub(wasm_v128_load(&y[i]), ay)));
++            const v128_t r = wasm_f32x4_add(wasm_f32x4_pmax(wasm_f32x4_convert_i32x4(d), wasm_v128_load(&wait[i])), wasm_v128_load(&clear[i]));
++            v128_t term = wasm_f32x4_sub(wasm_f32x4_div(wasm_v128_load(&worth[i]), wasm_f32x4_add(one, wasm_f32x4_div(r, h))), wasm_f32x4_mul(r_rate, r));
++            term = wasm_v128_bitselect(zero, term, wasm_v128_or(wasm_i32x4_eq(wasm_v128_load(&id[i]), me), wasm_f32x4_gt(r, lim)));
++            best = wasm_f32x4_pmax(best, term);
++            far = wasm_f32x4_pmax(far, wasm_v128_and(r, wasm_f32x4_gt(term, zero)));
++        }
++        arg_rounds = most_lane(far);
++        return most_lane(best);
++    }
++};
++FollowUp follow_up;
++
+ // work_arrival's `earliest` reads only these (and the ally's type, fixed by its index), so it is
+ // kept per group and ally while they hold: a claimer standing at its group, or unseen at its last
+ // sighting, asks the same each turn. -1: no live member. One table for every farm_turn instance.
+@@ -1041,6 +1155,13 @@
+     int best = -1, best_steps = unreachable, risky = -1, risky_steps = unreachable, shared = -1, shared_steps = unreachable;
+     bool best_spell = false;
+     float best_value = 0, risky_value = 0, shared_value = 0;
++    float base_most = 0; // the most our own jobs valued earn without their follow-ups (FollowUp)
++    // Debug builds: the pick by values without follow-ups, among the groups valued.
++    struct {
++        int best = -1, shared = -1;
++        float best_value = 0, shared_value = 0;
++    } trace;
++    (void)trace;
+     // How the best and the share were priced, for the traces and the proposal: mode (S alone, K
+     // kited, C crew, J joining), our extra trips home, the crew's tank, its expected allies, its output.
+     struct Priced {
+@@ -1453,9 +1574,11 @@
+     };
+     // rated_beaten by the best so far. Callers leave out our last choice, whose clear a partner
+     // claiming it may share.
+-    const auto beaten = [&](float worth, float trip, float fastest, int walk, float cycle_bank, float crew) __attribute__((always_inline)) {
++    // FollowUp's Δ, set before the loop: 0 banking, or with no follow-up worth more than standing here.
++    float follow_most = 0;
++    const auto beaten = [&](float worth, float trip, float fastest, int walk, float cycle_bank, float crew, float follow) __attribute__((always_inline)) {
+         return rated_beaten(world, worth, trip, fastest, strength, unclaimed_partner_output, bar_lt(),
+-                            banks_bag ? from_altar_value : -1.0f, walk, cycle_bank, crew);
++                            banks_bag ? from_altar_value : -1.0f, walk, cycle_bank, crew, follow);
+     };
+     // rated_beaten before farm reads the group's facts, with its turn constants hoisted: empty-handed
+     // and short of the win, no walk to an altar is in the trip and the weight is at most 1. Each rate
+@@ -1464,7 +1587,7 @@
+     const float cap_rounds = static_cast<float>(capture);
+     const float horizon = cycle_horizon(map);
+     const float partner_part = unclaimed_partner_output > 0 ? strength / (strength + unclaimed_partner_output) : 0.0f;
+-    const auto rated_below = [&](float worth, float trip, float fastest, float crew) __attribute__((always_inline)) {
++    const auto rated_below = [&](float worth, float trip, float fastest, float crew, float follow) __attribute__((always_inline)) {
+         const auto rated = [&](float w, float rounds) __attribute__((always_inline)) {
+             rounds = std::max(rounds, 1.0f);
+             return w / (rounds * (1.0f + rounds / horizon));
+@@ -1472,15 +1595,17 @@
+         const float near_trip = trip + cap_rounds;
+         // The slack covers float rounding where a clear takes exactly the fastest.
+         worth *= params::max_exposure * pull.deny_scale;
++        const float followed = follow > 0 ? rated(follow, near_trip) : 0.0f;
+         if (crew > 0) { // crew_rate's
+             const float k = std::clamp(fastest / std::sqrt(near_trip * (horizon + near_trip)), 1.0f, crew);
+-            return rated(worth / k, near_trip + fastest / k) * 1.0001f < bar_lt();
++            return (rated(worth / k, near_trip + fastest / k) + followed) * 1.0001f < bar_lt();
+         }
+         const float bar = bar_lt();
+-        return rated(worth, near_trip + fastest) * 1.0001f < bar
+-               && (unclaimed_partner_output <= 0 || rated(worth * partner_part, near_trip + fastest * partner_part) * 1.0001f < bar);
++        return (rated(worth, near_trip + fastest) + followed) * 1.0001f < bar
++               && (unclaimed_partner_output <= 0 || (rated(worth * partner_part, near_trip + fastest * partner_part) + followed) * 1.0001f < bar);
+     };
+-    const auto unweighed_beaten = [&](const CampGroup& group, const CampBelief& belief, int g, float trip) __attribute__((always_inline)) {
++    // rated_below's worth and fastest clear for the first turn's prune.
++    const auto unweighed = [&](const CampGroup& group, const CampBelief& belief, int g) __attribute__((always_inline)) {
+         const int gems = std::min(group.gems + (prospector ? prospected(group.cluster_gems, 1) : 0), short_by);
+         const int gold = group.gold + (prospector ? prospected(group.cluster_gold, 1) : 0);
+         const float worth = static_cast<float>(gems) + per_gold * static_cast<float>(gold) + bound_tribute * static_cast<float>(gems);
+@@ -1488,7 +1613,7 @@
+         const float fastest = reflect > 0          ? reflected_clear(world, g, strength, reflect)
+                               : belief.version == 0 ? group.health / strength
+                                                     : fastest_clear(world, g, strength);
+-        return rated_below(worth, trip, fastest, crew_most(g, false));
++        return std::pair{worth, fastest};
+     };
+     const int* worth_gems = nullptr;
+     const float* worth_gold = nullptr;
+@@ -1518,6 +1643,78 @@
+         return n_lead > 0 && than >= 0 && (g - first + n_groups) % n_groups < (than - first + n_groups) % n_groups;
+     };
+     const auto is_claimed = [&](int g) __attribute__((always_inline)) { return g < 256 && (claimed_bits[g >> 6] >> (g & 63) & 1); };
++    // FollowUp's columns, ρ and Δ, off banking: a bag headed for an altar has its cycle priced from
++    // there. The next jobs are groups alive or respawning, not a Monolith, that our walk reaches, no
++    // ally claims, and neither kite() nor siege() keeps from farm.
++    auto& follow = follow_up;
++    follow.rho = 0, follow.most = 0, ++follow.turn;
++    std::uint64_t follow_fuel = 0; // debug builds: the precompute's fuel
++    (void)follow_fuel;
++    debug_block({ follow_fuel = fuel(); });
++    const auto lane_count = static_cast<std::uint64_t>(n_groups);
++    // The map's columns read each group's exposure once a game (the first turn, mostly).
++    if (!banks_bag && strength > 0 && fuel_ok(loop_reserve() + 35 * lane_count + 1500 + (follow.map == &map ? 0 : 200 * lane_count + 3000))) {
++        static std::vector<int> kited_groups;
++        if (follow.map != &map) {
++            follow.read_map(map, exposure);
++            kited_groups.clear();
++            for (int g = 0; g < n_groups; ++g)
++                if (kited_of(g)) kited_groups.push_back(g);
++        }
++        follow.horizon = horizon;
++        follow.unmark();
++        world.each_cleared([&](int g) { follow.mark_off(g); });
++        world.each_respawning([&](int g) {
++            follow.mark_wait(g, std::max(0, camp_data[g].respawn_round - world.round));
++            return false;
++        });
++        for (int w = 0; w < 4; ++w)
++            for (auto bits = claimed_bits[w]; bits; bits &= bits - 1)
++                if (const int g = 64 * w + std::countr_zero(bits); g < n_groups) follow.mark_off(g);
++        for (const int g : kited_groups)
++            if (camp_data[g].state != CampState::cleared && kite_owns(world, g)) follow.mark_off(g);
++        if (const int g = siege_declined(world); g >= 0 && g < n_groups) follow.mark_off(g);
++        follow.begin(here, world.clear_health.data(), short_by, prospector, 1.0f + tribute_gold, per_gold, cap_rounds, strength);
++        follow_most = follow.most;
++    }
++    debug_block({ follow_fuel -= fuel(); });
++    const std::uint64_t scan_cost = 15 * lane_count + 300;
++    // δ_g unlimited, kept for the turn; false short of fuel.
++    const auto follow_kept = [&](int g) {
++        if (follow.stamp[g] == follow.turn) return true;
++        if (!fuel_ok(loop_reserve() + scan_cost)) return false;
++        float need = 0;
++        follow.delta[g] = follow.scan(group_data[g].centre, g, std::numeric_limits<float>::infinity(), need);
++        follow.need[g] = need, follow.stamp[g] = follow.turn;
++        return true;
++    };
++    // δ_g for a job ending at g after `rounds` (its follow-ups must fit in the rounds left), 0 when
++    // the job wins or short of fuel. The branches share the kept δ.
++    const auto follow_of = [&](int g, float rounds) {
++        const float limit = static_cast<float>(left) - rounds;
++        // Every follow-up takes at least the capture.
++        if (follow_most <= 0 || group_data[g].gems >= short_by || limit < cap_rounds || !follow_kept(g)) return 0.0f;
++        if (follow.need[g] <= limit) return follow.delta[g];
++        if (!fuel_ok(loop_reserve() + scan_cost)) return 0.0f;
++        float need = 0;
++        return follow.scan(group_data[g].centre, g, limit, need);
++    };
++    // An upper bound of δ_g: kept, or Δ short of fuel.
++    const auto follow_cap = [&](int g) {
++        if (follow_most <= 0 || group_data[g].gems >= short_by) return 0.0f;
++        return follow_kept(g) ? follow.delta[g] : follow_most;
++    };
++    // The kept δ_g where read, else Δ: for the lazy reads below.
++    const auto follow_known = [&](int g) __attribute__((always_inline)) { return follow.stamp[g] == follow.turn ? follow.delta[g] : follow_most; };
++    // A prune `pruned(f)` with f bounding the follow-up: Δ first, then, where only the follow-up keeps
++    // g in, g's own δ (a scan costs less than the facts it saves).
++    const auto follow_pruned = [&](int g, const auto& pruned) __attribute__((always_inline)) {
++        if (follow_most <= 0) return pruned(0.0f);
++        if (pruned(follow_most)) return true;
++        if (!pruned(0.0f)) return false;
++        const float d = follow_cap(g);
++        return d < follow_most && pruned(d);
++    };
+     // Nearest to `first` first, every group from position k on is at least r_k - D from here (r_k
+     // from first's centre, D ours to it) and walks no fewer steps. Once the most any of them holds,
+     // that close and cleared at once, cannot beat the best (only rising), none of them can change
+@@ -1545,7 +1742,9 @@
+                             + most_per_gold * static_cast<float>(prospector ? m.gold_prospected : m.gold));
+         const float via = via_bound(m.spawn_near, 0);
+         if (banks_bag) return rate(world, worth, std::max(0.0f, std::min(static_cast<float>(near), via) - bank_now) + cap_rounds) * 1.0001f < tested_value;
+-        return rate(world, worth, std::min(static_cast<float>(near), via) + cap_rounds) * 1.0001f < tested_value;
++        // The follow-up's rate over the same rounds keeps the bound falling along the order.
++        const float rounds = std::min(static_cast<float>(near), via) + cap_rounds;
++        return (rate(world, worth, rounds) + (follow_most > 0 ? rate(world, follow_most, rounds) : 0.0f)) * 1.0001f < tested_value;
+     };
+     // Banking: whether the group's cycle from the altar stays below the threshold.
+     const auto altar_below = [&](int g) __attribute__((always_inline)) {
+@@ -1632,7 +1831,7 @@
+         p.banking = pre_banked, p.bank_now = bank_now, p.recall = pre_banked ? recall_turns(world) : 0;
+         // Shaved for fastest_clear's sum taken member by member.
+         p.health = pre_health = world.clear_health.data(), p.clear_scale = 0.9999f / strength, p.reflects = reflect > 0;
+-        p.crew_most = 1.0f / team_scale(), p.other_part = unclaimed_partner_output > 0 ? partner_part : 1.0f;
++        p.crew_most = 1.0f / team_scale(), p.other_part = unclaimed_partner_output > 0 ? partner_part : 1.0f, p.follow = follow_most;
+         p.weight = known_weights(n_groups);
+         p.out = pre_upper.data(), p.alt = pre_alt.data(), p.test = pre_test.data(), p.test_alt = pre_test_alt.data();
+         p.old = pre_old.data(), p.old_alt = pre_old_alt.data();
+@@ -1690,7 +1889,7 @@
+         const float r = std::min(clear, std::max(std::sqrt(trip * (horizon + trip)), 1.0f - trip));
+         return rate(world, worth * (strength * r / health), trip + r);
+     };
+-    const auto claim_most = [&](int g) {
++    const auto claim_most = [&](int g, float follow) {
+         constexpr float none = std::numeric_limits<float>::infinity();
+         const auto& G = groups[g];
+         const float health = pre_health[g];
+@@ -1705,7 +1904,9 @@
+         const float weight = g < 256 ? home_weights()[static_cast<std::size_t>(g)] : 1.0f;
+         // The join's Focus is no share: at most its rate over the trip and the hold (rate is linear in worth).
+         const float carry = gems * keep_bonus(G) * exposure_most * weight;
+-        return (claim_bound(worth * exposure_most * weight, health, health / strength, trip) + (carry > 0 ? rate(world, carry, trip + cap_rounds) : 0.0f))
++        // The join's follow-up is held no capture's rounds: from the trip alone.
++        return (claim_bound(worth * exposure_most * weight, health, health / strength, trip) + (carry > 0 ? rate(world, carry, trip + cap_rounds) : 0.0f)
++                + (follow > 0 ? rate(world, follow, trip) : 0.0f))
+                * 1.0002f;
+     };
+     static const bool any_mono = [&] {
+@@ -1734,8 +1935,11 @@
+         if ((pre_pruned && barred()) || (pre_banked && best >= 0)) pre_bounds(g);
+         if (pre_pruned && barred() && (pre_upper[g] < bar_lt() || (pre_valued && best >= 0 && pre_value[g] < best_value))) continue;
+         if (pre_claims && is_claimed(g) && (best >= 0 || shared >= 0) && g != farm_group && g != memory.claim && g != memory.mono_group) {
+-            const float most = claim_most(g);
+-            if ((best >= 0 && most < best_value) || (shared >= 0 && most < shared_value)) continue;
++            if (follow_pruned(g, [&](float f) {
++                    const float most = claim_most(g, f);
++                    return (best >= 0 && most < best_value) || (shared >= 0 && most < shared_value);
++                }))
++                continue;
+         }
+         if (pre_banked && best >= 0
+             && ((pre_upper[g] < std::min(best_value, from_altar_value) && pre_alt[g] < from_altar_value)
+@@ -1780,7 +1984,8 @@
+                     if (kf.version == belief.version && kf.fastest_strength == strength) fastest = kf.fastest;
+                     else if (belief.version == 0) fastest = group.health / strength;
+                     else kf.version = belief.version, kf.fastest_strength = strength, fastest = kf.fastest = fastest_clear(world, g, strength);
+-                    if (rated_below(worth, soonest(group, belief, pulled_near(g, near)), fastest, crew_most(g, false))) continue;
++                    const float trip = soonest(group, belief, pulled_near(g, near));
++                    if (follow_pruned(g, [&](float f) { return rated_below(worth, trip, fastest, crew_most(g, false), f); })) continue;
+                 }
+             }
+         }
+@@ -1789,7 +1994,11 @@
+         // rules out from as close as the Chebyshev distance needs none.
+         if (rated && !banks_bag && !wins && !claimed && barred() && g != farm_group && prunable(g) && (!hop_any || map.group_hop(g) < 0)) {
+             if (const int near = dist(here, group.centre); !may_help(group, belief, near)
+-                && unweighed_beaten(group, belief, g, static_cast<float>(near + near_wait(belief, near))))
++                && [&] {
++                       const auto [worth, fastest] = unweighed(group, belief, g);
++                       const float trip = static_cast<float>(near + near_wait(belief, near));
++                       return follow_pruned(g, [&](float f) { return rated_below(worth, trip, fastest, crew_most(g, false), f); });
++                   }())
+                 continue;
+         }
+         auto& known = group_facts[g];
+@@ -1867,10 +2076,13 @@
+                                                                       via_bound(dist(spawn_centre, group.centre), respawn)) - bank_now)
+                                             : std::max(0.0f, soonest(group, belief, pulled) - bank_now + bank);
+                 const float fastest = prune_fastest(g, known.fastest, wins);
+-                if (by_rate) return beaten(worth, trip, opening ? prune_fastest(g, quickest, wins) : fastest, walk_out, cycle_bank, crew_most(g, wins));
++                if (by_rate) {
++                    const float clear = opening ? prune_fastest(g, quickest, wins) : fastest;
++                    return follow_pruned(g, [&](float f) { return beaten(worth, trip, clear, walk_out, cycle_bank, crew_most(g, wins), f); });
++                }
+                 const float near_cycle = trip + cap_rounds + fastest;
+-                return near_cycle > 0 && worth / near_cycle <= bar_le()
+-                       && (!banks_bag || worth / (static_cast<float>(walk_out + capture) + cycle_bank + fastest) <= from_altar_value);
++                return near_cycle > 0 && (!banks_bag || worth / (static_cast<float>(walk_out + capture) + cycle_bank + fastest) <= from_altar_value)
++                       && follow_pruned(g, [&](float f) { return (worth + f) / near_cycle <= bar_le(); });
+             };
+             // Walking is symmetric: a group's centre field, once made, gives our steps to it. The sources
+             // below give the same steps (the prunes skip only groups that cannot beat the best).
+@@ -1982,11 +2194,12 @@
+         const float gems = known.gems * exposed, gold = known.gold * exposed, fastest = known.fastest, carried = gems * bonus;
+         // Skip the costly clearing estimate for groups that cannot beat the best even with no
+         // clearing. A crew's share can.
+-        if (!claimed && barred() && prunable(g)
+-            && ((rated && g != farm_group && beaten(gems + gold + carried, trip, prune_fastest(g, quickest, wins), walk_out, cycle_bank, crew_most(g, wins)))
+-                || ((!rated || g == farm_group || reflect > 0)
+-                    && (gems + gold + carried) / (trip + cap_rounds + prune_fastest(g, fastest, wins)) <= bar_le()
+-                    && (!banks_bag || (gems + gold + carried) / (static_cast<float>(walk_out + capture) + cycle_bank + prune_fastest(g, fastest, wins)) <= from_altar_value))))
++        if (!claimed && barred() && prunable(g) && follow_pruned(g, [&](float f) {
++                return (rated && g != farm_group && beaten(gems + gold + carried, trip, prune_fastest(g, quickest, wins), walk_out, cycle_bank, crew_most(g, wins), f))
++                       || ((!rated || g == farm_group || reflect > 0)
++                           && (gems + gold + carried + f) / (trip + cap_rounds + prune_fastest(g, fastest, wins)) <= bar_le()
++                           && (!banks_bag || (gems + gold + carried) / (static_cast<float>(walk_out + capture) + cycle_bank + prune_fastest(g, fastest, wins)) <= from_altar_value));
++            }))
+             continue;
+         // No known way to an altar (sealed, or a centre walls hide) is no deadline: the gold still counts.
+         const auto too_late = [&](float clear_rounds) __attribute__((always_inline)) {
+@@ -2027,9 +2240,12 @@
+             // over the trip and the hold alone.
+             float carry = carried, hold = carry > 0 ? cap_rounds : 0.0f;
+             const float carry_most = carry > 0 ? rate(world, carry, trip + hold) : 0.0f;
++            // The join's follow-up likewise, over the trip alone: at most `follow` (follow_pruned).
+             const auto beaten_claimed = [&](float most) __attribute__((always_inline)) {
+-                most = (most + carry_most) * (op && memory.claim == g ? crew_hold(g) : 1.0f) * 1.0001f;
+-                return most < shared_value || (best >= 0 && most < best_value);
++                return follow_pruned(g, [&](float follow) {
++                    const float bound = (most + carry_most + (follow > 0 ? rate(world, follow, trip) : 0.0f)) * (op && memory.claim == g ? crew_hold(g) : 1.0f) * 1.0001f;
++                    return bound < shared_value || (best >= 0 && bound < best_value);
++                });
+             };
+             if (bounded) {
+                 const auto& allies = crew_allies_now();
+@@ -2073,8 +2289,18 @@
+             if (carry > 0 && my_health() - (kite_hit ? kite_hits() : damage) < params::hurt_health_fraction * max_health) carry = 0, hold = 0;
+             // No capture rounds but a keeping Prism's: the claimer holds it, and the crew moves on once it is cleared.
+             // A crew we are in holds us against small pulls: one member leaving shrinks it for the rest.
+-            const float value = rate(world, plain * part + carry, trip + rounds + hold + trips_home(static_cast<float>(trips)))
+-                                * (op && memory.claim == g ? crew_hold(g) : 1.0f);
++            const float joined_rounds = trip + rounds + hold + trips_home(static_cast<float>(trips));
++            const float held_by = op && memory.claim == g ? crew_hold(g) : 1.0f;
++            const float base = rate(world, plain * part + carry, joined_rounds) * held_by;
++            // Our part of the follow-up too, as of the clear: read only where it could lift the share past the bars.
++            float value = base;
++            if (follow_most > 0 && !wins
++                && (base + rate(world, follow_known(g) * part, joined_rounds) * held_by) * 1.0001f >= std::max(shared_value, best >= 0 ? best_value : 0.0f))
++                if (const float d = follow_of(g, joined_rounds); d > 0) value = rate(world, plain * part + carry + d * part, joined_rounds) * held_by;
++            debug_block({
++                if (base > trace.shared_value && !too_late(rounds) && !(kite_hit && kite_hits() > spare_health))
++                    trace.shared = g, trace.shared_value = base;
++            });
+             // Only a better share counts, and the final pick takes none a group of our own beats.
+             if (g == memory.mono_group) mono_seen = value;
+             if ((value < shared_value || (value == shared_value && !earlier(g, shared))) || (best >= 0 && value <= best_value) || too_late(rounds))
+@@ -2109,22 +2335,31 @@
+             const bool alive = belief.state == CampState::alive;
+             if (best >= 0 && (alone_damage <= spare_health || unclaimed_partner_output <= 0 || !alive)) {
+                 const float quickest = kite >= 0 ? std::min(alone_rounds, kite) : alone_rounds;
+-                if (worth / (trip + quickest + capture) <= best_value
+-                    && (!banks_bag || worth / (static_cast<float>(walk_out) + cycle_bank + quickest + capture) <= from_altar_value))
++                if ((!banks_bag || worth / (static_cast<float>(walk_out) + cycle_bank + quickest + capture) <= from_altar_value)
++                    && follow_pruned(g, [&](float f) { return (worth + f) / (trip + quickest + capture) <= best_value; }))
+                     continue;
+             }
+             float rounds = alone_rounds, damage = alone_damage;
+             const bool cast = kite >= 0 && (damage > spare_health || kite < rounds + heal(g, damage));
+             if (cast) damage = 0, rounds = kite;
+             if (too_late(rounds)) continue;
+-            float value = rate(world, worth, trip + rounds + capture);
++            float kited_rounds = trip + rounds + capture, kited_part = 1;
++            float value = rate(world, worth, kited_rounds);
+             if (damage > spare_health && unclaimed_partner_output > 0 && alive) {
+                 float joint_rounds = 0;
+                 const float part = strength / (strength + unclaimed_partner_output);
+                 if (soften * min_camp_damage(world, g, strength + unclaimed_partner_output, &joint_rounds) * part <= spare_health)
+-                    damage = 0, value = rate(world, worth * part, trip + joint_rounds + capture);
++                    damage = 0, kited_rounds = trip + joint_rounds + capture, kited_part = part, value = rate(world, worth * part, kited_rounds);
+             }
+-            if (damage > spare_health && !ally_engaged(world, g)) {
++            const bool risk = damage > spare_health && !ally_engaged(world, g);
++            const float base = value;
++            if (follow_most > 0 && !wins && (base + rate(world, follow_known(g) * kited_part, kited_rounds)) * 1.0001f >= (risk ? risky_value : best_value))
++                if (const float d = follow_of(g, kited_rounds); d > 0) value = rate(world, (worth + d) * kited_part, kited_rounds);
++            debug_block({
++                if (!risk && base > trace.best_value) trace.best = g, trace.best_value = base;
++            });
++            if (!risk) base_most = std::max(base_most, base);
++            if (risk) {
+                 if (value > risky_value || (value == risky_value && earlier(g, risky))) risky = g, risky_value = value, risky_steps = steps;
+                 continue;
+             }
+@@ -2142,8 +2377,8 @@
+         // Otherwise it takes us alone at least the quicker of the two ways.
+         if (barred() && !crewable) {
+             const float quickest = kite >= 0 ? std::min(alone_rounds, kite) : alone_rounds;
+-            if (worth / (trip + quickest + capture) <= bar_le()
+-                && (!banks_bag || worth / (static_cast<float>(walk_out) + cycle_bank + quickest + capture) <= from_altar_value))
++            if ((!banks_bag || worth / (static_cast<float>(walk_out) + cycle_bank + quickest + capture) <= from_altar_value)
++                && follow_pruned(g, [&](float f) { return (worth + f) / (trip + quickest + capture) <= bar_le(); }))
+                 continue;
+         }
+         float clear_rounds = alone_rounds, share = worth;
+@@ -2159,7 +2394,11 @@
+         // A Monolith is a crew's only: alone, the walk there is often given up for nearer camps on
+         // the way, and a lone chip only softens it for whoever comes next.
+         bool late = too_late(clear_rounds) || (group.has_monolith && belief.state != CampState::cleared);
+-        float value = late ? 0.0f : rate(world, worth, trip + clear_rounds + capture + trips_home(static_cast<float>(trips)));
++        const float alone_total = trip + clear_rounds + capture + trips_home(static_cast<float>(trips));
++        float value = late ? 0.0f : rate(world, worth, alone_total), base = value;
++        // The follow-up only where it could lift the value past the bar (the crew's own is read below).
++        if (follow_most > 0 && !wins && !late && (base + rate(world, follow_known(g), alone_total)) * 1.0001f >= bar_lt())
++            if (const float d = follow_of(g, alone_total); d > 0) value = rate(world, worth + d, alone_total);
+         // Banking: the cycle from the altar after the tribute (from_altar_value's candidate).
+         const float via_altar = banks_bag && walk_out != unreachable && belief.state == CampState::respawning
+                                     ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk_out) - bank_now) : 0.0f;
+@@ -2193,8 +2432,15 @@
+                 const auto crew_bound = [&](float base) __attribute__((always_inline)) {
+                     return wins ? rate(world, worth, base + fastest / hi) : crew_rate(world, worth, base, fastest, lo, hi);
+                 };
+-                const float most = crew_bound(trip + cap_rounds) * hold * 1.0001f;
+-                may_beat = most >= value && !((best >= 0 && most < best_value) || most < floor_value);
++                const float crew_most_bound = crew_bound(trip + cap_rounds);
++                const auto most_at = [&](float follow) __attribute__((always_inline)) {
++                    return (crew_most_bound + (wins || follow <= 0 ? 0.0f : rate(world, follow, trip + cap_rounds))) * hold * 1.0001f;
++                };
++                may_beat = !follow_pruned(g, [&](float follow) {
++                    const float m = most_at(follow);
++                    return !(m >= value && !((best >= 0 && m < best_value) || m < floor_value));
++                });
++                const float most = most_at(follow_most);
+                 if (!may_beat && most >= value && banks_bag && walk_out != unreachable) {
+                     const float via_altar_out = static_cast<float>(walk_out) + cycle_bank + via_altar + cap_rounds;
+                     may_beat = crew_bound(via_altar_out) * 1.0001f >= from_altar_value || (!late && altar_rate(share, clear_rounds, trips) > from_altar_value);
+@@ -2210,7 +2456,12 @@
+                 // way gives way to joining it rather than split the free allies.
+                 const float hold = memory.claim == g ? crew_hold(g)
+                                    : plan.claimers == 0 && rival_op() ? params::crew_rival_factor : 1.0f;
+-                const float crew_value = rate(world, worth * part, trip + plan.rounds + capture + trips_home(static_cast<float>(my_trips))) * hold;
++                const float crew_total = trip + plan.rounds + capture + trips_home(static_cast<float>(my_trips));
++                const float crew_base = rate(world, worth * part, crew_total) * hold;
++                float crew_value = crew_base;
++                // Our part of the follow-up, as of the worth: it keeps a crew's short clear from multiplying it.
++                if (follow_most > 0 && !wins && (crew_base + rate(world, follow_known(g) * part, crew_total) * hold) * 1.0001f >= std::max(bar_lt(), value))
++                    if (const float d = follow_of(g, crew_total); d > 0) crew_value = rate(world, (worth + d) * part, crew_total) * hold;
+                 debug_block({
+                     if (group.has_monolith && round % 25 == 0)
+                         std::printf("MONO VALUE %d %u g%d worth %.0f part %.2f trip %.0f rounds %.0f trips %d home %.0f crew %d+%d output %.0f value %.4f best-so-far %.4f\n",
+@@ -2218,7 +2469,7 @@
+                                     plan.output, crew_value, best_value);
+                 });
+                 if (crew_value > value) {
+-                    value = crew_value, late = false, spell = false;
++                    value = crew_value, base = crew_base, late = false, spell = false;
+                     clear_rounds = plan.rounds, trips = my_trips, share = worth * part;
+                     priced = {'C', my_trips, plan.tank ? plan.tank->index : -1, plan.n_expected, plan.output, crew_share(plan, reach)};
+                 }
+@@ -2226,6 +2477,10 @@
+         }
+         if (g == memory.mono_group) mono_seen = value;
+         if (late) continue;
++        debug_block({
++            if (base > trace.best_value) trace.best = g, trace.best_value = base;
++        });
++        base_most = std::max(base_most, base);
+         if (value > best_value || (value == best_value && earlier(g, best)))
+             best = g, best_value = value, best_steps = steps, best_spell = spell, best_priced = priced;
+         if (banks_bag && walk_out != unreachable) from_altar_value = std::max(from_altar_value, altar_rate(share, clear_rounds, trips));
+@@ -2236,7 +2491,8 @@
+     // An ally's hold that pays more with us on it: the rounds we then hold free the holder, worth
+     // what our best cycle earns a round, so the walk is what it costs.
+     if (!banks_bag && !memory.banking && evaluated == n_groups && takes_over(world)) {
+-        const float work_rate = best_value;
++        // What our best job earns a round, not where it leaves us.
++        const float work_rate = base_most;
+         world.each_cleared([&](int g) {
+             const auto& G = groups[g];
+             // A payout is at most capture_time rounds away, so no longer walk arrives before it (takeover_worth).
+@@ -2250,12 +2506,45 @@
+             int hold = 0;
+             const float worth = takeover_worth(gain, timer, walk, work_rate, hold);
+             if (!(worth > 0)) return;
+-            const float value = rate(world, worth, static_cast<float>(walk + hold));
++            // Held, we are left on g: its follow-up, as a job's.
++            const float rounds = static_cast<float>(walk + hold);
++            const float value = rate(world, worth + follow_of(g, rounds), rounds);
+             debug_block({ std::printf("TAKEOVER %d %u g%d gain %.2f per_gold %.3f walk %d timer %d value %.4f best %.4f\n", round, my_handle(), g,
+                                       gain, prices(world).per_gold, walk, timer, value, best_value); });
+             if (value > best_value) best = g, best_steps = walk, best_value = value, best_spell = false, best_priced = Priced{'T'};
+         });
+     }
++    debug_block({
++        // Per instance: turns weighed with a follow-up, picks it changed (against the pick by values
++        // without it, among the groups valued: prunes then cut more), Δ, and δ of the pick.
++        static struct {
++            int turns = 0, changed = 0, lifted = 0, scans = 0, last = 0;
++            double most = 0, delta = 0, rho = 0, fuel = 0;
++        } s;
++        if (!banks_bag && follow_most > 0) {
++            const int pick = shared >= 0 && (best < 0 || shared_value > best_value) ? shared : best;
++            const int base_pick = trace.shared >= 0 && (trace.best < 0 || trace.shared_value > trace.best_value) ? trace.shared : trace.best;
++            const float d = pick >= 0 && follow.stamp[pick] == follow.turn ? follow.delta[pick] : 0.0f;
++            float far = 0;
++            const float here_delta = follow.scan(here, -1, std::numeric_limits<float>::infinity(), far);
++            if (here_delta > 1e-3f * follow_most + 1e-4f)
++                std::printf("FOLLOW HERE %d %u delta %.4f most %.4f rho %.5f\n", round, my_handle(), here_delta, follow_most, follow.rho);
++            ++s.turns, s.most += follow_most, s.rho += follow.rho, s.fuel += static_cast<double>(follow_fuel);
++            for (int g = 0; g < n_groups; ++g) s.scans += follow.stamp[g] == follow.turn;
++            if (d > 0) ++s.lifted, s.delta += d;
++            if (pick != base_pick) {
++                ++s.changed;
++                std::printf("FOLLOW CHANGE %d %u pick g%d delta %.3f base-pick g%d most %.3f rho %.4f\n", round, my_handle(), pick, d, base_pick,
++                            follow_most, follow.rho);
++            }
++        }
++        if (s.turns > 0 && round - s.last >= 200) {
++            s.last = round;
++            std::printf("FOLLOW SUM %d %u turns %d changed %d lifted %d mean-most %.3f mean-delta %.3f mean-rho %.4f scans/turn %.1f fuel/turn %.0f\n",
++                        round, my_handle(), s.turns, s.changed, s.lifted, s.most / s.turns, s.lifted ? s.delta / s.lifted : 0.0, s.rho / s.turns,
++                        static_cast<double>(s.scans) / s.turns, s.fuel / s.turns);
++        }
++    });
+     if (banks_bag && (best < 0 || best_value <= from_altar_value)) return false;
+     if (banks_bag && attack_in_range()) return true;
+     if (world.is_stale()) return true;
+diff -ru '--exclude=.cambc' '--exclude=compile_commands.json' macro6-carry3/src/economy/siege.cc macro6-follow/src/economy/siege.cc
+--- macro6-carry3/src/economy/siege.cc	2026-11-11 01:36:30.493907850 +0000
++++ macro6-follow/src/economy/siege.cc	2026-11-11 05:06:15.568565190 +0000
+@@ -219,6 +219,7 @@
+ } declined;
+ 
+ bool siege_declines(const World& world, int g) { return declined.round == world.round && declined.group == g; }
++int siege_declined(const World& world) { return declined.round == world.round ? declined.group : -1; }
+ 
+ bool stop_siege(Memory& memory) {
+     memory.siege = false;

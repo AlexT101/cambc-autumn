@@ -1,0 +1,671 @@
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/bot.cc macro2-fight/src/bot.cc
+--- ocean-ref-b7c87cf/src/bot.cc	2026-11-11 01:36:28.906846080 +0000
++++ macro2-fight/src/bot.cc	2026-11-11 02:51:41.017381183 +0000
+@@ -376,6 +376,7 @@
+         shop(world, memory, true, true); // the dead can only shop
+         return;
+     }
++    skirmish_verdict(world, safety);
+     // One state read covers the channels until one is cancelled; a channel excludes the others.
+     const auto state = my_state();
+     if (recall_farm >= 0 && !state.contains(cambc::champion_state::recalling)) {
+@@ -497,7 +498,8 @@
+     if (wake_ring(world, pathing, safety)) return;
+     // After the search the goal takes only what the search left and could not price: its walk, camp
+     // work, a travel dash (a dash the search plays only before a strike). A ranged attack spent the walk.
+-    if (my_can_move() && wants_shop(world, pathing, safety, memory)) {
++    // Engaged (skirmish verdict), the fight is the work: no shopping trip takes us out of it.
++    if (my_can_move() && !skirmish_engaged(world) && wants_shop(world, pathing, safety, memory)) {
+         decision = Branch::shop;
+         memory.claim = -1;
+         step_safely(world, pathing, pathing.to_ally_spawn(), safety);
+@@ -709,6 +711,7 @@
+     memory.health = world.me().alive ? my_health() : 0;
+     if (world.me().alive) note_income_end(world);
+     upkeep.camp_turns += camp_hits() != camp_hits_before;
++    skirmish_trace(world);
+     debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), static_cast<char>(decision), memory.farm_group, memory.claim); });
+ }
+ 
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/bot_parts.h macro2-fight/src/bot_parts.h
+--- ocean-ref-b7c87cf/src/bot_parts.h	2026-11-11 01:36:28.906986482 +0000
++++ macro2-fight/src/bot_parts.h	2026-11-11 02:47:49.673046263 +0000
+@@ -322,6 +322,14 @@
+ void guard_work(const World& world, Pathing& pathing, Safety& safety, float damage, const bitboard* avoid);
+ void strike_guard_known(const Pathing& pathing, vec2 here);
+ 
++// combat/skirmish.cc: the skirmish verdict, worked out or read at the turn's start and followed by
++// its members for the rest of the turn.
++void skirmish_verdict(const World& world, Safety& safety);
++bool skirmish_engaged(const World& world);    // the verdict keeps us in the fight
++bool skirmish_disengaged(const World& world); // the verdict takes us out of it
++const ChampionBelief* skirmish_focus(const World& world); // the engaging verdict's target, in sight
++void skirmish_trace(const World& world);
++
+ // combat/fight.cc
+ bool attack_enemy(const World& world);
+ float recall_line(const World& world, Safety& safety);
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/combat/fight.cc macro2-fight/src/combat/fight.cc
+--- ocean-ref-b7c87cf/src/combat/fight.cc	2026-11-11 01:36:28.907079743 +0000
++++ macro2-fight/src/combat/fight.cc	2026-11-11 03:16:17.667961597 +0000
+@@ -501,7 +501,10 @@
+     if (test(world.map().ally_spawn, here)) return false;
+     const float health = my_health();
+     HoldAt hold(world, pathing, here, memory.damage);
+-    if (drawn_home(world, safety, hold)) return true;
++    // The skirmish verdict stands in for our own lines and stand: engaged, only a fall before our
++    // next turn sends us home; disengaged, so does any enemy that can strike us by then.
++    const bool team_engaged = skirmish_engaged(world);
++    if (!team_engaged && drawn_home(world, safety, hold)) return true;
+     const int mono = mono_trapped(world, pathing, safety, memory, health);
+     if (mono >= 0 ? mono == 1 : camp_trapped(world, pathing, safety, here, health, memory.siege)) return true;
+     // Once camps sent us home, only a heal brings us back: stepping back into their reach to work
+@@ -512,6 +515,9 @@
+     if (world.me().facts().heals() && !holding_capture(world, pathing) && !contesting(world) && exposure_here(world, safety).enemy
+         && !willow_stands(world))
+         return true;
++    // Cassi and Issac also keep their stand test, which counts the other body's fall.
++    if (team_engaged) return safety.lethal(here) || (partner(world) && stand_lost_at(world, safety, hold));
++    if (skirmish_disengaged(world) && !hold.keeps_us(safety) && safety.fight_key(here) != Safety::no_fight) return true;
+     return stand_lost_at(world, safety, hold);
+ }
+ 
+@@ -726,6 +732,11 @@
+     // The strike search runs after these verdicts: a build must leave it a full search's fuel. Under prey's
+     // flat gate, turns that built here ran out ~8x as often as prey's (chase-verdict.md "Fuel gate").
+     const auto need = escape::chase_cost_estimate() + search_reserve;
++    if (skirmish_disengaged(world)) return aim;
++    if (const auto* f = skirmish_focus(world); f && !escapes(world, pathing, *f, need)) {
++        trace_verdict(world, pathing, *f, 'S');
++        return f->pos;
++    }
+     // A teammate's pressed fight when we have none of our own.
+     if (!engaged_before) {
+         if (const auto* t = team_pressed(world); t && preyable(world, safety, *t, here, range, held) && !escapes(world, pathing, *t, need))
+@@ -777,6 +788,9 @@
+     // Willow holds no fight (want_home), but early (willow_stands): a chase walks it into reach only to leave next turn.
+     if (world.me().facts().heals() && !willow_early(world)) return nullptr;
+     const vec2 here = my_position();
++    // The skirmish's fight is ours: its focus is chased as long as it cannot walk away clear.
++    if (skirmish_disengaged(world)) return nullptr;
++    if (const auto* f = skirmish_focus(world); f && !escapes(world, pathing, *f)) return f;
+     const std::uint32_t lost_sight = lost_prey(world, here);
+     if (!enemy_seen(world) && !lost_sight) return nullptr;
+     const int range = world.me().facts().attack_range();
+@@ -941,7 +955,8 @@
+     if (!searched && !unseen && dist(my_position(), target->pos) > range + 1 && my_can_move()) dash_to_attack(world, pathing, target);
+     bool stuck = false;
+     if ((unseen || dist(my_position(), target->pos) > range) && my_can_move()) {
+-        const auto* zone = pack_zone(world, safety);
++        // The skirmish's fight outweighs the pack it would keep us out of.
++        const auto* zone = target == skirmish_focus(world) ? nullptr : pack_zone(world, safety);
+         static bitboard goals{cambc::uninitialized};
+         clear_board(goals);
+         if (unseen) goals |= target->possible;
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/combat/guard.cc macro2-fight/src/combat/guard.cc
+--- ocean-ref-b7c87cf/src/combat/guard.cc	2026-11-11 01:36:28.907079743 +0000
++++ macro2-fight/src/combat/guard.cc	2026-11-11 03:16:17.665959981 +0000
+@@ -625,7 +625,9 @@
+     // Every enemy that could hit any of them against the allies at all of them first: if we win
+     // even that, no tile needs guarding. Each bound holds its tile's exact exposure, so a win
+     // settles the exact tiles before Reach is asked.
+-    if (m > 1) {
++    // Engaged, the union fight below is not read (but by Cassi and Issac).
++    const bool team_engaged = skirmish_engaged(world) && !linked;
++    if (m > 1 && !team_engaged) {
+         if (!outcome(enemies | allies, lost, falls)) return nullptr;
+         if (!lost && !falls) {
+             note_placing();
+@@ -657,6 +659,18 @@
+     }
+     note_placing();
+     if (m == 0) return nullptr;
++    // Engaged (skirmish verdict), the team's fight stands for each tile's: only a fall there before
++    // our next turn is kept off, as want_home would leave only that. Cassi and Issac keep the full
++    // guard: one standing where the other would fall loses both.
++    if (team_engaged) {
++        bool any = false;
++        for (int i = 0; i < m; ++i)
++            if (safety.lethal(exposed[i].first)) {
++                if (!any) clear_board(guard), any = true;
++                set_tile(guard, exposed[i].first);
++            }
++        return any ? &guard : nullptr;
++    }
+     if (m > 1 && (!outcome(enemies | allies, lost, falls) || (!lost && !falls))) return nullptr;
+     // Then the fewest enemies first, so that lost fights settle the larger ones.
+     std::sort(exposed.begin(), exposed.begin() + m, [](const auto& a, const auto& b) {
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/combat/skirmish.cc macro2-fight/src/combat/skirmish.cc
+--- ocean-ref-b7c87cf/src/combat/skirmish.cc	1970-01-01 00:00:00.000000000 +0000
++++ macro2-fight/src/combat/skirmish.cc	2026-11-11 03:16:08.293145131 +0000
+@@ -0,0 +1,207 @@
++// The skirmish verdict: one fight for every ally present against every enemy present, worked out by
++// the first member to act in a round and posted (comms::FightPost) for the members acting after it,
++// so that a group the fight favours stays and strikes together and one it does not leaves together.
++// Each champion's own verdicts (want_home's stand, prey's chase, the step guard) see only the allies
++// near its own tile, so allies in one skirmish could reach opposite ones.
++//
++// The fight is Safety::skirmish_fight's, judged by net kills (a kill is worth about what a death
++// costs): engage when we take more than we lose even when they strike first, disengage when we lose
++// more than we take even when we do. Between the two the outcome rests on who strikes first, which
++// members acting turn about in the alternation cannot hold to: no verdict, and each decides alone
++// as before. The focus is the enemy the engaging fight fells first.
++#include "../bot_parts.h"
++
++namespace aph {
++
++namespace {
++
++struct SkirmishTurn {
++    int round = -1;
++    comms::Verdict verdict = comms::Verdict::none;
++    int focus = -1;
++    std::uint32_t members = 0, enemies = 0;
++    bool member = false; // the verdict binds us this turn
++    bool posted = false; // we worked it out
++};
++SkirmishTurn sk_turn;
++
++// The engaged verdict we last posted, for its outcome trace at our next turn.
++struct SkirmishPosted {
++    int round = -1, focus = -1;
++    std::uint32_t members = 0;
++};
++SkirmishPosted sk_posted;
++
++// An ally that fights where it stands: not held by a tribute or a teleport, nor a healer past its
++// early fights, whose own judgement sends it home from any enemy (want_home).
++bool fights(const World& world, const ChampionBelief& a) {
++    if (a.facts().heals() && world.round >= params::willow_fight_until) return false;
++    return a.alive && (a.is_self || (a.visible && a.channel != Channel::tribute && !a.teleport_pending()));
++}
++
++bool members_alive(const World& world, std::uint32_t members) {
++    for (auto left = members; left; left &= left - 1) {
++        const auto i = static_cast<std::size_t>(std::countr_zero(left));
++        if (i >= world.allies.size() || !world.allies[i].alive) return false;
++    }
++    return true;
++}
++
++// Visible and alive now, after any hits this turn.
++bool live_in_sight(const ChampionBelief& e) { return e.alive && e.visible && visible_record(e.handle) != nullptr; }
++
++// The roster: us and the allies near us (Safety's fight square), the enemies that could strike any
++// of them before our next turn (the credible unseen too) or that any of them could strike this
++// turn, then the allies those enemies could strike or be struck by.
++std::uint32_t skirmish_key(const World& world, Safety& safety) {
++    const vec2 here = my_position();
++    std::uint32_t allies = 0;
++    for (auto left = safety.fight_allies(here); left; left &= left - 1)
++        if (fights(world, world.allies[static_cast<std::size_t>(std::countr_zero(left))])) allies |= 1u << std::countr_zero(left);
++    const auto tile = [&](const ChampionBelief& a) { return a.is_self ? here : a.pos; };
++    const auto turn = [&](const ChampionBelief& a) { return a.is_self ? world.round : next_turn_round(world, a); };
++    std::uint32_t enemies = 0;
++    for (auto left = allies; left; left &= left - 1) {
++        const auto& a = world.allies[static_cast<std::size_t>(std::countr_zero(left))];
++        if (const auto key = safety.fight_key(tile(a)); key != Safety::no_fight) enemies |= key >> 16;
++        const auto& s = strike(a, turn(a));
++        for (const auto& e : world.enemies)
++            if (e.alive && e.visible && s.hits(dist(tile(a), e.pos))) enemies |= 1u << e.index;
++    }
++    std::uint32_t seen = 0;
++    for (auto left = enemies; left; left &= left - 1)
++        if (const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))]; e.visible) seen |= 1u << e.index;
++    if (!seen) return Safety::no_fight;
++    for (const auto& a : world.allies) {
++        if (a.is_self || (allies >> a.index & 1) || !fights(world, a)) continue;
++        bool in = false;
++        const auto& s = strike(a, turn(a));
++        for (auto left = seen; left && !in; left &= left - 1)
++            in = s.hits(dist(a.pos, world.enemies[static_cast<std::size_t>(std::countr_zero(left))].pos));
++        if (!in)
++            if (const auto key = safety.fight_key(a.pos); key != Safety::no_fight) in = (key >> 16 & seen) != 0;
++        if (in) allies |= 1u << a.index;
++    }
++    return allies | enemies << 16;
++}
++
++void trace_outcome(const World& world) {
++    if (sk_posted.round < 0) return;
++    debug_block({
++        const auto& e = world.enemies[static_cast<std::size_t>(sk_posted.focus)];
++        int alive = 0;
++        for (auto left = sk_posted.members; left; left &= left - 1)
++            alive += world.allies[static_cast<std::size_t>(std::countr_zero(left))].alive;
++        std::printf("SKO %d %u %d %d %d %.2f %d/%d\n", world.round, my_handle(), sk_posted.round, sk_posted.focus, e.alive ? 1 : 0,
++                    e.alive && e.visible ? e.health / std::max(1.0f, e.max_health) : -1.0f, alive, std::popcount(sk_posted.members));
++    });
++    sk_posted.round = -1;
++}
++
++void skirmish_verdict(const World& world, Safety& safety) {
++    world.throw_if_stale();
++    sk_turn = {};
++    sk_turn.round = world.round;
++    if (!world.me().alive) return;
++    trace_outcome(world);
++    // A tribute's channel is kept or cancelled by its own judgement (continue_tribute), and a
++    // teleport holds us: such a turn neither follows nor posts.
++    if (const auto state = my_state(); state.contains(cambc::champion_state::submitting_gems) || state.contains(cambc::champion_state::teleporting))
++        return;
++    if (!enemy_seen(world)) return;
++    const int me = world.me().index;
++    comms::FightPost post;
++    // An engaging post binds only a member that sees its focus (vision is each champion's own):
++    // without it, its retreat lines would go with no fight to join. Such a member decides alone.
++    const auto sees_focus = [&] {
++        if (post.focus < 0 || post.focus >= static_cast<int>(world.enemies.size())) return false;
++        const auto& e = world.enemies[static_cast<std::size_t>(post.focus)];
++        return live_in_sight(e) && !test(world.map().near_enemy_spawn, e.pos);
++    };
++    if (comms::fight_post(world, post) && (post.members >> me & 1) && members_alive(world, post.members)) {
++        if (post.verdict == comms::Verdict::engage && !sees_focus()) {
++            debug_block({ std::printf("SKF %d %u e %d %u\n", world.round, my_handle(), post.focus, post.members); });
++            return;
++        }
++        sk_turn.verdict = post.verdict, sk_turn.focus = post.focus, sk_turn.members = post.members, sk_turn.member = true;
++        debug_block({ std::printf("SKF %d %u %c %d %u\n", world.round, my_handle(), "-NED"[static_cast<int>(post.verdict)], post.focus, post.members); });
++        return;
++    }
++    // Two fights, at about a fight_cost_estimate each, ahead of the turn's own.
++    if (!fuel_ok(2 * safety.fight_cost_estimate() + search_reserve)) {
++        note_shortcut("skirmish-fuel");
++        return;
++    }
++    const auto key = skirmish_key(world, safety);
++    // Alone, our own verdicts are already one judgement: the shared one is for a group.
++    if (key == Safety::no_fight || std::popcount(key & 0xFFFFu) < 2) return;
++    // The enemies who walk into reach of any of us in time join, as in prey's fights: the soonest walk each.
++    std::uint32_t late = 0;
++    for (auto left = key & 0xFFFFu; left; left &= left - 1) {
++        const auto& a = world.allies[static_cast<std::size_t>(std::countr_zero(left))];
++        const auto l = safety.late(a.is_self ? my_position() : a.pos, key);
++        for (int j = 0; j < 16; ++j)
++            if (const auto w = l >> 2 * j & 3, had = late >> 2 * j & 3; w && (!had || w < had))
++                late = (late & ~(3u << 2 * j)) | w << 2 * j;
++    }
++    // Losing even when we strike first, the fight with their first strike cannot engage.
++    const auto take = safety.skirmish_fight(key, false, late);
++    const bool leave = take.theirs_lost < take.ours_lost;
++    const auto hold = leave ? take : safety.skirmish_fight(key, true, late);
++    // A kill is worth about what a death costs: the verdict is the net kills, which must hold
++    // whoever strikes first.
++    const bool engage = !leave && hold.theirs_lost > hold.ours_lost;
++    comms::Verdict verdict = comms::Verdict::none;
++    int focus = -1;
++    if (engage && !leave && hold.fallen >= 0) {
++        const auto& e = world.enemies[static_cast<std::size_t>(hold.fallen)];
++        // On its spawn's edge it heals at its every turn end, which the fight does not count.
++        if (e.visible && !test(world.map().near_enemy_spawn, e.pos)) verdict = comms::Verdict::engage, focus = hold.fallen;
++    } else if (leave && !engage) {
++        verdict = comms::Verdict::disengage;
++    }
++    sk_turn.verdict = verdict, sk_turn.focus = focus;
++    sk_turn.members = key & 0xFFFFu, sk_turn.enemies = key >> 16;
++    sk_turn.member = sk_turn.posted = true;
++    comms::post_fight(world, {verdict, focus, sk_turn.members});
++    if (verdict == comms::Verdict::engage) sk_posted = {world.round, focus, sk_turn.members};
++    debug_block({
++        // Pooled health, ours and the visible enemies', for the share the engagement study buckets by.
++        float ours = 0, theirs = 0;
++        for (auto left = sk_turn.members; left; left &= left - 1)
++            if (const auto& a = world.allies[static_cast<std::size_t>(std::countr_zero(left))]; a.is_self) ours += my_health();
++            else ours += a.health;
++        for (auto left = sk_turn.enemies; left; left &= left - 1)
++            if (const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))]; e.visible) theirs += e.health;
++        std::printf("SKV %d %u %c %d %u %u %u tf %d %d %d-%d uf %d %d %d-%d hp %d %d\n", world.round, my_handle(), "-NED"[static_cast<int>(verdict)], focus,
++                    sk_turn.members, sk_turn.enemies, late, hold.ours, hold.theirs, hold.theirs_lost, hold.ours_lost, take.ours, take.theirs,
++                    take.theirs_lost, take.ours_lost, static_cast<int>(ours), static_cast<int>(theirs));
++    });
++}
++
++// Willow holds no fight but early (willow_early): its own judgement keeps it.
++bool skirmish_binds(const World& world) {
++    return sk_turn.round == world.round && sk_turn.member && world.me().alive && (!world.me().facts().heals() || willow_early(world));
++}
++
++bool skirmish_engaged(const World& world) { return skirmish_binds(world) && sk_turn.verdict == comms::Verdict::engage; }
++
++bool skirmish_disengaged(const World& world) { return skirmish_binds(world) && sk_turn.verdict == comms::Verdict::disengage; }
++
++const ChampionBelief* skirmish_focus(const World& world) {
++    if (!skirmish_engaged(world) || sk_turn.focus < 0) return nullptr;
++    const auto& e = world.enemies[static_cast<std::size_t>(sk_turn.focus)];
++    return live_in_sight(e) && !test(world.map().near_enemy_spawn, e.pos) ? &e : nullptr;
++}
++
++void skirmish_trace(const World& world) {
++    if (sk_turn.round != world.round || !sk_turn.member) return;
++    debug_block({
++        std::printf("SKA %d %u %c %d %c %d\n", world.round, my_handle(), "-NED"[static_cast<int>(sk_turn.verdict)], sk_turn.focus,
++                    static_cast<char>(decision), sk_turn.posted ? 1 : 0);
++    });
++}
++
++} // namespace
++
++} // namespace aph
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/economy/bank.cc macro2-fight/src/economy/bank.cc
+--- ocean-ref-b7c87cf/src/economy/bank.cc	2026-11-11 01:36:28.909050928 +0000
++++ macro2-fight/src/economy/bank.cc	2026-11-11 03:16:08.293800959 +0000
+@@ -1204,7 +1204,8 @@
+ // A turn-end tribute wherever one can start (Mite's habit), else the caller's recall feint: the turn has acted,
+ // so standing in a channel costs nothing, and next turn continue_tribute keeps or cancels it.
+ bool mite_tribute_habit(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
+-    if (stunned_turn || !world.me().alive || channelling() || my_gems() <= 0) return false;
++    // Engaged, want_home no longer reads the fight: a channel would leave it.
++    if (stunned_turn || !world.me().alive || channelling() || my_gems() <= 0 || skirmish_engaged(world)) return false;
+     const vec2 here = my_position();
+     if (here.x < 0) return false;
+     const int a = altar_here(world, here);
+@@ -1370,6 +1371,12 @@
+             decision = Branch::capture_recall;
+             return true;
+         }
++    } else if (const bool pocket = !pathing.on_foot(my_position()) ? memory.farm_group < 0 || beyond_walk(world, pathing, memory.farm_group)
++                                                                  : sealed_in(world, pathing, my_position());
++               skirmish_engaged(world) && !winning_bag(world)) {
++        // Engaged (skirmish verdict), the fight is the work: no shopping, banking or farm trip takes us
++        // out of it. A pocket's recall is the only way out, not a trip.
++        if (pocket && (my_gems() == 0 || retaining_gems(world, pathing) || !memory.banking)) return true;
+     } else {
+         const auto shop = [&] {
+             return wants_shop(world, pathing, safety, memory) && my_channel_time() < pathing.to_ally_spawn().at(my_position());
+@@ -1379,8 +1386,6 @@
+         if ((!*home || recall_outruns(safety)) && (recall_to_bank(world, pathing, safety, memory) || shop())) return true;
+         if (siege_heal_trip(world, pathing, memory, safety)) return sieged = true; // the trip keeps the siege until home
+         // No walk leaves a pocket a crystal took us into, unless to bank there or to farm there.
+-        const bool pocket = !pathing.on_foot(my_position()) ? memory.farm_group < 0 || beyond_walk(world, pathing, memory.farm_group)
+-                                                            : sealed_in(world, pathing, my_position());
+         if (pocket && (my_gems() == 0 || retaining_gems(world, pathing) || !memory.banking)) return true;
+         // The pick weighed again, kept while it still goes by way of spawn.
+         if (recall_farm >= 0 && my_gems() == 0 && !memory.siege) {
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/model/comms.cc macro2-fight/src/model/comms.cc
+--- ocean-ref-b7c87cf/src/model/comms.cc	2026-11-11 01:36:28.909420083 +0000
++++ macro2-fight/src/model/comms.cc	2026-11-11 03:16:08.293028139 +0000
+@@ -1,6 +1,7 @@
+ #include "comms.h"
+ #include <algorithm>
+ #include <bit>
++#include <cstdio>
+ #include <utility>
+ #include <vector>
+ #include "support_mailbox.h"
+@@ -18,6 +19,8 @@
+ //   bag       bag in fours, rounded up, * team + carrying ally's index
+ //   camp      0 = none, else 1 + offset[captured group] + its respawn round mod period[group];
+ //             left out (never posted) when it does not fit
++//   fight     the skirmish verdict (FightPost): round mod 2, 0 none / 1 disengage / 2 + focus engage,
++//             members (0: no record); left out when it does not fit
+ //   ally      0 = none, else 1 + cell * 4 team + 4 ally index + round mod 4 (params::comms_ally): a
+ //             c x c square (c odd: 1, 3 or 5, the narrowest that fits) centred on the record's tile;
+ //             left out when it does not fit
+@@ -50,6 +53,9 @@
+     BitField ally;
+     std::uint64_t ally_bits = 0;
+     int cell = 1, cells_y = 1;
++    bool fight_on = false;
++    BitField fight_tag, fight_code, fight_members;
++    std::uint64_t fight_bits = 0;
+     int period(int g) const { return camp_offset[g + 1] - camp_offset[g]; }
+ };
+ 
+@@ -80,20 +86,46 @@
+     const int camp_width = static_cast<int>(std::bit_width(static_cast<std::uint64_t>(L.camp_offset.back())));
+     L.camp_on = shift + camp_width <= 64;
+     if (L.camp_on) L.camp = field(camp_width);
+-    if (params::comms_ally && L.camp_on)
++    const auto ally_width = [&](int c) {
++        const auto cells = static_cast<std::uint64_t>((map.width + c - 1) / c) * static_cast<std::uint64_t>((map.height + c - 1) / c);
++        return width_of(cells * 4 * static_cast<std::uint64_t>(L.team) + 1);
++    };
++    const int enemies = std::clamp(static_cast<int>(world.enemies.size()), 1, 8);
++    // Verdict and focus as one code: none, disengage, or engage on enemy e (2 + e).
++    const int code_width = width_of(static_cast<std::uint64_t>(enemies) + 2);
++    const int fight_width = 1 + code_width + L.team;
++    const auto fight_field = [&] {
++        L.fight_on = true;
++        L.fight_tag = field(1);
++        L.fight_code = field(code_width);
++        L.fight_members = field(L.team);
++        L.fight_bits = L.fight_tag.mask | L.fight_code.mask | L.fight_members.mask;
++    };
++    // The ally record is posted only while a healer lives: without one on the team it would never be.
++    // With one, the verdict goes ahead of it only if the ally record keeps the cell it had without
++    // the verdict, else after it if room is left.
++    bool healer = false;
++    for (const auto& a : world.allies) healer |= a.facts().heals();
++    const bool ally = params::comms_ally && L.camp_on && healer;
++    int ally_ref = 0; // its width without the verdict, 0 if it would not fit
++    for (const int c : {1, 3, 5})
++        if (ally && !ally_ref && shift + ally_width(c) <= 64) ally_ref = ally_width(c);
++    if (L.camp_on && shift + fight_width + ally_ref <= 64) fight_field();
++    if (ally)
+         for (const int c : {1, 3, 5}) {
+-            const auto cells = static_cast<std::uint64_t>((map.width + c - 1) / c) * static_cast<std::uint64_t>((map.height + c - 1) / c);
+-            const int width = width_of(cells * 4 * static_cast<std::uint64_t>(L.team) + 1);
++            const int width = ally_width(c);
+             if (shift + width > 64) continue;
+             L.cell = c, L.cells_y = (map.height + c - 1) / c;
+             L.ally = field(width);
+             L.ally_on = true;
+             break;
+         }
++    if (L.camp_on && !L.fight_on && shift + fight_width <= 64) fight_field();
+     L.ally_bits = L.ally.mask;
+     L.bag_bits = L.bag.mask;
+     L.camp_bits = L.camp.mask;
+     L.ready = true;
++    debug_block({ std::printf("LAYOUT %d fight %d ally %d cell %d used %d\n", world.round, L.fight_on ? 1 : 0, L.ally_on ? 1 : 0, L.cell, shift); });
+ }
+ 
+ const Layout& layout(const World& world) {
+@@ -120,6 +152,10 @@
+ };
+ std::array<Told, 8> told_allies;
+ 
++// The fight record read this turn (fight_post), and the one we post at its end (post_fight).
++int fight_in_round = -1, fight_out_round = -1;
++FightPost fight_in, fight_out;
++
+ support_mailbox::State support;
+ int support_intent_round = -1;
+ bool support_intent_value = false;
+@@ -184,6 +220,17 @@
+     const int round = state.now_round = world.round;
+     receive_support(world);
+     state.fresh = changes(L, bits);
++    // Changed since our previous turn and tagged this round: a teammate wrote it before us this round
++    // (one from last round changed after our turn then, and older ones we saw then).
++    // A missed turn (stale world, fuel) would let a record two rounds old pass the parity tag.
++    if (L.fight_on && state.last_round == round - 1 && ((bits ^ state.last) & L.fight_bits) && L.fight_members.get(bits) != 0
++        && static_cast<int>(L.fight_tag.get(bits)) == (round & 1)) {
++        const int code = static_cast<int>(L.fight_code.get(bits));
++        fight_in.verdict = code == 0 ? Verdict::none : code == 1 ? Verdict::disengage : Verdict::engage;
++        fight_in.focus = code >= 2 ? code - 2 : -1;
++        fight_in.members = static_cast<std::uint32_t>(L.fight_members.get(bits));
++        fight_in_round = round;
++    }
+     if (state.fresh & L.bag_bits)
+         if (const int body = bag_body(L, bits); body != world.me().index) detail::posts.bags[body] = 4 * bag_fours(L, bits);
+     // An ally in sight's payload is as of the same turn as its field, and never capped.
+@@ -269,6 +316,15 @@
+         }
+     }
+ 
++    if (L.fight_on && fight_out_round == round) {
++        auto v = bits;
++        const int code = fight_out.verdict == Verdict::engage ? 2 + fight_out.focus : fight_out.verdict == Verdict::disengage ? 1 : 0;
++        L.fight_tag.set(v, static_cast<std::uint64_t>(round & 1));
++        L.fight_code.set(v, static_cast<std::uint64_t>(code));
++        L.fight_members.set(v, fight_out.members);
++        if (v != bits) bits = v, dirty = true;
++    }
++
+     // Bags change at captures, kills, deaths and tributes. A bag not yet read at our previous turn
+     // may not have reached every teammate: ours waits. Turn order changes every round, so a
+     // teammate can miss a bag overwritten before its next turn: each in turn re-posts its own.
+@@ -287,6 +343,18 @@
+ 
+ void bag(int gems) { detail::posts.my_bag = gems; }
+ 
++bool fight_post(const World& world, FightPost& out) {
++    if (fight_in_round != world.round) return false;
++    out = fight_in;
++    return true;
++}
++
++void post_fight(const World& world, const FightPost& post) {
++    if (!layout(world).fight_on) return;
++    fight_out = post;
++    fight_out_round = world.round;
++}
++
+ bool told_ally(int ally, vec2& at, int& round) {
+     if (ally < 0 || ally >= 8 || told_allies[static_cast<std::size_t>(ally)].round < 0) return false;
+     at = told_allies[static_cast<std::size_t>(ally)].at;
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/model/comms.h macro2-fight/src/model/comms.h
+--- ocean-ref-b7c87cf/src/model/comms.h	2026-11-11 01:36:28.910024080 +0000
++++ macro2-fight/src/model/comms.h	2026-11-11 02:45:09.471099604 +0000
+@@ -54,4 +54,18 @@
+     return a.alive ? detail::posts.claims[ally] : -1;
+ }
+ 
++// The skirmish verdict (combat/skirmish.cc): one shared record, posted by the first of a skirmish's
++// members to act in a round and read by those acting after it that round.
++enum class Verdict : std::uint8_t { none = 1, engage = 2, disengage = 3 };
++struct FightPost {
++    Verdict verdict = Verdict::none;
++    int focus = -1;            // enemy index, -1 for none
++    std::uint32_t members = 0; // bits by ally index, the poster's included
++};
++// The record a teammate posted this round since our previous turn; false if none, or if the layout
++// leaves it no room.
++bool fight_post(const World& world, FightPost& out);
++// Posted at our turn's end (send), if the layout has room.
++void post_fight(const World& world, const FightPost& post);
++
+ } // namespace aph::comms
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/model/safety.cc macro2-fight/src/model/safety.cc
+--- ocean-ref-b7c87cf/src/model/safety.cc	2026-11-11 01:36:28.910420095 +0000
++++ macro2-fight/src/model/safety.cc	2026-11-11 03:16:08.293482695 +0000
+@@ -677,13 +677,15 @@
+ // With `self_falls` and not Dealt, a fight our fighter (or, once it has fallen, the rest of ours)
+ // must outlive ends at once as {0, 0}, and one they must win as {0, horizon}. With `falls_unknown` too, a fight the rest of ours must outlive
+ // once one of theirs has fallen ends as {0, 0}, setting it and leaving self_falls unknown.
++// With `firsts` (and no `self_falls`), the half-turn of each side's first fall is noted.
+ template <bool Dealt = false>
+ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_falls = nullptr, int horizon = fight_horizon,
+                              std::array<float, 4>* dealt = nullptr, bool* falls_unknown = nullptr,
+-                             bool* lost_unknown = nullptr) {
++                             bool* lost_unknown = nullptr, Safety::SkirmishFight* firsts = nullptr, int* fallen = nullptr,
++                             const std::uint8_t* index = nullptr) {
+     int ours = 0, theirs = 0;
+     int watched = self_falls ? us.self : -1;
+-    const int their_start = them.alive;
++    const int their_start = them.alive, our_start = us.alive;
+     if (!Dealt && self_falls && 2 * horizon > 0)
+         if (const int end = decided<Dealt>(us, them, horizon, horizon, horizon, watched, their_start, self_falls, falls_unknown); end >= 0) return {0, end};
+     // Members fall only in act() and the camps' hits, so the checks after one wait for a change of
+@@ -716,6 +718,17 @@
+         }
+         if (const int now = us.alive + 16 * them.alive; now != alive) {
+             alive = now;
++            if (firsts) {
++                if (us.alive < our_start && firsts->ours < 0) firsts->ours = t;
++                if (them.alive < their_start && firsts->theirs < 0) {
++                    firsts->theirs = t;
++                    for (int i = 0; i < them.count && fallen; ++i)
++                        if (them.fighters[i].health <= 0) {
++                            *fallen = index[i];
++                            break;
++                        }
++                }
++            }
+             // Ren's reflection can fell the side whose turn it is.
+             if (watched >= 0 && us.fighters[watched].health <= 0) {
+                 *self_falls = true, watched = -1;
+@@ -3273,6 +3286,50 @@
+     return slot.trade;
+ }
+ 
++Safety::SkirmishFight Safety::skirmish_fight(std::uint32_t key, bool they_first, std::uint32_t late) {
++    world_.throw_if_stale();
++    SkirmishFight out;
++    Side us, them;
++    fill(us, world_, world_.allies, key & 0xFFFFu, made_);
++    build();
++    const auto enemies = (key >> 16 | late_mask(late)) & threat_mask_;
++    fill(them, world_, world_.enemies, enemies, made_);
++    if (late) join_late(them, enemies, late);
++    if (us.count == 0 || them.count == 0) return out;
++    // As walk_allies_in, but for us too: whoever computes the verdict may stand back as well.
++    int k = 0;
++    for (auto left = key & 0xFFFFu; left && k < us.count; left &= left - 1, ++k) {
++        const auto& a = world_.allies[static_cast<std::size_t>(std::countr_zero(left))];
++        auto& f = us.fighters[k];
++        if (f.health <= 0) continue;
++        const vec2 from = a.is_self ? my_position() : a.pos;
++        const int reach = strike(a, a.is_self ? world_.round : next_turn_round(world_, a)).reach;
++        int walk = never;
++        for (auto e = enemies; e && walk > 0; e &= e - 1) {
++            const auto& x = world_.enemies[static_cast<std::size_t>(std::countr_zero(e))];
++            walk = x.visible ? std::min(walk, std::max(0, dist(from, acts_from(x)) - reach)) : 0;
++        }
++        if (walk != never && walk > f.arrives_at) f.arrives_at = walk;
++    }
++    // Their first to fall, read as it falls: the fighters' order is the enemies' bits'.
++    std::array<std::uint8_t, max_fighters> index{};
++    k = 0;
++    for (auto left = enemies; left && k < them.count; left &= left - 1, ++k) index[static_cast<std::size_t>(k)] = static_cast<std::uint8_t>(std::countr_zero(left));
++    // Played to the end (no early exit without a watched fall): its cost teaches fight_cost_estimate.
++    const auto before = fuel();
++    simulate(us, them, they_first, nullptr, fight_horizon, nullptr, nullptr, nullptr, &out, &out.fallen, index.data());
++    if (const auto after = fuel(); after < before) costliest_fight_ = std::max(costliest_fight_, before - after);
++    // Kills, as the rules reward them: Cassi and Issac fall together, one kill.
++    const auto kills = [](const Side& side) {
++        int n = 0;
++        for (int i = 0; i < side.count; ++i)
++            if (const auto& f = side.fighters[i]; f.health <= 0 && (f.link < 0 || f.link > i)) ++n;
++        return n;
++    };
++    out.ours_lost = kills(us), out.theirs_lost = kills(them);
++    return out;
++}
++
+ Trade Safety::chase_trade(std::uint32_t key, std::uint32_t delayed, const std::array<int, 2>& self_cooldowns, bool can_cast, bool falls,
+                           std::uint32_t late) {
+     world_.throw_if_stale();
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/model/safety.h macro2-fight/src/model/safety.h
+--- ocean-ref-b7c87cf/src/model/safety.h	2026-11-11 01:36:28.910420095 +0000
++++ macro2-fight/src/model/safety.h	2026-11-11 02:59:39.791612222 +0000
+@@ -402,6 +402,17 @@
+     // (Trade::lost_known).
+     Trade chase_trade(std::uint32_t key, std::uint32_t delayed, const std::array<int, 2>& self_cooldowns, bool can_cast, bool falls = true,
+                       std::uint32_t late = 0);
++    // The skirmish's fight (combat/skirmish.cc): `key`'s allies against its enemies, each of ours
++    // (us too) joining once a walk brings a foe within its strike, played to the horizon or a side's
++    // end with nobody's fall watched, `they_first` or not. The half-turn of each side's first fall
++    // (-1: none), the enemy (by index) that falls first, and the kills each side takes.
++    // `late` as late() gives: enemies who walk in.
++    struct SkirmishFight {
++        int ours = -1, theirs = -1;
++        int fallen = -1;
++        int ours_lost = 0, theirs_lost = 0;
++    };
++    SkirmishFight skirmish_fight(std::uint32_t key, bool they_first, std::uint32_t late = 0);
+     // Who would fight at p: bit i of the low half for allies[i], of the high half for enemies[i];
+     // no_fight if no threat hits p.
+     static constexpr std::uint32_t no_fight = ~0u;
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/unity.cpp macro2-fight/src/unity.cpp
+--- ocean-ref-b7c87cf/src/unity.cpp	2026-11-11 01:36:28.911420108 +0000
++++ macro2-fight/src/unity.cpp	2026-11-11 02:47:49.673081664 +0000
+@@ -9,6 +9,7 @@
+ #include "economy/home.cc"
+ #include "combat/guard.cc"
+ #include "combat/fight.cc"
++#include "combat/skirmish.cc"
+ #include "economy/bank.cc"
+ #include "economy/capture.cc"
+ #include "economy/crew.cc"

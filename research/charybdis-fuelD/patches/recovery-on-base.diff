@@ -1,0 +1,122 @@
+--- a/src/economy/camps.cc
++++ b/src/economy/camps.cc
+@@ -210,6 +210,7 @@
+     // Each round we hit the first living target, then every living attacker hits us and takes the
+     // reflection. Stepped from one death to the next.
+     for (int i = 0; i < n;) {
++        throw_if_stale();
+         if (i >= attackers) {
+             // Once the strikers are gone, only independent cluster clears remain. Preserve
+             // the extra attack that a positive float residual costs in the stepped path.
+@@ -526,12 +527,15 @@
+             return c.damage[i];
+         }
+     const int i = c.next;
+-    c.next = (c.next + 1) % static_cast<int>(c.strength.size());
+-    c.count = std::max(c.count, i + 1);
+-    c.strength[i] = strength;
+-    c.reflect[i] = reflect;
+-    c.range[i] = range;
+-    c.survivable[i] = survivable;
++    // Publish the key only after a clear completes: stale simulations can unwind.
++    const auto publish = [&] {
++        c.next = (c.next + 1) % static_cast<int>(c.strength.size());
++        c.count = std::max(c.count, i + 1);
++        c.strength[i] = strength;
++        c.reflect[i] = reflect;
++        c.range[i] = range;
++        c.survivable[i] = survivable;
++    };
+     if (harmless) {
+         // With no strikers, geometry and clear order cannot affect damage or the integral turn sum.
+         float elapsed = 0;
+@@ -547,7 +551,9 @@
+             }
+         }
+         *rounds = c.rounds[i] = elapsed;
+-        return c.damage[i] = 0;
++        c.damage[i] = 0;
++        publish();
++        return 0;
+     }
+     // Kept per group and range (melee or ranged) for its version, each in its own part of one static
+     // pool (zeroed for free, where allocating and filling cost per group): a group asked again on a
+@@ -597,6 +603,7 @@
+     }
+     c.damage[i] = min_camp_damage(left, n, strength, &c.rounds[i], reflect, survivable);
+     *rounds = c.rounds[i];
++    publish();
+     return c.damage[i];
+ }
+ 
+--- a/src/economy/shop.cc
++++ b/src/economy/shop.cc
+@@ -365,6 +365,7 @@
+     const float p_now = std::max(1.0f, f.raw_output(now.strength, now.focus)) * now.max_health / now.taken;
+     const bool collecting = has_family(owned, collectors); // every new family adds to its camp damage
+     const auto value = [&](int family, int stat) __attribute__((always_inline)) -> Emblem {
++        throw_if_stale();
+         const unsigned left = shards_needed(family) - owned[shard_of(family, stat)];
+         Build b = now;
+         add_shards(b, f, stat, static_cast<float>(left));
+--- a/src/model/escape.cc
++++ b/src/model/escape.cc
+@@ -472,6 +472,7 @@
+     for (auto& h : hit_) h = Rows{};
+     const Rows open = ~bush;
+     for (int c = 0; c < race.kinds.n; ++c) {
++        throw_if_stale();
+         const auto& kind = race.kinds.of[c];
+         // `near`: grow(from), which the walk reuses.
+         const auto strike = [&](int k, const Rows& from, const Rows& near, int reach, bool blind) {
+@@ -540,6 +541,7 @@
+                                             int dash_turn, Plan::Pass& out, bool skip_first) {
+     Rows s00 = goal, s10 = goal, s01 = goal, s11 = goal; // the goal holds walk tiles only
+     for (int k = horizon; k >= 2; --k) {
++        throw_if_stale();
+         const Rows hit = hits[k], clear = ~hit;
+         const Rows g0 = grow(s00 & clear), g1 = One ? grow((s10 & clear) | (s00 & hit)) : g0;
+         if constexpr (Dash) {
+--- a/src/model/safety.cc
++++ b/src/model/safety.cc
+@@ -1812,6 +1812,7 @@
+ }
+ 
+ void Reach::build_geometry() {
++    throw_if_stale();
+     geometry_ready_ = true;
+     const auto& world = *world_;
+     const auto& e = *enemy_;
+@@ -1925,6 +1926,7 @@
+ }
+ 
+ void Reach::set_bounds() {
++    throw_if_stale();
+     for (int i = 0; i < ways_->count; ++i) bounds_[static_cast<std::size_t>(i)] = static_cast<std::int8_t>(bound(ways_->way[static_cast<std::size_t>(i)]));
+ }
+ 
+--- a/src/model/world.cc
++++ b/src/model/world.cc
+@@ -1119,7 +1119,6 @@
+     int from = attack_indexed_, to = group + 1, at = attack_next_bit_;
+     if (index_.checkpoints) {
+         const int block = group / PlanIndex::block;
+-        attack_blocks_ |= 1u << block;
+         from = block * PlanIndex::block, to = std::min<int>(from + PlanIndex::block, header_.attack_groups);
+         at = drafted_.end + attack_first_.back() + index_checkpoint(*plan_, index_, block);
+     }
+@@ -1128,12 +1127,13 @@
+     int g = from;
+     for (int i = start; i < end; i += 32)
+         for (auto w = flags.get(std::min(32, end - i)); w; w &= w - 1) {
++            throw_if_stale();
+             const int m = i + __builtin_ctz(w);
+             while (attack_first_[g + 1] <= m) ++g;
+             attack_bit_[m] = at;
+             at += count_in_small_square<DraftPlan::bush_range>(open_bushes(), groups[g].members[m - attack_first_[g]].pos);
+         }
+-    if (index_.checkpoints) return;
++    if (index_.checkpoints) { attack_blocks_ |= 1u << (group / PlanIndex::block); return; }
+     attack_next_bit_ = at;
+     attack_indexed_ = group + 1;
+ }

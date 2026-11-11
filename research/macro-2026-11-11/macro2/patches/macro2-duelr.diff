@@ -1,0 +1,37 @@
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/combat/abilities.cc macro2-duelr/src/combat/abilities.cc
+--- ocean-ref-b7c87cf/src/combat/abilities.cc	2026-11-11 01:36:28.906986482 +0000
++++ macro2-duelr/src/combat/abilities.cc	2026-11-11 05:54:52.994287269 +0000
+@@ -455,11 +455,32 @@
+     return threats;
+ }
+ 
++// Our Prism's stun is its one answer to an enemy Prism's burst, and a slot cast now is back only
++// after ability_cooldown rounds: while an enemy Prism could walk (a step a turn) into ability range
++// of us by then, the stun stays off camps. Untracked, it is within a step a round of its last tile.
++bool stun_reserved(const World& world) {
++    if (world.me().type != cambc::champion_type::prism) return false;
++    const vec2 here = my_position();
++    constexpr int far = ability_range + ability_cooldown;
++    for (const auto& e : world.enemies)
++        if (e.alive && e.type == cambc::champion_type::prism
++            && (e.visible   ? dist(here, e.pos) <= far
++                : e.tracked ? possible_within(e, here, far)
++                            : dist(here, e.pos) - e.age(world.round) <= far))
++            return true;
++    return false;
++}
++
+ // `approach`: see cast_at_camp_on_approach.
+ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_value, bool approach = false) {
+     if (!my_can_cast()) return {};
+     const auto& f = world.me().facts();
+-    const std::array<bool, 2> ready{castable(world, 0), castable(world, 1)};
++    std::array<bool, 2> ready{castable(world, 0), castable(world, 1)};
++    // Reserved, the stun is kept for champions, and the other slot goes on camps only while the stun
++    // is ready to answer.
++    if ((ready[0] || ready[1]) && stun_reserved(world))
++        for (int s = 0; s < 2; ++s)
++            if (f.abilities[s].stuns) ready[s] = false, ready[1 - s] = ready[1 - s] && world.me().ability_ready(s, world.round);
+     if (!ready[0] && !ready[1]) return {};
+     const bool stuns = (ready[0] && f.abilities[0].stuns) || (ready[1] && f.abilities[1].stuns);
+     const vec2 here = my_position();

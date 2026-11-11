@@ -1,0 +1,20 @@
+--- a/src/combat/plan.cc
++++ b/src/combat/plan.cc
+@@ -1962,7 +1962,7 @@
+     return enemy_within(world, my_position(), std::max(ability_range + 1, reach));
+ }
+ 
+-[[gnu::flatten]] Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent) {
++Planned plan_strikes(const World& world, Pathing& pathing, Safety& safety, const Intent& intent) {
+     Planned out;
+     std::uint64_t fuel_start = 0;
+     if constexpr (debug_search) {
+@@ -2519,7 +2519,7 @@
+     return plan_strikes(world, pathing, safety, stay);
+ }
+ 
+-[[gnu::flatten]] bool strike_enemy(const World& world) {
++bool strike_enemy(const World& world) {
+     if (!world.me().alive || !my_can_attack()) return false;
+     Board b;
+     const auto& f = world.me().facts();

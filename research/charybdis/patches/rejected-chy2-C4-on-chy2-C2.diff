@@ -1,0 +1,515 @@
+diff -ruN chy2-C2/src/bot_parts.h chy2-C4/src/bot_parts.h
+--- chy2-C2/src/bot_parts.h	2026-11-11 10:38:02.919033781 +0000
++++ chy2-C4/src/bot_parts.h	2026-11-11 12:55:26.641899751 +0000
+@@ -324,6 +324,20 @@
+ void reguard_willow(const World& world, Pathing& pathing, Safety& safety);
+ void strike_guard_known(const Pathing& pathing, vec2 here);
+ 
++// combat/stun_lock.cc: our Prism only (else none). The enemy (World::enemies index) whose stun on its
++// next turn, before ours, then its following turn's casts and attacks, with the other threats' blows
++// and camps meanwhile, would kill us at p; -1 if none. Memoised for the Safety's life.
++int stun_locker(const World& world, Safety& safety, vec2 p);
++// stun_locker(p) when it is the only enemy locking p, else -1.
++int sole_stun_locker(const World& world, Safety& safety, vec2 p);
++// Bit i: the tile here + directions[i] has a stun_locker.
++unsigned stun_locked_steps(const World& world, Safety& safety, vec2 here);
++// here or a tile beside it has a stun_locker.
++bool stun_lock_around(const World& world, Safety& safety, vec2 here);
++// A free tile beside here has none.
++bool stun_lock_exit(const World& world, Pathing& pathing, Safety& safety, vec2 here);
++void trace_stun_lock(const World& world, Safety& safety, vec2 p, char tag); // debug builds: an SLOCK line
++
+ // combat/fight.cc
+ bool attack_enemy(const World& world);
+ float recall_line(const World& world, Safety& safety);
+diff -ruN chy2-C2/src/combat/fight.cc chy2-C4/src/combat/fight.cc
+--- chy2-C2/src/combat/fight.cc	2026-11-11 10:42:27.749643458 +0000
++++ chy2-C4/src/combat/fight.cc	2026-11-11 12:55:26.642050973 +0000
+@@ -207,14 +207,16 @@
+     bool beside_held = false;
+     if (held)
+         for (const auto d : directions) beside_held |= in_bounds(here + d) && test(*held, here + d);
+-    if (!safety.avoid_within(here, vision_radius)) {
++    // Our Prism's stun-lock tiles (stun_lock.cc) need not be in avoid(): a remembered enemy's never are.
++    const unsigned locked = stun_lock_around(world, safety, here) ? stun_locked_steps(world, safety, here) : 0;
++    if (!locked && !safety.avoid_within(here, vision_radius)) {
+         if (!beside_held || !pathing.descend(home, held)) pathing.step_towards(home);
+         return;
+     }
+     // A walk the dash was put off for is the plan's to choose.
+     const bool walk_dash = walk_dash_deferred(world) && my_can_cast();
+     const auto& avoid = safety.avoid();
+-    if (!walk_dash && !test(avoid, here)) {
++    if (!locked && !walk_dash && !test(avoid, here)) {
+         if (beside_held) {
+             static bitboard both{cambc::uninitialized};
+             copy_into(avoid, both);
+@@ -237,6 +239,7 @@
+         int rank = 0;  // the group it is tried in, after HomeWalk's: the plan's rank, or without a plan, damage now
+         bool dashes = false; // ranked as a walk then a dash (walk_dash_deferred): this turn does not end here
+         bool held = false;   // on a sole Prism's hold (`held`)
++        bool locked = false; // a stun lock kills us here: tried after every other, bar this turn's lethal hits
+     };
+     Unwritten<Option, 8> scratch;
+     auto& options = scratch.a;
+@@ -250,8 +253,8 @@
+         o.eff = o.damage - (fixc_bush_threatened && o.bush == 0 ? params::fixc::bush_margin * my_health_and_shield(world) : 0.0f);
+     };
+     const auto add = [&](bool longer) {
+-        for (auto d : directions) {
+-            const vec2 p = here + d;
++        for (int i = 0; i < 8; ++i) {
++            const vec2 p = here + directions[i];
+             if (!in_bounds(p) || test(blocked, p)) continue;
+             const int s = home.at(p);
+             if (s == unreachable || (s > steps) != longer) continue;
+@@ -267,8 +270,9 @@
+             auto& o = options[n - 1];
+             o.bush = fixc_bush_rank(world, p);
+             o.held = held && test(*held, p);
++            o.locked = locked >> i & 1;
+             o.eff = o.damage - (fixc_bush_threatened && o.bush == 0 ? params::fixc::bush_margin * my_health_and_shield(world) : 0.0f);
+-            clear |= !reached;
++            clear |= !reached && !o.locked;
+         }
+     };
+     auto& plan = escape::plan(world, pathing, safety);
+@@ -319,14 +323,14 @@
+     };
+     // Groups of equal HomeWalk and rank, HomeWalk's first, then by rank; each priced only when
+     // reached, then tried in `by`'s order. Without a plan: HomeWalk's, the clear, then the rest.
+-    std::array<std::uint8_t, 8> order, group, last;
++    std::array<std::uint8_t, 8> order, group, last, locked_order;
+     for (int i = 0; i < n; ++i) order[i] = static_cast<std::uint8_t>(i);
+     std::stable_sort(order.begin(), order.begin() + n, [&](int a, int b) {
+         const auto &x = options[a], &y = options[b];
+         return x.home != y.home ? x.home : x.rank < y.rank;
+     });
+     const auto by_index = [&](int a, int b) { return by(options[a], options[b]); };
+-    int lasts = 0;
++    int lasts = 0, n_locked = 0;
+     for (int g = 0; g < n;) {
+         const auto& lead = options[order[g]];
+         const bool lead_home = lead.home;
+@@ -342,6 +346,10 @@
+                     continue;
+                 }
+             }
++            if (o.locked && !o.dashes) {
++                locked_order[n_locked++] = order[e];
++                continue;
++            }
+             group[m++] = order[e];
+         }
+         std::stable_sort(group.begin(), group.begin() + m, by_index);
+@@ -349,6 +357,9 @@
+             if (pathing.try_move(options[group[i]].p)) return;
+         g = e;
+     }
++    std::stable_sort(locked_order.begin(), locked_order.begin() + n_locked, by_index);
++    for (int i = 0; i < n_locked; ++i)
++        if (pathing.try_move(options[locked_order[i]].p)) return;
+     std::stable_sort(last.begin(), last.begin() + lasts, by_index);
+     for (int i = 0; i < lasts; ++i)
+         if (pathing.try_move(options[last[i]].p)) return;
+@@ -538,6 +549,13 @@
+     if (test(world.map().ally_spawn, here)) return false;
+     const float health = my_health();
+     HoldAt hold(world, pathing, here, memory.damage);
++    // Our Prism inside a lethal stun lock (stun_lock.cc) leaves, bar a hold that outlasts it: idle
++    // until the payout is no worse than stunned.
++    if (stun_locker(world, safety, here) >= 0) {
++        const bool kept = hold.keeps_us(safety);
++        trace_stun_lock(world, safety, here, kept ? 'h' : 'w');
++        if (!kept) return true;
++    }
+     if (drawn_home(world, safety, hold)) return true;
+     const int mono = mono_trapped(world, pathing, safety, memory, health);
+     if (mono >= 0 ? mono == 1 : camp_trapped(world, pathing, safety, here, health, memory.siege)) return true;
+@@ -1435,7 +1453,22 @@
+         if (dash_retreat_casts(world, pathing, safety, memory, dead)) return;
+     } else {
+         // After the walk, a cast that allows walking may still follow (Cassi's stun).
+-        if (!escape_walk(world, pathing, safety) || my_can_cast()) cast_at_enemies(world, escape_step_value);
++        const bool walked = escape_walk(world, pathing, safety);
++        // Stun-locked (stun_lock.cc), a cast that keeps us here must kill the locker or stun it before
++        // it acts; with every step beside us locked too, the walk saves nothing.
++        // Locked by two, stopping one leaves us locked: no walk-excluding cast.
++        const int locker = !walked && my_can_move() ? stun_locker(world, safety, my_position()) : -1;
++        if (locker >= 0) {
++            const bool exit = stun_lock_exit(world, pathing, safety, my_position());
++            const int sole = sole_stun_locker(world, safety, my_position());
++            bool attempted = false;
++            const bool cast = cast_at_enemies_for_escape(world, sole >= 0 && world.enemies[static_cast<std::size_t>(sole)].visible ? sole : -1,
++                                                        exit ? escape_step_value : 0.0f, attempted);
++            debug_block({ std::printf("SLCAST %d %u %d %d %d\n", world.round, my_handle(), locker, static_cast<int>(exit), static_cast<int>(cast)); });
++            if (attempted && !cast) see_again(world, pathing, safety);
++        } else if (!walked || my_can_cast()) {
++            cast_at_enemies(world, escape_step_value);
++        }
+         if (!me.is_alive()) return;
+         if (!my_can_attack() || !my_can_cast()) see_kills(world, pathing, safety);
+         // A tribute survives damage; a recall does not.
+diff -ruN chy2-C2/src/combat/guard.cc chy2-C4/src/combat/guard.cc
+--- chy2-C2/src/combat/guard.cc	2026-11-11 08:53:35.993059358 +0000
++++ chy2-C4/src/combat/guard.cc	2026-11-11 12:55:26.642184304 +0000
+@@ -778,6 +778,28 @@
+     return made.tiles;
+ }
+ 
++// Our Prism's steps beside us onto a stun lock (stun_lock.cc), bit i for directions[i], that want_home
++// would leave at once; none once on one, where any way out is ours. A hold that outlasts it may be stepped onto.
++unsigned lock_out(const World& world, Pathing& pathing, Safety& safety, vec2 here, float damage) {
++    if (world.me().facts().passive != Passive::gem_focus) return 0;
++    // The guard and its cover ask alike: once per Safety and tile.
++    static struct {
++        std::uint32_t generation = 0;
++        vec2 here{-1, -1};
++        float damage = -1;
++        unsigned tiles = 0;
++    } made;
++    if (made.generation == Safety::generation() && made.here == here && made.damage == damage) return made.tiles;
++    made.generation = Safety::generation(), made.here = here, made.damage = damage, made.tiles = 0;
++    if (stun_locker(world, safety, here) >= 0) return 0;
++    unsigned out = stun_locked_steps(world, safety, here);
++    for (unsigned left = out; left; left &= left - 1) {
++        const vec2 q = here + directions[std::countr_zero(left)];
++        if (const int rounds = hold_rounds(world, pathing, q); rounds >= 0 && hold_outlasts(safety, damage, q, rounds)) out &= ~(left & -left);
++    }
++    return made.tiles = out;
++}
++
+ const bitboard* work_guard(const World& world, Safety& safety, vec2 here, int radius) {
+     const auto& in = work_guard_inputs;
+     auto& pathing = *in.pathing;
+@@ -796,7 +818,7 @@
+                 if (const vec2 q{here.x + dx, here.y + dy}; in_bounds(q) && test(*strikes, q) && !(in.avoid && test(*in.avoid, q)))
+                     if (const int rounds = hold_rounds(world, pathing, q); rounds >= 0 && hold_outlasts(safety, in.damage, q, rounds))
+                         edit(), set_tile(out, q, false);
+-    const unsigned kept = keep_out(world, pathing, safety, here, in.damage);
++    const unsigned kept = keep_out(world, pathing, safety, here, in.damage) | lock_out(world, pathing, safety, here, in.damage);
+     for (unsigned left = kept; left; left &= left - 1) edit(), set_tile(out, here + directions[std::countr_zero(left)]);
+     if (in.avoid) edit(), out |= *in.avoid;
+     if (!copied) return strikes;
+@@ -807,7 +829,7 @@
+ const bitboard* work_cover(const World& world, Safety& safety, vec2 here, int radius) {
+     const auto& in = work_guard_inputs;
+     const bitboard* strikes = in.strikes_known ? in.strikes : step_guard_cover(world, safety, here, radius);
+-    const unsigned kept = keep_out(world, *in.pathing, safety, here, in.damage);
++    const unsigned kept = keep_out(world, *in.pathing, safety, here, in.damage) | lock_out(world, *in.pathing, safety, here, in.damage);
+     if (!kept && !in.avoid) return strikes;
+     static bitboard cover{cambc::uninitialized};
+     if (strikes) copy_into(*strikes, cover);
+diff -ruN chy2-C2/src/combat/stun_lock.cc chy2-C4/src/combat/stun_lock.cc
+--- chy2-C2/src/combat/stun_lock.cc	1970-01-01 00:00:00.000000000 +0000
++++ chy2-C4/src/combat/stun_lock.cc	2026-11-11 12:55:26.642234245 +0000
+@@ -0,0 +1,270 @@
++// Our Prism's stun lock: an enemy whose stun takes our next turn can follow it with its next turn's
++// cast and attacks before we act again. Safety prices what lands before our next turn, and widens a
++// strike to two turns only by a walk or a second basic attack; with our turn taken, the follow-up
++// cast lands too, and we can neither answer nor leave in between.
++#include "../bot_parts.h"
++
++namespace aph {
++
++namespace {
++
++// One enemy's lock, fixed for a Safety's life (its beliefs are).
++struct Locker {
++    const ChampionBelief* e = nullptr;
++    enum Kind : std::uint8_t { seen, tracked, remembered } kind = seen;
++    vec2 origin{-1, -1}; // seen: where its stun turn starts; remembered: its last-seen tile
++    int reach = -1;       // farthest tile its stun turn stuns
++    int growth = 0;       // remembered: the steps it may have taken since, to its stun turn's start
++    bool sight = false;   // a unit stun that excludes walking: only tiles its origin sees
++    std::array<float, Strike::max_reach + 1> damage{}; // stun turn and follow-up, by distance, as we take it
++    float most = 0;
++    int board = -1; // seen with sight, or remembered: its scratch board, built on first need
++    bool built = false;
++};
++
++constexpr int max_lockers = 8;
++struct LockState {
++    std::uint32_t generation = 0;
++    bool valid = false;
++    int count = 0;
++    std::array<Locker, max_lockers> lockers;
++    float health = 0;
++    int boards = 0;
++    struct Memo {
++        vec2 p;
++        int locker;
++        bool several;
++    };
++    std::array<Memo, 16> memo;
++    int memo_count = 0, memo_next = 0;
++};
++LockState lock_state;
++
++// Scratch boards, one per locker that needs one: allocated once (~300 fuel each).
++bitboard& lock_board(int i) {
++    static std::array<std::optional<bitboard>, max_lockers> boards;
++    auto& b = boards[static_cast<std::size_t>(i)];
++    return b ? *b : b.emplace(cambc::uninitialized);
++}
++
++// Where a visible enemy acts from: a teleport lands before it acts.
++vec2 stun_origin(const ChampionBelief& e) { return e.teleport_pending() && in_bounds(e.tp_dest) ? e.tp_dest : e.pos; }
++
++// e's lock: its stun on its next turn, which falls before ours (else we act first and can leave),
++// then the best of its following turn (in the next round) with the stun slot spent.
++bool make_locker(const World& world, const ChampionBelief& e, Locker& out) {
++    const auto& f = e.facts();
++    int s = -1;
++    for (int k = 0; k < 2; ++k)
++        if (f.abilities[k].stuns) s = k;
++    if (s < 0 || turns_before_ours(world, e) < 1) return false;
++    const int round = next_turn_round(world, e);
++    if (!e.can_act(round) || !(e.cooldowns_uncertain() || e.ability_ready(s, round))) return false;
++    const auto& stun = strike_with(e, 1u << s);
++    const bool uncertain = e.cooldowns_uncertain();
++    const unsigned follow = (uncertain || e.ability_ready(0, round + 1) ? 1u : 0u) | (uncertain || e.ability_ready(1, round + 1) ? 2u : 0u);
++    const auto& next = strike_with(e, follow & ~(1u << s));
++    const float taken = world.me().taken;
++    const auto& a = f.abilities[s];
++    out = Locker{};
++    out.e = &e;
++    for (int d = 0; d <= stun.reach; ++d) {
++        if (!stun.stuns[d]) break;
++        out.reach = d;
++        // The follow-up starts where the stun turn ended: beside us after a dash landing, a step
++        // nearer after a walk the stun allows.
++        const int after = a.lands() ? std::min(d, a.radius) : !a.excludes_walking ? std::max(0, d - 1) : d;
++        out.damage[d] = (stun.at(d) + next.at(after)) * taken;
++        out.most = std::max(out.most, out.damage[d]);
++    }
++    if (out.reach < 0) return false;
++    if (e.visible) {
++        out.kind = Locker::seen;
++        out.origin = stun_origin(e);
++        // From a bush it sees its own cluster too: counted as seeing every tile.
++        out.sight = a.target == Targeting::unit && a.excludes_walking && !test(world.map().bushes, out.origin);
++    } else if (e.tracked) {
++        out.kind = Locker::tracked;
++    } else {
++        // Past track_horizon, kept from its last sighting for one ability cooldown: a step a turn
++        // (and a dash a cooldown) from there, to its next turn's start.
++        if (e.pos_round < 0 || !in_bounds(e.pos)) return false;
++        const int turns = world.round - e.pos_round + 1;
++        if (turns > ability_cooldown) return false;
++        out.kind = Locker::remembered;
++        out.origin = e.pos;
++        out.growth = turns + (f.has_dash() ? dash_range * ((turns + ability_cooldown - 1) / ability_cooldown) : 0);
++    }
++    return true;
++}
++
++LockState& lockers(const World& world, Safety& safety) {
++    auto& st = lock_state;
++    if (st.valid && st.generation == Safety::generation()) return st;
++    world.throw_if_stale();
++    st.valid = true;
++    st.generation = Safety::generation();
++    st.count = st.boards = st.memo_count = st.memo_next = 0;
++    st.health = my_health_and_shield(world);
++    for (auto left = safety.live_enemies(); left && st.count < max_lockers; left &= left - 1) {
++        const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
++        if (make_locker(world, e, st.lockers[st.count])) ++st.count;
++    }
++    // live_enemies leaves out the unseen past track_horizon.
++    for (const auto& e : world.enemies) {
++        if (st.count >= max_lockers) break;
++        if (!e.alive || e.visible || e.tracked) continue;
++        if (make_locker(world, e, st.lockers[st.count])) ++st.count;
++    }
++    return st;
++}
++
++// Whether L's stun can land on p, by geometry alone.
++bool stun_reaches(const World& world, LockState& st, Locker& L, vec2 p) {
++    switch (L.kind) {
++    case Locker::seen: {
++        if (dist(p, L.origin) > L.reach) return false;
++        if (!L.sight) return true;
++        if (!L.built) {
++            L.built = true;
++            L.board = st.boards++;
++            // Sight is symmetric: the tiles off bushes that see its tile are those it sees.
++            world.map().sight_off_bushes_into(L.origin, L.reach, lock_board(L.board));
++        }
++        return test(lock_board(L.board), p);
++    }
++    case Locker::tracked: return possible_within(*L.e, p, L.reach);
++    case Locker::remembered: {
++        if (dist(p, L.origin) > L.growth + L.reach) return false;
++        if (L.board < 0) L.board = st.boards++;
++        auto& b = lock_board(L.board);
++        if (!L.built) {
++            L.built = true;
++            // Not where we see now: it stands where its next turn starts.
++            clear_board(b);
++            draw_square(b, L.origin, static_cast<float>(L.growth));
++            and_into(b, world.map().open_for_them, b);
++            drop(b, world.visible);
++        }
++        return any_within(b, p, L.reach);
++    }
++    }
++    return false;
++}
++
++// What the other threats add at p while we stand stunned: their blows before our next turn, and
++// two camp phases (ours lost, then the next). Each worked out once per tile, for every locker.
++struct Others {
++    float ceiling = -1; // at least `total` less the locker's blow
++    int n = -1;
++    std::array<Safety::ThreatAt, 16> at;
++    float total = 0;
++    float without(int enemy) const {
++        float out = total;
++        for (int i = 0; i < n; ++i)
++            if (at[i].enemy == enemy) out -= at[i].blow.damage * taken;
++        return out;
++    }
++    float taken = 1;
++};
++
++// The lockers of p: `found` the first, `several` whether another locks it too.
++void locker_at(const World& world, Safety& safety, LockState& st, vec2 p, int& found, bool& several) {
++    world.throw_if_stale();
++    found = -1, several = false;
++    Others o;
++    o.taken = world.me().taken;
++    float camps = -1; // the second camp phase
++    for (int i = 0; i < st.count; ++i) {
++        auto& L = st.lockers[i];
++        // Cheap bounds first: the most it can deal, then where.
++        const int far = L.kind == Locker::remembered ? L.growth + L.reach : L.reach;
++        if (L.kind != Locker::tracked ? dist(p, L.origin) > far : !L.e->possible_box.meets(p, L.reach)) continue;
++        const float own = L.kind == Locker::seen ? L.damage[static_cast<std::size_t>(dist(p, L.origin))] : L.most;
++        if (own < st.health) {
++            if (camps < 0) camps = safety.camp_damage(p, true, false);
++            if (o.ceiling < 0) o.ceiling = safety.damage_ceiling(p, false, o.taken) + camps;
++            if (own + o.ceiling < st.health) continue;
++        }
++        if (!stun_reaches(world, st, L, p)) continue;
++        if (own < st.health) {
++            if (o.n < 0) {
++                o.n = safety.threats_at(p, o.at);
++                o.total = camps + safety.camp_damage(p, true, true);
++                for (int k = 0; k < o.n; ++k) o.total += o.at[k].blow.damage * o.taken;
++            }
++            if (own + o.without(L.e->index) < st.health) continue;
++        }
++        if (found >= 0) {
++            several = true;
++            return;
++        }
++        found = L.e->index;
++    }
++}
++
++const LockState::Memo* lock_memo(const World& world, Safety& safety, vec2 p) {
++    if (world.me().facts().passive != Passive::gem_focus || !in_bounds(p)) return nullptr;
++    auto& st = lockers(world, safety);
++    if (st.count == 0) return nullptr;
++    for (int i = 0; i < st.memo_count; ++i)
++        if (st.memo[i].p == p) return &st.memo[i];
++    auto& m = st.memo[st.memo_count < static_cast<int>(st.memo.size()) ? st.memo_count++ : std::exchange(st.memo_next, (st.memo_next + 1) % 16)];
++    m = {p, -1, false};
++    // Only tiles we can stand on (Safety's blows assume a tile that is not a wall), and off our spawn,
++    // where a turn end heals us to full, the stunned one's too (rules abilities.stun).
++    if (test(world.map().open_for_us, p) && !test(world.map().ally_spawn, p)) locker_at(world, safety, st, p, m.locker, m.several);
++    return &m;
++}
++
++int stun_locker(const World& world, Safety& safety, vec2 p) {
++    const auto* m = lock_memo(world, safety, p);
++    return m ? m->locker : -1;
++}
++
++int sole_stun_locker(const World& world, Safety& safety, vec2 p) {
++    const auto* m = lock_memo(world, safety, p);
++    return m && !m->several ? m->locker : -1;
++}
++
++unsigned stun_locked_steps(const World& world, Safety& safety, vec2 here) {
++    if (world.me().facts().passive != Passive::gem_focus || lockers(world, safety).count == 0) return 0;
++    unsigned out = 0;
++    for (int i = 0; i < 8; ++i)
++        if (stun_locker(world, safety, here + directions[i]) >= 0) out |= 1u << i;
++    return out;
++}
++
++bool stun_lock_around(const World& world, Safety& safety, vec2 here) {
++    return stun_locker(world, safety, here) >= 0 || stun_locked_steps(world, safety, here) != 0;
++}
++
++bool stun_lock_exit(const World& world, Pathing& pathing, Safety& safety, vec2 here) {
++    const unsigned locked = stun_locked_steps(world, safety, here);
++    const auto& blocked = pathing.blocked();
++    for (int i = 0; i < 8; ++i) {
++        const vec2 q = here + directions[i];
++        if (!(locked >> i & 1) && in_bounds(q) && test(world.map().open_for_us, q) && !test(blocked, q)) return true;
++    }
++    return false;
++}
++
++void trace_stun_lock(const World& world, Safety& safety, vec2 p, char tag) {
++    debug_block({
++        const int i = stun_locker(world, safety, p);
++        if (i < 0) return;
++        const auto& st = lock_state;
++        for (int k = 0; k < st.count; ++k) {
++            const auto& L = st.lockers[k];
++            if (L.e->index != i) continue;
++            const int d = L.kind == Locker::tracked ? -1 : dist(p, L.origin);
++            std::printf("SLOCK %d %u %c %d %d %d %.0f %.0f %d %d %d\n", world.round, my_handle(), tag, i, static_cast<int>(L.kind), d,
++                        L.kind == Locker::seen ? L.damage[static_cast<std::size_t>(d)] : L.most, st.health, L.e->gems, static_cast<int>(my_gems()),
++                        static_cast<int>(L.e->type));
++        }
++    });
++}
++
++} // namespace
++
++} // namespace aph
+diff -ruN chy2-C2/src/economy/bank.cc chy2-C4/src/economy/bank.cc
+--- chy2-C2/src/economy/bank.cc	2026-11-11 10:38:02.919176423 +0000
++++ chy2-C4/src/economy/bank.cc	2026-11-11 12:55:26.642329196 +0000
+@@ -1422,9 +1422,10 @@
+         return false;
+     }
+     home = want_home(world, pathing, safety, memory);
+-    // Home by the recall only while it lands sooner than the walk, which no damage cancels.
++    // Home by the recall only while it lands sooner than the walk, which no damage cancels. A stun
++    // lock's stun cancels it (stun_lock.cc), unseen or not.
+     if (*home && !walk_beats_recall(world, pathing, safety, my_channel_time()) && !safety.threatened(my_position())
+-        && !can_tribute_safely(world, pathing, safety, memory) && recall_outruns(safety))
++        && !can_tribute_safely(world, pathing, safety, memory) && recall_outruns(safety) && stun_locker(world, safety, my_position()) < 0)
+         return true;
+     // With no walk home, retreat has nowhere to go: the recall is the way out, and an enemy who
+     // reaches us in time cancels it no sooner than it would catch us standing.
+diff -ruN chy2-C2/src/economy/farm.cc chy2-C4/src/economy/farm.cc
+--- chy2-C2/src/economy/farm.cc	2026-11-11 12:43:14.878679220 +0000
++++ chy2-C4/src/economy/farm.cc	2026-11-11 12:52:19.497332096 +0000
+@@ -2379,8 +2379,6 @@
+                             groups[g].gems, groups[g].gold, groups[g].strength, groups[g].health, spawn_steps(g));
+         }
+         if (memory.claim != last_claim || chosen.mode != last_mode || chosen.trips != last_trips) {
+-            if (keeps && memory.claim >= 0)
+-                std::printf("PPICK %d %u g%d %c gems %d gold %d\n", round, my_handle(), memory.claim, chosen.mode, groups[memory.claim].gems, groups[memory.claim].gold);
+             last_claim = memory.claim, last_mode = chosen.mode, last_trips = chosen.trips;
+             std::printf("CREW PICK %d %u g%d %c trips %d tank %d expected %d output %.0f damage %.0f hp %.0f/%.0f\n", round, my_handle(), memory.claim,
+                         chosen.mode, chosen.trips, chosen.tank, chosen.expected, chosen.output, chosen.damage, my_health(), max_health);
+diff -ruN chy2-C2/src/unity.cpp chy2-C4/src/unity.cpp
+--- chy2-C2/src/unity.cpp	2026-11-11 06:40:38.537695491 +0000
++++ chy2-C4/src/unity.cpp	2026-11-11 12:55:26.642408927 +0000
+@@ -8,6 +8,7 @@
+ #include "economy/camps.cc"
+ #include "economy/home.cc"
+ #include "combat/guard.cc"
++#include "combat/stun_lock.cc"
+ #include "combat/fight.cc"
+ #include "economy/bank.cc"
+ #include "economy/capture.cc"

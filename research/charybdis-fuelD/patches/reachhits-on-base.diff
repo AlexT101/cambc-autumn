@@ -1,0 +1,139 @@
+diff -ruN bots/variants/chary-fuelD-base/src/model/safety.cc bots/variants/chary-fuelD-reachhits/src/model/safety.cc
+--- bots/variants/chary-fuelD-base/src/model/safety.cc	2026-11-11 15:52:13.385612608 +0000
++++ bots/variants/chary-fuelD-reachhits/src/model/safety.cc	2026-11-11 16:03:06.532602158 +0000
+@@ -2031,10 +2031,13 @@
+     ws.stuns = pattern.stuns;
+     ws.from_here_range = pattern.from_here_range;
+     ws.stationary = pattern.stationary;
++    ws.direct_range = ws.blind_range = 0;
+     for (int i = 0; i < ws.count; ++i) {
+         const auto& term = pattern.terms[i];
+         auto& w = ws.way[i];
+         w = term.way;
++        ws.direct_range = std::max(ws.direct_range, static_cast<int>(w.range));
++        if (!w.sight) ws.blind_range = std::max(ws.blind_range, static_cast<int>(w.range));
+         w.damage = std::max(term.basic * s, std::max(term.pure * focus, term.combined > 0 ? term.combined * focus + s : 0.0f));
+     }
+     float single = -1, walked = -1;
+@@ -2081,6 +2084,21 @@
+     return m;
+ }
+ 
++// Every movement set contains the origin; one strike from there proves a hit without
++// building the movement geometry or pricing the other ways.
++bool Reach::hits(vec2 p) const {
++    const auto& memo = memo_[static_cast<std::size_t>((p.x & 7) | (p.y & 7) << 3)];
++    if (memo.stamp == stamp_ && memo.p == p) return memo.blow.hits;
++    const int dx = p.x - origin_.x, dy = p.y - origin_.y;
++    const int d = std::max(std::abs(dx), std::abs(dy));
++    if (const auto& t = terrain(world_->map()); t.inside(p)) {
++        if (d <= ways_->blind_range && ways_->blind_range > 0) return true;
++        if (d <= ways_->direct_range
++            && ((d <= 1 && !t.bush(p)) || (sight(*world_, p, d > 1) & win_bit(win_r - dx, win_r - dy)))) return true;
++    }
++    return at(p).hits;
++}
++
+ Blow Reach::at(vec2 p) const {
+     auto& memo = memo_[static_cast<std::size_t>((p.x & 7) | (p.y & 7) << 3)];
+     if (memo.stamp == stamp_ && memo.p == p) return memo.blow;
+@@ -2736,6 +2754,12 @@
+     return b;
+ }
+ 
++bool Safety::hits(const ChampionBelief& e, vec2 p) {
++    const auto& s = struck(e).strike;
++    if (e.teleport_pending() && in_bounds(e.tp_dest)) return s.blow(dist(p, e.tp_dest)).hits;
++    return s.reach >= 0 && in_square(p, e.pos, s.reach) && reach_of(e).hits(p);
++}
++
+ int Safety::fight_reach(const ChampionBelief& e) {
+     const int reach = struck(e).strike.reach;
+     return reach >= 0 || !turn_lost(e) ? reach : strike(e, next_turn_round(world_, e)).reach;
+@@ -2744,11 +2768,11 @@
+ int Safety::approach(const ChampionBelief& e, vec2 p, int horizon) {
+     const int reach = struck(e).strike.reach;
+     if (reach < 0 && turn_lost(e)) {
+-        if (reach_of(e).at(p).hits) return 1;
++        if (reach_of(e).hits(p)) return 1;
+         const int r = fight_reach(e);
+         return 1 + std::max(1, enemy_reach::distance(world_, e, e.pos, p, r + horizon - 1) - r);
+     }
+-    if (blow(e, p).hits) return 0;
++    if (hits(e, p)) return 0;
+     return walk_in(e, p, horizon);
+ }
+ 
+@@ -2993,7 +3017,7 @@
+         const auto& s = x.strike;
+         if (s.reach < 0) continue;
+         if (e.visible) {
+-            if (blow(e, p).hits) return true;
++            if (hits(e, p)) return true;
+         } else if (x.weight > 0) {
+             if (x.asked != p) x.asked = p, x.near = possible_within(e, p, s.reach);
+             if (!x.near || !s.blow(0).hits) continue;
+@@ -3205,7 +3229,7 @@
+         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+         if (gone(e)) continue;
+         for (int i = 0; i < n; ++i)
+-            if (in_square(ps[i], e.pos, fight_reach(e)) && reach_of(e).at(ps[i]).hits) {
++            if (in_square(ps[i], e.pos, fight_reach(e)) && reach_of(e).hits(ps[i])) {
+                 key |= 1u << (16 + e.index);
+                 if (first) (*first)[static_cast<std::size_t>(e.index)] = static_cast<std::uint8_t>(i);
+                 break;
+@@ -3228,7 +3252,7 @@
+         const int j = std::countr_zero(left);
+         const auto& e = world_.enemies[static_cast<std::size_t>(j)];
+         if (i < first[static_cast<std::size_t>(j)]) continue;
+-        if (i == first[static_cast<std::size_t>(j)] || (in_square(p, e.pos, fight_reach(e)) && reach_of(e).at(p).hits)) key |= 1u << (16 + j);
++        if (i == first[static_cast<std::size_t>(j)] || (in_square(p, e.pos, fight_reach(e)) && reach_of(e).hits(p))) key |= 1u << (16 + j);
+     }
+     return key;
+ }
+@@ -3238,7 +3262,7 @@
+     for (unsigned left = lost_mask_; left; left &= left - 1) {
+         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+         // Its Reach is its first turn's: next_turn_round() skips the lost one.
+-        if (!gone(e) && in_square(p, e.pos, fight_reach(e)) && reach_of(e).at(p).hits) out |= 1u << (16 + e.index);
++        if (!gone(e) && in_square(p, e.pos, fight_reach(e)) && reach_of(e).hits(p)) out |= 1u << (16 + e.index);
+     }
+     return out;
+ }
+@@ -3433,7 +3457,7 @@
+         const int reach = fight_reach(e);
+         if (reach < 0 || dist(p, acts_from(e)) - reach > farthest) continue;
+         // approach()'s 0, its first test.
+-        if (!(struck(e).strike.reach < 0 && turn_lost(e)) && blow(e, p).hits) hit |= 1u << e.index;
++        if (!(struck(e).strike.reach < 0 && turn_lost(e)) && hits(e, p)) hit |= 1u << e.index;
+         else if (!test(spawn, e.pos)) r.pending |= 1u << e.index;
+     }
+     for (auto left = live_enemies() & ~seen_enemies(); left; left &= left - 1) {
+diff -ruN bots/variants/chary-fuelD-base/src/model/safety.h bots/variants/chary-fuelD-reachhits/src/model/safety.h
+--- bots/variants/chary-fuelD-base/src/model/safety.h	2026-11-11 15:52:13.386285247 +0000
++++ bots/variants/chary-fuelD-reachhits/src/model/safety.h	2026-11-11 16:03:06.531716817 +0000
+@@ -95,6 +95,7 @@
+     // turn falls in turn_round + 1, so a slot coming ready then counts for it.
+     void build(const World& world, const ChampionBelief& e, int turn_round, bool twice);
+     Blow at(vec2 p) const;
++    bool hits(vec2 p) const;
+     bool geometry_ready() const { return geometry_ready_; }
+     int reach() const; // Chebyshev bound on the tiles it can affect
+ 
+@@ -182,7 +183,7 @@
+         int count = 0;
+         bool stuns = false, stationary = false;
+         Blow from_here;
+-        int from_here_range = 0;
++        int from_here_range = 0, direct_range = 0, blind_range = 0;
+         int basic = -1; // the plain basic attack's way
+     };
+     // By each slot's turns ready (0-2) and twice.
+@@ -433,6 +434,7 @@
+     bool blow_repeats(const ChampionBelief& e) { return struck(e).repeats; }
+     // What a visible enemy could do to p before our next turn (threat_strike placed on the map).
+     Blow blow(const ChampionBelief& e, vec2 p);
++    bool hits(const ChampionBelief& e, vec2 p);
+     // A visible enemy's turns of walking before it can strike p: 0 if it can now, else at least 1
+     // and at least its terrain distance (enemy_reach::distance) past its reach. Exact up to `horizon`,
+     // else some value above it.

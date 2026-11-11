@@ -1,0 +1,22 @@
+--- a/src/model/world.cc
++++ b/src/model/world.cc
+@@ -2575,7 +2575,18 @@
+     if (!respawning && !(c.state == CampState::alive && c.awake == Awake::asleep && c.witness >= 0)) return false;
+     const auto& members = G.members;
+     const std::size_t n = members.size();
+-    if (n > 64) return false;
++    if (n > 64) {
++        const int width = map().width;
++        if (!(c.settled_round == round - 1 && c.settled_view == camp_view_ && c.settled_version == c.version))
++            for (std::size_t i = 0; i < n; ++i)
++                if (camp_tile_seen[members[i].pos.x + members[i].pos.y * width] && c.health_round[i] != round - 1) return false;
++        if (!respawning && engine::camp_awake(members[static_cast<std::size_t>(c.witness)].handle) != Awake::asleep) return false;
++        c.settled_round = round, c.settled_version = c.version, c.settled_view = camp_view_;
++        for (std::size_t i = 0; i < n; ++i)
++            if (camp_tile_seen[members[i].pos.x + members[i].pos.y * width]) c.health_round[i] = round;
++        c.state_round = round;
++        return true;
++    }
+     std::uint64_t seen = 0;
+     // Settled last round with the same camp tiles in view and no version since: the same members
+     // are in view, each with health_round set to last round then.

@@ -1,0 +1,13 @@
+--- a/src/economy/camps.cc
++++ b/src/economy/camps.cc
+@@ -454,6 +454,10 @@
+         });
+     for (int i = 0; i < n; ++i) {
+         const int m = left[i].member;
++        if (living == 0) {
++            left[i].fire = 0, left[i].home_fire = -1;
++            continue;
++        }
+         left[i].fire = fire(t.hits[m] & living);
+         const auto bits = t.homes.empty() ? -1 : t.home_bits(m);
+         left[i].home_fire = bits >= 0 ? fire(static_cast<std::uint32_t>(bits) & living) : -1.0f;

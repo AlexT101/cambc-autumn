@@ -1,0 +1,150 @@
+{
+  "name": "fuelC-combo-standard",
+  "started": "20261111-151953",
+  "wall_seconds": 54.8,
+  "threads": 86,
+  "fuel": null,
+  "game_timeout": null,
+  "experiment_config": null,
+  "release": true,
+  "cand": {
+    "spec": "variants/chary-fuelC-combo",
+    "kind": "dir",
+    "path": "bots/variants/chary-fuelC-combo"
+  },
+  "ref": {
+    "spec": "variants/chary-fuelC-base",
+    "kind": "dir",
+    "path": "bots/variants/chary-fuelC-base"
+  },
+  "games": 1280,
+  "cand_wins": 644,
+  "cand_win_pct": 50.31,
+  "ci95": [
+    47.58,
+    53.05
+  ],
+  "errors": 0,
+  "oof": {
+    "cand": [
+      7379,
+      749
+    ],
+    "ref": [
+      7340,
+      743
+    ]
+  },
+  "early_losses": {
+    "cand": 0,
+    "ref": 0
+  },
+  "handoff_failures": {
+    "cand": 0,
+    "ref": 0
+  },
+  "capped_drafts": {
+    "cand": 0,
+    "ref": 0
+  },
+  "notes": [],
+  "suites": [
+    {
+      "suite": "ladder",
+      "batch": "replays/batch-20261111-151953-ab-fuelC-combo-standard-ladder",
+      "log": "replays/ab/fuelC-combo-standard/ladder.log",
+      "exit": 0,
+      "games": 256,
+      "wins": 130,
+      "errors": 0,
+      "failed": [],
+      "oof": {
+        "cand": [
+          2002,
+          191
+        ],
+        "ref": [
+          1973,
+          190
+        ]
+      },
+      "early": {
+        "cand": 0,
+        "ref": 0
+      },
+      "handoff": {
+        "cand": 0,
+        "ref": 0
+      },
+      "capped": {
+        "cand": 0,
+        "ref": 0
+      }
+    },
+    {
+      "suite": "gen",
+      "batch": "replays/batch-20261111-151953-ab-fuelC-combo-standard-gen",
+      "log": "replays/ab/fuelC-combo-standard/gen.log",
+      "exit": 0,
+      "games": 512,
+      "wins": 254,
+      "errors": 0,
+      "failed": [],
+      "oof": {
+        "cand": [
+          2512,
+          264
+        ],
+        "ref": [
+          2414,
+          263
+        ]
+      },
+      "early": {
+        "cand": 0,
+        "ref": 0
+      },
+      "handoff": {
+        "cand": 0,
+        "ref": 0
+      },
+      "capped": {
+        "cand": 0,
+        "ref": 0
+      }
+    },
+    {
+      "suite": "gen-s1",
+      "batch": "replays/batch-20261111-151953-ab-fuelC-combo-standard-gen-s1",
+      "log": "replays/ab/fuelC-combo-standard/gen-s1.log",
+      "exit": 0,
+      "games": 512,
+      "wins": 260,
+      "errors": 0,
+      "failed": [],
+      "oof": {
+        "cand": [
+          2865,
+          294
+        ],
+        "ref": [
+          2953,
+          290
+        ]
+      },
+      "early": {
+        "cand": 0,
+        "ref": 0
+      },
+      "handoff": {
+        "cand": 0,
+        "ref": 0
+      },
+      "capped": {
+        "cand": 0,
+        "ref": 0
+      }
+    }
+  ],
+  "cambc": "5.0.1"
+}

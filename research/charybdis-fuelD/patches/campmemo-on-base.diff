@@ -1,0 +1,20 @@
+--- a/src/model/safety.cc
++++ b/src/model/safety.cc
+@@ -3069,9 +3069,17 @@
+     next = next && worst;
+     auto& memo = camp_memo_[next ? 2 : worst ? 1 : 0];
+     if (memo.valid && memo.p == p) return memo.damage;
++    struct Cell { std::uint32_t generation; vec2 p; float damage; };
++    static std::array<std::array<Cell, 64>, 3> table{};
++    auto& cell = table[next ? 2 : worst ? 1 : 0][(p.x & 7) | ((p.y & 7) << 3)];
++    if (cell.generation == hold_generation_ && cell.p == p) {
++        memo = {p, cell.damage, true};
++        return cell.damage;
++    }
+     float total = 0;
+     for (const auto& m : members)
+         if (in_square(p, m.pos, m.reach) && !(next && m.stunned)) total += worst ? m.strength : m.strength * m.weight;
++    cell = {hold_generation_, p, total};
+     memo = {p, total, true};
+     return total;
+ }

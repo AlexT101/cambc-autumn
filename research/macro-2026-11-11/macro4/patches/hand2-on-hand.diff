@@ -1,0 +1,20 @@
+diff -ru bots/variants/macro4-handf/src/economy/farm.cc bots/variants/macro4-hand2/src/economy/farm.cc
+--- bots/variants/macro4-handf/src/economy/farm.cc	2026-11-11 05:51:07.152842928 +0000
++++ bots/variants/macro4-hand2/src/economy/farm.cc	2026-11-11 06:22:58.973995388 +0000
+@@ -2338,9 +2338,14 @@
+                 // Joining a multi-tile hold before its payout, the ally steps off once we stand on it
+                 // (sole_capture_holder). Otherwise we hold afresh where the ally hands it over (hub_hands_over),
+                 // as hub_hands_at judges it then: at once when we are due before its payout, else at its last turn.
+-                theirs = hub_payout(ours, walk, G.members.size() > 1, world.me().fast_capture);
+-                const bool late = !(G.members.size() > 1 && static_cast<float>(walk) < ours);
++                // A hand-over at its last turn is the ally's to judge then, on where we are by then: no walk of ours
++                // secures it, and any delay loses it. So we start only on a group we reach before its payout, and
++                // keep the last-turn hand-over for our current pick or posted claim (what the ally judges), which the
++                // walk already sunk into it still serves.
+                 const bool at_once = static_cast<float>(walk) < ours;
++                if (!at_once && g != memo.collected && g != memory.claim) return;
++                theirs = hub_payout(ours, walk, G.members.size() > 1, world.me().fast_capture);
++                const bool late = !(G.members.size() > 1 && at_once);
+                 const float at_last = static_cast<float>(std::max(1, walk - std::max(0, static_cast<int>(ours) - 1)) + ours_fresh);
+                 if (late && !(hub_net(world, rho, static_cast<float>(G.gems), at_once ? ours : 1.0f, at_once ? hub_payout(ours, walk, false, world.me().fast_capture) : at_last) > 0.0f))
+                     return;

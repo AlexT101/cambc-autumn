@@ -1,0 +1,13 @@
+diff -ruN bots/variants/chary-fuelD-base/src/economy/farm.cc bots/variants/chary-fuelD-floor/src/economy/farm.cc
+--- bots/variants/chary-fuelD-base/src/economy/farm.cc	2026-11-11 15:52:13.384334080 +0000
++++ bots/variants/chary-fuelD-floor/src/economy/farm.cc	2026-11-11 16:10:29.139506570 +0000
+@@ -1459,7 +1459,8 @@
+     const auto barred = [&]() __attribute__((always_inline)) { return best >= 0 || floor_value > 0; };
+     const auto bar_lt = [&]() __attribute__((always_inline)) { return best >= 0 ? std::max(best_value, floor_value) : floor_value; };
+     const auto bar_le = [&]() __attribute__((always_inline)) {
+-        const float below = floor_value > 0 ? std::nextafter(floor_value, 0.0f) : 0.0f;
++        // Positive IEEE floats are ordered by their bits, including the subnormal boundary.
++        const float below = floor_value > 0 ? std::bit_cast<float>(std::bit_cast<std::uint32_t>(floor_value) - 1) : 0.0f;
+         return best >= 0 ? std::max(best_value, below) : below;
+     };
+     // rated_beaten by the best so far. Callers leave out our last choice, whose clear a partner

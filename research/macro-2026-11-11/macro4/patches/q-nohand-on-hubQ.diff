@@ -1,0 +1,101 @@
+diff -ru macro4-hubQf/src/economy/capture.cc macro4-q-nohand/src/economy/capture.cc
+--- macro4-hubQf/src/economy/capture.cc	2026-11-11 02:51:46.741817357 +0000
++++ macro4-q-nohand/src/economy/capture.cc	2026-11-11 05:22:25.883116674 +0000
+@@ -405,16 +405,13 @@
+     if (g < 0 || world.camps[g].state != CampState::cleared) return false;
+     const auto& G = map.groups[g];
+     const auto* prism = sole_capture_holder(world, G);
+-    bool handed = false; // to Prism coming for it, off the tiles (hub_hands_over)
++    const bool handed = false; // q-nohand: no hand-over to Prism (hub_hands_over)
+     if (!prism) {
+         // The value holder, once on a tile and its hold counting.
+         prism = value_holder(world, G);
+-        if (!prism || prism->is_self || !test(G.tiles(), prism->pos) || fresh_ally_capture(world, G) < 0) {
+-            prism = hub_hands_over(world, pathing, G, g);
+-            if (!prism) return false;
+-            handed = true;
+-        }
++        if (!prism || prism->is_self || !test(G.tiles(), prism->pos) || fresh_ally_capture(world, G) < 0) return false;
+     }
++    if (prism->facts().passive == Passive::gem_focus) return false; // q-nohand: nobody steps off for Prism
+     if (prism->is_self || safety.any_threat() || (!handed && safety.camp_damage(prism->pos) > 0)) return false;
+     // Tavi and Marcella take over a hold: leave only once ours is counting.
+     if ((prism->type == cambc::champion_type::tavi || prism->type == cambc::champion_type::marcella) && fresh_ally_capture(world, G) < 0)
+@@ -616,8 +613,6 @@
+     if (world.round + channel < payout) return false;
+     const auto& G = world.map().groups[g];
+     const bool wins = gem_share(world, G) >= gems_short(world);
+-    // A recall would keep us on the tiles to the payout: Prism coming for it may take the hold (hub_hands_over).
+-    if (!wins && hub_awaited(world, pathing, G, g, payout - world.round)) return false;
+     const auto* prism = sole_capture_holder(world, G);
+     if (!wins && (retaining_gems(world, pathing) || (prism && prism->is_self))) {
+         // A bag kept off the altar: only Prism rides home, when the shop and heal there outweigh
+diff -ru macro4-hubQf/src/economy/farm.cc macro4-q-nohand/src/economy/farm.cc
+--- macro4-hubQf/src/economy/farm.cc	2026-11-11 05:04:56.508774689 +0000
++++ macro4-q-nohand/src/economy/farm.cc	2026-11-11 05:27:58.990588091 +0000
+@@ -2245,8 +2245,6 @@
+         const float rho = hub_premium(world, world.me().facts());
+         const int winning = static_cast<int>(cambc::constants::winning_gems), carried = static_cast<int>(my_gems());
+         const int fresh = capture_rounds(false), ours_fresh = capture_rounds(world.me().fast_capture);
+-        // A freed holder's rounds, priced as the takeover above prices them.
+-        const float work_rate = cycle_rate, price = prices(world).per_gold;
+         // An ally's tile in sight, else as last seen or posted within a capture's rounds.
+         const auto known_at = [&](const ChampionBelief& a, vec2& at) {
+             if (a.visible) return at = a.pos, true;
+@@ -2299,25 +2297,16 @@
+             } else {
+                 return;
+             }
+-            // What our hold pays the team over the ally's (takeover_gain's holder_value, so its gold and a
+-            // pair's shyness), and the gems' premium: the ally would bank the same gems, so only the
+-            // premium is ours to add (hub_factor - 1). Unheld, the group is ours alone to take.
++            // The gems' premium: the ally would bank the same gems, so only the premium on our share is ours
++            // to add. Unheld, the group is ours alone to take.
+             const float gems = static_cast<float>(G.gems) * exposure(g);
+-            float gain = 0;
+-            if (!unheld) {
+-                float held_value = 0;
+-                bool any = false;
+-                for (const auto& a : world.allies) {
+-                    if (a.is_self || !a.alive || !((a.visible && test(G.tiles(), a.pos)) || comms::claim_of(world, a.index) == g)) continue;
+-                    const float v = holder_value(world, a, G, price);
+-                    if (!any || v > held_value) held_value = v, any = true;
+-                }
+-                if (any) gain = holder_value(world, world.me(), G, price) - held_value;
+-            }
++            int holders_there = 0; // q-nohand: the allies we would split the payout with
++            if (!unheld)
++                for (const auto& a : world.allies)
++                    if (!a.is_self && a.alive && ((a.visible && test(G.tiles(), a.pos)) || comms::claim_of(world, a.index) == g)) ++holders_there;
+             const float stick = g == farm_group ? stickiness : 1.0f;
+-            // No payout of ours comes before the ally's or the soonest walk, and the ally is freed at most
+-            // until its own payout: a bound before any field.
+-            const float most = unheld ? (1.0f + rho) * gems + per_gold * static_cast<float>(G.gold) : rho * gems + gain + ours * work_rate;
++            // No payout of ours comes before the ally's or the soonest walk: a bound before any field.
++            const float most = unheld ? (1.0f + rho) * gems + per_gold * static_cast<float>(G.gold) : rho * gems; // q-nohand: a join's at most
+             const float soonest = unheld ? static_cast<float>(steps_to(G, here) + ours_fresh) : std::max(ours, static_cast<float>(steps_to(G, here)));
+             if (!(rate(world, std::max(0.0f, most), soonest) * stick > best_value)) return;
+             int walk = steps_data[g];
+@@ -2333,16 +2322,12 @@
+                 theirs = static_cast<float>(walk + ours_fresh); // nobody to hand it over: ours from arrival
+                 worth = (1.0f + rho) * gems + per_gold * static_cast<float>(G.gold);
+             } else {
+-                // Joining a multi-tile hold before its payout, the ally steps off once we stand on it
+-                // (sole_capture_holder). Arriving after, we hold afresh only where the ally hands it over
+-                // at its last turn, as hub_hands_at judges it then.
+-                theirs = hub_payout(ours, walk, G.members.size() > 1, world.me().fast_capture);
+-                const bool late = !(G.members.size() > 1 && static_cast<float>(walk) < ours);
+-                const float at_last = static_cast<float>(std::max(1, walk - std::max(0, static_cast<int>(ours) - 1)) + ours_fresh);
+-                if (late && !(hub_net(world, rho, static_cast<float>(G.gems), 1.0f, at_last) > 0.0f)) return;
+-                // The rounds the ally no longer stands on it once we do, at our work rate (takeover_worth's).
+-                const float freed = std::max(0.0f, ours - static_cast<float>(walk));
+-                worth = gems * (hub_factor(world, rho, ours, theirs) - 1.0f) + gain + freed * work_rate;
++                // q-nohand: no ally steps off or hands over, so only a join of a multi-tile hold before its
++                // payout: the payout is the ally's, split with us, and the premium is on our split share. The
++                // ally stays on, freed of nothing, and holds as before (no holder gain).
++                if (!(G.members.size() > 1 && static_cast<float>(walk) < ours)) return;
++                theirs = ours;
++                worth = gems / static_cast<float>(std::max({1, holders_there, allies_on(world, G.tiles())}) + 1) * rho;
+             }
+             const float value = rate(world, worth, theirs) * stick;
+             if (value > best_value)

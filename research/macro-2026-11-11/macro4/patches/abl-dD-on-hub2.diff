@@ -1,0 +1,295 @@
+diff -ru '--exclude=.cambc' bots/variants/macro4-hub2/src/bot.cc bots/variants/macro4-dD/src/bot.cc
+--- bots/variants/macro4-hub2/src/bot.cc	2026-11-11 01:36:29.699546229 +0000
++++ bots/variants/macro4-dD/src/bot.cc	2026-11-11 03:30:14.336300248 +0000
+@@ -576,8 +576,25 @@
+ // act() found the fuel short of its last steps (turn_end_tight): the turn's end checks its own.
+ bool end_tight = false;
+ 
++// DUEL kill: an enemy Prism in sight at our turn's start that our turn killed. Debug builds only.
++[[maybe_unused]] void trace_prism_kills(const World& world, bool start) {
++    static std::array<std::pair<cambc::handle_champion_t, int>, 4> seen;
++    static int n = 0;
++    if (start) {
++        n = 0;
++        for (const auto& e : world.enemies)
++            if (n < 4 && e.alive && e.visible && e.facts().passive == Passive::gem_focus) seen[n++] = {e.handle, e.gems};
++        return;
++    }
++    for (int i = 0; i < n; ++i)
++        if (!is_alive(seen[i].first))
++            std::printf("DUEL kill %d %u target %u bag %d mine %d\n", world.round, my_handle(), static_cast<unsigned>(seen[i].first), seen[i].second,
++                        static_cast<int>(my_gems()));
++}
++
+ // The turn's walk, hits and casts, and the free actions that end it.
+ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
++    debug_block({ trace_prism_kills(world, true); });
+     const vec2 start = world.me().pos;
+     const bool could_attack = my_can_attack();
+     // The walk to our farm choice is searched out to our tile: from where the turn starts, before
+@@ -629,6 +646,7 @@
+     // The posts come before the recall: an ally reads our claim and bag, and next turn our health.
+     if (!support_owned && (!tight || fuel_ok(posts_cost + recall_cost) || (cut = cut || (alive && !stunned_turn), false))) start_recall(world);
+     count_use(world, could_attack);
++    debug_block({ trace_prism_kills(world, false); });
+     if (cut) note_shortcut("turn-end-short");
+ }
+ 
+diff -ru '--exclude=.cambc' bots/variants/macro4-hub2/src/bot_parts.h bots/variants/macro4-dD/src/bot_parts.h
+--- bots/variants/macro4-hub2/src/bot_parts.h	2026-11-11 03:05:42.070837909 +0000
++++ bots/variants/macro4-dD/src/bot_parts.h	2026-11-11 03:43:23.657504740 +0000
+@@ -445,6 +445,16 @@
+     bool on() const { return prism && rho > 0; }
+ };
+ float hub_premium(const World& world, const ChampionFacts& prism);
++// hub_premium for a Prism of either team, else 0: its bag is also its Focus.
++float carry_premium(const World& world, const ChampionBelief& c);
++// What a kill takes from c's team, in enemy health points: its bag (both of Cassi and Issac) at
++// gem_value, a Prism's at its premium too.
++float bag_worth(const World& world, const ChampionBelief& c);
++// Our fall in a fight our side wins (Trade::self_falls, not lost) hands the killer our bag. It
++// counts when that bag (a Prism's at its premium) is worth more than what the fight's enemies in
++// sight carry and a life: the stand-in for the trade, as the fight does not say which of them die.
++// `enemies`: the fight's enemies, bit i for World::enemies[i], those who walk in included.
++bool fall_outweighs(const World& world, std::uint32_t enemies);
+ bool hold_threatened(const World& world, vec2 p);
+ const Hub& team_hub(const World& world);
+ int hub_steps(const World& world, Pathing& pathing, const Hub& hub, int g);
+diff -ru '--exclude=.cambc' bots/variants/macro4-hub2/src/combat/fight.cc bots/variants/macro4-dD/src/combat/fight.cc
+--- bots/variants/macro4-hub2/src/combat/fight.cc	2026-11-11 01:36:29.699776662 +0000
++++ bots/variants/macro4-dD/src/combat/fight.cc	2026-11-11 03:43:23.657797144 +0000
+@@ -447,8 +447,9 @@
+     return outmatched(world, safety, hold) && !hold.keeps_us(safety);
+ }
+ 
+-// A stand at p we lose, or, linked or lethal there, one we fall in. Healthy on our own ground, they
+-// have no reason to come for us, unless we carry a bag: a kill takes it. Every input is read at p.
++// A stand at p we lose, or, linked, carrying (fall_outweighs) or lethal there, one we fall in. Healthy
++// on our own ground, they have no reason to come for us, unless we carry a bag: a kill takes it.
++// Every input is read at p.
+ bool stand_lost_at(const World& world, Safety& safety, HoldAt& hold) {
+     const vec2 p = hold.p;
+     // lethal(p), worked out where read: an enemy that hits p now leaves the roster blind to it, so
+@@ -478,8 +479,18 @@
+     if (reach.hit || pursued) safety.stand_walks(p, params::pursuit_steps, reach);
+     const auto roster = safety.stand_roster(p, reach, pursued ? params::pursuit_steps : 0, unseen);
+     if (roster.key == Safety::no_fight) return false;
+-    const bool falls = partner(world) != nullptr || lethal();
++    const bool carrier = fall_outweighs(world, roster.key >> 16 | roster.walking);
++    const bool falls = partner(world) != nullptr || carrier || lethal();
+     const auto t = safety.stand_trade(roster, falls);
++    debug_block({
++        // lethal() is left unasked: the release path skips it for a carrier. Only fights known won.
++        if (t.lost_known && !t.lost && t.self_falls && carrier && !partner(world)) {
++            bool prism = false;
++            for (auto left = roster.key >> 16; left; left &= left - 1)
++                prism |= world.enemies[static_cast<std::size_t>(std::countr_zero(left))].facts().passive == Passive::gem_focus;
++            std::printf("DUEL stand %d %u %d,%d bag %d prism %d\n", world.round, my_handle(), p.x, p.y, bag_at_stake(world), static_cast<int>(prism));
++        }
++    });
+     return t.lost || (falls && t.self_falls);
+ }
+ 
+@@ -793,7 +804,8 @@
+     }
+     std::optional<float> strength; // read once a candidate needs it
+     // Cassi or Issac falling takes the other body and both bags: a won fight that costs us is lost.
+-    const bool linked = partner(world) != nullptr;
++    // A carrier's fall its bag, where that outweighs the fight's prize (fall_outweighs, per target).
++    const bool paired = partner(world) != nullptr;
+     // Best first (ties in index order), so fights are simulated only up to the first won.
+     Unwritten<std::pair<float, const ChampionBelief*>, 8> candidates;
+     auto& order = candidates.a;
+@@ -885,6 +897,10 @@
+             }
+         // Enemies who walk to the target in time join the fight.
+         const auto late = key == Safety::no_fight ? 0u : safety.late(target.pos, key);
++        // The late joiners (2 bits each by index) count with the enemies the target fights beside.
++        std::uint32_t joiners = 0;
++        for (int i = 0; i < 16; ++i) joiners |= ((late >> (2 * i)) & 3u ? 1u : 0u) << i;
++        const bool linked = paired || (key != Safety::no_fight && fall_outweighs(world, key >> 16 | joiners));
+         const std::pair<std::uint64_t, std::uint32_t> fight{std::uint64_t{key} << 32 | delayed, late};
+         if (std::find(lost.begin(), lost.begin() + n_lost, fight) != lost.begin() + n_lost) continue;
+         int u = 0;
+@@ -1360,6 +1376,66 @@
+     return false;
+ }
+ 
++// Standing here is lethal, but a walk-excluding unit cast from here kills a visible enemy (the
++// engine's damage) and what is left could not kill us before our next turn: its burst goes with it,
++// and its bag is ours, where the walk away keeps only our own. Prism's 1.5x-Focus stun settles most
++// of its duels so. The most valuable such kill; true if cast.
++bool duel_strike(World& world, Pathing& pathing, Safety& safety) {
++    if (!my_can_cast() || cast_walked(world)) return false;
++    const vec2 here = my_position();
++    const auto& f = world.me().facts();
++    struct Pick {
++        int slot;
++        const ChampionBelief* e;
++        float worth;
++    };
++    std::array<Pick, 8> picks;
++    int n = 0;
++    for (int s = 0; s < 2; ++s) {
++        const auto& a = f.abilities[s];
++        if (a.target != Targeting::unit || a.kind != AbilityKind::damage || !a.excludes_walking || !world.me().ability_ready(s, world.round))
++            continue;
++        for (const auto& e : world.enemies) {
++            if (n == static_cast<int>(picks.size()) || !e.alive || !e.visible || dist(here, e.pos) > a.range()) continue;
++            try {
++                const auto* live = visible_record(e.handle);
++                if (!live || live->health <= 0 || my_damage_to(s, e.handle) < live->health) continue;
++            } catch (const cambc::error&) {
++                continue;
++            }
++            picks[n++] = {s, &e, params::life_value + bag_worth(world, e)};
++        }
++    }
++    if (n == 0) return false;
++    // A basic attack this turn may have killed: the reply is read without the dead.
++    if (!my_can_attack()) see_kills(world, pathing, safety);
++    if (!safety.lethal(here)) return false;
++    std::sort(picks.begin(), picks.begin() + n, [](const Pick& x, const Pick& y) { return x.worth > y.worth; });
++    for (int i = 0; i < n; ++i) {
++        const auto& pk = picks[i];
++        // Ren's reply lands as it dies, before anyone else acts.
++        const float reply = pk.e->retaliation() * world.me().taken;
++        if (!is_alive(pk.e->handle) || safety.lethal_without(here, pk.e->index, reply)) continue;
++        const auto target = pk.e->handle;
++        bool cast = false;
++        try {
++            cast = cast_slot_on(pk.slot, target);
++        } catch (const cambc::error&) {
++        }
++        if (!cast) {
++            see_again(world, pathing, safety); // a refusal can reveal a hidden unit
++            return false;
++        }
++        debug_block({
++            std::printf("DUEL strike %d %u target %u bag %d mine %d prism %d\n", world.round, my_handle(), static_cast<unsigned>(target),
++                        pair_gems(world, *pk.e), bag_at_stake(world), static_cast<int>(pk.e->facts().passive == Passive::gem_focus));
++        });
++        see_kills(world, pathing, safety);
++        return true;
++    }
++    return false;
++}
++
+ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     world.throw_if_stale();
+     auto& me = cambc::self();
+@@ -1388,6 +1464,8 @@
+     // A melee kill one step off waits for the step, which may land beside it.
+     const bool held = melee && my_can_attack() && sure_kill(world, here, range + 1);
+     if (melee && !held) attack_enemy(world);
++    // Before the stunning reset, which would take the one cast; not while a kill waits on the step.
++    if (!held && duel_strike(world, pathing, safety) && !me.is_alive()) return;
+     if (!my_can_attack()) reset_and_attack_enemy(world, true);
+     const auto& f = world.me().facts();
+     const int escape_slot = f.slot_of(AbilityKind::dash);
+diff -ru '--exclude=.cambc' bots/variants/macro4-hub2/src/combat/guard.cc bots/variants/macro4-dD/src/combat/guard.cc
+--- bots/variants/macro4-hub2/src/combat/guard.cc	2026-11-11 01:36:29.699776662 +0000
++++ bots/variants/macro4-dD/src/combat/guard.cc	2026-11-11 03:43:23.657885405 +0000
+@@ -667,10 +667,21 @@
+         const auto [q, key] = exposed[i];
+         const int k = settle(key);
+         // Not lost settles q unless a fall there counts.
+-        if (k == 2 && !linked && !safety.lethal(q)) continue;
++        // A carrier's fall counts as a linked pair's does where it outweighs the fight's prize; read
++        // only where a fall can count (k 0 and 1 settle without it).
++        const bool carrier = !linked && (k == 2 || k == -1) && fall_outweighs(world, key >> 16);
++        if (k == 2 && !linked && !carrier && !safety.lethal(q)) continue;
+         if (k == 0 || k == 1) lost = falls = k == 1;
+         else if (!simulate(key, lost, falls)) return any ? &guard : nullptr;
+-        if (lost || (falls && (linked || safety.lethal(q)))) {
++        if (lost || (falls && (linked || carrier || safety.lethal(q)))) {
++            debug_block({
++                if (!lost && carrier) { // lethal(q) left unasked, as the release path skips it
++                    bool prism = false;
++                    for (auto left = key >> 16; left; left &= left - 1)
++                        prism |= world.enemies[static_cast<std::size_t>(std::countr_zero(left))].facts().passive == Passive::gem_focus;
++                    std::printf("DUEL guard %d %u %d,%d bag %d prism %d\n", world.round, my_handle(), q.x, q.y, bag_at_stake(world), static_cast<int>(prism));
++                }
++            });
+             if (!any) clear_board(guard), any = true;
+             set_tile(guard, q);
+         }
+diff -ru '--exclude=.cambc' bots/variants/macro4-hub2/src/economy/hub.cc bots/variants/macro4-dD/src/economy/hub.cc
+--- bots/variants/macro4-hub2/src/economy/hub.cc	2026-11-11 03:05:42.070780928 +0000
++++ bots/variants/macro4-dD/src/economy/hub.cc	2026-11-11 03:43:23.657606612 +0000
+@@ -45,6 +45,30 @@
+     return std::clamp(rho, 0.0f, params::hub_rho_most);
+ }
+ 
++float carry_premium(const World& world, const ChampionBelief& c) {
++    if (c.facts().passive != Passive::gem_focus) return 0;
++    // One Prism kit, and the premium reads only the round and our race: once a round.
++    static int round = -1;
++    static float rho = 0;
++    if (round != world.round) round = world.round, rho = hub_premium(world, c.facts());
++    return rho;
++}
++
++float bag_worth(const World& world, const ChampionBelief& c) {
++    const int gems = pair_gems(world, c);
++    return gems <= 0 ? 0.0f : params::gem_value * static_cast<float>(gems) * (1.0f + carry_premium(world, c));
++}
++
++bool fall_outweighs(const World& world, std::uint32_t enemies) {
++    const int bag = bag_at_stake(world);
++    if (bag <= 0) return false;
++    const float ours = params::gem_value * static_cast<float>(bag) * (1.0f + carry_premium(world, world.me()));
++    float theirs = params::life_value;
++    for (auto left = enemies & 0xFFFFu; left && ours > theirs; left &= left - 1)
++        if (const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))]; e.visible) theirs += bag_worth(world, e);
++    return ours > theirs;
++}
++
+ // A visible enemy that could act on p before a hold begun now pays: within the capture's rounds of
+ // acting there (enemy_reach's distance less its act range), a dash further for a dasher. Prism's holds
+ // only: the Marcella and Tavi holders keep sole_capture_holder's enemy_seen gate.
+diff -ru '--exclude=.cambc' bots/variants/macro4-hub2/src/model/safety.cc bots/variants/macro4-dD/src/model/safety.cc
+--- bots/variants/macro4-hub2/src/model/safety.cc	2026-11-11 01:36:29.702681349 +0000
++++ bots/variants/macro4-dD/src/model/safety.cc	2026-11-11 03:30:14.337296772 +0000
+@@ -3490,4 +3490,28 @@
+     return worst_damage(p, taken) >= health;
+ }
+ 
++bool Safety::lethal_without(vec2 p, int enemy, float reply) {
++    if (!lethal(p)) return false;
++    const auto& victim = world_.enemies[static_cast<std::size_t>(enemy)];
++    // Camp members pick the nearest champion: one in our reach that the victim stands as near turns on
++    // us once it dies, which the members found with it alive do not count.
++    bool sheltered = false;
++    const auto& groups = world_.map().groups;
++    world_.each_stirring([&](int g) {
++        const auto& members = groups[g].members;
++        for (std::size_t i = 0; i < members.size() && !sheltered; ++i)
++            if (const auto& m = members[i]; world_.camps[g].health[i] > 0 && m.strength > 0 && dist(p, m.pos) <= m.reach)
++                sheltered = dist(victim.pos, m.pos) <= dist(p, m.pos);
++    });
++    if (sheltered) return true;
++    const float health = (test(world_.map().ally_spawn, p) ? own_health_ - my_health() + my_max_health() : own_health_) - reply;
++    // Cassi and Issac die together.
++    const auto* pair = linked_partner(world_, victim);
++    const int other = pair ? pair->index : -1;
++    float total = camp_damage(p, true, true);
++    for (const auto& t : threats())
++        if (t.enemy != enemy && t.enemy != other) total += t.at(p).damage * world_.me().taken;
++    return total >= health;
++}
++
+ } // namespace aph
+diff -ru '--exclude=.cambc' bots/variants/macro4-hub2/src/model/safety.h bots/variants/macro4-dD/src/model/safety.h
+--- bots/variants/macro4-hub2/src/model/safety.h	2026-11-11 01:36:29.703430199 +0000
++++ bots/variants/macro4-dD/src/model/safety.h	2026-11-11 03:30:14.337457064 +0000
+@@ -492,6 +492,9 @@
+     // Could the credible threats and camps kill us at p before our next turn? Against our health
+     // and shield now: Ren's retaliation and our shield cast this turn count once refreshed.
+     bool lethal(vec2 p);
++    // lethal(p) with `enemy` (an index into World::enemies, and its linked partner) dead first, after
++    // `reply` (its retaliation) lands: the answer to a kill. A camp member it shelters us from counts as lethal.
++    bool lethal_without(vec2 p, int enemy, float reply = 0);
+     bool unseen_beyond(vec2 p);
+ 
+     // Live members of awake (or maybe awake) groups, bar those read asleep that nobody else is near

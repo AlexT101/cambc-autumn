@@ -1,0 +1,87 @@
+diff -ruN macro3/bots/variants/macro3-eoq2/src/bot_parts.h macro3/bots/variants/macro3-eoq5/src/bot_parts.h
+--- macro3/bots/variants/macro3-eoq2/src/bot_parts.h	2026-11-11 08:04:05.745667118 +0000
++++ macro3/bots/variants/macro3-eoq5/src/bot_parts.h	2026-11-11 08:27:14.384123752 +0000
+@@ -381,6 +381,7 @@
+ bool sealed_in(const World& world, Pathing& pathing, vec2 p);
+ bool wake_ring(const World& world, Pathing& pathing, Safety& safety);
+ int altar_steps(const World& world, Pathing& pathing, vec2 p, int altar);
++float carrier_hazard();
+ int bank_floor(const World& world, Pathing& pathing);
+ void note_carriers(const World& world);
+ int bankable_bag(const World& world, Pathing& pathing);
+diff -ruN macro3/bots/variants/macro3-eoq2/src/economy/bank.cc macro3/bots/variants/macro3-eoq5/src/economy/bank.cc
+--- macro3/bots/variants/macro3-eoq2/src/economy/bank.cc	2026-11-11 08:04:24.178996253 +0000
++++ macro3/bots/variants/macro3-eoq5/src/economy/bank.cc	2026-11-11 08:27:14.384018611 +0000
+@@ -1291,11 +1291,11 @@
+     return tribute_ok(world, safety, memory, tribute_turns(world, my_gems()));
+ }
+ 
+-// Only a small bag, out of every credible enemy's reach, and never the gems that would win.
+-// Cassi's and Issac's bags fall together. A credible enemy elsewhere on the map is no reason to
+-// walk a small bag home.
++// Out of every credible enemy's reach, and never the gems that would win; farm's banking turn
++// prices the bag's exposure on the chain. A credible enemy elsewhere on the map is no reason to
++// walk the bag home.
+ bool may_chain(const World& world, Safety& safety) {
+-    if (bag_at_stake(world) >= params::chain_bag_limit || winning_bag(world)) return false;
++    if (winning_bag(world)) return false;
+     return !safety.may_reach_within(my_position(), params::pursuit_steps);
+ }
+ 
+diff -ruN macro3/bots/variants/macro3-eoq2/src/economy/farm.cc macro3/bots/variants/macro3-eoq5/src/economy/farm.cc
+--- macro3/bots/variants/macro3-eoq2/src/economy/farm.cc	2026-11-11 01:36:29.308680420 +0000
++++ macro3/bots/variants/macro3-eoq5/src/economy/farm.cc	2026-11-11 08:35:32.842644329 +0000
+@@ -1507,8 +1507,8 @@
+     // in its cycle) and crystal hops (shorter than the crow flies).
+     // Banking, the trip is at least the steps less bank_now (bank >= 0), and a group skipped must
+     // also not raise from_altar_value (at most its worth over its altar walk and the capture) to the
+-    // larger of the best and from_altar_value: below it, it changes neither the choice nor whether
+-    // we bank, as both only rise.
++    // larger of the best less the bag's holding cost and from_altar_value: below it, it changes
++    // neither the choice nor whether we bank, as both only rise.
+     const bool hop_any = map.any_group_hop(); // group_hop(g) >= 0 only then
+     const bool can_bound = !opening && order && !in_pocket;
+     const bool hops = can_bound && hop_any;
+@@ -1516,7 +1516,11 @@
+     const float most_tribute = std::max(0.0f, tribute_gold), most_per_gold = std::max(0.0f, per_gold);
+     const FarmMemo::Most* most = nullptr;
+     float tested_value = 0; // the threshold the stop was searched for
+-    const auto threshold = [&]() __attribute__((always_inline)) { return banks_bag ? std::max(best_value, from_altar_value) : bar_lt(); };
++    // Banking, the chain's detour keeps the bag (Cassi's and Issac's together) out: at the bank floor's
++    // hazard and swing it loses this much a round, the same for every candidate, so it decides only
++    // whether we chain (best_value - hold against from_altar_value), not which group.
++    const float hold = banks_bag ? params::bag_swing * carrier_hazard() * static_cast<float>(bag_at_stake(world)) : 0.0f;
++    const auto threshold = [&]() __attribute__((always_inline)) { return banks_bag ? std::max(best_value - hold, from_altar_value) : bar_lt(); };
+     const auto beyond = [&](int j) __attribute__((always_inline)) {
+         const auto& m = most[j];
+         const int near = m.near - offset;
+@@ -2217,7 +2221,7 @@
+             if (value > best_value) best = g, best_steps = walk, best_value = value, best_spell = false, best_priced = Priced{'T'};
+         });
+     }
+-    if (banks_bag && (best < 0 || best_value <= from_altar_value)) return false;
++    if (banks_bag && (best < 0 || best_value - hold <= from_altar_value)) return false;
+     if (banks_bag && attack_in_range()) return true;
+     if (world.is_stale()) return true;
+     if (best < 0 && risky >= 0) best = risky, best_steps = risky_steps, best_value = risky_value, best_priced = Priced{'r'};
+diff -ruN macro3/bots/variants/macro3-eoq2/src/params.h macro3/bots/variants/macro3-eoq5/src/params.h
+--- macro3/bots/variants/macro3-eoq2/src/params.h	2026-11-11 08:06:00.868614124 +0000
++++ macro3/bots/variants/macro3-eoq5/src/params.h	2026-11-11 08:30:14.099032529 +0000
+@@ -111,12 +111,11 @@
+ // farm's pick_up: take over a group cleared this turn within this many tiles of its nearest member.
+ inline constexpr int pick_up_radius = 7;
+ 
+-// Chain another capture onto a bag (Cassi's and Issac's together) only below this.
+-inline constexpr int chain_bag_limit = 26;
+-// The bank floor (economy/bank.cc bank_floor) holds a bag against its loss: a carrier dies at the
+-// game's hazard a round (economy/bank.cc carrier_hazard, a posterior from this prior), and the killer
+-// takes the bag, a swing of bag_swing times it. The prior is bag-carrier deaths per champion-round
+-// alive with 25+ gems, measured on 10,240 macro3-base games.
++// The bank floor (economy/bank.cc bank_floor) and a chain past it (economy/farm.cc farm_turn) hold a
++// bag against its loss: a carrier dies at the game's hazard a round (economy/bank.cc carrier_hazard,
++// a posterior from this prior), and the killer takes the bag, a swing of bag_swing times it. The
++// prior is bag-carrier deaths per champion-round alive with 25+ gems, measured on 10,240 macro3-base
++// games.
+ inline constexpr float carrier_hazard = 0.86e-3f;
+ inline constexpr float bag_swing = 2.0f;
+ 

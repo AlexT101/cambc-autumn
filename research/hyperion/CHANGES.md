@@ -11,6 +11,8 @@ cite them. Missing numbers are fuel-only work, bug fixes, cleanups, superseded a
 - `bots/astraeus_teacher` (442-449), `bots/fish`, `bots/hermes` and `bots/ocean_manip` were deleted 2026-11-11, with
   `tools/teacher_ab.py` (`./copybot -r 5d92828d0 fish variants/fish` restores one). river, river_ac, fushia, demeter,
   diana, proteus and the ocean_tune copies moved to `bots/archives/` the same day.
+- 507 is used twice, as 449 is: ocean's comms slots, then `bots/charybdis` (507-515, its own line from ocean 506).
+  The next entry is 516.
 - Results are win rates against the bot before the change, all maps from both sides at the real fuel budget, unless
   noted. 1094-1164 games is ladder + `maps/gen` + `maps/gen-s1`; earlier entries used smaller suites, later ones
   10,240-game fresh suites. "Own drafts" means each bot on its own draft.
@@ -4512,3 +4514,134 @@ paired; own drafts, release, fast runner):
 
 Evidence: EXPERIMENTS "Comms slots" (2026-11-11) and [comms/README.md](../ideas-2026-11-11/comms/README.md).
 Frozen as `variants/oc-comms-507` (= bots/ocean).
+
+## 507: charybdis, a new bot: ocean 506 with a Prism gem-carry macro (charybdis, 2026-11-11)
+
+`bots/charybdis` starts as macro1's `macro1-hold6` (branch `macro1-20261111`), the best of six independent macro
+refactors of ocean (research/macro-2026-11-11/, merge record research/charybdis/). Draft and emblems are ocean's. The
+lever: a Prism gains 1.5 Focus a carried gem and its spells scale with Focus, so Prism duels go to the larger bag; the
+team's capture gems are put on the Prism rather than farmed differently (captures are level with ocean's).
+- **Carry:** the Prism takes over an ally's counting gem hold it reaches before the payout ('G'), and takes groups an
+  ally leaves to it within `carry_reach() = 2 x capture_time` ('L'). Allies hold for a claiming Prism, cancel capture
+  recalls to yield to it, and step off.
+- **Funnel:** allies leave a fresh cleared gem group to a nearby Prism that is not dominant (`prism_dominant`: our Focus
+  under 2x the largest seen enemy Prism's) when its ETA, counting its current task (`prism_eta`), is within the capture
+  time (`leave_for_prism`).
+- **Hold:** a fit sole Prism holder keeps its hold with an enemy in sight unless one contests the tiles or could take it
+  below `hurt_health_fraction` before the payout (`prism_hold_threatened`, `Safety::turns_to_harm_idle`).
+- **No dilution:** a sole Prism hold's tiles are kept off by allies' work, fight and retreat steps, Willow's guard and
+  formation, and damaged allies out of sight (`prism_hold_tiles`, `held_step_guard`, `yield_capture`).
+- While it keeps its gems the Prism weighed gold at half (`gold_part`; replaced in 512).
+
+Against ocean (`variants/ocean-main-b7c87cf` = bots/ocean 506): 56.8% of 40,960 at the real budget (fresh ladder-v2
+s-700001..080); 58.3% of 40,960 at 2x fuel in its own programme. Frozen as `variants/charybdis-base`.
+
+## 508: EOQ bank floor with an online carrier hazard (charybdis, 2026-11-11)
+
+From macro3 (`macro3-eoq2`, branch `macro3-20261111`). `params::min_bank = 25` is replaced by `bank_floor`, the
+economic order quantity D x sqrt(2T / h): D our gem income a round alive (`gem_income_rate`), T the bank trip (walk or
+recall to an altar, a tribute turn, and back out), h = carrier hazard x `bag_swing` (2: a killer takes the bag). The
+hazard is a Gamma posterior over the team's carrier deaths and carrying rounds (`note_carriers`), from a prior of
+0.86e-3 a round measured on 10,240 mirror games. Clamped to [10, min(gems short of the win, 10 x rounds left)];
+`winning_bag` and `closing` still override. 51.1% of 20,480 against 507; 57.9% against ocean. Frozen as
+`variants/chy-K1`.
+
+## 509: No lethal camp flight (charybdis, 2026-11-11; bug fix)
+
+From macro2 (`macro2-lstep`). `flee_camps` prefers a step `Safety::lethal` does not flag over any lethal one, whatever
+the camp damage, and when the best exit is lethal because of enemies it defers to `retreat_step` if that has a
+non-lethal step whose damage bound we survive (found where a 228-gem Prism fled a 20-damage wolf into a one-cast kill).
+508 + this: 51.65% of 40,960 against 507, 58.37% against ocean. Frozen as `variants/charybdis-p1`.
+
+## 510: The Prism collects an ally's clear in progress, 'Q' (charybdis, 2026-11-11)
+
+From macro4 (`macro4-handfc`, its M4-a2). After the 'G'/'L' carry loop, a Prism keeping its gems may pick an ally's
+claimed gem group that is alive, being worked (hit last round, or a claimer in reach) and within `carry_reach`, with a
+tile the claimers leave free; the carry gates apply (no enemy seen or able to see it, hurt line, win, time). The clear
+takes health / the claimers' camp output: arriving before it ends the Prism joins as crew if `affordable`, before the
+payout it holds alone (507's hold), after it the cleared group is left to it. 50.91% of 40,960 against 509 (CI
+50.4-51.4); 59.15% against ocean. Frozen as `variants/chy2-C2`.
+
+## 511: Hold cast and Willow's heal order (charybdis, 2026-11-11)
+
+From macro2 (`macro2-lstep`, its M2-c and M2-a; its double-turn two-cast threat, M2-b, is left out).
+- **Hold cast** (`hold_capture`): a holder with no camp its basic attack reaches casts at the nearest alive group in
+  cast reach that has no sleeping strikers (the cast wakes nothing). `engagement_near` already refuses it with an enemy
+  near.
+- **Willow's heal order** (`heal_before`, `heal_station`): urgent allies first (every blow before our next turn could
+  fell them; the support mate first among them), then the mate while it waits in recovery, then farm rounds saved, then
+  the lowest health fraction.
+Paired against 510 over 40,960: +0.61 against 509 (CI +0.12..+1.11), +0.62 against 507, +0.10 against ocean. Frozen as
+`variants/chy2-C8ac`.
+
+## 512: Focus-priced farm values replace the Prism's half-price gold (charybdis, 2026-11-11)
+
+From macro6 (`macro6-carry3`, its M6-bc). For a Prism keeping its gems, each gem of a group short of the win (not a
+Monolith) is worth 1 + `carried_bonus` (the takeover price `per_gold` x 1.5 Focus / 8 Focus a 30-gold shard) in its
+solo, kited, crew and risky values and in the 'G', 'L' and 'Q' picks; a join adds the Focus whole, not as a share, and
+drops it if the clear would leave the Prism under the hurt line. `gold_part` is gone; every prune bound carries the
+bonus (`keep_most`). On 509, over 122,880 games: 50.35% against 509 (CI 50.07-50.63). On 511, paired over 81,920:
++0.70 against ocean (CI +0.29..+1.11), +0.16 against 507, -0.05 against 509; kept on the ocean gain and the derived
+price (user decision). **511 + this: 60.12% of 81,920 against ocean (CI 59.78-60.46), 53.19% against 507, 51.32%
+against 509.** Frozen as `variants/charybdis-p2`.
+
+## 513: Exact fuel cuts in charybdis's additions (charybdis, 2026-11-11; fuel-only)
+
+From two fuel passes (branches `charybdis-fuelA-20261111`, `charybdis-fuelB-20261111`), squashed onto 512:
+- **Bank:** `bankable_bag` memoised on its inputs (never across the crystal branch); `below_bank_floor` tests bag <
+  floor by bounds on the trip (each way between min(walk, recall) and the walk), reading the landing and spawn fields
+  only when the bounds leave it open; `closing` memoised (key set once computed); `note_carriers` leaner.
+- **Farm:** the 'G'/'L'/'Q' picks are bounded before their takeover tests, field and `affordable()`: their rounds are at
+  least the crow's walk's and `rate` falls with rounds.
+- **Combat:** `prism_hold_tiles` asked only with our Prism ally alive and in sight (`prism_hold_seen`); `yield_capture`
+  only on a cleared group's tile; `held_step_guard` reuses its cover; `flee_camps` reads `lethal` only down to its first
+  safe step.
+
+bench.py replays at 100M are identical: 52/52 `--set wide` and 52/52 `--test-draft` against 512 for each of the two
+commits (opponent ocean-main); the fuel passes' own sets 96/96 and 108/108 (Prism, Ren, Heart of Ruin, Vendetta drafts).
+Mean fuel -1.5% (100M, wide). At the real budget, paired over 4,096 held-out games: out-of-fuel turns -5.4% (CI
+-8.2..-2.5), shortcuts -4.0% (economy pass); the combat pass alone -1.3% (CI -4.3..+1.6). Frozen as
+`variants/charybdis-1178688`.
+
+## 514: Cheaper idle and reflected simulations (charybdis, 2026-11-11; fuel-only)
+
+Idle survival ceiling and enemy-only idle simulation; direct nonlethal quiet reflection; a separate
+Safety generation for capture threat caches; harmless Ren clear/tail formulas with the old float
+residual turn retained; stop next-death scans at one; omit dash landing checks below the retained scores.
+No draft, strategic constant, gate or reserve change. Frozen as `variants/chary-fuelC-final`,
+source-identical to measured `variants/chary-fuelC-combo`.
+
+- 100M bench: **232/232 byte-identical** (52 own, 52 test drafts, 128 forced Ren/all-kit/large-group coverage).
+  Actual-source oracle: one million idle fights, one million team fights and one million camp clears match.
+- Reserved fresh paired debug bench, 4,096 games: OOF **27,399 → 26,438 (-3.51%, 95% -7.08..+0.22%)**;
+  shortcuts **1,106,126 → 1,090,337 (-1.43%, -3.12..+0.13%)**. Map-cluster bootstrap; both intervals include zero.
+- Standard release A/B, 1,280 games: 50.31% wins; OOF 7,340 → 7,379. Level; no failed or early games.
+
+The requested **10% exhaustion reduction was not reached**. Closed at the user's request. Evidence and
+rejected experiments: [Charybdis fuel C](../charybdis-fuelC/README.md); experiment record in EXPERIMENTS.
+
+## 515: Draft18's F92 draft model, refitted on charybdis (charybdis, 2026-11-11)
+
+Replaces only `src/draft/draft_model.h`: draft10-f92's model (CHANGES 502) refitted on games charybdis played, since
+its Prism (507-512) is worth more than the Prism draft10 measured. Lab `replays/draftlab/draft18` (tools/draftlab):
+1,000,004 games in 16 batches (0 errors, 120 draft mismatches), the player `variants/charybdis-5564637` (514), the
+same 92 features, draft10-f92's searched penalties (the final search was cancelled after 29 min without an
+improvement; the header is `replays/draftlab/draft18-start`'s, a link lab refitting all draft18's games at them).
+Pool: fresh `--mix ladder-v2` 3300000-3300099 (25,518 maps); opponents charybdis 0.2, ocean 506 0.2, the Fish body
+(`spar-dvn951-Flp4`) 0.3 and the Mite body (`spar-dvn95-Mt3qro`) 0.3; ladder prior: the top 10 other teams' ranked
+drafts since 2026-11-08T14:54 (2,800 groups). CV log loss 0.52496. The team changes on 54% of the lab's maps: Prism
+80 -> 88% of 4- and 5-pick teams (74 -> 80% at 3), Ryth and Vendetta up, Vesper Vale, Marcella and Ren down. Native
+parity 0 team mismatches, 0 C++ failures on 384 maps (ladder + fresh-3310000); the first draft turn was not
+re-measured (same features and ranking code; user decision), and the A/Bs had no broken, capped or early-lost drafts
+(61,440 candidate games).
+
+Held-out A/Bs on `merged/d18-hold` (fresh ladder-v2 3310000-3310079, 20,480 maps, both sides; own drafts, release,
+real fuel, fast runner), against ocean 506 = `variants/ocean-chybase` (the branch's bots/ocean):
+
+| Candidate | Reference | Win % of 40,960 (95% CI) |
+|---|---|---|
+| this | charybdis 514 | **51.0%** (50.5-51.5) |
+| this | ocean 506 | **60.3%** (59.8-60.8) |
+| charybdis 514 | ocean 506 | 59.8% (59.3-60.3) |
+
+Evidence: EXPERIMENTS "Draft18 on charybdis". Frozen as `variants/chy-draft18` (= bots/charybdis).

@@ -1,0 +1,34 @@
+diff -ruN bots/variants/chary-fuelD-base/src/combat/fight.cc bots/variants/chary-fuelD-exit/src/combat/fight.cc
+--- bots/variants/chary-fuelD-base/src/combat/fight.cc	2026-11-11 15:52:13.382105740 +0000
++++ bots/variants/chary-fuelD-exit/src/combat/fight.cc	2026-11-11 15:56:17.066157680 +0000
+@@ -27,18 +27,26 @@
+ const Field& camp_exit_field(const World& world, Pathing& pathing, Safety& safety, int cap, bool dash) {
+     struct Made {
+         Field field;
++        bitboard walls{cambc::uninitialized};
+         int round = -1, cap = 0;
+         std::uint32_t champion = 0;
+     };
+     static Made made[2];
+-    static bitboard walls{cambc::uninitialized}, visited{cambc::uninitialized};
++    static bitboard walls{cambc::uninitialized}, goals{cambc::uninitialized}, visited{cambc::uninitialized};
+     auto& m = made[dash];
+     const auto me = static_cast<std::uint32_t>(world.me().handle);
+     if (m.round == world.round && m.champion == me && m.cap >= cap) return m.field;
+     or_into(dash ? world.map().dash_walls : world.map().blocked_for_us, pathing.live_camps(), walls);
+-    not_into(safety.camp_area(), m.field.goals);
+-    m.field.goals &= world.map().standable;
+-    home_exits(world, safety, m.field.goals);
++    not_into(safety.camp_area(), goals);
++    goals &= world.map().standable;
++    home_exits(world, safety, goals);
++    // The walk depends on these boards, not the round or the damage of a camp's hit.
++    if (m.round >= 0 && m.cap >= cap && boards_equal(walls, m.walls) && boards_equal(goals, m.field.goals)) {
++        m.round = world.round;
++        return m.field;
++    }
++    copy_into(walls, m.walls);
++    copy_into(goals, m.field.goals);
+     m.field.steps.compute_with_expansion_count(walls, m.field.goals, visited, static_cast<std::uint16_t>(cap));
+     m.round = world.round, m.champion = me, m.cap = cap;
+     return m.field;

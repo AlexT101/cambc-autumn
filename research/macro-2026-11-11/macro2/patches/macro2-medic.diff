@@ -1,0 +1,513 @@
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/bot.cc macro2-medic/src/bot.cc
+--- ocean-ref-b7c87cf/src/bot.cc	2026-11-11 01:36:28.906846080 +0000
++++ macro2-medic/src/bot.cc	2026-11-11 04:35:03.211966769 +0000
+@@ -514,7 +514,7 @@
+         decision = Branch::siege;
+         return;
+     }
+-    if (willow_follow(world, pathing, safety)) return;
++    if (willow_follow(world, pathing, safety, memory)) return;
+     farm(world, pathing, safety, memory);
+ }
+ 
+@@ -654,6 +654,8 @@
+     search.chose = false;
+     struck = searched = false;
+     support_owned = support_requested = support_offered = support_retreat = end_ward = end_tight = false;
++    medic_attended = -1;
++    if (world.me().alive && world.me().facts().heals()) note_intake(world);
+     comms::support_intent(world.round, false);
+     siege_group() = -1;
+     turn_acts = {};
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/bot_parts.h macro2-medic/src/bot_parts.h
+--- ocean-ref-b7c87cf/src/bot_parts.h	2026-11-11 01:36:28.906986482 +0000
++++ macro2-medic/src/bot_parts.h	2026-11-11 04:35:03.211898619 +0000
+@@ -70,6 +70,8 @@
+ // For the turn end's comms::support_intent: Prism waits on a heal (requested) or Willow can give
+ // one safely (offered). support_retreat: the support code hands the turn to retreat().
+ bool support_requested = false, support_offered = false, support_retreat = false;
++// The ally (index) Willow attends this turn (willow_follow), -1 for none: for the traces.
++int medic_attended = -1;
+ 
+ // A tile's risk to the support pair: a likely enemy hit, or a live/returning camp member in reach.
+ // camp is needed only without an enemy threat; the independent heal step asks for full damage.
+@@ -531,7 +533,9 @@
+ const ChampionBelief* support_endpoint(const World& world, bool healer);
+ bool willow_bank_heal_step(World& world, Pathing& pathing, Safety& safety, const Field& field);
+ bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety, int farm_group);
+-bool willow_follow(World& world, Pathing& pathing, Safety& safety);
++bool willow_follow(World& world, Pathing& pathing, Safety& safety, Memory& memory);
++// Willow, each turn: the camp damage it sees allies take, which willow_follow attends to.
++void note_intake(const World& world);
+ bool support_work(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
+ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool leave, bool& mate_eligible);
+ 
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/combat/self_abilities.cc macro2-medic/src/combat/self_abilities.cc
+--- ocean-ref-b7c87cf/src/combat/self_abilities.cc	2026-11-11 01:36:28.907420057 +0000
++++ macro2-medic/src/combat/self_abilities.cc	2026-11-11 04:33:18.614929586 +0000
+@@ -8,6 +8,7 @@
+ #include "../champions.h"
+ #include "../emblems.h"
+ #include "../params.h"
++#include "../model/comms.h"
+ #include "../model/escape.h"
+ #include "../model/pathing.h"
+ #include "../model/safety.h"
+@@ -682,10 +683,8 @@
+     return true;
+ }
+ 
+-namespace {
+-
+-// The awake camps' hits on an ally at p each camp phase: a monster hits the nearest champion in its
+-// range, a tie the one acting first in next round's order, so only members no champion we see takes first.
++// A monster hits the nearest champion in its range, a tie the one acting first in next round's
++// order, so only members no champion we see takes first.
+ float ally_camp_fire(const World& world, const ChampionBelief& a, vec2 p) {
+     const auto& groups = world.map().groups;
+     const vec2 here = my_position();
+@@ -711,8 +710,6 @@
+     return fire * a.camp_taken;
+ }
+ 
+-} // namespace
+-
+ float HealGate::damage(const ChampionBelief& a, vec2 p, float blow_share) {
+     int i = 0;
+     while (i < n_hits_ && !(hits_[static_cast<std::size_t>(i)].ally == &a && hits_[static_cast<std::size_t>(i)].p == p)) ++i;
+@@ -753,14 +750,35 @@
+     return gain >= least_ || health <= damage(a, pos, 1);
+ }
+ 
++float heal_value(const World& world, const ChampionBelief& a, vec2 pos, float gain, float max_health) {
++    const int field = world.map().from_ally_spawn().at(pos);
++    const auto steps = static_cast<float>(field != unreachable ? field : dist(pos, world.map().ally_spawn_centre));
++    const float usable = max_health * (1 - params::recall_health_fraction);
++    return usable > 0 ? gain / usable * heal_trip(a.recall_turns(), steps, steps) : 0.0f;
++}
++
++HealMate heal_mate(const World& world) {
++    const auto pair = support_pair(world);
++    if (!pair[0] || !pair[1] || !pair[1]->is_self) return {};
++    return {pair[0], comms::support_request(world)};
++}
++
++bool heal_before(const HealTarget& x, const HealTarget& y, const HealMate& mate) {
++    const auto rank = [&](const HealTarget& t) { return t.urgent ? (t.ally == mate.ally ? 3 : 2) : t.ally == mate.ally && mate.waiting ? 1 : 0; };
++    if (const int rx = rank(x), ry = rank(y); rx != ry) return rx > ry;
++    return x.value != y.value ? x.value > y.value : x.fraction < y.fraction;
++}
++
+ std::optional<HealTarget> heal_target(const World& world, const ChampionBelief& a, float amount, HealGate* gate, bool step) {
+     if (a.is_self || !a.alive || !a.visible || test(world.map().ally_spawn, a.pos)) return std::nullopt;
+     const auto* live = visible_record(a.handle);
+     if (!live) return std::nullopt;
+-    const HealTarget t{&a, {live->x, live->y}, std::min(amount, live->max_health - live->health), live->health / live->max_health};
++    HealTarget t{&a, {live->x, live->y}, std::min(amount, live->max_health - live->health), live->health / live->max_health};
+     const float health = live->health;
+     if (t.gain <= 0 || ((step || !gate) && !worth_healing(amount, t.gain, t.fraction))) return std::nullopt;
+     if (kept_recall(a.handle, a.recall_turns()) || (gate && !gate->worth(a, t.pos, t.gain, health))) return std::nullopt;
++    t.value = heal_value(world, a, t.pos, t.gain, live->max_health);
++    t.urgent = gate && gate->urgent(a, t.pos, health);
+     return t;
+ }
+ 
+@@ -773,12 +791,13 @@
+     const int range = world.me().facts().abilities[heal].range();
+     struct Candidate {
+         cambc::handle_champion_t c;
+-        const ChampionBelief* a;
+-        vec2 pos;
+-        float gain, fraction, health;
++        HealTarget t;
++        float health;
+     };
+     std::array<Candidate, 8> found;
+     int n = 0;
++    HealGate gate(world, safety, here, range, amount);
++    const auto mate = heal_mate(world);
+     // Read live: allies come into sight as we move.
+     for (auto p : positions_within(live_champion_tiles(team::ally), here, range)) {
+         if (p == here || test(world.map().ally_spawn, p) || n == static_cast<int>(found.size())) continue;
+@@ -793,17 +812,21 @@
+                 if (o.handle == c) a = &o;
+             // One keeping a recall going will reach spawn and heal there.
+             if (!a || kept_recall(c, a->recall_turns())) continue;
+-            // Most restored first, then the lowest.
++            HealTarget t{a, p, gain, fraction, heal_value(world, *a, p, gain, live.max_health), gate.urgent(*a, p, health)};
+             int i = n++;
+-            for (; i > 0 && (found[i - 1].gain < gain || (found[i - 1].gain == gain && found[i - 1].fraction > fraction)); --i) found[i] = found[i - 1];
+-            found[i] = {c, a, p, gain, fraction, health};
++            for (; i > 0 && heal_before(t, found[i - 1].t, mate); --i) found[i] = found[i - 1];
++            found[i] = {c, t, health};
+         } catch (const cambc::error&) {
+         }
+     }
+-    HealGate gate(world, safety, here, range, amount);
+     for (int i = 0; i < n; ++i) {
+         try {
+-            if (gate.worth(*found[i].a, found[i].pos, found[i].gain, found[i].health) && cast_slot_on(heal, found[i].c)) return true;
++            const auto& t = found[i].t;
++            if (gate.worth(*t.ally, t.pos, t.gain, found[i].health) && cast_slot_on(heal, found[i].c)) {
++                debug_block({ std::printf("MEDIC %d %u target %d value %.2f gain %.0f urgent %d attended %d\n", world.round,
++                                          static_cast<std::uint32_t>(world.me().handle), t.ally->index, t.value, t.gain, t.urgent, medic_attended); });
++                return true;
++            }
+         } catch (const cambc::error&) {
+         }
+     }
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/combat/self_abilities.h macro2-medic/src/combat/self_abilities.h
+--- ocean-ref-b7c87cf/src/combat/self_abilities.h	2026-11-11 01:36:28.907420057 +0000
++++ macro2-medic/src/combat/self_abilities.h	2026-11-11 04:32:54.679221886 +0000
+@@ -80,6 +80,8 @@
+         : world_(world), safety_(safety), from_(from), radius_(radius), amount_(amount) {}
+     // A heal restoring `gain` to ally `a` at `pos` with `health`.
+     bool worth(const ChampionBelief& a, vec2 pos, float gain, float health);
++    // Every blow that may land before our next turn could fell it.
++    bool urgent(const ChampionBelief& a, vec2 pos, float health) { return health <= damage(a, pos, 1); }
+ private:
+     // What could hit `a` at p a round: camp hits, and `blow_share` of the enemy blows.
+     float damage(const ChampionBelief& a, vec2 p, float blow_share);
+@@ -109,7 +111,23 @@
+     const ChampionBelief* ally;
+     vec2 pos;
+     float gain, fraction; // what the heal restores, and the ally's health fraction before it
++    float value = 0;      // heal_value
++    bool urgent = false;  // HealGate::urgent, with a gate
+ };
++// Rounds of farm a heal restoring `gain` to `a` at `pos` saves: its share of a trip home (heal_trip
++// from pos's steps from our spawn) per usable health, as Prism's recovery prices it (support.cc).
++float heal_value(const World& world, const ChampionBelief& a, vec2 pos, float gain, float max_health);
++// Our protected mate when we are its healer, and whether it waits in its recovery for our heal.
++struct HealMate {
++    const ChampionBelief* ally = nullptr;
++    bool waiting = false;
++};
++HealMate heal_mate(const World& world);
++// x's heal before y's: one that may keep an ally from falling (the mate first among those), then the
++// mate while it waits for us, then the most rounds saved (heal_value), then the lowest ally.
++bool heal_before(const HealTarget& x, const HealTarget& y, const HealMate& mate);
++// The awake camps' hits on ally `a` at p each camp phase, less members a champion nearer takes.
++float ally_camp_fire(const World& world, const ChampionBelief& a, vec2 p);
+ // A visible ally off its spawn that a heal of `amount` is worth casting on (`gate`), or with `step`
+ // or no gate, also worth stepping for (worth_healing). One keeping a recall going will reach spawn
+ // and heal there.
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/combat/support.cc macro2-medic/src/combat/support.cc
+--- ocean-ref-b7c87cf/src/combat/support.cc	2026-11-11 01:36:28.907420057 +0000
++++ macro2-medic/src/combat/support.cc	2026-11-11 04:45:11.974451193 +0000
+@@ -221,14 +221,15 @@
+     return false;
+ }
+ 
+-// The neighbouring station `ok` accepts from which a heal lands best: the most restored, then on
+-// the lowest ally, then the least `cost`. `here` if none.
++// The neighbouring station `ok` accepts from which a heal lands best (heal_before), then the least
++// `cost`. `here` if none.
+ template <class Ok, class Cost>
+ vec2 heal_station(const World& world, Pathing& pathing, Safety& safety, vec2 here, const std::array<HealView, 8>& views,
+                   int n, Ok&& ok, Cost&& cost) {
+     vec2 best = here;
+-    float best_gain = 0, best_fraction = 0;
++    const HealTarget* best_target = nullptr;
+     int best_cost = unreachable;
++    const auto mate = heal_mate(world);
+     const auto& tiles = stations(world, safety, here).tiles;
+     for (int k = 1; k < 9; ++k) {
+         const auto& tile = tiles[k];
+@@ -239,9 +240,8 @@
+         for (int t = 0; t < n; ++t) {
+             const auto& target = views[t].target;
+             if (!support_view(views[t].viewers, target.pos, tile.p)) continue;
+-            if (target.gain != best_gain ? target.gain > best_gain
+-                : target.fraction != best_fraction ? target.fraction < best_fraction : c < best_cost)
+-                best = tile.p, best_gain = target.gain, best_fraction = target.fraction, best_cost = c;
++            if (!best_target || heal_before(target, *best_target, mate) || (!heal_before(*best_target, target, mate) && c < best_cost))
++                best = tile.p, best_target = &target, best_cost = c;
+         }
+     }
+     return best;
+@@ -361,13 +361,227 @@
+     return true;
+ }
+ 
+-// Farm turns: a healer walks back within 2 of the ally with the most allies within 4 of it (ties: the
+-// nearest) when it is farther; within 2, it hits that ally's claimed group from where it stands.
++// A live, awake member that strikes reaches p.
++bool awake_camp_reaches(const World& world, vec2 p) {
++    for (const int g : world.map().groups_near(p, world.map().max_camp_reach)) {
++        const auto& group = world.map().groups[g];
++        const auto& c = world.camps[g];
++        if (group.strength <= 0 || c.state != CampState::alive || c.awake == Awake::asleep) continue;
++        for (std::size_t i = 0; i < group.members.size(); ++i) {
++            const auto& m = group.members[i];
++            if (m.strength > 0 && c.health[i] > 0 && !c.member_asleep(i) && dist(p, m.pos) <= m.reach) return true;
++        }
++    }
++    return false;
++}
++
++// Health each ally (by index) was seen to lose while an awake camp reached it, by round mod the heal
++// cooldown: what the heal could have served since its last cast.
++struct Intake {
++    std::array<float, 8> health{};
++    std::array<int, 8> read{-1, -1, -1, -1, -1, -1, -1, -1};
++    std::array<std::array<float, ability_cooldown>, 8> loss{};
++    std::array<std::array<int, ability_cooldown>, 8> when{};
++};
++Intake& intake() {
++    static Intake k;
++    return k;
++}
++
++// Health a round, over the last heal cooldown.
++float recent_intake(const World& world, int ally) {
++    const auto& k = intake();
++    float sum = 0;
++    for (int s = 0; s < ability_cooldown; ++s)
++        if (k.when[ally][s] > world.round - ability_cooldown) sum += k.loss[ally][s];
++    return sum / static_cast<float>(ability_cooldown);
++}
++
++// The tank of a crew's clear of a's claimed group: two or more allies we see claim it, and a has
++// crew_tank's best tank_score among them (us aside: Willow keeps out of reach). Its live members' hits.
++float planned_fire(const World& world, const ChampionBelief& a) {
++    const int g = comms::claim_of(world, a.index);
++    const auto& map = world.map();
++    if (g < 0 || g >= static_cast<int>(map.groups.size()) || map.groups[g].strength <= 0 || world.camps[g].state != CampState::alive
++        || (map.shared_gems && big_group(map.groups[g])))
++        return 0;
++    int claimers = 0;
++    const float score = tank_score(a);
++    for (const auto& b : world.allies) {
++        if (b.is_self || !b.alive || !b.visible || comms::claim_of(world, b.index) != g) continue;
++        ++claimers;
++        if (&b != &a && (tank_score(b) > score || (tank_score(b) == score && b.index < a.index))) return 0;
++    }
++    if (claimers < 2) return 0;
++    const auto& G = map.groups[g];
++    float fire = 0;
++    for (std::size_t i = 0; i < G.members.size(); ++i)
++        if (world.camps[g].health[i] > 0) fire += G.members[i].strength;
++    return fire * a.camp_taken;
++}
++
++void note_intake(const World& world) {
++    auto& k = intake();
++    for (const auto& a : world.allies) {
++        if (a.is_self || a.index >= 8) continue;
++        const auto i = static_cast<std::size_t>(a.index);
++        if (!a.alive || !a.visible || test(world.map().ally_spawn, a.pos)) {
++            if (!a.alive || a.visible) k.read[i] = -1; // healed on spawn, or respawning
++            continue;
++        }
++        if (k.read[i] >= world.round - 2 && a.health < k.health[i] - 0.01f && awake_camp_reaches(world, a.pos)) {
++            const auto s = static_cast<std::size_t>(world.round % ability_cooldown);
++            if (k.when[i][s] != world.round) k.when[i][s] = world.round, k.loss[i][s] = 0;
++            k.loss[i][s] += k.health[i] - a.health;
++        }
++        k.health[i] = a.health, k.read[i] = world.round;
++    }
++}
++
++// Rounds a's claimed group lasts at the output of the allies we see claiming it, or `cap` (past it
++// nothing counts) when it claims none alive.
++float clear_rounds_left(const World& world, const ChampionBelief& a, float cap) {
++    const int g = comms::claim_of(world, a.index);
++    if (g < 0 || g >= static_cast<int>(world.map().groups.size()) || world.camps[g].state != CampState::alive) return cap;
++    float health = 0, output = 0;
++    const auto& G = world.map().groups[g];
++    for (std::size_t i = 0; i < G.members.size(); ++i) health += std::max(0.0f, world.camps[g].health[i]);
++    for (const auto& b : world.allies)
++        if (!b.is_self && b.alive && (&b == &a || (b.visible && comms::claim_of(world, b.index) == g))) output += camp_output(b);
++    return std::min(cap, health / std::max(1.0f, output));
++}
++
++void drop_claim(Memory& memory) {
++    memory.claim = -1;
++    memory.crew = false;
++    memory.siege = false;
++}
++
++// Stand where `a` (at `at`) is in heal range and in sight (off bushes: one cast, no clusters), out of
++// every live camp member's reach (camp_may_hit), off camp tiles. `avoid`: awake members' reach, for
++// the walk there. Empty `goals`: no such tile.
++void attend_tiles(const World& world, vec2 at, int range, bitboard& goals, bitboard& avoid) {
++    static bitboard hit{cambc::uninitialized}, sight{cambc::uninitialized};
++    clear_board(hit), clear_board(avoid);
++    const auto& map = world.map();
++    for (const int g : map.groups_near(at, range + map.max_camp_reach)) {
++        const auto& group = map.groups[g];
++        if (group.strength <= 0) continue;
++        const auto& c = world.camps[g];
++        const bool returning = c.state == CampState::respawning && c.respawn_round <= world.round + 1;
++        if (!returning && c.state != CampState::alive) continue;
++        for (std::size_t i = 0; i < group.members.size(); ++i) {
++            const auto& m = group.members[i];
++            if (m.strength <= 0 || (!returning && c.health[i] <= 0)) continue;
++            draw_square(hit, m.pos, static_cast<float>(m.reach));
++            if (!returning && !c.member_asleep(i)) draw_square(avoid, m.pos, static_cast<float>(m.reach));
++        }
++    }
++    not_into(hit, hit);
++    and_into(within(map.standable, at, range), hit, goals);
++    map.sight_off_bushes_into(at, range, sight);
++    and_into(goals, sight, goals);
++}
++
++// Attend the ally taking the most camp damage a round (its hits now, what we saw it lose over the
++// last heal cooldown, or its crew's planned hits as tank) when what it misses, and the hits it takes
++// once we are in heal range until its clear ends (a cooldown at most), make a heal worth a step
++// (worth_healing): stand in heal range of it, out of every camp's reach, and hold there while it
++// needs us. The ally attended last turn first, while it still needs us: switching walks. Only allies
++// we see. Our claim goes, as in a formation: we work none.
++bool willow_attend(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
++    const int slot = world.me().facts().slot_of(AbilityKind::heal);
++    if (slot < 0) return false;
++    // Our own clear under way, or a crew counting on our output, is ours to finish.
++    const int own = memory.claim;
++    if (memory.crew || (own >= 0 && own == memory.farm_group && own < static_cast<int>(world.camps.size())
++                        && world.camps[own].state == CampState::alive && world.camps[own].awake != Awake::asleep))
++        return false;
++    const float amount = my_heal(slot);
++    const vec2 here = my_position();
++    static int last_round = -1, last_ally = -1;
++    const int kept = last_round == world.round - 1 ? last_ally : -1;
++    last_round = -1;
++    struct Need {
++        const ChampionBelief* a;
++        vec2 pos;
++        float rate;
++        bool planned;
++    };
++    std::array<Need, 8> needs;
++    int n = 0;
++    for (const auto& a : world.allies) {
++        if (a.is_self || !a.alive || !a.visible || a.index >= 8 || n == static_cast<int>(needs.size()) || a.channel == Channel::teleport) continue;
++        // Read live: a step this turn may have taken it out of sight.
++        const auto* live = visible_record(a.handle);
++        if (!live || live->max_health <= 0) continue;
++        const vec2 pos{live->x, live->y};
++        const float health = live->health, max_health = live->max_health;
++        if (test(world.map().ally_spawn, pos) || kept_recall(a.handle, a.recall_turns())) continue;
++        const float fire = std::max(ally_camp_fire(world, a, pos), recent_intake(world, a.index));
++        const float planned = planned_fire(world, a);
++        const float rate = std::max(fire, planned);
++        if (rate <= 0) continue;
++        const float missing = std::max(0.0f, max_health - health);
++        const auto cooldown = static_cast<float>(ability_cooldown);
++        const auto walk = static_cast<float>(std::max(0, dist(here, pos) - heal_range(world.me())));
++        const float served = std::clamp(clear_rounds_left(world, a, walk + cooldown) - walk, 0.0f, cooldown);
++        if (!worth_healing(amount, std::min(amount, missing + rate * served), health / max_health)) continue;
++        const auto first = [&](const Need& x, const ChampionBelief& y, float y_rate, vec2 y_pos) {
++            if ((x.a->index == kept) != (y.index == kept)) return x.a->index == kept;
++            return x.rate != y_rate ? x.rate > y_rate : dist(here, x.pos) <= dist(here, y_pos);
++        };
++        int i = n++;
++        for (; i > 0 && !first(needs[i - 1], a, rate, pos); --i) needs[i] = needs[i - 1];
++        needs[i] = {&a, pos, rate, planned > fire};
++    }
++    if (n == 0) return false;
++    static bitboard goals{cambc::uninitialized}, avoid{cambc::uninitialized};
++    const int range = heal_range(world.me());
++    for (int k = 0; k < n; ++k) {
++        const auto& need = needs[k];
++        world.throw_if_stale();
++        attend_tiles(world, need.pos, range, goals, avoid);
++        if (board_empty(goals)) continue;
++        const int work = comms::claim_of(world, need.a->index);
++        const bool hold = test(goals, here);
++        debug_block({ std::printf("MEDIC-ATTEND %d %u ally %d rate %.1f planned %d hold %d\n", world.round,
++                                  static_cast<std::uint32_t>(world.me().handle), need.a->index, need.rate, need.planned, hold); });
++        if (hold) {
++            if (!exposure_here(world, safety).safe()) return false;
++            medic_attended = need.a->index;
++            last_round = world.round, last_ally = need.a->index;
++            drop_claim(memory);
++            // A heal takes the turn's cast from the reset.
++            if (!heal_ally(world, safety)) stationary_support_output(world, work);
++            else if (!attack_enemy(world) && my_can_attack()) attack_support_camp(world, work);
++            decision = Branch::willow_support;
++            return true;
++        }
++        // Already in an awake member's reach, any way out is ours.
++        const bool in_fire = test(avoid, here);
++        world.throw_if_stale();
++        if (!pathing.step_towards(goals, in_fire ? nullptr : &avoid)) continue;
++        medic_attended = need.a->index;
++        last_round = world.round, last_ally = need.a->index;
++        drop_claim(memory);
++        see_revealed(world, pathing, safety);
++        heal_ally(world, safety);
++        decision = Branch::willow_support;
++        return true;
++    }
++    return false;
++}
++
++// Farm turns: a healer attends an ally taking camp damage (willow_attend); else it walks back within 2
++// of the ally with the most allies within 4 of it (ties: the nearest) when it is farther; within 2, it
++// hits that ally's claimed group from where it stands.
+ // The ally's tile when seen within 2 rounds, else as it posted it (comms_ally) within 6, else the centre
+ // of the group it posts as its claim.
+-bool willow_follow(World& world, Pathing& pathing, Safety& safety) {
++bool willow_follow(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     constexpr int follow_dist = 2, crowd_radius = 4;
+     if (!world.me().facts().heals() || !my_can_move() || stunned_turn) return false;
++    if (willow_attend(world, pathing, safety, memory)) return true;
+     const vec2 here = my_position();
+     const auto known = [&](const ChampionBelief& a, vec2& at) {
+         if (a.visible || (a.pos_round >= world.round - 2 && a.pos.x >= 0)) return at = a.pos, true;
+@@ -422,12 +636,6 @@
+ // through turns the mate is out of sight (tuned).
+ constexpr int support_turns = 4;
+ 
+-void drop_claim(Memory& memory) {
+-    memory.claim = -1;
+-    memory.crew = false;
+-    memory.siege = false;
+-}
+-
+ // One pass over our tile and its neighbours, for either side of the pair. Willow (neither wanting
+ // home nor at work: decide) holds a formation in heal view of its mate; Prism (or Tavi) waits in
+ // Willow's view to be healed rather than recall: a recovery. True when it took the turn.
+@@ -548,7 +756,8 @@
+     const bool can_step = my_can_move();
+     vec2 best = here;
+     int best_gap = unreachable, best_home = unreachable;
+-    float best_gain = -1;
++    const HealTarget* best_target = nullptr;
++    const auto heal_mate_now = heal_mate(world);
+     bool found = false;
+     for (int k = -1; k < 8; ++k) {
+         const vec2 p = k < 0 ? here : here + directions[k];
+@@ -564,13 +773,10 @@
+         for (int t = 0; t < view_count; ++t) {
+             const auto& v = views[t].target;
+             if (!support_view(views[t].viewers, v.pos, p)) continue;
+-            const auto* chosen = target >= 0 ? &views[target].target : nullptr;
+-            if (!chosen || (v.gain != chosen->gain ? v.gain > chosen->gain
+-                            : v.fraction != chosen->fraction ? v.fraction < chosen->fraction
+-                            : v.ally == mate && comms::support_request(world)))
+-                target = t;
++            if (target < 0 || heal_before(v, views[target].target, heal_mate_now)) target = t;
+         }
+-        const float gain = target >= 0 ? views[target].target.gain : 0;
++        const HealTarget* chosen = target >= 0 ? &views[target].target : nullptr;
++        const float gain = chosen ? chosen->gain : 0;
+         if (willow && !ready) {
+             if (p == here || !work_route || work_route->at(p) >= work_route->at(here)
+                 || (!in_range && dist(p, mate->pos) >= dist(here, mate->pos))) continue;
+@@ -579,9 +785,10 @@
+         if (!(p == here ? here_risk : support_exposure(world, safety, p)).safe()) continue;
+         const int home = pathing.to_ally_spawn().at(p);
+         // Staying, tried first, keeps ties; between steps, the one nearer home wins.
+-        if (!found || gain > best_gain || (gain == best_gain && gap < best_gap)
+-            || (gain == best_gain && gap == best_gap && best != here && home < best_home))
+-            found = true, best = p, best_gain = gain, best_gap = gap, best_home = home;
++        const bool better = chosen && (!best_target || heal_before(*chosen, *best_target, heal_mate_now));
++        const bool tie = chosen ? best_target && !heal_before(*best_target, *chosen, heal_mate_now) : !best_target;
++        if (!found || better || (tie && gap < best_gap) || (tie && gap == best_gap && best != here && home < best_home))
++            found = true, best = p, best_target = chosen, best_gap = gap, best_home = home;
+     }
+     if (!found) return abandon_recovery();
+     const auto commit_support = [&] {

@@ -1,0 +1,466 @@
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/bot.cc macro2-lock/src/bot.cc
+--- ocean-ref-b7c87cf/src/bot.cc	2026-11-11 01:36:28.906846080 +0000
++++ macro2-lock/src/bot.cc	2026-11-11 05:29:50.361260838 +0000
+@@ -488,6 +488,9 @@
+         static const bool near = home_monolith_map(world);
+         guard_work(world, pathing, safety, memory.damage, near ? home_reach_avoid(world, memory) : nullptr);
+     }
++    // Locked out of every altar: the nearest go and break the lock together; other carriers' bags
++    // wait on it (bankable_bag) rather than walk up to a lock they will not break.
++    if (break_lockout(world, pathing, safety, memory)) return;
+     if (banks_bag(world, pathing)) {
+         carry_bag(world, pathing, safety, memory, attacked, strike_guard);
+         return;
+@@ -504,6 +507,7 @@
+         return;
+     }
+     if (guard_turn(world, pathing, safety, memory, strike_guard)) return;
++    if (hold_broken_altar(world, pathing, safety, memory, strike_guard)) return;
+     if (chase_with_guard(world, pathing, safety, strike_guard)) return;
+     if (contest_capture(world, pathing, memory)) {
+         decision = Branch::contest;
+@@ -655,6 +659,7 @@
+     struck = searched = false;
+     support_owned = support_requested = support_offered = support_retreat = end_ward = end_tight = false;
+     comms::support_intent(world.round, false);
++    comms::post_lock(-2, 0);
+     siege_group() = -1;
+     turn_acts = {};
+     engaged_before = memory.round == world.round - 1 ? engaged : 0;
+@@ -700,6 +705,12 @@
+     if (world.me().alive && world.me().facts().heals()
+         && ((!support_owned && camp_hits() != camp_hits_before) || my_cooldown(world.me().facts().slot_of(AbilityKind::heal)) >= ability_cooldown))
+         memory.formation_start = -1, memory.formation_turns = 0;
++    try {
++        post_lock_sighting(world);
++    } catch (const StaleTurn&) {
++        return;
++    } catch (const std::exception&) {
++    }
+     comms::claim(memory.claim);
+     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);
+     comms::chasing(world.round, world.me().alive && decision == Branch::chase);
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/bot.h macro2-lock/src/bot.h
+--- ocean-ref-b7c87cf/src/bot.h	2026-11-11 01:36:28.906986482 +0000
++++ macro2-lock/src/bot.h	2026-11-11 05:13:37.021851223 +0000
+@@ -22,6 +22,7 @@
+     int staged_since = -1; // round we started waiting near it for the others
+     int wait_altar = -1, wait_since = -1;   // the altar we wait at for a safe tribute, since when
+     int avoid_altar = -1, avoid_until = -1; // one we gave up waiting at, skipped until that round
++    int lock_altar = -1; // the altar whose lock we last went to break (economy/lockout.cc)
+     bool wants_crystal = false; // once a crystal hop to an altar would have beaten walking to bank: kept all game
+     int hop_refused = -1, hop_refused_until = -1; // a farm hop no safe landing was found for, skipped until then
+     // The protected mate's (Prism's) stops beside Willow for heals (support.cc): the current one's
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/bot_parts.h macro2-lock/src/bot_parts.h
+--- ocean-ref-b7c87cf/src/bot_parts.h	2026-11-11 01:36:28.906986482 +0000
++++ macro2-lock/src/bot_parts.h	2026-11-11 05:29:50.361132457 +0000
+@@ -59,6 +59,7 @@
+     stop_ender = 'E',     // stopping a game-ending bag
+     willow_support = 'h', // Willow's heal or formation
+     prism_recovery = 'r', // Prism's recovery beside Willow
++    lock_siege = 'L',     // breaking the enemy lock that locks us out (economy/lockout.cc)
+ };
+ Branch decision = Branch::none;
+ bool sieged = false;       // siege() or its heal trip ran this turn: act() keeps the siege
+@@ -352,6 +353,20 @@
+ // economy/altar_guard.cc
+ bool keep_guard_lock(const World& world, int a);
+ bool guard_turn(const World& world, Pathing& pathing, Safety& safety, Memory& memory, const Pathing::GuardState& strike_guard);
++// Hold stand tile `rank` by altar `a`, fighting an enemy near it first.
++bool hold_altar(const World& world, Pathing& pathing, Safety& safety, Memory& memory, const Pathing::GuardState& strike_guard, int a, int rank);
++
++// economy/lockout.cc
++// Every altar our bags could use carries a believed enemy lock while the team has gems to bank:
++// the lock the team breaks, its hits left, and whether we are one of its breakers.
++struct Lockout {
++    bool active = false, breaker = false;
++    int altar = -1, hits = 0;
++};
++const Lockout& lockout(const World& world, Pathing& pathing);
++bool break_lockout(World& world, Pathing& pathing, Safety& safety, Memory& memory);
++bool hold_broken_altar(const World& world, Pathing& pathing, Safety& safety, Memory& memory, const Pathing::GuardState& strike_guard);
++void post_lock_sighting(const World& world);
+ 
+ // economy/bank.cc
+ bool channelling();
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/economy/altar_guard.cc macro2-lock/src/economy/altar_guard.cc
+--- ocean-ref-b7c87cf/src/economy/altar_guard.cc	2026-11-11 01:36:28.908447950 +0000
++++ macro2-lock/src/economy/altar_guard.cc	2026-11-11 05:13:44.580033435 +0000
+@@ -140,7 +140,10 @@
+     if (!guarding(world)) return false;
+     const int rank = guard_rank(world);
+     if (rank < 0) return false;
+-    const int a = guarded_altar(world);
++    return hold_altar(world, pathing, safety, memory, strike_guard, guarded_altar(world), rank);
++}
++
++bool hold_altar(const World& world, Pathing& pathing, Safety& safety, Memory& memory, const Pathing::GuardState& strike_guard, int a, int rank) {
+     const auto& tiles = stands(world, a);
+     if (tiles.empty()) return false;
+     memory.claim = -1;
+@@ -156,6 +159,8 @@
+     const vec2 stand = tiles[static_cast<std::size_t>(i)];
+     if (!my_can_move() || my_position() == stand) return true;
+     static std::vector<std::optional<Field>> fields;
++    static int fields_altar = -1; // by stand index: stands() rebuilds for another altar
++    if (fields_altar != a) fields.clear(), fields_altar = a;
+     if (fields.size() < tiles.size()) fields.resize(tiles.size());
+     auto& field = fields[static_cast<std::size_t>(i)];
+     if (!field) {
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/economy/bank.cc macro2-lock/src/economy/bank.cc
+--- ocean-ref-b7c87cf/src/economy/bank.cc	2026-11-11 01:36:28.909050928 +0000
++++ macro2-lock/src/economy/bank.cc	2026-11-11 05:29:50.363708162 +0000
+@@ -704,6 +704,8 @@
+ int bankable_bag(const World& world, Pathing& pathing) {
+     const int bag = static_cast<int>(my_gems());
+     if (bag == 0 || !altar_usable(world, pathing, bag, my_health())) return 0;
++    // Locked out and not breaking: the bag waits on the lock.
++    if (const auto& lo = lockout(world, pathing); lo.active && !lo.breaker) return 0;
+     if (bag < params::min_bank && !winning_bag(world) && !closing(world, pathing)) return 0;
+     if (world.round < ring_refused_until && altar_steps(world, pathing, my_position(), -1) == unreachable) return 0;
+     // Only a crystal reaches an altar and we can neither use nor buy one: farm the gold first. A
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/economy/lockout.cc macro2-lock/src/economy/lockout.cc
+--- ocean-ref-b7c87cf/src/economy/lockout.cc	1970-01-01 00:00:00.000000000 +0000
++++ macro2-lock/src/economy/lockout.cc	2026-11-11 05:29:50.360972334 +0000
+@@ -0,0 +1,235 @@
++// Lockouts: while every altar our bags could use carries an enemy lock, the team's score rate is
++// zero. Five basic attacks break a lock, so its nearest champions go and hit it together, and
++// carriers stop walking bags up to a lock they are not breaking.
++#include "../bot_parts.h"
++
++namespace aph {
++
++namespace {
++
++// The tiles a champion of attack range r hits the altar's lock from (it must see it), and their field.
++const Field* lock_stands(const World& world, Pathing& pathing, int a, int r) {
++    static std::vector<std::array<std::optional<Field>, 2>> fields;
++    static std::vector<std::array<bool, 2>> built;
++    const auto& map = world.map();
++    if (fields.size() < map.altars.size()) fields.resize(map.altars.size()), built.resize(map.altars.size(), {false, false});
++    const int k = r > melee_range ? 1 : 0;
++    auto& f = fields[static_cast<std::size_t>(a)][static_cast<std::size_t>(k)];
++    if (!built[static_cast<std::size_t>(a)][static_cast<std::size_t>(k)]) {
++        if (!fuel_ok(end_reserve + full_field_cost_estimate())) return nullptr; // built on a later turn
++        built[static_cast<std::size_t>(a)][static_cast<std::size_t>(k)] = true;
++        static bitboard goals{cambc::uninitialized};
++        map.viewers_into(map.altars[static_cast<std::size_t>(a)].pos, r, goals);
++        goals &= map.standable;
++        if (!board_empty(goals)) f.emplace(make_field(pathing.static_walls(), goals));
++    }
++    return f ? &*f : nullptr;
++}
++
++// The ally's bag as seen, else as posted.
++int ally_bag(const World& world, const ChampionBelief& a) {
++    if (a.is_self) return static_cast<int>(my_gems());
++    return a.visible ? a.gems : comms::bag_of(world, a.index);
++}
++
++// Willow stays with her mate while ocean's support code has one alive for her.
++bool support_bound(const World& world, const ChampionBelief& a) {
++    if (!support_healer(a)) return false;
++    const auto pair = support_pair(world);
++    return pair[0] && pair[0]->alive;
++}
++
++bool lock_believed(const World& world, int a, int& hits) {
++    const auto& b = world.altars[static_cast<std::size_t>(a)];
++    const int full = static_cast<int>(cambc::constants::altar_lock_hits);
++    int shared = -1, shared_hits = 0;
++    const bool posted = comms::shared_lock(shared, shared_hits) && shared == a;
++    if (b.enemy_lock) {
++        hits = b.enemy_lock_hits > 0 ? b.enemy_lock_hits : full;
++        // A teammate's later sighting of an altar we no longer see counts its hits since.
++        if (posted && b.seen_round < world.round) hits = std::min(hits, shared_hits);
++        return true;
++    }
++    // A teammate's sighting, unless we see the altar unlocked this round.
++    if (posted && b.seen_round < world.round) {
++        hits = shared_hits;
++        return true;
++    }
++    return false;
++}
++
++bool altar_reached(const World& world, Pathing& pathing, int a) {
++    if (altar_steps(world, pathing, my_position(), a) != unreachable) return true;
++    for (const auto& h : world.map().hops())
++        if (h.altar == a) return true;
++    return altar_steps(world, pathing, recall_landing(world), a) != unreachable;
++}
++
++const Lockout& lockout(const World& world, Pathing& pathing) {
++    static Lockout lo;
++    static int round = -1;
++    static std::uint32_t seen = 0;
++    if (round == world.round && seen == world.observations) return lo;
++    round = world.round, seen = world.observations;
++    lo = {};
++    const auto& map = world.map();
++    const int n = static_cast<int>(map.altars.size());
++    if (n == 0 || !world.me().alive || my_position().x < 0) return lo;
++    // Most turns: no lock believed anywhere.
++    std::array<int, 16> hits{};
++    bool any = false;
++    for (int a = 0; a < n && a < static_cast<int>(hits.size()); ++a) {
++        hits[static_cast<std::size_t>(a)] = 0;
++        int h = 0;
++        if (lock_believed(world, a, h)) hits[static_cast<std::size_t>(a)] = h, any = true;
++    }
++    if (!any || n > static_cast<int>(hits.size())) return lo;
++    int team_gems = 0;
++    for (const auto& a : world.allies)
++        if (a.alive) team_gems += ally_bag(world, a);
++    if (team_gems <= 0) return lo;
++    bool reached = false;
++    for (int a = 0; a < n; ++a) {
++        if (!altar_reached(world, pathing, a)) continue;
++        if (hits[static_cast<std::size_t>(a)] == 0) return lo; // an unlocked altar banks
++        reached = true;
++    }
++    if (!reached) return lo;
++    // The roster: allies that can walk up and hit, nearest first. Team cost of a lock: the k-th
++    // nearest's walk plus the ceil(hits / k) turns k of them hit it in, at the best k.
++    struct Body {
++        int steps, index;
++    };
++    std::array<Body, 8> roster;
++    int best_cost = unreachable;
++    for (int a = 0; a < n; ++a) {
++        const int h = hits[static_cast<std::size_t>(a)];
++        if (h == 0 || !altar_reached(world, pathing, a)) continue;
++        int m = 0;
++        for (const auto& c : world.allies) {
++            if (!c.alive || m == static_cast<int>(roster.size()) || support_bound(world, c)) continue;
++            if (c.is_self ? channel_held() : held_by_channel(c)) continue;
++            const vec2 p = c.is_self ? my_position() : c.pos;
++            if (!in_bounds(p)) continue;
++            const Field* f = lock_stands(world, pathing, a, c.facts().attack_range());
++            const int s = f ? f->at(p) : unreachable;
++            if (s != unreachable) roster[static_cast<std::size_t>(m++)] = {s, c.index};
++        }
++        if (m == 0) continue;
++        std::sort(roster.begin(), roster.begin() + m, [](const Body& x, const Body& y) { return x.steps != y.steps ? x.steps < y.steps : x.index < y.index; });
++        int cost = unreachable;
++        for (int k = 1; k <= m; ++k) cost = std::min(cost, roster[static_cast<std::size_t>(k - 1)].steps + (h + k - 1) / k);
++        if (cost >= best_cost) continue;
++        best_cost = cost;
++        lo.altar = a, lo.hits = h;
++        // As many as break it in one turn of hits, up to the whole roster.
++        const int k = std::min(m, h);
++        lo.breaker = false;
++        for (int i = 0; i < k; ++i) lo.breaker |= roster[static_cast<std::size_t>(i)].index == world.me().index;
++    }
++    lo.active = lo.altar >= 0;
++    return lo;
++}
++
++// A breaker's turn: hit the lock from a stand that sees it, else walk to the nearest one.
++bool break_lockout(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
++    const auto& lo = lockout(world, pathing);
++    if (!lo.active) return false;
++    if (!lo.breaker) {
++        debug_block({ if (my_gems() > 0) std::printf("SIEGE %d %u %d wait %d\n", world.round, my_handle(), lo.altar, lo.hits); });
++        return false;
++    }
++    const int a = lo.altar;
++    const auto& f = world.me().facts();
++    const Field* stands = lock_stands(world, pathing, a, f.attack_range());
++    if (!stands) return false;
++    decision = Branch::lock_siege;
++    memory.lock_altar = a;
++    memory.claim = -1;
++    debug_block({ std::printf("SIEGE %d %u %d breaker %d\n", world.round, my_handle(), a, lo.hits); });
++    // A ranged walk spends the attack: one that can hit now does.
++    if (break_lock(world, a)) {
++        if (!f.walk_and_attack_independent()) return true;
++    }
++    if (my_can_move() && stands->at(my_position()) > 0) step_safely(world, pathing, *stands, safety);
++    if (f.walk_and_attack_independent()) break_lock(world, a);
++    return true;
++}
++
++// After a break, its breakers hold the altar's stands (altar_guard's) while an ally tributes
++// there or a carrier is in sight: an enemy within 2 of it relocks it and cancels every channel.
++bool hold_broken_altar(const World& world, Pathing& pathing, Safety& safety, Memory& memory, const Pathing::GuardState& strike_guard) {
++    const int a = memory.lock_altar;
++    if (a < 0) return false;
++    int h = 0;
++    if (a >= static_cast<int>(world.altars.size()) || lock_believed(world, a, h) || lockout(world, pathing).active) {
++        memory.lock_altar = -1;
++        return false;
++    }
++    bool needed = false;
++    for (const auto& c : world.allies) {
++        if (c.is_self || !c.alive || !c.visible) continue;
++        needed |= c.channel == Channel::tribute && tribute_altar(world, c.pos) == a;
++        // A bag banks once it reaches min_bank (bankable_bag); Prism keeps its bag for Focus.
++        needed |= c.gems >= params::min_bank && c.facts().passive != Passive::gem_focus
++                  && dist(c.pos, world.map().altars[static_cast<std::size_t>(a)].pos) <= params::altar_leash;
++    }
++    if (!needed) {
++        memory.lock_altar = -1;
++        return false;
++    }
++    int rank = 0;
++    for (const auto& c : world.allies) rank += c.alive && !c.is_self && c.index < world.me().index;
++    // Off the tribute tiles while stands within lock range remain: a relock needs an enemy within 2.
++    const auto& tiles = stands(world, a);
++    const vec2 alt = world.map().altars[static_cast<std::size_t>(a)].pos;
++    int on_tribute = 0;
++    for (const vec2 t : tiles) on_tribute += dist(t, alt) <= static_cast<int>(cambc::constants::submit_gems_range);
++    if (on_tribute < static_cast<int>(tiles.size())) rank = on_tribute + rank % (static_cast<int>(tiles.size()) - on_tribute);
++    debug_block({ std::printf("SIEGE %d %u %d hold 0\n", world.round, my_handle(), a); });
++    return hold_altar(world, pathing, safety, memory, strike_guard, a, rank);
++}
++
++// Our sighting for the team's lock record: the lock we see at its altar (or clearing it, seen
++// without one), else the first enemy lock we see when the record is empty.
++void post_lock_sighting(const World& world) {
++    comms::post_lock(-2, 0);
++    if (!world.me().alive || world.is_stale()) return;
++    const vec2 here = my_position();
++    if (here.x < 0) return;
++    const auto& altars = world.map().altars;
++    // world.visible is as of the turn's start; the lock read below is from where we stand now.
++    const auto sees = [&](int a) {
++        const vec2 p = altars[static_cast<std::size_t>(a)].pos;
++        return (here == world.turn_start && test(world.visible, p)) || dist(here, p) <= 1;
++    };
++    namespace raw = cambc::detail;
++    std::uint32_t count{};
++    ok(raw::sdk_altar_locks(nullptr, 0, &count));
++    static std::vector<raw::altar_lock_info> locks;
++    if (locks.size() < count) locks.resize(count);
++    if (count > 0) ok(raw::sdk_altar_locks(locks.data(), count, &count));
++    const auto own = static_cast<std::uint32_t>(raw::cached_my_team);
++    const auto enemy_at = [&](int a) -> int {
++        const vec2 p = altars[static_cast<std::size_t>(a)].pos;
++        for (std::uint32_t i = 0; i < count && i < locks.size(); ++i)
++            if (locks[i].team != own && locks[i].x == p.x && locks[i].y == p.y) return static_cast<int>(locks[i].hits_remaining);
++        return 0;
++    };
++    int shared = -1, hits = 0;
++    if (comms::shared_lock(shared, hits)) {
++        if (!sees(shared)) return;
++        const int left = enemy_at(shared);
++        comms::post_lock(left > 0 ? shared : -1, left);
++        if (left > 0) return;
++    }
++    for (std::uint32_t i = 0; i < count && i < locks.size(); ++i) {
++        if (locks[i].team == own) continue;
++        const int a = world.map().altar_at({locks[i].x, locks[i].y});
++        if (a >= 0) return comms::post_lock(a, static_cast<int>(locks[i].hits_remaining));
++    }
++}
++
++} // namespace
++
++} // namespace aph
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/model/comms.cc macro2-lock/src/model/comms.cc
+--- ocean-ref-b7c87cf/src/model/comms.cc	2026-11-11 01:36:28.909420083 +0000
++++ macro2-lock/src/model/comms.cc	2026-11-11 05:30:10.814190477 +0000
+@@ -21,6 +21,8 @@
+ //   ally      0 = none, else 1 + cell * 4 team + 4 ally index + round mod 4 (params::comms_ally): a
+ //             c x c square (c odd: 1, 3 or 5, the narrowest that fits) centred on the record's tile;
+ //             left out when it does not fit
++//   lock      0 = none, else 1 + altar * altar_lock_hits + hits left - 1: an enemy lock a teammate
++//             saw; left out when it does not fit
+ //   then free bits
+ // Each ally's priority payload (turn_order.h) also carries its claim + 1 in its low 8 bits, and
+ // support_mailbox.h's intents above them.
+@@ -46,8 +48,8 @@
+     BitField bag, camp;
+     std::vector<int> camp_offset; // by group, then the total
+     std::uint64_t bag_bits = 0, camp_bits = 0;
+-    bool ally_on = false;
+-    BitField ally;
++    bool ally_on = false, lock_on = false;
++    BitField ally, lock;
+     std::uint64_t ally_bits = 0;
+     int cell = 1, cells_y = 1;
+     int period(int g) const { return camp_offset[g + 1] - camp_offset[g]; }
+@@ -90,6 +92,10 @@
+             L.ally_on = true;
+             break;
+         }
++    // After every older record, so their layout is as without it.
++    const auto lock_states = 1 + static_cast<std::uint64_t>(map.altars.size()) * static_cast<std::uint64_t>(cambc::constants::altar_lock_hits);
++    if (const int width = width_of(lock_states); !map.altars.empty() && shift + width <= 64) L.lock = field(width), L.lock_on = true;
++    debug_block({ std::printf("LOCKREC %s\n", L.lock_on ? "on" : "off"); });
+     L.ally_bits = L.ally.mask;
+     L.bag_bits = L.bag.mask;
+     L.camp_bits = L.camp.mask;
+@@ -200,6 +206,16 @@
+                                                             std::min(cell % L.cells_y * L.cell + h, world.map().height - 1)},
+                                                            round - ((round - kind) & 3)};
+     }
++    const int lock_before = detail::posts.lock_altar;
++    detail::posts.lock_altar = -1, detail::posts.lock_hits = 0;
++    if (const auto v = L.lock_on ? L.lock.get(bits) : 0; v != 0) {
++        const auto per = static_cast<std::uint64_t>(cambc::constants::altar_lock_hits);
++        if (const int a = static_cast<int>((v - 1) / per); a < static_cast<int>(world.map().altars.size()))
++            detail::posts.lock_altar = a, detail::posts.lock_hits = static_cast<int>((v - 1) % per) + 1;
++    }
++    // A teammate cleared the record: it saw that altar without the lock, which our older sighting outlives.
++    if (lock_before >= 0 && lock_before != detail::posts.lock_altar && lock_before < static_cast<int>(world.altars.size()))
++        if (auto& b = world.altars[static_cast<std::size_t>(lock_before)]; b.seen_round < round) b.enemy_lock = false, b.enemy_lock_hits = 0;
+     if (const auto record = L.camp.get(bits); (state.fresh & L.camp_bits) && record != 0) {
+         const auto [g, respawn] = decode_capture(L, record);
+         world.note_capture(g, respawn);
+@@ -281,6 +297,14 @@
+         state.posted_bag = fours;
+         dirty = true;
+     }
++    if (auto& P = detail::posts; L.lock_on && P.lock_post > -2) {
++        const int hits = std::clamp(P.lock_post_hits, 1, static_cast<int>(cambc::constants::altar_lock_hits));
++        const auto v = P.lock_post < 0 ? 0 : 1 + static_cast<std::uint64_t>(P.lock_post) * static_cast<std::uint64_t>(cambc::constants::altar_lock_hits)
++                                                 + static_cast<std::uint64_t>(hits - 1);
++        if (L.lock.get(bits) != v) L.lock.set(bits, v), dirty = true;
++        P.lock_altar = P.lock_post, P.lock_hits = P.lock_post < 0 ? 0 : hits;
++    }
++    detail::posts.lock_post = -2;
+     world.throw_if_stale();
+     if (dirty) write_bits(bits, round);
+ }
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/model/comms.h macro2-lock/src/model/comms.h
+--- ocean-ref-b7c87cf/src/model/comms.h	2026-11-11 01:36:28.910024080 +0000
++++ macro2-lock/src/model/comms.h	2026-11-11 05:12:36.725297607 +0000
+@@ -13,6 +13,9 @@
+     std::array<int, 8> bags{};
+     std::array<int, 8> claims{-1, -1, -1, -1, -1, -1, -1, -1};
+     int my_bag = 0, mine = -1;
++    int lock_altar = -1, lock_hits = 0; // the shared lock record as read this turn
++    int lock_post = -2;                 // ours for send: -2 leaves the record, -1 clears it
++    int lock_post_hits = 0;
+ };
+ inline Posts posts;
+ } // namespace detail
+@@ -32,6 +35,15 @@
+     if (a.is_self) return detail::posts.my_bag;
+     return a.alive ? detail::posts.bags[ally] : 0;
+ }
++// The enemy lock a teammate saw (altar index, hits left), standing until one sees that altar
++// without it: locks never expire, and only our hits remove them. False if none, or the map's layout
++// has no room for the record.
++inline bool shared_lock(int& altar, int& hits) {
++    altar = detail::posts.lock_altar, hits = detail::posts.lock_hits;
++    return altar >= 0;
++}
++// Ours for this turn's send: an altar and its hits, -1 to clear, -2 to leave it.
++inline void post_lock(int altar, int hits) { detail::posts.lock_post = altar, detail::posts.lock_post_hits = hits; }
+ // The group we work towards (-1 for none), posted every turn.
+ void claim(int group);
+ // The other support endpoint's intent (the protected mate's request, the healer's offer), posted in
+diff -ruN -x .cambc -x compile_commands.json ocean-ref-b7c87cf/src/unity.cpp macro2-lock/src/unity.cpp
+--- ocean-ref-b7c87cf/src/unity.cpp	2026-11-11 01:36:28.911420108 +0000
++++ macro2-lock/src/unity.cpp	2026-11-11 05:13:37.021877403 +0000
+@@ -16,6 +16,7 @@
+ #include "economy/siege.cc"
+ #include "combat/support.cc"
+ #include "economy/altar_guard.cc"
++#include "economy/lockout.cc"
+ #include "bot.cc"
+ #include "model/comms.cc"
+ #include "draft/draft.cc"

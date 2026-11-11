@@ -1,0 +1,687 @@
+diff -ru macro4-hub2f/src/bot.cc macro4-gall/src/bot.cc
+--- macro4-hub2f/src/bot.cc	2026-11-11 01:36:29.699546229 +0000
++++ macro4-gall/src/bot.cc	2026-11-11 05:06:32.662944710 +0000
+@@ -408,7 +408,7 @@
+     if (!world.me().can_act(world.round)) return;
+     fixc_bush_threatened = fixc_bush_threat(world, safety);
+     if (const auto* ender = game_ender(world); ender && holds_hard_stop(world, *ender)) {
+-        stop_game_ender(world, pathing, memory, *ender);
++        stop_game_ender(world, pathing, safety, memory, *ender);
+         return;
+     }
+     const bool willow = support_healer(world.me());
+diff -ru macro4-hub2f/src/bot_parts.h macro4-gall/src/bot_parts.h
+--- macro4-hub2f/src/bot_parts.h	2026-11-11 03:05:42.070837909 +0000
++++ macro4-gall/src/bot_parts.h	2026-11-11 05:06:32.662865539 +0000
+@@ -339,7 +339,7 @@
+ const ChampionBelief* stoppable_winning_tribute(const World& world);
+ bool ally_stops(const World& world, const ChampionBelief& e);
+ const ChampionBelief* game_ender(const World& world);
+-void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e);
++void stop_game_ender(const World& world, Pathing& pathing, Safety& safety, Memory& memory, const ChampionBelief& e);
+ bool holds_hard_stop(const World& world, const ChampionBelief& e);
+ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ 
+diff -ru macro4-hub2f/src/combat/fight.cc macro4-gall/src/combat/fight.cc
+--- macro4-hub2f/src/combat/fight.cc	2026-11-11 01:36:29.699776662 +0000
++++ macro4-gall/src/combat/fight.cc	2026-11-11 05:27:55.856539677 +0000
+@@ -1082,8 +1082,12 @@
+ }
+ 
+ // Into reach of the enemy whose bag ends the game, whatever the risk: a stun or a lock if it is
+-// tributing, else attacks, followed until it stops at an altar.
+-void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e) {
++// tributing, else attacks, followed until it stops at an altar. Bar one risk, while a turn's wait
++// still stops the tribute in time: a tributer can cancel to stun us, and the step into its reach
++// spends an exclusive stun of ours that turn, so we lose the next to its stun. A goal outside that
++// reach comes first, and a step into it is guarded where the window is lethal, unless that step
++// stops the tribute this turn (a lock, a stun after a walk).
++void stop_game_ender(const World& world, Pathing& pathing, Safety& safety, Memory& memory, const ChampionBelief& e) {
+     auto& me = cambc::self();
+     decision = Branch::stop_ender;
+     memory.claim = -1;
+@@ -1134,8 +1138,55 @@
+     // A stun a walk away comes from the walk's tile: a dash first may land out of it (Heart of Ruin).
+     const bool walk_stuns = tributing && e.facts().passive != Passive::stun_immune
+                             && dist(me.position(), e.pos) <= world.me().ready_stun_reach(world.round, true);
++    const vec2 here = me.position();
++    const auto& self = world.me();
++    int theirs = -1; // the farthest its strike stuns
++    // Waiting a turn, our stun goes after the next walk, in round + 2.
++    const bool slack = tributing && Moment{world.round + 2, world.slot(self, world.round + 2)} < turn_start(world, e, e.channel_end_round);
++    if (slack && self.facts().passive != Passive::stun_immune) {
++        const auto& s = safety.strike_of(e);
++        for (int d = 0; d <= s.reach; ++d)
++            if (s.stuns[static_cast<std::size_t>(d)]) theirs = d;
++    }
++    static bitboard outside{cambc::uninitialized}, guard{cambc::uninitialized};
++    bool narrowed = false, guarded = false;
++    if (theirs >= 0 && dist(here, e.pos) > theirs) {
++        static bitboard reach{cambc::uninitialized};
++        clear_board(reach);
++        reach.draw_chebyshev(e.pos, static_cast<float>(theirs));
++        copy_into(goals, outside);
++        drop(outside, reach);
++        narrowed = !board_empty(outside);
++        int moves = 1, walk_stun = -1;
++        for (int s = 0; s < 2; ++s) {
++            const auto& a = self.facts().abilities[static_cast<std::size_t>(s)];
++            if (!self.ability_ready(s, world.round) || !my_can_cast()) continue;
++            if (a.kind == AbilityKind::dash) moves = dash_range;
++            if (a.stuns && !a.excludes_walking && e.facts().passive != Passive::stun_immune)
++                walk_stun = std::max(walk_stun, self.facts().stun_reach(s));
++        }
++        const bool lock = altar >= 0 && carried_locks() > 0;
++        if (fuel_ok(safety.query_cost_estimate() + act_reserve + end_reserve) && !safety.lethal(here))
++            for (int dy = -moves; dy <= moves; ++dy)
++                for (int dx = -moves; dx <= moves; ++dx) {
++                    const vec2 q{here.x + dx, here.y + dy};
++                    if (q == here || !in_bounds(q) || !test(world.map().open_for_us, q) || dist(q, e.pos) > theirs) continue;
++                    if ((lock && test(world.map().altars[altar].lock_tiles(), q)) || (dist(here, q) == 1 && dist(q, e.pos) <= walk_stun)) continue;
++                    if (!fuel_ok(act_reserve + end_reserve) || !safety.lethal(q)) continue;
++                    if (!guarded) clear_board(guard), guarded = true;
++                    set_tile(guard, q);
++                }
++        if (guarded) pathing.set_guard(&guard);
++    }
+     if (!hard && dist(me.position(), e.pos) > range + 1 && !walk_stuns) dash_to_attack(world, pathing, &e);
+-    if (!test(goals, me.position())) pathing.step_towards_funded(goals, end_reserve);
++    if (!test(goals, me.position()) && !(narrowed && pathing.step_towards_funded(outside, end_reserve)))
++        pathing.step_towards_funded(goals, end_reserve);
++    debug_block({
++        if (narrowed || guarded)
++            std::printf("STUN ender %d %u d %d theirs %d outside %d guarded %d moved %d\n", world.round, static_cast<unsigned>(self.handle),
++                        dist(here, e.pos), theirs, static_cast<int>(narrowed), static_cast<int>(guarded),
++                        static_cast<int>(me.position() != here));
++    });
+     act(true);
+ }
+ 
+diff -ru macro4-hub2f/src/combat/guard.cc macro4-gall/src/combat/guard.cc
+--- macro4-hub2f/src/combat/guard.cc	2026-11-11 01:36:29.699776662 +0000
++++ macro4-gall/src/combat/guard.cc	2026-11-11 05:27:31.750080790 +0000
+@@ -472,10 +472,8 @@
+ };
+ FirstPass first_pass;
+ 
+-// The tiles step_guard could guard by its first test alone, null if none: the plan search works
+-// the guard out only once one of them would count.
+-const bitboard* step_guard_cover(const World& world, Safety& safety, vec2 here, int radius) {
+-    world.throw_if_stale();
++// seen_step_guard's cover: the tiles it could guard by its first test alone, null if none.
++const bitboard* seen_step_guard_cover(const World& world, Safety& safety, vec2 here, int radius) {
+     if (!enemy_seen(world)) return nullptr;
+     auto& fp = first_pass;
+     fp.valid = false;
+@@ -495,10 +493,8 @@
+     return any ? &cover : nullptr;
+ }
+ 
+-// The tiles a step (or a ready dash) could end on that want_home would leave at once: stopping
+-// there hands the enemy the first strike. Cassi and Issac also keep off tiles where one would fall.
+-const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int radius) {
+-    world.throw_if_stale();
++// step_guard against the seen enemies, whose fights it prices.
++const bitboard* seen_step_guard(const World& world, Safety& safety, vec2 here, int radius) {
+     if (!enemy_seen(world)) return nullptr;
+     static bitboard guard{cambc::uninitialized};
+     auto& fp = first_pass;
+@@ -678,6 +674,94 @@
+     return any ? &guard : nullptr;
+ }
+ 
++// The tiles beyond every seen enemy's strike that a tracked unseen one's reaches (ground spells hit
++// unseen champions): no fight is priced there, so they are guarded where lethal (a stun's window
++// included) while our own tile is not. Added to `base` in a scratch board; `cover`: every tile
++// beyond the seen strikes, while an unseen threat may reach a step.
++const bitboard* unseen_guard(const World& world, Safety& safety, vec2 here, int radius, const bitboard* base, bool cover) {
++    // No tracked threat within reach of a step: nothing to build or ask (the common case).
++    if (!safety.unseen_may_hit_within(here, radius)) return base;
++    static bitboard guard{cambc::uninitialized}, covered{cambc::uninitialized}, hit{cambc::uninitialized};
++    // Its costliest working out lately, as step_guard counts its placing.
++    static std::uint64_t costliest = 0;
++    const auto start = fuel();
++    struct Note {
++        std::uint64_t start;
++        bool on;
++        ~Note() {
++            if (const auto now = fuel(); on && now <= start) costliest = std::max(start - now, costliest - costliest / 8);
++        }
++    } note{start, !cover};
++    if (!cover) {
++        if (!fuel_ok(safety.query_cost_estimate() + act_reserve + costliest)) {
++            note_shortcut("step-guard-unseen");
++            costliest -= costliest / 8; // else one dear turn keeps it off while the threat stays near
++            note.on = false;
++            return base;
++        }
++        if (safety.lethal(here)) return base;
++        // The tiles the unseen threats hit, each its built area.
++        bool any = false;
++        for (const auto& t : safety.threats()) {
++            if (t.visible) continue;
++            if (!any) copy_into(t.area, hit), any = true;
++            else or_into(hit, t.area, hit);
++        }
++        if (!any) return base;
++    }
++    bitboard& out = cover ? covered : guard;
++    // The seen strikes: where they reach, the seen guard prices the fight.
++    struct Seen {
++        vec2 from;
++        int reach;
++    };
++    std::array<Seen, 8> seen;
++    int n = 0;
++    for (auto left = safety.seen_enemies(); left && n < static_cast<int>(seen.size()); left &= left - 1) {
++        const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
++        if (const int r = safety.strike_of(e).reach; r >= 0)
++            seen[static_cast<std::size_t>(n++)] = {e.teleport_pending() && in_bounds(e.tp_dest) ? e.tp_dest : e.pos, r};
++    }
++    const auto& open = world.map().open_for_us;
++    bool any = false;
++    for (int dy = -radius; dy <= radius; ++dy)
++        for (int dx = -radius; dx <= radius; ++dx) {
++            const vec2 q{here.x + dx, here.y + dy};
++            if (q == here || !in_bounds(q) || !test(open, q)) continue;
++            bool reached = false;
++            for (int k = 0; k < n && !reached; ++k) reached = dist(q, seen[static_cast<std::size_t>(k)].from) <= seen[static_cast<std::size_t>(k)].reach;
++            if (reached) continue;
++            if (!cover) {
++                if (!test(hit, q) || !safety.lethal(q)) continue;
++                debug_block({
++                    std::printf("STUN guard %d %u %d,%d by-stun %d\n", world.round, static_cast<unsigned>(world.me().handle), q.x, q.y,
++                                static_cast<int>(safety.lethal_by_stun(q)));
++                });
++            }
++            if (!any) {
++                if (base) copy_into(*base, out);
++                else clear_board(out);
++                any = true;
++            }
++            set_tile(out, q);
++        }
++    return any ? &out : base;
++}
++
++// The tiles step_guard could guard, null if none: the plan search works the guard out only once one
++// of them would count.
++const bitboard* step_guard_cover(const World& world, Safety& safety, vec2 here, int radius) {
++    world.throw_if_stale();
++    return unseen_guard(world, safety, here, radius, seen_step_guard_cover(world, safety, here, radius), true);
++}
++
++// The tiles a step (or a ready dash) could end on that want_home would leave at once: stopping
++// there hands the enemy the first strike. Cassi and Issac also keep off tiles where one would fall.
++const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int radius) {
++    world.throw_if_stale();
++    return unseen_guard(world, safety, here, radius, seen_step_guard(world, safety, here, radius), false);
++}
++
+ // step_guard from where we stand, worked out when a step or dash first needs it.
+ static_assert([] {
+     for (const auto& f : champion_table)
+diff -ru macro4-hub2f/src/economy/bank.cc macro4-gall/src/economy/bank.cc
+--- macro4-hub2f/src/economy/bank.cc	2026-11-11 01:36:29.701706267 +0000
++++ macro4-gall/src/economy/bank.cc	2026-11-11 05:28:43.413593766 +0000
+@@ -793,6 +793,21 @@
+            || rounds_left(world) <= channel_turns + endgame_slack;
+ }
+ 
++// A stun cancels a channel and takes our next turn (rules: gems.tribute, abilities.stun): where only
++// that window is lethal (Safety::lethal_by_stun), a channel ends before we act again only if no stun
++// comes, and if one does we die with the bag. Doomed while a step leaves the window: a channel
++// there is neither kept nor started. With none, the channel is the only chance.
++bool stun_dooms_channel(const World& world, Pathing& pathing, Safety& safety) {
++    const vec2 here = my_position();
++    if (!safety.lethal_by_stun(here) || !my_can_move()) return false;
++    const auto& blocked = pathing.blocked();
++    for (const auto d : directions) {
++        const vec2 q = here + d;
++        if (in_bounds(q) && test(world.map().open_for_us, q) && !test(blocked, q) && !safety.lethal(q)) return true;
++    }
++    return false;
++}
++
+ // A channel still running at the round limit scores nothing.
+ bool tribute_ok(const World& world, Safety& safety, const Memory& memory, int turns) {
+     return turns <= rounds_left(world) && (any_risk(world, turns) || tribute_safe(safety, memory, turns));
+@@ -800,7 +815,7 @@
+ 
+ // At an unlocked altar in reach. The caller judged the turn's start tile safe; anywhere else, at an
+ // altar carry_bag gave up waiting at, or at one believed locked (the caller skipped it), is judged again.
+-bool submit_here(const World& world, Safety& safety, Memory& memory) {
++bool submit_here(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     if (stunned_turn) return false; // the engine refuses it, and the thrown error costs ~3.9k fuel
+     auto& me = cambc::self();
+     const vec2 here = my_position();
+@@ -812,6 +827,7 @@
+         if ((avoided || world.altars[a].enemy_lock || here != world.turn_start)
+             && !tribute_ok(world, safety, memory, tribute_turns(world, my_gems())))
+             return false;
++        if (stun_dooms_channel(world, pathing, safety)) return false;
+         place_lock(world); // first: it cancels every tribute at its altar
+         place_ward(world, memory); // first: no ward goes down while channelling
+         throw_if_stale();
+@@ -1094,7 +1110,7 @@
+ [[gnu::flatten]] void bank_gems(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool heal_step) {
+     if (retaining_gems(world, pathing)) return;
+     world.throw_if_stale();
+-    if (submit_here(world, safety, memory)) return;
++    if (submit_here(world, pathing, safety, memory)) return;
+     const vec2 here = my_position();
+     const auto& altars = world.map().altars;
+     // One we gave up waiting at (carry_bag) counts as locked until we could reach another.
+@@ -1122,13 +1138,13 @@
+     const auto lock_hit_ends_turn = [&] {
+         if (best < 0 || !world.altars[best].enemy_lock || !break_lock(world, best) || world.me().facts().walk_and_attack_independent())
+             return false;
+-        submit_here(world, safety, memory);
++        submit_here(world, pathing, safety, memory);
+         return true;
+     };
+     // A melee champion's hit on the lock it stepped beside, then the tribute if that broke it.
+     const auto hit_and_submit = [&] {
+         if (best >= 0 && world.altars[best].enemy_lock && world.me().facts().walk_and_attack_independent()) break_lock(world, best);
+-        submit_here(world, safety, memory);
++        submit_here(world, pathing, safety, memory);
+     };
+     // A pack we would retreat from stands in the way: around it within the usual detour, else
+     // wait outside it until it leaves or a recall (recall_to_bank) takes the bag home.
+@@ -1174,7 +1190,7 @@
+     const Field& field = best >= 0 ? pathing.to_altar(best) : pathing.to_any_altar();
+     if (lock_hit_ends_turn()) return;
+     if (heal_step && willow_bank_heal_step(world, pathing, safety, field)) {
+-        submit_here(world, safety, memory);
++        submit_here(world, pathing, safety, memory);
+         return;
+     }
+     step_safely(world, pathing, field, safety);
+@@ -1210,7 +1226,7 @@
+     const int a = altar_here(world, here);
+     if (a < 0 || enemy_lock_live(world.map().altars[a].pos) || retaining_gems(world, pathing)) return false;
+     if (tribute_turns(world, my_gems()) > rounds_left(world)) return false;
+-    if (want_home(world, pathing, safety, memory)) return false;
++    if (want_home(world, pathing, safety, memory) || stun_dooms_channel(world, pathing, safety)) return false;
+     throw_if_stale();
+     try {
+         self_acted(), cambc::self().submit_gems(world.map().altars[a].pos);
+@@ -1321,12 +1337,22 @@
+         }
+         if (!me.is_submitting_gems()) return false;
+     }
+-    if (tribute_ok(world, safety, memory, my_channel_time())) return true;
++    // A keep below holds unless a stun dooms the channel here (stun_dooms_channel): cancelled, the
++    // gems stay carried.
++    const auto doomed = [&] {
++        if (!stun_dooms_channel(world, pathing, safety)) return false;
++        debug_block({
++            std::printf("STUN tribute %d %u gems %d channel %d\n", world.round, static_cast<unsigned>(world.me().handle),
++                        static_cast<int>(my_gems()), my_channel_time());
++        });
++        return true;
++    };
++    if (tribute_ok(world, safety, memory, my_channel_time()) && !doomed()) return true;
+     // Damage does not interrupt a tribute: cancelling pays only to flee or to fight back. Sealed in
+     // a ring, neither saves the bag from the camps: only the channel's end can.
+     if (memory.damage > 0 && sealed_in(world, pathing, my_position())) return true;
+     if (memory.damage <= 0 && !*(home = want_home(world, pathing, safety, memory)) && !attack_target(world)
+-        && (winning_bag(world) || !prey(world, pathing, safety)))
++        && (winning_bag(world) || !prey(world, pathing, safety)) && !doomed())
+         return true;
+     decision = Branch::tribute_cancelled;
+     throw_if_stale();
+diff -ru macro4-hub2f/src/model/safety.cc macro4-gall/src/model/safety.cc
+--- macro4-hub2f/src/model/safety.cc	2026-11-11 01:36:29.702681349 +0000
++++ macro4-gall/src/model/safety.cc	2026-11-11 05:26:12.506656865 +0000
+@@ -1106,6 +1106,34 @@
+     return enemy_blow_repeats(world, e, turns);
+ }
+ 
++WindowTurns window_turns(const World& world, const ChampionBelief& c) {
++    // turns_before_ours' reads: this round after us, next round before us.
++    const bool now = c.visible ? !c.acted : enemy_may_act_after_us(world, c);
++    const bool next = enemy_turn_before_ours_next(world, c);
++    // Round + 2 has this round's team order (rules: rounds.champion_order): a turn before ours now
++    // comes before ours then. Next round's turn falls in the window either way, before or after the
++    // one the stun takes.
++    const bool later = !now;
++    const int from = c.teleport_pending() ? c.channel_end_round : world.round;
++    struct Turn {
++        int round;
++        bool present, before;
++    };
++    const std::array<Turn, 3> turns{{{world.round, now, true}, {world.round + 1, true, next}, {world.round + 2, later, false}}};
++    WindowTurns w;
++    bool lost = turn_lost(c); // its first turn from now
++    for (const auto& t : turns) {
++        if (!t.present || from > t.round) continue;
++        if (lost) {
++            lost = false;
++            continue;
++        }
++        if (t.before) ++w.before;
++        else ++w.after, w.last = t.round;
++    }
++    return w;
++}
++
+ namespace {
+ 
+ // threat_strike()'s damage at distance 0 with both slots ready and two turns: at least what it
+@@ -3473,21 +3501,241 @@
+     return true;
+ }
+ 
+-bool Safety::lethal(vec2 p) {
++namespace {
++
++// The slots e has ready for a turn in `round`: both while an unseen reset may have readied them.
++unsigned ready_slots(const ChampionBelief& e, int round) {
++    if (e.cooldowns_uncertain()) return 3u;
++    return (e.ability_ready(0, round) ? 1u : 0u) | (e.ability_ready(1, round) ? 2u : 0u);
++}
++
++// The most x's enemy deals to a tile `d` away over `turns` turns, the last in turns.last, without
++// the slots in `spent`: each turn its basic attacks and at most one slot (rules: turn.cast), each
++// slot once, as the window is shorter than a cooldown; a walk closer on each turn but the last.
++float follow_damage(const WindowFoe& x, int d, int turns, unsigned spent) {
++    if (turns <= 0) return 0;
++    const int at = std::max(0, d - (turns - 1));
++    const float basic = x.strikes[0]->at(at);
++    std::array<float, 2> gain{};
++    const unsigned ready = x.ready_last & ~spent;
++    for (int s = 0; s < 2; ++s)
++        if (ready >> s & 1) gain[static_cast<std::size_t>(s)] = std::max(0.0f, x.strikes[static_cast<std::size_t>(s) + 1]->at(at) - basic);
++    return static_cast<float>(turns) * basic + (turns >= 2 ? gain[0] + gain[1] : std::max(gain[0], gain[1]));
++}
++
++// The slot a worst blow `damage` from `d` away over x's counted turns needs: none within its basic
++// attacks, else the best of those ready.
++unsigned spent_slot(const WindowFoe& x, int d, float damage) {
++    const float basic = static_cast<float>(x.counted) * x.strikes[0]->at(std::max(0, d - (x.counted - 1)));
++    if (damage <= basic + 0.01f) return 0;
++    float best = -1;
++    unsigned slot = 0;
++    for (int s = 0; s < 2; ++s)
++        if (x.ready_counted >> s & 1)
++            if (const float v = x.strikes[static_cast<std::size_t>(s) + 1]->at(d); v > best) best = v, slot = 1u << s;
++    return slot;
++}
++
++int stun_slot(const ChampionFacts& f) { return f.abilities[0].stuns ? 0 : f.abilities[1].stuns ? 1 : -1; }
++
++// By enemy index; static storage starts zeroed, and generation 0 is never a Safety's.
++union WindowFoes {
++    constexpr WindowFoes() {}
++    std::array<WindowFoe, 16> at;
++};
++WindowFoes window_foes;
++
++// lethal_kind() by the low 3 bits of x and y (no two tiles of an 8x8 square collide), valid for
++// its generation.
++struct LethalMemo {
++    vec2 p;
++    std::uint32_t generation;
++    std::int8_t kind;
++};
++union LethalMemos {
++    constexpr LethalMemos() {}
++    std::array<LethalMemo, 64> at;
++};
++LethalMemos lethal_memos;
++
++struct WindowCeiling {
++    std::uint32_t generation;
++    float value;
++};
++WindowCeiling window_ceiling_memo;
++
++} // namespace
++
++const WindowFoe& Safety::window_foe(const ChampionBelief& e) {
++    auto& x = window_foes.at[static_cast<std::size_t>(e.index) & 15u];
++    if (x.generation == generation_) return x;
++    x.generation = generation_;
++    x.turns = window_turns(world_, e);
++    debug_block({
++        if (const int turns = struck(e).turns; turns >= 0 && turns != x.turns.before)
++            std::printf("STUN-TURNS %d e%d %d/%d\n", world_.round, e.index, x.turns.before, turns);
++    });
++    // A threat's blow counts its next turn even when that comes after ours (threat_strike); one with
++    // no strike (a stun of ours or a teleport takes every turn before ours) counts none.
++    const bool late = struck(e).strike.reach < 0;
++    x.counted = late ? 0 : std::max(1, x.turns.before);
++    x.follow = x.turns.before + x.turns.after - x.counted;
++    x.round = next_turn_round(world_, e) + std::max(0, x.counted - 1);
++    x.ready_counted = ready_slots(e, x.round);
++    x.ready_last = ready_slots(e, x.turns.last);
++    for (unsigned k = 0; k < 3; ++k) x.strikes[k] = &strike_with(e, k == 0 ? 0u : 1u << (k - 1));
++    x.ceiling = follow_damage(x, 0, x.follow, 0);
++    return x;
++}
++
++// Without the threat build: the enemies stun_window() reads, threats() and late_enemy() ones.
++float Safety::window_ceiling() {
++    auto& m = window_ceiling_memo;
++    if (m.generation == generation_) return m.value;
++    m.generation = generation_;
++    m.value = 0;
++    for (auto left = live_enemies(); left; left &= left - 1) {
++        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
++        if (gone(e)) continue;
++        if (struck(e).strike.reach >= 0 ? e.visible || foe(e).weight > 0 : e.visible) m.value += window_foe(e).ceiling;
++    }
++    return m.value;
++}
++
++bool Safety::stun_may_land(vec2 p) {
++    return any_threat_at(p, [](const Blow& b) { return b.hits && b.stuns; });
++}
++
++// Each enemy's turns after the lost one (window_turns) are priced by follow_damage from where its
++// turns before it can have brought it, without the slot its blow at p took; a stunner's, without
++// its stun's slot, from where its stun leaves it. The stunner is whichever adds the most.
++Safety::StunWindow Safety::stun_window(vec2 p, float blow_scale) {
++    StunWindow out;
++    // A stunner first: only it opens the window. One acting after our next turn stuns the turn after
++    // it, not this window.
++    const auto stuns = [&](const Threat& t, const ChampionBelief& e, int d) {
++        if (d >= unreachable || stun_slot(e.facts()) < 0 || window_foe(e).turns.before <= 0) return false;
++        const Blow b = t.at(p);
++        return b.hits && b.stuns;
++    };
++    const auto distance = [&](const Threat& t, const ChampionBelief& e) {
++        return t.visible ? dist(p, acts_from(e)) : t.steps ? steps_at(*t.steps, p) : static_cast<int>(unreachable);
++    };
++    bool any = false;
++    for (const auto& t : threats()) {
++        const auto& e = world_.enemies[static_cast<std::size_t>(t.enemy)];
++        if ((any = stuns(t, e, distance(t, e)))) break;
++    }
++    if (!any) return out;
++    float follows = 0, best = 0, best_before = 0, best_after = 0, most_after = 0;
++    for (const auto& t : threats()) {
++        const auto& e = world_.enemies[static_cast<std::size_t>(t.enemy)];
++        const int d = distance(t, e);
++        if (d >= unreachable) continue;
++        const auto& x = window_foe(e);
++        const Blow b = t.at(p);
++        const unsigned spent = b.hits ? spent_slot(x, d, b.damage) : 0;
++        // A dash spent on the blow ends within its basic reach of us.
++        int near = std::max(0, d - x.counted);
++        for (int k = 0; k < 2; ++k)
++            if ((spent >> k & 1) && e.facts().abilities[static_cast<std::size_t>(k)].kind == AbilityKind::dash)
++                near = std::min(near, e.facts().basic_reach());
++        const float plain = follow_damage(x, near, x.follow, spent);
++        follows += plain;
++        if (!stuns(t, e, d)) continue;
++        const int s = stun_slot(e.facts());
++        const auto& a = e.facts().abilities[static_cast<std::size_t>(s)];
++        const auto& stun = *x.strikes[static_cast<std::size_t>(s) + 1];
++        // Its blow with the stun. With two turns before ours, its other slot on the other turn (or a
++        // walk in first): the two-turn strike counts a second basic attack only, so it may add that slot.
++        float as_stun = std::min(b.damage, stun.at(d));
++        if (x.counted >= 2) {
++            const int o = 1 - s;
++            const auto& rest = x.ready_counted >> o & 1 ? *x.strikes[static_cast<std::size_t>(o) + 1] : *x.strikes[0];
++            as_stun = std::min(b.damage + std::max(0.0f, rest.at(d) - x.strikes[0]->at(d)),
++                               std::max(stun.at(d), stun.at(std::max(0, d - 1))) + rest.at(d));
++        }
++        // An exclusive stun is cast standing; a landing ends beside us, a stunning attack in its range.
++        int left = std::max(0, d - (x.counted - (a.excludes_walking ? 1 : 0)));
++        if (a.lands()) left = std::min(left, a.radius);
++        else if (a.kind == AbilityKind::attack_reset) left = std::min(left, e.facts().basic_reach());
++        const float after = follow_damage(x, left, x.follow, 1u << s) - plain;
++        const float before = as_stun - b.damage;
++        if (!out.open || before + after > best) best = before + after, best_before = before, best_after = after;
++        most_after = out.open ? std::max(most_after, after) : after;
++        out.open = true;
++    }
++    if (!out.open) return out;
++    // Enemies with no turn before ours (a stun of ours or a teleport takes them) act after it.
++    for (auto left = seen_enemies(); left; left &= left - 1) {
++        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
++        if (gone(e) || struck(e).strike.reach >= 0) continue;
++        const auto& x = window_foe(e);
++        follows += follow_damage(x, dist(p, acts_from(e)), x.follow, 0);
++    }
++    // The camp phase of the round our turn after next falls in; stunned members skip only the next.
++    const float camp = camp_damage(p, true, false);
++    out.before = best_before * blow_scale;
++    out.after = (follows + best_after) * blow_scale + camp;
++    out.after_only = (follows + most_after) * blow_scale + camp;
++    return out;
++}
++
++namespace {
++
++// Our health against a stun window's blows: on our spawn the lost turn's end heals us to full
++// again before the turns after it, our shield maybe gone by then.
++float my_window_health(bool spawn, float health) { return spawn ? my_max_health() : health; }
++
++} // namespace
++
++int Safety::lethal_kind(vec2 p) {
++    auto& memo = lethal_memos.at[static_cast<std::size_t>((p.x & 7) | (p.y & 7) << 3)];
++    if (memo.generation == generation_ && memo.p == p) return memo.kind;
+     if (own_health_ < 0) own_health_ = my_health() + (world_.me().shield_slot >= 0 ? shield_value(world_.me().handle) : 0.0f);
+     // A turn ended on our spawn heals to full before any enemy acts (rules rounds.turn_end).
+-    const float health = test(world_.map().ally_spawn, p) ? own_health_ - my_health() + my_max_health() : own_health_;
++    const bool spawn = test(world_.map().ally_spawn, p);
++    const float health = spawn ? own_health_ - my_health() + my_max_health() : own_health_;
+     // Most turns no enemy is near enough; skip the threat build then.
+     // Blows by our Durability; camp_damage has it already.
+     const float taken = world_.me().taken;
+-    // With no enemy in sight and every one past any strike's reach of p, damage_bound adds nothing to
+-    // the camps' damage, and it bounds the ceiling's test: the same answer without the enemies'
+-    // strikes (once they are all known, the bound below costs little more). With one in sight, the
+-    // strikes are mostly read anyway.
+-    if (!built_ && live_enemies() && !seen_ && (known_ & unseen_) != unseen_ && camp_damage(p, true, true) < health && unseen_beyond(p))
+-        return false;
+-    if (!built_ && (damage_ceiling(p, false, taken) < health || damage_bound(p, false, taken) < health)) return false;
+-    return worst_damage(p, taken) >= health;
++    const bool immune = world_.me().facts().passive == Passive::stun_immune;
++    const int kind = [&] {
++        // With no enemy in sight and every one past any strike's reach of p, damage_bound adds nothing to
++        // the camps' damage, and it bounds the ceiling's test: the same answer without the enemies'
++        // strikes (once they are all known, the bound below costs little more). With one in sight, the
++        // strikes are mostly read anyway. No blow reaches p there, so none stuns.
++        if (!built_ && live_enemies() && !seen_ && (known_ & unseen_) != unseen_ && camp_damage(p, true, true) < health && unseen_beyond(p))
++            return 0;
++        // Bounds at least worst_damage(p): with no stun, or every follow-up at its most still short, done.
++        if (!built_) {
++            float bound = damage_ceiling(p, false, taken);
++            if (!(bound < health)) bound = damage_bound(p, false, taken);
++            if (bound < health
++                && (immune || !stun_may_land(p) || (spawn ? 0.0f : bound) + window_ceiling() * taken + camp_damage(p, true, false) < my_window_health(spawn, health)))
++                return 0;
++        }
++        const float worst = worst_damage(p, taken);
++        if (worst >= health) return 1;
++        if (immune) return 0;
++        // Every follow-up at its most (a stunner's repriced blow is no more than its worst) leaves us
++        // standing: no window is lethal, so none needs working out.
++        const float extra = window_ceiling() * taken + camp_damage(p, true, false);
++        if ((spawn ? 0.0f : worst) + extra < my_window_health(spawn, health)) return 0;
++        const auto w = stun_window(p, taken);
++        if (!w.open) return 0;
++        if (!(spawn ? w.after_only >= my_window_health(spawn, health) : worst + w.before + w.after >= health)) return 0;
++        debug_block({
++            static int round = -1, count = 0;
++            if (round != world_.round) round = world_.round, count = 0;
++            if (count++ < 4)
++                std::printf("STUN lethal %d %u %d,%d worst %.0f window %.0f/%.0f health %.0f\n", world_.round,
++                            static_cast<unsigned>(world_.me().handle), p.x, p.y, worst, w.before, w.after, health);
++        });
++        return 2;
++    }();
++    memo = {p, generation_, static_cast<std::int8_t>(kind)};
++    return kind;
+ }
+ 
+ } // namespace aph
+diff -ru macro4-hub2f/src/model/safety.h macro4-gall/src/model/safety.h
+--- macro4-hub2f/src/model/safety.h	2026-11-11 01:36:29.703430199 +0000
++++ macro4-gall/src/model/safety.h	2026-11-11 05:17:58.984473785 +0000
+@@ -244,6 +244,23 @@
+ // strike(), widened when it has two turns before our next: a walk then the strike, or the strike
+ // and a second basic attack.
+ const Strike& threat_strike(const World& world, const ChampionBelief& c);
++// An enemy's turns from now until our turn after next, as a stun on us leaves them (our next turn
++// lost): `before` our next turn (turns_before_ours), then `after` between it and the one after,
++// the last of those in round `last`.
++struct WindowTurns {
++    int before = 0, after = 0, last = 0;
++};
++WindowTurns window_turns(const World& world, const ChampionBelief& c);
++// What Safety's stun window reads of an enemy, fixed with the beliefs (Safety::generation()).
++struct WindowFoe {
++    std::uint32_t generation;
++    WindowTurns turns;
++    int counted, follow;            // turns its threat counts, and the window's turns past them
++    int round;                      // its last counted turn
++    unsigned ready_counted, ready_last; // slots ready by then, and by turns.last
++    std::array<const Strike*, 3> strikes; // strike_with no slot, slot 0, slot 1
++    float ceiling;                  // its follow-up from distance 0, no slot spent: at least any
++};
+ // Farthest enemy its basic attack can reach in one turn from where it stands, by a walk, a ranged
+ // champion's walk and reset, or a dash ready in `round` first.
+ int attack_reach_in_turn(const ChampionBelief& c, int round);
+@@ -490,8 +507,11 @@
+     // act (channelling), each enemy walking a step a turn until in reach; 0 if not within `horizon` turns.
+     int turns_to_kill_idle(vec2 p, int horizon);
+     // Could the credible threats and camps kill us at p before our next turn? Against our health
+-    // and shield now: Ren's retaliation and our shield cast this turn count once refreshed.
+-    bool lethal(vec2 p);
++    // and shield now: Ren's retaliation and our shield cast this turn count once refreshed. A blow
++    // that stuns us takes that turn (rules: abilities.stun), so then before the turn after it.
++    bool lethal(vec2 p) { return lethal_kind(p) != 0; }
++    // lethal(p) only through the turn a stun takes.
++    bool lethal_by_stun(vec2 p) { return lethal_kind(p) == 2; }
+     bool unseen_beyond(vec2 p);
+ 
+     // Live members of awake (or maybe awake) groups, bar those read asleep that nobody else is near
+@@ -522,6 +542,22 @@
+     bool threatened_now(vec2 p);
+     // Every credible threat at full damage, plus camps.
+     float worst_damage(vec2 p, float blow_scale = 1);
++    // 0: not lethal; 1: before our next turn; 2: only before the turn after a stun takes it.
++    int lethal_kind(vec2 p);
++    const WindowFoe& window_foe(const ChampionBelief& e);
++    // The sum of every enemy's window ceiling.
++    float window_ceiling();
++    // Whether a threat's blow at p may stun us.
++    bool stun_may_land(vec2 p);
++    // What a stun at p adds to worst_damage(p) before the turn after the one it takes: `open` if a
++    // blow at p stuns. `before`: the stunner's blow as a stun, less its worst blow; `after`: the
++    // enemies' turns between the lost turn and ours after it, and that round's camp phase.
++    struct StunWindow {
++        bool open = false;
++        float before = 0, after = 0;
++        float after_only = 0; // the most `after` alone can be, by any stunner (a spawn heals between)
++    };
++    StunWindow stun_window(vec2 p, float blow_scale);
+     // Its strike's reach; for one whose stun leaves it no turn before our next, its first turn's,
+     // as it still fights from then on.
+     int fight_reach(const ChampionBelief& e);

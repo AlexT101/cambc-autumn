@@ -1,0 +1,314 @@
+diff -ru bots/variants/ocean-ref-b7c87cf/src/bot.cc bots/variants/macro6-stakes/src/bot.cc
+--- bots/variants/ocean-ref-b7c87cf/src/bot.cc	2026-11-11 01:36:30.491731192 +0000
++++ bots/variants/macro6-stakes/src/bot.cc	2026-11-11 02:38:21.645014948 +0000
+@@ -510,7 +510,7 @@
+         return;
+     }
+     decision = Branch::farm;
+-    if ((world.map().shared_gems && kite(world, pathing, memory)) || siege(world, pathing, safety, memory)) {
++    if ((world.map().shared_gems && kite(world, pathing, safety, memory)) || siege(world, pathing, safety, memory)) {
+         decision = Branch::siege;
+         return;
+     }
+diff -ru bots/variants/ocean-ref-b7c87cf/src/bot_parts.h bots/variants/macro6-stakes/src/bot_parts.h
+--- bots/variants/ocean-ref-b7c87cf/src/bot_parts.h	2026-11-11 01:36:30.491873194 +0000
++++ bots/variants/macro6-stakes/src/bot_parts.h	2026-11-11 02:38:21.644878047 +0000
+@@ -326,6 +326,12 @@
+ bool attack_enemy(const World& world);
+ float recall_line(const World& world, Safety& safety);
+ float recall_line(const World& world, Safety& safety, vec2 p);
++// recall_line without a carrier's raise (bag_at_stake under brake_bag): the line allies are priced at.
++float threat_recall_line(const World& world, Safety& safety, vec2 p);
++// bag_at_stake of brake_bag or more: a kill takes a bag worth guarding, so the recall line rises.
++bool bag_carrier(const World& world);
++// The highest recall_line can be this turn, wherever we stand.
++float recall_line_most(const World& world, Safety& safety);
+ int hold_rounds(const World& world, Pathing& pathing, vec2 p);
+ bool hold_outlasts(Safety& safety, float damage, vec2 p, int rounds);
+ bool paying_soon(const World& world, Safety& safety, vec2 p, int turns);
+@@ -464,6 +470,7 @@
+     std::array<Ally, 16> at;
+     int n = 0;
+     float line = 0, my_hp = 0, my_max = 0;
++    float ally_line = 0; // the other allies': `line` without our bag's raise (threat_recall_line)
+     vec2 here{};
+     // The living allies other than us that claim a group, in ally order: each group's claimers
+     // without a pass over every ally.
+@@ -476,7 +483,7 @@
+     mutable std::uint32_t avail_bits = 0;
+ };
+ float crew_output(const CrewAllies::Ally& a);
+-void crew_allies(const World& world, float line, CrewAllies& out);
++void crew_allies(const World& world, float line, float ally_line, CrewAllies& out);
+ // Slot bits of the seen allies claiming g (plan_crew's claimers), and of those crew_available for g.
+ std::uint32_t crew_claimer_bits(const CrewAllies& allies, int g);
+ std::uint32_t crew_available_bits(const World& world, const CrewAllies& allies, int g);
+@@ -515,7 +522,7 @@
+ bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ const bitboard* home_reach_avoid(const World& world, const Memory& memory);
+ bool home_monolith_map(const World& world);
+-bool kite(const World& world, Pathing& pathing, Memory& memory);
++bool kite(const World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ bool kites_with_spells(const ChampionBelief& c);
+ bool kite_owns(const World& world, int g);
+ bool siege_declines(const World& world, int g);
+diff -ru bots/variants/ocean-ref-b7c87cf/src/combat/fight.cc bots/variants/macro6-stakes/src/combat/fight.cc
+--- bots/variants/ocean-ref-b7c87cf/src/combat/fight.cc	2026-11-11 01:36:30.491962615 +0000
++++ bots/variants/macro6-stakes/src/combat/fight.cc	2026-11-11 02:38:21.641939397 +0000
+@@ -380,9 +380,59 @@
+     return false;
+ }
+ 
+-// The share of max health below which we go home from p. A low champion is mainly an easy kill, so
+-// with no enemy near enough to reach us soon the line is lower; camps are priced separately (camp_trapped).
+-float recall_line(const World& world, Safety& safety, vec2 p) {
++namespace {
++
++// The most one living enemy can deal us in a turn of its own, both slots ready, at its last-read
++// Strength and Focus (a Prism's with its last-seen bag; base stats if never seen), before our
++// Durability: what an enemy we cannot see may land before we can react. Read once per observation.
++float enemy_burst(const World& world) {
++    static int round = -1;
++    static std::uint32_t seen = 0;
++    static float most = 0;
++    if (round == world.round && seen == world.observations) return most;
++    round = world.round, seen = world.observations, most = 0;
++    for (const auto& e : world.enemies)
++        if (e.alive) most = std::max(most, strike_with(e, 3u).at(0)); // every blow reaches distance 0
++    return most;
++}
++
++// The most camp fire one phase deals a tile of our spawn: a turn there starts that far below full,
++// as the turn end before it healed us. Kept until Safety finds the members again.
++float spawn_fire(const World& world, Safety& safety) {
++    static int round = -1;
++    static std::uint32_t found = 0;
++    static float most = 0;
++    if (!camps_reach_spawn(world)) return 0;
++    if (round == world.round && found == safety.members_found) return most;
++    most = 0;
++    for (const auto t : world.map().ally_spawn_tiles) most = std::max(most, safety.camp_damage(t));
++    round = world.round, found = safety.members_found; // camp_damage may find the members, bumping the count
++    return most;
++}
++
++// A carrier's line wherever it stands: a kill takes its bag, so unseen enemies are its main risk and
++// the threatened line holds, raised to one enemy turn's burst. Capped where a champion starting its
++// turn on spawn still has the safe line's room to spend: else it could never leave to bank the bag.
++float carrier_line(const World& world, Safety& safety) {
++    const float max_health = std::max(1.0f, my_max_health());
++    const float burst = enemy_burst(world) * world.me().taken / max_health;
++    if (burst <= params::recall_health_fraction) return params::recall_health_fraction;
++    const float cap = 1.0f - params::safe_recall_health_fraction - spawn_fire(world, safety) / max_health;
++    return std::max(params::recall_health_fraction, std::min(burst, cap));
++}
++
++} // namespace
++
++bool bag_carrier(const World& world) { return bag_at_stake(world) >= params::brake_bag; }
++
++float recall_line_most(const World& world, Safety& safety) {
++    return bag_carrier(world) ? carrier_line(world, safety) : params::recall_health_fraction;
++}
++
++// The share of max health below which we go home from p for a champion without a bag at stake. A low
++// champion is mainly an easy kill, so with no enemy near enough to reach us soon the line is lower;
++// camps are priced separately (camp_trapped).
++float threat_recall_line(const World& world, Safety& safety, vec2 p) {
+     if (safety.recall_line_known && safety.recall_line_at == p) return safety.recall_line_share;
+     const auto line = [&] {
+         for (const auto& e : world.enemies)
+@@ -395,6 +445,22 @@
+     safety.recall_line_at = p, safety.recall_line_known = true;
+     return safety.recall_line_share;
+ }
++
++float recall_line(const World& world, Safety& safety, vec2 p) {
++    if (!bag_carrier(world)) return threat_recall_line(world, safety, p);
++    const float line = carrier_line(world, safety);
++    debug_block({
++        static int traced = -1;
++        if (traced != world.round) {
++            traced = world.round;
++            const float max_health = std::max(1.0f, my_max_health());
++            std::printf("STAKES %d %u bag %d base %.3f burst %.3f line %.3f hp %.3f fire %.3f\n", world.round, my_handle(), bag_at_stake(world),
++                        threat_recall_line(world, safety, p), enemy_burst(world) * world.me().taken / max_health, line,
++                        my_health() / max_health, spawn_fire(world, safety) / max_health);
++        }
++    });
++    return line;
++}
+ float recall_line(const World& world, Safety& safety) { return recall_line(world, safety, my_position()); }
+ 
+ // A hold paying in `rounds` keeps us at p while it outlasts what can reach us there, to the payout
+@@ -440,8 +506,8 @@
+ // Low under p's recall line (bar finishing a camp), or in a pack's zone there.
+ bool drawn_home(const World& world, Safety& safety, HoldAt& hold) {
+     const float health = my_health();
+-    // Either line is at most recall_health_fraction: above it, no line needs working out.
+-    if (health < params::recall_health_fraction * my_max_health() && health < recall_line(world, safety, hold.p) * my_max_health()
++    // Every line is at most recall_line_most: above it, no line needs working out.
++    if (health < recall_line_most(world, safety) * my_max_health() && health < recall_line(world, safety, hold.p) * my_max_health()
+         && !finishing_camp(world, hold.p) && !hold.keeps_us(safety))
+         return true;
+     return outmatched(world, safety, hold) && !hold.keeps_us(safety);
+@@ -1392,7 +1458,7 @@
+     const auto& f = world.me().facts();
+     const int escape_slot = f.slot_of(AbilityKind::dash);
+     const bool contested = escape_slot >= 0 && (f.abilities[escape_slot].lands() || f.abilities[1 - escape_slot].hits_enemies());
+-    const bool keep_dash = contested && my_health() < params::recall_health_fraction * my_max_health()
++    const bool keep_dash = contested && my_health() < recall_line_most(world, safety) * my_max_health()
+                            && my_can_cast() && my_cooldown(escape_slot) == 0;
+     if (keep_dash) {
+         if (dash_retreat_casts(world, pathing, safety, memory, dead)) return;
+diff -ru bots/variants/ocean-ref-b7c87cf/src/combat/guard.cc bots/variants/macro6-stakes/src/combat/guard.cc
+--- bots/variants/ocean-ref-b7c87cf/src/combat/guard.cc	2026-11-11 01:36:30.491962615 +0000
++++ bots/variants/macro6-stakes/src/combat/guard.cc	2026-11-11 02:38:21.642161290 +0000
+@@ -721,9 +721,9 @@
+ WorkGuard work_guard_inputs;
+ 
+ // What the work guard reads alike for every tile beside ours: whether any of them can be drawn home.
+-// Below recall_health_fraction a recall line may be above us; a pack's zone needs members near.
++// Below recall_line_most a recall line may be above us; a pack's zone needs members near.
+ bool may_draw_home(const World& world, Safety& safety, vec2 here) {
+-    if (my_health() < params::recall_health_fraction * my_max_health()) return true;
++    if (my_health() < recall_line_most(world, safety) * my_max_health()) return true;
+     if (!safety.live_enemies()) return false;
+     const std::uint32_t near = may_be_near(world, safety, here, pack_radius + 1);
+     // The members within reach of any tile beside us: fewer never outmatch where these do not (in floats too).
+diff -ru bots/variants/ocean-ref-b7c87cf/src/economy/crew.cc bots/variants/macro6-stakes/src/economy/crew.cc
+--- bots/variants/ocean-ref-b7c87cf/src/economy/crew.cc	2026-11-11 01:36:30.493907850 +0000
++++ bots/variants/macro6-stakes/src/economy/crew.cc	2026-11-11 02:26:38.608166602 +0000
+@@ -129,8 +129,9 @@
+     const float health = a.is_self ? allies.my_hp : a.health, max_health = a.is_self ? allies.my_max : a.max_health;
+     x.weight = a.facts().walk_and_attack_independent() ? 1.5f : 1.0f;
+     x.taken = crew_taken(a);
+-    x.score = (health - allies.line * max_health) / std::max(0.01f, x.taken) * x.weight;
+-    x.budget = crew_budget(health, max_health, allies.line), x.usable = crew_usable(max_health, allies.line);
++    const float line = a.is_self ? allies.line : allies.ally_line;
++    x.score = (health - line * max_health) / std::max(0.01f, x.taken) * x.weight;
++    x.budget = crew_budget(health, max_health, line), x.usable = crew_usable(max_health, line);
+ }
+ 
+ } // namespace
+@@ -151,12 +152,12 @@
+     return a.on_cleared && dist(a.on_centre, centre) <= params::crew_near_radius;
+ }
+ 
+-void crew_allies(const World& world, float line, CrewAllies& out) {
++void crew_allies(const World& world, float line, float ally_line, CrewAllies& out) {
+     // One read of our own record: each accessor reads the engine again.
+     const auto& me = my_record();
+     out.here = {me.x, me.y};
+     out.my_hp = me.health, out.my_max = me.max_health;
+-    out.line = line, out.n = 0, out.n_claiming = 0, out.self_slot = -1;
++    out.line = line, out.ally_line = ally_line, out.n = 0, out.n_claiming = 0, out.self_slot = -1;
+     out.n_joinable = -1, out.avail_group = -1;
+     for (const auto& a : world.allies) {
+         if (out.n == static_cast<int>(out.at.size())) break;
+diff -ru bots/variants/ocean-ref-b7c87cf/src/economy/farm.cc bots/variants/macro6-stakes/src/economy/farm.cc
+--- bots/variants/ocean-ref-b7c87cf/src/economy/farm.cc	2026-11-11 01:36:30.493907850 +0000
++++ bots/variants/macro6-stakes/src/economy/farm.cc	2026-11-11 02:38:21.660090232 +0000
+@@ -1207,7 +1207,11 @@
+     static CrewAllies crew_table;
+     bool crew_read = false;
+     const auto crew_allies_now = [&]() -> const CrewAllies& {
+-        if (!crew_read) crew_allies(world, line, crew_table), crew_read = true;
++        if (!crew_read) {
++            // Our bag raises only our own line: allies keep the unraised one.
++            const float ally_line = bag_carrier(world) ? threat_recall_line(world, safety, my_position()) : line;
++            crew_allies(world, line, ally_line, crew_table), crew_read = true;
++        }
+         return crew_table;
+     };
+     // Our camp damage in a crew's clear (share_damage), after our emblems and shield.
+diff -ru bots/variants/ocean-ref-b7c87cf/src/economy/home.cc bots/variants/macro6-stakes/src/economy/home.cc
+--- bots/variants/ocean-ref-b7c87cf/src/economy/home.cc	2026-11-11 01:36:30.493907850 +0000
++++ bots/variants/macro6-stakes/src/economy/home.cc	2026-11-11 02:38:21.659679586 +0000
+@@ -23,8 +23,11 @@
+ // near (recall_line at the spawn's centre, read once a turn) the line kept above is the recall line.
+ float home_room(const World& world, Safety& safety) {
+     static int round = -1;
++    static bool carried = false;
+     static float room = 0;
+-    if (round == world.round) return room;
++    const bool carrier = bag_carrier(world);
++    if (round == world.round && carried == carrier) return room;
++    carried = carrier;
+     // recall_line keeps one tile's answer, most often ours: kept as it was.
+     const bool known = safety.recall_line_known;
+     const vec2 at = safety.recall_line_at;
+@@ -70,10 +73,13 @@
+     bool any_fired = false;
+     int round = -1;
+     std::uint32_t found = 0;
++    bool carrier = false; // home_room's key
+ };
+ const HomeBoard& home_fires(const World& world, Safety& safety) {
+     static HomeBoard h;
+-    if (h.round == world.round && h.found == safety.members_found) return h;
++    const bool carrier = bag_carrier(world);
++    if (h.round == world.round && h.found == safety.members_found && h.carrier == carrier) return h;
++    h.carrier = carrier;
+     const auto& map = world.map();
+     copy_into(map.ally_spawn, h.board);
+     // Read only below the spawn's tile count.
+diff -ru bots/variants/ocean-ref-b7c87cf/src/economy/siege.cc bots/variants/macro6-stakes/src/economy/siege.cc
+--- bots/variants/ocean-ref-b7c87cf/src/economy/siege.cc	2026-11-11 01:36:30.493907850 +0000
++++ bots/variants/macro6-stakes/src/economy/siege.cc	2026-11-11 02:38:21.652192795 +0000
+@@ -567,7 +567,7 @@
+ // For a ground caster whose ground spell is down: whether stepping into (or staying in) group g's
+ // reach pays over two activations, damage dealt against the heal trips its camp hits cost; steps
+ // there if so. `interior`, already in reach: whether firing from here this activation pays.
+-bool kite_productive_action(const World& world, Pathing& pathing, int g, bool interior = false) {
++bool kite_productive_action(const World& world, Pathing& pathing, Safety& safety, int g, bool interior = false) {
+     if (!interior && !my_can_move()) return false;
+     const auto& map = world.map();
+     const auto& self = world.me();
+@@ -651,7 +651,7 @@
+     const float strength = my_strength(), basic_damage = strength * dealt;
+     const float spell_damage = slot < 0 ? 0 : f.abilities[slot].multiplier * my_record().focus * dealt;
+     const float soften = camp_hit_factor();
+-    const float spare = my_health() - params::recall_health_fraction * my_max_health();
++    const float spare = my_health() - recall_line_most(world, safety) * my_max_health();
+     const float lost_output = camp_output(self);
+     world.throw_if_stale();
+     static std::vector<float> remaining;
+@@ -955,7 +955,7 @@
+ 
+ // A big group cleared by stationary spells out of its monsters' reach, so that nobody takes a hit;
+ // harmless members fall to basic attacks from there, the rest once the monsters are dead.
+-bool kite(const World& world, Pathing& pathing, Memory& memory) {
++bool kite(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     world.throw_if_stale();
+     const auto& map = world.map();
+     const vec2 here = my_position();
+@@ -1122,7 +1122,7 @@
+         if (attacked) reset_and_attack_camp(world, g);
+         return cast || attacked;
+     };
+-    if (!safe_here && ground_stations && kite_productive_action(world, pathing, g, true)) {
++    if (!safe_here && ground_stations && kite_productive_action(world, pathing, safety, g, true)) {
+         const bool hit_now = hit();
+         const bool reset = reset_and_attack_camp(world, g);
+         if (hit_now || reset) return true;
+@@ -1132,7 +1132,7 @@
+         const bool placed = test(first, here);
+         if (hit()) return true;
+         if (placed) {
+-            if (ground_stations && kite_productive_action(world, pathing, g)) {
++            if (ground_stations && kite_productive_action(world, pathing, safety, g)) {
+                 hit();
+                 reset_and_attack_camp(world, g);
+             }
+diff -ru bots/variants/ocean-ref-b7c87cf/src/params.h bots/variants/macro6-stakes/src/params.h
+--- bots/variants/ocean-ref-b7c87cf/src/params.h	2026-11-11 01:36:30.496440302 +0000
++++ bots/variants/macro6-stakes/src/params.h	2026-11-11 02:38:21.660221483 +0000
+@@ -59,6 +59,7 @@
+ 
+ // Below this share of max health a champion goes home; camps may cost only the health above it.
+ // This is the line while an enemy threatens us (fight.cc recall_line); safe_recall_health_fraction otherwise.
++// A carrier of brake_bag gems keeps it, or one enemy turn's burst if higher, whatever it sees (carrier_line).
+ // Set per map on a champion's first turn (draft.cc condition_on_map); this is the value without map features.
+ inline float recall_health_fraction = 0.31549114f;
+ // The recall line while no enemy can credibly reach us within threat_radius steps.

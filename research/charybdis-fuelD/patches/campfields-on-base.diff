@@ -1,0 +1,39 @@
+diff -ruN bots/variants/chary-fuelD-base/src/model/safety.cc bots/variants/chary-fuelD-campfields/src/model/safety.cc
+--- bots/variants/chary-fuelD-base/src/model/safety.cc	2026-11-11 15:52:13.385612608 +0000
++++ bots/variants/chary-fuelD-campfields/src/model/safety.cc	2026-11-11 16:13:34.585391878 +0000
+@@ -2274,6 +2274,22 @@
+         }
+         return static_cast<int>(o.first);
+     };
++    bool fields_known = false;
++    static Field nearest, earlier;
++    static const bitboard open;
++    static bitboard targets{cambc::uninitialized}, ahead{cambc::uninitialized}, visited{cambc::uninitialized};
++    const auto fields = [&] {
++        if (fields_known) return;
++        fields_known = true;
++        targets.clear(), ahead.clear();
++        for (int k = 0; k < n; ++k) {
++            targets.set(others.at[k].pos);
++            if (first(others.at[k])) ahead.set(others.at[k].pos);
++        }
++        const auto cap = static_cast<std::uint16_t>(world_.map().max_camp_reach + 1);
++        nearest.steps.compute(open, targets, visited, cap);
++        earlier.steps.compute(open, ahead, visited, cap);
++    };
+     const bool reread = refresh_;
+     const auto& groups = world_.map().groups;
+     // Allies done acting that some group could fell (into others), and whether an ally is yet to act.
+@@ -2452,7 +2468,11 @@
+             // tie: the reach had we acted first, so reach <= tie <= reach + 1 and no other lies
+             // between them. Both are plain minima: an other with d - 1 >= reach lowers neither.
+             int reach = m.reach, tie = m.reach;
+-            for (int k = 0; k < k_near; ++k) {
++            if (n >= 3) {
++                fields();
++                tie = std::min(tie, nearest.at(m.pos));
++                reach = std::min(tie, earlier.at(m.pos) - 1);
++            } else for (int k = 0; k < k_near; ++k) {
+                 auto& o = others.at[near[k]];
+                 if (const int d = dist(o.pos, m.pos); d - 1 < reach) reach = std::min(reach, d - first(o)), tie = std::min(tie, d);
+             }

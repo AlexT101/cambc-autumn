@@ -1,0 +1,363 @@
+diff -ruN macro5/bots/variants/macro5-hold-sole2/src/economy/bank.cc macro5/bots/variants/macro5-hold-sole3/src/economy/bank.cc
+--- macro5/bots/variants/macro5-hold-sole2/src/economy/bank.cc	2026-11-11 07:36:24.376025269 +0000
++++ macro5/bots/variants/macro5-hold-sole3/src/economy/bank.cc	2026-11-11 08:09:29.633926915 +0000
+@@ -1366,47 +1366,54 @@
+         && !can_tribute_safely(world, pathing, safety, memory))
+         return true;
+     decision = Branch::recall_cancelled;
+-    if (holding_capture(world, pathing)) {
+-        // Our Prism keeps the hold: the share this recall waits for goes to it once we step off
+-        // (yield_capture), and from beside the tiles a recall the turn end starts keeps its other ends.
+-        const auto& G = world.map().groups[world.map().group_at(my_position())];
++    // On a hold our Prism keeps, whatever this recall is for, while it would still stand us there at
++    // the payout: the share is the Prism's once we step off (yield_capture, unless we go home), and a
++    // recall the turn end starts beside the tiles keeps its ends.
++    bool off = false;
++    if (const int g = world.map().group_at(my_position()); !*home && g >= 0 && world.camps[g].state == CampState::cleared
++        && world.camps[g].held_since >= 0 && world.round + my_channel_time() >= world.camps[g].payout_round()) {
++        const auto& G = world.map().groups[g];
+         const auto* holder = yield_holder(world, safety, memory, G);
+         std::array<vec2, 8> steps;
+-        const bool off = holder && focus_holder(world, *holder, G) && yield_steps(world, pathing, safety, memory, G, steps) > 0;
+-        if (!off && capture_recall(world, pathing, safety, memory)) {
+-            decision = Branch::capture_recall;
+-            return true;
+-        }
+-    } else {
+-        const auto shop = [&] {
+-            return wants_shop(world, pathing, safety, memory) && my_channel_time() < pathing.to_ally_spawn().at(my_position());
+-        };
+-        // Wanting home, the home keep's reach test binds these too: else we alternate a retreat
+-        // step with a standing turn on a recall the pursuer cancels.
+-        if ((!*home || recall_outruns(safety)) && (recall_to_bank(world, pathing, safety, memory) || shop())) return true;
+-        if (siege_heal_trip(world, pathing, memory, safety)) return sieged = true; // the trip keeps the siege until home
+-        // No walk leaves a pocket a crystal took us into, unless to bank there or to farm there.
+-        const bool pocket = !pathing.on_foot(my_position()) ? memory.farm_group < 0 || beyond_walk(world, pathing, memory.farm_group)
+-                                                            : sealed_in(world, pathing, my_position());
+-        if (pocket && (my_gems() == 0 || retaining_gems(world, pathing) || !memory.banking)) return true;
+-        // The pick weighed again, kept while it still goes by way of spawn.
+-        if (recall_farm >= 0 && my_gems() == 0 && !memory.siege) {
+-            memory.recall_farm = -1;
+-            farm_reprice(world, pathing, safety, memory);
+-            if (memory.recall_farm >= 0) {
+-                debug_block({ std::printf("RFKEEP %d %u %d %d%s\n", world.round, my_handle(), memory.recall_farm, static_cast<int>(my_channel_time()),
+-                                          memory.recall_farm != recall_farm ? " switched" : ""); });
++        off = holder && focus_holder(world, *holder, G) && yield_steps(world, pathing, safety, memory, G, steps) > 0;
++    }
++    if (!off) {
++        if (holding_capture(world, pathing)) {
++            if (capture_recall(world, pathing, safety, memory)) {
++                decision = Branch::capture_recall;
++                return true;
++            }
++        } else {
++            const auto shop = [&] {
++                return wants_shop(world, pathing, safety, memory) && my_channel_time() < pathing.to_ally_spawn().at(my_position());
++            };
++            // Wanting home, the home keep's reach test binds these too: else we alternate a retreat
++            // step with a standing turn on a recall the pursuer cancels.
++            if ((!*home || recall_outruns(safety)) && (recall_to_bank(world, pathing, safety, memory) || shop())) return true;
++            if (siege_heal_trip(world, pathing, memory, safety)) return sieged = true; // the trip keeps the siege until home
++            // No walk leaves a pocket a crystal took us into, unless to bank there or to farm there.
++            const bool pocket = !pathing.on_foot(my_position()) ? memory.farm_group < 0 || beyond_walk(world, pathing, memory.farm_group)
++                                                                : sealed_in(world, pathing, my_position());
++            if (pocket && (my_gems() == 0 || retaining_gems(world, pathing) || !memory.banking)) return true;
++            // The pick weighed again, kept while it still goes by way of spawn.
++            if (recall_farm >= 0 && my_gems() == 0 && !memory.siege) {
++                memory.recall_farm = -1;
++                farm_reprice(world, pathing, safety, memory);
++                if (memory.recall_farm >= 0) {
++                    debug_block({ std::printf("RFKEEP %d %u %d %d%s\n", world.round, my_handle(), memory.recall_farm, static_cast<int>(my_channel_time()),
++                                              memory.recall_farm != recall_farm ? " switched" : ""); });
++                    decision = Branch::recall_kept;
++                    return true;
++                }
++            } else if (recall_to_farm(world, pathing, safety, memory, recall_farm)) {
++                debug_block({ std::printf("RFKEEP %d %u %d %d\n", world.round, my_handle(), recall_farm, static_cast<int>(my_channel_time())); });
+                 decision = Branch::recall_kept;
++                memory.recall_farm = recall_farm;
+                 return true;
+             }
+-        } else if (recall_to_farm(world, pathing, safety, memory, recall_farm)) {
+-            debug_block({ std::printf("RFKEEP %d %u %d %d\n", world.round, my_handle(), recall_farm, static_cast<int>(my_channel_time())); });
+-            decision = Branch::recall_kept;
+-            memory.recall_farm = recall_farm;
+-            return true;
+-        }
+-        if (recall_farm >= 0) {
+-            debug_block({ std::printf("RFDROP %d %u %d %d\n", world.round, my_handle(), recall_farm, static_cast<int>(my_channel_time())); });
++            if (recall_farm >= 0) {
++                debug_block({ std::printf("RFDROP %d %u %d %d\n", world.round, my_handle(), recall_farm, static_cast<int>(my_channel_time())); });
++            }
+         }
+     }
+     throw_if_stale();
+diff -ruN macro5/bots/variants/macro5-hold-sole2/src/economy/capture.cc macro5/bots/variants/macro5-hold-sole3/src/economy/capture.cc
+--- macro5/bots/variants/macro5-hold-sole2/src/economy/capture.cc	2026-11-11 07:36:24.375814837 +0000
++++ macro5/bots/variants/macro5-hold-sole3/src/economy/capture.cc	2026-11-11 08:10:10.054539923 +0000
+@@ -416,27 +416,37 @@
+     return walked;
+ }
+ 
+-// A Prism holding G for its Focus, fit and staying on its tiles; prism_keeps_hold, with the hold
+-// counting. A co-holder adds it no protection (one enemy on a tile stops the count however many of
+-// ours stand there), only splits its Focus, and from beside the tiles can step back on should it leave.
+-bool prism_stays(const World& world, const ChampionBelief& prism, const CampGroup& G) {
+-    return focus_holder(world, prism, G) && fit_on(prism, G.tiles()) && prism.channel != Channel::teleport && !real_recall(prism);
++// A Prism holding G for its Focus, fit and on its tiles through the payout in round `payout`: a teleport
++// or real recall moves it at its turn start in channel_end_round, after that round's capture phase.
++// prism_keeps_hold, with the hold counting. A co-holder adds it no protection (one enemy on a tile
++// stops the count however many of ours stand there), only splits its Focus, and from beside the
++// tiles can step back on should it leave.
++bool prism_stays(const World& world, const ChampionBelief& prism, const CampGroup& G, int payout) {
++    const bool leaves = (prism.channel == Channel::teleport || real_recall(prism)) && prism.channel_end_round < payout;
++    return !leaves && focus_holder(world, prism, G) && fit_on(prism, G.tiles());
+ }
+ bool prism_keeps_hold(const World& world, const ChampionBelief& prism, const CampGroup& G) {
+-    return prism_stays(world, prism, G) && fresh_ally_capture(world, G) >= 0;
++    const int timer = fresh_ally_capture(world, G);
++    return timer >= 0 && prism_stays(world, prism, G, world.round + timer);
+ }
+ 
+-// The tiles of a group our Prism (not us) keeps alone (prism_stays), its hold counting as last seen;
+-// else null. Read by Pathing's first steps mid-search, so from beliefs only, kept while they hold.
+-const bitboard* prism_hold_tiles(const World& world) {
+-    if (world.me().facts().passive == Passive::gem_focus) return nullptr;
++// The one-holder group our Prism (not us) keeps (prism_stays), its hold counting as last seen, and whether
++// its payout falls in the next capture phase, before our next turn; else group -1. Read by Pathing
++// mid-search, so from beliefs only, kept while they hold: the timer is read while a camp tile is in
++// sight, as the Prism's is, and nothing brings a payout sooner than it reads (rules capture.timing).
++struct PrismHold {
++    int group = -1;
++    bool paid_next = false;
++};
++const PrismHold& prism_hold(const World& world) {
+     static struct {
+         int round = -1;
+         std::uint32_t observations = 0;
+-        const bitboard* tiles = nullptr;
++        PrismHold hold;
+     } kept;
+-    if (kept.round == world.round && kept.observations == world.observations) return kept.tiles;
+-    kept.round = world.round, kept.observations = world.observations, kept.tiles = nullptr;
++    if (kept.round == world.round && kept.observations == world.observations) return kept.hold;
++    kept.round = world.round, kept.observations = world.observations, kept.hold = {};
++    if (world.me().facts().passive == Passive::gem_focus) return kept.hold;
+     const auto& map = world.map();
+     for (const auto& a : world.allies) {
+         if (a.is_self || !a.alive || !a.visible || a.facts().passive != Passive::gem_focus) continue;
+@@ -445,10 +455,24 @@
+         const auto& c = world.camps[g];
+         const auto& G = map.groups[g];
+         if (c.state == CampState::cleared && c.holder == team::ally && c.held_since >= 0 && holders(G) == 1
+-            && allies_on(world, G.tiles()) == 1 && prism_stays(world, a, G))
+-            kept.tiles = &G.tiles();
++            && prism_stays(world, a, G, c.payout_round()))
++            kept.hold = {g, c.payout_round() <= world.round + 1};
+     }
+-    return kept.tiles;
++    return kept.hold;
++}
++
++// prism_hold's tiles.
++const bitboard* prism_hold_tiles(const World& world) {
++    const int g = prism_hold(world).group;
++    return g >= 0 ? &world.map().groups[g].tiles() : nullptr;
++}
++
++// prism_hold's tiles, seen from `me` off them, while ending the turn on one takes a share of its payout.
++const bitboard* paid_hold_tiles(const World& world, vec2 me) {
++    const auto& hold = prism_hold(world);
++    if (!hold.paid_next) return nullptr;
++    const auto& tiles = world.map().groups[hold.group].tiles();
++    return test(tiles, me) ? nullptr : &tiles;
+ }
+ 
+ // The ally whose hold of G, on whose tile we stand, we step off (yield_capture), if any: one that
+diff -ruN macro5/bots/variants/macro5-hold-sole2/src/model/pathing.cc macro5/bots/variants/macro5-hold-sole3/src/model/pathing.cc
+--- macro5/bots/variants/macro5-hold-sole2/src/model/pathing.cc	2026-11-11 07:36:39.668241532 +0000
++++ macro5/bots/variants/macro5-hold-sole3/src/model/pathing.cc	2026-11-11 08:10:10.054722375 +0000
+@@ -21,6 +21,7 @@
+ int aim_distance(vec2 p, vec2 aim) { return std::abs(p.x - aim.x) + std::abs(p.y - aim.y); }
+ int fixc_bush_order(const World& world, vec2 p, int score); // combat/fixc.cc
+ const bitboard* prism_hold_tiles(const World& world);     // economy/capture.cc
++const bitboard* paid_hold_tiles(const World& world, vec2 me); // economy/capture.cc
+ 
+ // No enemy seen this round or last this close for a travel dash, by its terrain distance (enemy_reach): one we could
+ // still see from its landing, which can come for us. Nearer, the dash is the fight's.
+@@ -738,10 +739,11 @@
+     std::array<bool, 8> held_of{};
+     // As route()'s first steps: of equally short steps, those onto a hold our Prism keeps alone go last.
+     const bitboard* held = fixc_bush_threatened ? nullptr : prism_hold_tiles(world_);
++    const bitboard* paid = held ? paid_hold_tiles(world_, me) : nullptr; // as route()'s: no step onto them
+     for (auto d : directions) {
+         const vec2 p = me + d;
+         // The field first: steppable() may work out a deferred guard.
+-        if (!in_bounds(p)) continue;
++        if (!in_bounds(p) || (paid && test(*paid, p))) continue;
+         const int steps = field.at(p);
+         if (steps >= here || !steppable(p, walls, avoid)) continue;
+         const int towards = fixc_bush_order(world_, p, pull(p) * 256 + (aim ? aim_distance(p, *aim) : 0));
+@@ -801,6 +803,8 @@
+         {
+             auto r = route_around(goals, avoid, max_steps, aim, cover);
+             pocket_at_ = pocket;
++            // A detour's steps are not the shortest ones these compare.
++            if (r.detour || bare.detour) return route_around(goals, avoid, max_steps, aim, guard());
+             if (r.steps == bare.steps && r.count == bare.count) {
+                 r.unguarded = guard_skipped_ = true;
+                 return r;
+@@ -1021,6 +1025,8 @@
+     const int cap = std::min<int>(max_steps, unreachable);
+     auto& kept = kept_routes_[crossing_];
+     int here = kept_steps(kept, goals, walls, me, cap);
++    // This search's walls: a kept field's labels hold only below `here`, and a tile walled since can read it.
++    const bitboard* now = &walls;
+     if (here == unreachable) {
+         // A search fails only at its cap, having labelled all the goals reach, so in a pocket (holes a
+         // dash crossed, units) it costs a whole map; a standoff repeats it every turn. Once a failed
+@@ -1078,6 +1084,7 @@
+         std::swap(route_gen_, kept.id);
+         copy_into(goals, kept.goals);
+         walls.swap(kept.walls);
++        now = &kept.walls;
+         kept.layer = here;
+     }
+     const auto& field = kept.field;
+@@ -1097,7 +1104,7 @@
+     if (best < here)
+         for (int i = 0; i < 8; ++i)
+             if (around[i] == best) r.first_steps[r.count++] = me + directions[i];
+-    if (r.count > 1) {
++    const auto order = [&] {
+         std::array<int, 8> towards{};
+         for (int j = 0; j < r.count; ++j) {
+             const vec2 p = r.first_steps[j];
+@@ -1108,7 +1115,10 @@
+             r.first_steps[i] = p;
+             towards[i] = score;
+         }
+-        // Then steps onto a hold our Prism keeps alone go last: one standing there at the payout
++    };
++    if (r.count > 1) {
++        order();
++        // Then steps onto a hold our Prism keeps go last: each ally standing there at the payout
+         // splits the gems that are Focus on it. Not under a bush threat, whose rank leads.
+         if (const bitboard* held = fixc_bush_threatened ? nullptr : prism_hold_tiles(world_)) {
+             std::array<vec2, 8> late;
+@@ -1121,6 +1131,16 @@
+             for (int j = 0; j < m; ++j) r.first_steps[k++] = late[j];
+         }
+     }
++    // Every shortest step onto those tiles in their payout round takes a share: one step more round
++    // them instead, or none, a wait that costs the same round.
++    if (r.count > 0)
++        if (const bitboard* paid = fixc_bush_threatened ? nullptr : paid_hold_tiles(world_, me); paid && test(*paid, r.first_steps[0])) {
++            r.count = 0, r.detour = true;
++            for (int i = 0; i < 8; ++i)
++                if (const vec2 p = me + directions[i]; around[i] == best + 1 && !test(*paid, p) && !test(*now, p)) r.first_steps[r.count++] = p;
++            if (r.count > 1) order();
++            if (r.count == 0) paid_wait_ = {round_now(), me};
++        }
+     return r;
+ }
+ 
+@@ -1440,20 +1460,25 @@
+     }
+     camps_into(no_dash);
+     const bitboard* const enemies = td.forced ? &live_champion_tiles(team::enemy) : nullptr;
+-    const bitboard* veto = travel_landing_veto(world_, me);
+-    // The three windows (shut, no dash path, vetoed landings) from one gather of their chunks.
+-    std::uint64_t shut = 0, no_pass = 0, vetoed = 0;
++    const bitboard* const veto = travel_landing_veto(world_, me);
++    // No turn ends where route()'s walk would not step: no dash lands there, nor walks on after one.
++    const bitboard* const paid = fixc_bush_threatened ? nullptr : paid_hold_tiles(world_, me);
++    // The four windows (shut, no dash path, vetoed landings, paid tiles) from one gather of their chunks.
++    std::uint64_t shut = 0, no_pass = 0, vetoed = 0, on_paid = 0;
+     if (across > 0) {
+         const auto k = window::corner(me, across, height);
+-        window::Quad s, p, v;
++        window::Quad s, p, v, w;
+         window::gather(s, k, &walls), window::gather(s, k, avoid), window::gather(s, k, guard);
+         window::gather(p, k, &no_dash), window::gather(p, k, &*static_no_dash_), window::gather(p, k, enemies);
+-        window::gather(v, k, veto);
++        window::gather(v, k, veto), window::gather(w, k, paid);
+         shut = window::cut(s, k), no_pass = window::cut(p, k), vetoed = veto ? window::cut(v, k) : 0;
++        on_paid = paid ? window::cut(w, k) : 0;
+     } else {
+         const auto bits = [&](std::initializer_list<const bitboard*> boards) { return window::bits(boards, me, across, width, height); };
+         shut = bits({&walls, avoid, guard}), no_pass = bits({&no_dash, &*static_no_dash_, enemies}), vetoed = veto ? bits({veto}) : 0;
++        on_paid = paid ? bits({paid}) : 0;
+     }
++    vetoed |= on_paid;
+     // The step guard is worked out within a dash of us (guard_steps): with one, every end stays there.
+     const std::uint64_t near = guard ? window::grow(window::grow(window::centre)) : window::all;
+     const std::uint64_t inside = window::inside(me, width, height) & near, free = inside & ~shut;
+@@ -1469,7 +1494,7 @@
+     std::array<std::uint64_t, 8> from_first{}; // landings after the walk to each first step
+     const std::uint64_t firsts = walking ? window::grow(window::centre) & free & ~window::centre : 0;
+     if (walking) {
+-        then_walk = window::grow(dashed) & free & ~window::centre;
++        then_walk = window::grow(dashed) & free & ~on_paid & ~window::centre;
+         int i = 0;
+         for (std::uint64_t m = firsts; m; m &= m - 1, ++i) walk_then |= from_first[i] = dash_from(m & -m);
+     }
+@@ -1816,6 +1841,7 @@
+         }
+         if (cap < here) note_shortcut("static-descend");
+         else if (step_route(td, field.goals, avoid, cap, aim)) return true;
++        else if (paid_waiting()) return false;
+         else searched = true;
+     }
+     // The search that failed between moved nothing: the descent, its dash plan included, fails again.
+@@ -1844,7 +1870,7 @@
+ }
+ 
+ bool Pathing::descend_with(const TravelDash& td, const Field& field, const bitboard* avoid, std::optional<vec2> aim) {
+-    if (!my_can_move() && !td.now) return false;
++    if ((!my_can_move() && !td.now) || paid_waiting()) return false;
+     const auto steps = my_can_move() ? closer_neighbours(field, avoid, aim) : Neighbours{};
+     if (td.now && !(bumped_any_ && fight_near(true))) {
+         const int here = field.at(my_pos());
+@@ -1863,14 +1889,15 @@
+ }
+ 
+ bool Pathing::step_closer(vec2 target, const bitboard* avoid, std::optional<vec2> aim) {
+-    if (!my_can_move()) return false;
++    if (!my_can_move() || paid_waiting()) return false;
+     const vec2 me = my_pos();
+     const auto& walls = blocked();
+     std::optional<vec2> best;
+     int best_dist = dist(me, target);
++    const bitboard* paid = fixc_bush_threatened ? nullptr : paid_hold_tiles(world_, me); // as route()'s
+     for (auto d : directions) {
+         const vec2 p = me + d;
+-        if (!steppable(p, walls, avoid)) continue;
++        if (!steppable(p, walls, avoid) || (paid && test(*paid, p))) continue;
+         if (const int d2 = dist(p, target); d2 < best_dist
+             || (best && d2 == best_dist && pull(p) * 256 + (aim ? aim_distance(p, *aim) : 0) < pull(*best) * 256 + (aim ? aim_distance(*best, *aim) : 0)))
+             best = p, best_dist = d2;
+diff -ruN macro5/bots/variants/macro5-hold-sole2/src/model/pathing.h macro5/bots/variants/macro5-hold-sole3/src/model/pathing.h
+--- macro5/bots/variants/macro5-hold-sole2/src/model/pathing.h	2026-11-11 01:36:30.103687948 +0000
++++ macro5/bots/variants/macro5-hold-sole3/src/model/pathing.h	2026-11-11 08:08:47.373160387 +0000
+@@ -222,6 +222,7 @@
+             std::array<vec2, 8> first_steps;
+         };
+         bool unguarded = false; // the first steps are off the guard, which is left deferred
++        bool detour = false;    // one step longer, or none, off the tiles a payout would share (route_around)
+     };
+     Route route(const bitboard& goals, const bitboard* avoid = nullptr, int max_steps = unreachable, std::optional<vec2> aim = std::nullopt);
+     // route() with `guard` walled.
+@@ -421,6 +422,12 @@
+     }
+     // Where a failed search last found us enclosed (enclosed()).
+     vec2 pocket_at_{-1, -1};
++    // Where a route waited off the tiles a payout would share this round: no fallback steps instead.
++    struct {
++        std::uint32_t round = 0;
++        vec2 at{-1, -1};
++    } paid_wait_;
++    bool paid_waiting() { return paid_wait_.round == round_now() && paid_wait_.at == my_pos(); }
+     static constexpr int pocket_radius = 16;
+     // No goal within the walkable region around us, which ends within pocket_radius, and no ally beside us.
+     bool enclosed(const bitboard& walls, const bitboard& goals, vec2 me);

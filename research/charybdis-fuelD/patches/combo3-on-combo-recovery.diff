@@ -1,0 +1,31 @@
+--- a/src/economy/camps.cc
++++ b/src/economy/camps.cc
+@@ -447,14 +447,25 @@
+     std::uint32_t living = 0;
+     for (int i = 0; i < n; ++i)
+         if (t.slot[left[i].member] >= 0) living |= 1u << t.slot[left[i].member];
+-    for (int i = 0; i < n; ++i) left[i].fire = fire(t.hits[left[i].member] & living);
+-    if (n > 1)
+-        std::sort(left, left + n, [](const CampLeft& a, const CampLeft& b) {
++    // Harmless members follow every striker; by then no camp damage remains.
++    int attackers = 0;
++    for (int i = 0; i < n; ++i)
++        if (left[i].strength > 0) {
++            std::swap(left[i], left[attackers]);
++            left[attackers].fire = fire(t.hits[left[attackers].member] & living);
++            ++attackers;
++        }
++    if (attackers > 1)
++        std::sort(left, left + attackers, [](const CampLeft& a, const CampLeft& b) {
+             const float x = a.strength * b.health, y = b.strength * a.health;
+             return x != y ? x > y : a.fire < b.fire;
+         });
+     for (int i = 0; i < n; ++i) {
+         const int m = left[i].member;
++        if (living == 0) {
++            left[i].fire = 0, left[i].home_fire = -1;
++            continue;
++        }
+         left[i].fire = fire(t.hits[m] & living);
+         const auto bits = t.homes.empty() ? -1 : t.home_bits(m);
+         left[i].home_fire = bits >= 0 ? fire(static_cast<std::uint32_t>(bits) & living) : -1.0f;
