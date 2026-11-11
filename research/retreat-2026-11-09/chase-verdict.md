@@ -59,7 +59,8 @@ every hit our visible team could land is not caught, so the walk after it is fut
   than ones that stood (4.0%).
 - **Chase steps** were left alone: lead pursuit and minimax steering lost before. `want_home`'s stand verdict is
   untouched.
-- **Doomed-first target order** (the report's step 2): not built. It needs a verdict for every candidate.
+- **Doomed-first target order** (the report's step 2): built later as `variants/cv-doom` (one-hit targets after the
+  rest). It changes ~0.9 picks a team-game, too few to screen (EXPERIMENTS "Doomed-first chase order").
 
 **Known limits.**
 - Turn order is modelled as strict alternation. Counterpart pairs flip with round parity, so a pursuer can get two
@@ -218,7 +219,7 @@ The rule removes ~40% of chase turns: 88 a team-game, nearly all of them chases 
 Follow-ups, not tried here:
 - **The remaining OOF excess (+8%)** is mostly the aim's verdict before the strike search. A gate on the fuel the
   search still needs, or reusing a teammate's verdict through comms, might recover some of it.
-- **The doomed-first target order** (the report's step 2).
+- **The doomed-first target order** (the report's step 2): built and counted; too rare to matter (EXPERIMENTS).
 - **Modelling the turn-order flips** in both races.
 
 ## Tools

@@ -56,3 +56,6 @@ tools/fastengine/runner-prof/
 *.rej
 .mapcache*.jsonl
 **/run.lock
+
+# Live scrim runner lock (tools/ladder_coordination.py)
+research/ladder-scrims-2026-11-06/data/live-switch.lock

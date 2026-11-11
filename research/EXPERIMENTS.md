@@ -16830,6 +16830,22 @@ Each arm lowers farm.cc's after-loop reserve (`after_loop`) by `loop_slack` on t
 - Lowering end_reserve does not add to that.
 - The leader, oc16-rs12, is at most a small gain. If it is tried further, a larger slack is the next step.
 
+## Mite r4 to r5: matched live v105 comparison (2026-11-10, Codex coordinator)
+
+Same ocean submission v105, 80 common map/side cells against the two pinned Mite versions. Read through `tools/ladder_scrims.py::games` (deduplicated, suspect groups excluded); source is `research/ladder-scrims-2026-11-06/data/games.jsonl`. This isolates the opponent pin update from our v106 mask-key change.
+
+| Metric | Mite r4 | Mite r5 |
+|---|---:|---:|
+| Our wins | 49/80 (61.25%) | 42/80 (52.50%) |
+| Our mean tributed gems | 809.35 | 740.74 |
+| Mite mean tributed gems | 630.41 | 709.58 |
+| Our mean kills | 7.20 | 6.62 |
+| Mite mean kills | 5.22 | 6.09 |
+| Our mean earned gold | 5766.98 | 5407.12 |
+| Mite mean earned gold | 6080.38 | 5996.71 |
+
+Paired flips: 10 new wins, 17 new losses (net -7, z -1.35), insufficient evidence of a strength change. Both teams' ordered drafts are unchanged in all 80 cells; 66/80 games change duration. This observed change is in play/code execution, not the picks on this set; it does not prove a particular behaviour or generalise draft identity beyond these maps. Continue on the existing r5 pin; no automatic repin or new draft-model fit is warranted from this comparison.
+
 
 ### Hourly opponent-version check calibration (2026-11-10)
 
@@ -16851,6 +16867,13 @@ summary trajectories are logged and relayed to the user as behaviour/version-cha
 evidence, with engine/seed/nondeterminism caveats, never as an automatic repin.
 [Implementation, evidence paths and recovery](ladder-scrims-2026-11-06/VERSION-CHECK.md).
 
+
+## Live v106 reserve read against v105 (2026-11-10 09:07 UTC; Fish complete, Mite partial)
+
+Results against v105 (`live-wd-fsnh`): v106 `live-wd-rs8` wins **184/256 (71.88%)** against Fish r2 versus **164/256 (64.06%)** on the same map/side/pin cells. Flips +52/-32; unadjusted cell sign-test two-sided p=0.0375 (exploratory, opposite sides of a map may correlate). Grouping by map gives 34 net-positive, 21 net-negative and 73 level maps. Both ordered drafts, seed, engine hash and map ID match on all 256 cells. The priority-mask key changes at v106 as well as the farm reserve, so this is evidence about the submitted combination, **not an isolated reserve gain**; no automatic merge follows.
+
+Mite r5 has only 80 common cells because v105 ended there: v106 41/80 versus v105 42/80, flips +12/-13; drafts/seed/hash/map IDs all match. v106 currently has 139/230 total Mite wins, still incomplete; this unpaired total is not the matched comparison. No comparison with Mite r4 is pooled into this result. Normal scheduler continues to the authorized camp-shield arm after drain. Data: `tools/ladder_scrims.py::games` excludes suspect groups and duplicate cells; snapshot and matched IDs in `~/tmp-offload/handoff/codex/live-analysis/v106-v105.json`, reproducer `pair106.py` beside it. Shared historical scheduler `base_version=86` for v106 is erroneous; intended base is105.
+
 ## Warding policy evidence and fuel-matched experiments — 2026-11-10
 
 Forty common map/side cells per cohort: Mite r5 placed 6,982 wards (62.9% bush,15.6% camp), Ad Astra 4,030 (100% bush), Ocean-v105 4,086 (74.9% bush,1.5% camp). Confirmed ward-only basic-attack shares 8.35%, 5.14%, 8.98%; no demonstrated Ocean ward-value deficit. Opponents/drafts differ; five Ad Astra games predate the 5.0.1 switch, and excluding those cells preserves findings. Mite's camp wards mostly retain future information (769/1,088 add no immediate sight). This is descriptive policy evidence, not causal strength evidence.
@@ -16860,30 +16883,6 @@ Prepared independent full 498 arms `oc-wtile-498` (exact sight ranks tiles in th
 ### Alive-camp ward ablation — 2026-11-10
 
 Event-level follow-up found 686/1,088 Mite camp wards on alive groups, versus 269 cleared and 133 respawning, with only two same-group replacements. Added sealed `oc-wcampall-498`, removing only the dead-group restriction from the cheap camp arm. Its 16 normal/doubled-fuel smoke games pass release/error/draft/replay checks; camp placements rise to 422/410 versus 301/274 for the dead-camp arm on those cells. No strength claim. Eight independent arm/base fuel gates are now prepared; the original six commands and all frozen sources remain unchanged. See [warding evidence](ideas-2026-11-10/warding.md).
-
-### Planned-ward timing ablation — 2026-11-10
-
-Ocean's routine end placement already follows movement/combat, but 379/4,086 observed v105 placements have a later main action; 179 non-bush cases are definitely early planned wards. Current Ad Astra has only 1/4,017 such cases. Added sealed `oc-wlate-498` on full498: remove only the early planned call/re-observation, retain end planned placement and early reveal. This also saves that early check and allows reveal to take precedence; it is not a pure clock-time intervention. Sixteen release smokes pass errors, handoff, ordered-draft and hard replay checks. Observably early placements fall 132→16 normal /140→17 doubled; non-bush planned placements remain 451/410, and immediate ward attacks remain7/3. Two separate fuel gates prepared; prior eight commands/sources unchanged. No strength claim. [Evidence](ideas-2026-11-10/warding.md).
-
-## Replay camp metadata identity fix (2026-11-10)
-
-Self-mirrored camps invalidate the extractor's runtime-index shifts. Replaced them with coordinate joins for static rewards and mirror groups; schema 3 uses new internal map-cache hashes, retaining old blobs and the existing filename convention. Read-only audit: 69/868 groups on 40 maps had wrong reward/timer metadata, and 52 had wrong mirror labels. Active draft/emblem training uses independent features and direct outcomes, so it is unaffected. Historical reward-weighted camp reports are potentially stale; see [impact audit](ideas-2026-11-10/replay-camp-metadata.md). No existing dataset or bot/gate source changed.
-
-Validation: five focused mapping tests; all 868 groups match direct engine members/rewards and exact reflected tile sets; four full extractions into a separate root have zero hard errors and identical events, rounds, drafts, champion records and outcomes. Original map blobs and copied legacy sentinels remain unchanged. No strength claim or gate promotion.
-
-## Current 498 farm reserve and queue-guard attribution programme (2026-11-10)
-
-Read-only source audit confirms submitted v106 included both 8k less after-loop reserve and q1 queue recovery, plus its changed priority-mask key. Neither policy is in full498. Old local bundle: fresh +0.150±0.250 at 317 blocks; Fish fresh +0.014±0.339, ladder+0.642±0.349. Those data do not isolate the live Fish lead or answer current-base reserve-only strength. See [coverage and provenance](ideas-2026-11-10/reserve-followup.md).
-
-Authorized three independent normal-fuel arms against frozen oc-campsh-498: oc-rs8-498 (reserve only), oc-q1-498 (exact original guard only), and oc-rs8q1-498 (union). All final release builds and 64 smoke conditions pass errors/early/handoff/hard replay checks; all 48 candidate/reference ordered draft pairs match. Source factorial assertions and patch reconstruction match all seals. Smoke trajectories differ, so OOF totals are descriptive only. Ops admitted the three source-verified fresh gates under round.lock at 12:19:27, after all existing behavior gates and before draft10 continuation/new training; no strength result, live promotion or merge yet.
-
-### Ward exact-tile gate at normal fuel (2026-11-10 12:41 UTC)
-
-Sealed oc-wtile-498 vs full498, fixed Flp4/Mt3q, release/native 5.0.1, own drafts: 52 blocks/6,656 fresh paired units, NARROWED (ZONE crossed). Fresh +0.101±0.249 points (Fish +0.060±0.339; Mite +0.143±0.361); ladder −0.394±0.295. No established fresh gain, acceptance screen or promotion; this is not a formal low-SPRT rejection. Doubled-fuel condition started with verified 200k summary metadata and unchanged source seals. Full evidence and budget caveat: [warding study](ideas-2026-11-10/warding.md).
-
-### Ward exact-tile fuel comparison completed (2026-11-10 13:06 UTC)
-
-The 200k gate stopped NARROWED at 34 blocks/4,352 fresh paired units: −0.270±0.247 points (Fish −0.322±0.326; Mite −0.218±0.367), ladder −0.195±0.297. No acceptance screen; low LLR −2.286 did not cross formal rejection. Normal 100k was +0.101±0.249. Neither supports promotion. Balanced common 32-block/1,024-map secondary contrast is raised-minus-normal−0.470±0.428 conditional descriptive points; both teams' budgets change. Close the tile-ranking branch without the conditional cheaper-tile follow-up. Remaining bush/camp/timing gates are independent. [Full evidence](ideas-2026-11-10/warding.md).
 
 ## Livelock follow-up: alternative goals and capture routing (Codex, frozen ocean 497, 2026-11-10)
 
@@ -16914,6 +16913,23 @@ The retained trace explains its missed Vesper loop: his bank step is a detour aw
 ### Planned-ward timing ablation — 2026-11-10
 
 Ocean's routine end placement already follows movement/combat, but 379/4,086 observed v105 placements have a later main action; 179 non-bush cases are definitely early planned wards. Current Ad Astra has only 1/4,017 such cases. Added sealed `oc-wlate-498` on full498: remove only the early planned call/re-observation, retain end planned placement and early reveal. This also saves that early check and allows reveal to take precedence; it is not a pure clock-time intervention. Sixteen release smokes pass errors, handoff, ordered-draft and hard replay checks. Observably early placements fall 132→16 normal /140→17 doubled; non-bush planned placements remain 451/410, and immediate ward attacks remain7/3. Two separate fuel gates prepared; prior eight commands/sources unchanged. No strength claim. [Evidence](ideas-2026-11-10/warding.md).
+
+## Replay camp metadata identity fix (2026-11-10)
+
+Self-mirrored camps invalidate the extractor's runtime-index shifts. Replaced them with coordinate joins for static rewards and mirror groups; schema 3 uses new internal map-cache hashes, retaining old blobs and the existing filename convention. Read-only audit: 69/868 groups on 40 maps had wrong reward/timer metadata, and 52 had wrong mirror labels. Active draft/emblem training uses independent features and direct outcomes, so it is unaffected. Historical reward-weighted camp reports are potentially stale; see [impact audit](ideas-2026-11-10/replay-camp-metadata.md). No existing dataset or bot/gate source changed.
+
+Validation: five focused mapping tests; all 868 groups match direct engine members/rewards and exact reflected tile sets; four full extractions into a separate root have zero hard errors and identical events, rounds, drafts, champion records and outcomes. Original map blobs and copied legacy sentinels remain unchanged. No strength claim or gate promotion.
+
+## Current 498 farm reserve and queue-guard attribution programme (2026-11-10)
+
+Read-only source audit confirms submitted v106 included both 8k less after-loop reserve and q1 queue recovery, plus its changed priority-mask key. Neither policy is in full498. Old local bundle: fresh +0.150±0.250 at 317 blocks; Fish fresh +0.014±0.339, ladder+0.642±0.349. Those data do not isolate the live Fish lead or answer current-base reserve-only strength. See [coverage and provenance](ideas-2026-11-10/reserve-followup.md).
+
+Authorized three independent normal-fuel arms against frozen oc-campsh-498: oc-rs8-498 (reserve only), oc-q1-498 (exact original guard only), and oc-rs8q1-498 (union). All final release builds and 64 smoke conditions pass errors/early/handoff/hard replay checks; all 48 candidate/reference ordered draft pairs match. Source factorial assertions and patch reconstruction match all seals. Smoke trajectories differ, so OOF totals are descriptive only. Ops admitted the three source-verified fresh gates under round.lock at 12:19:27, after all existing behavior gates and before draft10 continuation/new training; no strength result, live promotion or merge yet.
+
+### Ward exact-tile gate at normal fuel (2026-11-10 12:41 UTC)
+
+Sealed oc-wtile-498 vs full498, fixed Flp4/Mt3q, release/native 5.0.1, own drafts: 52 blocks/6,656 fresh paired units, NARROWED (ZONE crossed). Fresh +0.101±0.249 points (Fish +0.060±0.339; Mite +0.143±0.361); ladder −0.394±0.295. No established fresh gain, acceptance screen or promotion; this is not a formal low-SPRT rejection. Doubled-fuel condition started with verified 200k summary metadata and unchanged source seals. Full evidence and budget caveat: [warding study](ideas-2026-11-10/warding.md).
+
 
 ## Camp crew initiation: exact surviving v107 death and a pre-heal guard (Codex, full ocean 498, 2026-11-10)
 
@@ -16961,6 +16977,7 @@ The separate `c500-wfollow-blind` adds only a chosen-target visibility restricti
 
 
 **Resumed501 Willow shipping screens complete17:35:53/55:** both stopped at the prespecified8block200k cap,1,024fresh paired map units each, outcome **undecided**. Hurt−0.195pp95%CI[−0.990,+0.600]; blind+0.049ppCI[−0.553,+0.650]. Independent source/body/fuel/release checks and complete unique paired-cell validation pass; zero run/draft/handoff errors. Recomputed unrounded fresh intervals match fgate. Neither lower bound exceeds0, so the coordinator accepts **NO SHIP / NO FURTHER TEST** for both under the user's screening/cutoff rule: no100k admission, extension or new exploration. This is programme closure for insufficient positive evidence, not statistical rejection. Exact rescues/support-cost diagnostics remain separate. Full validity/summary hashes and decisions: `wfollow-{hurt,blind}501-screen-review.json`; linked README. Owner work ends; no prior livelock fixes revived.
+
 
 ### Ward exact-tile fuel comparison completed (2026-11-10 13:06 UTC)
 
@@ -17216,6 +17233,14 @@ The user requested one draft lab followed sequentially by one tuning run, after 
 
 Only a new draft_model.h may be exported. Native parity, release build, strict first-turn10M validation and a200k-first held-out sequential gate precede coordinator review. Precision-only stopping is disabled; ZONE and unresolved caps are not rejection. No automatic normal-fuel gate, merge, live test or refill. Tuning remains behind an explicit final draft-disposition barrier. Before the first heavy phase, both approved-base policy and committed Ocean source must still match sealed504; a newer base holds for review, while a started experiment remains frozen. Four start-preflight tests and the read-only sealed-input check pass; no training result exists at preparation. [Protocol](ideas-2026-11-10/draft504/README.md); artifacts `~/tmp-offload/localq/rounds/draft17`.
 
+## Ocean main against ocean-16d6f78 (2026-11-10)
+
+Current main `bots/ocean` (after CHANGES 504) against `variants/ocean-16d6f78` (the 485-491 removals base, checked
+identical to `bots/ocean` at 16d6f7803), own drafts, release builds, real fuel, fast runner, on 29,952 fresh
+ladder-v2 maps (`suites/oc-16d6`, seeds 5200000-5200116, both sides): **53.9% of 59,904 (32,260-27,644), 95% CI
+53.5-54.3**. No failed games, no broken or capped drafts; out-of-fuel turns CAND 342,900 in 39,416 games, REF 657,470
+in 46,785. `replays/ab/ocean-vs-16d6f78-60k/`.
+
 ## One economy/crew/shop tune on frozen504 (2026-11-10, prepared)
 
 User requested one sequential draft lab then a thoughtful constants tuning run. Root approved [tune8's sourcewide inventory and protocol](ideas-2026-11-10/tune504/README.md):27 explicit float ranges, including shop income priors, holder gold pricing, farm commitment and cycle time omitted by the prior params-only tuner. Combat threat calibration, learned headers, engine/encoding facts and compute budgets stay fixed. Prior tune1 already trained fresh and ended fresh−0.188±0.250pp versus ladder+0.539±0.250; it did not establish a gain.
@@ -17248,14 +17273,6 @@ The user requested more local games for the inconclusive Fish/Mite conditional e
 The full200k release/native programme uses a new shared1,024-map ladder-v2 pool (reserved2414000–07), noise1004–2003, Flp4/Mt3q and own drafts. Target-opponent fresh paired-map units decide under gain50.0/50.25 SPRT, distinct harm49.75/50.0 and off-target harm review. First-cross latches prevent reopening a closed gain test; joint gain-H0/harm-H1 is SMALL/UNRESOLVED review, not a positive result. No width/eight-block stop;1,000-block cap unresolved. Other-opponent effects remain shipping constraints, including classifier overhead/mistakes.
 
 Eight lightweight decision checks, source review and final independent seal review passed. Builds, release smoke, debug runtime activation and all strength games are scheduled phases, not completed validation. Manifest86a82e8a2bf37b1ea6602c34391af77d5755fbc611d55024c9a0eebb9d6ece89 in `~/tmp-offload/cond504`; [prospective protocol](ideas-2026-11-10/cond504/README.md). A changed approved/committed base holds before heavy work; frozen experiments may resume. No automatic100k, repin, live test or review token.
-
-## Ocean main against ocean-16d6f78 (2026-11-10)
-
-Current main `bots/ocean` (after CHANGES 504) against `variants/ocean-16d6f78` (the 485-491 removals base, checked
-identical to `bots/ocean` at 16d6f7803), own drafts, release builds, real fuel, fast runner, on 29,952 fresh
-ladder-v2 maps (`suites/oc-16d6`, seeds 5200000-5200116, both sides): **53.9% of 59,904 (32,260-27,644), 95% CI
-53.5-54.3**. No failed games, no broken or capped drafts; out-of-fuel turns CAND 342,900 in 39,416 games, REF 657,470
-in 46,785. `replays/ab/ocean-vs-16d6f78-60k/`.
 
 ## Ocean main against ocean-7862c1b (2026-11-10)
 
@@ -17308,12 +17325,16 @@ Uninterrupted baseline median99.94s/block (benchmark-pause interval excluded); n
 
 New noise-based fresh gates use `tools/fgate.py`: 16 compile workers, eight future noise blocks, shared-slot accounting and ordinary source/build locks; no extra games or changed stopping rules. Queued conditional and draft/tune final gates inherit phase-scoped cleanup and an optout. All 43 lightweight checks passed. Active ward same-process rollout preserved its sealed inputs: six warmed blocks had median21.77s versus immediately preceding four-worker median31.39s, with changing-load caveat (earlier four-worker window22.20s; original serial99.94s). This supports keeping preparation ahead, not a controlled16-v4 speed claim. [Implementation, lifecycle and timing evidence](ideas-2026-11-10/compile-ahead-default/README.md).
 
+
+## Live v112 conditional-policy bundle completed (2026-11-10)
+
+All 104 groups finished at 22:52:08 UTC: Fish r2 177/256 (69.14%), Mite r5 159/256 (62.11%). Against v105, matched deltas are Fish +5.08 ± 6.95 points and Mite 0.00 ± 12.16 on only 80 same-pin cells, with the known priority-mask confound. Against same-mask v108/v109 single conditional arms, all paired differences remain unresolved; the bundle does not demonstrate an additional gain. No promotion. Await current-mask v105 control v113 and the prospective local conditional tests. [Complete matched chart and saved-input audit](ideas-2026-11-10/live-stack112.md).
+
 ### Cleared-camp 504: prescribed ZONE at 653 blocks (2026-11-10)
 
 `oc504-wcamp` vs `oc-emb5-504`, release 200k, Flp4/Mt3q, finished **ZONE** with fresh −0.036±0.169pp; Fish +0.024±0.229, Mite −0.096±0.249. Low LLR +2.979/high −22.181; no positive screen. This is judgement review, not formal rejection. No established gain supports 100k testing or shipping. All 653 block records/5,224 summary hashes pass terminal audit, zero validity failures, unchanged seals. The 83,584 paired noise-map units reuse 1,024 maps. Both reopened full ward comparisons are terminal; earlier evidence remains separate. [Complete record](ideas-2026-11-10/ward504/README.md).
 
 Native-cache diagnosis found about 13s of remaining serial preparation per 20.21s block. A bounded 16-slot prewarm prototype passed resource tests/review, but its owner ended before launch: **no warming was run, no benefit established, no default warm integration**. [Measured timing and preserved prototype](ideas-2026-11-10/compile-ahead-default/native-cache-diagnosis.md).
-
 
 
 ## (ocean, 2026-11-11) Fish/Mite draft nudge on 506: neither helps

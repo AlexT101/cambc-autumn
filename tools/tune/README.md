@@ -23,7 +23,7 @@ python3 tools/tune/tune.py apply --run R --out bots/variants/BOT-R # a copy with
 - **Score**, from the tuned bot's side, balanced around 0: `win * (+1/-1/0) + gems * (ours - theirs) / (ours +
   theirs)` of tributed gems `+ gold *` the same of earned gold; weights in `config.json` (default 0.7 / 0.2 / 0.1).
 - **SPSA** in the [0, 1]-scaled space of each range (`config.json` `params`: `[lo, hi, kind]`, default half to double
-  the default, fractions below 0.95, ints at least +-2): `pairs` sign vectors a batch, gradient from each pair's
+  the default, fractions below 0.95, ints at least +-2; optional `c_min` {name: floor} keeps an on/off gate's perturbation crossing its threshold as c_k decays): `pairs` sign vectors a batch, gradient from each pair's
   paired score difference, `a_k = a / (k + 1 + A)^0.602`, `c_k = c / (k + 1)^0.101`. `config.json` is re-read every
   iteration, so ranges, gains, weights and games can be changed while it runs. `history.jsonl` has every iteration
   (means, x); `games.jsonl` has every game (an iteration a line: its names, sign vectors `deltas`, per-name `cn`,

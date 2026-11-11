@@ -29,6 +29,8 @@ FF = '../fishfid'
 # version: (the version it patches, [patch command after the bot dir]). Flp3/Mt3q write Fish's/Mite's own priorities.
 VERSIONS = {'Flp2': ('Flp', [f'{FF}/patch_fish2.py']), 'Flp3': ('Flp2', [f'{FF}/patch_prio.py', 'F', 'order']),
             'Mt3q': ('Mt3p', [f'{FF}/patch_prio.py', 'M', 'near']),
+            'Mt3k': ('Mt3q', [f'{FF}/patch_mkill.py']),  # Mite's 12:00 kill flag 21262 (opp-intent)
+            'Mt3qro': ('Mt3p', ['../../ideas-2026-11-10/opporder/patch_prio_ro.py']),  # Mite's real turn order (opp-order)
             'Flp4': ('Flp3', [f'{FF}/patch_coh.py', '0.5'])}  # Flp4: cohesion, Fish's "joins, never partitions"
 FISH_PATCHES = [v for v in VERSIONS if v.startswith('Fl')]
 MITE_PATCHES = [v for v in VERSIONS if v.startswith('Mt')]

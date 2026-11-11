@@ -265,9 +265,10 @@ Single-seed generated suites, `suites/fresh/fresh-<seed>/` (256 maps each, the d
 | 795001-795080, 796001-796080 | 160 | ladder | `--mix ladder` (fuel campaign 16: `merged/fuel16-795`, `merged/fuel16-796`) | 2026-11-07 |
 | 1320000-1320047 | 48 | paradigms | `--mix paradigms`, in `~/tmp-offload/mapgen3/suites/para-{seed}`, not under `maps/` (oc-base25 against oc-base23 per layout: `~/tmp-offload/mapgen3/by-paradigm/<preset>`, 1,008-1,056 maps each). Used. 1329997-1329999: development and byte-identity suites in `~/tmp-offload/mapgen3/`. Range 1320000-1329999 reserved for mapgen paradigms | 2026-11-08 |
 | 1100000-1100999 | reserved | ladder, ladder-v2 | calibration 3's validation, in `~/tmp-offload/mapgenv2/`, not under `maps/`: `--mix ladder` 1100000-1100019 (before) and, with `varied`, `varied-v1` and `fixed`, 1100990-1100991 (byte identity); `--mix ladder-v2` 1100100-1100109 (tuning) and 1100900-1100919 (held out; 1100900 played by the smoke test). Don't reuse the range | 2026-11-08 |
+| 1060000-1060199, 1061000-1061159, 1062000-1062019, 1063000-1063059 | 440 | ladder; varied (1062xxx) | context knobs (ctxknob): `merged/ctx-scr-1060` (+ `-rest-g2`, `-rest-d1` resume subsets), `ctx-held-1061`, `ctx-varied-1062` (`--mix varied`), `ctx-panel-1063`. All used; range 1060000-1069999 reserved for ctxknob | 2026-11-08 |
+| 644000-644116, 664000-664116 | 234 | ladder | `--mix ladder` (gem zones: `sets/gemzone-644`, `sets/gemzone-664`) | 2026-11-08 |
 | 905000-905019, 1000000-1000079, 1000100-1000179, 1000200-1000219, 1000300-1000339 | 240 | ladder; varied (10002xx) | `--mix ladder` / `--mix varied` (tune3 oc6 SPSA pool `fresh-905000..905019`; `merged/tune3-held-1000`, `tune3-held2-1001`, `tune3-varied-1002`, `tune3-panel-1003`) | 2026-11-08 |
 | 1000400-1000479, 1000500-1000519, 1000600-1000639, 1000700-1000779, 1000800-1000839, 1000900-1000919, 1001000-1001039, 1001100-1001179 | 380 | ladder-v2; varied (10005xx, 10009xx) | `--mix ladder-v2` / `--mix varied` (tune3 oc6 confirmation on oc-base29: `merged/tune3-v2held-1004`, `-v2held2-1007`, `-v2held3-1010`; `tune3-v2panel-1006`, `-v2panel2-1008`, `-v2panel3-1011`; `tune3-varied-1005`, `-varied2-1009`) | 2026-11-08 |
-| 1060000-1060199, 1061000-1061159, 1062000-1062019, 1063000-1063059 | 440 | ladder; varied (1062xxx) | context knobs (ctxknob): `merged/ctx-scr-1060` (+ `-rest-g2`, `-rest-d1` resume subsets), `ctx-held-1061`, `ctx-varied-1062` (`--mix varied`), `ctx-panel-1063`. All used; range 1060000-1069999 reserved for ctxknob | 2026-11-08 |
 | 911000-911019 | 5,120 | ladder-v2 | `--mix ladder-v2` (escape planner, CHANGES 478: `merged/retreat-911000b`). Used | 2026-11-09 |
 | 1700000-1700079, 1701000-1701119 | 51,200 | ladder-v2 | `--mix ladder-v2` (escape planner after 478: `merged/esc2-dev` = 1700000-1700079, 478's reference and fo-lean, used; `merged/esc2-held` = 1701000-1701119, held out for the CHANGES 480 merge and CHANGES 481's check against oc-cl2-seat5m, used twice) | 2026-11-09 |
 | 1702000-1702079, 1703000-1703079 | 40,960 | ladder-v2 | `--mix ladder-v2` (chase verdict, CHANGES 481: `merged/plan2-dev` = 1702000-1702079, cv-final-v2, used; `merged/plan3-dev` = 1703000-1703079, chase verdict fuel gate, CHANGES 483, cg-final-aimgate2, used) | 2026-11-09 |
@@ -632,6 +633,8 @@ Hand-assembled sets of real map files (copies, no index.json).
 - `p5-a` (10240 maps): phase 5 set, copies of fresh seeds 150481-150520.
 - `p5-b` (10240 maps): phase 5 set, copies of fresh seeds 150521-150560.
 - `p5-c` (10240 maps): phase 5 set, copies of fresh seeds 150561-150600.
+- `gemzone-644` (724 maps), `gemzone-664` (691 maps): the gem-zone maps of fresh-644000..644116 (dev) and
+  fresh-664000..664116 (confirm), by `research/ideas-2026-11-08/gemzone-tools/make_set.py`. Both used (gem-zone.md).
 
 ## Paths not updated
 
@@ -639,11 +642,11 @@ The draft and emblem labs' `config.json` and `maps.jsonl` were rewritten to the 
 
 ## Teacher benchmark (2026-11-06)
 
+The `teacher-*-20261106/` dirs were deleted on 2026-11-11; remake them from the seeds below.
+
 `teacher-20261106/` contains 20 fresh ladder-mix suites, seeds 861001–861020,
 256 maps each. `astraeus-teacher-v1-10k` samples 5,000 of their 5,120 maps with
 seed 861000 and plays both sides. Its exact selection and hashes are in
-The `teacher-*-20261106/` dirs were deleted on 2026-11-11; remake them from the seeds below.
-
 `replays/ab/astraeus-teacher-v1-10k/teacher.json`.
 
 `teacher-confirm-20261106/` contains 20 new ladder-mix suites, seeds
@@ -718,20 +721,18 @@ Ladder-mix, symlinked into `merged/` (EXPERIMENTS "CHANGES 459/460 removals meas
 - `rm19-altar1-831`: the 10,204 one-altar maps of fresh-831000..831099 and 832000..832079 (46,080 maps; the other
   35,876 unused, still fresh).
 
+## Ocean against v82 (2026-11-07)
+
+Ladder-mix, symlinked into `merged/` (EXPERIMENTS "Current ocean against v82"):
+- `v82-own-867`: 867000-867079, 20,480 maps, oc-base19 vs oc-base10 own drafts (40,960 games; used).
+- `v82-td-868`: 868000-868039, 10,240 maps, both against oc-base10-td (used).
+
 ## 460 restore re-measured (2026-11-07)
 
 Ladder-mix, symlinked into `merged/` (EXPERIMENTS "CHANGES 459/460 removals measured"):
 - `oc20-held-850`: 850000-850079, 20,480 maps, oc-base20-cand vs oc-base19 (40,960 games; used).
 - `oc20-altar1-851`: the 10,201 altars = 1 maps of fresh-851000..851179 (46,080 maps; the other 35,879 unused, still
   fresh).
-
-## min_bank by map features (2026-11-07)
-
-Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "min_bank by map features"; all used):
-- `mbm-pool-895`: 895000-895467, 119,808 maps (the decision; SPRT stopped at 98,057 games).
-- `mbm-held-896`: 896000-896079, 20,480 maps; `mbm-held2-899`: 899000-899079, 20,480 maps.
-- `mbm-varied-897`: 897000-897019, `--mix varied`, 5,120 maps.
-- `mbm-panel-898`: 898000-898039, 10,240 maps; `mbm-panel2-899`: 899100-899139, 10,240 maps.
 
 ## Willow early aggression (2026-11-07)
 
@@ -748,6 +749,25 @@ Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "Willow early agg
   Willow-map held-out; used). `waggr-pan-892`: 892000-892079, 20,480 maps; `waggr-wp892` its 10,293 Willow maps (the
   panel; used). `waggr-re-893`: 893000-893039, 10,240 maps; `waggr-wr893` its 5,066 Willow maps under oc-base17's (used).
 
+## min_bank by map features (2026-11-07)
+
+Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "min_bank by map features"; all used):
+- `mbm-pool-895`: 895000-895467, 119,808 maps (the decision; SPRT stopped at 98,057 games).
+- `mbm-held-896`: 896000-896079, 20,480 maps; `mbm-held2-899`: 899000-899079, 20,480 maps.
+- `mbm-varied-897`: 897000-897019, `--mix varied`, 5,120 maps.
+- `mbm-panel-898`: 898000-898039, 10,240 maps; `mbm-panel2-899`: 899100-899139, 10,240 maps.
+
+## Behaviour-gap arms, round 2 (2026-11-07)
+
+Ladder-mix unless noted, all symlinked into `merged/` (research/ideas-2026-11-07/behaviour-gaps-2.md):
+- `g2-pool-840`: 840000-840039, 10,240 maps, the screens (dev). `g2-mono-840` is its 2,843 maps with a Monolith;
+  `g2-mono-mech` (256 of those) and `g2-pool-mech` (256 of the pool) the mechanism games.
+- `g2-dec-841`: 841000-841159, 40,960 maps, the real-budget decisions. `g2-dec-mono-841` is its 11,599 Monolith maps.
+- `g2-held-842`: 842000-842079, 20,480 maps, held out. `g2-held-mono-842` its 5,740 Monolith maps (unused).
+- `g2-held-845`: 845000-845079, 20,480 maps, held out (with 842: 81,920 games).
+- `g2-varied-843`: 843000-843019, `--mix varied`, 5,120 maps.
+- `g2-panel-844`: 844000-844039, 10,240 maps, the panel at 20,480 games a member.
+
 ## Fish turn-order priority (2026-11-08)
 
 Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "Fish turn-order priority in ocean"; all used):
@@ -757,6 +777,17 @@ Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "Fish turn-order 
   `fp-panel-977`: 977000-977039, 10,240 maps, the panel.
 - On oc-base17 (the base moved back): `fp17-held-978`: 978000-978079, 20,480 maps; `fp17-varied-979`: 979100-979119,
   `--mix varied`, 5,120 maps; `fp17-panel-979`: 979000-979039, 10,240 maps.
+
+## min_bank learned from randomised thresholds (2026-11-08)
+
+Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "min_bank learned from randomised thresholds"):
+- `mbl-data-c0..c7`: 950000-950584 (75 seeds a chunk; c7 60), 149,760 maps, the randomised-threshold data (used).
+  `mbl-data-950` links all of them.
+- `mbl-scr-955`: 955000-955039, 10,240 maps, the panel screen and decision (used). `mbl-panel-959`: 959000-959039,
+  10,240 maps (used).
+- Unused, still fresh: the rest of `mbl-pool-955` (955040-955233), `mbl-held-956` (956000-956079, 20,480 maps),
+  `mbl-held2-957` (957000-957079), `mbl-varied-958` (958000-958019, `--mix varied`), and fresh-960000..960374
+  (96,000 maps, not merged).
 
 ## Reply model (ocean, 2026-11-08)
 
@@ -770,6 +801,8 @@ Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "Reply model phas
 - `dg-dev-984`: 984000-984019, 5,120 maps, the dev A/Bs.
 - `dg-held-985`: 985000-985039, 10,240 maps, held out.
 - `dg-varied-986`: 986000-986019, `--mix varied`, 5,120 maps.
+- `unk-held-991`: 991000-991079, 20,480 maps, the guard fallback alone (used).
+- `unk2-held-992`: 992000-992079, 20,480 maps, its cheap form (used).
 
 ## Position comms (2026-11-07/08)
 
@@ -790,6 +823,30 @@ Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "Rejection-audit 
 - `port-panel-634`: 634000-634039, 10,240 maps, the panel (members on test drafts).
 - Used: `port-scr-630` (ac3 played all of it), `port-held-631` and `port-held-632` (ac3), `port-varied-633` (ac3's run
   stopped part-way). `port-panel-634` has only oc-base23's side played against the three members: its cand side is unused.
+
+## CHANGES 465 keep-or-revert (2026-11-08)
+
+Ladder-mix, symlinked into `merged/` (EXPERIMENTS "CHANGES 465 re-measured"):
+- `nc465-702`: 702000-702319, 81,920 maps, oc-base25 vs oc-base25-nocomms, own drafts, fixed n (163,840 games).
+- `nc465-702b`: 702320-702639, 81,920 maps, reserved for the extension.
+
+## Settling small undecided ideas (ocean, 2026-11-08)
+
+Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "(ocean, 2026-11-08) Settling small undecided ideas"):
+- `s1-lk-710`: 710000-710079, 20,480 maps, the lock-threshold sweep (every arm plays all of it, fixed n).
+- `s1-scr-710`: 710080-710779, 179,200 maps, the SPRT screens (own `--sprt-seed` each, 7101-7199).
+- `s1-mono-723`: the Monolith maps of 723000-723159, paired Monolith-crew reads.
+- `s1-held-720a` / `s1-held-720b`: 720000-720079 / 720080-720159, 20,480 maps each, held out.
+- `s1-varied-721`: 721000-721019, `--mix varied`, 5,120 maps.
+- `s1-panel-722`: 722000-722039, 10,240 maps, the panel (members on test drafts).
+- `s1-mono-724`: the Monolith maps of 724000-724199 (`--mix ladder-v2`), the Monolith-crew SPRT.
+- `s1-panel-725-bN` (N = 1..6): 725000+40(N-1) .. +39 (`--mix ladder-v2`), 10,240 maps each, panel continuation blocks for lk600 (read pooled with s1-panel-722).
+- `s1-mono-727-bN` (N = 1..6): the Monolith maps of 727000+200(N-1) .. +199 (`--mix ladder-v2`), Monolith-crew SPRT continuation blocks (pooled with s1-mono-724).
+- `s1-held-733`: 733000-733159 (`--mix ladder-v2`), 40,960 maps, held-out confirmation of lk600 on oc-base27.
+- `s1-held-733b`: 733160-733319 (`--mix ladder-v2`), 40,960 maps, held-out continuation of lk600 on oc-base27 (pooled with s1-held-720a+b and s1-held-733).
+- `tune3-held-1000`, `tune3-held2-1001`, `tune3-panel-1003`: 1000000-079, 1000100-179, 1000300-339 (`--mix ladder`), 20,480/20,480/10,240 maps; `tune3-varied-1002`: 1000200-219 (`--mix varied`).
+- `tune3-v2held-1004`: 1000400-479 (`--mix ladder-v2`), 20,480 maps; `tune3-v2panel-1006`: 1000600-639 (`--mix ladder-v2`), 10,240 maps; `tune3-varied-1005`: 1000500-519 (`--mix varied`), 5,120 maps. oc6 retune confirmation on oc-base29.
+- `tune3-v2held2-1007` (1000700-779), `tune3-v2held3-1010` (1001100-179): 20,480 maps each, held-out continuation (pooled with v2held-1004); `tune3-v2panel2-1008` (1000800-839), `tune3-v2panel3-1011` (1001000-039): 10,240 each, panel continuation (`--mix ladder-v2`); `tune3-varied2-1009` (1000900-919, `--mix varied`).
 
 ## Retesting underpowered rejections, s2 (2026-11-08)
 
@@ -852,24 +909,6 @@ so only 873000-873599 is used; 900000-904399 was never played and is fresh:
 - Fresh: `bnd-pan-c0`..`c9`: 902000-902199, 5,120 maps each (panel chunks).
 - Fresh: `bnd-loo`: 903000-903399, 102,400 maps.
 - Fresh: `bnd-trim`: 904000-904399, 102,400 maps.
-
-## Settling small undecided ideas (ocean, 2026-11-08)
-
-Ladder-mix unless noted, symlinked into `merged/` (EXPERIMENTS "(ocean, 2026-11-08) Settling small undecided ideas"):
-- `s1-lk-710`: 710000-710079, 20,480 maps, the lock-threshold sweep (every arm plays all of it, fixed n).
-- `s1-scr-710`: 710080-710779, 179,200 maps, the SPRT screens (own `--sprt-seed` each, 7101-7199).
-- `s1-mono-723`: the Monolith maps of 723000-723159, paired Monolith-crew reads.
-- `s1-held-720a` / `s1-held-720b`: 720000-720079 / 720080-720159, 20,480 maps each, held out.
-- `s1-varied-721`: 721000-721019, `--mix varied`, 5,120 maps.
-- `s1-panel-722`: 722000-722039, 10,240 maps, the panel (members on test drafts).
-- `s1-mono-724`: the Monolith maps of 724000-724199 (`--mix ladder-v2`), the Monolith-crew SPRT.
-- `s1-panel-725-bN` (N = 1..6): 725000+40(N-1) .. +39 (`--mix ladder-v2`), 10,240 maps each, panel continuation blocks for lk600 (read pooled with s1-panel-722).
-- `s1-mono-727-bN` (N = 1..6): the Monolith maps of 727000+200(N-1) .. +199 (`--mix ladder-v2`), Monolith-crew SPRT continuation blocks (pooled with s1-mono-724).
-- `s1-held-733`: 733000-733159 (`--mix ladder-v2`), 40,960 maps, held-out confirmation of lk600 on oc-base27.
-- `s1-held-733b`: 733160-733319 (`--mix ladder-v2`), 40,960 maps, held-out continuation of lk600 on oc-base27 (pooled with s1-held-720a+b and s1-held-733).
-- `tune3-held-1000`, `tune3-held2-1001`, `tune3-panel-1003`: 1000000-079, 1000100-179, 1000300-339 (`--mix ladder`), 20,480/20,480/10,240 maps; `tune3-varied-1002`: 1000200-219 (`--mix varied`).
-- `tune3-v2held-1004`: 1000400-479 (`--mix ladder-v2`), 20,480 maps; `tune3-v2panel-1006`: 1000600-639 (`--mix ladder-v2`), 10,240 maps; `tune3-varied-1005`: 1000500-519 (`--mix varied`), 5,120 maps. oc6 retune confirmation on oc-base29.
-- `tune3-v2held2-1007` (1000700-779), `tune3-v2held3-1010` (1001100-179): 20,480 maps each, held-out continuation (pooled with v2held-1004); `tune3-v2panel2-1008` (1000800-839), `tune3-v2panel3-1011` (1001000-039): 10,240 each, panel continuation (`--mix ladder-v2`); `tune3-varied2-1009` (1000900-919, `--mix varied`).
 
 ## Exact ward sight (ocean, 2026-11-08)
 
