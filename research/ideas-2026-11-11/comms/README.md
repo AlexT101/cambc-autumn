@@ -10,6 +10,9 @@ that group's crew. That is worth about +0.45 points against the Fish and Mite bo
 CI +0.20 to +0.72) and about +0.2 at the ladder's 100k (CI -0.07 to +0.47), where its fuel cost eats half of it.
 It is real but small: not a needle-mover, and too small for a live test to see.
 
+After a fuel pass the merge candidate is `bots/variants/cm2-k3` (`cm2-k3.patch` on `oc-dfuel-506`): level with base
+on out-of-fuel turns, and +0.17 / +0.18 points at 100k on two independent reads (see "Fuel pass").
+
 ## What ocean sends today
 
 The 8 team bytes are one 64-bit word laid out per map (`bots/ocean/src/model/comms.cc`):
@@ -121,6 +124,53 @@ near ones, and those are mostly in sight already. An unseen teammate is a median
 to within 2 rather than 7 rarely changes what we do now. The crew count is the exception because it is a yes/no fact
 (is my partner at the group or not) that the claim alone gets wrong half the time.
 
+## Fuel pass: `cm2-k3` (2026-11-11)
+
+Where s3k's fuel went, 100k on panel A (40,960 games an arm; base 79.46%, 6.15 out-of-fuel turns a game):
+
+| arm | content | paired diff, points (95% CI) | OOF turns a game |
+|---|---|---|---|
+| cm2-s3 | plumbing only | -0.31 (-0.75..+0.13) | 6.41 |
+| cm2-s3a | + farm arrival | -0.38 (-0.82..+0.06) | 6.39 |
+| cm2-s3k | + arrival + crew | +0.00 (-0.47..+0.48) | 6.40 |
+| cm2-k1 | s3k with the unused code stripped (52/52 identical replays, -0.23% fuel) | -0.01 (-0.48..+0.47) | 6.35 |
+| cm2-k2 | k1 without farm arrival | +0.10 (-0.37..+0.58) | 6.36 |
+
+The plumbing is the whole cost: +1.0-1.3% fuel a turn on identical games (the per-ally decode and x/y history on every
+turn), all of the extra out-of-fuel turns, and about 0.3 points at 100k. The crew count costs nothing measurable and
+earns about +0.3 to +0.5 on top. Farm arrival does nothing (k2 = k1).
+
+`cm2-k3` = `oc-dfuel-506` + `cm2-k3.patch` (196 lines, 6 files; `mkfinal.py` builds it) removes the reader's
+per-turn work instead of trimming it:
+
+- A tile frame is one 2D cell (side median 6), decoded on demand from the word read this turn, only when the crew
+  count (or Willow's follow) asks. No history: a tile is known only while the ally's slot holds one (77% of turns).
+- A slot holding a tile leaves the claim as last read, so the claim costs one compare an ally.
+- The old ally record's poster loop goes; `send` takes our position from `main.cc`; no farm arrival.
+- Bench (100M, identical games): 0.15% less fuel than base, against 1.01% more for k2.
+
+It is not behaviour-preserving relative to s3k: cells instead of 1-3 tile precision, no 4-round history, no jump
+code, no farm arrival.
+
+Results against `oc-dfuel-506` (`cm2-k3`):
+
+| read | fuel | win % (base) | diff, points (95% CI) | games | Fish | Mite | OOF turns a game (base) |
+|---|---|---|---|---|---|---|---|
+| panels A+B+C | 100k | 79.64 (79.46) | +0.18 (-0.09..+0.44) | 122,880 | +0.00 ±0.36 | +0.35 ±0.38 | 5.97 (5.99) |
+| `fgate.py`, 16 batches, unmetered bodies | 100k | 50.17 (49.93-50.40) | +0.17 ±0.24 | 327,680 | +0.40 ±0.32 | -0.07 ±0.35 | 5.78 (5.77) |
+| panels A+B+C | 200k | 79.46 (79.31) | +0.15 (-0.11..+0.42) | 122,880 | +0.10 ±0.36 | +0.21 ±0.38 | 0.05 (0.05) |
+| cm2-s3k, panels A+B+C, for comparison | 200k | 79.77 (79.31) | +0.46 (+0.20..+0.72) | 122,880 | +0.35 ±0.36 | +0.57 ±0.38 | 0.05 (0.05) |
+| cm2-s3k, `fgate.py`, for comparison | 100k | 50.20 (49.95-50.44) | +0.20 ±0.25 | 327,680 | +0.17 ±0.34 | +0.22 ±0.36 | 5.98 (5.77) |
+
+- **Fuel: level with base** on both reads (s3k was +0.2 turns a game on both).
+- **Win rate: +0.17 and +0.18 on two independent reads at 100k**, about +0.17 ±0.18 together; each interval alone
+  reaches zero, and the Fish/Mite split swaps between the two reads.
+- **The fuel came back but the gain at 100k did not grow**: at 200k k3 is +0.15 where s3k is +0.46, so the coarse,
+  history-free tile lost about as much behaviour as the cheaper reader saved in fuel.
+- Not built: posting, in a tile frame, the ally's distance to the group it claims instead of a map cell. That is the
+  one fact the crew count uses, it is exact to a tile, and it decodes on demand with no history, so it should give
+  s3k's behaviour at k3's fuel. Willow's follow would fall back to the claim's centre.
+
 ## Do Fish and Mite converge on fights more than we do?
 
 One use that could be large is calling far allies to a fight. Live check on 512 ladder games of v115 (256 against
@@ -154,6 +204,8 @@ champions stand before the fight, not about what gets broadcast once it starts.
 
 ## Files
 
+- Merge candidate: `bots/variants/cm2-k3` = `oc-dfuel-506` + `cm2-k3.patch` (`mkfinal.py cm2-k3` rebuilds it;
+  `cm2-k1`, `cm2-k2` are the earlier fuel-pass steps).
 - Dev copy with every knob off (byte-identical replays to base on `bench.py`'s 52): `bots/variants/cm2-dev`.
 - Frozen arms: `bots/variants/cm2-s1`, `-s2`, `-s3` (plumbing, modes 1-3), `-s3a` (+ arrival), `-s3l` (+ late),
   `-s3k` (+ crew), `-s3c` (+ late and crew), `-s3p` (+ pull), `-s1c` (mode 1 + late and crew); `cm2-tr*` are the
