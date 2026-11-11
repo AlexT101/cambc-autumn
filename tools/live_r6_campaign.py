@@ -105,12 +105,16 @@ class Campaign:
         return live == target and selected == target, selected
 
     def activate(self, st, d, old, target, next_phase):
-        ready, selected = self.selection(d, old, target)
-        if ready:
-            self.save(st, next_phase)
-        elif selected != target:
-            rc, out = self.s.sh(['cambc', 'submissions', 'activate', str(target)])
-            self.s.log(f'campaign activate existing v{target}: rc{rc} {out[-160:]}')
+        with self.s.ls.live_lock(self.s.ls.DATA):
+            _, created, finished, _, _ = self.s.ls.state()
+            if any(e['group'] not in finished for e in created.values()):
+                return
+            ready, selected = self.selection(self.s.submissions_json(), old, target)
+            if ready:
+                self.save(st, next_phase)
+            elif selected != target:
+                rc, out = self.s.sh(['cambc', 'submissions', 'activate', str(target)])
+                self.s.log(f'campaign activate existing v{target}: rc{rc} {out[-160:]}')
         # A queued/building activation waits; it is not a reason to upload again.
 
     def tick(self, st):
@@ -161,9 +165,14 @@ class Campaign:
                 self.selection(d, 113, 113)
                 if not self.progress(113, {'mite': 'r6'}):
                     return True
-                c['note'] = plan['submission_note'].strip()
-                self.save(st, 'upload_intent', upload_note=c['note'])
-                rc, out = self.s.sh(['cambc', 'submit', 'ocean', '-n', c['note']], cwd=c['workspace'], timeout=600)
+                with self.s.ls.live_lock(self.s.ls.DATA):
+                    _, created, finished, _, _ = self.s.ls.state()
+                    if any(e['group'] not in finished for e in created.values()):
+                        return True
+                    self.selection(self.s.submissions_json(), 113, 113)
+                    c['note'] = plan['submission_note'].strip()
+                    self.save(st, 'upload_intent', upload_note=c['note'])
+                    rc, out = self.s.sh(['cambc', 'submit', 'ocean', '-n', c['note']], cwd=c['workspace'], timeout=600)
                 self.s.log(f'campaign prepared506 upload rc{rc}: {out[-200:]}')
                 if rc:
                     self.s.hold('campaign506 upload result uncertain; reconcile note before retry, never rebuild')
@@ -207,6 +216,8 @@ class Campaign:
                     self.save(st, 'done', result=record)
             else:
                 raise ValueError(f'unknown campaign phase {phase}')
+        except self.s.ls.CambcError as e:
+            self.s.log(f'campaign submissions read deferred: {e}')
         except Exception as e:
             self.s.hold(f'r6 campaign: {type(e).__name__}: {e}')
         return True

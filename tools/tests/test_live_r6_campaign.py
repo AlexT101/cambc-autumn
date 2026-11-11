@@ -20,6 +20,9 @@ class CampaignTests(unittest.TestCase):
         self.s = SimpleNamespace(H=self.h, save=Mock(), log=Mock(), wake=Mock(), hold=Mock(),
                                  now=lambda: 'now', submissions_json=Mock(), sh=Mock(return_value=(0, 'ok')),
                                  ls=SimpleNamespace(TEAMS=sched.ls.TEAMS, CambcError=sched.ls.CambcError), plan_gate=Mock())
+        self.s.ls.DATA = self.h
+        self.s.ls.live_lock = sched.ls.live_lock
+        self.s.ls.state = Mock(return_value=([], {}, {}, set(), {}))
         self.c = Campaign(self.s, Mock())
         self.plan = {'id': 'bridge113-r6-main506', 'submission_note': 'unique506'}
         self.path = self.h / 'r6-campaign.json'
@@ -56,6 +59,13 @@ class CampaignTests(unittest.TestCase):
         self.c.tick(self.st)
         self.s.hold.assert_called_once()
         self.s.sh.assert_not_called()
+
+    def test_switch_rechecks_inflight_inside_shared_lock(self):
+        self.platform(114)
+        self.s.ls.state.return_value = ([], {'t': {'group': 'newly-created'}}, {}, set(), {})
+        self.c.tick(self.st)
+        self.s.sh.assert_not_called()
+        self.assertEqual(self.st['r6_campaign']['phase'], 'activate113')
 
     def test_read_only_rate_limit_waits_without_hold(self):
         self.s.submissions_json.side_effect = sched.ls.CambcError('HTTP429')
