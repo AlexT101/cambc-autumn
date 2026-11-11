@@ -4657,3 +4657,22 @@ Skirmish comment (+10%, not 5%). Review item H5 / E10 in [findings-2026-11-11](.
 bench.py replays at 100M are identical: 16/16 default, 52/52 `--set wide`, 52/52 `--set wide --test-draft`. Total fuel
 -0.01%: about 0.5% of turns are cheaper by ~0.9k; the rest are a few fuel dearer. Frozen as
 `variants/charybdis-3e040a9` (= bots/charybdis).
+
+## 517: Three lethal-model fixes from the ATLAS programme (charybdis, 2026-11-11)
+
+Fixes 1, 2 and 4 of [macro-atlas](../macro-atlas/NOTES.md), each a gap a 1,000-game trace tied to Prism kills:
+- `turn_window.cc`: a visible stunned enemy that has not acted yet, and whose next-round strike can reach a tile we
+  could move to, fills our next-slot room first. A stunned champion still sets its priority (rules: abilities.stun),
+  so its next-round turn can come before ours; `lethal()` had read it as after us (246 traced kills). The windows
+  rebuild when `read_stuns()` changes a `stun_pending` (`World::stun_reads`).
+- `safety.cc`: in the fight simulation, an enemy turn whose damage fells the asking fighter (or its linked body),
+  through Durability and shield, aims at it instead of our weakest member; the quiet, shielded and reflected loops
+  break on such a turn. A bag carrier's `self_falls` had read false while it was one-shot (47+ traced kills).
+- `fight.cc`: with no untouched escape step, `quote_escape_walk` takes the first reached non-lethal step (not
+  farther from home, then damage bound, then steps home); when it is not farther from home it is retreat_step's walk,
+  and walk-excluding casts at enemies are priced `lethal_step_value` (infinite) against it (81 traced kills).
+
+Against `variants/charybdis-ref` (= 515, the same code as 516 for play), real 100k fuel, own drafts, 61,440 games on
+fresh `ladder-v2` seeds 92000-92119: **50.4% (CI ~50.0-50.8)**; out-of-fuel turns +6.4% (366k vs 344k). At 2x fuel
+50.5% of 10,240 (dev). Fixes 3, 5 and the press stay out: they hold their gain only at 2x fuel; see the
+[fuel handoff](../macro-atlas/HANDOFF-fuel.md).

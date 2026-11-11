@@ -4,6 +4,8 @@
 #include <array>
 #include <bit>
 #include <cstdint>
+#include <cstdio>
+#include "safety.h"
 #include "world.h"
 
 namespace aph {
@@ -14,7 +16,7 @@ constexpr int window_cap = 16, slot_cap = 32, far_off = 99;
 
 struct Windows {
     int round = -1;
-    std::uint32_t observations = 0;
+    std::uint32_t observations = 0, stun_reads = 0;
     int n = 0;
     std::array<std::int8_t, window_cap> early{}, late{};
     int unseen_after = 0; // this round's enemy turns after ours not held by a visible enemy yet to act
@@ -51,6 +53,7 @@ int ranks_before(const SlotLayout& l, int count, int slot) {
     auto& w = windows;
     w.round = world.round;
     w.observations = world.observations;
+    w.stun_reads = world.stun_reads;
     w.second_known = 0;
     const int size = static_cast<int>(world.enemies.size());
     const int n = std::min(size, window_cap);
@@ -122,7 +125,8 @@ int ranks_before(const SlotLayout& l, int count, int slot) {
 }
 
 const Windows& current(const World& world) {
-    if (windows.round != world.round || windows.observations != world.observations) build_windows(world);
+    if (windows.round != world.round || windows.observations != world.observations || windows.stun_reads != world.stun_reads)
+        build_windows(world);
     return windows;
 }
 
@@ -140,6 +144,7 @@ int unseen_distance(const ChampionBelief& e, vec2 from) {
     struct Maybe {
         int i, d;
         float strength;
+        bool lost; // stunned with its turn this round still to come
     };
     std::array<Maybe, window_cap> maybe;
     int k = 0;
@@ -151,7 +156,7 @@ int unseen_distance(const ChampionBelief& e, vec2 from) {
             if (room > 0) chosen |= static_cast<std::uint16_t>(1u << i), --room;
             continue;
         }
-        maybe[static_cast<std::size_t>(k++)] = {i, -1, e.strength};
+        maybe[static_cast<std::size_t>(k++)] = {i, -1, e.strength, false};
     }
     if (room <= 0 || k == 0) return chosen;
     if (k <= room) {
@@ -159,24 +164,41 @@ int unseen_distance(const ChampionBelief& e, vec2 from) {
         return chosen;
     }
     const vec2 from = in_bounds(world.turn_start) ? world.turn_start : world.me().pos;
+    // Our own move this turn, which the tiles asked about lie within.
+    const int move = world.me().facts().has_dash() ? dash_range : 1;
     for (int j = 0; j < k; ++j) {
         auto& m = maybe[static_cast<std::size_t>(j)];
         const auto& e = world.enemies[static_cast<std::size_t>(m.i)];
         m.d = e.visible ? dist(from, e.pos) : unseen_distance(e, from);
+        // Only where its next-round strike can reach us does that turn matter.
+        m.lost = e.visible && !e.acted && e.stun_pending && m.d <= strike(e, world.round + 1).reach + move;
     }
-    // The `room` first by (distance, strength descending, index): a strict order, picked one by one.
-    const auto before = [](const Maybe& a, const Maybe& b) {
-        return a.d != b.d ? a.d < b.d : a.strength != b.strength ? a.strength > b.strength : a.i < b.i;
+    // The `room` first: the stunned yet to act, then by (distance, strength descending, index), a
+    // strict order, picked one by one. A stunned enemy still sets its priority on the turn it loses
+    // (rules: abilities.stun), so its next-round slot is as open as any unsettled one's, and that
+    // slot is its only turn before ours: the others yet to act have one this round already.
+    const auto pick = [&](bool lost_first) {
+        const auto before = [&](const Maybe& a, const Maybe& b) {
+            if (lost_first && a.lost != b.lost) return a.lost;
+            return a.d != b.d ? a.d < b.d : a.strength != b.strength ? a.strength > b.strength : a.i < b.i;
+        };
+        std::uint16_t out = chosen;
+        unsigned taken = 0;
+        for (int r = 0; r < room; ++r) {
+            int best = -1;
+            for (int j = 0; j < k; ++j)
+                if (!(taken >> j & 1) && (best < 0 || before(maybe[static_cast<std::size_t>(j)], maybe[static_cast<std::size_t>(best)]))) best = j;
+            taken |= 1u << best;
+            out |= static_cast<std::uint16_t>(1u << maybe[static_cast<std::size_t>(best)].i);
+        }
+        return out;
     };
-    unsigned taken = 0;
-    for (int r = 0; r < room; ++r) {
-        int best = -1;
-        for (int j = 0; j < k; ++j)
-            if (!(taken >> j & 1) && (best < 0 || before(maybe[static_cast<std::size_t>(j)], maybe[static_cast<std::size_t>(best)]))) best = j;
-        taken |= 1u << best;
-        chosen |= static_cast<std::uint16_t>(1u << maybe[static_cast<std::size_t>(best)].i);
-    }
-    return chosen;
+    const std::uint16_t out = pick(true);
+    debug_block({
+        if (const auto old = pick(false); old != out)
+            std::printf("PZFIX1 %d %u %d %d %d %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), ours, room, k, old, out);
+    });
+    return out;
 }
 
 } // namespace
@@ -217,7 +239,18 @@ bool enemy_turn_before_ours_next(const World& world, const ChampionBelief& e) {
     if (e.side != team::enemy || e.index < 0 || e.index >= window_cap) return world.slot(e, world.round + 1) < ours;
     auto& w = const_cast<Windows&>(current(world));
     if (ours < 0 || ours >= slot_cap) return enemy_earliest_slot(world, e, world.round + 1) < ours;
-    if (!(w.second_known >> ours & 1)) w.second[static_cast<std::size_t>(ours)] = pick_second(world, w, ours), w.second_known |= 1u << ours;
+    if (!(w.second_known >> ours & 1)) {
+        w.second[static_cast<std::size_t>(ours)] = pick_second(world, w, ours), w.second_known |= 1u << ours;
+        // Stunned enemies yet to act left without a turn before our next one.
+        debug_block({
+            const int room = ranks_before(layout_of(world, false, world.round + 1), static_cast<int>(world.enemies.size()), ours);
+            for (int i = 0; i < w.n; ++i)
+                if (const auto& x = world.enemies[static_cast<std::size_t>(i)];
+                    x.alive && x.visible && !x.acted && x.stun_pending && !(w.second[static_cast<std::size_t>(ours)] >> i & 1))
+                    std::printf("PZFIX1N %d %u %d %d %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), ours, room, i,
+                                dist(world.me().pos, x.pos));
+        });
+    }
     return w.second[static_cast<std::size_t>(ours)] >> e.index & 1;
 }
 

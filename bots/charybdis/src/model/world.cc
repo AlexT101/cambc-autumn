@@ -1835,6 +1835,7 @@ bool World::read_stuns() {
         // The stun cancelled its recall, tribute or teleport: it stays where it is, its bag kept.
         if (e.stun_pending) e.channel = e.seen_channel = Channel::none, e.tp_dest = {-1, -1};
     }
+    stun_reads += changed;
     return changed;
 }
 

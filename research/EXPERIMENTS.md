@@ -17500,3 +17500,12 @@ Note: [chyport/README.md](ideas-2026-11-11/chyport/README.md). `tools/fgate.py`,
 `tools/fuel/bench.py` at 100M against astraeus (`replays/fuel/h5/`): identical replays 16/16 (default), 52/52
 (`--set wide`), 52/52 (`--set wide --test-draft`). Total fuel 12,910.9M -> 12,910.2M on the wide set; 1,353 turns
 cheaper, 250k dearer by a few fuel. Not run at the real budget: too small to move out-of-fuel turns.
+
+## (charybdis, 2026-11-11) ATLAS lethal fixes 1, 2, 4 at the real budget (CHANGES 517)
+`mo1-pz-s2` (the audited fixes 1, 2, 4 of [macro-atlas](macro-atlas/NOTES.md)) against `variants/charybdis-ref`
+(515), default 100k fuel, own drafts, fresh `ladder-v2` maps never used by an A/B:
+- seeds 92000-92039 (10,240 maps): 50.4% of 20,480 (49.7-51.1); OOF 120,077 vs 112,766.
+- seeds 92040-92119 (20,480 maps): 50.4% of 40,960 (49.9-50.9); OOF 245,958 vs 231,298.
+- pooled 50.4% of 61,440 (~50.0-50.8), OOF +6.4%. At 2x fuel it was 50.5% of 10,240 (macro-dev).
+Merged onto 516 unchanged (one `world.h` line placed by hand around 516's rewritten comment); release and debug
+builds pass. Not re-run on 516: 516 is fuel-only with identical replays at 100M.

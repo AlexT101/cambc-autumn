@@ -333,20 +333,53 @@ unsigned stun_skips(const Side& self, int turn) {
     return skip;
 }
 
+// Whether `damage` as dealt fells living member f, through its Durability and shield (take()).
+[[gnu::always_inline]] inline bool fells(const Fighter& f, float damage) {
+    float d = damage * f.taken;
+    d -= std::min(d, f.shield);
+    return f.health > 0 && !(d < f.health);
+}
+
+// The member of ours an enemy turn dealing `damage` aims at instead of the weakest: our `watched`
+// fighter, or its linked body, when that damage fells it. A real enemy takes the kill (and the bag)
+// over the hit on whoever is weakest; -1: the weakest, as for every other turn.
+int aim_at(const Side& us, int watched, float damage) {
+    if (watched < 0) return -1;
+    const auto& f = us.fighters[watched];
+    if (fells(f, damage)) return watched;
+    return f.link >= 0 && fells(us.fighters[f.link], damage) ? f.link : -1;
+}
+
+// Whether aim_at() would take an enemy turn of `damage` off `weak`: the quiet runs, which put
+// every hit on the weakest, leave that turn to act().
+bool aims_elsewhere(const Side& us, int watched, int weak, float damage) {
+    if (watched < 0) return false;
+    const auto& f = us.fighters[watched];
+    if (watched != weak && fells(f, damage)) return true;
+    return f.link >= 0 && f.link != weak && fells(us.fighters[f.link], damage);
+}
+
 // One side's turn: stunned members (the strongest of those in reach first) skip it. `N`:
-// self.count for the common sizes, for which the loops unroll, or 0.
+// self.count for the common sizes, for which the loops unroll, or 0. `watched`: aim_at()'s.
 template <int N>
-[[gnu::noinline]] float act(Side& self, Side& other) {
+[[gnu::noinline]] float act(Side& self, Side& other, int watched) {
     const int turn = self.turn++;
     // Nothing of this turn changes their weakest. A Ren there hits back each of ours by its hits.
-    const int target = other.weakest();
-    const float back = target >= 0 ? other.fighters[target].retaliation : 0.0f;
-    // With `back`: each member's hits, the first `count` written. Static, as a stack frame costs more.
+    int target = other.weakest();
+    float back = target >= 0 ? other.fighters[target].retaliation : 0.0f;
+    // Hits are taped when a member this turn may aim at hits back.
+    bool tape = back > 0;
+    if (watched >= 0) {
+        const auto& w = other.fighters[watched];
+        tape |= w.retaliation > 0 || (w.link >= 0 && other.fighters[w.link].retaliation > 0);
+    }
+    // With `tape`: each member's hits, the first `count` written. Static, as a stack frame costs more.
     static std::array<int, max_fighters> hits;
     const int count = N > 0 ? N : self.count;
     float damage = 0;
     if (self.stunned == 0 && turn < self.quiet_until && self.alive == self.quiet_alive) {
         damage = self.quiet_damage;
+        if (const int a = aim_at(other, watched, damage); a >= 0) target = a, back = other.fighters[a].retaliation;
         if (target >= 0) other.hurt(damage, target);
         // With no cast each living attacker takes one reflection; no per-member hit tape is needed.
         if (back > 0)
@@ -376,11 +409,11 @@ template <int N>
         int until = self.arrival;
         each<N>(count, [&](int i) {
             auto& f = self.fighters[i];
-            if (back > 0) hits[i] = f.health > 0 && f.arrives_at <= turn && !(skip >> i & 1);
+            if (tape) hits[i] = f.health > 0 && f.arrives_at <= turn && !(skip >> i & 1);
             if (f.health <= 0 || f.arrives_at > turn) return;
             if (f.next_cast <= turn && !(skip >> i & 1)) {
                 const int h = cast(f, turn, self, other, damage);
-                if (back > 0) hits[i] = h;
+                if (tape) hits[i] = h;
             }
             until = std::min(until, f.next_cast);
         });
@@ -393,11 +426,11 @@ template <int N>
         each<N>(count, [&](int i) {
             auto& f = self.fighters[i];
             if (f.shield_until <= turn) f.shield = 0, f.shield_until = never, self.lowered(i);
-            if (back > 0) hits[i] = 0;
+            if (tape) hits[i] = 0;
             if (f.health <= 0) return;
             if (f.arrives_at <= turn && !(skip >> i & 1)) {
                 const int h = attack(f, turn, self, other, damage);
-                if (back > 0) hits[i] = h;
+                if (tape) hits[i] = h;
             }
             until = std::min(until, f.shield_until);
             if (f.arrives_at > turn + 1) {
@@ -412,6 +445,7 @@ template <int N>
         self.quiet_damage = quiet;
     }
     if (target < 0) return damage;
+    if (const int a = aim_at(other, watched, damage); a >= 0) target = a, back = other.fighters[a].retaliation;
     other.hurt(damage, target);
     if (back > 0)
         each<N>(count, [&](int i) {
@@ -420,10 +454,10 @@ template <int N>
     return damage;
 }
 
-float act(Side& self, Side& other) {
+float act(Side& self, Side& other, int watched = -1) {
     switch (self.count) {
-    case 1: return act<1>(self, other);
-    default: return act<0>(self, other);
+    case 1: return act<1>(self, other, watched);
+    default: return act<0>(self, other, watched);
     }
 }
 
@@ -440,15 +474,17 @@ float act(Side& self, Side& other) {
 }
 
 // play_quiet() with a weakest shielded.
-[[gnu::noinline]] int play_shielded(Side& us, Side& them, Fighter& u, Fighter& e, int t, int end, bool they_first) {
+[[gnu::noinline]] int play_shielded(Side& us, Side& them, Fighter& u, Fighter& e, int t, int end, bool they_first, int watched) {
     // Camp hits on another of ours: act() plays it.
     if (us.camp > 0 && us.self >= 0 && &us.fighters[us.self] != &u && us.fighters[us.self].health > 0) return t;
+    // Only u's health changes in here.
+    const bool aimed = aims_elsewhere(us, watched, static_cast<int>(&u - us.fighters.data()), them.quiet_damage);
     // Each as hurt() takes it, through the target's Durability.
     const float camp = us.camp * u.taken, on_us = them.quiet_damage * u.taken, on_them = us.quiet_damage * e.taken;
     for (; t < end; ++t) {
         float us_ = u.shield, uh = u.health, es = e.shield, eh = e.health;
         if ((t % 2 == 0) == they_first) {
-            if (them.turn >= them.quiet_until || them.alive != them.quiet_alive || them.stunned != 0) break;
+            if (them.turn >= them.quiet_until || them.alive != them.quiet_alive || them.stunned != 0 || aimed) break;
             if (!takes(on_us, us_, uh) || !takes(camp, us_, uh)) break;
             ++them.turn;
         } else {
@@ -462,14 +498,14 @@ float act(Side& self, Side& other) {
 }
 
 // Quiet attacks with reflection, stopping before any shield or death needs act().
-int play_reflected(Side& us, Side& them, int t, int end, bool they_first) {
+int play_reflected(Side& us, Side& them, int t, int end, bool they_first, int watched) {
     for (; t < end; ++t) {
         const bool their_turn = (t % 2 == 0) == they_first;
         Side& self = their_turn ? them : us;
         Side& other = their_turn ? us : them;
         if (self.turn >= self.quiet_until || self.alive != self.quiet_alive || self.stunned) break;
         const int weak = other.weakest();
-        if (weak < 0) break;
+        if (weak < 0 || (their_turn && aims_elsewhere(us, watched, weak, self.quiet_damage))) break;
         auto& target = other.fighters[weak];
         const float damage = self.quiet_damage * target.taken, back = target.retaliation;
         if (target.shield != 0 || !(damage < target.health)) break;
@@ -512,13 +548,14 @@ int play_reflected(Side& us, Side& them, int t, int end, bool they_first) {
 
 // The half-turns from `t` (to `end` at most) in which both sides only make their basic attacks
 // and nobody falls, each taken off the side's weakest as act() and hurt() would; returns the next.
-int play_quiet(Side& us, Side& them, int t, int end, bool they_first) {
+// An enemy turn aim_at() takes off the weakest (`watched`, ours) ends it.
+int play_quiet(Side& us, Side& them, int t, int end, bool they_first, int watched) {
     const int wu = us.weakest(), we = them.weakest();
     if (wu < 0 || we < 0) return t;
     auto& u = us.fighters[wu];
     auto& e = them.fighters[we];
-    if (u.retaliation > 0 || e.retaliation > 0) return play_reflected(us, them, t, end, they_first);
-    if (u.shield != 0 || e.shield != 0) return play_shielded(us, them, u, e, t, end, they_first);
+    if (u.retaliation > 0 || e.retaliation > 0) return play_reflected(us, them, t, end, they_first, watched);
+    if (u.shield != 0 || e.shield != 0) return play_shielded(us, them, u, e, t, end, they_first, watched);
     // The camps hit us (hurt_by_camps()), who may not be the weakest.
     Fighter* s = us.camp > 0 && us.self >= 0 && us.self != wu && us.fighters[us.self].health > 0 ? &us.fighters[us.self] : nullptr;
     if (s && s->shield != 0) return t;
@@ -527,12 +564,15 @@ int play_quiet(Side& us, Side& them, int t, int end, bool they_first) {
     const int their_end = them.alive == them.quiet_alive && them.stunned == 0 ? them.quiet_until : them.turn;
     const int our_end = us.alive == us.quiet_alive && us.stunned == 0 ? us.quiet_until : us.turn;
     const float on_us = them.quiet_damage * u.taken, on_them = us.quiet_damage * e.taken;
+    // aim_at's answer changes in here only with s's health (u's is held in uh, and skipped).
+    const bool aimed = !s && aims_elsewhere(us, watched, wu, them.quiet_damage);
     float uh = u.health, eh = e.health;
     int their_turn = them.turn, our_turn = us.turn;
     for (; t < end; ++t) {
         if ((t % 2 == 0) == they_first) {
             if (their_turn >= their_end) break;
             if (!(on_us < uh)) break;
+            if (s ? aims_elsewhere(us, watched, wu, them.quiet_damage) : aimed) break;
             const float h = uh - on_us;
             if (camp > 0 && !(camp < h)) break;
             if (s && !(on_self < s->health)) break;
@@ -563,6 +603,13 @@ int play_quiet(Side& us, Side& them, int t, int end, bool they_first) {
 // Own turns a fight is played for: every slot ready at the start is cast on turns 0, 8 and 16,
 // and kills land just after those casts.
 constexpr int fight_horizon = 2 * ability_cooldown + 1;
+
+// False only while debug replays a fight with every enemy hit on our weakest, to count what aim_at() changes.
+bool aim_watched = true;
+struct AimCounts {
+    int fights = 0, lost = 0, falls = 0, mismatch = 0;
+};
+AimCounts aim_counts;
 
 // Our fighter's health, as its linked body's falls with it.
 float watched_health(const Side& us, int self) {
@@ -743,7 +790,7 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
         if (const Side& next = (t % 2 == 0) == they_first ? them : us;
             !Dealt && us.turn < us.quiet_until && them.turn < them.quiet_until && next.stunned == 0 && next.alive == next.quiet_alive) {
             const int our_turn = us.turn, their_turn = them.turn;
-            t = play_quiet(us, them, t, 2 * horizon, they_first);
+            t = play_quiet(us, them, t, 2 * horizon, they_first, aim_watched ? watched : -1);
             ours += us.turn - our_turn, theirs += them.turn - their_turn;
             if (t == 2 * horizon) break;
         }
@@ -751,7 +798,7 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
             if (t % 8 == 7) throw_if_stale();
         const bool their_turn = (t % 2 == 0) == they_first;
         if (their_turn) {
-            const float d = act(them, us);
+            const float d = act(them, us, aim_watched ? watched : -1);
             if constexpr (Dealt)
                 if (theirs < 5) (*dealt)[2] += d, (*dealt)[0] += theirs == 0 ? d : 0;
             if (us.camp > 0) us.hurt_by_camps();
@@ -797,6 +844,7 @@ int simulate_idle(Side& us, Side& them, int horizon) {
 }
 
 constinit std::array<Side, 2> debug_sides{};
+constinit std::array<Side, 4> aim_sides{};
 
 // Plays the fight out on the sides given, which callers discard: copying them is costly.
 Trade trade(Side& us, Side& them, bool they_first = true, bool need_falls = true, bool settle = false) {
@@ -806,6 +854,7 @@ Trade trade(Side& us, Side& them, bool they_first = true, bool need_falls = true
     if constexpr (debug_fights) t.our_health = us.health(), t.their_health = them.health();
     if (them.count == 0) return t;
     if constexpr (check_fight_exits) debug_block({ debug_sides = {us, them}; });
+    debug_block({ aim_sides = {us, them, us, them}; });
     bool unknown = false, lost_unknown = false;
     const auto [we_kill, they_kill] = simulate<debug_fights>(us, them, they_first, &t.self_falls, fight_horizon, debug_fights ? &t.dealt : nullptr,
                                                              need_falls ? nullptr : &unknown, settle && need_falls && !debug_fights ? &lost_unknown : nullptr);
@@ -818,6 +867,19 @@ Trade trade(Side& us, Side& them, bool they_first = true, bool need_falls = true
         const auto [a, b] = simulate<true>(debug_sides[0], debug_sides[1], they_first, &falls, fight_horizon, &dealt);
         if ((t.lost_known && (b > 0) != (they_kill > 0)) || (t.falls_known && falls != t.self_falls))
             std::printf("FIGHT-EXIT-MISMATCH %d %d %d %d %d\n", cambc::round_number(), b, they_kill, falls, t.self_falls);
+    });
+    // PZFIX2: the fight played out with and without aim_at(), and the early ends against the first.
+    debug_block({
+        bool on = false, off = false;
+        std::array<float, 4> dealt{};
+        const int a = simulate<true>(aim_sides[0], aim_sides[1], they_first, &on, fight_horizon, &dealt).second;
+        aim_watched = false;
+        const int b = simulate<true>(aim_sides[2], aim_sides[3], they_first, &off, fight_horizon, &dealt).second;
+        aim_watched = true;
+        ++aim_counts.fights;
+        aim_counts.lost += (a > 0) != (b > 0);
+        aim_counts.falls += on != off;
+        aim_counts.mismatch += (t.lost_known && (a > 0) != (they_kill > 0)) || (t.falls_known && on != t.self_falls);
     });
     t.turns_to_kill_them = we_kill;
     t.turns_to_kill_us = they_kill;
@@ -929,6 +991,16 @@ vec2 acts_from(const ChampionBelief& e) { return e.teleport_pending() && in_boun
 } // namespace
 
 bool turn_lost(const ChampionBelief& c) { return c.side == team::enemy && c.visible && c.stun_pending; }
+
+void print_aim_counts(const World& world) {
+    debug_block({
+        auto& c = aim_counts;
+        if (c.lost || c.falls || c.mismatch)
+            std::printf("PZFIX2 %d %u %d %d %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), c.fights, c.lost, c.falls,
+                        c.mismatch);
+        c = {};
+    });
+}
 
 int attack_reach_in_turn(const ChampionBelief& c, int round) {
     const auto& f = c.facts();

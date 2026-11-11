@@ -36,7 +36,8 @@ int enemy_latest_slot(const World& world, const ChampionBelief& e, int r);
 bool enemy_may_act_after_us(const World& world, const ChampionBelief& e);
 
 // Next round: is this enemy one of the (at most enemy_turns_before) enemies given a turn before our
-// next slot? The surely-earlier ones first, then the nearest and strongest of those that could be.
+// next slot? The surely-earlier ones first, then of those that could be the stunned yet to act, then
+// the nearest and strongest.
 bool enemy_turn_before_ours_next(const World& world, const ChampionBelief& e);
 
 } // namespace aph

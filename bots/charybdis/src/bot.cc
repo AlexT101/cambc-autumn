@@ -683,6 +683,7 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     // Home is reached on our spawn even where camp fire there keeps us below the health we fled at.
     if (!record || health > memory.camp_fled || (memory.camp_fled >= 0 && test(world.map().ally_spawn, world.me().pos))) memory.camp_fled = -1;
     decision = Branch::none;
+    debug_block({ print_aim_counts(world); }); // the previous turn's
     sieged = false;
     search.chose = false;
     struck = searched = false;

@@ -638,6 +638,7 @@ public:
     // in sight it could have reached, once a turn. True if one changed.
     bool read_stuns();
     std::uint32_t observations = 0; // update() and observe() calls: beliefs change only with one
+    std::uint32_t stun_reads = 0;   // read_stuns() calls that changed a stun_pending
     // Our tile at update(), where the turn started. me().pos stays there all turn (observe() skips
     // our own belief): my_position() is where we are, sight_pos() where vision was last read.
     vec2 turn_start{-1, -1};

@@ -6,6 +6,13 @@ namespace aph {
 namespace {
 
 constexpr float escape_step_value = 210; // a retreat's or a game-ender intercept's walk, in enemy health
+// The walk off a lethal tile to one it survives: no walk-excluding cast's worth buys it away.
+constexpr float lethal_step_value = std::numeric_limits<float>::infinity();
+struct KeptWalk {
+    int round = -1;
+    vec2 from{-1, -1};
+};
+KeptWalk kept_walk; // debug only (PZFIX4W): the turn escape_walk last kept the walk for retreat_step
 
 bool attack_enemy(const World& world) {
     if (!my_can_attack()) return false;
@@ -1275,26 +1282,62 @@ void see_kills(World& world, Pathing& pathing, Safety& safety) {
     safety.refresh();
 }
 
-// One adjacent walk taking no modelled damage or stun before our next turn, nearest our spawn. Quotes
-// are legal-looking only: a hidden unit can still refuse the move.
+// One adjacent walk taking no modelled damage or stun before our next turn, nearest our spawn. With
+// none (we stand on a lethal tile: escape_walk), a reached step that is not lethal (`survived`): one
+// not farther from home first (retreat_step's), then by damage bound and steps home. A walk-excluding
+// cast would keep us on the lethal tile. Quotes are legal-looking only: a hidden unit can still refuse
+// the move.
 std::optional<vec2> quote_escape_walk(const World& world, Pathing& pathing, Safety& safety,
-                                      const std::array<vec2, 8>& rejected, int count) {
+                                      const std::array<vec2, 8>& rejected, int count, bool& survived) {
+    survived = false;
     const vec2 here = my_position();
     const auto& blocked = pathing.blocked();
     const auto* guard = pathing.guard();
     const auto& home = pathing.to_ally_spawn();
     std::optional<vec2> best;
     int best_home = unreachable;
+    std::array<vec2, 8> touched;
+    int n = 0;
     for (const auto d : directions) {
         const vec2 p = here + d;
         if (!in_bounds(p) || !test(world.map().open_for_us, p) || test(blocked, p) || (guard && test(*guard, p))) continue;
         bool refused = false;
         for (int i = 0; i < count; ++i) refused |= rejected[i] == p;
         if (refused) continue;
-        if (safety.touched(p)) continue;
+        if (safety.touched(p)) {
+            touched[static_cast<std::size_t>(n++)] = p;
+            continue;
+        }
         const int steps = home.at(p);
         if (!best || steps < best_home) best = p, best_home = steps;
     }
+    if (best || n == 0) return best;
+    // Ties in compass order; lethal (~1k a tile) is read only down to the first step it spares.
+    struct Reached {
+        vec2 p;
+        bool away;
+        float damage;
+        int steps;
+        bool before(const Reached& o) const {
+            if (away != o.away) return !away;
+            return damage != o.damage ? damage < o.damage : steps < o.steps;
+        }
+    };
+    Unwritten<Reached, 8> sorted;
+    auto& reached = sorted.a;
+    const int at = home.at(here);
+    for (int j = 0; j < n; ++j) {
+        const vec2 p = touched[static_cast<std::size_t>(j)];
+        const Reached r{p, home.at(p) > at, safety.damage_bound(p, false, world.me().taken), home.at(p)};
+        int i = j;
+        for (; i > 0 && r.before(reached[i - 1]); --i) reached[i] = reached[i - 1];
+        reached[i] = r;
+    }
+    for (int i = 0; i < n; ++i)
+        if (!safety.lethal(reached[i].p)) {
+            survived = true;
+            return reached[i].p;
+        }
     return best;
 }
 
@@ -1317,8 +1360,12 @@ int sole_escape_threat(const World& world, Safety& safety, vec2 here) {
 // A champion whose casts at enemies exclude walking (Prism, Stellar, Ryth, Marcella, Tavi, Ren,
 // Cassi), on a lethal tile with a safe step: no cast's worth buys away that walk, bar a cast that
 // kills or stuns in time the only threat (a unit cast, or a ground stun centred within 1 of it).
-// Each refused move is looked at again before the next; `looked`: vision was read again.
-bool escape_walk(World& world, Pathing& pathing, Safety& safety, bool* looked = nullptr) {
+// Each refused move is looked at again before the next; `looked`: vision was read again. With only
+// survivable steps the same holds; one not farther from home is retreat_step's to rank (it weighs no
+// other reached step): `kept` is set, nothing is walked, and the caller's casts at enemies take
+// lethal_step_value for the walk.
+bool escape_walk(World& world, Pathing& pathing, Safety& safety, bool& kept, bool* looked = nullptr) {
+    kept = false;
     const auto& f = world.me().facts();
     if (!(f.abilities[0].excludes_walking && f.abilities[0].hits_enemies()) && !(f.abilities[1].excludes_walking && f.abilities[1].hits_enemies()))
         return false;
@@ -1332,7 +1379,8 @@ bool escape_walk(World& world, Pathing& pathing, Safety& safety, bool* looked = 
     while (count < static_cast<int>(rejected.size())) {
         world.throw_if_stale();
         if (!my_can_move() || !safety.lethal(my_position())) return false;
-        const auto quote = quote_escape_walk(world, pathing, safety, rejected, count);
+        bool survived = false;
+        const auto quote = quote_escape_walk(world, pathing, safety, rejected, count, survived);
         if (!quote) return false;
         if (consider_cast) {
             consider_cast = false;
@@ -1345,7 +1393,18 @@ bool escape_walk(World& world, Pathing& pathing, Safety& safety, bool* looked = 
                 continue;
             }
         }
+        if (const auto& home = pathing.to_ally_spawn(); survived && home.at(*quote) != unreachable && home.at(*quote) <= home.at(my_position())) {
+            debug_block({
+                std::printf("PZFIX4 %d %u %d,%d %d,%d\n", world.round, my_handle(), my_position().x, my_position().y, quote->x, quote->y);
+                kept_walk = {world.round, my_position()};
+            });
+            kept = true;
+            return false;
+        }
         if (pathing.try_move(*quote)) {
+            debug_block({
+                if (survived) std::printf("PZFIX4A %d %u\n", world.round, my_handle());
+            });
             look();
             return true;
         }
@@ -1369,7 +1428,7 @@ bool dash_retreat_casts(World& world, Pathing& pathing, Safety& safety, Memory& 
     const auto quote = quote_escape_dash(world, pathing, safety, pathing.to_ally_spawn(), dead);
     // A cast tried and failed may have revealed a hidden blocker, and a dash moved us: either way
     // vision is read again and the quote, which vouches only for its first landing, is dropped.
-    bool reusable = true, casted = false;
+    bool reusable = true, casted = false, kept = false;
     if (quote.clears && !safety.touched(quote.tiles[0])) {
         bool attempted = false;
         casted = cast_at_enemies(world, escape_step_value, true, &attempted);
@@ -1382,12 +1441,12 @@ bool dash_retreat_casts(World& world, Pathing& pathing, Safety& safety, Memory& 
     if (!casted) {
         bool looked = false;
         // Walked (the quote is from the old tile), cast, or read vision again.
-        if (escape_walk(world, pathing, safety, &looked)) casted = !my_can_cast(), reusable = false;
+        if (escape_walk(world, pathing, safety, kept, &looked)) casted = !my_can_cast(), reusable = false;
         if (looked) reusable = false;
     }
     if (!casted && !walk_dash_deferred(world)) {
         bool attempted = false;
-        casted = cast_at_enemies(world, escape_step_value, false, &attempted);
+        casted = cast_at_enemies(world, kept ? lethal_step_value : escape_step_value, false, &attempted);
         if (attempted && !casted) {
             see_again(world, pathing, safety);
             reusable = false;
@@ -1451,7 +1510,8 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
         if (dash_retreat_casts(world, pathing, safety, memory, dead)) return;
     } else {
         // After the walk, a cast that allows walking may still follow (Cassi's stun).
-        if (!escape_walk(world, pathing, safety) || my_can_cast()) cast_at_enemies(world, escape_step_value);
+        bool kept = false;
+        if (!escape_walk(world, pathing, safety, kept) || my_can_cast()) cast_at_enemies(world, kept ? lethal_step_value : escape_step_value);
         if (!me.is_alive()) return;
         if (!my_can_attack() || !my_can_cast()) see_kills(world, pathing, safety);
         // A tribute survives damage; a recall does not.
@@ -1472,6 +1532,13 @@ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
             debug_block({ std::printf("LSTEP %d %u %d,%d %d,%d\n", world.round, my_handle(), from.x, from.y, my_position().x, my_position().y); });
         }
     }
+    debug_block({
+        if (kept_walk.round == world.round && cambc::self().is_alive()) {
+            const vec2 at = my_position();
+            std::printf("PZFIX4W %d %u %d %d\n", world.round, my_handle(), static_cast<int>(at != kept_walk.from), static_cast<int>(safety.lethal(at)));
+            kept_walk.round = -1;
+        }
+    });
     // The dash put off for the walk, from its tile (from here if the walk was refused: put off once a turn).
     if (walk_dash && my_can_cast() && dash_away(world, pathing, safety, pathing.to_ally_spawn(), dead)) see_again(world, pathing, safety);
     // A walk to a hole line's edge can bring a dash out of the camps' reach in reach.

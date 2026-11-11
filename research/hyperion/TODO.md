@@ -22,6 +22,13 @@ fresh 4,096 paired games give -3.51% OOF and -1.43% shortcuts, both CIs includin
 The user requested closure without new ideas. See [fuel C](../charybdis-fuelC/README.md) before resuming: it
 records the rejected bounds/caches/copies and remaining call-site reach and dash-plan leads.
 
+## Charybdis: the rest of ATLAS's lethal-model change (2026-11-11)
+
+CHANGES 517 took fixes 1, 2 and 4. Fixes 3 and 5 and the disarmed-enemy press add about +1.3 points at 2x fuel
+(51.8% of 19,200 in all) but are level or below at 100k, out-of-fuel turns +21-114%. Make them cheap enough to keep
+the gain at the real budget: [HANDOFF-fuel](../macro-atlas/HANDOFF-fuel.md) has the measurements, the remaining
+diff and the method.
+
 ## Ocean fuel target (2026-11-07)
 
 CHANGES 455 reduces out-of-fuel turns by 3.5% on standard and fresh suites; the requested **20% reduction remains

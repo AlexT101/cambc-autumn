@@ -233,6 +233,8 @@ const Strike& strike(const ChampionBelief& c, int turn_round);
 const Strike& strike_with(const ChampionBelief& c, unsigned slots);
 // An enemy in sight loses its next turn to a stun (rules: abilities.stun).
 bool turn_lost(const ChampionBelief& c);
+// Debug: this turn's fights whose answer aiming at our fighter changed (PZFIX2 line), then reset.
+void print_aim_counts(const World& world);
 // The round of the enemy's next turn: later this round if it acts after us, else next round; one
 // later if a stun takes it.
 int next_turn_round(const World& world, const ChampionBelief& c);
