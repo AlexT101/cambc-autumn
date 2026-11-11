@@ -702,7 +702,6 @@ bool altar_usable(const World& world, Pathing& pathing, int bag, float health) {
 // Carrier deaths against carrying rounds, the whole team's: an ally's death is read for anyone, its
 // bag from vision or as posted. A champion carrying at one note and dead at the next died carrying.
 struct CarrierRecord {
-    std::array<bool, 8> alive{};
     std::array<int, 8> bag{};
     int round = -1;
     float deaths = 0, rounds = 0;
@@ -711,16 +710,16 @@ struct CarrierRecord {
 void note_carriers(const World& world) {
     auto& c = carriers;
     if (world.round == c.round) return;
-    const int gap = c.round < 0 ? 0 : world.round - c.round;
+    // A bag noted is a living carrier's (0 until the first note, and for the dead).
+    const float gap = static_cast<float>(world.round - c.round);
     for (const auto& a : world.allies) {
         if (a.index >= 8) continue;
-        const auto i = static_cast<std::size_t>(a.index);
-        if (gap > 0 && c.alive[i] && c.bag[i] > 0) {
-            if (a.alive) c.rounds += static_cast<float>(gap);
+        auto& bag = c.bag[static_cast<std::size_t>(a.index)];
+        if (bag > 0) {
+            if (a.alive) c.rounds += gap;
             else c.deaths += 1, c.rounds += 1; // died some round in the gap: a round's exposure
         }
-        c.alive[i] = a.alive;
-        c.bag[i] = !a.alive ? 0 : a.is_self ? static_cast<int>(my_gems()) : a.visible ? a.gems : comms::bag_of(world, a.index);
+        bag = !a.alive ? 0 : a.is_self ? static_cast<int>(my_gems()) : a.visible ? a.gems : comms::bag_of(world, a.index);
     }
     c.round = world.round;
 }
@@ -735,17 +734,21 @@ float carrier_hazard() {
 // forgoes K = T D gems at our income D a round, and a gem carried costs h = hazard x swing a round.
 // T is the way there (a walk, or a recall and the walk from spawn), the tribute's one fixed turn (the
 // rest, a turn per 10 gems, is paid whatever the bag) and the way back out here. At least a tribute
-// turn's gems; at most the win, or what a tribute could still score in the rounds left.
-int bank_floor(const World& world, Pathing& pathing) {
-    static int round = -1;
-    static vec2 at{-1, -1};
-    static std::uint32_t gems = 0, observations = 0;
-    static int kept = 0;
+// turn's gems; at most the win, or what a tribute could still score in the rounds left (bank_floor_most).
+// Whether `bag`, within those bounds, is below it: below the order quantity q rounded, so q >= bag + 0.5.
+// With a walk to an altar each way is between min(walk, recall) and the walk, and q grows with the trip:
+// the landing's and the spawn's steps are read only when those bounds leave it open.
+bool below_bank_floor(const World& world, Pathing& pathing, int bag) {
     const vec2 here = my_position();
-    if (world.round == round && here == at && my_gems() == gems && world.observations == observations) return kept;
-    round = world.round, at = here, gems = my_gems(), observations = world.observations;
     const auto& field = pathing.to_any_altar();
-    const int recall = recall_turns(world), walk = field.at(here);
+    const int recall = recall_turns(world), walk = field.at(here), fixed = tribute_turns(world, 1);
+    const float rate = gem_income_rate(), scale = carrier_hazard() * params::bag_swing, need = static_cast<float>(bag) + 0.5f;
+    const auto below = [&](int there, int back) { return need <= rate * std::sqrt(2.0f * static_cast<float>(there + fixed + back) / scale); };
+    if (walk != unreachable) {
+        if (!below(walk, walk)) return false;
+        const int least = std::min(walk, recall);
+        if (below(least, least)) return true;
+    }
     const auto via = [](int channel, int steps) { return steps == unreachable ? unreachable : channel + steps; };
     int there = std::min(walk, via(recall, field.at(recall_landing(world))));
     int back = std::min(walk, via(recall, pathing.to_ally_spawn().at(here)));
@@ -757,13 +760,10 @@ int bank_floor(const World& world, Pathing& pathing) {
         if (there == unreachable) there = near;
         if (back == unreachable) back = near;
     }
-    const float trip = static_cast<float>(there + tribute_turns(world, 1) + back);
-    const float rate = gem_income_rate();
-    const float q = rate * std::sqrt(2.0f * trip / (carrier_hazard() * params::bag_swing));
-    return kept = std::clamp(static_cast<int>(std::lround(q)), gems_per_tribute_turn, bank_floor_most(world));
+    return below(there, back);
 }
 
-// bank_floor's bounds: at least a tribute turn's gems, at most this.
+// bank_floor's upper bound (below_bank_floor).
 int bank_floor_most(const World& world) {
     return std::max(gems_per_tribute_turn, std::min(gems_short(world), gems_per_tribute_turn * bag_rounds_left(world)));
 }
@@ -774,8 +774,8 @@ namespace {
 // else in its key moving.
 int bankable_bag_now(const World& world, Pathing& pathing, int bag, bool& crystal) {
     if (bag == 0 || !altar_usable(world, pathing, bag, my_health())) return 0;
-    // bank_floor only within its bounds, each test before the dearer ones.
-    if (!winning_bag(world) && bag < bank_floor_most(world) && (bag < gems_per_tribute_turn || bag < bank_floor(world, pathing))
+    // Below the bank floor (below_bank_floor), each test before the dearer ones.
+    if (!winning_bag(world) && bag < bank_floor_most(world) && (bag < gems_per_tribute_turn || below_bank_floor(world, pathing, bag))
         && !closing(world, pathing))
         return 0;
     if (world.round < ring_refused_until && altar_steps(world, pathing, my_position(), -1) == unreachable) return 0;
@@ -863,8 +863,25 @@ int bag_rounds_left(const World& world) {
 }
 
 // The bag needs the rest of the game, or of the race (the rest of the win comes without it), to
-// reach an altar and score: it goes straight there.
+// reach an altar and score: it goes straight there. Asked a dozen times a turn by Prism (keeps_gems),
+// so kept while its inputs hold: the race and the landing move only with an observation, a recall's
+// length with our items.
 bool closing(const World& world, Pathing& pathing) {
+    struct Key {
+        std::uint32_t round, observations, gems, gold;
+        vec2 here;
+        bool operator==(const Key&) const = default;
+    };
+    static Key last{~0u};
+    static bool kept = false;
+    const Key key{static_cast<std::uint32_t>(world.round), world.observations, my_gems(), my_gold(), my_position()};
+    if (key == last) return kept;
+    kept = closing_now(world, pathing);
+    last = key;
+    return kept;
+}
+
+bool closing_now(const World& world, Pathing& pathing) {
     const auto& field = pathing.to_any_altar();
     int walk = field.at(my_position());
     // No walk out of here: recall home and walk from there.

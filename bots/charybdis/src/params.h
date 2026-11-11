@@ -113,7 +113,7 @@ inline constexpr int pick_up_radius = 7;
 
 // Chain another capture onto a bag (Cassi's and Issac's together) only below this.
 inline constexpr int chain_bag_limit = 26;
-// The bank floor (economy/bank.cc bank_floor) holds a bag against its loss: a carrier dies at the
+// The bank floor (economy/bank.cc below_bank_floor) holds a bag against its loss: a carrier dies at the
 // game's hazard a round (economy/bank.cc carrier_hazard, a posterior from this prior), and the killer
 // takes the bag, a swing of bag_swing times it. The prior is bag-carrier deaths per champion-round
 // alive with 25+ gems, measured on 10,240 macro3-base games.
