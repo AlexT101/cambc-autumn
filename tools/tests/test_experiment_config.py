@@ -24,18 +24,18 @@ class ConfigTests(unittest.TestCase):
    for key,val in [('seed',-1),('salt',True),('unmetered',1)]:
     bad=json.loads(json.dumps(d));bad['maps']['map'][key]=val;p.write_text(json.dumps(bad))
     with self.assertRaises(ValueError):ec.load(p,['map.map26a'])
- def test_prepare_reservation_partial_release_and_failure_cleanup(self):
+ def test_prepare_holds_a_partial_grant_and_releases_on_failure(self):
   for code in [0,1]:
    with self.subTest(code=code),tempfile.TemporaryDirectory() as td:
-    events=[];partial=list(range(4));full=list(range(16));env={}
+    events=[];partial=list(range(4));env={}
     def run(argv,**kwargs):
-     self.assertEqual(events,[('release',4)]);self.assertIn('--prepare-only',argv)
-     events.append(('prepare',16));return SimpleNamespace(returncode=code)
-    with patch.object(rb.cpu_slots,'acquire',side_effect=[partial,full]),patch.object(rb.cpu_slots,'release',side_effect=lambda h:events.append(('release',len(h)))),patch.object(rb,'sleep'),patch.object(rb.subprocess,'run',side_effect=run):
+     self.assertEqual(events,[]);self.assertIn('--prepare-only',argv)
+     events.append('prepare');return SimpleNamespace(returncode=code)
+    with patch.object(rb.cpu_slots,'acquire',side_effect=[partial]),patch.object(rb.cpu_slots,'release',side_effect=lambda h:events.append(('release',len(h)))),patch.object(rb,'sleep'),patch.object(rb.subprocess,'run',side_effect=run):
      if code:
       with self.assertRaises(RuntimeError):rb.prepare_experiment_cache('runner',Path(td)/'manifest',[],env,Path(td)/'log')
      else:rb.prepare_experiment_cache('runner',Path(td)/'manifest',[],env,Path(td)/'log')
-    self.assertEqual(events,[('release',4),('prepare',16),('release',16)])
+    self.assertEqual(events,['prepare',('release',4)])
     self.assertEqual(env['FASTRUNNER_BUILT'],'1')
  def test_cpp_reservation_occurs_on_coordinator_and_bounds_build_threads(self):
   with tempfile.TemporaryDirectory() as td:

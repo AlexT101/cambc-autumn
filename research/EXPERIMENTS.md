@@ -16960,3 +16960,41 @@ Verdict: no nudge reaches the 50.5 bar or is established above 50; nothing shipp
 swap our marginal pick, which the model cannot rank (predicted -2.2 points on changed maps, measured -0.8 ±0.5);
 Prism and Willow are worth 8.7 and 3.6 points to this bot. Details, pick-rate table and limits:
 [ideas-2026-11-11/draftnudge/README.md](ideas-2026-11-11/draftnudge/README.md).
+
+### Fresh-map gate in large batches (2026-11-11)
+
+`tools/fgate.py CAND REF` now plays batches of 2,560 unused fresh ladder-v2 maps plus the 128 ladder maps against the Fish and Mite bodies compiled once (`variants/rt-Flp4`, `rt-Mt3q`: noise seed and draft salt per game from the runner, a seed a map), unmetered; CAND and REF keep the exact fuel budget. The three-way decision reads the fresh maps after each batch. The 256-game noise blocks are `--blocks`. Tool notes: tools/README.md "Fresh-map gate".
+
+Identity checks (256 ladder games a run, oc-dfuel-506 against noise seed 7, both bodies, `~/tmp-offload/gatebatch/validate`):
+
+| check | Flp4 | Mt3q |
+|---|---|---|
+| shared runner library against the gate's (`target-rt`), metered: whole bundles, fuel files included | 256/256 equal | 256/256 |
+| baked seed against the same seed at run time, 100M fuel: replays, and our fuel file | 256/256, 256/256 | 256/256, 256/256 |
+| metered code with the meter unlimited against unmetered code: replays, and our fuel file | 256/256, 256/256 | 256/256, 256/256 |
+| the same at 100k for us, body metered against unmetered: winners equal; our wins | 178/256; 206 against 204 | 185/256; 206 against 191 |
+
+So the library changes nothing for a metered bot, a run-time seed plays its baked body's game, and unmetered code plays the ordinary code's game with unlimited fuel. Our fuel file is equal in every game whose replay is equal, and our out-of-fuel turns stay (2,848 turns in 245 of 320 games in the smoke; the bodies 0). The bodies do change: metered at 100k they lose turns in about 80% of games (4,544 turns in 208 of 256 for Flp4), so about 30% of winners differ and the unmetered Mite body is stronger. Win rates against the bodies do not compare across the two modes.
+
+Results against oc-fuel-501 (oc-dfuel-506, the draft10 model; 100k fuel, Flp4/Mt3q):
+
+| gate | win% (95% CI) | units | games |
+|---|---|---|---|
+| batch mode, fresh | 52.08% (51.43-52.73) | 7,680 maps | 61,440 |
+| batch mode, fresh, Fish / Mite | 52.18% (51.33-53.04) / 51.99% (51.06-52.92) | 7,680 | 30,720 each |
+| batch mode, ladder side read | 51.17% (48.13-54.22) | 384 | 3,072 |
+| `--blocks`, fresh, 48 blocks | 51.89% (51.19-52.58) | 6,144 | 49,152 |
+| `--blocks`, ladder, 48 blocks | 51.58% (50.88-52.27) | 6,144 | 49,152 |
+| identical copy of oc-dfuel-506 against it, batch mode | 50.00%, no paired game differs | 2,560 maps + 128 ladder | 21,504 |
+
+The two modes agree: +2.08 ±0.65 against +1.89 ±0.69. Batch mode reached ACCEPT (screen H1) at its third batch; the old gate was undecided at 48 blocks and passed the same bound by block 56 (+2.05 ±0.65 of 7,168 units, LLR high +3.26). Batches 4 to 6 (timing runs) read +1.58 ±1.14, +2.04 ±1.12 and +2.09 ±1.10.
+
+Throughput. A gate's rate is its share of the slot pool, so the two were timed side by side at equal weight:
+
+- Box with one other group (about 21 slots each), eight 320-map suites a run: batch mode 21,504 games in 187 s, 414k games/h and 49k fresh units/h; `--blocks` over the same 187 s 16,384 games (blocks 57 to 64, bodies already built), 315k games/h and 20k fresh units/h. 1.3x the games and 2.5x the fresh units an hour.
+- Loaded box (about 20 groups, 6 to 7 slots each), 41 minutes side by side: `--blocks` 108k games/h and 9.0k fresh units/h; batch mode 95k games/h and 11.3k fresh units/h (one suite a run).
+- Batch mode needs 8.4 games a fresh unit against 16 (the ladder maps are 5% of its games, not half), which is where its gain per decision comes from.
+- Compiles: batch mode compiles two bodies once per body version (the first smoke, 1,280 games and both builds, took 3.9 minutes), then none. `--blocks` compiled nothing here either, because earlier gates had built seeds 1 to 1,293; on unbuilt seeds a block took 99.9 s against 22.2 s prepared (the compile-ahead timing above), 78% of its wall.
+- `run_batched.py` handles finished games one at a time, and each pruned replay costs an fsync (`oof.thin`): about 30 games/s a suite whatever the machine. A 5,376-game suite a run capped a batch at 376k games/h, so a run now plays its batch as eight 320-map suites. The cap applies to every large `ab.py` suite past `--keep-replays`; thinning replays in groups would lift it.
+
+Not carried over: a compiled opponent pair a block and compile-ahead (only in `--blocks`); ladder maps as half the games; metered bodies; the 1,024-map pool replayed every 8 blocks; from the conditional-batch506 protocol its seals and reviews, eight fixed seed/salt pairs, the single fixed final read, the 120 s watchdog (600 s here: wall time on a loaded box) and the wait for all 16 slots before cache preparation, which never ends once a group's fair share is under 16.

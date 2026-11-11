@@ -271,6 +271,7 @@ Single-seed generated suites, `suites/fresh/fresh-<seed>/` (256 maps each, the d
 | 911000-911019 | 5,120 | ladder-v2 | `--mix ladder-v2` (escape planner, CHANGES 478: `merged/retreat-911000b`). Used | 2026-11-09 |
 | 1700000-1700079, 1701000-1701119 | 51,200 | ladder-v2 | `--mix ladder-v2` (escape planner after 478: `merged/esc2-dev` = 1700000-1700079, 478's reference and fo-lean, used; `merged/esc2-held` = 1701000-1701119, held out for the CHANGES 480 merge and CHANGES 481's check against oc-cl2-seat5m, used twice) | 2026-11-09 |
 | 1702000-1702079, 1703000-1703079 | 40,960 | ladder-v2 | `--mix ladder-v2` (chase verdict, CHANGES 481: `merged/plan2-dev` = 1702000-1702079, cv-final-v2, used; `merged/plan3-dev` = 1703000-1703079, chase verdict fuel gate, CHANGES 483, cg-final-aimgate2, used) | 2026-11-09 |
+| 2417000-2417383 | 98,304 | ladder-v2 | `--mix ladder-v2`, in `~/tmp-offload/conditional-batch506/chanM/generated/{seed}` (2417000-2417191) and `~/tmp-offload/gatebatch/generated/{seed}` (2417192-2417383), not under `maps/`: the fresh-map gate's pool (`tools/fgate.py`, `~/tmp-offload/gatebatch/pool`: 97,535 of them, byte-new and one per layout key, in the pool's own order). Every gate walks the pool from its start, so these are the gate's maps and no held-out set; 2417384-2417999 are reserved for growing it | 2026-11-11 |
 
 ## suites/merged/
 

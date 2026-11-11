@@ -1,7 +1,13 @@
-"""Standard fresh-gate entry point with bounded compile-ahead (16 workers, 8 blocks).
+"""The fresh-map gate: py tools/fgate.py CAND REF.
 
-All statistical/game arguments pass unchanged to the existing research fgate. Resource overrides:
---no-compile-ahead, --compile-workers N, --compile-lookahead N. No extra scored games are created.
+Default: large batches of fresh maps against run-time-configured, unmetered Fish/Mite bodies, with no opponent
+compile a batch (fgate_batch.py; --help lists its options).
+
+--blocks: the gate as it was before 2026-11-11, for reproducing older reads: 256-game noise blocks, a compiled
+opponent pair a block, with bounded compile-ahead (16 workers, 8 blocks). Its statistical/game arguments pass
+unchanged to research/ideas-2026-11-09/freshgate-tools/fgate.py; resource overrides: --no-compile-ahead,
+--compile-workers N, --compile-lookahead N. The two modes play different opponent populations (metered against
+unmetered bodies, a seed a block against a seed a map), so their runs and result files are separate.
 """
 import argparse
 import importlib.util
@@ -29,6 +35,10 @@ def main():
     os.environ.setdefault('CAMBC_SLOTS','86')
     os.environ.setdefault('FASTRUNNER_MODE','native')
     os.environ.setdefault('CAMBC_BIN',str(ahead.CLI))
+    if '--blocks' not in sys.argv[1:]:
+        import fgate_batch
+        return fgate_batch.main(sys.argv[1:])
+    sys.argv.remove('--blocks')
     parser=argparse.ArgumentParser(add_help=False)
     parser.add_argument('--no-compile-ahead',action='store_true')
     parser.add_argument('--compile-workers',type=int,default=ahead.DEFAULT_WORKERS)

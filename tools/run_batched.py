@@ -283,14 +283,11 @@ def build_bots(cli, bots, env, log, warm_map, release=False, configured_ref=Fals
 
 
 def prepare_experiment_cache(cli, manifest, options, env, log):
-    """Reserve the native compiler's16 slots without retaining a partial grant; dispatch no games."""
+    """Compile the manifest's bot/metering entries into the native cache, holding up to the compiler's 16 slots;
+    dispatch no games."""
     env['FASTRUNNER_BUILT'] = '1'
-    while True:
-        held = cpu_slots.acquire(16, least=1)
-        if len(held) == 16:
-            break
-        cpu_slots.release(held)
-        sleep(.25)
+    # Whatever fair share grants: on a shared pool a group's share can stay under 16, and a wait for all 16 never ends.
+    held = cpu_slots.acquire(16, least=1)
     try:
         with log.open('a') as stream:
             prepared = subprocess.run([cli, 'run-batch', str(manifest), '--prepare-only', *options],

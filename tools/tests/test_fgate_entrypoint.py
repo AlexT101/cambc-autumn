@@ -30,7 +30,7 @@ class EntryTests(unittest.TestCase):
                     seen.extend(sys.argv)
                     assert self.block_units('cand','ref',1,None) is result
             fg=FG()
-            with patch.object(entry.sys,'argv',['tools/fgate.py',*args]),patch.object(entry.ahead,'R',root),patch.object(entry.ahead,'snapshot_manifest') as seal,patch.object(entry.ahead,'scope') as scope,patch.object(entry.tempfile,'mkdtemp',return_value=str(directory)),patch.object(entry.importlib.util,'module_from_spec',return_value=fg),patch.object(entry.importlib.util,'spec_from_file_location') as loader:
+            with patch.object(entry.sys,'argv',['tools/fgate.py','--blocks',*args]),patch.object(entry.ahead,'R',root),patch.object(entry.ahead,'snapshot_manifest') as seal,patch.object(entry.ahead,'scope') as scope,patch.object(entry.tempfile,'mkdtemp',return_value=str(directory)),patch.object(entry.importlib.util,'module_from_spec',return_value=fg),patch.object(entry.importlib.util,'spec_from_file_location') as loader:
                 loader.return_value.loader.exec_module.return_value=None
                 entry.main()
                 self.assertEqual(seal.call_count,int(enabled));self.assertEqual(scope.call_count,int(enabled))
@@ -39,7 +39,16 @@ class EntryTests(unittest.TestCase):
                     self.assertEqual(scope.call_args.args[4],['Flp4','Mt3qro'])
             self.assertEqual(seen[1:],[x for x in args if x!='--no-compile-ahead'])
 
-    def test_default_preserves_game_arguments_and_units(self):self.run_entry([],True)
+    def test_default_is_batch_mode_and_blocks_flag_is_consumed(self):
+        seen=[]
+        with patch.dict(sys.modules,{'fgate_batch':type(sys)('fgate_batch')}):
+            sys.modules['fgate_batch'].main=lambda argv:seen.append(list(argv))
+            with patch.object(entry.sys,'argv',['tools/fgate.py','variants/cand','variants/ref','--fuel','200000']),patch.object(entry.importlib.util,'spec_from_file_location') as loader:
+                entry.main()
+                loader.assert_not_called()
+        self.assertEqual(seen,[['variants/cand','variants/ref','--fuel','200000']])
+
+    def test_blocks_preserves_game_arguments_and_units(self):self.run_entry([],True)
     def test_explicit_optout_has_no_helper(self):self.run_entry(['--no-compile-ahead'],False)
     def test_no_run_never_precompiles(self):self.run_entry(['--no-run'],False)
 
