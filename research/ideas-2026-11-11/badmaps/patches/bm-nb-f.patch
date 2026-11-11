@@ -1,0 +1,31 @@
+diff -ru -x .cambc -x compile_commands.json oc-dfuel-506/src/economy/bank.cc bm-nb-f/src/economy/bank.cc
+--- oc-dfuel-506/src/economy/bank.cc	2026-11-10 03:27:12.032823697 +0000
++++ bm-nb-f/src/economy/bank.cc	2026-11-11 06:05:18.954472612 +0000
+@@ -704,7 +704,12 @@
+ int bankable_bag(const World& world, Pathing& pathing) {
+     const int bag = static_cast<int>(my_gems());
+     if (bag == 0 || !altar_usable(world, pathing, bag, my_health())) return 0;
+-    if (bag < params::min_bank && !winning_bag(world) && !closing(world, pathing)) return 0;
++    if (bag < params::min_bank && !winning_bag(world) && !closing(world, pathing)) {
++        // Prism's bag is kept either way (retaining_gems): its farm context stays as it was.
++        if (world.me().facts().passive == Passive::gem_focus) return 0;
++        const int walk = altar_steps(world, pathing, my_position(), -1);
++        if (walk == unreachable || static_cast<float>(bag) < params::near_bank_slope * static_cast<float>(walk - params::near_bank_free)) return 0;
++    }
+     if (world.round < ring_refused_until && altar_steps(world, pathing, my_position(), -1) == unreachable) return 0;
+     // Only a crystal reaches an altar and we can neither use nor buy one: farm the gold first. A
+     // recall out of a pocket to a spawn with a walk to one banks it. Altars' hops come first.
+diff -ru -x .cambc -x compile_commands.json oc-dfuel-506/src/params.h bm-nb-f/src/params.h
+--- oc-dfuel-506/src/params.h	2026-11-09 22:24:31.475410479 +0000
++++ bm-nb-f/src/params.h	2026-11-11 06:05:18.954223949 +0000
+@@ -116,6 +116,10 @@
+ // A bag under this many gems is not banked (economy/bank.cc bankable_bag), but for a winning bag or a
+ // closing game: Fish banks 25-50 at a time (research/ideas-2026-11-07/behaviour-gaps.md).
+ inline constexpr int min_bank = 25;
++// Under min_bank a bag is still banked once the altar is near: at least near_bank_slope gems a step of the
++// walk beyond near_bank_free. Fish and Mite bank by the walk, not the bag (research/ideas-2026-11-11/badmaps).
++inline constexpr float near_bank_slope = 8.0f;
++inline constexpr int near_bank_free = 2;
+ 
+ // Cassi's or Issac's hold is worth this share of another ally's in the holder choice
+ // (economy/capture.cc hold_shy): the pair hands captures to the rest of the team.

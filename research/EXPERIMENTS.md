@@ -57,6 +57,50 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 - A risk change can win the mirror and nothing else (nuke guard, 2026-11-08): +0.22 held out over 149k, panel -0.02.
   The v84 pattern again: a risk or greed change needs its panel H1 before it ships.
 
+## (ocean = 506, 2026-11-11) Bad maps (wheel and the ladder tail): the losses are Prism's hoard dying, one-site overruns and big groups; five fixes built, none wins on fresh maps
+
+Notes, data paths and scripts: [ideas-2026-11-11/badmaps/README.md](ideas-2026-11-11/badmaps/README.md). Candidates are
+copies of `variants/oc-dfuel-506` (= ocean 506); `bots/variants/` is not tracked, so each one's diff is in
+`ideas-2026-11-11/badmaps/patches/`.
+
+**Diagnosis** (512 v115 scrims against Fish and Mite, 29 older wheel scrims, the big-arm archive):
+- wheel (all altars and gems inside one walled ring with two doors): scrims v105-v115 Mite 0/26, Fish 6/22. In the
+  losses to Fish we out-capture them (1,091 gems to 703) and die carrying 422 a game (Prism 243); against Mite 303
+  (Prism 181). Mite hops the ring wall with crystals 5-12 times a game; we use none. wheel is also a Mite draft matchup.
+- v115's 176 losses by cause: gem bleed 62, overrun on one-site maps 38, big groups 32 (now the biggroups agent's),
+  out-farmed or other 44.
+- Gems lost on death per game are level with theirs except Prism's hoard: against Fish 122 (Prism 53) to their 84;
+  against Mite 95 (Prism 35) to their 130. Bags under 25 lose 18-22 gems a game on both sides.
+- Fish and Mite bank small bags by altar distance (bags 1-24 within 3 tiles of an altar: Mite 95%, Fish 83%, us 68%);
+  we bank at 25 wherever we are.
+- Body fidelity: Flp4 banks like Fish, Mt3q keeps our 25 floor; both bodies kill our carriers less than the real teams
+  (bags under 25 lost 5.4-5.7% of the time against 6.9-7.7% live). A bag change reads smaller locally than live.
+
+**Results against oc-dfuel-506** (fresh `--mix ladder-v2`, seeds 1212000-1212039 in two halves of 5,120 maps, both
+sides, `--fuel 200000`; candidate and base each play the fixed bodies `spar-dvn1-Flp4` (Fish) and `spar-dvn1-Mt3q`
+(Mite); paired difference in points, 95% CI over body x map):
+
+| candidate | maps | both bodies | Fish body | Mite body | verdict |
+|---|---|---|---|---|---|
+| bm-nb-d: bank a bag under 25 when bag >= 2.75 x altar walk | all fresh, both halves | 78.73% of 40,960; +0.05 ±0.42 | 81.31%; +0.12 ±0.57 | 76.15%; -0.04 ±0.62 | level (half A +0.35 ±0.59, half B -0.26 ±0.60) |
+| | camp within 3 of an altar | 79.84% of 18,908; +0.22 ±0.66 | +0.33 ±0.90 | +0.12 ±0.96 | level |
+| bm-nb-f: Fish's rule, bag >= 8 x (walk - 2) | all fresh, half A | 78.83% of 20,480; -0.04 ±0.57 | 81.29%; +0.08 ±0.76 | 76.38%; -0.17 ±0.84 | level |
+| | camp within 3 of an altar | 80.39% of 9,432; +0.59 ±0.89 | +0.89 ±1.21 | +0.30 ±1.32 | level |
+| bm-pace: gold price counts the enemy's remaining gems at our rate over theirs | all fresh, half A | 78.57% of 20,480; -0.31 ±0.58 | 80.92%; -0.29 ±0.75 | 76.22%; -0.32 ±0.88 | level, leaning negative |
+| bm-lb: Prism banks once enemy score + its bag reaches 1,000 | all fresh, half A | 76.87% of 20,480; -2.01 ±0.31 | 80.15%; -1.06 ±0.35 | 73.59%; -2.95 ±0.51 | loses |
+| bm-tp: crystal hops over walls to walkable altars | all fresh, half A | 78.46% of 20,480; -0.42 ±0.36 | 80.62%; -0.60 ±0.50 | 76.31%; -0.23 ±0.51 | loses |
+| | spawn-to-altar hop gain 1.3x+ | 75.50% of 4,592; +0.33 ±1.15 | -0.35 ±1.63 | +1.00 ±1.62 | level; the other maps lose about 0.6 |
+
+- Mechanisms fire (ladder suite, 256 games a body, stock fuel). bm-nb-d: non-Prism tributes 22.6 a game against
+  20.0, non-Prism gems lost on death 45-58 against 66-67, captures 935-957 against 965-972: the walk to the altar
+  costs about what the saved bags are worth. bm-tp: 4.05 teleports a game on the 32 shortcut ladder maps against
+  0.14, and more out-of-fuel turns at stock fuel (2,612 / 3,263 against 1,707 / 2,187).
+- bm-lb joins the earlier Prism banking changes that lost locally (psm50b, retain cap 150, "doubles its Focus").
+- Nothing here passes the bar; no 100k arm was run. bm-nb-d is the only one with a live case (the real teams kill
+  carriers more often than the bodies), but its expected size is under a point, below what a 500-game live gate resolves.
+- Not tried: keeping a hoarding Prism alive (131 deaths with 40+ gems in 384 live games, 113 with an enemy in sight
+  two rounds earlier, median 15% health the round before), and the one-site overrun class.
+
 ## (combat lab, 2026-11-11) ocean's fight model is calibrated against Fish and Mite too; nothing to correct
 
 Write-up: [combat-lab/fishcal-notes.md](combat-lab/fishcal-notes.md); tools in `research/combat-lab/fishcal/`.

@@ -973,3 +973,6 @@ re-measured"; used).
 
 **Ocean vs 16d6f78 (2026-11-10):** `--mix ladder-v2`, under `suites/oc-16d6/fresh-{seed}`, symlinked into `merged/oc-16d6`:
 - 5200000–5200116, 29,952 maps: current main `bots/ocean` against `variants/ocean-16d6f78` (both own drafts), `replays/ab/ocean-vs-16d6f78-60k/` (used).
+
+**Bad maps (2026-11-11):** `--mix ladder-v2`, under `~/tmp-offload/badmaps/maps11/fresh-{seed}`, symlinked into `merged-a` and `merged-b`:
+- 1212000–1212039, 10,240 maps: `bm-nb-d`, `bm-nb-f`, `bm-pace`, `bm-lb`, `bm-tp` against `variants/oc-dfuel-506`, each playing `spar-dvn1-Flp4` and `spar-dvn1-Mt3q`, `replays/ab/bm11-f200a-*` and `bm11-f200b-*` (used).
