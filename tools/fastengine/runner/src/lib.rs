@@ -20,6 +20,7 @@ mod df;
 mod dirty;
 mod engine;
 mod fuel;
+mod experiment;
 mod game;
 mod host;
 mod native;
@@ -100,11 +101,14 @@ struct Job {
     map: PathBuf,
     out: PathBuf,
     statistics: Option<PathBuf>,
+    config: [Option<experiment::TeamConfig>; 2],
 }
 
 #[derive(Clone, Debug)]
 struct Opts {
     quantum: u64,
+    game_timeout: Option<std::time::Duration>,
+    prepare_only: bool,
     rounds: u32,
     log_limit: usize,
     release: bool,
@@ -197,8 +201,8 @@ fn resolve_map(root: &Path, m: Option<&str>) -> Result<PathBuf> {
 fn play_job(rt: &mut runtime::Runtime, job: &Job, o: &Opts) -> Result<game::MatchResult> {
     let wa = wasm_of(&job.a, o.release)?;
     let wb = wasm_of(&job.b, o.release)?;
-    let pa = rt.program(&wa)?;
-    let pb = rt.program(&wb)?;
+    let pa = rt.configured_program(&wa, job.config[0])?;
+    let pb = rt.configured_program(&wb, job.config[1])?;
     let map = std::fs::read(&job.map).with_context(|| format!("reading {}", job.map.display()))?;
     let spec = game::MatchSpec { map: &map, programs: [pa, pb], max_rounds: o.rounds, log_limit: o.log_limit, statistics: job.statistics.is_some() };
     let t0 = Instant::now();
@@ -257,12 +261,17 @@ fn parse_manifest(path: &Path) -> Result<Vec<Job>> {
         if w.len() < 4 {
             bail!("{}:{}: expected BOT_A BOT_B MAP REPLAY", path.display(), n + 1);
         }
-        let mut job = Job { a: abs(w[0]), b: abs(w[1]), map: abs(w[2]), out: abs(w[3]), statistics: None };
+        let mut job = Job { a: abs(w[0]), b: abs(w[1]), map: abs(w[2]), out: abs(w[3]), statistics: None, config: [None, None] };
         let mut i = 4;
         while i < w.len() {
             match w[i] {
                 "--statistics" if i + 1 < w.len() => {
                     job.statistics = Some(abs(w[i + 1]));
+                    i += 2;
+                }
+                "--runtime-config" if i + 1 < w.len() => {
+                    anyhow::ensure!(job.config == [None, None], "duplicate runtime config");
+                    job.config = experiment::parse(w[i + 1])?;
                     i += 2;
                 }
                 "--json" => i += 1,
@@ -275,6 +284,11 @@ fn parse_manifest(path: &Path) -> Result<Vec<Job>> {
             }
         }
         jobs.push(job);
+    }
+    if jobs.iter().any(|j| j.config.iter().any(Option::is_some)) {
+        for key in ["FASTRUNNER_UNLIMITED_BOTS", "FASTRUNNER_BOT_FUEL", "FASTRUNNER_NATIVE_SO"] {
+            anyhow::ensure!(std::env::var_os(key).is_none(), "runtime experiments forbid ambient {key} overrides");
+        }
     }
     Ok(jobs)
 }
@@ -510,8 +524,21 @@ fn run_batch(manifest: &Path, o: &Opts) -> Result<i32> {
     if jobs.is_empty() {
         return Ok(0);
     }
+    if o.prepare_only {
+        let mut rt = load_runtime()?;
+        let mut seen = std::collections::HashSet::new();
+        for job in &jobs {
+            for (i, bot) in [&job.a, &job.b].iter().enumerate() {
+                let mode = job.config[i].is_some_and(|c| c.unmetered);
+                let wasm = wasm_of(bot, o.release)?;
+                if seen.insert((wasm.clone(), mode)) { rt.configured_program(&wasm, job.config[i])?; }
+            }
+        }
+        writeln!(stdout, "Prepared {} bot/metering cache entries; no manifest matches dispatched", seen.len())?;
+        return Ok(0);
+    }
     let n = o.jobs.max(1).min(jobs.len());
-    if n == 1 {
+    if n == 1 && o.game_timeout.is_none() {
         let mut rt = load_runtime()?;
         let mut slots = o.slots.as_ref().map(|(d, k)| Slots::new(d, *k));
         for job in &jobs {
@@ -545,9 +572,10 @@ fn run_batch(manifest: &Path, o: &Opts) -> Result<i32> {
             let mut rt = load_runtime()?;
             let mut seen = std::collections::HashSet::new();
             for job in &jobs {
-                for b in [&job.a, &job.b] {
-                    if seen.insert(b.clone()) {
-                        rt.program(&wasm_of(b, o.release)?)?;
+                for (i, b) in [&job.a, &job.b].iter().enumerate() {
+                    let unmetered = job.config[i].is_some_and(|c| c.unmetered);
+                    if seen.insert(((*b).clone(), unmetered)) {
+                        rt.program_mode(&wasm_of(b, o.release)?, unmetered)?;
                     }
                 }
             }
@@ -586,6 +614,8 @@ fn run_batch(manifest: &Path, o: &Opts) -> Result<i32> {
         let mut inputs: Vec<Option<std::process::ChildStdin>> = Vec::new();
         let mut slots = o.slots.as_ref().map(|(d, k)| Slots::new(d, *k));
         let mut current: Vec<Option<(usize, Option<Slot>)>> = Vec::new();
+        let mut began: Vec<Option<Instant>> = Vec::new();
+        let mut timed_out: Vec<bool> = Vec::new();
         let mut idle: Vec<(usize, Instant)> = Vec::new();
         let mut next = 0usize;
         let mut busy = 0usize;
@@ -597,6 +627,15 @@ fn run_batch(manifest: &Path, o: &Opts) -> Result<i32> {
         let mut next_poll = Instant::now();
         let mut rng = std::process::id() as u64 | 1;
         loop {
+            if let Some(limit) = o.game_timeout {
+                for w in 0..children.len() {
+                    if !timed_out[w] && current[w].is_some() && began[w].is_some_and(|t| t.elapsed() >= limit) {
+                        timed_out[w] = true;
+                        // This child owns only the current game; preload finished before workers were spawned.
+                        if let Some(child) = children[w].as_mut() { let _ = child.kill(); let _ = child.wait(); }
+                    }
+                }
+            }
             let poll_now = Instant::now() >= next_poll;
             if slots.is_some() && poll_now {
                 rng ^= rng << 13;
@@ -626,6 +665,7 @@ fn run_batch(manifest: &Path, o: &Opts) -> Result<i32> {
                             inputs.push(ch.stdin.take());
                             children.push(Some(ch));
                             current.push(None);
+                            began.push(None); timed_out.push(false);
                             alive += 1;
                             children.len() - 1
                         }
@@ -652,6 +692,7 @@ fn run_batch(manifest: &Path, o: &Opts) -> Result<i32> {
                     continue;
                 }
                 current[w] = Some((next, slot));
+                began[w] = Some(Instant::now());
                 next += 1;
                 busy += 1;
             }
@@ -678,8 +719,9 @@ fn run_batch(manifest: &Path, o: &Opts) -> Result<i32> {
             if let Some(s) = slots.as_mut() {
                 s.set_waiting(waiting);
             }
-            let msg = if waiting {
-                match rx.recv_timeout(next_poll.saturating_duration_since(Instant::now())) {
+            let msg = if waiting || o.game_timeout.is_some() {
+                let delay = if waiting { next_poll.saturating_duration_since(Instant::now()) } else { std::time::Duration::from_millis(100) };
+                match rx.recv_timeout(delay.min(std::time::Duration::from_millis(100))) {
                     Ok(m) => m,
                     Err(std::sync::mpsc::RecvTimeoutError::Timeout) => continue,
                     Err(_) => break,
@@ -690,7 +732,9 @@ fn run_batch(manifest: &Path, o: &Opts) -> Result<i32> {
                     Err(_) => break,
                 }
             };
-            let (w, line) = msg;
+            let (w, mut line) = msg;
+            if timed_out[w] { line = "\u{0}eof".into(); }
+            began[w] = None;
             let done = current[w].take();
             let (idx, slot) = match done {
                 Some((i, sl)) => (Some(i), sl),
@@ -713,7 +757,7 @@ fn run_batch(manifest: &Path, o: &Opts) -> Result<i32> {
                 }
                 if let Some(i) = idx {
                     let job = &jobs[i];
-                    stdout.write_all(format!("[!] FAILED: worker died  {} vs {}  {}\n    Replay: {}\n", bot_name(&job.a), bot_name(&job.b), map_name(&job.map), job.out.display()).as_bytes())?;
+                    stdout.write_all(format!("[!] FAILED: {}  {} vs {}  {}\n    Replay: {}\n", if timed_out[w] { "per-game wallclock timeout" } else { "worker died" }, bot_name(&job.a), bot_name(&job.b), map_name(&job.map), job.out.display()).as_bytes())?;
                     stdout.flush()?;
                     failed += 1;
                     busy -= 1;
@@ -767,7 +811,7 @@ fn real_main() -> Result<i32> {
         Some("scenario") => bail!("fastrunner scenario needs the wasm engine (build.rs found no wasm2c or clang)"),
         _ => {}
     }
-    let mut o = Opts { quantum: crate::fuel::DEFAULT_QUANTUM, rounds: 2000, log_limit: 1 << 20, release: false, jobs: 1, quiet: false, slots: None };
+    let mut o = Opts { quantum: crate::fuel::DEFAULT_QUANTUM, game_timeout: None, prepare_only: false, rounds: 2000, log_limit: 1 << 20, release: false, jobs: 1, quiet: false, slots: None };
     let mut slot_dir: Option<PathBuf> = None;
     let mut slot_count = 0usize;
     let mut pos: Vec<String> = Vec::new();
@@ -795,6 +839,13 @@ fn real_main() -> Result<i32> {
                 let q: u64 = need(i)?.parse()?;
                 crate::fuel::set_quantum(q);
                 o.quantum = q;
+                i += 2;
+            }
+            "--prepare-only" => { o.prepare_only = true; i += 1; }
+            "--game-timeout" => {
+                let seconds: f64 = need(i)?.parse()?;
+                anyhow::ensure!(seconds.is_finite() && seconds > 0.0 && seconds <= 86400.0, "game timeout must be in (0,86400] seconds");
+                o.game_timeout = Some(std::time::Duration::from_secs_f64(seconds));
                 i += 2;
             }
             "--timeout" | "--color" | "--jsonl" => i += 2,
@@ -869,6 +920,7 @@ fn real_main() -> Result<i32> {
             Ok(0)
         }
         Some("run") => {
+            anyhow::ensure!(o.game_timeout.is_none() && !o.prepare_only, "--game-timeout and --prepare-only are supported by run-batch only");
             if pos.len() < 2 {
                 bail!("usage: fastrunner run BOT_A BOT_B --map MAP [-o OUTDIR]");
             }
@@ -879,7 +931,7 @@ fn real_main() -> Result<i32> {
             let dir = outdir.unwrap_or_else(|| root.join("replays"));
             let ms = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0);
             let out = dir.join(format!("{}-vs-{}-{ms}.repl26a", bot_name(&a), bot_name(&b)));
-            let job = Job { a, b, map: mp, out, statistics };
+            let job = Job { a, b, map: mp, out, statistics, config: [None, None] };
             let mut rt = load_runtime()?;
             let t = Instant::now();
             let r = play_job(&mut rt, &job, &o);
@@ -937,3 +989,4 @@ mod slot_registration_tests {
         std::fs::remove_dir_all(dir).unwrap();
     }
 }
+

@@ -22,6 +22,7 @@ import contextlib
 from datetime import datetime
 import io
 import json
+import hashlib
 import math
 import os
 from concurrent.futures import ProcessPoolExecutor
@@ -271,6 +272,8 @@ def main():
                         help="Comma-separated: ladder, gen, fresh, or directories of maps (default: all three)")
     parser.add_argument("--no-test-draft", action="store_true",
                         help="Leave materialised copies' params.h untouched, so each plays its own draft")
+    parser.add_argument("--game-timeout", type=float, help="Opt-in native per-game wallclock limit; errors are retained")
+    parser.add_argument("--experiment-config", type=Path, help="Per-map native REF runtime config JSON")
     parser.add_argument("--fuel", type=int, help="Fuel per turn, passed to run_batched.py --fuel")
     parser.add_argument("--debug", dest="release", action="store_false",
                         help="Both bots as debug builds, whose debug_block traces run (OOF, SHORTCUT, decision lines), "
@@ -325,6 +328,10 @@ def main():
         log = out_dir / f"{slug(label)}.log"
         command = [sys.executable, str(ROOT / "tools" / "run_batched.py"), str(sides[0]["path"]), str(sides[1]["path"]),
                    "--threads", str(args.threads), "--output", str(batch), *extra]
+        if args.game_timeout is not None:
+            command += ["--game-timeout", str(args.game_timeout)]
+        if args.experiment_config is not None:
+            command += ["--experiment-config", str(args.experiment_config.resolve())]
         if args.fuel is not None:
             command += ["--fuel", str(args.fuel)]
         if args.release:
@@ -466,7 +473,7 @@ def main():
     lo, hi = wilson(wins, games)
     summary = {
         "name": name, "started": stamp, "wall_seconds": round(wall, 1), "threads": args.threads,
-        "fuel": args.fuel, "release": args.release, "cand": {**sides[0], "path": rel(sides[0]["path"])},
+        "fuel": args.fuel, "game_timeout": args.game_timeout, "experiment_config": ({"path": str(args.experiment_config.resolve()), "sha256": hashlib.sha256(args.experiment_config.read_bytes()).hexdigest()} if args.experiment_config else None), "release": args.release, "cand": {**sides[0], "path": rel(sides[0]["path"])},
         "ref": {**sides[1], "path": rel(sides[1]["path"])}, "games": games, "cand_wins": wins,
         "cand_win_pct": round(100 * wins / games, 2) if games else None, "ci95": [round(lo, 2), round(hi, 2)],
         "errors": errors, "oof": oof_total, "early_losses": early, "handoff_failures": handoff, "capped_drafts": capped,

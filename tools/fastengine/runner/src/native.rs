@@ -369,7 +369,7 @@ fn compile(srcs: &[PathBuf], flags: &[String], tag: &str, out: &Path) -> Result<
 
 /// An instrumented build (-O0: frontend profiles do not depend on the optimisation level) plays one self-play game
 /// on PGO_MAP in a child process (`__pgotrain`), whose profile is merged for -fprofile-instr-use.
-fn pgo_profile(work: &Path, srcs: &[PathBuf], wasm: &[u8]) -> Result<PathBuf> {
+fn pgo_profile(work: &Path, srcs: &[PathBuf], wasm: &[u8], unmetered: bool) -> Result<PathBuf> {
     let mut flags: Vec<String> = cflags().into_iter().map(|f| if f.starts_with("-O") { "-O0".into() } else { f }).collect();
     flags.push("-fprofile-instr-generate".into());
     let inst = work.join("inst.so");
@@ -380,6 +380,7 @@ fn pgo_profile(work: &Path, srcs: &[PathBuf], wasm: &[u8]) -> Result<PathBuf> {
         .arg("__pgotrain")
         .arg(&bot)
         .env("FASTRUNNER_NATIVE_SO", &inst)
+        .env("FASTRUNNER_PGO_UNMETERED", if unmetered { "1" } else { "0" })
         .env("LLVM_PROFILE_FILE", work.join("train-%p.profraw"))
         .env_remove("FASTRUNNER_STATS")
         .env_remove("FASTRUNNER_TRACE_FUEL")
@@ -413,13 +414,14 @@ fn pgo_profile(work: &Path, srcs: &[PathBuf], wasm: &[u8]) -> Result<PathBuf> {
 }
 
 /// The native library for a wasm module: translated, compiled in parallel and cached by content and flags.
-pub fn build(wasm: &[u8], hash: u128, engine: &wasmtime::Engine, cache: &Path) -> Result<PathBuf> {
+pub fn build(wasm: &[u8], hash: u128, engine: &wasmtime::Engine, cache: &Path, unmetered: bool) -> Result<PathBuf> {
     let pgo = pgo();
     let key = {
         let mut k = format!("{hash:032x}");
         let flags = cflags().join(" ") + &cc() + include_str!("aot_rt.h") + env!("CARGO_PKG_VERSION") + if crate::aot::trace_sites() { "trace" } else { "" }
             + &std::env::var("FASTRUNNER_UNITS").unwrap_or_default()
-            + if pgo { "pgo1" } else { "" };
+            + if pgo { "pgo1" } else { "" }
+            + if unmetered { "unmetered-v1" } else { "" };
         let fh = crate::runtime::fnv128(flags.as_bytes()) ^ crate::runtime::fnv128(include_bytes!("aot.rs"));
         k.push_str(&format!("-{:08x}", fh as u32));
         k
@@ -454,7 +456,7 @@ pub fn build(wasm: &[u8], hash: u128, engine: &wasmtime::Engine, cache: &Path) -
     }
     let jobs = std::thread::available_parallelism().map_or(4, |n| n.get()).min(16);
     let units = std::env::var("FASTRUNNER_UNITS").ok().and_then(|v| v.parse().ok()).unwrap_or(jobs * 2);
-    let m = crate::aot::translate(wasm, &bulk, units)?;
+    let m = crate::aot::translate(wasm, &bulk, units, unmetered)?;
     let work = dir.join(format!(".{key}.{}", std::process::id()));
     std::fs::create_dir_all(&work)?;
     std::fs::write(work.join("mod.h"), &m.header)?;
@@ -467,7 +469,7 @@ pub fn build(wasm: &[u8], hash: u128, engine: &wasmtime::Engine, cache: &Path) -
     let t1 = std::time::Instant::now();
     let mut flags = cflags();
     if pgo {
-        match pgo_profile(&work, &srcs, wasm) {
+        match pgo_profile(&work, &srcs, wasm, unmetered) {
             Ok(prof) => flags.push(format!("-fprofile-instr-use={}", prof.display())),
             Err(e) => eprintln!("fastrunner: profile-guided build of {key} failed, compiling without a profile: {e:#}"),
         }

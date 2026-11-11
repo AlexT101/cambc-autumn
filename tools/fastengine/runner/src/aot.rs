@@ -327,6 +327,7 @@ struct Frame {
 }
 
 struct Fx<'m, 'a> {
+    unmetered: bool,
     m: &'m Module<'a>,
     bulk: &'m BulkLog,
     body: String,
@@ -403,6 +404,7 @@ impl<'m, 'a> Fx<'m, 'a> {
         self.body.push('\n');
     }
     fn flush(&mut self) {
+        if self.unmetered { self.pend = 0; return; }
         if self.pend != 0 {
             let p = self.pend;
             self.line(&format!("fuel += {p};"));
@@ -410,9 +412,11 @@ impl<'m, 'a> Fx<'m, 'a> {
         }
     }
     fn save(&mut self) {
+        if self.unmetered { return; }
         self.line("I->fuel = fuel;");
     }
     fn check(&mut self) {
+        if self.unmetered { self.pend = 0; return; }
         self.flush();
         self.line("FUEL_CHECK();");
     }
@@ -669,7 +673,7 @@ impl<'m, 'a> Fx<'m, 'a> {
                     let callee = format!("(({})IMPS[{f}])", Self::fn_ptr_type(&sig));
                     self.call(&sig, callee, false);
                     // cambc 5.0.1's host trampolines run out_of_gas as soon as a host call returns with the chunk spent.
-                    self.line("FUEL_CHECK();");
+                    if !self.unmetered { self.line("FUEL_CHECK();"); }
                 } else {
                     let mt = self.m.may_throw[f];
                     self.call(&sig, format!("wf{f}"), mt);
@@ -784,6 +788,11 @@ impl<'m, 'a> Fx<'m, 'a> {
                 let n = self.pop();
                 let s = self.pop();
                 let d = self.pop();
+                if self.unmetered {
+                    let f = if matches!(op, O::MemoryCopy { .. }) { "mem_copy" } else { "mem_fill" };
+                    self.line(&format!("{f}(I, M, {d}, {s}, {n});"));
+                    return Ok(());
+                }
                 let (kind, cost, units) = *self.bulk.get(&pos).ok_or_else(|| anyhow!("no Cranelift fuel record for the bulk operation at {pos}"))?;
                 let f = if matches!(op, O::MemoryCopy { .. }) { "mem_copy" } else { "mem_fill" };
                 match kind {
@@ -1508,7 +1517,7 @@ fn c_str(s: &str) -> String {
     o
 }
 
-fn gen_function(m: &Module, bulk: &BulkLog, f: usize, body: &wasmparser::FunctionBody) -> Result<String> {
+fn gen_function(m: &Module, bulk: &BulkLog, f: usize, body: &wasmparser::FunctionBody, unmetered: bool) -> Result<String> {
     let sig = m.types[m.funcs[f] as usize].clone().unwrap();
     let mut locals: Vec<T> = sig.params.clone();
     let mut lr = body.get_locals_reader()?;
@@ -1519,6 +1528,7 @@ fn gen_function(m: &Module, bulk: &BulkLog, f: usize, body: &wasmparser::Functio
         }
     }
     let mut fx = Fx {
+        unmetered,
         m,
         bulk,
         body: String::new(),
@@ -1578,7 +1588,7 @@ fn gen_function(m: &Module, bulk: &BulkLog, f: usize, body: &wasmparser::Functio
 }
 
 /// Translates a module; `bulk` is the vendored Cranelift's record of its bulk-memory fuel decisions.
-pub fn translate(wasm: &[u8], bulk: &BulkLog, units: usize) -> Result<CModule> {
+pub fn translate(wasm: &[u8], bulk: &BulkLog, units: usize, unmetered: bool) -> Result<CModule> {
     let m = parse(wasm)?;
     let tbl_n = m.table.unwrap_or(0);
     let mut h = String::new();
@@ -1668,7 +1678,7 @@ pub fn translate(wasm: &[u8], bulk: &BulkLog, units: usize) -> Result<CModule> {
     let mut size = 0;
     for (k, b) in m.bodies.iter().enumerate() {
         let f = m.nimp + k;
-        cur.push_str(&gen_function(&m, bulk, f, b)?);
+        cur.push_str(&gen_function(&m, bulk, f, b, unmetered)?);
         size += (b.range().end - b.range().start) as usize;
         if size >= per {
             out.push(std::mem::replace(&mut cur, String::from("#include \"mod.h\"\n")));
@@ -1696,4 +1706,44 @@ pub fn bulk_offsets(wasm: &[u8]) -> Result<Vec<u32>> {
         }
     }
     Ok(v)
+}
+
+#[cfg(test)]
+mod experiment_tests {
+    use super::*;
+    fn sample() -> Vec<u8> {
+        let mut w = b"\0asm\x01\0\0\0".to_vec();
+        for (id, body) in [(1,vec![1,0x60,0,0]),(3,vec![1,0]),(5,vec![1,0,1]),
+            (7,vec![1,6,b'_',b's',b't',b'a',b'r',b't',0,0]),
+            (10,vec![1,11,0,0x41,0,0x41,1,0x41,32,0xfc,11,0,0x0b])] {
+            w.push(id);w.push(body.len() as u8);w.extend(body);
+        }
+        w
+    }
+    #[test] fn unmetered_host_import_has_no_fuel_check() {
+        let mut w = b"\0asm\x01\0\0\0".to_vec();
+        for (id, body) in [(1,vec![1,0x60,0,0]),
+            (2,vec![1,3,b'e',b'n',b'v',5,b'y',b'i',b'e',b'l',b'd',0,0]),
+            (3,vec![1,0]),(5,vec![1,0,1]),
+            (7,vec![1,6,b'_',b's',b't',b'a',b'r',b't',0,1]),(10,vec![1,4,0,0x10,0,0x0b])] {
+            w.push(id);w.push(body.len() as u8);w.extend(body);
+        }
+        let bulk=BulkLog::new();
+        let m=translate(&w,&bulk,1,false).unwrap().units.join("");
+        let u=translate(&w,&bulk,1,true).unwrap().units.join("");
+        assert!(m.contains("FUEL_CHECK();"));
+        assert!(!u.contains("FUEL_CHECK();") && !u.contains("fuel +="));
+        assert!(u.contains("IMPS[0]"));
+    }
+    #[test] fn unmetered_omits_instruction_and_bulk_charges() {
+        let wasm=sample();let bulk=bulk_offsets(&wasm).unwrap().into_iter().map(|p|(p,(2,1,0))).collect();
+        let metered=translate(&wasm,&bulk,2,false).unwrap();
+        let fast=translate(&wasm,&bulk,2,true).unwrap();
+        let m=metered.units.join(""); let u=fast.units.join("");
+        assert!(m.contains("fuel +=") && m.contains("FUEL_CHECK();"));
+        assert!(!u.contains("fuel +=") && !u.contains("FUEL_CHECK();"));
+        assert!(u.contains("mem_fill(I"));
+        // Captured from the pre-change translator; default emitted C remains byte-for-byte identical.
+        assert_eq!(crate::runtime::fnv128((metered.header+&m).as_bytes()),0x818c95a28c252b54a6cab4d537a39c5au128);
+    }
 }

@@ -55,6 +55,9 @@ pub fn per_call() -> u64 {
 pub struct Meter {
     /// Native-only teacher runs: count work but never suspend for fuel.
     pub unlimited: bool,
+    /// Explicit native opponent mode: no instruction or host fuel accounting.
+    pub unmetered: bool,
+    pub experiment: [u64; 2],
     /// [chunks consumed, overshoot pending] written by the vendored wasmtime's out_of_gas.
     pub cell: [u64; 2],
     /// The store's fuel counter: -(fuel left in the active chunk), positive when overrun.
@@ -90,6 +93,8 @@ impl Meter {
     pub fn new(debug: bool) -> Meter {
         Meter {
             unlimited: false,
+            unmetered: false,
+            experiment: [0; 2],
             cell: [0, 0],
             ctr: std::ptr::null_mut(),
             interval: quantum(),
@@ -130,6 +135,7 @@ impl Meter {
     /// wasm_runtime::charge_fuel: a host price, in the store's active chunk and then whole chunks.
     #[inline(always)]
     pub fn charge(&mut self, amount: u64) {
+        if self.unmetered { return; }
         // With the multiplier 1.0 the f64 round trip is exact below 2^53 (out of line, or LLVM computes both arms).
         let price = if self.mult == 1.0 && amount < 1 << 53 { amount } else { self.scaled(amount) };
         let fuel = self.active();
@@ -163,6 +169,7 @@ impl Meter {
 
     /// FuelMeter::capture: fuel used so far this turn.
     pub fn capture(&mut self, active: u64) {
+        if self.unmetered { self.used = 0; return; }
         let i = self.interval;
         let whole = self.chunks.saturating_mul(i);
         let part = i.saturating_sub(active);
@@ -231,5 +238,18 @@ impl Meter {
         self.turn += 1;
         self.yielded = false;
         self.exhausted = false;
+    }
+}
+
+#[cfg(test)]
+mod experiment_tests {
+    use super::*;
+    #[test] fn unmetered_host_costs_leave_metered_peer_unchanged() {
+        let mut ordinary=Meter::new(false); ordinary.virt=true;ordinary.ctr=&mut ordinary.vctr;ordinary.begin_turn(1);
+        let before=ordinary.remaining();ordinary.charge(123);assert_eq!(ordinary.remaining(),before-123);
+        let mut opponent=Meter::new(false);opponent.virt=true;opponent.ctr=&mut opponent.vctr;opponent.unlimited=true;opponent.unmetered=true;opponent.begin_turn(1);
+        opponent.charge(u64::MAX);opponent.capture(0);
+        assert_eq!(opponent.remaining(),i64::MAX as u64);assert_eq!(opponent.used,0);assert_eq!(opponent.chunks,0);
+        assert_eq!(ordinary.remaining(),before-123);
     }
 }

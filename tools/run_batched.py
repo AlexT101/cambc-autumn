@@ -22,6 +22,7 @@ from time import perf_counter, sleep
 
 import cambc_env
 import cpu_slots
+import experiment_config
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "fuel"))
 import oof  # noqa: E402
@@ -251,7 +252,7 @@ def freeze(bot):
     return copy
 
 
-def build_bots(cli, bots, env, log, warm_map, release=False):
+def build_bots(cli, bots, env, log, warm_map, release=False, configured_ref=False):
     """Build the bots with `cambc build`, at once (each is one ~25 s single-threaded compile), then
     compile each into the wasmtime cache (cambc_env.warm); write the output to `log` and return the
     first bot that fails, or None. run-batch's own compiles fail on Windows ("unable to open output
@@ -259,12 +260,16 @@ def build_bots(cli, bots, env, log, warm_map, release=False):
     def build(bot):
         clear_copied_cache(bot)
         print(f"Building {bot.name}...", flush=True)
-        with cpu_slots.exclusive(bot.parent / "build.lock"):
-            built = subprocess.run([cli, "build", str(bot), *(["--release"] if release else [])], cwd=ROOT, env=env,
-                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8",
-                                   errors="replace")
-            if not built.returncode and not cambc_env.warm(cli, bot, warm_map, ["--release"] if release else []):
-                built.stdout += f"Warming {bot.name}'s compile cache failed; its first matches compile it\n"
+        reservation = cpu_slots.acquire(1) if configured_ref else []
+        try:
+            with cpu_slots.exclusive(bot.parent / "build.lock"):
+                built = subprocess.run([cli, "build", str(bot), *(["--release"] if release else [])], cwd=ROOT, env=({**env, "CMAKE_BUILD_PARALLEL_LEVEL": "1"} if configured_ref else env),
+                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8",
+                                       errors="replace")
+                if not built.returncode and not configured_ref and not cambc_env.warm(cli, bot, warm_map, ["--release"] if release else []):
+                    built.stdout += f"Warming {bot.name}'s compile cache failed; its first matches compile it\n"
+        finally:
+            cpu_slots.release(reservation)
         return built
 
     unique = list(dict.fromkeys(bots))
@@ -274,6 +279,25 @@ def build_bots(cli, bots, env, log, warm_map, release=False):
         for built in results:
             stream.write(built.stdout)
     return next((bot for bot, built in zip(unique, results) if built.returncode), None)
+
+
+def prepare_experiment_cache(cli, manifest, options, env, log):
+    """Reserve the native compiler's16 slots without retaining a partial grant; dispatch no games."""
+    env['FASTRUNNER_BUILT'] = '1'
+    while True:
+        held = cpu_slots.acquire(16, least=1)
+        if len(held) == 16:
+            break
+        cpu_slots.release(held)
+        sleep(.25)
+    try:
+        with log.open('a') as stream:
+            prepared = subprocess.run([cli, 'run-batch', str(manifest), '--prepare-only', *options],
+                                      cwd=manifest.parent, env=env, stdout=stream, stderr=subprocess.STDOUT)
+        if prepared.returncode:
+            raise RuntimeError('Runtime opponent cache preparation failed; no matches dispatched')
+    finally:
+        cpu_slots.release(held)
 
 
 def main():
@@ -292,6 +316,8 @@ def main():
                         "all of them, or N sampled by --gen-seed")
     parser.add_argument("--gen-seed", type=nonnegative_int, default=0, help="Seed for choosing --gen N maps (default: 0)")
     parser.add_argument("--output", type=Path, help="New results directory (default: replays/batch-TIMESTAMP)")
+    parser.add_argument("--game-timeout", type=float, help="Opt-in native per-game wallclock limit; no timed-out game retry")
+    parser.add_argument("--experiment-config", type=Path, help="Per-map native REF runtime config JSON; explicit experimental opponents only")
     parser.add_argument("--fuel", type=positive_int, help="Fuel per turn (run-batch --fuel-quantum)")
     parser.add_argument("--timeout", type=positive_int, metavar="SECONDS",
                         help="Wall-clock limit per match; a match over it counts as an error")
@@ -331,6 +357,11 @@ def main():
             raise ValueError(f"CAMBC_BIN={CAMBC_BIN} does not exist")
         if CAMBC_BIN and fastrunner_unanswered(cli):
             raise ValueError(FASTRUNNER_DOWN.format(cli=cli))
+        config, config_proof = experiment_config.load(args.experiment_config, maps)
+        if args.game_timeout is not None and (not 0 < args.game_timeout <= 86400 or not is_fastrunner(cli)):
+            raise ValueError('game timeout requires fast runner and (0,86400] seconds')
+        if config is not None and (not is_fastrunner(cli) or os.environ.get('FASTRUNNER_MODE') != 'native'):
+            raise ValueError('experiment configuration requires the native fast runner')
         output = (args.output or ROOT / "replays" / datetime.now().strftime("batch-%Y%m%d-%H%M%S-%f")).resolve()
         played = [freeze(bot) for bot in bots]
         for path in (*played, *maps, output):
@@ -365,7 +396,8 @@ def main():
     # Replay paths are relative to the manifest's directory, and per-game manifests live in jobs/.
     lines = {stem: f"{manifest_path(played[order[0]])} {manifest_path(played[order[1]])} {manifest_path(path)} "
                    f"{manifest_path(output)}/{stem}.repl26a"
-                   f"{f' --statistics {manifest_path(output)}/{stem}.camstat' if LOCAL_ARENA and not args.no_replays else ''}\n"
+                   f"{f' --statistics {manifest_path(output)}/{stem}.camstat' if LOCAL_ARENA and not args.no_replays else ''}"
+                   f"{experiment_config.suffix(config, path, order)}\n"
              for stem, (i, path, order) in stems.items()}
     manifest = output / "manifest.txt"
     manifest.write_text("".join(lines.values()), encoding="utf-8")
@@ -383,7 +415,7 @@ def main():
     last_write = [0.0]
 
     def write_results():
-        report = {"bots": [str(p) for p in bots], "fuel": args.fuel, "release": args.release, "timeout": args.timeout,
+        report = {"bots": [str(p) for p in bots], "experiment_config": config_proof, "game_timeout": args.game_timeout, "fuel": args.fuel, "release": args.release, "timeout": args.timeout,
                   "gen": args.gen, "gen_seed": args.gen_seed if args.gen else None,
                   "one_side": args.one_side, "side_seed": args.side_seed if args.one_side else None,
                   "scheduled": len(jobs), "completed": len(records), "wins": wins, "early_losses": early,
@@ -427,6 +459,8 @@ def main():
     # Each team's stdout cap (run-batch --log-limit; 1 MiB by default), for heavily traced bots.
     if os.environ.get("CAMBC_LOG_LIMIT"):
         options += ["--log-limit", os.environ["CAMBC_LOG_LIMIT"]]
+    if args.game_timeout is not None:
+        options += ["--game-timeout", str(args.game_timeout)]
     if args.fuel is not None:
         options += ["--fuel-quantum", str(args.fuel)]
     if args.timeout is not None:
@@ -441,7 +475,8 @@ def main():
         index, path, order = stems[stem]
         replay = output / f"{stem}.repl26a"
         result = {"index": index, "map": str(path), "order": list(order),
-                  "replay": str(replay) if replay.is_file() and not args.no_replays else None}
+                  "replay": str(replay) if replay.is_file() and not args.no_replays else None,
+                  "runtime_config": experiment_config.teams(config, path, order)}
         if failure is not None:
             error_log = ERROR_LOG.search(failure)
             result["error"] = ERROR_LOG.sub("", failure).strip() + (
@@ -513,7 +548,10 @@ def main():
                     "error": f"run-batch exit {code}; no result. See run.log", "seconds": 0.0})
 
     cambc_env.check_local_header()
-    failed_build = build_bots(cli, played, env, log, maps[0], args.release)
+    failed_build = build_bots(cli, played, env, log, maps[0], args.release, configured_ref=config is not None)
+    if not failed_build and config is not None:
+        prepare_experiment_cache(cli, manifest, options, env, log)
+
     if failed_build is None:
         if live:
             redraw(progress(0, len(jobs), wins, errors))

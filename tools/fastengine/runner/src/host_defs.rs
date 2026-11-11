@@ -1,5 +1,8 @@
 // WASI and fuel imports of host.rs, included twice (wasmtime linker, native trampolines).
 {
+    defm!("env", "experiment_config", |mut c: Cx<'_>, key: i32| -> i64 {
+        c.data_mut().meter().experiment.get(key as usize).copied().unwrap_or(0) as i64
+    });
     defm!("env", "fuel_remaining", |mut c: Cx<'_>| -> i64 {
         let m = c.data_mut().meter();
         if m.virt {

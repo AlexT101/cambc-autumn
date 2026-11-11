@@ -54,10 +54,14 @@ pub struct Runtime {
     pub linker: Linker<BotCtx>,
     pub eng: &'static Eng,
     cache_dir: PathBuf,
-    modules: std::collections::HashMap<PathBuf, Arc<Program>>,
+    modules: std::collections::HashMap<(PathBuf, bool), Arc<Program>>,
 }
 
+#[derive(Clone)]
 pub struct Program {
+    experiment: Option<crate::experiment::TeamConfig>,
+    requires_config: bool,
+    unmetered: bool,
     unlimited: bool,
     quantum: u64,
     pub pre: InstancePre<BotCtx>,
@@ -106,7 +110,22 @@ impl Runtime {
 
     /// A bot program from its wasm, compiled once (cached on disk by content hash).
     pub fn program(&mut self, wasm_path: &Path) -> Result<Arc<Program>> {
-        if let Some(p) = self.modules.get(wasm_path) {
+        self.program_mode(wasm_path, false)
+    }
+
+    pub fn configured_program(&mut self, wasm_path: &Path, config: Option<crate::experiment::TeamConfig>) -> Result<Arc<Program>> {
+        let p = self.program_mode(wasm_path, config.is_some_and(|c| c.unmetered))?;
+        anyhow::ensure!(!p.requires_config || config.is_some(), "runtime opponent requires explicit per-game configuration");
+        anyhow::ensure!(config.is_none() || p.requires_config, "runtime configuration supplied to a bot without experiment_config import");
+        if config.is_none() { return Ok(p); }
+        let mut configured = (*p).clone();
+        configured.experiment = config;
+        Ok(Arc::new(configured))
+    }
+
+    pub fn program_mode(&mut self, wasm_path: &Path, unmetered: bool) -> Result<Arc<Program>> {
+        anyhow::ensure!(!unmetered || native_mode(), "unmetered opponents require native mode");
+        if let Some(p) = self.modules.get(&(wasm_path.to_path_buf(), unmetered)) {
             return Ok(p.clone());
         }
         let wasm = std::fs::read(wasm_path).with_context(|| format!("reading {}", wasm_path.display()))?;
@@ -128,6 +147,8 @@ impl Runtime {
                 unsafe { Module::deserialize_file(&self.engine, &file) }.map_err(werr)?
             }
         };
+        let requires_config = module.imports().any(|i| i.module() == "env" && i.name() == "experiment_config");
+        anyhow::ensure!(!unmetered || requires_config, "unmetered mode is restricted to explicit experimental opponent bodies");
         let debug = module.imports().any(|i| i.module() == "env" && i.name() == "fuel_pause");
         let pre = match self.linker.instantiate_pre(&module) {
             Ok(p) => p,
@@ -142,7 +163,7 @@ impl Runtime {
             // native::build's training game: its instrumented library.
             Some(crate::native::load(Path::new(&so))?)
         } else if native_mode() {
-            let so = crate::native::build(&wasm, hash, &self.engine, self.cache_dir.parent().unwrap_or(&self.cache_dir))
+            let so = crate::native::build(&wasm, hash, &self.engine, self.cache_dir.parent().unwrap_or(&self.cache_dir), unmetered)
                 .with_context(|| format!("native build of {}", wasm_path.display()))?;
             Some(crate::native::load(&so)?)
         } else {
@@ -161,8 +182,8 @@ impl Runtime {
             anyhow::ensure!(q > 0 && q <= i64::MAX as u64, "invalid per-bot fuel quantum");
             if wasm_path.ancestors().nth(3).and_then(Path::file_name).is_some_and(|bot| bot == name) { quantum = q; }
         }
-        let p = Arc::new(Program { pre, debug, native, unlimited, quantum });
-        self.modules.insert(wasm_path.to_path_buf(), p.clone());
+        let p = Arc::new(Program { pre, debug, native, unlimited, quantum, unmetered, requires_config, experiment: None });
+        self.modules.insert((wasm_path.to_path_buf(), unmetered), p.clone());
         Ok(p)
     }
 }
@@ -217,7 +238,12 @@ pub struct Bot {
 impl Bot {
     pub fn spawn(rt: &Runtime, prog: &Arc<Program>, init: host::BotInit, log: *mut TeamLog) -> Result<Bot> {
         let mut meter = Box::new(Meter::new(prog.debug));
-        meter.unlimited = prog.unlimited;
+        let pgo = std::env::var_os("FASTRUNNER_NATIVE_SO").is_some();
+        anyhow::ensure!(!prog.requires_config || prog.experiment.is_some() || pgo, "missing runtime experiment configuration");
+        meter.unmetered = prog.unmetered || (pgo && std::env::var("FASTRUNNER_PGO_UNMETERED").as_deref() == Ok("1"));
+        meter.unlimited = prog.unlimited || meter.unmetered;
+        // PGO uses one fixed configuration so the compiled cache never depends on the experiment seed.
+        meter.experiment = prog.experiment.map(|c| [c.seed, c.salt]).unwrap_or([1310001, 1]);
         meter.interval = prog.quantum;
         meter.vctr = -(prog.quantum as i64);
         if let Some(m) = &prog.native {
