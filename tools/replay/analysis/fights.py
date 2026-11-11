@@ -140,10 +140,10 @@ def engagements(g, P=None):
         for e in deaths_by.get(cid, []):
             kt = g.team_of[e['by']]
             lost[1 - kt] += e['gems']
+            gems[kt] += e['gems']  # the victim's bag; gemsTo repeats the step's gain on each kill of a multi-kill
             if 'linked' in e:
                 continue
             kills[kt] += 1
-            gems[kt] += e.get('gemsTo', 0)
             gold[kt] += e.get('gold', 0)
             killed.append(e['v'])
         allp = part[0] | part[1]
@@ -157,7 +157,7 @@ def engagements(g, P=None):
         value = [gems[t] - lost[t] + lam * gold[t] for t in (0, 1)]
         bush_init = its[0][5] in g.map.bushes if its[0][5] else False
         out.append({'dir': g.dir, 'map': g.map_name, 'r0': r0, 'r1': r1, 'loc': loc, 'init': g.team_of[its[0][2]],
-                    'init_from_bush': bush_init, 'part': [len(part[0]), len(part[1])], 'present': present,
+                    'init_from_bush': bush_init, 'loc0': loc0, 'part': [len(part[0]), len(part[1])], 'present': present,
                     'hp': hp, 'hpfrac': [hp[t] / hpmax[t] if hpmax[t] else None for t in (0, 1)], 'carried': carried,
                     'earned': earned, 'ready': ready, 'dmg': dmg, 'kills': kills, 'kill_gems': gems, 'kill_gold': gold,
                     'bags_lost': lost, 'camp_deaths': [sum(1 for e in camp_deaths if g.team_of[e['v']] == t) for t in (0, 1)],
@@ -249,7 +249,7 @@ def extract(g, P=None):
             'init_share': sum(1 for f in mine if f['init'] == t) / len(mine) if mine else None,
             'kills_per100': 100 * len(kills) / n,
             'deaths_per100': 100 * len(deaths) / n,
-            'kill_gems_per100': 100 * sum(e.get('gemsTo', 0) for e in kills) / n,
+            'kill_gems_per100': 100 * sum(e['gems'] for e in g.deaths if 'by' in e and g.team_of.get(e['by']) == t) / n,
             'death_gems_per100': 100 * own_lost / n,
             'bush_time': b[0] / b[1] if b[1] else None,
             'bush_dmg': b[4] / b[5] if b[5] else None,

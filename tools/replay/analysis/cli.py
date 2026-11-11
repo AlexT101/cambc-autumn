@@ -7,7 +7,7 @@ from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
 from pathlib import Path, PurePosixPath
 
-from . import audits, camps, draft, economy, fights, gap, params, sensitivity, tempo
+from . import audits, camps, draft, economy, fights, gap, macro, params, sensitivity, tempo
 from .data import ANALYSIS, Game, load_index, load_map, resolve
 from .util import BOOT, CAVEAT, Report
 
@@ -18,11 +18,12 @@ REPORTS = {
     'draft': ('Draft', draft),
     'economy': ('Economy and camp handling', economy),
     'camps': ('Camp values', camps),
+    'macro': ('Macro: turns, gems, cohesion, control, losses', macro),
     'gap': ('Gap report', gap),
     'sensitivity': ('Threshold sensitivity', sensitivity),
 }
-EXTRACTORS = ['tempo', 'fights', 'audits', 'draft', 'economy']
-DEFAULT_REPORTS = 'tempo,fights,audits,draft,economy,camps,gap'
+EXTRACTORS = ['tempo', 'fights', 'audits', 'draft', 'economy', 'macro']
+DEFAULT_REPORTS = 'tempo,fights,audits,draft,economy,macro,camps,gap'
 
 
 def cluster_of(meta):
@@ -162,6 +163,7 @@ def main(argv=None):
     ap.add_argument('--out', help='output dir (default replays/.analysis/reports/<timestamp>/)')
     ap.add_argument('--reports', default=DEFAULT_REPORTS, help='comma-separated subset of ' + ','.join(REPORTS) + f' (default {DEFAULT_REPORTS}; sensitivity reruns extraction ~10 times)')
     ap.add_argument('--threads', type=int, default=min(16, os.cpu_count() or 4))
+    ap.add_argument('--analysis', help='extract.mjs --out dir to read instead of replays/.analysis (also CAMBC_ANALYSIS)')
     args = ap.parse_args(argv)
     t0 = time.time()
     reports = [r.strip() for r in args.reports.split(',') if r.strip()]
@@ -174,7 +176,7 @@ def main(argv=None):
     prim = resolve(args.sources or ['replays/ladder'], index)
     vs = resolve(args.vs, index) if args.vs else []
     dirs = list(dict.fromkeys(prim + vs))
-    needs = {'economy': {'economy'}, 'camps': set(), 'gap': set(EXTRACTORS)}
+    needs = {'economy': {'economy'}, 'macro': {'macro'}, 'camps': set(), 'gap': set(EXTRACTORS)}
     only = [r for r in EXTRACTORS if any(r in needs.get(rep, set(EXTRACTORS) - {'economy'}) for rep in reports)]
     data = extract_all(dirs, args.threads, P, only)
     t1 = time.time()

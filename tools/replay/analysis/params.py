@@ -17,6 +17,9 @@ DEFAULTS = {
     'econ_top': 10,
     'econ_top_games': 100,
     'camp_strength': (130, 50, 45, 35),
+    'macro_window': 100,  # rounds after the break round read as the loss window
+    'macro_join': 3,  # a walk that ends this close to an ally who was beyond `radius` is a regroup
+    'macro_every': 5,  # camp-control sampling period (rounds)
 }
 
 SENSITIVITY = {

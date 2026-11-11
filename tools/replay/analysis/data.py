@@ -1,10 +1,12 @@
 import gzip
 import json
+import os
 from functools import cached_property
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-ANALYSIS = ROOT / 'replays' / '.analysis'
+# CAMBC_ANALYSIS points every loader at an extract.mjs --out dir (analyze.py --analysis sets it before importing).
+ANALYSIS = Path(os.environ['CAMBC_ANALYSIS']).resolve() if os.environ.get('CAMBC_ANALYSIS') else ROOT / 'replays' / '.analysis'
 
 TYPE_ABBR = {'Wolf': 'W', 'Elk': 'E', 'Gem cluster': 'G', 'Gold cluster': '$', 'Monolith': 'M', 'Golem': 'O'}
 

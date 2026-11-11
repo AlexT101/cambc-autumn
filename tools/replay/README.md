@@ -85,7 +85,7 @@ Every event has `s`, `r`, `t`, `k` (kind). `a` is the acting champion. Damage li
 | `attack` | `a, f, to`, target `tgt` (champion) / `camp` / `lock: 1` (altar), `hits` (lock hits remaining after), `dmg`, `cdmg` (camps), `refl` + `reflBy` (damage reflected to the attacker by Ren), `heal`, `shield`, `stun` (ids newly stunned) |
 | `cast` | as `attack` plus `slot`, `ab` (ability type name), `moved` (new position after a dash); `f` is the caster's tile, `to` the target tile |
 | `camp_attack` | `camp, g, tgt, dmg`; `xdmg` other champions hit; `refl` `[[camp, amount]]` Ren's reflection |
-| `death` | `v` victim, `at`, `gems` (bag at death), `hp` (before the step), `by` killer id, or `camp` (the camp's id) for a camp kill, `gold` and `gemsTo` (killer's gain), `assists`, `cause` (step kind), `linked` (set on the Cassi/Issac body that died because its partner did; its value is the partner) |
+| `death` | `v` victim, `at`, `gems` (bag at death), `hp` (before the step), `by` killer id, or `camp` (the camp's id) for a camp kill, `gold` and `gemsTo` (killer's gain over the step: a step that kills two champions repeats it on both events, so sum the victims' `gems` for kill gems), `assists`, `cause` (step kind), `linked` (set on the Cassi/Issac body that died because its partner did; its value is the partner) |
 | `respawn` | `a, at` |
 | `shop`, `sell`, `consumable` | `a, gold` (change), `items` / `cons` (`{name: delta}`; emblem combines show as -5 shards +1 emblem), `to` (consumable target) |
 | `ward` | `a, to` |
@@ -162,9 +162,10 @@ Offline reports over the extracted tables: Markdown plus CSVs, no viewer. Python
 ```
 py tools/replay/analyze.py                                    # ladder (replays/ladder), default reports
 py tools/replay/analyze.py replays/batch-X --vs replays/ladder --team hyperion   # adds the gap report
-py tools/replay/analyze.py [SOURCES...] [--vs SOURCES...] [--team NAME] [--map NAME] [--since ISO] [--out DIR] [--reports tempo,fights,audits,draft,economy,camps,gap,sensitivity] [--threads N]
+py tools/replay/analyze.py [SOURCES...] [--vs SOURCES...] [--team NAME] [--map NAME] [--since ISO] [--out DIR] [--reports tempo,fights,audits,draft,economy,macro,camps,gap,sensitivity] [--threads N] [--analysis DIR]
 ```
 
+- `--analysis DIR` (or `CAMBC_ANALYSIS=DIR`) reads an `extract.mjs --out DIR` cache instead of `replays/.analysis/`; reports then default to `DIR/reports/`.
 - SOURCES and `--vs` are replay dirs or files (or analysis dir names), resolved through `index.json`; run `extract.mjs` on them first. Copies count once.
 - `--team` keeps that team's side of each game (and only its games); `--map` filters games; `--since 2026-10-13T22:00` keeps ladder groups created from then on. Bots change version during the competition and replays carry no version (`group.json` `submissionId`/`version` are null), so use `--since` to look at current bots.
 - Output: `replays/.analysis/reports/<timestamp>/` with `<report>.md`, `<report>-<table>.csv` and `summary.md` (highlights from each report). Every flagged item cites `<game dir> r<round>`.
@@ -185,12 +186,63 @@ Statistics:
 | `draft` | Pick and non-mirror win rates (overall and per map), compositions, top teams' usage, per-champion engine statistics per 100 rounds. |
 | `economy` | Rounds 1-300 economy of the focus team against its opponents and the --vs sets (all, winners, top 10 by win rate, their wins, low camp-ratio winners): camp DPS per map/preset and champion, camp damage taken/dealt by group type, victim activity and attackers, against the basic-attack minimum; time budget; capture sharing, bags, altar-trip overhead, captured-gem mix; shard mix; recalls and the recall-loop check (must stay 0). Cached in `replays/.analysis/cache/economy/`. The ladder only plays its 9 maps, so judge generated maps against `opponents`. |
 | `camps` | Static camp-group values for each map in the sources (from the extracted map files): hp, Strength, gems, gold, respawn, walk from spawn and from the altar, clear time and minimum damage for the Strengths in `params.py` (`camp_strength`), gems per 1k hp, per effort and per farm-and-tribute cycle. |
-| `gap` | Only with `--team` and `--vs`: every per-side metric (tempo, fights, audits, economy) for the focus team against the comparison set and its game winners, per map and pooled, ranked by a robust z score; opponent-dependent metrics are flagged. |
+| `macro` | How each side's champions played the map, paired by game (focus team against its opponent with `--team`, else winner against loser); see [Macro](#macro-analysismacropy-macro_cardpy). |
+| `gap` | Only with `--team` and `--vs`: every per-side metric (tempo, fights, audits, economy, macro) for the focus team against the comparison set and its game winners, per map and pooled, ranked by a robust z score; opponent-dependent metrics are flagged. |
 | `sensitivity` | Opt-in: headline numbers at a lower and higher value of each key constant. |
 
 Conventions: positions and camp groups are in each team's own frame (team B mirrored onto A); group labels are `<types>(x,y)<o|m|e>` (W wolf, E elk, G gem, $ gold, M monolith, O golem; own/middle/enemy half).
 
 For ad-hoc scripts, `tools/replay/analysis/data.py` has the loaders: `resolve(sources)` gives analysis dirs, `Game(dir)` exposes `meta`, `map` (`Map`: `own(team, p)`, `own_group(team, g)`, `group_label`, `cell_of`, altars, bushes), lazily loaded `events` and `rounds`, `ch(id)` (per-round arrays), `champ_damage`, `camp_damage`, `deaths` and `seen_recently`. Each report module's `extract(game, params)` returns its per-game features. Run with `sys.path.insert(0, 'tools/replay')` and `from analysis import Game, resolve`.
+
+## Macro (analysis/macro.py, macro_card.py)
+
+How the champions play the map, from the replay alone (no bot traces), so any two bots compare. About 0.2 s a game.
+
+```
+py tools/replay/analyze.py replays/batch-X --reports macro --team charybdis-5564637 [--analysis DIR] [--threads N]
+py tools/replay/macro_card.py <replay file or dir | analysis dir> [...] [--analysis DIR]   # one game, both teams side by side
+```
+
+With `--team`, every number is the focus team against its opponent in the same game (an A/B's CAND against REF), with a
+95% cluster-bootstrap CI on the mean difference; without it, winner against loser (which partly measures winning).
+`macro.md` sections:
+
+- **Macro metrics, paired** (CSV `macro-paired.csv`) and, with `--team`, the same metrics in the focus team's wins and losses.
+- **Rounds 1-150, paired**: walk, work, wait, dead, isolated, outnumbered and control over the opening only (before most
+  break rounds, so less of it is the result of winning), with the focus team's win rate when its value was higher or lower.
+- **By map family**: per map family (the name without its seed and `gen-` prefix) the focus win rate, the paired
+  differences of the main metrics and the top cause of its losses.
+- **Where the turns go**: each champion-round gets one class, first match wins: dead; lost (stunned, out of fuel, bot error);
+  fight (dealt or took champion damage); tribute, recall or teleport channel (`turn` = channelling, so recall feints are not
+  recalls); camp (hit a camp); walk_bag / walk (moved, with or without gems at the start; recall, teleport and respawn arrivals
+  are not walks); hold (still on a claimable group tile); spawn (still on own spawn); wait_camp (still within 3 of a
+  respawning or live group's tiles, not hitting it); wait_altar (still within 2 of an altar); idle. Whole game and per phase
+  (r1-150, 151-400, 401-800, 801+). `mt_work` = camp + hold + tribute; `mt_wait` = both waits.
+- **What the walking was for**: walk legs (runs of walk rounds) by the class of the turn that ends them, and the
+  regroup legs: those ending within `macro_join` (3) of an ally who was more than `radius` (8) away when the leg began.
+- **Champion roles**: per champion type, the turn mix, its share of the team's capture gems and of its carried gem-rounds.
+- **Gem flow**: tributed = captured + taken by kills - lost to champions - lost to camps - carried at the end (checked per
+  side; kill gems are the victims' bags). `gem_latency` is the gem-weighted rounds from a gem entering a bag (capture share
+  or kill) to its tribute; `gem_exposed` the share of carried gem-rounds in an enemy's sight (`seenBy`).
+- **Cohesion and map control by phase**: field champions (alive, off own spawn) with no ally within 8 (`isolated`); contact
+  rounds (an enemy within 8) with more enemies than allies within 8 (`outnumbered`); `control`, the camp value (gems +
+  gold/4 per respawn round) nearer by walking to each team's nearest living champion, sampled every `macro_every` (5) rounds.
+- **Who turns up to fights**: at each engagement's first round (`fights.py` clustering), each own champion alive and more
+  than 8 from it, by what it was doing that round and whether it was within 16; `joined later` dealt or took damage in it
+  anyway. Then the mean net swing by numbers present at the start.
+- **Camp contests**: a camp cycle (respawn to capture) is contested when both teams hit its monsters or held its tiles, or a
+  hold was reset as contested; steals are captures by the team that did not land the clearing blow; captured gems by half.
+- **Which camps get taken**: captures per group type against capacity (game rounds / (respawn + 6) per group).
+- **Why games are lost**: the *break round* is the last round the loser had at least the winner's wealth (tributed + carried
+  gems). The `macro_window` (100) rounds after it are split into farm (capture gems, winner minus loser), fight (kill gems
+  minus bags lost to champions, winner minus loser) and camp (bags lost to camps, loser minus winner); the largest is the
+  loss's cause, or `bank` when the loser ended with at least the winner's wealth (gems carried, not tributed). Per cause:
+  the median break round and both teams' dead, work and walk shares in those windows (a farm window with a high loser dead
+  share is a farm deficit that follows deaths). Then the trigger (the loser's largest-bag death within 10 rounds of the
+  break), the loser's deaths in the windows, and the largest windows with game dir and round, for `macro_card.py` or `narrate.py`.
+
+The per-side metrics also feed the `gap` report. `macro_stats.py` (winner against loser time shares and clear crews) and
+`turn_budget.py` (trace-based classes and branch earnings) remain for their own views.
 
 ## Belief audit (audit_beliefs.py)
 
