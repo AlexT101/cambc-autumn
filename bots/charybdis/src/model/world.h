@@ -638,8 +638,10 @@ public:
     // in sight it could have reached, once a turn. True if one changed.
     bool read_stuns();
     std::uint32_t observations = 0; // update() and observe() calls: beliefs change only with one
-    // Our tile at update(), where the turn started: observe() moves me().pos with us.
+    // Our tile at update(), where the turn started. me().pos stays there all turn (observe() skips
+    // our own belief): my_position() is where we are, sight_pos() where vision was last read.
     vec2 turn_start{-1, -1};
+    vec2 sight_pos() const { return sight_pos_; }
     // An enemy in sight from p, within r of it, that this turn's reads did not see: our own move
     // revealed it. False at the tile vision was last read from, unless a move refused by a hidden
     // unit (`bumped`) revealed its tile.

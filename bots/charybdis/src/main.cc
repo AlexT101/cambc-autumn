@@ -322,9 +322,9 @@ struct Instance {
         if (world->is_stale() || !aph::fuel_ok(late_floor)) return;
         run("turn end", [&] { world->note_turn_end(); });
         if (world->is_stale() || !aph::fuel_ok(late_floor)) return;
-        // Vision changes only if we moved. Off the map, we were killed this turn: nothing to re-read.
+        // Vision changes only if we moved since it was last read. Off the map, we were killed this turn: nothing to re-read.
         const auto now = aph::my_position();
-        const bool moved = world->me().alive && now.x >= 0 && now != world->me().pos;
+        const bool moved = world->me().alive && now.x >= 0 && now != world->sight_pos();
         const bool refresh = moved && aph::fuel_ok(refresh_floor);
         run("comms send", [&] { aph::comms::send(*world, moved, refresh); });
         run("debug", [&] { world->debug_output(); });

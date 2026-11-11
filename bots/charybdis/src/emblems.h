@@ -41,7 +41,7 @@ inline unsigned items_bought = 0;
 float camp_hit_factor();
 // A Monster emblem's owner hits camps 15% harder, a Collectors one 1% per emblem family owned.
 float camp_dealt_factor();
-// A Skirmish emblem's owner hits champions 5% harder, a Collectors one 1% per emblem family owned.
+// A Skirmish emblem's owner hits champions 10% harder, a Collectors one 1% per emblem family owned.
 float champion_dealt_factor();
 
 } // namespace aph

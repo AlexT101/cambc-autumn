@@ -17495,3 +17495,8 @@ Note: [chyport/README.md](ideas-2026-11-11/chyport/README.md). `tools/fgate.py`,
   ±1.01, Mite +4.90 ±1.09; 81.3% against 76.5% of games won; out-of-fuel turns 6.17 a game against 5.90. The
   mirror's 60.3% is not only a mirror effect.
 - Not merged here: a zone gain, left to the coordinator, user and teammate.
+
+## (charybdis, 2026-11-11) Turn-end vision re-read keyed on the last vision tile (CHANGES 516; fuel-only)
+`tools/fuel/bench.py` at 100M against astraeus (`replays/fuel/h5/`): identical replays 16/16 (default), 52/52
+(`--set wide`), 52/52 (`--set wide --test-draft`). Total fuel 12,910.9M -> 12,910.2M on the wide set; 1,353 turns
+cheaper, 250k dearer by a few fuel. Not run at the real budget: too small to move out-of-fuel turns.

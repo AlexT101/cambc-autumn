@@ -4645,3 +4645,14 @@ real fuel, fast runner), against ocean 506 = `variants/ocean-chybase` (the branc
 | charybdis 514 | ocean 506 | 59.8% (59.3-60.3) |
 
 Evidence: EXPERIMENTS "Draft18 on charybdis". Frozen as `variants/chy-draft18` (= bots/charybdis).
+
+## 516: The turn-end vision re-read only after moving since vision was last read (charybdis, 2026-11-11; fuel-only)
+
+`main.cc` re-read vision before posting comms whenever our tile differed from `me().pos`. But `observe()` skips our
+own belief, so `me().pos` is the turn's starting tile, and every turn we moved re-read vision, even when the move had
+already re-read it from the final tile. It now compares with `World::sight_pos()`, the tile vision was last read
+from. The `world.h` comment on `turn_start` said the opposite of the code and is corrected, as is `emblems.h`'s
+Skirmish comment (+10%, not 5%). Review item H5 / E10 in [findings-2026-11-11](../charybdis/findings-2026-11-11.md).
+
+bench.py replays at 100M are identical: 16/16 default, 52/52 `--set wide`, 52/52 `--set wide --test-draft`. Total fuel
+-0.01%: about 0.5% of turns are cheaper by ~0.9k; the rest are a few fuel dearer.
