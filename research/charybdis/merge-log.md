@@ -280,3 +280,50 @@ p1's on these suites.
 - **Decision: accepted** (the first phase-2 change). The lower bound against p1 is above 50%, and the results
   against ocean-main and base are above p1's on the same games. Committed into bots/charybdis without the
   debug-only pick trace.
+
+## C8 = K2b, restructured by user decision
+
+- **M2-b** (two casts on a double turn): **dropped by user decision: adds caution; level in K2b and alone on
+  macro2.** Not tested in phase 2.
+- **M2-c + M2-a** (hold cast, Willow heal order) are tested together as one candidate, **C10**, after C9, on the
+  latest accepted state. The separate C8a/b/c tests were discarded before any had run.
+- **C3** gets more games (user decision): chy2-C3 against p1, and chy2-C3 and p1 against ocean-main, on fresh suites
+  s-720161..240 (and s-720241..320 if still within noise). The pooled result decides it (below).
+
+## C4 = M5-c, Prism stun-lock safety (macro5 prismsafe), on C2
+
+- **Merged (candidate only), on charybdis (C2):** `combat/stun_lock.cc` (new, in unity.cpp), the `retreat_step`,
+  `want_home` and cast-branch hunks in combat/fight.cc, `lock_out` in combat/guard.cc, and the recall keep in
+  economy/bank.cc `continue_recall`. Three `retreat_step` hunks did not apply and were merged by hand: `locked` is
+  computed after `held`/`beside_held`, both early returns gain `!locked &&`, `Option::locked` is added, and the array
+  is renamed to `locked_order`/`n_locked`.
+- **Audit:** no bugs or spec deviations. stun_lock.cc is byte-identical to macro5's, and the recall keep sits on
+  `continue_recall`'s first keep, clear of the base's `yields_to_prism` branch.
+- **Debug batch:** SLOCK fires 1.49 turns a game, in 154 of 512 games (macro5: about 1.5).
+- **A/Bs (40,960 each, s-720001..080), paired against C2 on the same games:**
+  - vs ocean-main: **58.5%** (CI 58.0-59.0), paired -0.68 (CI -1.23..-0.12, z -2.4).
+  - vs charybdis-base: **52.4%** (CI 51.9-52.9), paired -0.05.
+  - vs charybdis-p1: **50.9%** (CI 50.4-51.4), paired -0.02.
+  - OOF turns: about 279-290k, against C2's 248-251k on the same suites (+15%).
+- **Decision: rejected.** It is level against p1 and significantly below C2 against ocean.
+  - The likely reason is the lock scan's fuel. It runs every Prism turn, and the rise in OOF turns costs more than
+    1.5 safer turns a game gain. macro5's own evidence was not significant either (+0.5 over 29,696 games).
+  - Next step: a cheaper lock test (only with a visible stun-ready enemy in reach) would show whether the idea has
+    value once its fuel is removed. Treat it as a fuel-optimization candidate only if that test is level on fuel.
+
+## C5 = L-3, the chain limit replaced by a holding cost (macro3-eoq5), on C2
+
+- **Merged (candidate only):** the true macro3-eoq2 to eoq5 diff (the scratchpad's earlier eoq5 diff lacked the
+  threshold prune). `may_chain` drops the `chain_bag_limit` test, and the banking instance's `hold` term lowers
+  `best_value` in the threshold and in the bank decision. `chain_bag_limit` is removed.
+- **Audit:** no bugs or spec deviations. `hold` is defined before every use, and the base's 'G'/'L' carry loop is
+  guarded by `!banks_bag`, so it leaves `best_value` as in the source.
+- **Debug batch:** the holding cost changes 34 decisions a game, in 476 of 512 games.
+- **A/Bs (40,960 each), paired against C2:**
+  - vs ocean-main: **59.1%** (CI 58.7-59.6), paired -0.01.
+  - vs charybdis-base: **52.6%** (CI 52.1-53.1), paired +0.20 (CI -0.35..+0.75).
+  - vs charybdis-p1: **50.9%** (CI 50.4-51.4), paired +0.00.
+  - OOF turns are level with C2.
+- **Decision: rejected (level).** It fires often but doesn't move the result, as at 2x fuel in macro3 (53.1 against
+  eoq2's 53.4). It isn't a fuel-optimization candidate. It would be a clean-up (it removes `chain_bag_limit`), but
+  the rule needs a gain.
