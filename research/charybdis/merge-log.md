@@ -46,3 +46,29 @@ charybdis-base vs ocean-main-b7c87cf: **56.9%** of 20,480 (CI 56.3-57.6). OOF tu
   - vs charybdis-base: **51.4%** (CI 50.7-52.1).
 - **Decision: accepted.** A bug fix, and it also passes the gain rule (51.4 > 51.1 against base, 58.2 >= 57.9 against
   ocean); the steps are within noise of each other.
+
+## K2b = M2-c hold cast, M2-a Willow heal order, M2-b two casts on a double turn (macro2-lstep)
+
+- **Merged (candidate only):** the rest of macro2-lstep's diff, `patch -p2`, offsets only, no fuzz, on K2a:
+  economy/capture.cc `hold_capture` (cast at the nearest alive group within cast reach that wakes nothing);
+  combat/self_abilities.cc/.h (`heal_value`, `HealMate`, `heal_mate`, `heal_before`, `HealTarget::value`/`urgent`,
+  `HealGate::urgent`); combat/support.cc (`heal_station`, the formation step choice); model/safety.cc/.h
+  (`add_two_casts`, `moved_strike`, two-turn `threat_strike`, `most_damage`, `Reach::build_ways`).
+- **Audit:** no bugs; every hunk identical to the source.
+  - The base's Willow `on_held` filter and `heal_before` ranking coexist (one filters tiles, the other ranks).
+  - M2-b leaves B1's verdict alone: `turns_to_harm_idle` models the Prism as never acting, and `add_two_casts`
+    raises damage, never reach.
+  - The plan is wrong that `cast_at_camp` has no enemy check: `camp_cast` refuses when `engagement_near`
+    (a visible enemy within cast reach + 1, or within its strike reach + 1). The remaining exposure is a sole
+    Prism holding with an enemy at 7-8 tiles, which may spend its stun on a camp.
+- **A/Bs (40,960 each, s-710001..710080, the plan's size for an expected +0.5):**
+  - vs ocean-main: **58.5%** (CI 58.0-58.9); halves 58.59 / 58.33. OOF CAND 260,042, REF 220,045.
+  - vs charybdis-base: **51.4%** (CI 50.9-51.9); halves 51.27 / 51.52.
+  - The accepted state (K2a) on the extension suites s-710041..710080, so both compare on identical maps:
+    vs ocean 58.6% (CI 57.9-59.3), vs base 51.9% (CI 51.2-52.6). Over all 40,960: K2a **58.37%** vs ocean,
+    **51.65%** vs base.
+- **Decision: rejected, to the end of the CONSIDER queue.** Against base it is below K2a, 51.39 against 51.65, and
+  lower on both halves. Against ocean it is level, 58.46 against 58.37. It was level at 2x fuel too (macro2: 50.0,
+  50.2 and 50.0 on ocean), so this is not a normal-fuel loss and gets no fuel-optimization note. OOF turns rose about
+  2% against K2a's (260,042 against 254,823 in the vs-ocean runs). K3, ported on top of K2b, was rebased onto K2a
+  before its test: the same diff, applied cleanly.

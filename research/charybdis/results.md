@@ -22,3 +22,5 @@ Details in merge-log.md.
 | (ref) charybdis-base | - | 56.9 (56.3-57.6) | - | - |
 | K1 | M3-a bank floor | 57.9 (57.2-58.6) | 51.1 (50.4-51.7) | accepted |
 | K2a | M2-d no lethal camp flight | 58.2 (57.5-58.8) | 51.4 (50.7-52.1) | accepted (bug fix) |
+| K2a (40,960, s-710001..080) | (accepted state, both halves) | 58.37 | 51.65 | reference for K2b, K3 |
+| K2b (40,960, s-710001..080) | M2-c, M2-a, M2-b | 58.5 (58.0-58.9) | 51.4 (50.9-51.9) | rejected: to CONSIDER |

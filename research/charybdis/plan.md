@@ -683,6 +683,10 @@ to merge.
    unguarded branches.
 7. **C7: L-1.** The Monolith carry price, farm part only, without the free-tile rule, and only if C3 was kept.
 8. Then any KEEP step that failed its gate, in queue order.
+9. **C8: K2b = M2-c + M2-a + M2-b** (failed phase 1, merge-log.md). It was level at normal fuel on K2a over 40,960
+   games: 51.4 against base where K2a had 51.65, and 58.5 against ocean where K2a had 58.4. Out-of-fuel turns rose
+   about 2%. If retried, test the pieces separately: M2-b is the one with a fuel cost. Note that `camp_cast`'s
+   `engagement_near` already limits M2-c's spent stun to enemies 7-8 tiles off.
 
 **One premium rule (C1 with C3).** C1's rho (from damage) and C3's `carried_bonus` (from the shard price) are two
 derivations of one quantity, a carried gem's Focus. If both are kept, every Prism pick type (S, K, C, J, G and L) must
