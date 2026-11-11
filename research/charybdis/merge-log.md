@@ -327,3 +327,8 @@ p1's on these suites.
 - **Decision: rejected (level).** It fires often but doesn't move the result, as at 2x fuel in macro3 (53.1 against
   eoq2's 53.4). It isn't a fuel-optimization candidate. It would be a clean-up (it removes `chain_bag_limit`), but
   the rule needs a gain.
+
+## C7 = L-1, macro6-mono's Monolith carry price
+
+- **Dropped by user decision: fired too rarely to pass (80 debug games, 70 identical to carry3); untested.** It is
+  not ported or tested, even if C3 is accepted.

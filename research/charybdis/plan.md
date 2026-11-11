@@ -682,6 +682,7 @@ to merge.
 6. **C6: M5-f.** The route tie-break. Only if a shared-payout-by-branch debug trace shows transit splits in the
    unguarded branches.
 7. **C7: L-1.** The Monolith carry price, farm part only, without the free-tile rule, and only if C3 was kept.
+   **Dropped by user decision: fired too rarely to pass (80 debug games, 70 identical to carry3); untested.**
 8. Then any KEEP step that failed its gate, in queue order.
 9. **C8: K2b = M2-c + M2-a + M2-b** (failed phase 1, merge-log.md). **Restructured by user decision (phase 2):**
    M2-b (two casts on a double turn) is **dropped by user decision: adds caution; level in K2b and alone on
