@@ -36,3 +36,6 @@ Details in merge-log.md. "vs p1" is the candidate against charybdis-p1 directly.
 | (ref) charybdis-p1 | K1 + K2a | 58.61 (58.1-59.1) | 52.21 (51.7-52.7) | - | - |
 | C1 | M4-a3 + M4-b2 team-marginal value + gate | 57.69 (57.2-58.2) | 51.35 (50.9-51.8) | 49.31 (48.8-49.8) | rejected: loses |
 | C1b | M4-b2 gate alone | 58.73 (58.3-59.2) | 52.35 (51.9-52.8) | 50.06 (49.6-50.5) | rejected: level, fires 0.26/game |
+| C3 | M6-bc carried_bonus pricing, swap for gold_part | 59.0 (58.5-59.4) | 52.3 (51.8-52.7) | 50.3 (49.8-50.8) | extended |
+| C3 (81,920, s-720001..160) | same; p1 there: 58.68 / 51.96 | 59.06 | 52.14 | 50.31 (49.97-50.65) | rejected: level; fuel-optimization candidate |
+| C6 | M5-f route tie-break | - | - | - | not built: trace shows 0.014 transit splits/game |

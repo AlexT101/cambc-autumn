@@ -188,3 +188,58 @@ p1's on these suites.
 - **Decision: rejected (level).** The lower bound against p1 is under 50%. Reaching above 50% at 81,920 games would
   need about 50.35%, against the 50.06% measured, so it was not extended. It fires about once in four games. It was
   not measured at 2x, so it gets no fuel note.
+
+## C6 = M5-f, route tie-break off the Prism's hold (conditional): not built
+
+- **Trace** (the plan's condition). A debug copy of charybdis (`chy2-C6trace`, debug-only lines in bot.cc) tags each
+  `decide()` branch. For a non-Prism champion, it logs every step onto a group the Prism holds alone
+  (`prism_hold_tiles` from its view, copied before `decide`). It also logs every turn that ends on such a group the
+  round before its payout (a split share). 512 games against ocean-main on dbg-729001:
+  - step-ons: `take_capture_handoff` 29, retreat 13, chase 6, farm 1;
+  - splits: 22 in 22 games. 15 are champions already on the tiles before the Prism became sole holder (not
+    transit). 7 are transit through the unguarded branches the plan lists: 4 by retreat moves, 3 by chase moves.
+- **Decision: not built.** Transit splits through those branches happen 0.014 times a game, once in about 70
+  games. A tie-break that changes so few games can't show a clear gain at 40k games. The leak is smaller than macro5
+  measured on ocean (hold6's 13 shared payouts in 48 games), because the base's guards already cover most of it.
+
+## C3 = M6-bc, Focus-priced farm values replacing `gold_part` (macro6-carry3)
+
+- **Order:** taken before C2, since C2's plan entry says to run it with C3's J piece or after C3.
+- **Merged (candidate only), on p1** (a first build on C1 was discarded with C1):
+  - economy/farm.cc: macro6's hunks 2-15 (`keep_most`, `keep_bonus`, `bound_tribute`; S/K/C worth `plain + carried`;
+    the J branch's `plain`/`carry`/`carry_most`, `hold = cap_rounds`, the health gate, and the moved kite-hit check;
+    every prune bound). Hunk 1 (`multiplies`' signature, part of M6-a) and the debug lines are left out.
+  - The base's `gold_part` is removed at both places (the `per_gold` halving and the crystal toll), so this is a swap.
+  - `keeper` is the base's `keeps` (`keeps_gems`), not macro6's `passive == gem_focus`.
+  - The 'G' and 'L' carry worth gains `gems x keep_bonus(G)`, as the plan requires, so every Prism pick type uses one
+    premium.
+  - economy/capture.cc: `keeps_bag` and `carried_bonus` ported, but not used in `holder_value` or the others (M6-a).
+- **Audit:** no bugs.
+  - The hunks match macro6's, and no `gold_part` is left.
+  - The prune bounds stay valid: `keep_bonus(G)` is 0 or `keep_most`; the join bound's carry term bounds J's.
+  - Nothing outside farm.cc relied on the halved gold.
+  - Risks noted: 'T' is now harder for a keeping Prism with a Vesper-level gold bonus; J counts the Focus in full even
+    where B1 may not make the Prism sole holder; `carried_bonus` ignores `prism_dominant`.
+- **Debug batch:** the bonus applies to every keeping-Prism pick. Prism picks a game (p1 trace copy, then C3):
+  S 14.54 to 14.26, C 3.03 to 2.71, K 6.75 to 6.92, J 12.65 to 12.83, G 1.21 to 1.13, L 1.59 to 1.47.
+- **A/Bs, s-720001..080 (40,960 each):**
+  - vs ocean-main: **59.0%** (CI 58.5-59.4); paired against p1 +0.36 (CI -0.22..+0.95). OOF CAND 249,931.
+  - vs charybdis-base: **52.3%** (CI 51.8-52.7); paired +0.04 (CI -0.55..+0.64).
+  - vs charybdis-p1: **50.3%** (CI 49.8-50.8). Within noise, so it was extended.
+- **Extension, s-720081..160 (40,960 more each, p1 measured there too):**
+  - vs p1: 50.3% (CI 49.8-50.8);
+  - vs ocean: 59.1%, against p1's 58.8%;
+  - vs base: 52.0%, against p1's 51.7%.
+- **Pooled, 81,920 games:**
+  - vs charybdis-p1: **50.31%** (CI 49.97-50.65);
+  - vs ocean-main: **59.06%**, paired against p1's 58.68% +0.37 (CI -0.04..+0.78, z 1.77);
+  - vs charybdis-base: **52.14%**, paired against p1's 51.96% +0.17 (CI -0.25..+0.60).
+  - OOF turns are level against p1 (CAND 241,225, REF 238,119 on the extension).
+- **Decision: rejected (level).** The CI lower bound against p1 is 49.97%, not above 50%, even at 81,920 games. The
+  direction is positive throughout, so it is the nearest miss so far.
+  - **Flag: dropped at normal fuel: candidate for later fuel optimization.** macro6's carry2 and carry3 gains
+    (+1.1, +1.0) were measured at 2x fuel.
+  - The likelier reason is overlap: the base's `gold_part` is a cruder version of the same pricing, so the swap
+    changes the Prism's gem:gold weight only where `per_gold` differs from about 0.18, and on J.
+  - Next step: test it with a Focus premium gated on `prism_dominant`. Or combine it with a future change that hands
+    the Prism more joins (where the J piece matters most).
