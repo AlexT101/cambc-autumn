@@ -461,6 +461,55 @@ float act(Side& self, Side& other) {
     return t;
 }
 
+// Quiet attacks with reflection, stopping before any shield or death needs act().
+int play_reflected(Side& us, Side& them, int t, int end, bool they_first) {
+    for (; t < end; ++t) {
+        const bool their_turn = (t % 2 == 0) == they_first;
+        Side& self = their_turn ? them : us;
+        Side& other = their_turn ? us : them;
+        if (self.turn >= self.quiet_until || self.alive != self.quiet_alive || self.stunned) break;
+        const int weak = other.weakest();
+        if (weak < 0) break;
+        auto& target = other.fighters[weak];
+        const float damage = self.quiet_damage * target.taken, back = target.retaliation;
+        if (target.shield != 0 || !(damage < target.health)) break;
+        Fighter* camp = nullptr;
+        float camp_hit = 0;
+        if (their_turn && us.camp > 0) {
+            camp = us.self >= 0 && us.fighters[us.self].health > 0 ? &us.fighters[us.self] : &target;
+            camp_hit = us.camp * camp->taken;
+            if (camp->shield != 0 || !(camp_hit < camp->health - (camp == &target ? damage : 0.0f))) break;
+        }
+        bool safe = true;
+        if (back > 0) {
+            NO_UNROLL
+            for (int i = 0; i < self.count; ++i) {
+                const auto& f = self.fighters[i];
+                if (f.health > 0 && f.arrives_at <= self.turn && (f.shield != 0 || !(back * f.taken < f.health))) {
+                    safe = false;
+                    break;
+                }
+            }
+        }
+        if (!safe) break;
+        target.health -= damage;
+        if (back > 0) {
+            NO_UNROLL
+            for (int i = 0; i < self.count; ++i) {
+                auto& f = self.fighters[i];
+                if (f.health > 0 && f.arrives_at <= self.turn) f.health -= back * f.taken;
+            }
+            self.weak = -2;
+        }
+        if (camp) {
+            camp->health -= camp_hit;
+            if (us.self >= 0) us.lowered(us.self);
+        }
+        ++self.turn;
+    }
+    return t;
+}
+
 // The half-turns from `t` (to `end` at most) in which both sides only make their basic attacks
 // and nobody falls, each taken off the side's weakest as act() and hurt() would; returns the next.
 int play_quiet(Side& us, Side& them, int t, int end, bool they_first) {
@@ -468,8 +517,7 @@ int play_quiet(Side& us, Side& them, int t, int end, bool they_first) {
     if (wu < 0 || we < 0) return t;
     auto& u = us.fighters[wu];
     auto& e = them.fighters[we];
-    // A Ren hits back each attacker: act() plays it.
-    if (u.retaliation > 0 || e.retaliation > 0) return t;
+    if (u.retaliation > 0 || e.retaliation > 0) return play_reflected(us, them, t, end, they_first);
     if (u.shield != 0 || e.shield != 0) return play_shielded(us, them, u, e, t, end, they_first);
     // The camps hit us (hurt_by_camps()), who may not be the weakest.
     Fighter* s = us.camp > 0 && us.self >= 0 && us.self != wu && us.fighters[us.self].health > 0 ? &us.fighters[us.self] : nullptr;
@@ -730,6 +778,22 @@ std::pair<int, int> simulate(Side& us, Side& them, bool they_first, bool* self_f
         }
     }
     return {0, 0};
+}
+
+// An idle holder's own turns only expire its shield. Reflections and the attackers'
+// casts still run through act(), including deaths caused by Ren's passive.
+int simulate_idle(Side& us, Side& them, int horizon) {
+    auto& f = us.fighters[0];
+    for (int turn = 0; turn < horizon; ++turn) {
+        act(them, us);
+        if (us.camp > 0) us.hurt_by_camps();
+        if (us.alive == 0) return turn + 1;
+        if (them.count > 0 && them.alive == 0) return 0;
+        if (turn % 4 == 3) throw_if_stale();
+        if (!us.plain && f.shield_until <= turn) f.shield = 0, f.shield_until = never;
+        us.stunned = 0;
+    }
+    return 0;
 }
 
 constinit std::array<Side, 2> debug_sides{};
@@ -2174,7 +2238,7 @@ std::vector<Safety::CampHit>& Safety::member_pool() {
     return pool;
 }
 
-Safety::Safety(const World& world) : world_{world}, threats_{threat_pool()}, members_{member_pool()} { ++generation_; }
+Safety::Safety(const World& world) : world_{world}, threats_{threat_pool()}, members_{member_pool()} { ++generation_, ++hold_generation_; }
 
 std::span<const Safety::CampHit> Safety::awake_members() {
     if (!members_known_) find_members();
@@ -2442,6 +2506,7 @@ bool Safety::gone(const ChampionBelief& c) {
 
 void Safety::invalidate() {
     ++generation_;
+    ++hold_generation_;
     built_ = false;
     refresh_ = true;
     reached_ = 0;
@@ -2468,7 +2533,7 @@ void Safety::refresh() {
     gone_.fill(0);
     build_cost_ = 0;
     reachable_known_ = false;
-    if (!built_ && !members_known_) return;
+    if (!built_ && !members_known_) { ++hold_generation_; return; }
     bool changed = false;
     for (auto left = seen_enemies(); left; left &= left - 1) changed |= gone(world_.enemies[static_cast<std::size_t>(std::countr_zero(left))]);
     if (!changed && members_known_)
@@ -2486,8 +2551,10 @@ void Safety::refresh() {
             m.stunned = stunned = true;
     for (int i = 0; i < tie_only_count_ && members_known_; ++i)
         if (auto& m = tie_only_[static_cast<std::size_t>(i)]; !m.stunned && camp_stunned(m.handle) && test(world_.visible, m.pos))
-            m.stunned = true;
-    if (stunned) camp_memo_[2].valid = false, threatened_known_ = false;
+            m.stunned = true, ++hold_generation_;
+    // Idle fights read fixed champion beliefs and the retained camp model. A refresh that
+    // found no death or new camp stun changes neither, even after our own nonlethal attack.
+    if (stunned) ++hold_generation_, camp_memo_[2].valid = false, threatened_known_ = false;
 }
 
 [[gnu::noinline]] void Safety::strike_foe(const ChampionBelief& e, Foe& x) {
@@ -3465,7 +3532,11 @@ int Safety::turns_to_harm_idle(const ChampionBelief& c, vec2 p, int horizon, flo
         if (them.count > k && walk != 0) them.fighters[k].arrives_at = walk;
     }
     if (them.count == 0 && us.camp <= 0) return 0;
-    return simulate(us, them, true, nullptr, horizon).second;
+    // The idle holder never attacks, so it takes no reflected damage. Ignore its shield and
+    // every attacker's arrival delay: surviving this ceiling settles the whole horizon.
+    auto cap = their_cap(us, them);
+    if (cap.short_of(us, them, horizon, 0, horizon, f.health / f.taken)) return 0;
+    return simulate_idle(us, them, horizon);
 }
 
 // Every live enemy unseen, and none's possible tiles within Strike::max_reach of p: each_threat's

@@ -4556,4 +4556,21 @@ bench.py replays at 100M are identical: 52/52 `--set wide` and 52/52 `--test-dra
 commits (opponent ocean-main); the fuel passes' own sets 96/96 and 108/108 (Prism, Ren, Heart of Ruin, Vendetta drafts).
 Mean fuel -1.5% (100M, wide). At the real budget, paired over 4,096 held-out games: out-of-fuel turns -5.4% (CI
 -8.2..-2.5), shortcuts -4.0% (economy pass); the combat pass alone -1.3% (CI -4.3..+1.6). Frozen as
-`variants/charybdis-1178688` (= bots/charybdis).
+`variants/charybdis-1178688`.
+
+## 514: Cheaper idle and reflected simulations (charybdis, 2026-11-11; fuel-only)
+
+Idle survival ceiling and enemy-only idle simulation; direct nonlethal quiet reflection; a separate
+Safety generation for capture threat caches; harmless Ren clear/tail formulas with the old float
+residual turn retained; stop next-death scans at one; omit dash landing checks below the retained scores.
+No draft, strategic constant, gate or reserve change. Frozen as `variants/chary-fuelC-final` (= bots/charybdis),
+source-identical to measured `variants/chary-fuelC-combo`.
+
+- 100M bench: **232/232 byte-identical** (52 own, 52 test drafts, 128 forced Ren/all-kit/large-group coverage).
+  Actual-source oracle: one million idle fights, one million team fights and one million camp clears match.
+- Reserved fresh paired debug bench, 4,096 games: OOF **27,399 → 26,438 (-3.51%, 95% -7.08..+0.22%)**;
+  shortcuts **1,106,126 → 1,090,337 (-1.43%, -3.12..+0.13%)**. Map-cluster bootstrap; both intervals include zero.
+- Standard release A/B, 1,280 games: 50.31% wins; OOF 7,340 → 7,379. Level; no failed or early games.
+
+The requested **10% exhaustion reduction was not reached**. Closed at the user's request. Evidence and
+rejected experiments: [Charybdis fuel C](../charybdis-fuelC/README.md); experiment record in EXPERIMENTS.

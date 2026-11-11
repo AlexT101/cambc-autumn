@@ -9,6 +9,20 @@ Win rates are against the bot's previous version, all maps from both sides at th
 used 390-582 games. Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## Charybdis fuel C (2026-11-11)
+
+Against `1178688e9`, retained the exact simulation/camp/dash changes in CHANGES 514.
+The 1,024-game screen's -8.06% OOF / -2.88% shortcuts regressed to **-3.51% / -1.43%**
+on 4,096 reserved fresh games; paired map-bootstrap 95% CIs **-7.08..+0.22% / -3.12..+0.13%**.
+No statistically established real-budget gain and **10% target unmet**. Release 1,280: level
+50.31% wins, OOF 7,340 → 7,379. 232/232 identities and three million actual-source oracle cases pass.
+
+Tighter generic sim bounds, whole-duel specialization, extra order/camp-range caches, SIMD Fighter
+copies and Ren pre-prunes gave no useful tail saving. `reflected_clear` is mainly opening-only,
+so its new memo scarcely reused anything. Do not repeat these without a new mechanism. The fuelprof
+`oof` class is not a census of real exhausted turns (see sixth pass). Detailed experiments,
+conditional coverage, stdout-cap sensitivity and reproduction: [report](charybdis-fuelC/README.md).
+
 ## Lessons
 
 - The emblem lab's per-decision randomisation misreads policy-level effects (round 4, 2026-11-10): 1.28M games

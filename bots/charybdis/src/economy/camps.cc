@@ -210,9 +210,19 @@ float min_camp_damage(CampLeft* left, int n, float strength, float* rounds, floa
     // Each round we hit the first living target, then every living attacker hits us and takes the
     // reflection. Stepped from one death to the next.
     for (int i = 0; i < n;) {
+        if (i >= attackers) {
+            // Once the strikers are gone, only independent cluster clears remain. Preserve
+            // the extra attack that a positive float residual costs in the stepped path.
+            for (; i < n; ++i) {
+                const float k = std::ceil(left[i].health / strength);
+                elapsed += k;
+                if (left[i].health - k * strength > 0) elapsed += 1;
+            }
+            break;
+        }
         const float own = left[i].strength > 0 ? reflect : 0.0f;
         float k = std::max(1.0f, std::ceil(left[i].health / (strength + own)));
-        for (int j = i + 1; j < attackers; ++j)
+        for (int j = i + 1; j < attackers && k > 1; ++j)
             if (left[j].health > 0 && left[j].strength > 0) k = std::min(k, std::max(1.0f, std::ceil(left[j].health / reflect)));
         // Our hit in round k fells it before it strikes; otherwise it struck every round. From its spawn
         // stand the hits still reflect, but heal.
@@ -480,7 +490,7 @@ void clear_fire(const StaticMap& map, int g, CampLeft* left, int n, int range) {
 float min_camp_damage(const World& world, int g, float strength, float* rounds, float reflect, int range, float survivable) {
     const auto& group = world.map().groups[g];
     const auto& belief = world.camps[g];
-    const bool harmless = group.strength <= 0 && reflect <= 0;
+    const bool harmless = group.strength <= 0;
     if (harmless) range = 0, survivable = 0;
     else {
         if (range < 0) range = world.me().facts().attack_range();
@@ -528,7 +538,13 @@ float min_camp_damage(const World& world, int g, float strength, float* rounds, 
         const bool fresh = belief.state == CampState::respawning;
         for (std::size_t m = 0; m < group.members.size(); ++m) {
             const float hp = fresh ? group.members[m].max_health : belief.health[m];
-            if (hp > 0) elapsed += std::ceil(hp / strength);
+            if (hp > 0) {
+                const float k = std::ceil(hp / strength);
+                // Ren's event simulation subtracts the hits and repeats on a positive rounding
+                // residual, even though these members never reflect. Preserve that last turn.
+                elapsed += k;
+                if (reflect > 0 && hp - k * strength > 0) elapsed += 1;
+            }
         }
         *rounds = c.rounds[i] = elapsed;
         return c.damage[i] = 0;

@@ -14,6 +14,13 @@ EXPERIMENTS.
 - No new fuel gates. Make work cheap or bounded instead; the plan is [FUEL-GATES.md](FUEL-GATES.md).
 - Keep the teleport, Tavi and Willow code.
 
+## Charybdis fuel target (2026-11-11)
+
+CHANGES 514 is exact at 100M but does not meet the requested **10% fewer exhausted turns**:
+fresh 4,096 paired games give -3.51% OOF and -1.43% shortcuts, both CIs including zero; release is level.
+The user requested closure without new ideas. See [fuel C](../charybdis-fuelC/README.md) before resuming: it
+records the rejected bounds/caches/copies and remaining call-site reach and dash-plan leads.
+
 ## Ocean fuel target (2026-11-07)
 
 CHANGES 455 reduces out-of-fuel turns by 3.5% on standard and fresh suites; the requested **20% reduction remains

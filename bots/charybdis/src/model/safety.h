@@ -313,6 +313,7 @@ public:
     // Changes whenever a Safety is made, refreshed or invalidated: within one, what it was asked
     // reads the same beliefs.
     static std::uint32_t generation() { return generation_; }
+    static std::uint32_t hold_generation() { return hold_generation_; }
 
     std::span<const Threat> threats();
     bool built() const { return built_; }
@@ -520,7 +521,7 @@ public:
     const Reach& reach_of(const ChampionBelief& e);
 
 private:
-    static inline std::uint32_t generation_ = 0;
+    static inline std::uint32_t generation_ = 0, hold_generation_ = 0;
     bool may_be_hit(vec2 p); // false only if no threat hits p
     bool threatened_now(vec2 p);
     // Every credible threat at full damage, plus camps.

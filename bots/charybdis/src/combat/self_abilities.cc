@@ -203,6 +203,7 @@ template <class Score, class Keep> Landings ranked(const bitboard& landings, Sco
     std::array<S, Landings::tries> scores{};
     for (auto p : Tiles<5 * 5>{landings}) {
         const S s = score(p);
+        if (out.count == Landings::tries && !(s < scores[Landings::tries - 1])) continue;
         if (!keep(p, s)) continue;
         int i = out.count < Landings::tries ? out.count++ : Landings::tries;
         for (; i > 0 && scores[i - 1] > s; --i)
@@ -223,6 +224,7 @@ template <class First, class Rest, class Keep> Landings ranked_by_first(const bi
         // Past the limit keep() refuses it; past the last kept one's `first`, with all kept, it sorts after them.
         if (!(f < limit) || (out.count == Landings::tries && f > scores[Landings::tries - 1].rank)) continue;
         const S s = rest(p, f);
+        if (out.count == Landings::tries && !(s < scores[Landings::tries - 1])) continue;
         if (!keep(p)) continue;
         int i = out.count < Landings::tries ? out.count++ : Landings::tries;
         for (; i > 0 && scores[i - 1] > s; --i)

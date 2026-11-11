@@ -333,14 +333,14 @@ bool prism_hold_threatened(const World& world, const ChampionBelief& a, const Ca
     };
     static std::array<Kept, 16> kept;
     auto& k = kept[static_cast<std::size_t>(a.index) & 15];
-    if (k.round == world.round && k.generation == Safety::generation() && k.observations == world.observations && k.pos == at)
+    if (k.round == world.round && k.generation == Safety::hold_generation() && k.observations == world.observations && k.pos == at)
         return k.threatened;
     // Short of fuel, this turn's last answer here, else none: a flip mid-turn would walk us back onto the tiles.
     if (!fuel_ok(hold_safety->fight_cost_estimate() + end_reserve)) return k.round != world.round || k.pos != at || k.threatened;
     const int rounds = c.held_since >= 0 ? std::max(0, c.payout_round() - world.round) : capture_rounds(a.fast_capture);
     const int window = rounds + 1;
     const int harm = hold_safety->turns_to_harm_idle(a, at, window + 1, params::hurt_health_fraction * a.max_health, false);
-    k = {world.round, Safety::generation(), world.observations, at, harm != 0 && harm <= window};
+    k = {world.round, Safety::hold_generation(), world.observations, at, harm != 0 && harm <= window};
     return k.threatened;
 }
 
@@ -597,7 +597,7 @@ bool holding_capture(const World& world, Pathing& pathing) {
     };
     static Key last{~0u};
     static bool kept = false;
-    const Key key{round_now(), world.observations, my_gems(), my_gold(), Safety::generation(), my_position()};
+    const Key key{round_now(), world.observations, my_gems(), my_gold(), Safety::hold_generation(), my_position()};
     if (key == last) return kept;
     last = key;
     return kept = holding_capture_now(world, pathing, key.here);
