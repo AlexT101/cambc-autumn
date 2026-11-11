@@ -9,6 +9,40 @@ Win rates are against the bot's previous version, all maps from both sides at th
 used 390-582 games. Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## Draft18 on charybdis (2026-11-11)
+
+A draft lab refit for charybdis (CHANGES 515): its Prism carry (507-512) makes Prism worth more than draft10 measured.
+- **Lab** `replays/draftlab/draft18`: player `variants/charybdis-5564637` (514); pool fresh `--mix ladder-v2`
+  3300000-3300099 (25,518 maps after duplicates; the 274 maps 28 a side were first dropped by a stale 29 minimum in
+  `lab.py`, fixed before the run, main 3b7bac565); held out 3310000-3310079. Opponents charybdis 0.2, ocean 506
+  (`oc-dfuel-506`) 0.2, Fish body `spar-dvn951-Flp4` 0.3, Mite body `spar-dvn95-Mt3qro` 0.3 (astraeus and proteus,
+  draft10's 0.1 each, dropped as outdated). Prior: top 10 other teams since 2026-11-08T14:54, 2,800 ranked groups,
+  3,459 / 4,362 / 13,410 team-games at 3 / 4 / 5 picks. Mix as draft4-10 (explore 35, current 15, Thompson 35, probe 15;
+  half against ladder compositions; 2 explore batches), F92 features, draft10-f92's searched penalties to start.
+- **Run:** 1,000,004 games in 16 batches, ~2 h 10 min (restarted once at slot weight 8 to take the box from other
+  A/Bs); 0 errors, 120 draft mismatches, 252 games over by round 5 (the bodies' unfinished drafts). Each batch waited
+  1.5-3 min for the next one's native compile, and the mid-run searches (8 threads) starved the plain refits, so
+  batches 2-8 planned from batch 0's model until one-off refits (406k, 676k games); both fixed for later labs
+  (main: `ahead` pipeline). The run waited 28 min on a stale 16:28 search before its final fit.
+- **Fit:** 999,884 games; CV log loss 0.52496 at the starting penalties; the final search found no improvement in 29 min and was
+  cancelled (user decision), so the header is the link lab `draft18-start`'s plain fit at them. Against draft10-f92's
+  teams on the lab's maps: 54% change. Prism 74 -> 80% (3 picks), 80 -> 88% (4 and 5); Vendetta 10 -> 17% (3),
+  Ryth 12 -> 20% (4) and 27 -> 37% (5); Vesper Vale 46 -> 30% (3) and 67 -> 46% (4); Marcella 22 -> 18% (4), 21 -> 14% (5).
+- **Checks:** native parity 0 team mismatches on 384 maps; first draft turn not re-measured (user decision).
+
+Held-out A/Bs (`merged/d18-hold`, 40,960 games each, own drafts, release, real fuel, fast runner native, weight 20;
+ocean = `variants/ocean-chybase`, the branch's bots/ocean, = 506):
+
+| Candidate | Reference | Win % (95% CI) | Out-of-fuel turns CAND / REF | Broken / capped drafts |
+|---|---|---|---|---|
+| chy-draft18 | charybdis 514 | **51.0%** (50.5-51.5), 20,883-20,077 | 235,772 / 229,395 | 0 / 0 |
+| chy-draft18 | ocean 506 | **60.3%** (59.8-60.8) | 243,805 / 210,415 | 0 / 0 |
+| charybdis 514 | ocean 506 | 59.8% (59.3-60.3) | 246,433 / 220,541 | 0 / 0 |
+
+The draft gains +1.0 head-to-head (CI clear of 50) and +0.5 against ocean over charybdis's own 59.8% on the same
+maps (overlapping CIs). It costs ~2.8% more out-of-fuel turns head-to-head (Prism-heavier teams), already counted in
+its wins. No failed matches, broken, capped or early-lost drafts in any of the 122,880 games.
+
 ## Charybdis fuel D (2026-11-11; not shipped)
 
 Against `556463738`, explored support-station laziness, camp-fire partitioning,

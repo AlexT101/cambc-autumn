@@ -4563,7 +4563,7 @@ Mean fuel -1.5% (100M, wide). At the real budget, paired over 4,096 held-out gam
 Idle survival ceiling and enemy-only idle simulation; direct nonlethal quiet reflection; a separate
 Safety generation for capture threat caches; harmless Ren clear/tail formulas with the old float
 residual turn retained; stop next-death scans at one; omit dash landing checks below the retained scores.
-No draft, strategic constant, gate or reserve change. Frozen as `variants/chary-fuelC-final` (= bots/charybdis),
+No draft, strategic constant, gate or reserve change. Frozen as `variants/chary-fuelC-final`,
 source-identical to measured `variants/chary-fuelC-combo`.
 
 - 100M bench: **232/232 byte-identical** (52 own, 52 test drafts, 128 forced Ren/all-kit/large-group coverage).
@@ -4574,3 +4574,29 @@ source-identical to measured `variants/chary-fuelC-combo`.
 
 The requested **10% exhaustion reduction was not reached**. Closed at the user's request. Evidence and
 rejected experiments: [Charybdis fuel C](../charybdis-fuelC/README.md); experiment record in EXPERIMENTS.
+
+## 515: Draft18's F92 draft model, refitted on charybdis (charybdis, 2026-11-11)
+
+Replaces only `src/draft/draft_model.h`: draft10-f92's model (CHANGES 502) refitted on games charybdis played, since
+its Prism (507-512) is worth more than the Prism draft10 measured. Lab `replays/draftlab/draft18` (tools/draftlab):
+1,000,004 games in 16 batches (0 errors, 120 draft mismatches), the player `variants/charybdis-5564637` (514), the
+same 92 features, draft10-f92's searched penalties (the final search was cancelled after 29 min without an
+improvement; the header is `replays/draftlab/draft18-start`'s, a link lab refitting all draft18's games at them).
+Pool: fresh `--mix ladder-v2` 3300000-3300099 (25,518 maps); opponents charybdis 0.2, ocean 506 0.2, the Fish body
+(`spar-dvn951-Flp4`) 0.3 and the Mite body (`spar-dvn95-Mt3qro`) 0.3; ladder prior: the top 10 other teams' ranked
+drafts since 2026-11-08T14:54 (2,800 groups). CV log loss 0.52496. The team changes on 54% of the lab's maps: Prism
+80 -> 88% of 4- and 5-pick teams (74 -> 80% at 3), Ryth and Vendetta up, Vesper Vale, Marcella and Ren down. Native
+parity 0 team mismatches, 0 C++ failures on 384 maps (ladder + fresh-3310000); the first draft turn was not
+re-measured (same features and ranking code; user decision), and the A/Bs had no broken, capped or early-lost drafts
+(61,440 candidate games).
+
+Held-out A/Bs on `merged/d18-hold` (fresh ladder-v2 3310000-3310079, 20,480 maps, both sides; own drafts, release,
+real fuel, fast runner), against ocean 506 = `variants/ocean-chybase` (the branch's bots/ocean):
+
+| Candidate | Reference | Win % of 40,960 (95% CI) |
+|---|---|---|
+| this | charybdis 514 | **51.0%** (50.5-51.5) |
+| this | ocean 506 | **60.3%** (59.8-60.8) |
+| charybdis 514 | ocean 506 | 59.8% (59.3-60.3) |
+
+Evidence: EXPERIMENTS "Draft18 on charybdis". Frozen as `variants/chy-draft18` (= bots/charybdis).
