@@ -24,3 +24,6 @@ Details in merge-log.md.
 | K2a | M2-d no lethal camp flight | 58.2 (57.5-58.8) | 51.4 (50.7-52.1) | accepted (bug fix) |
 | K2a (40,960, s-710001..080) | (accepted state, both halves) | 58.37 | 51.65 | reference for K2b, K3 |
 | K2b (40,960, s-710001..080) | M2-c, M2-a, M2-b | 58.5 (58.0-58.9) | 51.4 (50.9-51.9) | rejected: to CONSIDER |
+| K3 (40,960, s-710001..080) | M4-b1 hand-over (rebuilt) | 58.3 (57.9-58.8) | 51.6 (51.1-52.1) | rejected: level with K2a, to CONSIDER |
+
+Phase-1 state: K1 + K2a (commit 3c9b6c294), frozen as bots/variants/charybdis-p1: 58.37 vs ocean-main, 51.65 vs charybdis-base (40,960 each).

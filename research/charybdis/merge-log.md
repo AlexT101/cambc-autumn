@@ -72,3 +72,52 @@ charybdis-base vs ocean-main-b7c87cf: **56.9%** of 20,480 (CI 56.3-57.6). OOF tu
   50.2 and 50.0 on ocean), so this is not a normal-fuel loss and gets no fuel-optimization note. OOF turns rose about
   2% against K2a's (260,042 against 254,823 in the vs-ocean runs). K3, ported on top of K2b, was rebased onto K2a
   before its test: the same diff, applied cleanly.
+
+## K3 = M4-b1, hand-over of full and single-tile holds (rebuilt in the base)
+
+- **Built (candidate only), on K2a:**
+  - economy/capture.cc `leave_for_prism`, the ally side:
+    - `full` means we stand on a held group whose every tile is taken, our own counted as taken whatever the
+      occupancy reads.
+    - The `kept_group` pin is ignored when `full`.
+    - The claimed branch returns `claimed` when `full`, and on an unheld single-tile group.
+    - The near branch returns `near` when `full`, both in the pin case and in the slack window.
+  - New `prism_hand_over`, the Prism side: `prism_takeover`'s gates, plus every tile held by visible non-Prism
+    allies with no tribute and not held back, and `fresh_ally_capture >= 2`. It calls `prism_carries(..., taken)`,
+    whose goal is the group's tiles less camp-hit tiles.
+  - economy/farm.cc carry loop: a full held group goes to `prism_hand_over` only (skipping `prism_takeover`, which
+    must fail on it). It is priced as 'L' over `walk + capture_rounds`.
+  - The walk goes to `G.adjacent()` and waits there while every goal tile is held, since the base's route treats
+    ally-occupied tiles as blocked.
+  - Debug-only traces: `K3 LEAVE/PICK/ARRIVE/PAYOUT/LOST`. bot.cc calls `k3_watch` inside `debug_block`.
+- **Audit:** no release-side bug; the spec is fully implemented. Fixed after the audit:
+  - `full` now requires us on the group, with our own tile explicit. The audit could not confirm that ally occupancy
+    includes self, and off-tile callers were getting full leaves that later lapsed their record.
+  - Debug: the leave trace now prints once per group, cleared episode and kind (it overcounted). `k3_watch` arms
+    only on a new pick, resets on leaving or death, reads gems only while alive, and logs the measured payout delay.
+  - Fuel: a full group skips `prism_takeover`'s doomed `enemy_may_see` scan.
+
+  Not changed (risks noted): the two sides' gates differ, as for the base's held 'L', so a Prism can wait beside a
+  hold that is never left, until the timer is under 2; the waiting tile is not checked for camp damage; a leave that
+  frees only a camp-hit tile dissolves the pick.
+- **Debug batch** (512 games against ocean-main, debug build on fresh suite dbg-719001, measured on the K2b-based
+  build; the K3 diff is identical):
+  - Prism hand-over picks 0.26 a game (in 55 of 512 games), with a predicted delay of 4.9 rounds (median 4, at
+    most 14).
+  - Arrivals and payouts 0.19 a game; 7.1 gems a payout; measured delay against the ally's payout 3.9 rounds
+    (median 4, -1 to 11). No hand-over was lost.
+  - Ally leaves, per process and episode: claimed-full 0.33 a game (0.20 on single-tile groups), claimed-single
+    (unheld) 1.40, near-full under 0.01.
+  - That is under the plan's "about once a game", so a level result was expected.
+- **A/Bs (40,960 each, s-710001..710080):**
+  - vs ocean-main: **58.3%** (CI 57.9-58.8); halves 58.12 / 58.55. OOF CAND 255,255, REF 220,549.
+  - vs charybdis-base: **51.6%** (CI 51.1-52.1); halves 51.58 / 51.69.
+- **Decision: rejected, to the end of the CONSIDER queue.** It is level with K2a on the same 40,960 games: 51.63
+  against 51.65 against base (8 wins fewer) and 58.33 against 58.37 against ocean. More games can't make a 0.02-point
+  deficit a gain. It was not measured at 2x, so it gets no fuel note.
+
+## Phase-1 result
+
+Accepted state: K1 + K2a, `bots/charybdis` at commit 3c9b6c294, frozen as `bots/variants/charybdis-p1`.
+On s-710001..710080 (40,960 games each): **58.37%** against ocean-main-b7c87cf and **51.65%** against
+charybdis-base. charybdis-base itself scored 56.9% against ocean on s-710001..710040.

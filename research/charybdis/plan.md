@@ -687,6 +687,11 @@ to merge.
    games: 51.4 against base where K2a had 51.65, and 58.5 against ocean where K2a had 58.4. Out-of-fuel turns rose
    about 2%. If retried, test the pieces separately: M2-b is the one with a fuel cost. Note that `camp_cast`'s
    `engagement_near` already limits M2-c's spent stun to enemies 7-8 tiles off.
+10. **C9: K3 = M4-b1** (failed phase 1, merge-log.md). The built candidate is kept as `bots/variants/chy-K3`. It was
+    level on K2a over 40,960 games: 51.63 against base where K2a had 51.65, and 58.33 against ocean where K2a had
+    58.37. It fired about 0.26 Prism hand-overs a game, with about 7 gems a payout. Its spec still stands, with the
+    audit fixes. It may matter more with C1, whose `hub_net` gate reprices exactly these 'L' picks, so retest it
+    after C1 if C1 is kept.
 
 **One premium rule (C1 with C3).** C1's rho (from damage) and C3's `carried_bonus` (from the shard price) are two
 derivations of one quantity, a carried gem's Focus. If both are kept, every Prism pick type (S, K, C, J, G and L) must
