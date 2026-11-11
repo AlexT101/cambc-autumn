@@ -14,7 +14,7 @@ C++ only.
 - **astraeus** is our secondary bot and ocean's ancestor; changes sometimes move between the two.
 - The other bots are older experiments and baselines, kept for reference; retired ones are in `bots/archives/` (pass them as `archives/NAME`).
 - Their `src/`: `bot.cc` is the turn (`decide`); its branches are in `economy/` and `combat/`, sharing `bot_parts.h`; `model/` is the world, pathing and safety; `draft/` the draft. `unity.cpp` includes every `.cc`: a new one goes there.
-- `ab.py`'s git refs build `bots/archives/hyperion` (the main bot before astraeus). To A/B astraeus or ocean, pass bot directories: the working one and a frozen copy of a commit's, e.g. `./copybot -r <sha> astraeus variants/astraeus-<sha7>`.
+- `ab.py`'s git refs build `bots/ocean` (`--bot` picks another, e.g. `archives/hyperion`, which older commits also hold at `bots/hyperion`). To A/B a working tree, pass bot directories: the working one and a frozen copy of a commit's, e.g. `./copybot -r <sha> astraeus variants/astraeus-<sha7>`.
 - Drafts are compiled in. ocean drafts from draft10's F92 model (CHANGES 502); astraeus stays on draft5. With `params::test_draft` on, a bot plays ladder compositions (`tools/draftlab/test_comps.py`) in place of its own draft; every bot directory's is off.
 - The engine is cambc 5.0.1. Frozen baselines and `tools/replay/harness` trace bots keep their 2.0.0 stat tables.
 - `bots/baselines/` holds frozen A/B baselines: never edit them; delete one once current bots beat it ~80% of the time.

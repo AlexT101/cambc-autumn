@@ -5,9 +5,10 @@
     py tools/ab.py main HEAD~1 --no-test-draft --suites ladder,gen
     py tools/ab.py astraeus variants/astraeus-38aa25c --no-test-draft --sprt --sprt-stop low
 
-CAND and REF are each a git ref (branch, sha, main), whose bots/archives/hyperion (bots/hyperion
-before its 2026-11-11 retirement, bots/hecate before the 2026-10-21 rename) is materialised with git archive into bots/variants/ab-<name>-<cand|ref>-<sha7>/
-with params::test_draft switched on, or a bot directory under bots/ (astraeus) used as it is. Wins are CAND's.
+CAND and REF are each a git ref (branch, sha, main), whose bots/<--bot> (default ocean) is materialised with
+git archive into bots/variants/ab-<name>-<cand|ref>-<sha7>/ with params::test_draft switched on, or a bot
+directory under bots/ (astraeus) used as it is. An archived bot (--bot archives/hyperion) is also found where
+it was before retirement (bots/hyperion; hyperion was bots/hecate before 2026-10-21). Wins are CAND's.
 Suites: ladder (maps/), gen (maps/gen), fresh (every maps/gen-s*/), or any directory of maps.
 
 --sprt plays the maps in a seeded random order and stops every suite once a sequential probability ratio test
@@ -71,17 +72,27 @@ def write_if_changed(path, data):
     path.write_bytes(data)
 
 
-def materialise(side, role, name, test_draft):
+def bot_paths(bot):
+    """Where a commit may hold BOT: an archived bot also at bots/NAME, from before its retirement, and
+    hyperion also at bots/hecate, its name before 2026-10-21."""
+    paths = [f"bots/{bot}"]
+    if bot.startswith("archives/"):
+        paths.append(f"bots/{bot.removeprefix('archives/')}")
+    if Path(bot).name == "hyperion":
+        paths.append("bots/hecate")
+    return paths
+
+
+def materialise(side, role, name, test_draft, bot_name="ocean"):
     """Write the bot at side's commit into a variant directory, rewriting only changed files
     so its build cache stays incremental."""
     sha = side["sha"]
-    # Commits before the 2026-11-11 retirement have the bot at bots/hyperion; before the 2026-10-21 rename, bots/hecate.
-    for bot in ("bots/archives/hyperion", "bots/hyperion", "bots/hecate"):
+    for bot in bot_paths(bot_name):
         data = git("archive", "--format=tar", f"{sha}:{bot}", binary=True)
         if data:
             break
     else:
-        raise ValueError(f"git archive found none of bots/archives/hyperion, bots/hyperion, bots/hecate at {side['spec']} ({sha[:7]})")
+        raise ValueError(f"git archive found none of {', '.join(bot_paths(bot_name))} at {side['spec']} ({sha[:7]})")
     files = {}
     with tarfile.open(fileobj=io.BytesIO(data)) as tar:
         for member in tar.getmembers():
@@ -108,7 +119,7 @@ def materialise(side, role, name, test_draft):
         elif path.is_dir() and not any(path.iterdir()):
             path.rmdir()
     write_if_changed(target / "ab.json", (json.dumps(
-        {"spec": side["spec"], "sha": sha, "test_draft": test_draft}, indent=2) + "\n").encode("utf-8"))
+        {"spec": side["spec"], "sha": sha, "bot": bot, "test_draft": test_draft}, indent=2) + "\n").encode("utf-8"))
     return target
 
 
@@ -270,6 +281,8 @@ def main():
                         help=f"Most concurrent matches, as CPU slots allow (default: all {cpu_slots.SIZE})")
     parser.add_argument("--suites", default="ladder,gen,fresh",
                         help="Comma-separated: ladder, gen, fresh, or directories of maps (default: all three)")
+    parser.add_argument("--bot", default="ocean",
+                        help="The bot a git ref builds, a name under bots/ (default: ocean; e.g. archives/hyperion)")
     parser.add_argument("--no-test-draft", action="store_true",
                         help="Leave materialised copies' params.h untouched, so each plays its own draft")
     parser.add_argument("--game-timeout", type=float, help="Opt-in native per-game wallclock limit; errors are retained")
@@ -315,7 +328,7 @@ def main():
             raise ValueError("No suites to play")
         for side, role in zip(sides, ("cand", "ref")):
             if side["kind"] == "git":
-                side["path"] = materialise(side, role, name, not args.no_test_draft)
+                side["path"] = materialise(side, role, name, not args.no_test_draft, args.bot)
                 side["test_draft"] = not args.no_test_draft
     except (ValueError, OSError) as error:
         parser.error(str(error))

@@ -1,5 +1,10 @@
 """Copy a bot to bots/variants/<name>/ with a forced draft compiled into its draft_preference array.
 
+Bots with a draft.cc draft_order() (astraeus, ocean) draft from a map model and tables, with draft_preference
+only as a fallback: the copy's draft_order() returns draft_preference, and its Vesper Vale gate
+(vesper_allowed) and team lock (team_locked) are lifted, so the forced draft is picked as given. The map
+model still measures the map, so play is otherwise the source's.
+
     py tools/variants/make_variant.py varg,willow,ryth,stellar,tavi
     py tools/variants/make_variant.py tavi --source variants/x --name x-tavi
 
@@ -23,6 +28,14 @@ HEADER = ROOT / "sdk" / "cpp" / "cambc.h"
 MAX_PICKS = 5
 COPIED = (".clangd", ".gitignore")
 ARRAY = re.compile(r"(\bdraft_preference\s*\[\s*\]\s*=\s*\{)(.*?)(\};)", re.S)
+# Function heads in draft.cc that each get a first line, so nothing overrides or filters the forced draft.
+# draft_order() is required where any of them is found (a bot that drafts beyond draft_preference).
+HOOKS = (
+    ("std::vector<cambc::champion_draft> draft_order() {\n",
+     "    return {std::begin(params::draft_preference), std::end(params::draft_preference)};  // make_variant\n"),
+    ("bool vesper_allowed() {\n", "    return true;  // make_variant\n"),
+    ("bool team_locked() {\n", "    return false;  // make_variant\n"),
+)
 
 
 def champions():
@@ -111,6 +124,21 @@ def replace_draft(files, draft):
     return path
 
 
+def hook_draft(files):
+    """Patch the files holding HOOKS' heads; return their paths."""
+    found = {}
+    for head, line in HOOKS:
+        hits = [path for path, text in files.items() for _ in range(text.count(head))]
+        if len(hits) > 1:
+            raise ValueError(f"Expected one {head.strip()!r}, found it in {', '.join(hits)}")
+        if hits:
+            files[hits[0]] = files[hits[0]].replace(head, head + line)
+            found[head] = hits[0]
+    if found and HOOKS[0][0] not in found:
+        raise ValueError(f"Found {', '.join(h.strip() for h in found)} but no draft_order() to force")
+    return sorted(set(found.values()))
+
+
 def write_if_changed(path, data):
     if path.is_file() and path.read_bytes() == data:
         return False
@@ -119,7 +147,7 @@ def write_if_changed(path, data):
     return True
 
 
-def make_variant(source="archives/hyperion", draft=None, name=None):
+def make_variant(source="ocean", draft=None, name=None):
     """Create or refresh the variant; return (directory, manifest)."""
     source = bot_dir(source)
     given = parse_draft(draft)
@@ -141,6 +169,7 @@ def make_variant(source="archives/hyperion", draft=None, name=None):
             else:
                 blobs[rel] = path.read_bytes()
     edited = replace_draft(texts, full)
+    hooked = hook_draft(texts)
     for rel, text in texts.items():
         blobs[rel] = text.encode("utf-8")
     for rel in COPIED:
@@ -157,7 +186,8 @@ def make_variant(source="archives/hyperion", draft=None, name=None):
             path.rmdir()
 
     manifest = {"name": name, **source_state(source), "draft": full, "given": given,
-                "padded": full[len(given):], "edited": edited}
+                "padded": full[len(given):], "edited": edited,
+                "hooked": hooked}
     old = target / "manifest.json"
     previous = json.loads(old.read_text(encoding="utf-8")) if old.is_file() else None
     if previous and previous.get("source") != manifest["source"]:
@@ -170,7 +200,7 @@ def make_variant(source="archives/hyperion", draft=None, name=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("draft", help="Comma-separated champions in pick order, e.g. varg,willow,ryth")
-    parser.add_argument("--source", default="archives/hyperion", help="Bot name under bots/, or a path (default: archives/hyperion)")
+    parser.add_argument("--source", default="ocean", help="Bot name under bots/, or a path (default: ocean)")
     parser.add_argument("--name", help="Variant directory name (default: <source>-<champions>[-pad])")
     args = parser.parse_args()
     try:
