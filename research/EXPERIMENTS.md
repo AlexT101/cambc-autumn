@@ -17258,3 +17258,22 @@ Results against oc-dfuel-506 (`fgate.py --fuel 200000 --first-batch 35`, fresh l
 - The fights that remain are unchanged (first target dies as often); the loss is ceded camps (enemy captures by 300 +0.3 to +0.7 a game for `pg-z8`), no collapse in our gold or captures, no fuel cost (out-of-fuel turns a game 5.19 base, 5.26 `pg-z8`).
 - A margin only for members seen stepping nearer (`pg-c8`, `pg-c6`) does nothing: distance kept avoids the fights, not reacting to the approach.
 - Nothing ships on local evidence. `pg-z8` is the arm for a live pair, as a measurement: only its effect (about -0.14 fights a game, -9 outnumbered rounds on our half) is within reach of 512 live games. `tools/packmetrics.py live 115 NEW --pair` reads it.
+
+## (ocean, 2026-11-11) Live draft read against real Fish and Mite: no draft effect the scrims can separate from zero; nothing built
+
+[research/ideas-2026-11-11/livedraft](ideas-2026-11-11/livedraft/README.md). Our draft changed at three versions only (v81, v83, v115), so each step is read as changed cells against unchanged cells on the live scrims (9,525 games against Fish, 9,950 against Mite), with the ladder archive and v115's decoded deaths beside it. No games played.
+
+Results against oc-comms-507: no candidate, no gate.
+
+| reading | result (95% CI over maps) of n |
+|---|---|
+| draft10 step (v83-114 -> v115), Fish: effect on a changed cell | +0.3 points (-11.0 to +11.0) of 170 cells |
+| draft10 step, Mite | -1.5 (-13.9 to +11.2) of 170 cells |
+| draft10 step, the nine other panel teams | -3.3 (-7.8 to +1.2) of 1,342 cells |
+| the pair, swaps of all three steps: Fish / Mite | -5.0 (-20.4 to +10.6) / -3.5 (-15.3 to +7.7) of 502 changed cells each |
+| other teams holding the pair, ladder: against Fish minus against the field | +1.7 (-3.6 to +6.9) of 2,812 games |
+
+- v115's live gain over v113 is as large on the cells whose team did not change: it is play, not draft10.
+- Real Fish kills our pair early as often as its body does (0.35 against 0.31 a game); its excess is on Prism and Willow (0.21 against 0.10, 0.20 against 0.09). No reading prices either lower against Fish.
+- Nearest leads, neither clear: Willow against Mite (+4 to +7 in three readings), Heart of Ruin against Fish (-1 to -7).
+- A live pair cannot read a nudge: 15% of cells changed is about 38 cells an opponent, ±20 points on them.
