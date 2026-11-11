@@ -1,10 +1,11 @@
 """Join fishcal trace lines (CS / CC verdicts, HG turn-end reach) with what happened next in the game.
 
-    python3 collect.py live VERSION OUT.jsonl.gz      # direct.py re-runs of replays/<VERSION>, outcomes from the ladder replays
+    python3 collect.py live VERSION OUT.jsonl.gz      # direct_batch.py re-runs of replays/<VERSION>, outcomes from the ladder replays
     python3 collect.py self BATCH_DIR OUT.jsonl.gz    # a local debug batch whose bots both log (self-play)
 
-Outcomes come from extract.mjs tables in replays/fishcal/analysis (keyed by the replay's sha256). A live game's rows are
-kept only through its `ladder_trusted_through` round (direct.py's direct_validation.json): until then the traced bot's state is the
+Outcomes come from extract.mjs tables keyed by the replay's sha256: replays/fishcal/analysis, or a version's
+extract/ladder (pipeline.py's extract step). A live game's rows are kept only through its `ladder_trusted_through`
+round (tools/replay/harness/direct_batch.py's direct_validation.json): until then the traced bot's state is the
 ladder bot's, so its verdicts are the ones that played. The outcome window may run past it, since it reads the ladder game.
 
 Verdict rows follow cal-tools/collect.py (the last stand of a turn, one chase row per target). HG rows: one per enemy
@@ -17,6 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 AN = ROOT / "replays" / "fishcal" / "analysis"
+CACHES = [AN, *sorted((ROOT / "replays").glob("v*/extract/ladder"))]
 RANGED = {"Vesper Vale", "Cassi", "Stellar", "Prism", "Willow", "Tavi"}
 
 
@@ -62,8 +64,9 @@ def game_rows(job):
     """job: replay path, {team: stdout text path or (zip, member)}, {team: last trusted round}, extra fields."""
     replay, stdouts, trusted, extra = job
     raw = Path(replay).read_bytes()
-    folder = AN / hashlib.sha256(raw).hexdigest()[:16]
-    if not (folder / "meta.json").is_file():
+    sha = hashlib.sha256(raw).hexdigest()[:16]
+    folder = next((c / sha for c in CACHES if (c / sha / "meta.json").is_file()), None)
+    if folder is None:
         return [], [], f"no extract for {replay}"
     meta = json.loads((folder / "meta.json").read_text())
     champs = {c["id"]: c for c in meta["champions"]}

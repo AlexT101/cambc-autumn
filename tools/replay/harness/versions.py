@@ -3,6 +3,7 @@
 Every pipeline script takes `--version NAME` (default v38) and the loader `v38lib.use(NAME)`.
 Generated data goes under `dir` (gitignored): ws/, inputs/, runs/batch/, extract/.
 """
+import json
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -25,16 +26,32 @@ VERSIONS = {
             "folders": ["replays/v66-farm/*"]},
 }
 
-# Live versions from v87 on are rebuilt from the scheduler's frozen build workspace (`src`: the masked source
-# exactly as uploaded; ~/tmp-offload/handoff/sched/gates.jsonl maps each version to it) rather than a commit.
-# Their games ran on cambc 5.0.1. Manifests come from the scrim log (research/combat-lab/fishcal/manifest.py).
-SCHED = "/home/ubuntu/tmp-offload/handoff/sched/build"
-for _v, _ws in {105: "live-wd-fsnh-1794275157", 106: "live-wd-rs8-1794286616", 108: "live-wd-chanM-1794302330",
-                109: "live-wd-bagfF-1794312740", 111: "live-wd-greed-1794333702"}.items():
-    VERSIONS[f"v{_v}"] = {"commit": None, "src": f"{SCHED}/{_ws}/bots/ocean/src", "bot": "bots/ocean", "dir": f"replays/v{_v}",
-                          "manifest": f"replays/v{_v}/manifest.json",
-                          "trace_bot": f"replays/v{_v}/trace-bot"}
+# Live versions (v87 on) are rebuilt from the scheduler's frozen build workspace rather than a commit: `src` is the
+# masked source exactly as uploaded. The scheduler's gates.jsonl names each version's workspace (a label can have
+# several), so every version it lists is registered here; batch.py's release re-runs then prove the attribution. Their
+# games ran on cambc 5.0.1 and come from the scrim log (scrim_manifest.py). pipeline.py runs the live chain for them.
+SCHED = Path.home() / "tmp-offload/handoff/sched"
 
+
+def _live_versions():
+    seen = {}
+    try:
+        lines = (SCHED / "gates.jsonl").read_text().splitlines()
+    except OSError:
+        return
+    for line in lines:
+        e = json.loads(line).get("entry") or {}
+        if e.get("workspace") and e.get("version") is not None:
+            seen.setdefault(e["version"], set()).add(e["workspace"])
+    for num, wss in sorted(seen.items()):
+        src = Path(next(iter(wss))) / "bots/ocean/src"
+        if len(wss) > 1 or f"v{num}" in VERSIONS or not src.is_dir():
+            continue  # an ambiguous record is left out rather than guessed
+        VERSIONS[f"v{num}"] = {"commit": None, "src": str(src), "bot": "bots/ocean", "dir": f"replays/v{num}", "live": True,
+                               "manifest": f"replays/v{num}/manifest.json", "trace_bot": f"replays/v{num}/trace-bot"}
+
+
+_live_versions()
 
 class Version:
     def __init__(self, name):
@@ -57,6 +74,8 @@ class Version:
         self.rec = self.ws / "bots" / f"{name}-rec"
         self.slot_prefix = f"{name}-trace-s"
         self.folders = v.get("folders")
+        self.live = bool(v.get("live"))
+        self.direct = self.dir / "runs" / "direct"
 
 
 def get(name=None):

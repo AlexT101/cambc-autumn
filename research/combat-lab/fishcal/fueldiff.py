@@ -1,4 +1,4 @@
-"""Per-turn fuel of direct.py re-runs against the ladder .fuel, on turns before each game's first divergence.
+"""Per-turn fuel of tools/replay/harness/direct_batch.py re-runs against the ladder .fuel, on turns before each game's first divergence.
 
     python3 fueldiff.py VERSION RUN_NAME"""
 import collections, json, struct, sys, zipfile

@@ -1,4 +1,4 @@
-# Replay harness (v38, v47, v66, v105-v111)
+# Replay harness (v38, v47, v66, live versions)
 
 Every script takes `--version` (default `v38`); [versions.py](versions.py) maps a version to its commit, bot, trace bot and data directory. To add a version, add a row there, then port `trace-bot/`'s instrumentation onto that commit's sources as `trace-bot-v47/` did. The [v47](#v47) and [v66](#v66) sections have their commands; the rest of this page describes v38.
 
@@ -200,27 +200,46 @@ In Python, call `L.use("v66")` after `import v38lib as L`.
 - `runs/`: 2.1 GB. The traces are 3.6 GB raw, gzipped.
 - `extract/`: 0.29 GB; `inputs/`: 0.17 GB.
 
-## v105-v111 (cambc 5.0.1)
+## Live versions, v87 on (cambc 5.0.1; studied: v105-v111)
 
-These rows serve the combat lab's live calibration ([fishcal-notes.md](../../../research/combat-lab/fishcal-notes.md)).
-Live versions are built from a masked upload with no commit of their own, so their `versions.py` rows have
-`"commit": None` and a `src`. That is the scheduler's frozen build workspace for the version, outside the repo, and
-`setup_ws.py` copies it into the release bot instead of running `git archive`. Manifests come from the scrim log
-(`research/combat-lab/fishcal/manifest.py`), not from `build_manifest.py`.
+A live version is built from a masked upload with no commit of its own. `versions.py` registers every version the
+scheduler's `~/tmp-offload/handoff/sched/gates.jsonl` lists: its `src` is that version's frozen build workspace
+(outside the repo; a label can have several, and gates.jsonl names the one uploaded), which `setup_ws.py` copies into
+the release bot instead of running `git archive`. A version gates.jsonl records twice with different workspaces is
+left out. The release re-runs then prove the attribution. One command runs the whole chain:
 
+```
+py tools/replay/harness/pipeline.py --version v112 --jobs 32 [--opps fish,mite] [--skip direct,...]
+```
+
+| step | script | output under `replays/<v>/` |
+|---|---|---|
+| manifest | `scrim_manifest.py`: the version's finished scrims against `--opps` from the scrim log | `ladder/`, `manifest.json` |
+| setup, decode | `setup_ws.py`, `decode_all.mjs` | `ws/`, `inputs/ladder/` |
+| batch | `batch.py` without the recorder stage: puppets, release re-runs, validation | `runs/batch/` |
+| tracebot | `live_trace_bot.py`: the source plus the combat lab's CS / CC / HG lines | `trace-bot/` |
+| direct | `direct_batch.py`: the trace bot against each puppet, trusted rounds per game | `runs/direct/` |
+| extract | `extract_all.py --kinds ladder`: the ladder replays' tables (outcomes) | `extract/ladder/` |
+
+Every step skips finished work; `direct_batch.py` redoes a game when the trace bot's wasm changes. The combat lab's
+`research/combat-lab/fishcal/collect.py live <v>` then joins the trace lines with outcomes
+([fishcal-notes.md](../../../research/combat-lab/fishcal-notes.md)).
+
+**Why a separate chain.**
 - **Release re-runs** are exact, with identical per-turn fuel, in all 2,690 games of v105, v106, v108, v109 and v111.
 - **The recorder and tracer do not reproduce these games under cambc 5.0.1.** Recorder segments show host-call fuel
   mismatches, even with v105's plain source in the trace slot (25% of rounds trusted), and plain debug builds reach
   43%. Debug codegen and the debug refund no longer track release fuel closely enough.
-- **What works:** direct re-runs (`research/combat-lab/fishcal/direct.py`) of the release code against the puppet, with
-  logging added by `fishcal/make_trace_bot.py --release-guard=2`. A `RELEASE_CODE` marker in the bot makes the
-  harness cmake drop `CAMBC_DEBUG`. Each log statement then runs inside
-  `fuel_pause(); ...; fflush(stdout); fuel_adjust(2); fuel_resume();`.
+- **What works:** direct re-runs of the release code against the puppet, with logging added by `live_trace_bot.py`
+  (default `--release-guard 2`). A `RELEASE_CODE` marker in the bot makes the harness cmake drop `CAMBC_DEBUG`. Each
+  log statement then runs inside `fuel_pause(); ...; fflush(stdout); fuel_adjust(2); fuel_resume();`.
   - `fuel_adjust(x)` refunds x, and 2 a block cancels the guard's own cost.
   - The flush must happen inside the window. Otherwise the buffered write is charged at turn end, about 110 fuel a
     turn.
   - With both, 85% of turns are fuel-identical to the ladder. 1,968 of 2,384 games are exact, and 81% of rounds are
     trusted.
+  - `live_trace_bot.py` patches the source by exact text, so a version whose fight code differs stops with the
+    unmatched line; port the lines to it then.
 - `trace_batch.py --trace-bot DIR` traces with an instrumented bot other than the version's `trace_bot`.
 
 ## How the from-scratch path was tested
@@ -443,6 +462,7 @@ All paths are under `tools/replay/harness/` unless they start with `replays/`.
 | `trace-bot-v47/` | v47 with the same logging (TRACE_SCHEMA.md, section v47) |
 | `trace-bot-v66/` | v66 with the logging and v66's own events (TRACE_SCHEMA.md, section v66) |
 | `versions.py`, `build_manifest.py`, `pipeline.py` | the version table; a generated manifest from replay folders; the whole chain in one command |
+| `scrim_manifest.py`, `live_trace_bot.py` (+ `.inc`), `direct_batch.py` | live versions: manifest from the scrim log; trace bot; traced direct re-runs |
 | `v38lib.py`, `v38lib_examples.py` | loader (`use(version)`) and examples |
 | `calib/`, `dumpsteps.mjs` | calibration probe; raw step dump |
 | `replays/v38-top20/ws/` | generated cambc 3.0.5 workspace: patched `cmake/` and `sdk/`, the maps, `bots/v38-release`, `bots/v38-rec`, puppets `bots/p-<key>` and tracer slots `bots/v38-trace-s<N>` |

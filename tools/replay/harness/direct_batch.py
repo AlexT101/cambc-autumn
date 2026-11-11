@@ -1,25 +1,27 @@
-"""Direct debug re-runs: a version's fishcal trace bot (debug build) against each game's puppet, no recorder.
+"""Direct traced re-runs: a version's trace bot against each game's puppet, played straight (no recorder).
 
-    python3 direct.py VERSION [--keys K1,K2] [--jobs N] [--bot DIR] [--out NAME] [--force]
+    py tools/replay/harness/direct_batch.py --version v105 [--keys K1,K2] [--jobs N] [--bot DIR] [--out NAME] [--force]
 
-The harness's tracer (fuel replayed from a recorder run) does not reproduce v105 on cambc 5.0.1, even with the plain
-source, so this plays the debug build straight. Its fuel is the debug build's own: the workspace SDK refunds a debug
-block's overhead (CAMBC_DEBUG_REFUND 10), so the game follows the ladder's until a fuel-gated choice tips, and each game
-is trusted through the round before its first input or round-hash difference from the ladder replay (compare.mjs).
+The recorder/tracer path does not reproduce games on cambc 5.0.1, even with the plain source (README, v105-v111), so
+this plays the trace bot (live_trace_bot.py; its release-guard build plays release code) in a debug run against the
+puppet. Each game is trusted through the round before its first input or round-hash difference from the ladder replay
+(compare.mjs). A game is redone when its result is missing, --force is given, or the trace bot's wasm has changed.
 
-Per game: replays/<VERSION>/runs/<NAME>/<key>/{direct.repl26a, trace.stdout.gz, direct.json}; NAME defaults to direct.
-direct.json carries ladder_trusted_through, so collect.py reads it as it reads trace_validation.json."""
-import argparse, concurrent.futures as cf, gzip, json, shutil, subprocess, sys, zipfile
+Per game: <dir>/runs/<NAME>/<key>/{direct.repl26a, trace.stdout.gz, direct.json}; NAME defaults to direct, and the
+bot defaults to the version's trace_bot. <dir>/runs/<NAME>/direct_validation.json holds every game's direct.json:
+ladder_trusted_through, exact, the first differences."""
+import argparse, concurrent.futures as cf, gzip, hashlib, json, shutil, subprocess, sys, zipfile
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO / "tools/replay/harness"))
-import versions  # noqa: E402
+import versions
+
+REPO = versions.REPO
+HERE = versions.HERE
 
 
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("version")
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    versions.add_arg(ap)
     ap.add_argument("--keys")
     ap.add_argument("--jobs", type=int, default=16)
     ap.add_argument("--bot", help="default: the version's trace_bot")
@@ -41,6 +43,7 @@ def main():
     r = subprocess.run(["cambc", "build", str(bot.relative_to(ws))], cwd=ws, capture_output=True, text=True)
     if r.returncode:
         sys.exit(r.stdout[-3000:] + r.stderr[-3000:])
+    wasm = hashlib.sha256((bot / ".cambc/build/bot-injected.wasm").read_bytes()).hexdigest()[:16]
     out = cfg.dir / "runs" / a.out
     out.mkdir(parents=True, exist_ok=True)
 
@@ -49,7 +52,9 @@ def main():
         d = out / k
         res_p = d / "direct.json"
         if res_p.exists() and not a.force:
-            return json.loads(res_p.read_text())
+            old = json.loads(res_p.read_text())
+            if old.get("wasm") in (wasm, None):  # None: written before stamps
+                return old
         d.mkdir(parents=True, exist_ok=True)
         puppet = ws / "bots" / f"p-{k}"
         tmp = d / "_run"
@@ -69,13 +74,13 @@ def main():
             text = z.read(f"team-{g['our_side']}.stdout").replace(b"\0", b"")
         with gzip.open(d / "trace.stdout.gz", "wb", compresslevel=6) as f:
             f.write(text)
-        c = subprocess.run(["node", str(REPO / "tools/replay/harness/compare.mjs"), str(cfg.inputs / f"{k}.json.gz"), str(rep)],
+        c = subprocess.run(["node", str(HERE / "compare.mjs"), str(cfg.inputs / f"{k}.json.gz"), str(rep)],
                            cwd=REPO, capture_output=True, text=True)
         cmp = json.loads(c.stdout) if c.returncode == 0 else {"error": c.stderr[-300:]}
         diffs = [x["round"] for x in (cmp.get("firstInputDiff"), cmp.get("firstRoundDiff")) if x]
         trusted = g["rounds"] if cmp.get("exact") or cmp.get("exactIgnoringRollovers") else (min(diffs) - 1 if diffs else None)
         res = {"key": k, "status": "ok", "rounds": g["rounds"], "ladder_trusted_through": trusted, "exact": bool(cmp.get("exact")),
-               "first_input_diff": cmp.get("firstInputDiff"), "first_round_diff": cmp.get("firstRoundDiff"), "bytes": len(text)}
+               "first_input_diff": cmp.get("firstInputDiff"), "first_round_diff": cmp.get("firstRoundDiff"), "bytes": len(text), "wasm": wasm}
         res_p.write_text(json.dumps(res, indent=1))
         return res
 

@@ -1,21 +1,44 @@
-"""A live version's fishcal trace bot: its exact source plus cal-dbg's verdict logging (CS / CC lines with
-the margin), the noisiest debug traces muted. Debug blocks only, so the release play is unchanged.
+"""A live version's trace bot: its exact source plus the combat lab's verdict logging (CS / CC lines with the margin,
+HG turn-end reach lines; research/combat-lab/fishcal-notes.md), the noisiest debug traces muted.
 
-    python3 research/combat-lab/fishcal/make_trace_bot.py SRC_DIR OUT_BOT_DIR
+    py tools/replay/harness/live_trace_bot.py --version v105              # -> replays/v105/trace-bot
+    py tools/replay/harness/live_trace_bot.py --src SRC_DIR --out BOT_DIR [--debug-blocks] [--no-hg] [--no-d]
+
+By default the bot builds as release code (a RELEASE_CODE marker: setup_ws.py's cmake patch drops CAMBC_DEBUG for it
+even in a debug run), so it plays the release build's code, and only these lines run, each inside fc_block: a
+fuel-paused window like DebugGuard's, declared here since the SDK declares the pause imports only under CAMBC_DEBUG.
+On cambc 5.0.1 that reproduces 85% of v105's turns fuel-identically, where debug builds diverge (README, v105-v111).
+--debug-blocks logs from ordinary debug blocks instead.
 
 Ported from bots/variants/cal-dbg (oc-cl2-base): chase_trade here has no boost argument, so CC lines carry boost 0,
-and cal_cap is raised from 150 kB to 3 MB per instance, since the harness's tracer runs without the 1 MiB cap."""
-import shutil, sys
+and cal_cap is raised from 150 kB to 3 MB per instance, since these runs have no 1 MiB log cap."""
+import argparse, shutil, sys
 from pathlib import Path
 
+import versions
+
 HERE = Path(__file__).resolve().parent
-args = [a for a in sys.argv[1:] if not a.startswith("--")]
-src, out = Path(args[0]), Path(args[1])
-NO_HG = "--no-hg" in sys.argv
-# --release-guard: the bot builds as release code (RELEASE_CODE: the harness's cmake patch drops CAMBC_DEBUG for it even
-# in a debug run), so it plays the release build's code, and only fishcal's lines run, inside fc_block: a fuel-paused
-# window like DebugGuard's, declared here since the SDK declares the pause imports only under CAMBC_DEBUG.
-REL = next((int(a.split("=")[1]) for a in sys.argv if a.startswith("--release-guard")), None) if any(a.startswith("--release-guard") for a in sys.argv) else None
+ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+ap.add_argument("--version", choices=list(versions.VERSIONS), help="source and output from the version's row")
+ap.add_argument("--src", help="a bot's src/ directory")
+ap.add_argument("--out", help="the trace bot directory to (re)create")
+ap.add_argument("--release-guard", type=int, default=2, metavar="R",
+                help="fuel each fc_block refunds (default %(default)s: cancels the window's own cost on cambc 5.0.1)")
+ap.add_argument("--debug-blocks", action="store_true", help="debug_block logging, not release code")
+ap.add_argument("--no-hg", action="store_true", help="no HG lines")
+ap.add_argument("--no-d", action="store_true", help="leave the bot's own D line a debug block")
+a = ap.parse_args()
+if a.version:
+    cfg = versions.get(a.version)
+    if not cfg.src:
+        sys.exit(f"{cfg.name} has no source directory (not a live version)")
+    src, out = Path(a.src or cfg.src), Path(a.out or cfg.trace_bot)
+elif a.src and a.out:
+    src, out = Path(a.src), Path(a.out)
+else:
+    ap.error("give --version, or --src and --out")
+NO_HG = a.no_hg
+REL = None if a.debug_blocks else a.release_guard
 BLOCK = "fc_block" if REL is not None else "debug_block"
 if out.exists():
     shutil.rmtree(out)
@@ -77,15 +100,14 @@ if not NO_HG: sub("bot.cc", "static_cast<char>(decision), memory.farm_group, mem
     "    });\n")
 if REL is not None:
     (out / "RELEASE_CODE").write_bytes(b"")
-    if "--no-d" not in sys.argv: sub("bot.cc", 'debug_block({ std::printf("D %d %u %c %d %d\\n"', 'fc_block({ std::printf("D %d %u %c %d %d\\n"')
+    if not a.no_d: sub("bot.cc", 'debug_block({ std::printf("D %d %u %c %d %d\\n"', 'fc_block({ std::printf("D %d %u %c %d %d\\n"')
     guard = (
-        "// fishcal: a fuel-paused window for the trace lines in a release-code build (make_trace_bot.py --release-guard).\n"
+        "// fishcal: a fuel-paused window for the trace lines in a release-code build (live_trace_bot.py).\n"
         "__attribute__((import_module(\"env\"), import_name(\"fuel_pause\"))) int fc_fuel_pause();\n"
         "__attribute__((import_module(\"env\"), import_name(\"fuel_resume\"))) void fc_fuel_resume();\n"
         "__attribute__((import_module(\"env\"), import_name(\"fuel_adjust\"))) void fc_fuel_adjust(long long);\n"
         "__attribute__((import_module(\"env\"), import_name(\"fuel_remaining\"))) long long fc_fuel_remaining();\n"
-        "// Host calls inside the window (printf's fd_write) are still charged: the guard removes what the window cost,\n"
-        "// read as the fuel left before it and after it, plus a constant measured against the ladder's per-turn fuel.\n"
+        "// The pause still charges the window a constant; fuel_adjust refunds it (measured against the ladder's per-turn fuel).\n"
         "struct FcGuard {\n"
         "    FcGuard() { fc_fuel_pause(); }\n"
         f"    ~FcGuard() {{ fc_fuel_adjust({REL}); fc_fuel_resume(); }}\n"
@@ -100,5 +122,5 @@ p = s / "model/safety.cc"
 t = p.read_text()
 tail = "} // namespace aph\n"
 assert t.endswith(tail)
-p.write_text(t[: -len(tail)] + (HERE / "cal_safety.inc").read_text() + "\n" + tail)
-print("ok", out)
+p.write_text(t[: -len(tail)] + (HERE / "live_trace_bot.inc").read_text() + "\n" + tail)
+print(f"{out}: trace bot from {src}" + (f", release guard {REL}" if REL is not None else ", debug blocks"))

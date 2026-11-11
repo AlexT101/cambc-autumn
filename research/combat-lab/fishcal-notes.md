@@ -20,11 +20,11 @@ correct; no bot changed, no A/B or live quota spent.**
   re-run against puppets of the opponent's recorded inputs (`tools/replay/harness`, cambc 5.0.1) reproduce **2,690 of
   2,690** ladder games, inputs, round hashes and per-turn fuel identical, so every game's version and source are proven
   (the scrim log's queue-time version is right for all of them).
-- **Instrumentation** (`fishcal/make_trace_bot.py`): cal-dbg's CS (stand) and CC (chase) lines with the margin, ported
+- **Instrumentation** (`tools/replay/harness/live_trace_bot.py`): cal-dbg's CS (stand) and CC (chase) lines with the margin, ported
   onto each version (chase_trade has no boost argument here), plus an HG line at each turn's end: every visible enemy
   whose strike reaches our tile, with the bot's `strike.at(d)` and `blow(e, p)`, the terms the strike search prices at
   `hit_given_reach`, and whether the search priced that tile (`search_priced_end()`).
-- **Re-run build** (`fishcal/direct.py`): the bot built as release code (the harness's `RELEASE_CODE` cmake patch)
+- **Re-run build** (`tools/replay/harness/direct_batch.py`): the bot built as release code (the harness's `RELEASE_CODE` cmake patch)
   with only the trace lines inside `fc_block`, a fuel-paused window that flushes stdout inside it and refunds 2. It
   plays against the puppet; each game is trusted through the round before its first input or round-hash difference
   from the ladder replay, and its rows stop there (outcome windows read the ladder replay). **1,968 games reproduce
@@ -159,20 +159,17 @@ boundary loses games against both opponents (not the mirror). Test it only with 
 
 ## Reproducing
 
-All in `research/combat-lab/fishcal/`; data under gitignored `replays/v1xx/` and `replays/fishcal/`.
+The harness runs the whole re-run chain for a live version in one command (`tools/replay/harness/README.md`,
+v105-v111): scrim manifest, workspace, decode, puppets and release re-runs, trace bot, traced re-runs, ladder
+extracts. Data goes under gitignored `replays/v1xx/`; the analysis scripts are in `research/combat-lab/fishcal/`.
 
 ```
-python3 research/combat-lab/fishcal/manifest.py v105                      # scrim zips -> replays/v105/{ladder,manifest.json}
-python3 tools/replay/harness/setup_ws.py --version v105                   # workspace, exact release + recorder (versions.py rows v105-v111)
-node tools/replay/harness/decode_all.mjs --list replays/v105/ladder-list.json --out replays/v105/inputs/ladder --threads 20
-python3 tools/replay/harness/batch.py --version v105 --jobs 24            # puppets; release re-runs prove the source
-python3 research/combat-lab/fishcal/make_trace_bot.py SRC replays/v105/trace-bot --release-guard=2
-python3 research/combat-lab/fishcal/direct.py v105 --jobs 24              # traced re-runs, trust per game
-node tools/replay/extract.mjs replays/v105/ladder --threads 12 --out replays/fishcal/analysis
+py tools/replay/harness/pipeline.py --version v105 --jobs 32       # any version the scheduler's gates.jsonl lists
 python3 research/combat-lab/fishcal/collect.py live v105 replays/fishcal/live-v105.jsonl.gz
 python3 research/combat-lab/fishcal/collect.py self replays/batch-...-ladder replays/fishcal/self-ladder.jsonl.gz
 python3 research/combat-lab/fishcal/ana.py replays/fishcal/self-*.jsonl.gz replays/fishcal/live-v1*.jsonl.gz --sections calib,jump,members,damage,hg,sub
+python3 research/combat-lab/fishcal/fueldiff.py v105 direct                # a re-run's per-turn fuel against the ladder's
 ```
 
-`replays/fishcal/run_versions.sh 106 108 109 111` runs the chain for the other versions (about 15 minutes each on
-24 cores). `fishcal/fueldiff.py VERSION RUN` compares a re-run's per-turn fuel with the ladder's.
+The self-play rows come from a debug batch of `bots/variants/fishcal-v105` (v105's source with the same lines in debug
+blocks) against itself.
