@@ -1,0 +1,58 @@
+diff -ru -x .cambc chy18-cm2k3/src/bot_parts.h chy18-apg/src/bot_parts.h
+--- chy18-cm2k3/src/bot_parts.h	2026-11-11 21:02:52.430957541 +0000
++++ chy18-apg/src/bot_parts.h	2026-11-11 22:42:24.422772628 +0000
+@@ -467,6 +467,12 @@
+     int trips = 0, claimers = 0, n_expected = 0;
+     std::array<int, 8> expected{};
+ };
++// An unseen living ally's tile as its comms slot tells it this round or last: a cell centre, within
++// comms::told_error() of where it stood.
++inline bool told_tile(const World& world, const ChampionBelief& a, vec2& at) {
++    int round = -1;
++    return params::comms_slots && !a.is_self && a.alive && !a.visible && comms::told_ally(a.index, at, round) && round >= world.round - 1;
++}
+ // What plan_crew, share_damage and crew_available read of each ally, read once for a farm call
+ // (nothing in its loop changes them), in ally order; the costlier parts on first need.
+ // `line` is the recall line plans are priced at.
+@@ -481,7 +487,8 @@
+         // crew_available: 0 never, 1 unless it claims the group, 2 by the distances below.
+         mutable std::uint8_t avail;
+         mutable bool harmless_claim, on_cleared;
+-        mutable vec2 claim_centre, on_centre;
++        mutable bool told; // out of sight, placed by its slot's tile (`told_at`)
++        mutable vec2 claim_centre, on_centre, told_at;
+     };
+     std::array<Ally, 16> at;
+     int n = 0;
+diff -ru -x .cambc chy18-cm2k3/src/economy/farm.cc chy18-apg/src/economy/farm.cc
+--- chy18-cm2k3/src/economy/farm.cc	2026-11-11 18:39:54.000000000 +0000
++++ chy18-apg/src/economy/farm.cc	2026-11-11 22:42:24.423800092 +0000
+@@ -723,8 +723,10 @@
+             return false;
+         };
+         float staged = strength;
++        // The ring is wider than our sight: a claimer across it is placed by its slot's tile.
+         for (const auto& a : world.allies)
+-            if (!a.is_self && a.alive && a.visible && comms::claim_of(world, a.index) == g && near(a.pos)) staged += camp_output(a);
++            if (vec2 at; !a.is_self && a.alive && comms::claim_of(world, a.index) == g && (a.visible ? near(a.pos) : told_tile(world, a, at) && near(at)))
++                staged += camp_output(a);
+         if (staged >= params::mono_gather_share * output) return true;
+         return memory.mono_group == g && memory.mono_staged >= 0 && world.round - memory.mono_staged >= params::mono_max_wait;
+     };
+diff -ru -x .cambc chy18-cm2k3/src/economy/siege.cc chy18-apg/src/economy/siege.cc
+--- chy18-cm2k3/src/economy/siege.cc	2026-11-11 18:39:54.000000000 +0000
++++ chy18-apg/src/economy/siege.cc	2026-11-11 22:42:24.423703320 +0000
+@@ -271,7 +271,12 @@
+     bool engaged = false;
+     float staged = camp_output(world.me());
+     for (const auto& a : world.allies) {
+-        if (a.is_self || !a.alive || !a.visible) continue;
++        if (a.is_self || !a.alive) continue;
++        // The ring is wider than our sight: a claimer across it is placed by its slot's tile.
++        if (vec2 at; !a.visible) {
++            if (comms::claim_of(world, a.index) == g && told_tile(world, a, at) && at_stage(at)) staged += camp_output(a);
++            continue;
++        }
+         if (test(G.threat(), a.pos) && c.awake != Awake::asleep) engaged = true;
+         if (at_stage(a.pos)) staged += camp_output(a);
+     }

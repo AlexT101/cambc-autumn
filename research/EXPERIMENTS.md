@@ -17558,3 +17558,20 @@ The user's leads on wheel: the gem/gold price reading the enemy's state, crystal
   outside gold groups 9.4 -> 4.3; wheel wins 15 -> 17 of 48 (noise). No arm fixes wheel. Crystal uses 0 for all.
 - Not built: crystal hops (untestable locally on wheel; `bm-tp` lost), draft-time `min_bank` (charybdis's EOQ floor
   already sets it in play; CHANGES 461 lost live). No 100k read: the 200k result is a zone, not a reviewed gain.
+
+## (charybdis, 2026-11-11) Ally positions from the comms slots in existing decisions: all level
+
+On `variants/chy18-cm2k3`, the consumers of told ally tiles whose radius is wider than our sight
+(`research/ideas-2026-11-11/allypos/README.md`). `fgate.py` at 200k fuel against chy18-cm2k3, unmetered Flp4/Mt3q:
+
+| arm | change | win% (95% CI) | games | paired games differ |
+|---|---|---|---|---|
+| chy18-apg | siege and Monolith gathers count an unseen claimer told at the ring | 49.98 (49.91-50.04) | 163,840 | 0.4% |
+| chy18-apgc | apg + apc | 50.16 (49.91-50.40) | 163,840 | 6.4% |
+| chy18-apc | an unseen free ally is crew-available by its told tile | 50.07 (49.90-50.24) | 327,680 | 6.2% |
+| chy18-apk | an unseen claimer counts in the crew by its told tile, not a sight within 12 rounds | 50.06 (49.92-50.21) | 327,680 | 4.4% |
+| chy18-apc2 | apc + apk | 50.09 (49.90-50.28) | 327,680 | 7.4% |
+
+- Out-of-fuel turns are level in every arm. No 100k run, since no 200k read showed a gain. Nothing kept.
+- Allies that matter to a decision now are mostly in sight; patching radius tests with told tiles changes 4-7% of
+  games, and the changes cancel out.
