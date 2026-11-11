@@ -16831,3 +16831,29 @@ New noise-based fresh gates use `tools/fgate.py`: 16 compile workers, eight futu
 `oc504-wcamp` vs `oc-emb5-504`, release 200k, Flp4/Mt3q, finished **ZONE** with fresh −0.036±0.169pp; Fish +0.024±0.229, Mite −0.096±0.249. Low LLR +2.979/high −22.181; no positive screen. This is judgement review, not formal rejection. No established gain supports 100k testing or shipping. All 653 block records/5,224 summary hashes pass terminal audit, zero validity failures, unchanged seals. The 83,584 paired noise-map units reuse 1,024 maps. Both reopened full ward comparisons are terminal; earlier evidence remains separate. [Complete record](ideas-2026-11-10/ward504/README.md).
 
 Native-cache diagnosis found about 13s of remaining serial preparation per 20.21s block. A bounded 16-slot prewarm prototype passed resource tests/review, but its owner ended before launch: **no warming was run, no benefit established, no default warm integration**. [Measured timing and preserved prototype](ideas-2026-11-10/compile-ahead-default/native-cache-diagnosis.md).
+
+
+
+## (ocean, 2026-11-11) Fish/Mite draft nudge on 506: neither helps
+
+Draft10's champion values plus lam x the log-odds that Fish or Mite holds the champion (flat over all maps, or
+conditional on pick count and 25 map features), lam set so 15 / 30 / 50% of fresh maps change team; each arm is
+`oc-dfuel-506` with only `draft_model.h` changed. 200k fuel, release, plain `ab.py` batches against fixed `Flp4` /
+`Mt3q` bodies, both sides, 18,385 fresh ladder-v2 maps (seeds 7111000-23, 7111100-47); arms play only the maps whose
+team changes, paired with the base's games there (unchanged-team games verified identical). 416,904 games.
+
+Results against oc-dfuel-506 (win% = 50 + change over all maps, 95% CI over maps):
+
+| arm | maps changed | paired games | win% (95% CI) | vs Fish | vs Mite |
+|---|---:|---:|---|---:|---:|
+| Fish flat 15 / 30 / 50 | 15 / 30 / 50% | 10,920 / 21,964 / 36,984 | 50.07 (49.92-50.22) / 50.01 (49.79-50.23) / 49.91 (49.63-50.19) | +0.23 / +0.22 / +0.28 | -0.09 / -0.20 / -0.46 |
+| Fish cond 15 / 30 / 50 | 15 / 30 / 50% | 10,764 / 21,828 / 36,628 | 50.09 (49.93-50.24) / 49.97 (49.75-50.19) / 49.80 (49.52-50.08) | +0.27 / +0.24 / +0.20 | -0.10 / -0.30 / -0.60 |
+| Mite flat 15 / 30 / 50 | 15 / 30 / 50% | 11,252 / 22,036 / 36,692 | 50.06 (49.91-50.21) / 49.94 (49.73-50.16) / 49.82 (49.54-50.10) | +0.20 / +0.13 / +0.08 | -0.08 / -0.24 / -0.44 |
+| Mite cond 15 / 30 / 50 | 15 / 30 / 50% | 11,276 / 21,992 / 36,928 | 50.11 (49.96-50.27) / 49.94 (49.73-50.15) / 49.73 (49.45-50.01) | +0.24 / +0.21 / +0.11 | -0.01 / -0.33 / -0.65 |
+| Fish's / Mite's likeliest team (1,024 maps) | 99% | 4,048 / 4,064 | 32.6 (30.6-34.6) / 34.6 (32.7-36.6) | -15.0 / -13.3 | -19.7 / -17.4 |
+| never Prism / Willow / either (6,133 maps) | 80 / 61 / 86% | 19,492 / 14,956 / 21,164 | 41.3 (40.6-42.1) / 46.5 (45.9-47.0) / 38.4 (37.6-39.1) | -7.2 / -4.0 / -10.8 | -10.1 / -3.2 / -12.5 |
+
+Verdict: no nudge reaches the 50.5 bar or is established above 50; nothing shipped, no 100k run. Light nudges only
+swap our marginal pick, which the model cannot rank (predicted -2.2 points on changed maps, measured -0.8 ±0.5);
+Prism and Willow are worth 8.7 and 3.6 points to this bot. Details, pick-rate table and limits:
+[ideas-2026-11-11/draftnudge/README.md](ideas-2026-11-11/draftnudge/README.md).
