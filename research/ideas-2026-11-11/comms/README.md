@@ -171,6 +171,35 @@ Results against `oc-dfuel-506` (`cm2-k3`):
   one fact the crew count uses, it is exact to a tile, and it decodes on demand with no history, so it should give
   s3k's behaviour at k3's fuel. Willow's follow would fall back to the claim's centre.
 
+## Distance variants: `cm2-d1`, `cm2-d2` (2026-11-11)
+
+The idea left unbuilt above, built (`mkdist.py`, on top of `cm2-k3`; both decode on demand, both within 0.1% of
+base's fuel on the bench's identical games):
+
+- `cm2-d1`: a tile frame is the exact distance to the centre of the claimed group while the ally is within 9 of it
+  (the vision radius), and its cell otherwise, so Willow's follow keeps a told tile.
+- `cm2-d2`: a tile frame is that distance only; Willow's follow falls back to the claim's centre.
+
+Results against `oc-dfuel-506`:
+
+| arm | read | fuel | win % (base) | diff, points (95% CI) | games | Fish | Mite | OOF turns a game (base) |
+|---|---|---|---|---|---|---|---|---|
+| cm2-s3k | panels A+B+C | 200k | 79.77 (79.31) | +0.46 (+0.20..+0.72) | 122,880 | +0.35 ±0.36 | +0.57 ±0.38 | 0.05 (0.05) |
+| cm2-k3 | panels A+B+C | 200k | 79.46 (79.31) | +0.15 (-0.11..+0.42) | 122,880 | +0.10 ±0.36 | +0.21 ±0.38 | 0.05 (0.05) |
+| cm2-d1 | panels A+B+C | 200k | 79.50 (79.31) | +0.19 (-0.07..+0.46) | 122,880 | -0.07 ±0.36 | +0.46 ±0.38 | 0.05 (0.05) |
+| cm2-d2 | panels A+B+C | 200k | 79.34 (79.31) | +0.04 (-0.22..+0.30) | 122,880 | -0.15 ±0.35 | +0.22 ±0.38 | 0.05 (0.05) |
+| cm2-d1 | `fgate.py` batches 16-31 | 100k | 50.23 (50.00-50.47) | +0.23 ±0.24 | 327,680 | +0.17 ±0.32 | +0.30 ±0.35 | 5.88 (5.88) |
+| cm2-k3 | `fgate.py` batches 16-31 | 100k | 50.13 (49.89-50.37) | +0.13 ±0.24 | 327,680 | +0.17 ±0.32 | +0.09 ±0.35 | 5.87 (5.88) |
+
+- **The exact distance does not recover s3k's 200k figure**: d1 is +0.19 where k3 is +0.15 and s3k +0.46. Whatever
+  s3k had beyond k3 was not near-group precision; what is left is its 4-round history of tiles (or luck in s3k's
+  read, whose interval reaches down to +0.20).
+- **Dropping Willow's told tile costs**: d2 is the worst of the three.
+- d1's 100k read (maps none of the earlier reads played) is +0.23 ±0.24 with out-of-fuel turns level; k3 on the
+  same maps is +0.13 ±0.24. k3's three independent 100k reads (+0.18, +0.17, +0.13) pool to about +0.16 ±0.14.
+- Verdict: d1 = k3 within noise, with 27 more lines; k3 stays the candidate. The crew count from told positions is
+  a real, fuel-neutral gain of about +0.15 to +0.2 points at 100k and no more.
+
 ## Do Fish and Mite converge on fights more than we do?
 
 One use that could be large is calling far allies to a fight. Live check on 512 ladder games of v115 (256 against
@@ -205,6 +234,7 @@ champions stand before the fight, not about what gets broadcast once it starts.
 ## Files
 
 - Merge candidate: `bots/variants/cm2-k3` = `oc-dfuel-506` + `cm2-k3.patch` (`mkfinal.py cm2-k3` rebuilds it;
+  `cm2-d1`, `cm2-d2` = `cm2-d1.patch`, `cm2-d2.patch`, from `mkdist.py`;
   `cm2-k1`, `cm2-k2` are the earlier fuel-pass steps).
 - Dev copy with every knob off (byte-identical replays to base on `bench.py`'s 52): `bots/variants/cm2-dev`.
 - Frozen arms: `bots/variants/cm2-s1`, `-s2`, `-s3` (plumbing, modes 1-3), `-s3a` (+ arrival), `-s3l` (+ late),
