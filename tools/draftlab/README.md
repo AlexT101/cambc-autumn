@@ -63,7 +63,7 @@ node tools/draftlab/model.mjs ladder --lab L    # ladder.jsonl fit with team eff
     from the source's `draft_model.h`) under the lab's lock, in id order, as the C++ drafts it. Batch 0 mixes it
     with random teams (`explore_mix`, 60 / 40); later batches `mix` explore 35, current 15, Thompson 35, probe 15.
 - **Pool** (`pool`, `holdout` in `config.json`): globs of maps and suites, less the held-out suites, which are never
-  measured or played, and less maps outside the published sizes (`write_maps`, `PUBLISHED_SIZE` 29 to 100 a side:
+  measured or played, and less maps outside the published sizes (`write_maps`, `PUBLISHED_SIZE` 28 to 100 a side (29 until draft18, 2026-11-11, though the rules say 28 from 2026-11-05):
   13 of `fall-custom`'s edge cases, from 2026-10-31; draft3 and emblem round 3 still had them). draft2: the ladder, `fall-custom`, `gen` (6001), `gen-s1` (6002) and `fresh-6003` to
   `fresh-6176` (45k maps); held out `fresh-6177` to `fresh-6196`. draft3's and emblem round 3's (`lab.py POOL`;
   [PLAN-draft3.md](PLAN-draft3.md)): the ladder, `fall-custom` and `fresh-9100` to `9280` (suites no A/B used); held

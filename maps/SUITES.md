@@ -980,3 +980,7 @@ re-measured"; used).
 
 **Comms slots (2026-11-11):** `--mix ladder-v2`, under `~/tmp-offload/comms2/maps/fresh-{seed}`, symlinked into `~/tmp-offload/comms2/panels/{A,B,C}{0..3}`:
 - 3611000–3611119, 30,720 maps (panels A, B, C of 40 seeds each): `cm2-s*` against `variants/oc-dfuel-506`, each playing `spar-dvn1..4-Flp4` and `spar-dvn1..4-Mt3qro`, `replays/ab/cmb-*` (used). 3611120–3611999 reserved, not generated.
+
+**draft18 (charybdis draft lab, 2026-11-11):** `--mix ladder-v2`, in `suites/fresh/fresh-{seed}`:
+- 3300000-3300099, 25,600 maps: the lab's training pool (`replays/draftlab/draft18`).
+- 3310000-3310079, 20,480 maps, held out from the lab (its `holdout`): for judging its header.

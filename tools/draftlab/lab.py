@@ -25,7 +25,7 @@ from fetch_replays import MY_TEAM  # noqa: E402
 LABS = ROOT / "replays" / "draftlab"
 # Twice an A/B's share of the CPU slots while both run (cpu_slots.py, fair share); the emblem lab imports this too.
 os.environ.setdefault("CAMBC_SLOT_WEIGHT", "2")
-PUBLISHED_SIZE = (29, 100)  # smallest and largest side of a published map
+PUBLISHED_SIZE = (28, 100)  # smallest and largest side of a published map (cambc-rules.yaml map.size)
 # pool: globs of map files or directories; holdout: directories never played nor measured (judging what the lab
 # deploys). prior_games / prior_maps: another lab's games and map table, fitted at prior_weight (never scored) so
 # Thompson has a model from the first batch. features: the model's map features (model.mjs FEATURES names; init writes
