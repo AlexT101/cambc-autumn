@@ -80,6 +80,8 @@ public:
         : world_(world), safety_(safety), from_(from), radius_(radius), amount_(amount) {}
     // A heal restoring `gain` to ally `a` at `pos` with `health`.
     bool worth(const ChampionBelief& a, vec2 pos, float gain, float health);
+    // Every blow that may land before our next turn could fell it.
+    bool urgent(const ChampionBelief& a, vec2 pos, float health) { return health <= damage(a, pos, 1); }
 private:
     // What could hit `a` at p a round: camp hits, and `blow_share` of the enemy blows.
     float damage(const ChampionBelief& a, vec2 p, float blow_share);
@@ -109,7 +111,21 @@ struct HealTarget {
     const ChampionBelief* ally;
     vec2 pos;
     float gain, fraction; // what the heal restores, and the ally's health fraction before it
+    float value = 0;      // heal_value
+    bool urgent = false;  // HealGate::urgent, with a gate
 };
+// Rounds of farm a heal restoring `gain` to `a` at `pos` saves: its share of a trip home (heal_trip
+// from pos's steps from our spawn) per usable health, as Prism's recovery prices it (support.cc).
+float heal_value(const World& world, const ChampionBelief& a, vec2 pos, float gain, float max_health);
+// Our protected mate when we are its healer, and whether it waits in its recovery for our heal.
+struct HealMate {
+    const ChampionBelief* ally = nullptr;
+    bool waiting = false;
+};
+HealMate heal_mate(const World& world);
+// x's heal before y's: one that may keep an ally from falling (the mate first among those), then the
+// mate while it waits for us, then the most rounds saved (heal_value), then the lowest ally.
+bool heal_before(const HealTarget& x, const HealTarget& y, const HealMate& mate);
 // A visible ally off its spawn that a heal of `amount` is worth casting on (`gate`), or with `step`
 // or no gate, also worth stepping for (worth_healing). One keeping a recall going will reach spawn
 // and heal there.

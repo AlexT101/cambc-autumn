@@ -221,14 +221,15 @@ bool heal_lands_from(const World& world, vec2 p, const std::array<HealView, 8>& 
     return false;
 }
 
-// The neighbouring station `ok` accepts from which a heal lands best: the most restored, then on
-// the lowest ally, then the least `cost`. `here` if none.
+// The neighbouring station `ok` accepts from which a heal lands best (heal_before), then the least
+// `cost`. `here` if none.
 template <class Ok, class Cost>
 vec2 heal_station(const World& world, Pathing& pathing, Safety& safety, vec2 here, const std::array<HealView, 8>& views,
                   int n, Ok&& ok, Cost&& cost) {
     vec2 best = here;
-    float best_gain = 0, best_fraction = 0;
+    const HealTarget* best_target = nullptr;
     int best_cost = unreachable;
+    const auto mate = heal_mate(world);
     const auto& tiles = stations(world, safety, here).tiles;
     for (int k = 1; k < 9; ++k) {
         const auto& tile = tiles[k];
@@ -239,9 +240,8 @@ vec2 heal_station(const World& world, Pathing& pathing, Safety& safety, vec2 her
         for (int t = 0; t < n; ++t) {
             const auto& target = views[t].target;
             if (!support_view(views[t].viewers, target.pos, tile.p)) continue;
-            if (target.gain != best_gain ? target.gain > best_gain
-                : target.fraction != best_fraction ? target.fraction < best_fraction : c < best_cost)
-                best = tile.p, best_gain = target.gain, best_fraction = target.fraction, best_cost = c;
+            if (!best_target || heal_before(target, *best_target, mate) || (!heal_before(*best_target, target, mate) && c < best_cost))
+                best = tile.p, best_target = &target, best_cost = c;
         }
     }
     return best;
@@ -551,7 +551,8 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
     const bool can_step = my_can_move();
     vec2 best = here;
     int best_gap = unreachable, best_home = unreachable;
-    float best_gain = -1;
+    const HealTarget* best_target = nullptr;
+    const auto heal_mate_now = heal_mate(world);
     bool found = false;
     for (int k = -1; k < 8; ++k) {
         const vec2 p = k < 0 ? here : here + directions[k];
@@ -567,13 +568,10 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
         for (int t = 0; t < view_count; ++t) {
             const auto& v = views[t].target;
             if (!support_view(views[t].viewers, v.pos, p)) continue;
-            const auto* chosen = target >= 0 ? &views[target].target : nullptr;
-            if (!chosen || (v.gain != chosen->gain ? v.gain > chosen->gain
-                            : v.fraction != chosen->fraction ? v.fraction < chosen->fraction
-                            : v.ally == mate && comms::support_request(world)))
-                target = t;
+            if (target < 0 || heal_before(v, views[target].target, heal_mate_now)) target = t;
         }
-        const float gain = target >= 0 ? views[target].target.gain : 0;
+        const HealTarget* chosen = target >= 0 ? &views[target].target : nullptr;
+        const float gain = chosen ? chosen->gain : 0;
         if (willow && !ready) {
             if (p == here || !work_route || work_route->at(p) >= work_route->at(here)
                 || (!in_range && dist(p, mate->pos) >= dist(here, mate->pos))) continue;
@@ -582,9 +580,10 @@ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memor
         if (!(p == here ? here_risk : support_exposure(world, safety, p)).safe()) continue;
         const int home = pathing.to_ally_spawn().at(p);
         // Staying, tried first, keeps ties; between steps, the one nearer home wins.
-        if (!found || gain > best_gain || (gain == best_gain && gap < best_gap)
-            || (gain == best_gain && gap == best_gap && best != here && home < best_home))
-            found = true, best = p, best_gain = gain, best_gap = gap, best_home = home;
+        const bool better = chosen && (!best_target || heal_before(*chosen, *best_target, heal_mate_now));
+        const bool tie = chosen ? best_target && !heal_before(*best_target, *chosen, heal_mate_now) : !best_target;
+        if (!found || better || (tie && gap < best_gap) || (tie && gap == best_gap && best != here && home < best_home))
+            found = true, best = p, best_target = chosen, best_gap = gap, best_home = home;
     }
     if (!found) return abandon_recovery();
     const auto commit_support = [&] {

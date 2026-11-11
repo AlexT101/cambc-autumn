@@ -1056,7 +1056,30 @@ void hold_capture(const World& world, Memory& memory, bool attacked) {
     if (const int hit = attack_camp(world, free_hit); hit >= 0) {
         cast_at_camp(world, hit);
         reset_and_attack_camp(world, hit);
+        return;
     }
+    // No basic reaches one, but a cast may: the hold keeps us on this tile, so an excludes-walking
+    // cast forgoes no walk, and a ready slot not cast now loses the round (rules abilities.cooldown).
+    const vec2 here = my_position();
+    // camp_cast's own group-independent test, once rather than per group.
+    if (!my_can_cast() || engagement_near(world, here, world.me().facts().cast_reach())) return;
+    std::array<std::pair<int, int>, 16> near; // (distance, group): groups_near's vector is reused by camp_cast
+    int n = 0;
+    for (int g : world.map().groups_near(here, world.me().facts().cast_reach())) {
+        if (n == static_cast<int>(near.size())) break;
+        // Unlike free_hit, not an unknown wake state: from cast range it may hide strikers we would wake.
+        if (world.camps[g].state != CampState::alive || g == held
+            || !(groups[g].strength <= 0 || (world.camps[g].awake == Awake::awake && world.camps[g].asleep == 0)))
+            continue;
+        int d = unreachable;
+        const auto& ms = groups[g].members;
+        for (std::size_t i = 0; i < ms.size(); ++i)
+            if (world.camps[g].health[i] > 0) d = std::min(d, dist(here, ms[i].pos));
+        if (d != unreachable) near[n++] = {d, g};
+    }
+    std::sort(near.begin(), near.begin() + n);
+    for (int k = 0; k < n; ++k)
+        if (cast_at_camp(world, near[k].second)) return;
 }
 
 } // namespace

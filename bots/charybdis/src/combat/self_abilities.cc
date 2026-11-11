@@ -8,6 +8,7 @@
 #include "../champions.h"
 #include "../emblems.h"
 #include "../params.h"
+#include "../model/comms.h"
 #include "../model/escape.h"
 #include "../model/pathing.h"
 #include "../model/safety.h"
@@ -753,14 +754,35 @@ bool HealGate::worth(const ChampionBelief& a, vec2 pos, float gain, float health
     return gain >= least_ || health <= damage(a, pos, 1);
 }
 
+float heal_value(const World& world, const ChampionBelief& a, vec2 pos, float gain, float max_health) {
+    const int field = world.map().from_ally_spawn().at(pos);
+    const auto steps = static_cast<float>(field != unreachable ? field : dist(pos, world.map().ally_spawn_centre));
+    const float usable = max_health * (1 - params::recall_health_fraction);
+    return usable > 0 ? gain / usable * heal_trip(a.recall_turns(), steps, steps) : 0.0f;
+}
+
+HealMate heal_mate(const World& world) {
+    const auto pair = support_pair(world);
+    if (!pair[0] || !pair[1] || !pair[1]->is_self) return {};
+    return {pair[0], comms::support_request(world)};
+}
+
+bool heal_before(const HealTarget& x, const HealTarget& y, const HealMate& mate) {
+    const auto rank = [&](const HealTarget& t) { return t.urgent ? (t.ally == mate.ally ? 3 : 2) : t.ally == mate.ally && mate.waiting ? 1 : 0; };
+    if (const int rx = rank(x), ry = rank(y); rx != ry) return rx > ry;
+    return x.value != y.value ? x.value > y.value : x.fraction < y.fraction;
+}
+
 std::optional<HealTarget> heal_target(const World& world, const ChampionBelief& a, float amount, HealGate* gate, bool step) {
     if (a.is_self || !a.alive || !a.visible || test(world.map().ally_spawn, a.pos)) return std::nullopt;
     const auto* live = visible_record(a.handle);
     if (!live) return std::nullopt;
-    const HealTarget t{&a, {live->x, live->y}, std::min(amount, live->max_health - live->health), live->health / live->max_health};
+    HealTarget t{&a, {live->x, live->y}, std::min(amount, live->max_health - live->health), live->health / live->max_health};
     const float health = live->health;
     if (t.gain <= 0 || ((step || !gate) && !worth_healing(amount, t.gain, t.fraction))) return std::nullopt;
     if (kept_recall(a.handle, a.recall_turns()) || (gate && !gate->worth(a, t.pos, t.gain, health))) return std::nullopt;
+    t.value = heal_value(world, a, t.pos, t.gain, live->max_health);
+    t.urgent = gate && gate->urgent(a, t.pos, health);
     return t;
 }
 
@@ -773,12 +795,13 @@ bool heal_ally(const World& world, Safety& safety) {
     const int range = world.me().facts().abilities[heal].range();
     struct Candidate {
         cambc::handle_champion_t c;
-        const ChampionBelief* a;
-        vec2 pos;
-        float gain, fraction, health;
+        HealTarget t;
+        float health;
     };
     std::array<Candidate, 8> found;
     int n = 0;
+    HealGate gate(world, safety, here, range, amount);
+    const auto mate = heal_mate(world);
     // Read live: allies come into sight as we move.
     for (auto p : positions_within(live_champion_tiles(team::ally), here, range)) {
         if (p == here || test(world.map().ally_spawn, p) || n == static_cast<int>(found.size())) continue;
@@ -793,17 +816,17 @@ bool heal_ally(const World& world, Safety& safety) {
                 if (o.handle == c) a = &o;
             // One keeping a recall going will reach spawn and heal there.
             if (!a || kept_recall(c, a->recall_turns())) continue;
-            // Most restored first, then the lowest.
+            HealTarget t{a, p, gain, fraction, heal_value(world, *a, p, gain, live.max_health), gate.urgent(*a, p, health)};
             int i = n++;
-            for (; i > 0 && (found[i - 1].gain < gain || (found[i - 1].gain == gain && found[i - 1].fraction > fraction)); --i) found[i] = found[i - 1];
-            found[i] = {c, a, p, gain, fraction, health};
+            for (; i > 0 && heal_before(t, found[i - 1].t, mate); --i) found[i] = found[i - 1];
+            found[i] = {c, t, health};
         } catch (const cambc::error&) {
         }
     }
-    HealGate gate(world, safety, here, range, amount);
     for (int i = 0; i < n; ++i) {
         try {
-            if (gate.worth(*found[i].a, found[i].pos, found[i].gain, found[i].health) && cast_slot_on(heal, found[i].c)) return true;
+            const auto& t = found[i].t;
+            if (gate.worth(*t.ally, t.pos, t.gain, found[i].health) && cast_slot_on(heal, found[i].c)) return true;
         } catch (const cambc::error&) {
         }
     }

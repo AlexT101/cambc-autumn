@@ -42,3 +42,9 @@ Details in merge-log.md. "vs p1" is the candidate against charybdis-p1 directly.
 | C2 | M4-a2 Prism collects an ally's clear in progress ('Q') | 59.15 (58.7-59.6) | 52.43 (52.0-52.9) | 50.91 (50.4-51.4) | **accepted** |
 | C4 (on C2) | M5-c Prism stun-lock safety | 58.5 (58.0-59.0); paired vs C2 -0.68 (-1.23..-0.12) | 52.4 (51.9-52.9); -0.05 | 50.9 (50.4-51.4); -0.02 | rejected: loses vs ocean, OOF +15% |
 | C5 (on C2) | L-3 chain limit as a holding cost | 59.1 (58.7-59.6); -0.01 | 52.6 (52.1-53.1); +0.20 | 50.9 (50.4-51.4); +0.00 | rejected: level |
+| C3 ext (s-720161..240) | same; p1 vs ocean there 58.45 | 59.0 (58.5-59.4); paired vs p1 +0.51 | - | 50.4 (50.0-50.9) | - |
+| C3 (122,880, s-720001..240) | pooled | paired vs p1 +0.42 (+0.08..+0.75) | - | 50.35 (50.07-50.63) | **clear gain**: re-ported onto the accepted state |
+| C7 | L-1 Monolith carry price | - | - | - | dropped by user decision: fired too rarely to pass (80 debug games, 70 identical to carry3); untested |
+| C8 M2-b | two casts on a double turn | - | - | - | dropped by user decision: adds caution; level in K2b and alone on macro2 |
+| C9 (on C2) | K3 hand-over of full and single-tile holds | 59.1 (58.6-59.6); -0.05 | 52.8 (52.3-53.3); +0.35 | 50.9 (50.4-51.4); +0.02 | rejected: level vs p1 |
+| C10 (on C2) | M2-c + M2-a hold cast, Willow heal order | 59.3 (58.8-59.7); +0.10 | 53.1 (52.6-53.5); +0.62 | 51.5 (51.0-52.0); +0.61 | **accepted** |

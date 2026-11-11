@@ -332,3 +332,55 @@ p1's on these suites.
 
 - **Dropped by user decision: fired too rarely to pass (80 debug games, 70 identical to carry3); untested.** It is
   not ported or tested, even if C3 is accepted.
+
+## C3 extension (user decision): s-720161..240, 40,960 more games
+
+- **Runs:** chy2-C3 vs p1, chy2-C3 vs ocean-main, p1 vs ocean-main, all on s-720161..240. The C3 runs' OOF counts
+  were lost (their replays were deleted mid-run by a cleanup glob; the per-game results are unaffected). p1 vs
+  ocean there: OOF 246,526.
+  - vs charybdis-p1: **50.4%** (CI 50.0-50.9).
+  - vs ocean-main: **59.0%** (CI 58.5-59.4), against p1's 58.4% on the same games: paired +0.51 (CI -0.07..+1.09,
+    z 1.71).
+- **Pooled over s-720001..240 (122,880 games):**
+  - vs charybdis-p1: **50.35%** (CI 50.07-50.63).
+  - vs ocean-main, paired against p1: **+0.42** (CI +0.08..+0.75, z 2.44).
+- **Decision: clear gain** by the user's rule (pooled CI against p1 above 50%, paired result against ocean not
+  negative). The second extension (s-720241..320, generated) isn't needed. C3 is re-ported onto the current
+  accepted state and confirmed there (below). C7 does not return: the user dropped it.
+
+## C9 = K3 (M4-b1, hand-over of full and single-tile holds), on C2
+
+- **Port:** chy-K3's diff rebased onto charybdis (C2). The debug-only hunk was re-applied by hand. **Audit:** clean.
+  The auditor noted that lifting C2's free-tile restriction (so 'Q' could take a full group through K3's
+  hand-over) would need its own pricing: a later candidate, not done here.
+- **Debug batch:** 60.7% (C2: 60.5%). HANDOFF trace lines 2.04 a game, in 280 of 512 games.
+- **A/Bs (40,960 each, s-720001..080), paired against C2:**
+  - vs ocean-main: **59.1%** (CI 58.6-59.6), paired -0.05 (CI -0.36..+0.27).
+  - vs charybdis-base: **52.8%** (CI 52.3-53.3), paired +0.35 (CI +0.03..+0.67, z 2.14).
+  - vs charybdis-p1: **50.9%** (CI 50.4-51.4), paired +0.02 (CI -0.30..+0.34).
+  - OOF level with C2.
+- **Decision: rejected (level against p1).** It changes few games (about 4,400 of 40,960 differ from C2's), so the
+  paired CIs are narrow. Its gain against base alone is significant but not seen against p1 or ocean. Like phase 1, it
+  is level. It is not a fuel-optimization candidate (level in phase 1 too). Next step: combine it with a 'Q' that
+  can take a full group (above), where hand-overs would matter more.
+
+## C10 = M2-c + M2-a (hold cast, Willow heal order), on C2
+
+- **Port:** onto charybdis (C2): combat/self_abilities.cc/.h and combat/support.cc (M2-a), economy/capture.cc
+  `hold_capture` (M2-c), from macro2-lstep. M2-b is not included (user decision).
+- **Audit:** faithful to macro2-lstep, with no M2-b code (model/safety.* identical to the base) and no bugs.
+  - It fits the base's yield-then-hold path: `castable` refuses excludes-walking slots after a walk.
+  - The Prism's sole hold isn't affected, and the 'Q' pick doesn't conflict.
+  - One fuel-only fix applied: `camp_cast`'s group-independent `engagement_near` test is hoisted out of the hold
+    cast's per-group loop (identical behaviour).
+- **Debug batch:** HOLDCAST 1.80 a game in 266 games, MEDIC 33.7 a game in 326 games (phase 1: 1.79, 34). It scored
+  56.8% against ocean, where C2 had 60.5%. That is within noise at 512 games.
+- **A/Bs (40,960 each, s-720001..080), paired against C2:**
+  - vs ocean-main: **59.3%** (CI 58.8-59.7), paired +0.10 (CI -0.38..+0.58).
+  - vs charybdis-base: **53.1%** (CI 52.6-53.5), paired +0.62 (CI +0.13..+1.11, z 2.46).
+  - vs charybdis-p1: **51.5%** (CI 51.0-52.0), paired +0.61 (CI +0.12..+1.11, z 2.43).
+  - OOF turns: 246,919 to 254,415, about +1% on C2's.
+- **Decision: accepted.** It beats C2 against p1 by a paired significant margin and is not lower against ocean or
+  base. In phase 1, K2b (with M2-b, on K2a) was level. Without M2-b, and on C2, it gains: M2-b's added caution
+  probably cancelled the other two. Merged into bots/charybdis without the debug-only MEDIC and HOLDCAST traces (the
+  release build is the same size as the candidate's).
