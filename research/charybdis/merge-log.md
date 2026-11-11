@@ -121,3 +121,70 @@ charybdis-base vs ocean-main-b7c87cf: **56.9%** of 20,480 (CI 56.3-57.6). OOF tu
 Accepted state: K1 + K2a, `bots/charybdis` at commit 3c9b6c294, frozen as `bots/variants/charybdis-p1`.
 On s-710001..710080 (40,960 games each): **58.37%** against ocean-main-b7c87cf and **51.65%** against
 charybdis-base. charybdis-base itself scored 56.9% against ocean on s-710001..710040.
+
+# Phase 2: the CONSIDER queue (merge2-brief.md)
+
+Every A/B: release builds, normal fuel (no `--fuel`), `--no-test-draft`, fast runner, on the fixed phase-2 suite set
+`/home/ubuntu/wt/charybdis-maps/s-720001..720080` (80 ladder-v2 suites of 256 maps, both sides: 40,960 games). Each
+candidate plays ocean-main-b7c87cf, charybdis-base and charybdis-p1. CIs are ab.py's 95% intervals; "paired" compares
+two runs against the same opponent game by game (same map, same side), with a 95% CI on the difference.
+Debug batches: 512 games (debug build) against ocean-main on `dbg-729001`.
+Accept rule (first phase-2 change): against p1, 95% CI lower bound above 50%; against ocean-main and base, not below
+p1's on these suites.
+
+## Reference: charybdis-p1 on these suites
+
+- vs ocean-main: **58.61%** of 40,960 (CI 58.1-59.1); OOF CAND 247,857, REF 215,490.
+- vs charybdis-base: **52.21%** of 40,960 (CI 51.7-52.7).
+
+## C1 = M4-a3 + M4-b2, team-marginal carry value with the `hub_net` gate (macro4-handfc)
+
+- **Merged (candidate only):**
+  - new economy/hub.cc: macro4's `camp_gem_density`, `gem_damage_rate`, `hub_premium`, `hub_factor`,
+    `champion_gem_rate`, `hub_net` (verbatim); `params::hub_rho_most = 2`; declarations in bot_parts.h; unity.cpp.
+  - economy/farm.cc carry loop: `cycle_rate` = `best_value` before the 'T' loop. 'G' worth
+    `gems x rho + holder gain + (timer - walk) x cycle_rate` over `timer`; held 'L' (the ally's claimed leave)
+    `gems x (hub_factor(rho, timer, max(timer, walk + capture_rounds)) - 1) + gain`, taken only if `hub_net > 0`;
+    empty 'L' `(1 + rho) x gems + per_gold x gold`. Holder gain is `takeover_gain`'s: our `holder_value` less the
+    best visible holder's, at `prices().per_gold`.
+  - economy/capture.cc `leave_for_prism` claimed branch: a held group is left only if `hub_net > 0` (M4-b2).
+- **Audit:** one bug, fixed. A held group was priced as empty when any holder's recall landed before the Prism's
+  arrival, which also caught capture recalls timed to land on the payout (they score). Now it is priced as empty only
+  when every visible holder lands a kept recall before the payout (`channel_end_round < payout`, the base's own test).
+  Both gates now use `G.gems`. Noted, not changed: the empty 'L' still uses the base's halved `per_gold`
+  (`gold_part`), as the spec says; `hub_premium` is recomputed on the ally side (cheap).
+- **Debug batch:** C1 changed the Prism's carry decision in 225 of 512 games, about 2 turns a game. Almost every flip
+  refuses a 'G' or 'L' the base took (G 246 and L 244 episodes refused, 54 newly taken). The refusals have negative
+  worth: the holder gain. On gold-rich groups a Vesper (+33% gold, high `relative_efficiency`) or Marcella holder's
+  `holder_value` exceeds the Prism's by 30-150 gems' worth. The gate alone refused 0.17 Prism picks and 0.03 ally
+  leaves a game. Prism 'G'/'L' picks per game fell from 1.21/1.59 (p1, trace copy) to 0.65/0.98.
+- **A/Bs (40,960 each):**
+  - vs ocean-main: **57.7%** (CI 57.2-58.2); paired against p1's run -0.92 (CI -1.36..-0.47). OOF CAND 250,548.
+  - vs charybdis-base: **51.3%** (CI 50.9-51.8); paired -0.86 (CI -1.33..-0.40).
+  - vs charybdis-p1: **49.3%** (CI 48.8-49.8).
+- **Decision: rejected.** It loses significantly to p1 and falls below p1 against both references. The likely reason
+  is that the holder-gain term undoes the base's carry lever. macro4 gained with it, but on ocean, whose Prism
+  carried little. The base's gain comes from handing allies' captures to the Prism ("reallocate"), and C1 refuses
+  roughly half those carries whenever the holder values gold more. That overlaps with the base: its 'G'/'L' already
+  price the Prism's side, and `gold_part` already stands in for the premium. Per the plan, the gate alone was tried
+  next (C1b). Next step if revisited: price the holder gain with gems only (drop the gold differential), or take the
+  premium only on 'L' empty groups.
+
+## C1b = M4-b2 alone, the `hub_net` gate on held hand-overs
+
+- **Merged (candidate only):** hub.cc, params and declarations as C1. The carry values are the base's. Two gates:
+  - farm.cc, a held 'L' the Prism reaches after the payout (`walk >= timer`) whose holders stay: taken only if
+    `hub_net(rho, G.gems, timer, max(timer, walk + capture_rounds)) > 0`;
+  - capture.cc, `leave_for_prism`'s claimed branch for a held group: the same test from the ally's side.
+- **Audit:** one over-block, fixed. The Prism-side gate also caught in-time picks with a recalling co-holder (now
+  `walk >= timer` only). The sides otherwise agree; the remaining differences (the ally reads the Prism's posted
+  tile, each instance computes `champion_gem_rate` from its own view) matter only at the threshold.
+- **Debug batch:** 0.24 Prism refusals and 0.02 ally keeps a game (in 70 and 10 of 512 games). It rarely fires,
+  so a level result was expected.
+- **A/Bs (40,960 each):**
+  - vs ocean-main: **58.7%** (CI 58.3-59.2); paired against p1 +0.13 (CI -0.03..+0.29).
+  - vs charybdis-base: **52.3%** (CI 51.9-52.8); paired +0.14 (CI -0.03..+0.30).
+  - vs charybdis-p1: **50.1%** (CI 49.6-50.5).
+- **Decision: rejected (level).** The lower bound against p1 is under 50%. Reaching above 50% at 81,920 games would
+  need about 50.35%, against the 50.06% measured, so it was not extended. It fires about once in four games. It was
+  not measured at 2x, so it gets no fuel note.

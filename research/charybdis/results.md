@@ -27,3 +27,12 @@ Details in merge-log.md.
 | K3 (40,960, s-710001..080) | M4-b1 hand-over (rebuilt) | 58.3 (57.9-58.8) | 51.6 (51.1-52.1) | rejected: level with K2a, to CONSIDER |
 
 Phase-1 state: K1 + K2a (commit 3c9b6c294), frozen as bots/variants/charybdis-p1: 58.37 vs ocean-main, 51.65 vs charybdis-base (40,960 each).
+
+## Phase 2 merges (normal fuel, `--no-test-draft`, release; suites s-720001..720080, ladder-v2, 40,960 games each)
+Details in merge-log.md. "vs p1" is the candidate against charybdis-p1 directly.
+
+| Step | Changes | vs ocean-main | vs charybdis-base | vs charybdis-p1 | Decision |
+|---|---|---|---|---|---|
+| (ref) charybdis-p1 | K1 + K2a | 58.61 (58.1-59.1) | 52.21 (51.7-52.7) | - | - |
+| C1 | M4-a3 + M4-b2 team-marginal value + gate | 57.69 (57.2-58.2) | 51.35 (50.9-51.8) | 49.31 (48.8-49.8) | rejected: loses |
+| C1b | M4-b2 gate alone | 58.73 (58.3-59.2) | 52.35 (51.9-52.8) | 50.06 (49.6-50.5) | rejected: level, fires 0.26/game |
