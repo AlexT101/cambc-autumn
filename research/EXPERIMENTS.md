@@ -10,6 +10,26 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## Tune lab round 9 on lab-emb6-c520-ps (2026-11-12): SPSA on 19 economy and fight constants is level, 50.06% at 200k
+
+The lab filler's tune round (SPSA as localq's tune rounds: 19 knobs, 706 iterations on 40 fresh ladder-v4 suites
+against the Fish/Mite bodies at seeds 951-953, the base, charybdis 519 and ocean 506; second-half mean) moved 14
+constants, e.g. fight_weight 0.688 -> 0.664, life_value 277 -> 252, gem_value 17.5 -> 19.4, hit_given_reach 0.234 ->
+0.294, mid_gold 1.25 -> 1.33: `variants/lab-tune9-lab-emb6-c520-ps`, patch `labs/patches/lab-tune9-lab-emb6-c520-ps.patch`
+(the ported bot replays the tunified one byte-identically at 100M).
+
+Results against lab-emb6-c520-ps (`tools/fgate.py --pool v4`, both sides, unplayed v4 batches 16-23):
+
+| gate | fuel | fresh win% (95% CI) | games | Fish / Mite | verdict |
+|---|---|---|---|---|---|
+| Flp4 / Mt3q | 200k | **50.06% (49.80-50.33)** | 163,840 | 50.10 / 50.02 | undecided at 8 batches; high LLR -7.51 |
+| Flp4 / mf-c2, 2 batches | 200k | 50.00% (49.41-50.59) | 40,960 | 50.36 / 49.64 | fixed read |
+| fr8-g25 (Fish r8 body) / Mt3q, 2 batches | 200k | 50.22% (49.62-50.82) | 40,960 | 50.60 / 49.84 | fixed read |
+
+Level: the CI's top (50.33) is below the accept line, so no 100k run. No failed games or early losses. A
+repeat of the same 19-knob SPSA on this base is unlikely to pay; a later tune round should bring new knobs or a new
+objective.
+
 ## Draft lab round 19 on lab-emb6-c520-ps (2026-11-12): draft18's model refit on 1M ladder-v4 games loses, 49.48% at 200k
 
 The lab filler's draft round (commit c8bca2924) refit draft18's F92 model on `variants/lab-emb6-c520-ps` (999,996
