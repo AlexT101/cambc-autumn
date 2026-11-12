@@ -18368,7 +18368,7 @@ pruning (only -574 mean, 542/1,536 regressions); a clear-line certificate (super
 Previous 491/506 successes and failed ward-cache/bound experiments informed the choices. No live or strength gate;
 no exception to replay identity was used.
 
-## (fishr8, 2026-11-12) Fish r8: a Vesper carry, a fed Vesper killing Prism's hoard; body fr8-g25 (10 points easy); opp_detect r8 fix; no counter
+## (fishr8, 2026-11-12) Fish r8: a Vesper carry, a fed Vesper killing Prism's hoard; body fr8-g25 (10 points easy); opp_detect r8 fix; two counters fail from live positions
 
 Notes and scripts: [ideas-2026-11-12/fishr8/README.md](ideas-2026-11-12/fishr8/README.md).
 
@@ -18400,5 +18400,14 @@ x2.5. Our win % on 168 ranked maps, 4 members:
 **opp_detect.** r8 writes `old << 20` plus random bits. The fix (`oppd-r8.patch`, 3 lines) reads r8 as Fish in
 52 / 76 / 89% of instances by r100 / r300 / r500 (0% before), with no false Fish reads on other teams.
 
-**Counter.** None built. Prism's hoard is the loss channel, but banking or caution for it has lost in every form tried.
-The body under-represents it (37 gems a game to Vesper, against 99 live).
+**Counter** (on chy-emb6-524 = charybdis 524). Arms were read by livefork from 308 live v117/v118 r8 positions: our
+side swapped for the base or a forced arm, against fr8-g25 members (`fr_forkarms.py`). Results against chy-emb6-524,
+cand − base in points:
+
+| arm | change | forks | all | verdict |
+|---|---|---|---|---|
+| fr8x-pgf | Prism stops keeping gems once Fish's Vesper shows Greed (after it she kills our Prism for 88 gems a game, 38 before) | r300 −2.62 ±1.68, r450 −2.88 ±1.68, r600 −2.35 ±1.62 | −2.64 ±0.96 of 1,592 | loses |
+| fr8x-vff | pre-Greed Vesper focus: mitere's foe_bag at her live r8 death share 0.57, off once she has Greed | r50 0.00, r100 +2.52 ±1.35, r200 −2.76 ±1.67, r300 +1.07 ±1.01, r450 −0.36, r600 0.00 | +0.54 ±0.57 of 4,666 | level |
+
+Neither went to fgate. No counter to ship: both mechanisms the data supports most directly fail from live positions.
+Items against her burst are left to the labs emb7 round.

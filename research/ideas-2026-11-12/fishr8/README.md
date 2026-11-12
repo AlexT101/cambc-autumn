@@ -1,4 +1,4 @@
-# Fish r8 (2026-11-12): what changed, where the wins went, and the body fr8-g25
+# Fish r8 (2026-11-12): what changed, where the wins went, the body fr8-g25, and two counters that do not pay
 
 Intercontinental Fish changed twice on 11-12. The live pin moved from r2 to r8. v118 (`variants/lab-emb6-c520-ps`) won
 195 of 340 games against r8 (57.4%). On the same 235 cells, r2 gave 181 wins and r8 gave 132: 21 cells flipped for us
@@ -130,24 +130,58 @@ points for fr8-g25 (r100 +12.9, r300 +10.0, r600 +4.7), and +11.4 ±4.5 for fr8-
 The body is still about 10 points easier than live. The gap is mostly early economy and Fish's fights. It is as
 far as the c520-ps base goes, like the Mite bodies' fed Vesper.
 
-## 4. Counter: none built
+## 4. Counter: two arms on chy-emb6-524, neither pays
 
-**No candidate.** Neither lever the data points to has a cheap form left to test.
-- Prism's hoard is the largest loss channel, but every form of banking or caution for it has lost locally:
-  - never keep gems: 32.7;
-  - cap at 150: 46.7;
-  - bank at enemy score + bag: -2.0;
-  - bank under threat: 42.8-49.5;
-  - eight hoard-survival arms on 11-11: all level.
-  Its Focus is its damage.
-- Focusing or avoiding a fed Vesper doesn't pay (mitere).
-- She farms her own half, so denying her gold would mean invading.
+The base is `variants/chy-emb6-524`, which equals bots/charybdis 524.
 
-**No way to measure one locally.** A counter aimed at the fed Vesper could not be read on this body anyway: Prism loses
-37 gems a game to her here, against 99 live.
+**How the arms are read.** Each arm is read from live r8 positions (`fr_forkarms.py`, with mitere's `fork_read.py`):
+- the 308 live v117/v118 r8 games registered in the replay harness are forked at round R;
+- our side is swapped for the base or the candidate (both cold-started) against fr8-g25 noise members;
+- each result is candidate minus base in points, with the SE clustered by game.
 
-**What carries over.** The opp_detect fix is ready for any Fish-specific arm. Gate such an arm on a forced copy: the
-bodies write c520-ps's priorities, not Fish's.
+The forked position carries the live state, so from r450 and later Fish's Vesper is as fed as she was live, a point
+the body alone does not reach. The arms are forced copies, active against any team. The detector builds are
+`fr8x-pg` and `fr8x-vf` (patches `x-pg-chy524.patch` and `x-vf-chy524.patch`).
+
+**fr8x-pgf: Prism banks once Fish's Vesper shows a Greed emblem.**
+- Mechanism: after her Greed (median r454), Fish's Vesper kills our Prism for 88 gems a game, against 38 before
+  (`pgreed.py`). Prism's bag is 259 gems at her Greed.
+- The change: `keeps_gems` is false from the first sighting of an enemy Vesper with Greed. Emblems are visible.
+
+**fr8x-vff: pre-Greed Vesper focus.**
+- Mechanism: kill the carry before her build lands. Her deaths by r450 go with our wins: 0 deaths 47.5%, 1 death
+  71.4%, 2+ deaths 100% (`vearly.py`), but this is confounded.
+- The change: mitere's `foe_bag` adds `max(0, 0.57 × enemies − 1)` lives to her value while she has no Greed
+  emblem. 0.57 is her live r8 share of our deaths.
+
+**Results against chy-emb6-524** (livefork from live r8 positions, against fr8-g25; cand − base in points ±SE;
+n = pairs, 308 games):
+
+| arm | members | r50 | r100 | r200 | r300 | r450 | r600 | all | verdict |
+|---|---|---|---|---|---|---|---|---|---|
+| fr8x-pgf (Prism banks after her Greed) | 1-2 | – | – | – | −2.62 ±1.68 | −2.88 ±1.68 | −2.35 ±1.62 | **−2.64 ±0.96** of 1,592 | loses |
+| fr8x-vff (pre-Greed Vesper focus) | 1-4 | 0.00 ±1.92 | +2.52 ±1.35 | −2.76 ±1.67 | +1.07 ±1.01 | −0.36 ±1.48 | 0.00 ±1.41 | **+0.54 ±0.57** of 4,666 | level |
+
+- **pgf** loses at every fork round, including r600, where her stats are the live ones. Prism's hoard is worth more
+  to the fights than the gems it loses, as in every earlier Prism-banking arm.
+- **vff:** members 1-2 gave +4.06 ±1.97 at r100, but members 3-4 gave +0.97, and r200 is −2.76. Its signs shift
+  across fork rounds. This is the same picture as mitere's mxf against Mite (r100 +3.65, overall −0.5).
+- Neither went to fgate. A level or losing livefork read gives fgate's side-effect check nothing to protect.
+
+**Verdict: no counter to ship.**
+- The two mechanisms the data supports most directly, her Greed-fed Prism kills and her pre-Greed killability,
+  both fail from live positions.
+- Denying her gold would mean invading her half.
+- Items against her burst are in the labs agent's emb7 round, against fr8-g25 and mf-f9.
+- Fish's bigger tributes:
+  - Fish now starts 4.2 tributes of 100+ gems a game (r2: 1.7), each channelling 10-20 turns. One of ours is within
+    8 of the altar at 65% of the starts (`ftrib.py`).
+  - A lock cancels such a channel and keeps it shut until five hits remove it. Our bot places locks only from within
+    2 of the altar.
+  - Cancelling only delays a tribute, since the gems stay carried (mitere's zoning note). Not built.
+
+**What carries over.** The opp_detect fix is ready, with Fish detection at 52% by r100 and 76% by r300 on live r8.
+`fr_forkarms.py` reads a Fish arm in about a minute.
 
 ## Files
 
@@ -157,7 +191,8 @@ Data:
 - `live_ds.py`.
 
 Statistics:
-- live: `fishx.py`, `vesper.py`, `traj.py`, `opening.py`, `vexpo.py`, `ourdeaths.py`, `prismloss.py`, `where.py`;
+- live: `fishx.py`, `vesper.py`, `traj.py`, `opening.py`, `vexpo.py`, `ourdeaths.py`, `prismloss.py`, `where.py`,
+  `prismthreat.py`, `pgreed.py`, `vearly.py`, `ftrib.py`;
 - comparisons: `cmp.py`, `cmpcell.py`, `champ.py`, `builds.py`, `prio.py`;
 - local runs: `fidelity.py`, `bodystats.sh`, `localrows.py`.
 
@@ -167,5 +202,7 @@ Body:
 - `fr_livefork.py`.
 
 Detector: `det_r8.py`, `oppd-r8.patch`.
+
+Counter arms: `x-pg-chy524.patch`, `x-vf-chy524.patch`, `fr_forkarms.py`.
 
 Working data is in `~/tmp-offload/fishr8/`.
