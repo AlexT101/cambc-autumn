@@ -17,11 +17,15 @@ sched/<choose> (one of our versions, replayed on the repinned opponents; or a bo
 all), then repin those opponents to a new refset (captured by its first group, so the then-latest bot) and play the
 chosen bot on it in batches; the control then also covers the new refset's cells.
 
-Batch cycle: rest version active, nothing in flight, and quota room for a full batch (or, once, whatever fits when
-sched/BATCH-NOW exists) -> upload (first batch) or activate the candidate, append the next `room` gate tasks and write
-data/BATCH (the runner pauses replay collection and raises its in-flight cap) -> once those tasks are created and every
-group has played (or the quota is spent), activate the rest version. Hourly while resting: Fish/Mite/BattleCats opponent-change observations
+Batch cycle (throughput, user 2026-11-12): rest version active, nothing in flight, and any quota room -> upload (first
+batch) or activate the candidate and append its whole gate; the runner creates the groups back to back as far as the
+quota allows and the rest as it frees up, the candidate staying live meanwhile -> once every group is created and has
+played, activate the rest version. Hourly while resting: Fish/Mite/BattleCats opponent-change observations
 (logged + wake only; testing pins never change automatically).
+
+To test a version at full rate: write its number to sched/REST (rest_file); with nothing queued its gate on the
+refsets in refsets.json is planned and played as the quota allows. Other maps or opponents: `ladder_scrims.py plan`
+(`--maps`, `--opps`, `--groups`) for that version.
 
 State: state.json 'batches'. Report: py tools/live_batches.py report
 """
@@ -139,15 +143,6 @@ class Batches:
         _, created, finished, _, _ = self.ls.state()
         return all(e['group'] in finished for e in created.values() if e.get('live') == version)
 
-    def window_clear(self, rest):
-        import datetime
-        last = max((e['at'] for e in self.ls.read_jsonl(self.ls.DATA / 'events.jsonl')
-                    if e['ev'] == 'created' and e.get('live') not in (None, rest)), default=None)
-        if last is None:
-            return True
-        t = datetime.datetime.fromisoformat(last.replace('Z', '+00:00')).timestamp()
-        return time.time() - t > 3600
-
     def drained(self):
         """No group whose matches may still be playing (played/finished events; collection may lag)."""
         events = self.ls.read_jsonl(self.ls.DATA / 'events.jsonl')
@@ -188,13 +183,18 @@ class Batches:
             self.batch_file(False)
             return
         cur = B['cur']
+        self.rest_file(st, B)
         rest = B['rest']
         allowed = {rest} | ({cur['version']} if cur and cur.get('version') else set())
+        if B.get('rest_from') is not None:
+            allowed.add(B['rest_from'])   # still live until the switch below goes through
         d = s.outside_check(st, allowed)
         if not d:
             self.batch_file(False)
             return
         live, sel = d['active']['version'], d['selected']['version']
+        if live == sel == rest:
+            B.pop('rest_from', None)
         if not B['switches'] or B['switches'][-1]['live'] != live:
             B['switches'].append({'live': live, 't': time.time(), 'at': s.now()})
             s.save(st)
@@ -204,7 +204,7 @@ class Batches:
         # A queued line counts as waiting too: control must not slip in while the next candidate builds.
         self.report_done(st, B)
         after = self.after_steps(B)
-        self.hold_control(rest, hold=cur is not None or bool(s.queue_lines()) or bool(after))
+        self.hold_control(rest, hold=cur is not None or bool(s.queue_lines()) or bool(after), leaving=B.get('rest_from'))
         if cur is None:
             self.batch_file(False)
             self.plan_rest(B, rest, rsets_now)
@@ -223,7 +223,7 @@ class Batches:
                 s.save(st)
                 return
             else:
-                self.hold_control(rest, hold=True)
+                self.hold_control(rest, hold=True, leaving=B.get('rest_from'))
                 cur = B['cur'] = {'cand': c, 'label': c['label'], 'version': None, 'rsets': rsets_now,
                                   'phase': 'rest', 'batches': [], 'picked_at': s.now()}
                 s.log(f"batches: next candidate {c['label']} on {rsets_now}; v{rest} control held until candidates "
@@ -269,7 +269,7 @@ class Batches:
             label = d.name
             c = dict(kind='queue', label=label, dir=str(d), base=f"live-main506 (= v{B['rest']})",
                      line=f"after-queue {step['id']}: {d}", prio=0,
-                     note=f"arm {label} on live-main506 (= v{B['rest']}); {step['id']} pins"[:80])
+                     note=self.s.upload_name(d))
             cand, err = self.s.build(c)
             if err:
                 self.s.log(f"batches: after-queue {step['id']}: {label} failed to build: {err[:200]}")
@@ -291,10 +291,28 @@ class Batches:
         self.s.save(st)
         return cur
 
-    def hold_control(self, rest, hold):
+    def rest_file(self, st, B):
+        """sched/REST (a version number) sets the version to rest on and test: one of our uploads, taken between
+        candidates. The old one's pending groups are held so it drains, the new one is activated, and its gate on the
+        current refsets is planned as usual; the runner then creates it as fast as the quota allows."""
+        try:
+            v = int((self.s.H / 'REST').read_text().strip().removeprefix('v'))
+        except (OSError, ValueError):
+            return
+        if v == B['rest'] or B['cur'] is not None:
+            return
+        if v not in {h['version'] for h in st['history']}:
+            self.note(B, 'restfile', f'batches: sched/REST names v{v}, not one of our uploads: ignored')
+            return
+        B['rest_from'], B['rest'] = B['rest'], v
+        self.s.log(f"batches: rest version v{B['rest_from']} -> v{v} (sched/REST)")
+        self.s.save(st)
+
+    def hold_control(self, rest, hold, leaving=None):
         tasks, created, finished, dropped, _ = self.ls.state()
-        ids = sorted(t['id'] for t in tasks if t['version'] == rest and t.get('purpose') == 'set' and t['id'] != PROBE
-                     and t['id'] not in created and t['id'] not in dropped) if hold else []
+        ids = sorted(t['id'] for t in tasks if t['id'] not in created and t['id'] not in dropped
+                     and (t['version'] == leaving
+                          or (hold and t['version'] == rest and t.get('purpose') == 'set' and t['id'] != PROBE)))
         f = self.ls.DATA / 'HOLD-TASKS.json'
         try:
             if json.loads(f.read_text()) == ids:
@@ -304,7 +322,8 @@ class Batches:
         tmp = f.with_suffix('.tmp')
         tmp.write_text(json.dumps(ids) + '\n')
         tmp.replace(f)
-        self.s.log(f'batches: {len(ids)} v{rest} control groups held' if hold else f'batches: v{rest} control released')
+        self.s.log(f'batches: {len(ids)} groups held (v{rest} control{f", v{leaving} leaving" if leaving else ""})'
+                   if ids else f'batches: v{rest} control released')
 
     def final(self, B, rest):
         """Once the control has played, the full pairing of every candidate reported without it."""
@@ -369,16 +388,10 @@ class Batches:
             self.finish(st, B, cur)   # every group has played; its result follows once collected (report_done)
             return
         room, cap = self.room()
-        # Wait for a full batch: the rolling hour frees up, less one hourly observation per opponent.
-        need = min(todo, cap - len(cur['rsets']))
-        now_file = s.H / 'BATCH-NOW'
-        if now_file.exists():
-            need = 1   # operator: start with whatever fits
-        # Small rest-version use (opp-checks, a probe) or teammates' reserve must not stall a batch: once the rolling
-        # hour holds no candidate group, the window has refilled as far as batches are concerned.
-        if (room < need and not self.window_clear(rest)) or room <= 0:
-            self.note(B, 'rest', f"batches: {cur['label']} waits for quota: room {room}, batch needs {need} "
-                                 f"({todo} groups left)")
+        # Throughput (user, 2026-11-12): no wait for a full batch. The candidate goes live as soon as any quota is
+        # free and stays live until its whole gate has played; the runner creates what the quota allows as it frees.
+        if room <= 0:
+            self.note(B, 'rest', f"batches: {cur['label']} waits for quota: room {room} ({todo} groups left)")
             return
         if cur['version'] is None:
             c = cur['cand']
@@ -388,11 +401,10 @@ class Batches:
             cur['live_at'] = s.now()
             s.log(f"batches: uploaded {cur['label']} as v{cur['version']}")
             unplanned, planned_pending, *_ = self.gate_tasks(cur)
-        n = max(0, min(len(unplanned), room - len(planned_pending)))
-        for t in unplanned[:n]:
+        n = len(unplanned)
+        for t in unplanned:
             ls.append_jsonl(ls.DATA / 'tasks.jsonl', t)
         cur['batches'].append({'n': n + len(planned_pending), 'room': room, 'start': s.now()})
-        now_file.unlink(missing_ok=True)
         self.batch_file(True)
         s.log(f"batches: {cur['label']} v{cur['version']} batch {len(cur['batches'])}: "
               f"{n + len(planned_pending)} groups (room {room})")
@@ -418,8 +430,8 @@ class Batches:
                 if not self.drained():
                     return
                 _, planned_pending, *_ = self.gate_tasks(cur)
-                if planned_pending and self.room()[0] > 0:
-                    return   # the runner creates them next
+                if planned_pending:
+                    return   # the runner creates them as the quota frees up; the candidate stays live meanwhile
         cur['batches'][-1]['end'] = self.s.now()
         cur['phase'] = 'activate_rest'
         self.activate(B, B['rest'], 'batch played', sel)

@@ -8,7 +8,8 @@ ext (90). Below 100, so the runner's quota reserve (10/hour for teammates) stays
 
 Candidates, in order: the newest bots/ocean commit naming oc-baseNN with NN above the last ocean submitted, whose
 committed bots/ocean equals bots/variants/oc-baseNN; else the highest-priority untested ~/tmp-offload/live-queue.txt
-line (`prio | dir | base | result | agent | share`; ties: oldest), marked in live-queue.done. No candidate: the
+line (`prio | dir | base | result | agent | share | name`; ties: oldest; `name` is the upload's note, see
+upload_name), marked in live-queue.done. No candidate: the
 live version stays up.
 
 Outside submissions (2026-11-09): each loop reads `submissions list --json`. A version not in our history (a
@@ -215,7 +216,7 @@ def ocean_candidate(st):
             log(f'oc-base{nn} differs from bots/ocean at {sha[:8]}: {d[:300]}')
             return None
         return dict(kind='ocean', label=f'oc-base{nn}', nn=nn, dir=str(src), commit=sha[:8],
-                    note=f'ocean oc-base{nn}: {subj.removeprefix("ocean: ")[:52]} ({sha[:8]})'[:80])
+                    note=f'Ocean oc-base{nn}: {subj.removeprefix("ocean: ")[:52]} ({sha[:7]})'[:80])
     return None
 
 
@@ -242,6 +243,30 @@ def queue_lines():
     return out
 
 
+BOTS = ('charybdis', 'ocean', 'astraeus')
+
+
+def upload_name(src, given=None):
+    """An upload's platform note (AGENTS.md "Testing"): the bot, then what identifies its code, and nothing about the
+    test it is uploaded for. `given` (a live-queue line's 7th field) is used when it starts with a bot's name; else
+    a directory equal to a main bot is named by its latest CHANGES number and commit, and any other by its name."""
+    given = ' '.join((given or '').split())
+    if given and given.split()[0].lower() in BOTS and not re.search(r'\b(batch|pair|queue|pins?|pinned|vs)\b', given, re.I):
+        return given[:80]
+
+    def differing(bot):
+        a, b = Path(src) / 'src', R / 'bots' / bot / 'src'
+        fa, fb = ({q.relative_to(d) for q in d.rglob('*') if q.is_file()} for d in (a, b))
+        return len(fa ^ fb) + sum((a / f).read_bytes() != (b / f).read_bytes() for f in fa & fb)
+    diffs = {bot: differing(bot) for bot in BOTS if (R / 'bots' / bot / 'src').is_dir()}
+    bot = min(diffs, key=diffs.get)
+    if diffs[bot]:
+        return f'{bot.capitalize()} variant {Path(src).name}'[:80]
+    nums = re.findall(rf'^## (\d+)[^\n]*\({bot}\b', (R / 'research/hyperion/CHANGES.md').read_text(), re.M)
+    _, sha = sh(['git', 'log', '-1', '--format=%h', '--', f'bots/{bot}'], cwd=R)
+    return ' '.join(f"{bot.capitalize()} {nums[-1] if nums else ''} ({sha.strip()[:7]})".split())[:80]
+
+
 def queue_candidate(st):
     lines = queue_lines()
     if not lines:
@@ -257,7 +282,7 @@ def queue_candidate(st):
         return queue_candidate(st)
     base = f[2] if len(f) > 2 else '?'
     return dict(kind='queue', label=src.name, dir=str(src), base=base, line=line, prio=prio,
-                note=f'arm {src.name} on {base} (live queue p{prio:g})'[:80])
+                note=upload_name(src, f[6] if len(f) > 6 else None))
 
 
 def pick(st):

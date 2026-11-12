@@ -295,10 +295,19 @@ py tools/version_record.py 50                        # our version 50's record p
 - **bulk_replays.py** keeps ranked games between two of the day's top 15 teams and deletes each zip once extracted.
 - **scrim_ladder.py spends the team's unranked quota** (`cambc match-groups quota`; each group frees about an hour after it was queued): dry-run first. We are side A unless `--sides alt`; `--avoid` takes earlier run folders, so repeated maps go to the side not yet played. Replays go to `replays/scrims/<timestamp>/`.
 - **ladder_scrims.py** is the long-running scrim job behind `research/ladder-scrims-2026-11-06/` (README, SET.md):
-  `plan --version N --sets core,ext --opps fish,mite` appends five-game tasks of the frozen set, `run` (setsid nohup)
-  queues them while version N is live within the rolling 100-groups-an-hour quota (keeping `--reserve` free; `live_restart_runner.sh` restarts it with reserve 10),
-  pins each opponent to its first group's bot (`--source-group`), and downloads every game's bundle and summary;
+  `plan --version N --sets core,ext --opps fish,mite` appends five-game tasks of the frozen set (`--maps a,b,c,d,e`
+  an ad-hoc map list instead, `--groups K` a cap), `run` (setsid nohup) creates every pending task of the live
+  version back to back as far as the rolling 100-groups-an-hour quota allows (keeping `--reserve` free;
+  `live_restart_runner.sh` restarts it with reserve 10) and the rest as quota frees up, pins each opponent to its
+  first group's bot (`--source-group`, usable once that group has played), and downloads every game's bundle and summary;
   `status`, `report --by side,map` and `pair OLD NEW` (paired flips between our versions) read the jsonl data.
+  - **API pacing:** every call goes through a token bucket shared by our processes (`data/api.lock`: 24 calls of
+    burst, one more every 3.5 s, at least 1 s apart; the limit measured 2026-11-12 was ~30 calls at one a second, then
+    one every 3-4 s). Creates go first, the match-list sweep for played groups second (100 matches a call), and the
+    collector's downloads (ten calls a group) leave 8 tokens for them, so collection can run an hour behind a full
+    burst. Results don't wait for it: a `played` event carries the group's results (`WWLWW`).
+  - **To test a version at full rate:** write its number to `sched/REST` (the scheduler activates it between
+    candidates and plans its gate on `refsets.json`), or with the scheduler stopped activate it and `plan` its tasks.
 - **live_sched.py** is the unattended live-gate scheduler (one at a time: `setsid nohup py tools/live_sched.py >> ~/tmp-offload/handoff/sched/sched.out 2>&1 < /dev/null &`).
   While the live version's gate plays, it builds and smoke-tests the next candidate (the newest `oc-baseNN` ocean
   commit, else the top `~/tmp-offload/live-queue.txt` line) with `livemask/stream_patch.py`; once the gate's groups

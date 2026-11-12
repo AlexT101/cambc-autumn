@@ -59,6 +59,7 @@ tools/fastengine/runner-prof/
 
 # Live scrim runner lock (tools/ladder_coordination.py)
 research/ladder-scrims-2026-11-06/data/live-switch.lock
+research/ladder-scrims-2026-11-06/data/api.lock
 
 # macOS folder metadata
 .DS_Store

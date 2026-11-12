@@ -9,11 +9,13 @@ Requires `cambc login`. Data in research/ladder-scrims-2026-11-06/ (README.md, S
     py tools/ladder_scrims.py report [--version 78] [--by map|side|purpose]
 
 A task is one five-game group: our submission version, an opponent, five (map, side) games, a pin and a priority.
-`run` queues the best pending task whose version is live, only while the team's rolling quota (`cambc match-groups
-quota`, 100 groups an hour since 2026-11-07) keeps `--reserve` free (tasks of priority >= 100 may use it), at most `--inflight` groups
-at once and one per `--pace` seconds. It never switches the live submission: tasks of another version wait (submit
-or `cambc submissions activate N` to run them). Pins: `ref` plays the opponent's bot from the first group queued
-against it under that ref name (refs.json), so every version meets the same opponent bot; `none` plays its current.
+`run` creates every pending task whose version is live, back to back, as far as the team's rolling quota (`cambc
+match-groups quota`, 100 groups an hour since 2026-11-07) has room beyond `--reserve` (tasks of priority >= 100 may use
+it), and looks again every `--pace` seconds, so quota that frees up is used at once. API calls start at least a second
+apart across all our processes (data/api.lock), and creates go ahead of polls and downloads. It never switches the
+live submission: tasks of another version wait (submit or `cambc submissions activate N` to run them). Pins: `ref`
+plays the opponent's bot from the first group queued against it under that ref name (refs.json), usable once that
+group has played, so every version meets the same opponent bot; `none` plays its current.
 State is append-only jsonl, so `run` resumes where it stopped; it exits after `--max-errors` failures in a row.
 A group's games are labelled with the version live at its creation, so `run` creates only while live == selected, and
 when either changes (someone else's submission or activation) it logs a `live_change` event and marks every group in
@@ -22,6 +24,7 @@ flight `suspect`; games() leaves suspect groups out (a game may have played the 
 import argparse
 from ladder_coordination import live_lock, probe_active
 import fcntl
+import hashlib
 import json
 import math
 import os
@@ -48,7 +51,6 @@ TEAMS = {  # short names for --opps; any team id also works
     "neet": ("882106d4-9deb-40cc-9d5c-8522c1d32129", "NEETCoders"),
     "cats": ("285f4eb5-e97f-4ea4-93c5-19e1590a1e5a", "BattleCats"),
 }
-BATCH_MAX_AGE = 3 * 3600   # data/BATCH older than this is a leftover: collect again
 CHAMPS = ["Ryth", "Vesper Vale", "Vendetta", "Cassi & Issac", "Stellar", "Prism", "Marcella", "Willow", "Ren", "Varg",
           "Tavi", "Heart of Ruin"]
 
@@ -88,24 +90,68 @@ class CambcError(RuntimeError):
     pass
 
 
-_CALL, _LAST_CALL, CALL_GAP = threading.Lock(), [0.0], 1.0
+# The API's limit, measured 2026-11-12 on 68 creates: about 30 calls pass at one a second, then one every 3-4 s.
+# Modelled as a token bucket shared by all our processes (data/api.lock): BUCKET calls of burst, one more every
+# 1 / REFILL seconds, never less than CALL_GAP apart. Threads other than the main one (the collector's downloads) leave
+# KEEP tokens for it, and wait while _PRIORITY is set, so creates and polls always have a burst ready.
+_CALL, CALL_GAP, BUCKET, REFILL, KEEP = threading.Lock(), 1.0, 24.0, 1 / 3.5, 8.0
+_PRIORITY = threading.Event()   # set while `run` creates groups: other threads' calls wait
+
+
+def _bucket(update):
+    """Reads data/api.lock under its lock, applies update(tokens, last_call, now) -> (tokens, last_call, result) and
+    writes it back; None if the file cannot be used."""
+    try:
+        fd = os.open(DATA / "api.lock", os.O_RDWR | os.O_CREAT, 0o664)
+    except OSError:
+        return None
+    with os.fdopen(fd, "r+") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        now = time.time()
+        try:
+            st = json.loads(f.read() or "{}")
+            tokens, last, t = float(st["tokens"]), float(st["last"]), float(st["t"])
+        except (ValueError, KeyError, TypeError):
+            tokens, last, t = BUCKET, 0.0, now
+        tokens = min(BUCKET, tokens + max(0.0, now - t) * REFILL)
+        tokens, last, result = update(tokens, min(last, now), now)   # a stamp from the future (clock step) is dropped
+        f.seek(0)
+        f.truncate()
+        f.write(json.dumps({"tokens": tokens, "last": last, "t": now}))
+        return result
 
 
 def _space_calls():
-    # `run`'s collector and main loop share the API's burst limit: start calls at least CALL_GAP apart.
-    with _CALL:
-        wait = _LAST_CALL[0] + CALL_GAP - time.monotonic()
-        if wait > 0:
-            time.sleep(wait)
-        _LAST_CALL[0] = time.monotonic()
+    background = threading.current_thread() is not threading.main_thread()
+    need = 1.0 + (KEEP if background else 0.0)
+
+    def take(tokens, last, now):
+        wait = max((need - tokens) / REFILL, last + CALL_GAP - now)
+        return (tokens, last, wait) if wait > 0 else (tokens - 1.0, now, 0.0)
+
+    while True:
+        if background and _PRIORITY.is_set():
+            time.sleep(0.2)
+            continue
+        with _CALL:
+            wait = _bucket(take)
+        if not wait:   # taken, or no lock file: go
+            return
+        time.sleep(min(wait, 1.0))   # in short steps: a waiting download yields to a create pass that starts
 
 
-def cambc(*args, timeout=300, retries=4, limited_retries=8):
+def _limited():
+    """A 429: the server's bucket is empty whatever ours says."""
+    _bucket(lambda tokens, last, now: (0.0, last, None))
+
+
+def cambc(*args, timeout=300, retries=4, limited_retries=8, spaced=True):
     """Runs the CLI, honouring its "retry after N seconds" rate-limit replies (with growing waits: the reply's own
-    N is often too short to clear the burst window)."""
+    N is often too short to clear the burst window). spaced=False is for commands that never reach the API."""
     attempt = limited = 0
     while True:
-        _space_calls()
+        if spaced:
+            _space_calls()
         try:
             r = subprocess.run(["cambc", *args], capture_output=True, text=True, encoding="utf-8", errors="replace",
                                timeout=timeout)
@@ -121,7 +167,8 @@ def cambc(*args, timeout=300, retries=4, limited_retries=8):
             return r.stdout
         if wait and limited < limited_retries:
             limited += 1
-            time.sleep(min(60, (int(wait.group(1)) + 2) * 2 ** (limited - 1)))
+            _limited()
+            time.sleep(min(60, int(wait.group(1)) * 2 ** (limited - 1)))   # plus the wait for a token
             continue
         if attempt == retries:
             raise CambcError(f"cambc {' '.join(args[:3])}: {out.strip()[-400:]}")
@@ -177,6 +224,17 @@ def cmd_plan(args):
     have = {t["id"] for t in tasks}
     st = load_set(args.set)
     new = []
+    if args.maps:
+        # An ad-hoc map list (names from any set file): both sides of each, in five-game groups.
+        known = {m["name"]: m for f in sorted(DATA.glob("set-*.json")) for part in json.loads(f.read_text()).values()
+                 if isinstance(part, list) for m in part if isinstance(m, dict) and "id" in m}
+        names = [n.strip() for n in args.maps.split(",") if n.strip()]
+        missing = [n for n in names if n not in known]
+        if missing or len(set(names)) < 5:
+            sys.exit(f"--maps needs five or more known maps; unknown: {missing}")
+        st = dict(st, maps=[known[n] for n in dict.fromkeys(names)])
+        args.sets = "maps"
+        args.set = "m" + hashlib.sha1(",".join(sorted(set(names))).encode()).hexdigest()[:6]
     opps = [team_of(o) for o in args.opps.split(",")] if args.opps else []
     if args.repeat:
         by_id = {t["id"]: t for t in tasks}
@@ -199,11 +257,12 @@ def cmd_plan(args):
             tag = ("-1s" + ("f" if args.flip else "")) if args.one_side else ""
             # r1's ids predate ref sets; later sets are tagged so one version can play several.
             tag += f"-{args.refset}" if args.refset != "r1" else ""
-            for i, g in enumerate(set_groups(maps, st["core"], args.one_side, flip=flip), 1):
+            groups = set_groups(maps, maps if part == "maps" else st["core"], args.one_side, flip=flip)
+            for i, g in enumerate(groups[:args.groups] if args.groups else groups, 1):
                 new.append({"id": f"v{args.version}-{args.set}{part}{tag}-{short}-{i:02d}",
                             "version": args.version, "set": args.set, "part": part, "purpose": purpose,
                             "opp_id": tid, "opp_name": name, "pin": args.pin, "refset": args.refset,
-                            "games": g, "priority": args.priority or {"core": 50, "ext": 30}.get(part, 20),
+                            "games": g, "priority": args.priority or {"core": 50, "ext": 30, "maps": 95}.get(part, 20),
                             "order": i, "planned": now()})
     # Interleave opponents within a priority so a partial run stays balanced.
     new.sort(key=lambda t: (-t["priority"], t.get("order", 0)))
@@ -219,16 +278,22 @@ def cmd_plan(args):
 # ---------------------------------------------------------------- state
 
 def state():
+    return state_ex()[:5]
+
+
+def state_ex():
+    """state() plus the groups whose matches are over (played or finished events; collection may lag)."""
     tasks = read_jsonl(DATA / "tasks.jsonl")
     events = read_jsonl(DATA / "events.jsonl")
     created = {e["task"]: e for e in events if e["ev"] == "created"}
     finished = {e["group"]: e for e in events if e["ev"] == "finished"}
     dropped = {e["task"] for e in events if e["ev"] == "dropped"}
+    played = {e["group"] for e in events if e["ev"] in ("played", "finished")}
     refs = {}
     for e in events:
         if e["ev"] == "created" and e.get("is_ref"):
             refs.setdefault((e["refset"], e["opp_id"]), e["group"])
-    return tasks, created, finished, dropped, refs
+    return tasks, created, finished, dropped, refs, played
 
 
 def pending_tasks(tasks, created, dropped):
@@ -240,7 +305,7 @@ def pending_tasks(tasks, created, dropped):
 def summary_fields(raw, side):
     """Rounds, tributed gems, kills and earned gold per side from a binary match summary."""
     try:
-        d = json.loads(cambc("summary", str(raw), "-o", "-", timeout=120))
+        d = json.loads(cambc("summary", str(raw), "-o", "-", timeout=120, spaced=False))   # converts locally
     except (CambcError, ValueError):
         return {}
     us, them = ("teamA", "teamB") if side == "a" else ("teamB", "teamA")
@@ -287,7 +352,6 @@ def collect(task, ev, detail):
                         cambc("matches", what, m["matchId"], "-o", str(path))
                     except CambcError as e:
                         log(f"warning: {what} {m['matchId']}: {e}")
-                    time.sleep(1)  # the download endpoints rate-limit bursts (cambc() spaces and retries calls too)
             if raw.exists():
                 row.update(summary_fields(raw, row["side"]))
             row["replay"] = str(bundle.relative_to(ROOT)) if bundle.exists() else None
@@ -338,6 +402,26 @@ def create(task, source, retries=2):
     raise CambcError(f"no group id in: {out[:300]}")
 
 
+def groups_over(want, pages=12):
+    """The groups of `want` whose five matches are all over, with our results by position ("WLWW?"), from the team's
+    unranked match list: 100 matches (20 groups) a call, newest first, against one `match-groups show` a group.
+    Stops once every wanted group's five matches were seen or the list ends."""
+    seen, cursor = {}, None
+    for _ in range(pages):
+        args = ["matches", "list", "--team", "me", "--kind", "unranked", "--limit", "100", "--json"]
+        d = json.loads(cambc(*args, *(["--cursor", cursor] if cursor else [])))
+        for m in d.get("matches") or []:
+            if m.get("groupId") in want:
+                us = next((t for t in m.get("teams") or [] if t.get("teamId") == MY_TEAM), {})
+                seen.setdefault(m["groupId"], {})[m["matchId"]] = (m.get("position") or 0, m["status"],
+                                                                   (us.get("result") or "?")[0].upper())
+        cursor = d.get("nextCursor")
+        if not cursor or not d.get("matches") or all(len(seen.get(g, ())) >= 5 for g in want):
+            break
+    return {g: "".join(r for _, _, r in sorted(ms.values())) for g, ms in seen.items()
+            if len(ms) >= 5 and all(st in DONE for _, st, _ in ms.values())}
+
+
 def cmd_run(args):
     lock = open(DATA / "run.lock", "w")
     try:
@@ -346,42 +430,45 @@ def cmd_run(args):
         sys.exit("another `ladder_scrims.py run` holds the lock")
     lock.write(str(os.getpid()))
     lock.flush()
-    log(f"run: pid {os.getpid()}, reserve {args.reserve}, inflight {args.inflight}, pace {args.pace}s")
-    errors, last_create, polled, played = 0, 0.0, {}, set()
+    log(f"run: pid {os.getpid()}, reserve {args.reserve}, inflight {args.inflight or 'no cap'}, pace {args.pace}s, "
+        f"poll {args.poll}s")
+    errors, last_pass, last_poll, no_task = 0, 0.0, 0.0, None
     waiting_note = None
     seen_ls, last_ls = None, 0.0
-    # A finished group's ten rate-limited downloads take ~40 s; done inline they halved the create rate. One collector
-    # thread keeps them serial (the rate limit) and writes the finished event after the games, as before, so the
-    # scheduler still sees a group in flight until its games are recorded.
-    to_collect, collecting = queue.Queue(), set()
-    collecting_lock = threading.Lock()
-
-    def batch_on():
-        # A candidate batch (live_batches.py) writes data/BATCH: collection waits so creates and polls get the CLI's
-        # one-call-a-second budget, which the downloads otherwise take most of. A stale file (dead scheduler) is ignored.
-        try:
-            return time.time() - (DATA / "BATCH").stat().st_mtime < BATCH_MAX_AGE
-        except OSError:
-            return False
+    # A played group's ten downloads take ten API calls. One collector thread keeps them serial and off the loop
+    # (its calls wait while a create pass runs) and writes the finished event after the games, so the scheduler
+    # sees a group as uncollected until its games are recorded.
+    to_collect, collecting, collected = queue.LifoQueue(), set(), set()   # newest first: the games wanted soonest
+    collecting_lock, stopping = threading.Lock(), threading.Event()
 
     def collector():
-        while True:
-            task, ev, d = to_collect.get()
-            while batch_on():
-                time.sleep(5)
+        while not stopping.is_set():
             try:
-                rows = collect(task, ev, d)
+                task, ev = to_collect.get(timeout=1)
+            except queue.Empty:
+                continue
+            try:
+                rows = collect(task, ev, group_detail(ev["group"]))
                 res = "".join((r["result"] or "?")[0].upper() for r in rows)
-                append_jsonl(DATA / "events.jsonl", {"ev": "finished", "group": ev["group"], "task": ev["task"],
-                                                     "at": now(), "results": res})
+                with collecting_lock:
+                    # With the event: a loop pass that read the events just before it must not queue the group again.
+                    collected.add(ev["group"])
+                    append_jsonl(DATA / "events.jsonl", {"ev": "finished", "group": ev["group"], "task": ev["task"],
+                                                         "at": now(), "results": res})
                 log(f"finished {ev['task']} {ev['group'][:8]}: {res}")
-            except Exception as e:  # re-polled and collected again (collect skips files it already has)
+            except Exception as e:  # queued again by the next poll (collect skips files it already has)
                 log(f"warning: collect {ev['task']} {ev['group'][:8]}: {e}")
             finally:
                 with collecting_lock:
                     collecting.discard(ev["group"])
 
     threading.Thread(target=collector, daemon=True).start()
+
+    def note(msg):
+        nonlocal waiting_note
+        if msg != waiting_note:
+            log(msg)
+            waiting_note = msg
 
     def check_live(inflight, why):
         # Another submission or activation while groups are in flight: those games may have played it.
@@ -398,126 +485,168 @@ def cmd_run(args):
                                                      "at": now(), "why": f"live/selected {list(seen_ls)} -> {list(cur)}"})
         seen_ls = cur
         return cur
-    while True:
-        if (DATA / "STOP").exists():
-            log("STOP file present: exiting")
-            return
-        try:
-            tasks, created, finished, dropped, refs = state()
-            by_id = {t["id"]: t for t in tasks}
-            with collecting_lock:
-                busy = set(collecting)
-            # Groups waiting for the collector have finished playing: not in flight for the cap or a live switch.
-            inflight = [e for e in created.values() if e["group"] not in finished and e["group"] not in busy]
-            # Poll in-flight groups, each at most every `poll` seconds.
-            for ev in inflight:
-                if time.monotonic() - polled.get(ev["group"], 0) < args.poll:
-                    continue
-                polled[ev["group"]] = time.monotonic()
-                d = group_detail(ev["group"])
-                if group_done(d):
-                    if ev["group"] not in played:
-                        # Its matches are over: a submission switch can no longer reach them (collection may lag).
-                        played.add(ev["group"])
-                        append_jsonl(DATA / "events.jsonl", {"ev": "played", "group": ev["group"], "task": ev["task"],
-                                                             "at": now()})
-                    with collecting_lock:
-                        collecting.add(ev["group"])
-                    to_collect.put((by_id[ev["task"]], ev, d))
-                    inflight = [e for e in inflight if e["group"] != ev["group"]]
-                time.sleep(1)
-            if inflight and time.monotonic() - last_ls >= 60:
-                check_live(inflight, "poll")
-            pend = pending_tasks(tasks, created, dropped)
-            if not pend and not inflight:
-                with collecting_lock:
-                    drained = not collecting
-                if args.exit_when_done and drained:
-                    log("all tasks done: exiting")
-                    return
-                time.sleep(args.idle if drained else args.tick)
-                errors = 0
+
+    def runnable(pend, refs, over):
+        """Pending tasks that only need the live version and quota, best priority first: (task, source, is_ref).
+        A pinned task waits until its ref group has played; the first task of a new (refset, opponent) captures it."""
+        held, out = held_tasks(), []
+        for t in pend:
+            if t["id"] in held:
                 continue
-            cap = args.batch_inflight if batch_on() else args.inflight
-            if pend and not probe_active(DATA) and len(inflight) < cap and time.monotonic() - last_create >= args.pace:
-                with live_lock(DATA):
-                    if probe_active(DATA):
-                        time.sleep(args.tick)
+            source, is_ref = None, False
+            if t["pin"] == "ref":
+                ref = refs.get((t["refset"], t["opp_id"]))
+                if ref is None:
+                    is_ref = True
+                elif ref not in over:
+                    continue
+                else:
+                    source = ref
+            elif t["pin"] not in ("none", None):
+                source = t["pin"]
+            out.append((t, source, is_ref))
+        out.sort(key=lambda x: -x[0]["priority"])
+        return out
+
+    def create_pass(cand, playing):
+        """Creates every runnable task the quota has room for, back to back: one quota read and one live read, then
+        only creates (the collector's calls wait), re-reading both every --recheck creates so a long burst cannot
+        miss a teammate's quota use or a submission switch for long."""
+        nonlocal waiting_note
+        made = []
+        with live_lock(DATA):
+            if probe_active(DATA):
+                return made
+            q = quota()
+            qq = q.get("quota") or {}
+            used, limit = qq.get("used", 0), qq.get("limit") or 100
+            if not q.get("ready", True):
+                note("quota not ready (no live submission?)")
+                return made
+            if limit - used - (0 if cand[0][0]["priority"] >= 100 else args.reserve) <= 0:
+                note(f"quota {used}/{limit}, reserve {args.reserve}: waiting (resets {qq.get('resetsAt')})")
+                return made
+            live, selected = check_live(playing, "before create")
+            ready = [c for c in cand if c[0]["version"] == live] if selected == live else []
+            if not ready:
+                note(f"nothing runnable: live v{live}, selected v{selected}, pending versions "
+                     f"{sorted({c[0]['version'] for c in cand})}")
+                return None   # no task for the live version: the loop looks again later, or when the tasks change
+            capturing = set()
+            _PRIORITY.set()
+            try:
+                for t, source, is_ref in ready:
+                    if limit - used - (0 if t["priority"] >= 100 else args.reserve) <= 0:
+                        break   # by priority: no later task may use more
+                    if args.inflight and len(playing) + len(made) >= args.inflight:
+                        break
+                    key = (t.get("refset"), t["opp_id"])
+                    if is_ref:
+                        if key in capturing:
+                            continue   # one group captures the pin; the rest follow once it has played
+                        capturing.add(key)
+                    try:
+                        gid, out = create(t, source)
+                    except CambcError as e:
+                        msg = str(e)
+                        if "HTTP 429" in msg or not re.search(r"HTTP 4\d\d", msg):
+                            raise
+                        if re.search(r"quota|limit", msg, re.I):
+                            log(f"create refused on quota, pass ends: {msg[-200:]}")
+                            break
+                        # A request the API refuses (4xx, e.g. an unknown map) is dropped; rate limits are retried.
+                        append_jsonl(DATA / "events.jsonl", {"ev": "dropped", "task": t["id"], "at": now(),
+                                                             "why": msg[-300:]})
+                        log(f"dropped {t['id']}: {e}")
                         continue
-                    live, selected = check_live(inflight, "before create")
-                    held = held_tasks()
-                    ready = []
-                    for t in pend:
-                        if t["version"] != live or selected != live or t["id"] in held:
-                            continue
-                        source = None
-                        if t["pin"] == "ref":
-                            ref = refs.get((t["refset"], t["opp_id"]))
-                            if ref is None:
-                                # The first group against this opponent becomes its ref, unless one is already pending.
-                                if any(e.get("is_ref") and e["opp_id"] == t["opp_id"] and e["refset"] == t["refset"]
-                                       for e in inflight):
-                                    continue
-                            elif ref not in finished:
-                                continue
-                            else:
-                                source = ref
-                        elif t["pin"] not in ("none", None):
-                            source = t["pin"]
-                        ready.append((t, source))
-                    ready.sort(key=lambda ts: -ts[0]["priority"])
-                    if not ready:
-                        note = f"nothing runnable: live v{live}, selected v{selected}, pending versions {sorted({t['version'] for t in pend})}"
-                        if note != waiting_note:
-                            log(note)
-                            waiting_note = note
-                    else:
-                        t, source = ready[0]
-                        q = quota()
-                        qq = q.get("quota") or {}
-                        used, limit = qq.get("used", 0), qq.get("limit") or 100
-                        room = limit - used - (0 if t["priority"] >= 100 else args.reserve)
-                        if not q.get("ready", True):
-                            log("quota not ready (no live submission?)")
-                        elif room > 0:
-                            is_ref = t["pin"] == "ref" and refs.get((t["refset"], t["opp_id"])) is None
-                            try:
-                                gid, out = create(t, source)
-                            except CambcError as e:
-                                # A request the API refuses (4xx, e.g. an unknown map) is dropped; rate limits are retried.
-                                if not re.search(r"HTTP 4\d\d", str(e)) or "HTTP 429" in str(e):
-                                    raise
-                                append_jsonl(DATA / "events.jsonl", {"ev": "dropped", "task": t["id"], "at": now(),
-                                                                     "why": str(e)[-300:]})
-                                log(f"dropped {t['id']}: {e}")
-                                last_create = time.monotonic()
-                                continue
-                            last_create = time.monotonic()
-                            ev = {"ev": "created", "task": t["id"], "group": gid, "at": now(), "live": live,
-                                  "selected": selected, "source_group": source, "opp_id": t["opp_id"],
-                                  "refset": t.get("refset"), "is_ref": is_ref, "quota_used": used + 1}
-                            append_jsonl(DATA / "events.jsonl", ev)
-                            polled[gid] = time.monotonic()
-                            check_live(inflight + [ev], "after create")
-                            log(f"created {t['id']} -> {gid[:8]} (v{live}, quota {used + 1}/{limit}"
-                                f"{', ref' if is_ref else ''}{', pinned ' + source[:8] if source else ''})")
-                            waiting_note = None
-                        else:
-                            note = f"quota {used}/{limit}, reserve {args.reserve}: waiting (resets {qq.get('resetsAt')})"
-                            if note != waiting_note:
-                                log(note)
-                                waiting_note = note
-            errors = 0
-        except (CambcError, OSError, ValueError, KeyError) as e:
-            errors += 1
-            wait = min(1800, 60 * 2 ** (errors - 1))
-            log(f"error {errors}/{args.max_errors}: {e}; backing off {wait}s")
-            if errors >= args.max_errors:
-                log("too many errors in a row: exiting")
-                sys.exit(1)
-            time.sleep(wait)
-            continue
-        time.sleep(args.tick)
+                    used += 1
+                    ev = {"ev": "created", "task": t["id"], "group": gid, "at": now(), "live": live,
+                          "selected": selected, "source_group": source, "opp_id": t["opp_id"],
+                          "refset": t.get("refset"), "is_ref": is_ref, "quota_used": used}
+                    append_jsonl(DATA / "events.jsonl", ev)
+                    made.append(ev)
+                    log(f"created {t['id']} -> {gid[:8]} (v{live}, quota {used}/{limit}"
+                        f"{', ref' if is_ref else ''}{', pinned ' + source[:8] if source else ''})")
+                    if len(made) % args.recheck == 0:
+                        if check_live(playing + made, "during create") != (live, selected):
+                            return made
+                        qq = quota().get("quota") or {}
+                        used, limit = max(used, qq.get("used", used)), qq.get("limit") or limit
+            finally:
+                _PRIORITY.clear()
+            if made:
+                check_live(playing + made, "after create")
+                waiting_note = None
+        return made
+
+    try:
+        while True:
+            if (DATA / "STOP").exists():
+                log("STOP file present: exiting")
+                return
+            try:
+                tasks, created, finished, dropped, refs, over = state_ex()
+                by_id = {t["id"]: t for t in tasks}
+                with collecting_lock:
+                    busy = set(collecting)
+                # Created and not yet recorded; `playing` are those whose matches may still run (the cap, a live switch).
+                open_groups = [e for e in created.values() if e["group"] not in finished]
+                playing = [e for e in open_groups if e["group"] not in over]
+                pend = pending_tasks(tasks, created, dropped)
+                if not pend and not open_groups:
+                    if args.exit_when_done:
+                        log("all tasks done: exiting")
+                        return
+                    time.sleep(args.idle)
+                    errors = 0
+                    continue
+                # Creates first: quota that is free is used before anything else gets the API.
+                if pend and not probe_active(DATA) and time.monotonic() - last_pass >= args.pace:
+                    cand = runnable(pend, refs, over)
+                    key = sorted(c[0]["id"] for c in cand)
+                    # A pass that finds no task for the live version costs two calls: repeat it only every two
+                    # minutes, or at once when the runnable tasks change (a plan, a released hold, a played pin).
+                    if cand and (key != no_task or time.monotonic() - last_pass >= max(120, args.pace)):
+                        last_pass = time.monotonic()
+                        made = create_pass(cand, playing)
+                        no_task = key if made is None else None
+                        playing += made or []
+                # One sweep of the match list finds the groups that have played; a played group without its games
+                # (also after a restart) goes to the collector.
+                if time.monotonic() - last_poll >= args.poll:
+                    last_poll = time.monotonic()
+                    if playing:
+                        done = groups_over({e["group"] for e in playing})
+                        for ev in playing:
+                            if ev["group"] in done:
+                                # Its matches are over: a submission switch can no longer reach them (collection may lag).
+                                append_jsonl(DATA / "events.jsonl", {"ev": "played", "group": ev["group"],
+                                                                     "task": ev["task"], "at": now(),
+                                                                     "results": done[ev["group"]]})
+                                log(f"played {ev['task']} {ev['group'][:8]}: {done[ev['group']]}")
+                                over.add(ev["group"])
+                        playing = [e for e in playing if e["group"] not in done]
+                        if playing and time.monotonic() - last_ls >= 60:
+                            check_live(playing, "poll")
+                    with collecting_lock:
+                        for ev in open_groups:
+                            if (ev["group"] in over and ev["group"] not in collecting
+                                and ev["group"] not in collected and ev["task"] in by_id):
+                                collecting.add(ev["group"])
+                                to_collect.put((by_id[ev["task"]], ev))
+                errors = 0
+            except (CambcError, OSError, ValueError, KeyError) as e:
+                errors += 1
+                wait = min(1800, 60 * 2 ** (errors - 1))
+                log(f"error {errors}/{args.max_errors}: {e}; backing off {wait}s")
+                if errors >= args.max_errors:
+                    log("too many errors in a row: exiting")
+                    sys.exit(1)
+                time.sleep(wait)
+                continue
+            time.sleep(args.tick)
+    finally:
+        stopping.set()   # the collector ends after the group it is on
 
 
 # ---------------------------------------------------------------- reporting
@@ -633,6 +762,8 @@ def main():
     pl.add_argument("--set", default="v1", help="frozen set name (data/set-NAME.json)")
     pl.add_argument("--sets", help="parts of the set: core, ext")
     pl.add_argument("--opps", help="opponents: " + ", ".join(TEAMS) + " or team ids")
+    pl.add_argument("--maps", help="instead of --sets: five or more map names from any set file, comma separated")
+    pl.add_argument("--groups", type=int, help="at most this many groups per opponent and part")
     pl.add_argument("--one-side", action="store_true", help="one side per map, alternating (calibration)")
     pl.add_argument("--flip", action="store_true", help="with --one-side: the other side of each map")
     pl.add_argument("--repeat", help="rerun each opponent's ref group (determinism check)")
@@ -642,11 +773,11 @@ def main():
     pl.add_argument("--priority", type=int, help="higher first; >= 100 may use the reserve (default core 50, ext 30)")
     ru = sub.add_parser("run", help="queue and collect groups until stopped (touch data/STOP to stop)")
     ru.add_argument("--reserve", type=int, default=24, help="quota groups kept free for priority >= 100 tasks")
-    ru.add_argument("--inflight", type=int, default=12, help="most groups queued or playing at once")
-    # A slot turns over in ~1.3 min of play plus up to one --poll: ~24 slots keep a 10 s pace busy.
-    ru.add_argument("--batch-inflight", type=int, default=24, help="the cap while data/BATCH exists")
-    ru.add_argument("--pace", type=int, default=38, help="seconds between creates")
-    ru.add_argument("--poll", type=int, default=90, help="seconds between polls of one group")
+    ru.add_argument("--inflight", type=int, default=0, help="most groups playing at once (0: no cap, the quota decides)")
+    ru.add_argument("--batch-inflight", type=int, default=0, help="unused (kept for old command lines)")
+    ru.add_argument("--pace", type=int, default=20, help="seconds between create passes (one quota read each)")
+    ru.add_argument("--recheck", type=int, default=15, help="creates between quota and live re-reads within a pass")
+    ru.add_argument("--poll", type=int, default=30, help="seconds between sweeps for played groups")
     ru.add_argument("--tick", type=int, default=20)
     ru.add_argument("--idle", type=int, default=300, help="sleep when nothing is pending")
     ru.add_argument("--max-errors", type=int, default=8)
