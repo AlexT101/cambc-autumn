@@ -17963,3 +17963,33 @@ Results against charybdis-p3 (fgate 200k, pool batches 0-1):
 - **Verdict:** inert where BattleCats is absent. BattleCats itself can only be read live: `bcx-live` is queued at
   priority 88 (paired against v116 on Fish r2 / Mite r7 / BattleCats r7). It carries an `OPPD` printf trace (+94
   fuel a turn); `live_trace.py` tabulates it.
+
+## (charybdis, 2026-11-12) psafe-a ported to 520: +0.27 (ZONE), held on all three bases; comms adds nothing on 520
+
+The port519 parts were ported onto `variants/chy-life` (= 520): psafe-a alone as `c520-ps`, and comms + psafe-a as
+`c520-cmps`.
+- The patches applied with offsets only, and the ps code is byte-identical to c519-ps's.
+- 520's own-fall stand and step rule and psafe-a both send the Prism home, through separate OR'ed terms.
+- psafe-a alone also refuses the winning channel's start (`can_tribute_safely`), which 520 does not touch, so there
+  was nothing to resolve.
+- 520's Health shards just make psafe-a fire less.
+
+Maps: pool batch 75 (unplayed) and 76-86, grown from mapgen seeds 2471000-2471129 (`--mix ladder-v2`); no gate had
+played them. Details and patches: [port520/README.md](ideas-2026-11-12/port520/README.md).
+
+Results against chy-life (520), 100k, fgate, unmetered Flp4/Mt3q bodies:
+
+| arm | win% (95% CI) | games | Fish | Mite | OOF a game (REF 6.752) | verdict |
+|---|---|---|---|---|---|---|
+| **ps** (`c520-ps`) | **50.27 (50.11-50.44)** | 245,760 | +0.29 | +0.26 | 6.811 | **ZONE** (low +13.58, high -12.04) |
+| cm + ps (`c520-cmps`) | 50.20 (49.95-50.45) | 245,760 | +0.06 | +0.34 | 6.804 | ZONE (low +5.06, high -6.52) |
+| cm given ps (paired) | -0.07 ±0.24 points | 30,720 maps | -0.22 | +0.08 | | no gain |
+
+- psafe-a held its size on its third base: 517 +0.17, 519 +0.24, 520 +0.27.
+- Mechanism (5,120 games a bot on batch 0, with replays): Prism deaths carrying the winning bag went from 115 under
+  chy-life to 83 under ps (-28%), and 75 under cmps. Winning-bag games won: 95.9% under chy-life, 96.3% under ps.
+- Fuel is level (+0.06 out-of-fuel turns a game).
+
+Verdict: ZONE. Take c520-ps on judgement, as the best version: a consistent held-out gain with a shown mechanism and
+level fuel. Comms is dropped. The patch against chy-life is for the teammate to take into bots/charybdis. It is queued
+live at priority 89, in place of the dropped c519-cmps line.
