@@ -6,7 +6,7 @@
   3. constants: --set NAME=VALUE (params.h inline constexpr) and --mul NAME=FACTOR.
   3b. noise (--noise SD, default 0.2; 0 for none): params.h's tunable constants (tunify.py) are redrawn every 100
      rounds as value x exp(SD N(0,1)), seeded by the member seed, the map and the team, as the dvn bodies do.
-  4. rules: --patch FILE (a unified diff against the body's src/, applied with patch -p1 in src/) or --py SCRIPT
+  4. rules: --patch FILE (a unified diff against the body's src/, applied with patch -p1 in src/) or --py 'SCRIPT [ARGS]'
      (run as SCRIPT BODY_DIR), in order.
     py mkbody.py NAME [--base variants/c520-ps] [--draft table|model] [--ref r7] [--set K=V]... [--mul K=F]...
                       [--patch F]... [--py S]... [-f]"""
@@ -157,7 +157,8 @@ def main():
     p.write_text(ph)
     if a.noise > 0: noise(bot, a.noise)
     for x in a.patch: subprocess.run(['patch', '-p1', '-i', str(Path(x).resolve())], cwd=bot / 'src', check=True)
-    for x in a.py: subprocess.run([sys.executable, x, str(bot)], check=True)
+    # A --py value may carry the script's arguments after its path: 'rule_vesper.py 0 --build greed-s,greed-h'.
+    for x in a.py: q = x.split(); subprocess.run([sys.executable, q[0], str(bot)] + q[1:], check=True)
     (bot / 'MITEBODY.json').write_text(json.dumps({'base': a.base, 'draft': a.draft, 'ref': a.ref, 'table': n, 'constants': log,
                                                    'patches': a.patch, 'py': a.py, 'noise': a.noise, 'static': a.static}, indent=1))
     print(name, n, 'table entries', log)
