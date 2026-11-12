@@ -130,7 +130,15 @@ replays (11-10 to 11-12), our 375 live scrims against r7, and 48k capture rows.
   - Rule 2, the opening pack (c520-pk: lone gem clusters 0.5x before r100), on fgate pool v3 at 200k: 49.90%
     (49.65-50.15) of 122,880, NARROWED. With mf-c2: 50.04% of 20,480. Dropped.
   - Mite's gold-first opening does not carry over: our bot wins on gems.
-- **Leads (untested):** focus Mite's Vesper; 2-on-1 empty healthy Mite bodies; zone its carriers.
+- **Exploits tried on c520-ps (forced copies, since opp_detect reads mf-c2 as unknown); neither pays.**
+  fgate pool v4 at 200k, with the Flp4 and mf-c2 bodies:
+  - Vesper focus (c520-mxf: her valuation includes her 44% share of our deaths) gives 50.18% (49.96-50.39) of
+    61,440, NARROWED; fresh Mite reads 50.38. Our hits on her rise from 42% to 51%, but she escapes: her deaths go
+    from 0.94 to 0.91 and ours from 4.87 to 5.08. Live forks: −0.50 ±1.04. Dropped.
+  - Chasing healthy, empty Mite bodies that will stand (c520-msf) gives 46.95% (46.02-47.88) of 20,480: REJECT.
+    Kills rise by 1.4 a game, but deaths rise by 1.1 and gems lost by 20.
+  - Zoning carriers was not built. Our presence within 4 tiles cuts the tribute starts of Mite carriers from
+    20-27% to 9%, but the bag is banked later, so it delays banking rather than denying it.
 
 ## Forking live Mite games, and per-composition constants (2026-11-12): forks work and find a known gain at about a fresh gate's cost a game; the body plays on 5-7 points weaker than Mite from live positions; no pick-count interaction in 2.7M SPSA games
 

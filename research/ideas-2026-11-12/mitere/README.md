@@ -451,6 +451,83 @@ Results against c520-ps (fgate `--pool v3`, 200k fuel, batches from 8, `gatepk.s
   run.
 - Mite's gold-first opening does not carry over: our bot's wins come from gems.
 
+## 11. Exploiting Mite's rules on our bot: neither pays
+
+The brief asked us to exploit Mite's rules rather than copy them, with the change behind the `opp_detect` Mite
+classifier and built on c520-ps.
+
+### Choosing the lead (r7 live, 322 games)
+
+**Vesper (lead 1).**
+- Mite's Vesper makes 44% of our deaths (946 of 2,164) (`focus.py`).
+- Our bot does not single her out. When she and another Mite body are both in reach, 46% of our hits go to her,
+  against 45% if hits were spread uniformly.
+
+**2-on-1s (lead 2).**
+- Mite never retreats for numbers (section 3).
+- Outnumbered by two within 5, her Vesper still dies only 9.3% of the time within 10 rounds (`nums.py`).
+- Both of these are fight levers, so both were built.
+
+**Zoning carriers (lead 3).**
+- A Mite carrier (bag ≥ 11) at an altar starts a tribute in 9% of rows when we are within 4 tiles. The rate is 20%
+  at 5-8 tiles and 27% beyond 8.
+- So our presence delays her banking. It does not deny it, because the bag is kept and banked later.
+- Not built.
+
+**Prism kill and early tribute (leads 4 and 5).**
+- Mite drafts Prism in only 22% of games, and our tribute logic is not lock-fearful.
+- Both judged small. Not built.
+
+### The arms
+
+| arm | change (forced copy) |
+|---|---|
+| c520-mx / mxf | Every planner valuation of a Mite Vesper adds `max(0, 0.44 × enemies − 1)` lives to her bag (`foe_bag`). 0.44 is her measured share of our deaths. |
+| c520-ms / msf | A Mite body that is healthy (≥ 0.40 hp), not tributing and carrying a bag under 11 counts as prey and is never judged to escape (`stands_ground`). Mite's own retreat rule says it will stay and fight. |
+
+The patches are `x1-focus-c520-mx.patch` and `x2-stand-c520-ms.patch`.
+
+### Testing honestly
+
+- `opp_detect` reads mf-c2 as unknown: mx and ms play 6-9 flipped games in 1,022 pairs.
+- The tests therefore use forced copies (`mite_focus_force`, `mite_stand_force`). The decisive read is the
+  forced copy's *fresh, Mite* row.
+- The forced copy also plays its rule against Fish. That makes the Fish row a side-effect check, not the effect.
+- A detector-gated build would get at most the Mite row, scaled by the detector's recall: 0.74 by r300 and 0.94 by
+  r1000 on live Mite.
+
+### Mechanism
+
+Ladder maps, members 1-4, against mf-c2: 1,022 pairs at 200k (`focusmech.py`, `fightmech.py`). Fork results are
+cand − base with SE clustered by game; the forks are livefork's v116 positions against the mf-c2 body
+(`fork_arms.py`, `fork_read.py`).
+
+| arm | paired win | what changed | forks r100 / r300 / r600 / all |
+|---|---|---|---|
+| mxf | −1.4 (60 flips) | Hits on Vesper when there is a choice rose from 42% to 51%. Her deaths per game went from 0.94 to 0.91; ours from 4.87 to 5.08. | +3.65 ±2.0 / −4.26 ±1.9 / −1.12 ±1.5 / −0.50 ±1.0 |
+| msf | −7.5 (323 flips) | Kills per game rose from 10.02 to 11.46 and deaths from 5.12 to 6.25. Gems lost rose from 103 to 123. | −0.77 ±2.6 / −1.74 ±1.9 / −1.69 ±1.9 / −1.36 ±1.3 |
+
+**Vesper focus.** Focus moves our hits onto her, but she escapes. Her deaths do not rise, so the damage is wasted.
+
+**Chasing standing bodies.** It buys kills at more than one death each, and the gems carried by those deaths are
+lost.
+
+### Gates (fgate `--pool v4`, 200k, bodies Flp4 and mf-c2, `gatemx.sh`)
+
+| CAND vs c520-ps | fresh win% (95% CI) | fresh, Mite | fresh, Fish | games | verdict |
+|---|---|---|---|---|---|
+| c520-mxf | 50.18 (49.96-50.39) | 50.38 (50.00-50.77) | 49.97 (49.77-50.16) | 61,440 (3 batches) | NARROWED, dropped |
+| c520-msf | 46.95 (46.02-47.88) | 45.94 (44.46-47.42) | 47.97 (46.83-49.11) | 20,480 (1 batch) | REJECT |
+
+**mxf.**
+- The *fresh, Mite* read is +0.38 ±0.38. Behind the detector this shrinks to about +0.2 on Mite games, and to about
+  +0.1 overall.
+- The paired ladder read and the forks do not confirm it.
+- Dropped as a tweak below the 50.5 accept line. Per the 200k-first rule, it gets no 100k run.
+
+**msf.** Clear loss against both bodies. Mite's willingness to stand is not a free kill for our bot: it fights back
+at full strength.
+
 ## Files
 
 - **Python tools** (this folder):
@@ -468,6 +545,13 @@ Results against c520-ps (fgate `--pool v3`, 200k fuel, batches from 8, `gatepk.s
   - Section 10: `rule1-c520-vg.patch`, `rule2-c520-pk.patch` (diffs against c520-ps); `mech.sh`, `mechvc.sh`,
     `mechpk.sh` (paired runs against mf-c2); `rule1mech.py`, `paired.py` (their reads); `gatepk.sh` (the gate).
     Decoded games are in `~/tmp-offload/vg/ext/`.
+  - Section 11:
+    - Live reads: `focus.py`, `nums.py`.
+    - Patches against c520-ps: `x1-focus-c520-mx.patch`, `x2-stand-c520-ms.patch`.
+    - Paired runs: `mechmx.sh`, `mechms.sh`, with their reads `focusmech.py` and `fightmech.py`.
+    - livefork: `fork_arms.py`, with its read `fork_read.py`.
+    - Gate: `gatemx.sh`.
+    - Forks are in `~/tmp-offload/vg/fork/`.
   - `tools/*_remote.sh`: the big-arm queries.
 - **Data** under `~/tmp-offload/mitere/`:
   - `raw/` (rows, replays, the 05 maps' replays, platform map list);
