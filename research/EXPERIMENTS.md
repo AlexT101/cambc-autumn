@@ -129,6 +129,22 @@ Two independent studies of the same 345 games (198-147; 340 distinct, 195-145), 
   lines change v118's play; `v118-fish/tracebot.py` has lines that keep it exact.
 - Don't retry: earlier recalls, fleeing or banking on sight of a stronger enemy, or a cap on the hoard.
 
+## Emblem lab round 7 on lab-emb6-c520-ps against the Fish r8 body and mf-f9 (2026-11-12): nothing replicates
+
+The lab filler's emblem round (round 5's method: 332 edits rebuilt on the base, six rank-halving stages, then the 20
+survivors on new games to n_eff 150k) on `variants/lab-emb6-c520-ps`, 200 fresh ladder-v4 suites (seeds
+7730000-7730199), against the Fish r8 body (fr8-g25) and mf-f9 at 0.5 each, as one-member baked copies at seeds
+1310952/1310953 that replay the run-time bodies game for game. The question was coordinator's: do emblem choices
+(items against the fed Vesper's burst) help against Fish r8? 6.0M lab games. The emblem lab's vehicle learned to
+start from a base that already bakes lab flags (emb6's), checked identical to plain bots at 100M.
+
+Replication on 1.76M new games: the 20 survivors spread like noise around zero, from +0.26 (z 2.1,
+prism-monster-foc-k3) to -0.27 (z -2.0); the top of 20 null draws is expected near z 2, and the placebo read -0.22.
+Per opponent, nothing stands out against Fish r8 either (best issac-monster-hp-k0 +0.35 z 2.0 against Fish and -0.14
+against Mite). No durability, home or HP edit survived the screen. The round's candidate
+(`variants/lab-emb7-lab-emb6-c520-ps`, that one edit) is a likely false positive at this size and was not gated
+on the labs agent's recommendation. Within this library, emblem choice is not the lever against Fish r8's carry.
+
 ## Tune lab round 9 on lab-emb6-c520-ps (2026-11-12): SPSA on 19 economy and fight constants is level, 50.06% at 200k
 
 The lab filler's tune round (SPSA as localq's tune rounds: 19 knobs, 706 iterations on 40 fresh ladder-v4 suites
