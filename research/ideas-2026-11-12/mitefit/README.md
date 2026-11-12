@@ -208,6 +208,9 @@ table, live against bodies, on the same cells.
 
 **Not reproduced:** the fed Vesper. Her gold, damage and kills stay those of mf-c2.
 
+Late-game Strength is the next thing to check: mitere's live median is 465 at r600-900 and 705 after r900. Avoiding
+her loses on our side (mitere 97f1cf220: REJECT, 46.90%).
+
 **Opponent classification.** opp_detect reads every mf body as unknown: 256 of 256 games against mf-c2
 (`oppd_read.py`). The bodies write our packed turn order, not Mite's priorities. Exploit gates against them use a
 forced test copy and read the fresh-Mite row.
