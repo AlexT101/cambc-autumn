@@ -41,6 +41,9 @@ BASELINE = 86          # every candidate's gate pairs against v86's r2 games: ne
 # 2026-11-10 (user): no v1 probes. Each one drained live testing ~10-15 min an hour to switch the selection to v1.
 # Opponent changes use a rolling observation snapshot, separate from the fixed testing pins.
 VERSION_CHECK = False
+# 2026-11-12 (user): v115 rests on the book; candidates go live only in quota-sized batches (live_batches.py), which
+# replaces the gate/submit flow below.
+BATCH_MODE = True
 CORE_GROUPS = 32       # r2 core = 16 groups x 2 opponents
 NULL_A_REFS = {'fish': 'r2', 'mite': 'r3'}
 NULL_A_MITE_SOURCE = '01a1bf36-e601-756a-8b37-a90ad3d84ae0'
@@ -92,8 +95,9 @@ def wake(rec):
     ls.append_jsonl(f, rec)
 
 
-def outside_check(st):
-    """Logs versions we did not submit, and pauses when live/selected is not our newest version. True: go on."""
+def outside_check(st, allowed=None):
+    """Logs versions we did not submit, and pauses when live/selected is not our newest version (in batch mode: not
+    one of `allowed`). Returns the submissions listing to go on, else False."""
     d = submissions_json()
     ours = {h['version'] for h in st['history']}
     seen = set(st.setdefault('outside', []))
@@ -106,14 +110,15 @@ def outside_check(st):
             save(st)
             wake({'outside': v, 'note': x.get('note'), 'uploader': x.get('uploadedBy'), 'at': now()})
     live, sel, exp = d['active']['version'], d['selected']['version'], max(ours)
-    if live != exp or sel != exp:
-        why = f'live v{live} selected v{sel}, expected our v{exp}'
+    allowed = allowed or {exp}
+    if live not in allowed or sel not in allowed:
+        why = f'live v{live} selected v{sel}, expected our v{"/v".join(map(str, sorted(allowed)))}'
         if not (H / 'PAUSE').exists():
             log(f'PAUSE: {why}; not submitting until an agent checks and removes sched/PAUSE')
             (H / 'PAUSE').write_text(why + '\n')
             wake({'pause': why, 'at': now()})
         return False
-    return True
+    return d
 
 
 # ---------------------------------------------------------------- gate progress
@@ -354,7 +359,7 @@ def hold(why):
     return False
 
 
-def submit(st, c, base_live):
+def submit(st, c, base_live, plan=True):
     if not unmasked(c) and not (Path(c['workspace']) / 'bots/ocean/src/model' / MASK_HEADER).is_file():
         log(f"{c['label']}: workspace has no priority mask; rebuilding before any submit")
         st['prepared'] = None
@@ -405,7 +410,8 @@ def submit(st, c, base_live):
         time.sleep(60)
     if live != v:
         return hold(f'v{v} uploaded but not live after 10 activations')
-    plan_gate(v, rsets)
+    if plan:   # batch mode plans its own gate, a batch at a time
+        plan_gate(v, rsets)
     base_version = BASELINE
     if c['kind'] == 'queue':
         base_version = base_of(st, c['base'])
@@ -462,11 +468,13 @@ def runner_alive():
 def main():
     from live_r6_campaign import Campaign
     from live_opponent_campaign import Panel
+    from live_batches import Batches
     log(f'scheduler start pid {os.getpid()}')
     version_check = VersionCheck(ls, H, log, wake)
     opponent_detector = OpponentDetector(ls, save, log, wake, now)
     campaign = Campaign(sys.modules[__name__], opponent_detector)
     panel = Panel(sys.modules[__name__], opponent_detector)
+    batches = Batches(sys.modules[__name__], opponent_detector)
     while not (H / 'STOP').exists():
         try:
             st = load()
@@ -480,6 +488,10 @@ def main():
                 time.sleep(30)
                 continue
             if panel.tick(st):
+                time.sleep(30)
+                continue
+            if BATCH_MODE:
+                batches.tick(st)
                 time.sleep(30)
                 continue
             if not outside_check(st):   # live is not ours: neither report nor submit

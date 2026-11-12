@@ -48,6 +48,7 @@ TEAMS = {  # short names for --opps; any team id also works
     "neet": ("882106d4-9deb-40cc-9d5c-8522c1d32129", "NEETCoders"),
     "cats": ("285f4eb5-e97f-4ea4-93c5-19e1590a1e5a", "BattleCats"),
 }
+BATCH_MAX_AGE = 3 * 3600   # data/BATCH older than this is a leftover: collect again
 CHAMPS = ["Ryth", "Vesper Vale", "Vendetta", "Cassi & Issac", "Stellar", "Prism", "Marcella", "Willow", "Ren", "Varg",
           "Tavi", "Heart of Ruin"]
 
@@ -337,7 +338,7 @@ def cmd_run(args):
     lock.write(str(os.getpid()))
     lock.flush()
     log(f"run: pid {os.getpid()}, reserve {args.reserve}, inflight {args.inflight}, pace {args.pace}s")
-    errors, last_create, polled = 0, 0.0, {}
+    errors, last_create, polled, played = 0, 0.0, {}, set()
     waiting_note = None
     seen_ls, last_ls = None, 0.0
     # A finished group's ten rate-limited downloads take ~40 s; done inline they halved the create rate. One collector
@@ -346,9 +347,19 @@ def cmd_run(args):
     to_collect, collecting = queue.Queue(), set()
     collecting_lock = threading.Lock()
 
+    def batch_on():
+        # A candidate batch (live_batches.py) writes data/BATCH: collection waits so creates and polls get the CLI's
+        # one-call-a-second budget, which the downloads otherwise take most of. A stale file (dead scheduler) is ignored.
+        try:
+            return time.time() - (DATA / "BATCH").stat().st_mtime < BATCH_MAX_AGE
+        except OSError:
+            return False
+
     def collector():
         while True:
             task, ev, d = to_collect.get()
+            while batch_on():
+                time.sleep(5)
             try:
                 rows = collect(task, ev, d)
                 res = "".join((r["result"] or "?")[0].upper() for r in rows)
@@ -396,6 +407,11 @@ def cmd_run(args):
                 polled[ev["group"]] = time.monotonic()
                 d = group_detail(ev["group"])
                 if group_done(d):
+                    if ev["group"] not in played:
+                        # Its matches are over: a submission switch can no longer reach them (collection may lag).
+                        played.add(ev["group"])
+                        append_jsonl(DATA / "events.jsonl", {"ev": "played", "group": ev["group"], "task": ev["task"],
+                                                             "at": now()})
                     with collecting_lock:
                         collecting.add(ev["group"])
                     to_collect.put((by_id[ev["task"]], ev, d))
@@ -413,7 +429,8 @@ def cmd_run(args):
                 time.sleep(args.idle if drained else args.tick)
                 errors = 0
                 continue
-            if pend and not probe_active(DATA) and len(inflight) < args.inflight and time.monotonic() - last_create >= args.pace:
+            cap = args.batch_inflight if batch_on() else args.inflight
+            if pend and not probe_active(DATA) and len(inflight) < cap and time.monotonic() - last_create >= args.pace:
                 with live_lock(DATA):
                     if probe_active(DATA):
                         time.sleep(args.tick)
@@ -615,6 +632,8 @@ def main():
     ru = sub.add_parser("run", help="queue and collect groups until stopped (touch data/STOP to stop)")
     ru.add_argument("--reserve", type=int, default=24, help="quota groups kept free for priority >= 100 tasks")
     ru.add_argument("--inflight", type=int, default=12, help="most groups queued or playing at once")
+    # A slot turns over in ~1.3 min of play plus up to one --poll: ~24 slots keep a 10 s pace busy.
+    ru.add_argument("--batch-inflight", type=int, default=24, help="the cap while data/BATCH exists")
     ru.add_argument("--pace", type=int, default=38, help="seconds between creates")
     ru.add_argument("--poll", type=int, default=90, help="seconds between polls of one group")
     ru.add_argument("--tick", type=int, default=20)
