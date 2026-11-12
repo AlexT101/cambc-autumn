@@ -147,10 +147,13 @@ def all_features():
 
 
 def pool_files(cfg):
-    """The map files and directories of cfg's pool globs, less its holdout (shared with the emblem lab)."""
+    """The map files and directories of cfg's pool globs, less its holdout (shared with the emblem lab). Maps directly
+    under maps/ count only if in cfg's ladder set (ladder_set.py: the pinned 128 unless config "ladder" says "all")."""
+    import ladder_set
     held = {str(ROOT / h) for h in cfg["holdout"]}
+    ladder = {str(f) for f in ladder_set.files(cfg.get("ladder", "128"))}
     return [p for spec in cfg["pool"] for p in (sorted(glob.glob(str(ROOT / spec))) if glob.has_magic(spec) else [str(ROOT / spec)])
-            if p not in held]
+            if p not in held and (Path(p).parent != ROOT / "maps" or not p.endswith(".map26a") or p in ladder)]
 
 
 def write_maps(lab, cfg):

@@ -73,10 +73,12 @@ def ranges_for(spec):
 
 
 def maps_in(pool):
+    import ladder_set
     maps = []
     for d in pool:
         p = ROOT / d
-        maps += sorted(p.glob("*.map26a")) if p.is_dir() else []
+        # maps/ itself is the pinned 128-map ladder, whatever else it holds (runs before 2026-11-12 sampled those).
+        maps += ladder_set.files("128") if p.resolve() == ladder_set.MAPS.resolve() else sorted(p.glob("*.map26a")) if p.is_dir() else []
     return maps
 
 

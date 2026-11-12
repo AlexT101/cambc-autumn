@@ -21,11 +21,15 @@ serve every candidate, so a changed bot needs a new dir.
   --max-batches caps the gate, --batch-maps sets the step, and `--max-batches N --ci 0` is a fixed read of at most
   N batches. The pool (FGATE_HOME/pool, 97,535 maps) holds 38 default batches; every gate walks it from batch 0
   unless --first-batch J starts later, on maps earlier gates have not played (a held-out confirmation).
-- Results: gate-logs/fgate-<cand>--<ref><bodies><fuel>-batch.json, and a "Results against <ref>" table.
+- Ladder side read: the 128 ladder maps pinned in tools/ladder128.txt, whatever else maps/ holds (it has 170 from
+  2026-11-12). --ladder all plays every map under maps/ instead, under its own opponent configs and run names
+  (suffix -Lall), so REF's cached 128 runs are never reused for it or mixed with it.
+- Results: gate-logs/fgate-<cand>--<ref><bodies><fuel>[-Lall]-batch.json, and a "Results against <ref>" table.
 """
 import argparse, fcntl, hashlib, importlib.util, json, math, os, random, re, subprocess, sys, time
 from pathlib import Path
 import numpy as np
+import ladder_set
 
 ROOT = Path(__file__).resolve().parents[1]
 HOME = Path(os.environ.get('FGATE_HOME', os.path.expanduser('~/tmp-offload/gatebatch')))
@@ -34,6 +38,9 @@ HOME = Path(os.environ.get('FGATE_HOME', os.path.expanduser('~/tmp-offload/gateb
 LIB = Path(os.environ.get('FGATE_RUNNER_LIB', ROOT / 'tools/fastengine/runner/target-rt/release/libfastrunner.so'))
 NOISE0 = 1310000  # dgate's noise member k is seed NOISE0 + k with draft salt k
 PART = 320       # maps a suite (see suite())
+# The ladder side read: the pinned 128 maps (default; every run before 2026-11-12) or all maps under maps/ (--ladder all).
+# A set other than the 128 has its own opponent config and run names, so its REF runs never mix with the 128's.
+LADDER = '128'
 TIMEOUT = 600     # seconds a game; an unmetered body cannot run out of fuel, so only this stops a hung one
 LO, SCREEN, LIVE = math.log(0.05 / 0.95), math.log(0.95 / 0.05), math.log(99)
 
@@ -109,7 +116,11 @@ def pool():
 
 
 def ladder():
-    return sorted(p.stem for p in (ROOT / 'maps').glob('*.map26a'))
+    return ladder_set.names(LADDER)
+
+
+def ladder_tag():
+    return '' if LADDER == '128' else f'-L{LADDER}'
 
 
 def grow(dirs, seeds):
@@ -145,7 +156,7 @@ def suite(maps, n, j):
     whole batch, so a batch never changes when the pool grows."""
     rows = maps[j * n:(j + 1) * n]
     if len(rows) < n: return None
-    base = HOME / f'suites/m{n}'; d = base / f'b{j:03d}'; cfg = base / f'b{j:03d}.json'
+    base = HOME / f'suites/m{n}'; d = base / f'b{j:03d}'; cfg = base / f'b{j:03d}{ladder_tag()}.json'
     if not cfg.exists():
         base.mkdir(parents=True, exist_ok=True)
         with open(base / 'lock', 'w') as fh:
@@ -156,7 +167,7 @@ def suite(maps, n, j):
                     if not (d / f'{name}.map26a').exists(): os.symlink(HOME / f'pool/maps/{name}.map26a', d / f'{name}.map26a')
                 noise = {name: j * n + i + 1 for i, (name, _) in enumerate(rows)}
                 noise.update({name: j + 1 for name in ladder()})
-                tmp = base / f'b{j:03d}.json.tmp'
+                tmp = base / f'b{j:03d}{ladder_tag()}.json.tmp'
                 tmp.write_text(json.dumps({'schema': 1, 'opponent_index': 1, 'maps': {
                     name: {'seed': NOISE0 + k, 'salt': k, 'unmetered': True} for name, k in noise.items()}}))
                 tmp.rename(cfg)
@@ -171,7 +182,7 @@ def suite(maps, n, j):
                 part.mkdir(parents=True, exist_ok=True)
                 for name, _ in rows[k * PART:(k + 1) * PART]:
                     if not (part / f'{name}.map26a').exists(): os.symlink(HOME / f'pool/maps/{name}.map26a', part / f'{name}.map26a')
-    return {'suites': ','.join(map(str, parts)) + ',ladder', 'config': cfg, 'sha': hashlib.sha256(cfg.read_bytes()).hexdigest(),
+    return {'suites': ','.join(map(str, parts)) + (',ladder' if LADDER == '128' else f',ladder-{LADDER}'), 'config': cfg, 'sha': hashlib.sha256(cfg.read_bytes()).hexdigest(),
             'maps': dict(rows), 'games': 2 * (len(rows) + len(ladder()))}
 
 
@@ -252,7 +263,12 @@ def main(argv=None):
     ap.add_argument('--ahead', type=int, default=0, help='batches started before the one being read has decided')
     ap.add_argument('--no-run', action='store_true', help='decide from finished runs only')
     ap.add_argument('--fish-body', default='Flp4'); ap.add_argument('--mite-body', default='Mt3q')
+    ap.add_argument('--ladder', choices=('128', 'all'), default='128',
+                    help='the ladder side read: the pinned 128 maps (default, comparable with every earlier gate) or all maps '
+                    'under maps/ (its own opponent configs and run names, so REF plays it afresh)')
     a = ap.parse_args(argv)
+    global LADDER
+    LADDER = a.ladder
     if a.fuel is not None and a.fuel <= 0: ap.error('--fuel must be positive')
     if a.batch_maps <= 0 or a.first_batch < 0: ap.error('--batch-maps must be positive and --first-batch not negative')
     if not a.no_run and not LIB.is_file():
@@ -269,7 +285,7 @@ def main(argv=None):
     for v, known in ((a.fish_body, ['Flp'] + fg.FISH_PATCHES), (a.mite_body, ['Mt3p'] + fg.MITE_PATCHES)):
         if v not in known: ap.error(f'unknown body {v}: one of {", ".join(known)}')
     bodies = {'F': a.fish_body, 'M': a.mite_body}
-    fuel = '' if a.fuel is None else f'-fuel{a.fuel}'
+    fuel = ('' if a.fuel is None else f'-fuel{a.fuel}') + ladder_tag()
     maps, lad = pool(), set(ladder())
     opp = {o: f'variants/rt-{v}' for o, v in bodies.items()} if a.no_run else {o: body(fg, v) for o, v in bodies.items()}
 

@@ -9,7 +9,8 @@ CAND and REF are each a git ref (branch, sha, main), whose bots/<--bot> (default
 git archive into bots/variants/ab-<name>-<cand|ref>-<sha7>/ with params::test_draft switched on, or a bot
 directory under bots/ (astraeus) used as it is. An archived bot (--bot archives/hyperion) is also found where
 it was before retirement (bots/hyperion; hyperion was bots/hecate before 2026-10-21). Wins are CAND's.
-Suites: ladder (maps/, the default: a quick check only), any directory of maps, or the legacy gen (maps/suites/legacy/gen)
+Suites: ladder (the 128 pinned ladder maps under maps/, tools/ladder_set.py; the default: a quick check only),
+ladder-new (the maps under maps/ outside those 128: the 42 `05*` of 2026-11-12), ladder-all, any directory of maps, or the legacy gen (maps/suites/legacy/gen)
 and fresh (every maps/suites/legacy/gen-s*/), the 512-map default before 2026-11-11. Judge a change on 20k+ games of fresh
 suites (maps/suites/) or with tools/fgate.py.
 
@@ -140,6 +141,8 @@ def suites(tokens):
     for token in tokens:
         if token == "ladder":
             out.append(("ladder", []))
+        elif token in ("ladder-new", "ladder-all"):
+            out.append((token, ["--ladder", token.split("-")[1]]))
         elif token == "gen":
             out.append(("gen", ["--gen"]))
         elif token == "fresh":
@@ -150,7 +153,7 @@ def suites(tokens):
         elif Path(token).is_dir():
             out.append((Path(token).resolve().name, ["--maps-dir", str(Path(token).resolve())]))
         else:
-            raise ValueError(f"Unknown suite {token!r}: use ladder, gen, fresh or a directory of maps")
+            raise ValueError(f"Unknown suite {token!r}: use ladder, ladder-new, ladder-all, gen, fresh or a directory of maps")
     return out, notes
 
 
@@ -291,8 +294,8 @@ def main():
     parser.add_argument("--threads", type=int, default=cpu_slots.SIZE,
                         help=f"Most concurrent matches, as CPU slots allow (default: all {cpu_slots.SIZE})")
     parser.add_argument("--suites",
-                        help="Comma-separated: ladder, directories of maps, or the legacy gen and fresh "
-                        "(default: ladder alone, a quick check)")
+                        help="Comma-separated: ladder (the pinned 128 under maps/), ladder-new (maps/ outside them), "
+                        "ladder-all, directories of maps, or the legacy gen and fresh (default: ladder alone, a quick check)")
     parser.add_argument("--bot", default="ocean",
                         help="The bot a git ref builds, a name under bots/ (default: ocean; e.g. archives/hyperion)")
     parser.add_argument("--no-test-draft", action="store_true",

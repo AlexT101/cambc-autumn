@@ -68,6 +68,9 @@ const MIXES = {
 };
 const SUITES = { gen: { dir: 'maps/suites/legacy/gen', seed: 6001 }, 'gen-s1': { dir: 'maps/suites/legacy/gen-s1', seed: 6002 } };
 const LADDER_DIR = path.join(ROOT, 'maps');
+// The ladder mapgen samples mutation sources from and measures against: the 128 maps of 2026-11-05 that calibrations 2
+// and 3 were fitted to (tools/ladder128.txt), not whatever maps/ holds now, so a seed keeps making the same suite.
+const LADDER_FILES = () => fs.readFileSync(path.join(ROOT, 'tools/ladder128.txt'), 'utf8').split(/\s+/).filter(Boolean).map(n => `${n}.map26a`).sort();
 
 // The metric space of `diversity`, the nearest-ladder distance and the diverse pick.
 const FEATURES = {
@@ -340,7 +343,7 @@ function repair(g, rng) {
   }
 }
 
-const LADDER_NAMES = () => fs.readdirSync(LADDER_DIR).filter(f => f.endsWith('.map26a')).map(f => f.replace(/^\d\d/, '').replace(/\.map26a$/, '')).sort();
+const LADDER_NAMES = () => LADDER_FILES().map(f => f.replace(/^\d\d/, '').replace(/\.map26a$/, '')).sort();
 
 // A random edit list: one or two terrain edits, often an economy or camp edit, sometimes an altar,
 // access (dash gaps, crystal vaults) or pick-count edit.
@@ -572,7 +575,7 @@ function loadMetrics(engine, file) {
 
 let ladderCache;
 function ladderMetrics(engine) {
-  ladderCache ??= fs.readdirSync(LADDER_DIR).filter(f => f.endsWith('.map26a')).sort().map(f => loadMetrics(engine, path.join(LADDER_DIR, f)));
+  ladderCache ??= LADDER_FILES().map(f => loadMetrics(engine, path.join(LADDER_DIR, f)));
   return ladderCache;
 }
 

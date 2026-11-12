@@ -24,6 +24,7 @@ from time import perf_counter, sleep
 import cambc_env
 import cpu_slots
 import experiment_config
+import ladder_set
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "fuel"))
 import oof  # noqa: E402
@@ -70,9 +71,10 @@ def nonnegative_int(value):
     return value
 
 
-def find_maps(maps_dir, gen=None, gen_seed=0):
+def find_maps(maps_dir, gen=None, gen_seed=0, ladder="128"):
     """Maps under maps_dir (skipping the map sets in subdirectories of maps/ below it, so maps/ alone
-    is the ladder), or with --gen all generated maps in maps/suites/legacy/gen (gen=0) or a seeded sample of gen of them."""
+    is the ladder: `ladder` picks its set, ladder_set.py), or with --gen all generated maps in maps/suites/legacy/gen
+    (gen=0) or a seeded sample of gen of them."""
     if gen is not None:
         pool = sorted(p.resolve() for p in GEN_DIR.glob("*.map26a"))
         if not pool:
@@ -86,6 +88,9 @@ def find_maps(maps_dir, gen=None, gen_seed=0):
     for base, dirs, files in os.walk(maps_dir):
         dirs[:] = [d for d in dirs if (Path(base) / d).resolve() not in skip]
         found += [(Path(base) / f).resolve() for f in files if f.endswith(".map26a")]
+    if maps_dir == (ROOT / "maps").resolve():
+        keep = set(ladder_set.names(ladder))
+        found = [p for p in found if p.stem in keep]
     return sorted(found)
 
 
@@ -323,6 +328,9 @@ def main():
                         help=f"Most concurrent matches, as CPU slots allow (default: all {cpu_slots.SIZE})")
     parser.add_argument("--maps-dir", type=Path,
                         help="Recursively find all .map26a files here (default: maps/ without its subdirectories, the ladder)")
+    parser.add_argument("--ladder", choices=ladder_set.SETS, default="128",
+                        help="Which maps directly under maps/ are the ladder: the pinned 128 (tools/ladder128.txt, "
+                        "the default), the new ones outside it, or all")
     parser.add_argument("--gen", nargs="?", type=nonnegative_int, const=0, metavar="N",
                         help="Instead, play the generated maps in maps/suites/legacy/gen (node tools/mapgen/mapgen.mjs suite): "
                         "all of them, or N sampled by --gen-seed")
@@ -358,7 +366,7 @@ def main():
         parser.error("--gen and --maps-dir cannot be combined")
     try:
         bots = [bot_path(args.bot1), bot_path(args.bot2)]
-        maps = find_maps(args.maps_dir or ROOT / "maps", args.gen, args.gen_seed)
+        maps = find_maps(args.maps_dir or ROOT / "maps", args.gen, args.gen_seed, args.ladder)
         if not maps:
             raise ValueError(f"No .map26a files found in {args.maps_dir or ROOT / 'maps'}")
         # Absolute: games run with cwd=ROOT.
