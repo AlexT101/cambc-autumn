@@ -24,12 +24,12 @@ if [ ! -f $D/src.done ]; then
   touch $D/src.done
 fi
 
-# mkmaps N: fresh --mix ladder-v2 suites SEED..SEED+N-1 under $D/maps/fresh-{seed}, each generator holding one slot.
+# mkmaps N: fresh --mix ladder-v4 suites (coordinator 2026-11-12: lab fits see the ladder's close spawns and open edges) SEED..SEED+N-1 under $D/maps/fresh-{seed}, each generator holding one slot.
 mkmaps() {
   [ -f $D/maps.done ] && return 0
   mkdir -p $D/maps
   seq $SEED $((SEED + $1 - 1)) | xargs -P 6 -I{} sh -c \
-    '[ -f '$D'/maps/fresh-{}/.done ] || { python3 tools/pooled.py 1 -- node tools/mapgen/mapgen.mjs suite --mix ladder-v2 --seed {} --jobs 1 --out '$D'/maps/fresh-{} > '$D'/maps/gen-{}.log 2>&1 && touch '$D'/maps/fresh-{}/.done; }' \
+    '[ -f '$D'/maps/fresh-{}/.done ] || { python3 tools/pooled.py 1 -- node tools/mapgen/mapgen.mjs suite --mix ladder-v4 --seed {} --jobs 1 --out '$D'/maps/fresh-{} > '$D'/maps/gen-{}.log 2>&1 && touch '$D'/maps/fresh-{}/.done; }' \
     || fail MAPGEN
   local n=$(ls $D/maps/*/ | grep -c '\.map26a$')
   [ $(ls -d $D/maps/fresh-*/.done 2>/dev/null | wc -l) -eq $1 ] || fail "MAPGEN: $(ls $D/maps/fresh-*/.done | wc -l) of $1 suites"

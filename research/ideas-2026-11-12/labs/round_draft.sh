@@ -1,6 +1,6 @@
 #!/bin/bash
 # round_draft.sh ROUND_DIR: a draft-lab refit as draft18 (CHANGES 515, EXPERIMENTS "Draft18 on charybdis") with the
-# round's base as the lab player: 1M games on its own 100 fresh ladder-v2 suites, F92 features, draft18's opponents
+# round's base as the lab player: 1M games on its own 100 fresh ladder-v4 suites (340 maps each), F92 features, draft18's opponents
 # (self .2, ocean 506 .2, the gate's Fish/Mite bodies at training noise seed 951 .3 each), draft10-f92's searched
 # penalties to start; no mid-run searches (they starved the refits in draft18). The final fit: the lab's own search if
 # it ends within 40 min, else draft18's way, a plain fit at the starting penalties in a link lab (LAB-start).
@@ -19,7 +19,7 @@ for k in ('current_lab', 'link_of'):
 c.update(seed=int(seed) % 100000, pool=[f'{d}/maps/fresh-*'], holdout=[], search_batches=[], source=base, source_sha=sha,
          current_lab='replays/draftlab/draft18-start',
          opponent_bots={'ocean': 'bots/variants/oc-dfuel-506', 'fish': 'bots/variants/spar-dvn951-Flp4', 'mite': 'bots/variants/spar-dvn951-Mt3q'},
-         source_note=f'filler {d.rstrip("/").split("/")[-1]}: {base} as the lab player; draft18 config otherwise; own fresh ladder-v2 pool from seed {seed}')
+         source_note=f'filler {d.rstrip("/").split("/")[-1]}: {base} as the lab player; draft18 config otherwise; own fresh ladder-v4 pool from seed {seed}')
 json.dump(c, open(f'{ld}/config.json', 'w'), indent=1)
 PY
   python3 tools/draftlab/lab.py init --lab $LAB > $D/init.log 2>&1 || fail INIT

@@ -1,7 +1,7 @@
 #!/bin/bash
 # round_tune.sh ROUND_DIR: one SPSA round as localq's tune rounds (~/tmp-offload/localq/round_tune.sh, tune1) on the
 # round's base: tune1's 19 economy and fight knobs (localq mktune.sh), 700 iterations on the round's own 40 fresh
-# ladder-v2 suites, scored win .75 / gems .25, against the gate's Fish/Mite bodies at training noise seeds 951-953 (six
+# ladder-v4 suites, scored win .75 / gems .25, against the gate's Fish/Mite bodies at training noise seeds 951-953 (six
 # of nine opponents), the base itself, charybdis 519 and ocean 506. The second-half (Polyak) mean, ported into a copy
 # of the base, is the candidate; both the tunified bot and the port must replay the base / each other byte-identically
 # at 100M on bench.py's sets.
