@@ -4,9 +4,17 @@
 // tools/draftlab/native.mjs can compile it natively and check it against the JS on map files.
 #include <array>
 #include <cstdint>
+#include <memory>
 #include <vector>
 
 namespace aph::mapfeat {
+
+// Distance fields overwrite every element after resize; value-initializing them first costs a fuel per byte.
+template <class T> struct OverwriteAllocator : std::allocator<T> {
+    template <class U> struct rebind { using other = OverwriteAllocator<U>; };
+    void construct(T* p) { ::new (static_cast<void*>(p)) T; }
+};
+using Distances = std::vector<int, OverwriteAllocator<int>>;
 
 enum Tile : std::uint8_t { ground, wall, hole, bush, altar };
 enum Sym : int { horizontal, vertical, rotational };
@@ -53,7 +61,7 @@ struct Input {
 // Walking distances (mapgen spawnFields(g, blockers, 0)): from team `side`'s spawn over ground and
 // bush, the other spawn blocked, and the camps blocked when `camps_block`; -1 unreached. The bot
 // fills this with the engine's distance fields; null uses our own BFS.
-using WalkField = void (*)(const Input& in, int side, bool camps_block, std::vector<int>& out);
+using WalkField = void (*)(const Input& in, int side, bool camps_block, Distances& out);
 
 // Raw (untransformed) feature values in `names` order; NaN where the JS has null. Base features from dash_gain on
 // are measured only when their bit is in `want` (NaN otherwise); the first 19 and those past base_count always are

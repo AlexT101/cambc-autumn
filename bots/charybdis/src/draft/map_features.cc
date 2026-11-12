@@ -160,7 +160,7 @@ struct Grid {
     }
     // out[i] = a[mirror(i)], a row at a time: copied, or reversed 4 at a time (inserts through reverse iterators
     // cost ~5 fuel a tile). out is not a.
-    void mirrored(const std::vector<int>& a, std::vector<int>& out) const {
+    void mirrored(const Distances& a, Distances& out) const {
         out.resize(static_cast<std::size_t>(n));
         const bool flip_rows = in.sym != horizontal, reverse = in.sym != vertical;
         for (int y = 0; y < H; ++y) {
@@ -202,7 +202,7 @@ struct Grid {
         return pass;
     }
 
-    void bfs(const std::vector<int>& starts, const std::vector<std::uint8_t>& pass, std::vector<int>& dist) const {
+    void bfs(const std::vector<int>& starts, const std::vector<std::uint8_t>& pass, Distances& dist) const {
         dist.assign(n, -1);
         std::vector<int> q(n);
         int head = 0, tail = 0;
@@ -230,12 +230,12 @@ struct Grid {
     // bounds checks, `d` holding distance + 1 (0 where blocked, -1 on holes and altars, which a dash crosses),
     // byte masks read 8 tiles a word, and one instantiation per level.
     // `work`, if given, gets the leaping tiles walked to and the tiles brought nearer than walking (Work).
-    int travel(int side, const std::vector<int>& base, int level, std::vector<int>* dist, int* work = nullptr) const {
+    int travel(int side, const Distances& base, int level, Distances* dist, int* work = nullptr) const {
         return level > 1 ? travel_at<2>(side, base, dist, work) : travel_at<1>(side, base, dist, work);
     }
 
     template <int level>
-    int travel_at(int side, const std::vector<int>& base, std::vector<int>* dist, int* work) const {
+    int travel_at(int side, const Distances& base, Distances* dist, int* work) const {
         constexpr int pad = 3, far = std::numeric_limits<int>::max(), R = level > 1 ? 2 : 1;
         const int w = W, h = H, S = w + 2 * pad, N = S * (h + 2 * pad);
         int step[8], end[16], mid[16][3];
@@ -501,7 +501,7 @@ struct Grid {
         return gained;
     }
 
-    int reach_near(const std::vector<int>& dist, int x, int y) const {
+    int reach_near(const Distances& dist, int x, int y) const {
         int best = -1;
         for (int dy = -1; dy <= 1; ++dy)
             for (int dx = -1; dx <= 1; ++dx) {
@@ -645,18 +645,18 @@ double sight_gap_of(const Grid& g, const std::vector<std::uint8_t>& play, int pl
         std::array<std::uint64_t, 49> blocks; // by tile bit: the targets it lies between the source and
         std::uint64_t ring2, ring3;
     };
-    static const auto targets = [] {
+    static constexpr auto targets = [] {
         Targets out{};
         for (int dy = -3; dy <= 3; ++dy)
             for (int dx = -3; dx <= 3; ++dx) {
-                const int r = std::max(std::abs(dx), std::abs(dy));
+                const int r = std::max(iabs(dx), iabs(dy));
                 if (r < 2) continue;
                 Target t{1ull << ((dy + 3) * 7 + dx + 3), 0};
                 (r == 2 ? out.ring2 : out.ring3) |= t.bit;
                 // x0 + dx t / 2r rounds as dx t / 2r does: its fraction is a sixth or a quarter, never near a half
                 // unless exactly one.
                 for (int s = 1; s < 2 * r; ++s) {
-                    const int ox = static_cast<int>(js_round(dx * s / (2.0 * r))), oy = static_cast<int>(js_round(dy * s / (2.0 * r)));
+                    const int ox = (dx * s + 7 * r) / (2 * r) - 3, oy = (dy * s + 7 * r) / (2 * r) - 3;
                     if ((ox || oy) && (ox != dx || oy != dy)) t.line |= 1ull << ((oy + 3) * 7 + ox + 3);
                 }
                 for (int b = 0; b < 49; ++b)
@@ -740,15 +740,38 @@ double sight_gap_of(const Grid& g, const std::vector<std::uint8_t>& play, int pl
 #endif
         const int x0 = i % W, y0 = i / W, s = x0 - R + pad;
         std::uint32_t p[side], o[side];
-        for (int r = 0; r < side; ++r) p[r] = take(&pass[static_cast<std::size_t>((y0 + r) * words)], s);
         for (int r = 2; r < 9; ++r) o[r] = take(&opaque[static_cast<std::size_t>((y0 + r) * words)], s);
         // The counted targets: walkable, with a clear line.
         const std::uint64_t lines = core(o, 0);
         std::uint64_t clear = targets.ring2 | targets.ring3;
         for (std::uint64_t m = lines; m; m &= m - 1) clear &= ~targets.blocks[static_cast<std::size_t>(std::countr_zero(m))];
-        const std::uint64_t need = core(p, 0) & clear;
+        if (!clear) continue;
+        for (int r = 2; r < 9; ++r) p[r] = take(&pass[static_cast<std::size_t>((y0 + r) * words)], s);
+        const std::uint64_t pass_core = core(p, 0);
+        const std::uint64_t need = pass_core & clear;
         if (!need) continue;
         seen += std::popcount(need);
+        // Paths of at most three steps stay inside this 7x7 core. Most sources need no larger flood.
+        const auto grow = [&](std::uint64_t r) {
+            constexpr std::uint64_t col0 = 0x40810204081ull, all = (1ull << 49) - 1;
+            const std::uint64_t h = r | ((r << 1) & ~col0) | ((r >> 1) & ~(col0 << 6));
+            return (h | (h << 7) | (h >> 7)) & pass_core & all;
+        };
+        const auto r1 = grow(1ull << 24), r2 = grow(r1);
+        if (!(need & ~r2)) {
+            if (steps) *steps += 2;
+            continue;
+        }
+        const auto r3 = grow(r2);
+        if (!(need & ~r3)) {
+            if (steps) *steps += 3;
+            continue;
+        }
+
+        p[0] = take(&pass[static_cast<std::size_t>(y0 * words)], s);
+        p[1] = take(&pass[static_cast<std::size_t>((y0 + 1) * words)], s);
+        p[9] = take(&pass[static_cast<std::size_t>((y0 + 9) * words)], s);
+        p[10] = take(&pass[static_cast<std::size_t>((y0 + 10) * words)], s);
 #if defined(__wasm_simd128__)
         // The window as two u16x8, lane r row r (rows 8-10 in the second's lanes 0-2): a step is a few vector
         // instructions instead of ~30 a row. Every row steps (those beyond d of the source stay 0).
@@ -819,15 +842,15 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
     const int n = g.n;
     const auto a = g.spawn_tiles(0), b = g.spawn_tiles(1);
     const auto camps = g.camp_mask();
-    const auto field = [&](int side, bool camps_block, std::vector<int>& out) {
+    const auto field = [&](int side, bool camps_block, Distances& out) {
         if (walk) return walk(in, side, camps_block, out);
         g.bfs(side ? b : a, g.pass_for(side, camps_block ? camps.data() : nullptr), out);
     };
-    std::vector<int> openA, openB, fA, fB;
+    Distances openA, openB, fA, fB;
     // Team B's fields are team A's mirrored: the symmetry maps the terrain, camps and spawns onto team B's
     // (cambc-rules.yaml map.symmetry_rule; every pool and holdout map), and distances are exact. Half the fields.
     field(0, false, openA), g.mirrored(openA, openB);
-    const auto spawn_dist = [&](const std::vector<int>& dA) {
+    const auto spawn_dist = [&](const Distances& dA) {
         double best = inf;
         for (const int i : b) {
             const int d = g.reach_near(dA, i % g.W, i / g.W);
@@ -934,7 +957,7 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
 
     // sideGroups(g, open): our side's groups (a non-shared group's mirror is the enemy's), and shared ones.
     const auto groups = groups_of(g);
-    const auto group_dist = [&](const std::vector<int>& d, const Group& q) {
+    const auto group_dist = [&](const Distances& d, const Group& q) {
         double best = inf;
         for (const int m : q.members) {
             const int v = g.reach_near(d, in.camps[m].x, in.camps[m].y);
@@ -963,7 +986,7 @@ std::array<double, count> compute(const Input& in, WalkField walk, bool crystals
 
     // extras(): tiles a dash brings 6+ travel nearer team A's spawn.
     const bool wants_dash = want >> dash_gain & 1;
-    std::vector<int> dashA;
+    Distances dashA;
     const int dash_short = g.travel(0, openA, 1, wants_dash ? &dashA : nullptr, work ? work->dash : nullptr);
 
     // metrics' detour: from team A's spawn corner to its mirror, less the spawn's width (even where

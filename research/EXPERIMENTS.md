@@ -18308,3 +18308,42 @@ games:
 - vc2-c520 (Prism keeps every gem group): +0.5 ±1.9.
 
 Neither was gated.
+
+## (charybdis, 2026-11-12) Charybdis draft first-turn fuel: 33% more worst-case buffer, exact (CHANGES 523)
+
+Baseline CHANGES 522, frozen as `variants/chy-draftfuel-base`; tested candidate `variants/chy-draftfuel-final`,
+shipped as `variants/chy-draftfuel-523` (= bots/charybdis). Worked alone. Full notes, source hashes, retained
+rejected patches and reproducible checks: [charybdis-draftfuel](charybdis-draftfuel/README.md).
+
+Kept: distance buffers allocated without redundant clearing; constexpr sight-gap masks and an exact 49-bit
+two/three-step flood before the full fallback; shared sorted camp members and health/kiting facts across every
+draft consumer; zero-score ward sites skipped. Structural work counters, search limits and fuel reserves unchanged.
+
+Uninstrumented release draft turns, native fast runner / cambc 5.0.1; all 168 maps directly under `maps/` plus
+5,120 ocft-1950 maps, both seats (10,576 team drafts):
+
+| First-turn fuel | Before | After |
+|---|---:|---:|
+| median | 3,631,224 | 3,359,726 |
+| p99 | 7,363,797 | 6,971,127 |
+| p99.9 | 8,327,753 | 7,900,847 |
+| maximum | 8,765,019 | 8,356,306 |
+| buffer below 10M | 1,234,981 | 1,643,694 |
+
+Every first turn is cheaper: mean -279,887, savings 120,938–653,450. The observed maximum falls 4.66%, buffer
+**+33.09%**. At real fuel all 10,576 drafts finish all picks, no cap diagnostics, same 8,356,306 maximum.
+Later turns peak at 15,302 versus 15,283. `firstturn.py --need` also finds no unfinished/capped analysis.
+
+**Exactness:** 170/170 `bench.py` replays byte-identical at 100M: wide own drafts 52, matched test drafts 52,
+heavy 54, large-group stress 12. Covers every champion body, 3/4/5 picks, crystal fallback on `05border`, and
+112/208/352-member groups on 40/64/100-square maps. On those same 59 own-draft maps a coverage probe records
+44 two-step and 35,196 three-step sight shortcuts, 2,520 full-flood fallbacks and 228 empty ward sites.
+All 47,638 complete plan byte strings, picks, features and work counters match across all draft rounds on the
+10,576-draft panel, both at unlimited fuel and with the candidate at real fuel. Actual-source ASan/UBSan native
+oracle: 2,500 terrain cases, 9,996 travel fields, every value/work counter/team equal (one map disconnected in both).
+
+**Rejected:** exact host-frontier weighted searches (+79k/+299k mean dash-field fuel); SIMD gain counting after
+travel (+18k mean first-turn fuel, despite a smaller maximum); transformed-feature reuse plus unread-suffix search
+pruning (only -574 mean, 542/1,536 regressions); a clear-line certificate (superseded by the cheaper 49-bit flood).
+Previous 491/506 successes and failed ward-cache/bound experiments informed the choices. No live or strength gate;
+no exception to replay identity was used.

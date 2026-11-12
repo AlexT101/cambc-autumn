@@ -1,0 +1,32 @@
+2000/5288 maps
+4000/5288 maps
+5288/5288 maps
+5288 maps, 10576 team-drafts measured, 0 without an FT line (out of fuel before it)
+start-up: max 4429
+before the first pick's analysis (start-up + model draft): median 1092812, p99 3096709, p99.9 4023745, max 4685048; over 8.5M: 0
+after analyse(): median 3474393, max 8632064
+analysis unfinished after draft round 0: 0 of 10576
+model draft not used: 0
+capped (analyse's first-turn cap cut a section): 0
+    4685048 maps/suites/merged/ocft-1950/gen-ladder-195001300085.map26a a
+    4685048 maps/suites/merged/ocft-1950/gen-ladder-195001300085.map26a b
+    4472202 maps/suites/merged/ocft-1950/gen-ladder-195000300001.map26a a
+    4472202 maps/suites/merged/ocft-1950/gen-ladder-195000300001.map26a b
+    4346622 maps/suites/merged/ocft-1950/mut-terraces-195000617048.map26a a
+    4346622 maps/suites/merged/ocft-1950/mut-terraces-195000617048.map26a b
+    4345619 maps/suites/merged/ocft-1950/mut-terraces-195001017054.map26a a
+    4345619 maps/suites/merged/ocft-1950/mut-terraces-195001017054.map26a b
+    4129100 maps/suites/merged/ocft-1950/mut-orchard-195001617033.map26a a
+    4129100 maps/suites/merged/ocft-1950/mut-orchard-195001617033.map26a b
+whole first turn (as --need measures it): p50 3474368, p99 7199204, p99.9 8169884, max 8632064; headroom under 10000000: 1367936; over it: 0
+    8632064 maps/suites/merged/ocft-1950/gen-ladder-195001300060.map26a b
+    8598066 maps/suites/merged/ocft-1950/gen-ladder-195001300060.map26a a
+    8575173 maps/suites/merged/ocft-1950/gen-huge-195000912002.map26a b
+    8546931 maps/suites/merged/ocft-1950/gen-ladder-195000100068.map26a a
+    8452767 maps/suites/merged/ocft-1950/gen-huge-195000212002.map26a b
+    8375436 maps/suites/merged/ocft-1950/gen-huge-195000912002.map26a a
+    8360620 maps/suites/merged/ocft-1950/gen-ladder-195001700088.map26a b
+    8351216 maps/suites/merged/ocft-1950/gen-ladder-195001700088.map26a a
+    8335153 maps/suites/merged/ocft-1950/gen-huge-195000212002.map26a a
+    8283282 maps/suites/merged/ocft-1950/gen-ladder-195000100068.map26a b
+output: replays/draftlab/firstturn/chy-draftfuel-sight3

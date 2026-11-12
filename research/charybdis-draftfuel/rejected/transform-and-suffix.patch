@@ -1,0 +1,39 @@
+--- a/src/draft/map_features.cc
++++ b/src/draft/map_features.cc
+@@ -1093,9 +1093,11 @@
+         if (!std::isfinite(v)) return nan;
+         return base_tf[k] == bt_log ? std::log(std::max(v, 1.0)) : base_tf[k] == bt_log1p ? std::log1p(std::max(v, 0.0)) : v;
+     };
++    std::array<double, first_derived> transformed;
++    for (int k = 0; k < first_derived; ++k) transformed[k] = tf(k);
+     for (int k = first_derived; k < count; ++k) {
+         const auto& d = derived[static_cast<std::size_t>(k)];
+-        out[static_cast<std::size_t>(k)] = d.kind == k_one_altar ? (altars == 1 ? 1.0 : 0.0) : tf(d.a) * tf(d.b);
++        out[static_cast<std::size_t>(k)] = d.kind == k_one_altar ? (altars == 1 ? 1.0 : 0.0) : transformed[d.a] * transformed[d.b];
+     }
+     return out;
+ }
+--- a/src/draft/open_plan.cc
++++ b/src/draft/open_plan.cc
+@@ -466,17 +466,19 @@
+         } else if (op == 4 && n > 0) {
+             l[rng.below(n)] = static_cast<std::int8_t>(rng.below(p.cands)), made = true;
+         }
+-        if (!made || !tried.insert(cand)) continue;
++        if (!made) continue;
+         // simulate(p, cand), resumed from the best's run where they part (Trace).
+         int d = 0;
+         while (d < max_steps && l[d] == best[b][d]) ++d;
+         const int m = d < max_steps ? trace.first[b][d] : trace.n;
++        const int t = total + length(l) - length(best[b]);
++        // An unread suffix cannot improve the value; only shortening it can win the tie.
++        if ((m == trace.n && t >= total) || !tried.insert(cand)) continue;
+         float v = value;
+         if (m < trace.n) {
+             std::memcpy(&scratch, &trace.state[m], offsetof(State, group));
+             v = Sim<false, true>{p, tables, cand, nullptr, nullptr, scratch, &trace.state[m]}.run();
+         }
+-        const int t = total + length(l) - length(best[b]);
+         if (v > value || (v == value && t < total)) {
+             value = v, best = cand, total = t;
+             if (m < trace.n) record(m);

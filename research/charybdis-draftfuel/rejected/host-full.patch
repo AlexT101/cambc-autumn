@@ -1,0 +1,146 @@
+--- a/src/draft/draft.cc
++++ b/src/draft/draft.cc
+@@ -1610,6 +1610,84 @@
+ }
+ 
+ // The map's features, measured once (the first draft turn's fuel covers them), and the pick count.
++int engine_travel(const mapfeat::Input& in, const std::vector<int>& base, int level, std::vector<int>* out, int* work) {
++    constexpr int buckets = 9;
++    bitboard blocked = cambc::map::walls() | cambc::map::holes() | cambc::map::altars();
++    bitboard enemy, roots;
++    for (int y = in.sy; y < in.sy + in.sh; ++y)
++        for (int x = in.sx; x < in.sx + in.sw; ++x) {
++            roots.set({x, y});
++            enemy.set(in.sym == mapfeat::horizontal ? vec2{in.W - 1 - x, y}
++                      : in.sym == mapfeat::vertical ? vec2{x, in.H - 1 - y}
++                                                   : vec2{in.W - 1 - x, in.H - 1 - y});
++        }
++    blocked |= enemy;
++    bitboard open = ~blocked, cross = cambc::map::holes() | cambc::map::altars();
++    bitboard available = open, fringe{cambc::uninitialized}, middle{cambc::uninitialized}, ends{cambc::uninitialized};
++    std::array<bitboard, buckets> queue;
++    copy_into(roots, queue[0]);
++    unsigned pending = 1;
++    std::vector<int> distance(static_cast<std::size_t>(in.W * in.H), -1);
++    std::vector<vec2> tiles(distance.size());
++    for (int v = 0; pending; ++v) {
++        const int at = v % buckets;
++        if (!(pending >> at & 1)) continue;
++        pending &= ~(1u << at);
++        and_into(queue[at], available, fringe);
++        clear_board(queue[at]);
++        if (fringe.is_empty()) continue;
++        xor_into(available, fringe, available);
++        const auto n = positions_into(fringe, tiles.data(), static_cast<std::uint32_t>(tiles.size()));
++        for (std::uint32_t i = 0; i < n; ++i) distance[tiles[i].y * in.W + tiles[i].x] = v;
++        const auto push = [&](const bitboard& candidates, int cost) {
++            and_into(candidates, available, ends);
++            if (ends.is_empty()) return;
++            const int to = (v + cost) % buckets;
++            queue[to] |= ends;
++            pending |= 1u << to;
++        };
++        square_dilate(fringe, 1, middle);
++        push(middle, 1);
++        // A dash with a walkable middle is dominated by its two walking steps.
++        middle &= cross;
++        if (!middle.is_empty()) {
++            square_dilate(middle, 1, fringe);
++            push(fringe, 4);
++        }
++        if (level > 1) {
++            // Re-read the settled layer: fringe was scratch for the dash ends.
++            clear_board(fringe);
++            for (std::uint32_t i = 0; i < n; ++i) set_tile(fringe, tiles[i]);
++            square_dilate(fringe, 3, middle);
++            push(middle, 8);
++        }
++    }
++    int gained = 0, popped = 0;
++    for (std::size_t i = 0; i < distance.size(); ++i) {
++        const int d = distance[i], b = base[i];
++        gained += d >= 0 && b - d >= 6;
++        popped += d >= 0 && (b < 0 || d < b);
++    }
++    if (work) {
++        if (level == 1) square_dilate(cross, 1, middle);
++        else {
++            // The original crystal search also seeds the radius-two map border.
++            copy_into(blocked, cross);
++            for (int y = 0; y < in.H; ++y)
++                for (int x = 0; x < in.W; ++x)
++                    if (x < 2 || y < 2 || x >= in.W - 2 || y >= in.H - 2) set_tile(cross, {x, y});
++            square_dilate(blocked, 2, middle);
++            middle |= cross;
++        }
++        const auto n = positions_into(middle, tiles.data(), static_cast<std::uint32_t>(tiles.size()));
++        int heads = 0;
++        for (std::uint32_t i = 0; i < n; ++i) heads += base[tiles[i].y * in.W + tiles[i].x] >= 0;
++        work[0] = heads, work[1] = popped;
++    }
++    if (out) *out = std::move(distance);
++    return gained;
++}
++
+ struct Measured {
+     int picks;
+     std::array<double, mapfeat::count> raw;
+@@ -1649,7 +1727,7 @@
+     const auto in = engine_input();
+     features_measured = true; // a throw still spent what it filled in
+     const auto raw = mapfeat::compute(in, engine_walk, true, params::draft_parity ? mapfeat::every : mapfeat::model_features(),
+-                                      engine_clearance, &feature_work);
++                                      engine_clearance, &feature_work, engine_travel);
+     const auto team = mapfeat::model_team(raw, picks);
+     if (static_cast<int>(team.size()) != picks) return std::nullopt;
+     if constexpr (params::draft_parity) {
+--- a/src/draft/map_features.cc
++++ b/src/draft/map_features.cc
+@@ -808,7 +808,7 @@
+ 
+ } // namespace
+ 
+-std::array<double, count> compute(const Input& in, WalkField walk, bool crystals, std::uint32_t want, ClearanceSum clear, Work* work) {
++std::array<double, count> compute(const Input& in, WalkField walk, bool crystals, std::uint32_t want, ClearanceSum clear, Work* work, TravelField travel) {
+     if (in.W <= 0 || in.H <= 0 || static_cast<int>(in.t.size()) != in.W * in.H || in.sw <= 0 || in.sh <= 0
+         || in.sx < 0 || in.sy < 0 || in.sx + in.sw > in.W || in.sy + in.sh > in.H)
+         throw std::invalid_argument("map features: bad input");
+@@ -845,7 +845,8 @@
+         if (!std::isfinite(S)) {
+             if (!crystals) throw std::runtime_error("map features: spawns joined only by dash or crystal");
+             // Team B's mirrored, as above (every move is symmetric too). One field instead of metrics' two.
+-            g.travel(0, openA, 2, &fA, work ? work->crystal : nullptr);
++            if (travel) travel(in, openA, 2, &fA, work ? work->crystal : nullptr);
++            else g.travel(0, openA, 2, &fA, work ? work->crystal : nullptr);
+             g.mirrored(fA, fB);
+             S = spawn_dist(fA);
+             if (!std::isfinite(S)) throw std::runtime_error("map features: spawns not connected");
+@@ -964,7 +965,8 @@
+     // extras(): tiles a dash brings 6+ travel nearer team A's spawn.
+     const bool wants_dash = want >> dash_gain & 1;
+     std::vector<int> dashA;
+-    const int dash_short = g.travel(0, openA, 1, wants_dash ? &dashA : nullptr, work ? work->dash : nullptr);
++    const int dash_short = travel ? travel(in, openA, 1, wants_dash ? &dashA : nullptr, work ? work->dash : nullptr)
++                                  : g.travel(0, openA, 1, wants_dash ? &dashA : nullptr, work ? work->dash : nullptr);
+ 
+     // metrics' detour: from team A's spawn corner to its mirror, less the spawn's width (even where
+     // its height is the gap's axis).
+--- a/src/draft/map_features.h
++++ b/src/draft/map_features.h
+@@ -63,6 +63,7 @@
+ // clearance_sum: metrics' openness summed over the tiles `walked` marks (a byte a tile, 8 bytes of slack). The bot
+ // fills this with bitboard host calls; null uses our own BFS.
+ using ClearanceSum = int (*)(const Input& in, const std::uint8_t* walked);
++using TravelField = int (*)(const Input& in, const std::vector<int>& base, int level, std::vector<int>* out, int* work);
+ 
+ // The map's geometry that sets compute()'s cost, for the draft's structural budget (draft.cc work_budget): the
+ // sight_gap sources, and per travel field (dash; the crystal fallback, 0 unless needed) the leaping tiles walked to
+@@ -73,7 +74,7 @@
+ };
+ 
+ std::array<double, count> compute(const Input& in, WalkField walk = nullptr, bool crystals = true, std::uint32_t want = every,
+-                                  ClearanceSum clear = nullptr, Work* work = nullptr);
++                                  ClearanceSum clear = nullptr, Work* work = nullptr, TravelField travel = nullptr);
+ 
+ // The `want` bits of draft_model.h's features: the bot measures only what its model reads.
+ std::uint32_t model_features();

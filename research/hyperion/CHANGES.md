@@ -4837,3 +4837,26 @@ Results against each base:
 
 Evidence: EXPERIMENTS "Prism safety on the game-ending tribute", "comms + psafe-a ported to 519" and "psafe-a ported
 to 520". Frozen as `variants/chy-psafe` (= bots/charybdis).
+
+## 523: Draft fuel: worst measured first turn 8.77M -> 8.36M, 33% more buffer (charybdis, 2026-11-12; fuel-only)
+
+On 522, draft files only (`draft.cc`, `map_features.cc`, `map_features.h`):
+- Distance vectors skip zero-initialization before their full overwrite.
+- Sight-gap line masks are constexpr; two/three BFS steps use a 49-bit core, with the original full flood for
+  longer paths. The original structural-budget step count is preserved; outer rows are read only for the fallback.
+- Camp members are sorted once per group; lead estimates, partner clears and opening plans share that order and
+  the group's base health/kiting facts, retaining floating-point accumulation order.
+- A ward site with no unseen target tiles returns zero before casting from every candidate.
+
+Uninstrumented release, native runner, all 168 current ladder maps plus 5,120 ocft-1950 maps, both seats:
+10,576 first turns, **max 8,765,019 -> 8,356,306**, p99 7,363,797 -> 6,971,127. Every first turn is cheaper,
+mean saving 279,887 (range 120,938–653,450). Buffer below 10M rises 1,234,981 -> 1,643,694 (**+33.09%**).
+At the real budget every draft finishes with all picks and no cap; the maximum is again 8,356,306.
+
+Exact: **170/170 bench replays** at 100M (52 wide own drafts, 52 matched test drafts, 54 heavy, 12 large-group
+stress); all 13 bodies covered. **47,638 full plan byte strings**, all picks, 92 features and work counters match
+on the 10,576 team drafts, including the candidate at the real budget. A sanitizer-enabled native oracle also
+matches 2,500 random terrain cases. No behavior exception, changed budget or strength gate.
+
+Evidence, failed attempts and reproduction: [charybdis-draftfuel](../charybdis-draftfuel/README.md), EXPERIMENTS
+"Charybdis draft first-turn fuel". Frozen as `variants/chy-draftfuel-523` (= bots/charybdis).

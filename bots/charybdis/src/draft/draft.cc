@@ -109,6 +109,12 @@ struct TypeFacts {
     std::vector<float> worth, clear, damage;
 };
 
+struct DraftGroupFacts {
+    std::size_t begin = 0, size = 0;
+    float attackers = 0, rest = 0;
+    bool kites = true;
+};
+
 // The static map analysis every champion would repeat, carried over draft turns while fuel lasts.
 struct Analysis {
     std::unique_ptr<StaticMap> map;
@@ -125,6 +131,8 @@ struct Analysis {
     int dash_fields = 0;                 // of check_dash_steps' fields, done
     bool dash_spawn = true, dash_altar = true; // their steps so far equal the plan's
     std::array<TypeFacts, champion_types> types;
+    std::vector<DraftGroupFacts> group_facts;
+    std::vector<std::pair<float, float>> sorted;
     // The leads (group + 1, 0 for none) of the first `leads_made` bodies of `lead_for`, the team
     // we expect; later ones may be left from an earlier guess.
     std::vector<cambc::champion_type> lead_for;
@@ -195,15 +203,32 @@ float base_output(cambc::champion_type type) {
     return std::max(1.0f, f.raw_output(f.strength.base, f.focus.base));
 }
 
-// The members as (health, strength), deadliest first.
-void sorted_members(const CampGroup& group, std::vector<std::pair<float, float>>& left) {
-    left.clear();
-    for (const auto& m : group.members) left.push_back({m.max_health, m.strength});
-    std::sort(left.begin(), left.end(), [](const auto& x, const auto& y) { return x.second * y.first > y.second * x.first; });
+// Every body and the opening planner use the same member order and base camp health.
+void group_facts(const StaticMap& map, Analysis& a) {
+    a.group_facts.resize(map.groups.size());
+    a.sorted.reserve(map.camp_members.size());
+    for (std::size_t g = 0; g < map.groups.size(); ++g) {
+        const auto& group = map.groups[g];
+        auto& f = a.group_facts[g];
+        f.begin = a.sorted.size();
+        if (group.has_monolith || group.gems + group.gold == 0) continue;
+        for (const auto& m : group.members) {
+            a.sorted.push_back({m.max_health, m.strength});
+            if (m.strength > 0) f.attackers += m.max_health, f.kites = f.kites && m.reach < ability_range;
+            else f.rest += m.max_health;
+        }
+        f.size = a.sorted.size() - f.begin;
+        std::sort(a.sorted.begin() + f.begin, a.sorted.end(), [](const auto& x, const auto& y) { return x.second * y.first > y.second * x.first; });
+    }
+}
+
+std::span<const std::pair<float, float>> sorted_members(const Analysis& a, std::size_t g) {
+    const auto& f = a.group_facts[g];
+    return std::span{a.sorted}.subspan(f.begin, f.size);
 }
 
 // Camp damage taken clearing `left` in order at `strength` a round; `rounds`, the rounds taken.
-float clear_damage(const std::vector<std::pair<float, float>>& left, float strength, float& rounds) {
+float clear_damage(std::span<const std::pair<float, float>> left, float strength, float& rounds) {
     float damage = 0;
     rounds = 0;
     for (const auto& [hp, hits] : left) {
@@ -240,21 +265,14 @@ void type_facts(const StaticMap& map, const Analysis& a, cambc::champion_type ty
     out.spare = usable / params::camp_risk;
     const auto n = map.groups.size();
     out.worth.assign(n, -1), out.clear.assign(n, 0), out.damage.assign(n, 0);
-    static std::vector<std::pair<float, float>> left;
     for (std::size_t g = 0; g < n; ++g) {
         const auto& group = map.groups[g];
         if (group.has_monolith || group.gems + group.gold == 0) continue;
-        sorted_members(group, left);
-        float attackers = 0, rest = 0;
-        bool kites = spells > 0 && group.strength > 0;
-        for (const auto& m : group.members) {
-            if (m.strength > 0) attackers += m.max_health, kites = kites && m.reach < ability_range;
-            else rest += m.max_health;
-        }
+        const auto& G = a.group_facts[g];
         float alone = 0;
-        float damage = clear_damage(left, s, alone), clear = alone;
-        if (kites) {
-            const float kite = attackers / spells + rest / (basic + spells);
+        float damage = clear_damage(sorted_members(a, g), s, alone), clear = alone;
+        if (spells > 0 && group.strength > 0 && G.kites) {
+            const float kite = G.attackers / spells + G.rest / (basic + spells);
             // Each trip home walks there and back or recalls and walks back (heal_trip), whichever is quicker.
             const auto steps = static_cast<float>(landing_steps(map, a, static_cast<int>(g)));
             const float heal = damage / usable * std::min(2.0f * steps, static_cast<float>(cambc::constants::recall_time) + steps);
@@ -281,7 +299,6 @@ void rank_body(const StaticMap& map, Analysis& a, int b) {
     const bool by_tile = !a.spawn_steps.empty() && i < static_cast<int>(map.ally_spawn_tiles.size());
     std::array<std::pair<float, int>, DraftPlan::leads> top;
     top.fill({0.0f, -1});
-    static std::vector<std::pair<float, float>> left;
     for (int g = 0; g < static_cast<int>(map.groups.size()); ++g) {
         float worth = T.worth[g], clear = T.clear[g];
         const int steps = by_tile ? a.spawn_steps[g][i] : a.steps[g][0];
@@ -291,9 +308,8 @@ void rank_body(const StaticMap& map, Analysis& a, int b) {
         if (claimed) continue;
         if (T.damage[g] > T.spare) {
             if (partner <= 0) continue;
-            sorted_members(map.groups[g], left);
             const float part = T.output / (T.output + partner);
-            if (clear_damage(left, T.output + partner, clear) * part > T.spare) continue;
+            if (clear_damage(sorted_members(a, g), T.output + partner, clear) * part > T.spare) continue;
             worth *= part;
         }
         const float rounds = std::max(1.0f, static_cast<float>(steps) + clear + cap);
@@ -313,6 +329,7 @@ void make_leads(const StaticMap& map, Analysis& a, std::uint64_t reserve) {
     if (auto expected = expected_bodies(); expected != a.lead_for)
         a.lead_for = std::move(expected), a.leads_made = 0, a.dash_bodies = 0, a.dash_kind = {}; // the dash entries are per lead body too
     const auto n = map.groups.size();
+    if (a.group_facts.empty()) group_facts(map, a);
     for (; a.leads_made < static_cast<int>(std::min<std::size_t>(a.lead_for.size(), DraftPlan::lead_bodies)); ++a.leads_made) {
         auto& T = a.types[static_cast<std::size_t>(a.lead_for[a.leads_made])];
         if (!T.ready) {
@@ -588,6 +605,7 @@ std::uint16_t best_ward(const StaticMap& map, int site, const bitboard& reach) {
     draw_site(map, site, ward_sight, far);
     far &= map.open_for_them;
     drop(far, own);
+    if (far.is_empty()) return 0;
     and_into(reach, map.open_for_us, candidates); // never a wall, hole, altar or their spawn (wards.placement)
     const auto n = std::min<std::uint32_t>(positions_into(candidates, tiles.data(), static_cast<std::uint32_t>(tiles.size())), tiles.size());
     const auto& layout = cambc::detail::layout();
@@ -822,7 +840,6 @@ void make_open_plan(const StaticMap& map, Analysis& a, DraftPlan& plan, std::uin
         a.capped |= cap_open;
         return;
     }
-    static std::vector<std::pair<float, float>> left;
     // The walks between candidates. A run and the greedy seeds stop at a group farther than the horizon plus the
     // body's attack range, so the floods stop there: past it every step count reads unreachable, to the same effect.
     int reach = 0;
@@ -838,9 +855,8 @@ void make_open_plan(const StaticMap& map, Analysis& a, DraftPlan& plan, std::uin
         const auto& G = map.groups[g];
         auto& C = p.cand[c];
         C.group = g, C.gems = static_cast<float>(G.gems), C.gold = static_cast<float>(G.gold), C.respawn = G.respawn, C.home = order[c].first;
-        sorted_members(G, left);
         C.members = 0;
-        for (const auto& [hp, hits] : left) {
+        for (const auto& [hp, hits] : sorted_members(a, g)) {
             const int m = std::min(C.members, op::max_members - 1);
             C.hp[m] += hp, C.strength[m] += hits, C.total += hp, C.total_strength += hits;
             C.members = std::min(C.members + 1, op::max_members);
@@ -1472,7 +1488,7 @@ mapfeat::Input engine_input() {
 
 // mapfeat::WalkField from the engine's distance fields (the same king steps and corner rule as
 // grid.mjs bfs), at a host call's flat price instead of our own BFS.
-void engine_walk(const mapfeat::Input& in, int side, bool camps_block, std::vector<int>& out) {
+void engine_walk(const mapfeat::Input& in, int side, bool camps_block, mapfeat::Distances& out) {
     bitboard blocked{cambc::map::walls() | cambc::map::holes() | cambc::map::altars()}, roots;
     const auto mirror = [&](int x, int y) {
         return in.sym == mapfeat::horizontal ? vec2{in.W - 1 - x, y}
