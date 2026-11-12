@@ -1,0 +1,156 @@
+--- a/src/economy/bank.cc	2026-11-12 17:44:43.640776818 +0000
++++ b/src/economy/bank.cc	2026-11-12 18:53:11.972189410 +0000
+@@ -49,6 +49,26 @@
+     return side[a] > 0;
+ }
+ 
++// How far inside our half an altar is: the enemy's walk from its spawn to a tribute tile of it less ours, 0 where
++// either is unknown. Past two sight radii nobody on the line midway between the spawns sees a channel there: against
++// the local Fish body our channels of 21+ turn ends completed 77 of 77 at such altars, 62% at those 5-15 steps on our
++// side and 22-40% at the rest (1,252 channels). Kept per altar.
++int altar_depth(const StaticMap& map, int a) {
++    static std::vector<int> depth;
++    if (depth.size() < map.altars.size()) depth.resize(map.altars.size(), unreachable);
++    if (depth[a] == unreachable) {
++        const vec2 p = map.altars[a].pos;
++        const auto& field = map.from_ally_spawn();
++        int ours = unreachable, theirs = unreachable;
++        for (int dx = -1; dx <= 1; ++dx)
++            for (int dy = -1; dy <= 1; ++dy)
++                if (const vec2 t{p.x + dx, p.y + dy}; (dx || dy) && in_bounds(t))
++                    ours = std::min(ours, field.at(t)), theirs = std::min(theirs, map.enemy_spawn_steps(t));
++        depth[a] = ours != unreachable && theirs != unreachable ? theirs - ours : 0;
++    }
++    return depth[a];
++}
++
+ [[gnu::flatten]] void place_lock(const World& world) {
+     auto& me = cambc::self();
+     if (stunned_turn || !world.me().alive) return;
+@@ -502,6 +522,48 @@
+     return altar_walked(world, pathing, altar) ? steps : unreachable;
+ }
+ 
++// The altar a long tribute (a channel longer than params::tribute_window) goes to instead of the nearest, or -1: the
++// one with the fewest expected turn ends, its walk (on foot, or home by the recall and on) and the channel with its
++// restarts, (e^(hL) - 1) / h. The cancel hazard h is params::channel_hazard at a contested altar and falls in a line
++// to none at one two sight radii inside our half (altar_depth), where the channel takes its own length. Not an altar
++// under an enemy lock or given up on, nor one whose channel would end after the last round.
++int long_tribute_altar(const World& world, Pathing& pathing, const Memory& memory) {
++    const int turns = tribute_turns(world, my_gems());
++    const auto& map = world.map();
++    if (turns <= params::tribute_window || map.altars.size() < 2) return -1;
++    struct Key {
++        std::uint32_t round, observations, gems;
++        vec2 here;
++        bool operator==(const Key&) const = default;
++    };
++    static Key last{~0u};
++    static int kept = -1;
++    const vec2 here = my_position();
++    const Key key{static_cast<std::uint32_t>(world.round), world.observations, my_gems(), here};
++    if (key == last) return kept;
++    last = key, kept = -1;
++    const int near = altar_steps(world, pathing, here, -1);
++    const auto expected = [&](int a) {
++        const float h = params::channel_hazard * std::clamp(1.0f - static_cast<float>(altar_depth(map, a)) / static_cast<float>(2 * vision_radius), 0.0f, 1.0f);
++        return h > 1e-4f ? (std::exp(h * static_cast<float>(turns)) - 1.0f) / h : static_cast<float>(turns);
++    };
++    // The nearest altar at worst (contested); only one inside our half, whose hazard is lower, can beat it.
++    const float h0 = params::channel_hazard;
++    float least = near == unreachable ? std::numeric_limits<float>::infinity() : static_cast<float>(near) + (std::exp(h0 * static_cast<float>(turns)) - 1.0f) / h0;
++    int best = -1, best_foot = unreachable;
++    for (int a = 0; a < static_cast<int>(map.altars.size()); ++a) {
++        if (altar_depth(map, a) <= 0 || world.altars[a].enemy_lock || (a == memory.avoid_altar && world.round < memory.avoid_until)) continue;
++        const int foot = altar_steps(world, pathing, here, a);
++        int s = foot;
++        if (const int out = pathing.to_altar(a).at(recall_landing(world)); out != unreachable) s = std::min(s, recall_turns(world) + out);
++        if (s == unreachable || s + turns + endgame_slack > rounds_left(world)) continue;
++        if (const float t = static_cast<float>(s) + expected(a); t < least) best = a, least = t, best_foot = foot;
++    }
++    // The nearest serves as before.
++    if (best < 0 || best_foot == near) return -1;
++    return kept = best;
++}
++
+ // access_fire's fire on the open tiles. `active`: for each stirring group with a member that lives
+ // and may be awake, in group order, its id, then its word count, then those members' words.
+ static float fire_on_open(const World& world, const AltarAccess& a, const std::vector<std::uint64_t>& active) {
+@@ -937,13 +999,16 @@
+ 
+ // At an unlocked altar in reach. The caller judged the turn's start tile safe; anywhere else, at an
+ // altar carry_bag gave up waiting at, or at one believed locked (the caller skipped it), is judged again.
++// The altar a long tribute is bound for (long_tribute_altar, set by bank_gems), which alone starts it; -1 any.
++int submit_only = -1;
++
+ bool submit_here(const World& world, Safety& safety, Memory& memory) {
+     if (stunned_turn) return false; // the engine refuses it, and the thrown error costs ~3.9k fuel
+     auto& me = cambc::self();
+     const vec2 here = my_position();
+     const auto& altars = world.map().altars;
+     for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
+-        if (dist(here, altars[a].pos) > cambc::constants::submit_gems_range) continue;
++        if (dist(here, altars[a].pos) > cambc::constants::submit_gems_range || (submit_only >= 0 && a != submit_only)) continue;
+         if (world.altars[a].enemy_lock && enemy_lock_live(altars[a].pos)) continue;
+         const bool avoided = a == memory.avoid_altar && world.round < memory.avoid_until;
+         if ((avoided || world.altars[a].enemy_lock || here != world.turn_start)
+@@ -1237,6 +1302,11 @@
+ [[gnu::flatten]] void bank_gems(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool heal_step) {
+     if (retaining_gems(world, pathing)) return;
+     world.throw_if_stale();
++    const int deep = long_tribute_altar(world, pathing, memory);
++    struct Only {
++        explicit Only(int a) { submit_only = a; }
++        ~Only() { submit_only = -1; }
++    } only{deep};
+     if (submit_here(world, safety, memory)) return;
+     const vec2 here = my_position();
+     const auto& altars = world.map().altars;
+@@ -1260,6 +1330,7 @@
+         if (best < 0 && world.round < memory.avoid_until && (!carries_crystal() || hop_route(world, pathing, memory).hop < 0))
+             memory.avoid_until = world.round;
+     }
++    if (deep >= 0) best = deep, best_steps = altar_steps(world, pathing, here, deep);
+     // A hit on the aimed altar's lock; it ends the turn of a champion whose attack spends the walk,
+     // with a tribute if that hit broke it within reach.
+     const auto lock_hit_ends_turn = [&] {
+@@ -1353,6 +1424,7 @@
+     const int a = altar_here(world, here);
+     if (a < 0 || enemy_lock_live(world.map().altars[a].pos) || retaining_gems(world, pathing)) return false;
+     if (tribute_turns(world, my_gems()) > rounds_left(world)) return false;
++    if (const int deep = long_tribute_altar(world, pathing, memory); deep >= 0 && a != deep) return false;
+     if (want_home(world, pathing, safety, memory)) return false;
+     throw_if_stale();
+     try {
+@@ -1387,7 +1459,7 @@
+     const vec2 here = my_position();
+     if (safety.threatened(here)) return false;
+     // With no walk out (a crystal's pocket), the trip by way of spawn is the only one.
+-    const int walk = altar_steps(world, pathing, here, -1);
++    const int walk = altar_steps(world, pathing, here, long_tribute_altar(world, pathing, memory));
+     // On our walk with a crystal for a camp hop, the hop is the trip (hop_route).
+     if (walk == unreachable && carries_crystal() && world.map().any_camp_hop() && !sealed_in(world, pathing, my_position())) return false;
+     if (home_trip(world, pathing, my_channel_time(), winning_bag(world)).rounds(walk, 0, 0) < static_cast<float>(walk)) return true;
+@@ -1572,7 +1644,8 @@
+         bank_gems(world, pathing, safety, memory);
+         return;
+     }
+-    if (can_tribute_here(world)) {
++    // A long tribute bound for a deep altar (long_tribute_altar) does not wait at another.
++    if (const int deep = long_tribute_altar(world, pathing, memory); can_tribute_here(world) && (deep < 0 || altar_here(world, my_position()) == deep)) {
+         // Hit with nothing to hit back: waiting here only takes more.
+         if (memory.damage > 0 && !attack_target(world)) {
+             pathing.set_guard(nullptr);
+--- a/src/params.h	2026-11-12 17:44:43.644776870 +0000
++++ b/src/params.h	2026-11-12 18:24:27.426591438 +0000
+@@ -290,6 +290,10 @@
+ inline constexpr int willow_stand_ally = 2;
+ // The reactive Tribute emblem (shop.cc reactive_tribute) prices from a bag of this many gems.
+ inline constexpr int trib_min_bag = 100;
++// The chance a turn end that one of our tribute channels is cancelled (an enemy's lock on its altar, a stun, or our
++// own leaving under threat): 2.7%, which fits every length of our 5,723 live channels against Fish r8 (68%, 44%, 24%
++// and 4% completed at 11-20, 21-40, 41-70 and 71+ turn ends), and the local Fish body's (49% and 31% at 21-40, 41-70).
++inline constexpr float channel_hazard = 0.027f;
+ // Mid-game gold (research/ideas-2026-11-08/gold-price.md): per_gold x (1 + (mid_gold - 1) h), h a hump on the higher
+ // tributed score, 0 -> 1 over [0, mid_gold_rise], 1 to mid_gold_hold, 1 -> 0 by mid_gold_end. Win models of ladder and
+ // our own games put gold at ~1.5x per_gold's median there; x1.25 is the A/B's best.

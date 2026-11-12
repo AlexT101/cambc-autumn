@@ -1,0 +1,67 @@
+diff -ruN -x .cambc -x compile_commands.json r8s-base/src/economy/shop.cc r8s-gh/src/economy/shop.cc
+--- r8s-base/src/economy/shop.cc	2026-11-12 17:44:44.665820944 +0000
++++ r8s-gh/src/economy/shop.cc	2026-11-12 17:58:09.243397490 +0000
+@@ -145,7 +145,7 @@
+         if (has(b.family, b.stat)) return b;
+     for (const int family : {treasure, tribute, capture, prospector, hunter, skirmish, greed, collectors})
+         for (int stat = strength_stat; stat <= health_stat; ++stat)
+-            if (has(family, stat)) return Begun{family, stat, true};
++            if (has(family, stat) && !(family == greed && f.passive == Passive::gem_focus)) return Begun{family, stat, true};
+     if (f.heals() && has(jungle, health_stat)) return Begun{jungle, health_stat};
+     if (f.passive == Passive::gem_focus)
+         for (const int family : {power, jungle, home})
+@@ -406,6 +406,20 @@
+         const float p_b = std::max(1.0f, f.raw_output(b.strength, b.focus)) * b.max_health / b.taken;
+         return {family, stat, base - upkeep_cost(basis, b) + fight_scale * std::max(0.0f, 1.0f - p_now / p_b), left * shard_price};
+     };
++    // Greed's 25 shards count as 40 once combined (economy.emblems.greed), the most stats a gold buys: priced five
++    // shards at a time at that rate, while our gold income completes it within the rounds our gold has left; its
++    // shards are ordinary ones until then, so other emblems may come between.
++    const auto greed_step = [&](int stat) -> Emblem {
++        const unsigned have = owned[shard_of(greed, stat)], left = std::min(shards_per_emblem, greed_shards - have);
++        const IncomeRates rates = income_rates(world);
++        const float gold_turn = (income.capture_gold + income.kill_gold + income_prior(world.map()).gold * income_prior_gems) / rates.turns
++                                * gold_rate(f, owned);
++        const bool completes = static_cast<float>(my_gold()) + gold_turn * rates.horizon >= static_cast<float>((greed_shards - have) * shard_price);
++        Build b = now;
++        add_shards(b, f, stat, static_cast<float>(left) * (completes ? static_cast<float>(greed_stats) / static_cast<float>(greed_shards) : 1.0f));
++        const float p_b = std::max(1.0f, f.raw_output(b.strength, b.focus)) * b.max_health / b.taken;
++        return {greed, stat, base - upkeep_cost(basis, b) + fight_scale * std::max(0.0f, 1.0f - p_now / p_b), left * shard_price};
++    };
+     const bool three = economy_three(world);
+     // The best stat emblem: a Power, Jungle, Durability or Bruiser one (Vendetta's Monster too).
+     const auto best_stat = [&](int main) {
+@@ -466,6 +480,7 @@
+             if (const auto e = value(monster, health_stat); e.saved > best.saved) best = e;
+         if (!has_family(owned, home))
+             if (const auto e = value(home, health_stat); e.saved > best.saved) best = e;
++        if (const auto e = greed_step(health_stat); e.saved > best.saved) best = e;
+         return or_passive(best, health_stat, health_stat);
+     }
+     if (f.passive == Passive::gem_focus) {
+@@ -481,6 +496,7 @@
+         if (const auto e = value(power, focus_stat); e.saved > best.saved) best = e;
+         if (!has_family(owned, monster))
+             if (const auto e = value(monster, focus_stat); e.saved > best.saved) best = e;
++        if (const auto e = greed_step(health_stat); e.saved > best.saved) best = e;
+         return or_passive(best, health_stat, focus_stat);
+     }
+     const int main = main_stat(world);
+@@ -583,7 +599,7 @@
+     while (gold >= shard_price) {
+         const auto [family, stat, saved, cost, passive] = best_emblem(world, bought);
+         const unsigned have = my_items()[shard_of(family, stat)];
+-        const unsigned count = std::min<unsigned>(shards_needed(family) - have, gold / shard_price);
++        const unsigned count = std::min<unsigned>(std::min(shards_needed(family) - have, cost / shard_price), gold / shard_price);
+         if (!buy(shard_of(family, stat), count)) break;
+         gold -= shard_price * count;
+         add_shards(bought, world.me().facts(), stat, static_cast<float>(count));
+@@ -681,7 +697,7 @@
+     for (unsigned gold = budget; gold >= shard_price;) {
+         const auto e = quote.count == 0 ? quote.next : best_emblem(world, bought, &owned);
+         const unsigned have = owned[shard_of(e.family, e.stat)];
+-        const unsigned count = std::min<unsigned>(shards_needed(e.family) - have, gold / shard_price);
++        const unsigned count = std::min<unsigned>(std::min(shards_needed(e.family) - have, e.cost / shard_price), gold / shard_price);
+         gold -= shard_price * count;
+         quote.count += count;
+         add_shards(bought, f, e.stat, static_cast<float>(count));

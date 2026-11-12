@@ -1,0 +1,78 @@
+--- a/src/economy/altar_guard.cc	2026-11-12 17:44:43.640606806 +0000
++++ b/src/economy/altar_guard.cc	2026-11-12 17:59:10.557534116 +0000
+@@ -51,6 +51,39 @@
+     return world.score.ally + best >= static_cast<int>(cambc::constants::winning_gems);
+ }
+ 
++// Where the altars are several sites: the altar a winning bag's carrier (another of us) channels at, else the one
++// nearest it (by its tile as seen or posted), while its channel is too long to take at any risk
++// (params::tribute_window). The win is then that one channel, cancelled whole by a lock placed on its altar or a stun
++// (live against Fish r8, 120 lock and 79 stun cancels of winning channels; they complete 24% of the time at 41-70 turn
++// ends), and gems farmed meanwhile score nothing more. -1 for none.
++int escorted_altar(const World& world) {
++    static int round = -1, kept = -1;
++    static std::uint32_t observations = 0;
++    if (round == world.round && observations == world.observations) return kept;
++    round = world.round, observations = world.observations, kept = -1;
++    const ChampionBelief* carrier = nullptr;
++    int best = 0;
++    for (const auto& a : world.allies) {
++        if (!a.alive || a.is_self) continue;
++        if (const int bag = a.visible ? a.gems : comms::bag_of(world, a.index); bag > best) best = bag, carrier = &a;
++    }
++    if (!carrier || world.score.ally + best < static_cast<int>(cambc::constants::winning_gems)
++        || tribute_turns(best, carrier->fast_tribute) <= params::tribute_window)
++        return kept;
++    vec2 at;
++    int slack = 0;
++    if (!recent_tile(world, *carrier, at, slack)) {
++        if (!in_bounds(carrier->pos)) return kept;
++        at = carrier->pos;
++    }
++    if (carrier->visible && carrier->channel == Channel::tribute) return kept = tribute_altar(world, at);
++    const auto& altars = world.map().altars;
++    int near = unreachable;
++    for (int a = 0; a < static_cast<int>(altars.size()); ++a)
++        if (const int d = dist(at, altars[static_cast<std::size_t>(a)].pos); d < near) near = d, kept = a;
++    return kept;
++}
++
+ // Scores are read by every body alike, so the team agrees without comms.
+ bool guarding(const World& world) {
+     static bool on = false;
+@@ -137,10 +170,11 @@
+ // A guard's turn after the bag and the shop: fight an enemy by the altar (chase prices it), else hold
+ // our stand tile. False for a non-guard or when not guarding.
+ bool guard_turn(const World& world, Pathing& pathing, Safety& safety, Memory& memory, const Pathing::GuardState& strike_guard) {
+-    if (!guarding(world)) return false;
++    const bool site = guarded_altar(world) >= 0;
++    if (site ? !guarding(world) : escorted_altar(world) < 0) return false;
+     const int rank = guard_rank(world);
+     if (rank < 0) return false;
+-    const int a = guarded_altar(world);
++    const int a = site ? guarded_altar(world) : escorted_altar(world);
+     const auto& tiles = stands(world, a);
+     if (tiles.empty()) return false;
+     memory.claim = -1;
+@@ -152,10 +186,21 @@
+         if (chase_with_guard(world, pathing, safety, strike_guard)) return true;
+     }
+     decision = Branch::guard_altar;
++    // The escorted carrier's altar under an enemy lock: its channel cannot start until five hits remove it.
++    if (!site && world.altars[static_cast<std::size_t>(a)].enemy_lock) {
++        if (break_lock(world, a) && !world.me().facts().walk_and_attack_independent()) return true;
++        if (my_can_move() && my_can_attack() && dist(my_position(), alt) > world.me().facts().attack_range()) {
++            step_safely(world, pathing, pathing.to_altar(a), safety);
++            break_lock(world, a);
++            return true;
++        }
++    }
+     const int i = rank % static_cast<int>(tiles.size());
+     const vec2 stand = tiles[static_cast<std::size_t>(i)];
+     if (!my_can_move() || my_position() == stand) return true;
+     static std::vector<std::optional<Field>> fields;
++    static int fields_altar = -1;
++    if (fields_altar != a) fields.clear(), fields_altar = a;
+     if (fields.size() < tiles.size()) fields.resize(tiles.size());
+     auto& field = fields[static_cast<std::size_t>(i)];
+     if (!field) {

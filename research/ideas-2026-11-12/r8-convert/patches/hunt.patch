@@ -1,0 +1,34 @@
+--- a/src/economy/bank.cc	2026-11-12 17:44:43.640776818 +0000
++++ b/src/economy/bank.cc	2026-11-12 18:19:05.503074764 +0000
+@@ -1466,6 +1466,20 @@
+         }
+         if (!me.is_submitting_gems()) return false;
+     }
++    // A long winning channel is cancelled whole by any enemy that walks to its altar with a lock (10 gold) or stuns us
++    // (live against Fish r8: 120 lock and 79 stun cancels of winning channels, 24% of 41-70 turn channels completed;
++    // locally the locker stood within 8 of us at the channel's start in half the lock cancels). A fight we win
++    // (prey) is taken first: a kill takes the canceller off the map for a respawn, longer than the channel.
++    if (winning_bag(world) && static_cast<int>(my_channel_time()) > params::tribute_window && prey(world, pathing, safety)) {
++        decision = Branch::tribute_cancelled;
++        throw_if_stale();
++        try {
++            self_acted(), me.cancel_submit_gems();
++        } catch (const std::exception&) {
++            return true;
++        }
++        return false;
++    }
+     if (tribute_ok(world, safety, memory, my_channel_time())) return true;
+     // Damage does not interrupt a tribute: cancelling pays only to flee or to fight back. Sealed in
+     // a ring, neither saves the bag from the camps: only the channel's end can.
+@@ -1565,7 +1579,9 @@
+     drop_carry_claim(memory);
+     const bool safe = can_tribute_safely(world, pathing, safety, memory);
+     const bool close = closing(world, pathing);
+-    if (!safe && !close && !winning_bag(world) && chase_with_guard(world, pathing, safety, chase_guard)) return;
++    // A long winning channel's canceller in a fight we win is hunted first (continue_tribute).
++    const bool hunts = winning_bag(world) && tribute_turns(world, my_gems()) > params::tribute_window;
++    if (((!safe && !close && !winning_bag(world)) || hunts) && chase_with_guard(world, pathing, safety, chase_guard)) return;
+     if (safe) {
+         decision = Branch::bank;
+         memory.banking = true;

@@ -1,0 +1,76 @@
+diff -ruN -x .cambc -x compile_commands.json r8s-base/src/model/safety.cc r8s-bf2/src/model/safety.cc
+--- r8s-base/src/model/safety.cc	2026-11-12 17:44:44.666790186 +0000
++++ r8s-bf2/src/model/safety.cc	2026-11-12 18:25:10.948216096 +0000
+@@ -103,6 +103,7 @@
+     int quiet_until = 0, quiet_alive = -1;
+     float quiet_damage = 0;
+     int weak = -2; // weakest(), or -2 when it must be found again
++    int focus = -1; // the member their turns aim at while it lives (fill(): our side's richest bag)
+     int arrival = never; // plain: the next turn a living member comes into reach
+     bool plain = true; // every kit plain
+ 
+@@ -348,6 +349,8 @@
+ // fighter, or its linked body, when that damage fells it. A real enemy takes the kill (and the bag)
+ // over the hit on whoever is weakest; -1: the weakest, as for every other turn.
+ int aim_at(const Side& us, int watched, float damage) {
++    if (us.focus >= 0 && us.fighters[us.focus].health > 0 && !(watched >= 0 && watched != us.focus && fells(us.fighters[watched], damage)))
++        return us.focus;
+     if (watched < 0) return -1;
+     const auto& f = us.fighters[watched];
+     if (fells(f, damage)) return watched;
+@@ -357,6 +360,7 @@
+ // Whether aim_at() would take an enemy turn of `damage` off `weak`: the quiet runs, which put
+ // every hit on the weakest, leave that turn to act().
+ bool aims_elsewhere(const Side& us, int watched, int weak, float damage) {
++    if (us.focus >= 0 && us.focus != weak && us.fighters[us.focus].health > 0) return true;
+     if (watched < 0) return false;
+     const auto& f = us.fighters[watched];
+     if (watched != weak && fells(f, damage)) return true;
+@@ -385,6 +389,7 @@
+         damage = self.quiet_damage;
+         if (const int a = aim_at(other, watched, damage); a >= 0) target = a, back = other.fighters[a].retaliation;
+         if (target >= 0) other.hurt(damage, target);
++        if (other.focus >= 0 && target >= 0) other.lowered(target);
+         // With no cast each living attacker takes one reflection; no per-member hit tape is needed.
+         if (back > 0)
+             each<N>(count, [&](int i) {
+@@ -451,6 +456,7 @@
+     if (target < 0) return damage;
+     if (const int a = aim_at(other, watched, damage); a >= 0) target = a, back = other.fighters[a].retaliation;
+     other.hurt(damage, target);
++    if (other.focus >= 0) other.lowered(target);
+     if (back > 0)
+         each<N>(count, [&](int i) {
+             if (hits[i] > 0) self.hurt_one(i, static_cast<float>(hits[i]) * back);
+@@ -970,12 +976,23 @@
+     return made_fighters.fighter[slot];
+ }
+ 
++// A kill hands the killer the victim's gems (combat.kill), so their turns aim at the richest bag: ours, when it
++// is the largest of our side's and worth a life or more (params::gem_value a gem against params::life_value).
++// A linked body's stake is both bags.
++int stake(const World& world, const ChampionBelief& c) {
++    const auto* p = linked_partner(world, c);
++    return std::max(0, c.gems) + (p && p->alive ? std::max(0, p->gems) : 0);
++}
++
+ // An empty side's members, bit i for from[i]: Side::add() for each, kept in locals.
+ void fill(Side& side, const World& world, const std::vector<ChampionBelief>& from, unsigned bits, std::uint32_t& made) {
+     int count = 0, alive = 0;
+     bool plain = true;
++    int rich = -1, most = 0;
+     for (; bits && count < max_fighters; bits &= bits - 1) {
+         const auto& c = from[static_cast<std::size_t>(std::countr_zero(bits))];
++        if (c.side == team::ally)
++            if (const int bag = stake(world, c); bag > most) most = bag, rich = count;
+         if (c.is_self) side.self = count;
+         auto& g = side.fighters[count];
+         g = fighter(world, c, made);
+@@ -987,6 +1004,7 @@
+     side.count = count;
+     side.alive = alive;
+     side.plain = plain;
++    side.focus = params::gem_value * static_cast<float>(most) >= params::life_value ? rich : -1;
+ }
+ 
+ // Where it strikes from: a visible enemy's teleport lands before it acts.

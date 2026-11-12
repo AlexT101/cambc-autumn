@@ -1,0 +1,44 @@
+diff -ruN -x .cambc -x compile_commands.json r8s-base/src/combat/fight.cc r8s-rw/src/combat/fight.cc
+--- r8s-base/src/combat/fight.cc	2026-11-12 17:44:44.661575959 +0000
++++ r8s-rw/src/combat/fight.cc	2026-11-12 18:44:02.713663225 +0000
+@@ -1574,6 +1574,30 @@
+     return false;
+ }
+ 
++// What a retreat's walk is worth to a cast that excludes it: the blows the best step spares us before our next
++// turn, priced as their dealers price them (the fall in kill_distance on us, bag and all), at least
++// escape_step_value. A stun on everyone who reaches us still needs only its cast cost (enemy_cast).
++float retreat_walk_value(const World& world, Pathing& pathing, Safety& safety) {
++    if (!my_can_move() || !my_can_cast()) return escape_step_value;
++    const vec2 here = my_position();
++    bool near = false;
++    for (const auto& e : world.enemies) near |= e.alive && e.visible && dist(here, e.pos) <= ability_range;
++    if (!near) return escape_step_value;
++    const float taken = world.me().taken, stay = safety.bound(here, taken).damage;
++    if (stay <= 0) return escape_step_value;
++    float least = stay;
++    const auto& blocked = pathing.blocked();
++    for (const auto d : directions) {
++        const vec2 p = here + d;
++        if (least <= 0 || !in_bounds(p) || test(blocked, p)) continue;
++        least = std::min(least, safety.bound(p, taken).damage);
++    }
++    const float health = my_health_and_shield(world), full = std::max(my_max_health(), health);
++    const float bag = params::gem_value * static_cast<float>(bag_at_stake(world));
++    const float spared = kill_distance(std::max(0.0f, health - least), full, bag) - kill_distance(std::max(0.0f, health - stay), full, bag);
++    return std::max(escape_step_value, spared);
++}
++
+ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     world.throw_if_stale();
+     auto& me = cambc::self();
+@@ -1613,7 +1637,8 @@
+     } else {
+         // After the walk, a cast that allows walking may still follow (Cassi's stun).
+         bool kept = false;
+-        if (!escape_walk(world, pathing, safety, kept) || my_can_cast()) cast_at_enemies(world, kept ? lethal_step_value : escape_step_value);
++        if (!escape_walk(world, pathing, safety, kept) || my_can_cast())
++            cast_at_enemies(world, kept ? lethal_step_value : retreat_walk_value(world, pathing, safety));
+         if (!me.is_alive()) return;
+         if (!my_can_attack() || !my_can_cast()) see_kills(world, pathing, safety);
+         // A tribute survives damage; a recall does not.

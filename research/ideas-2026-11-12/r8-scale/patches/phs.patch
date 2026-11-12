@@ -1,0 +1,38 @@
+diff -ruN -x .cambc -x compile_commands.json r8s-base/src/economy/shop.cc r8s-phs/src/economy/shop.cc
+--- r8s-base/src/economy/shop.cc	2026-11-12 17:44:44.665820944 +0000
++++ r8s-phs/src/economy/shop.cc	2026-11-12 17:50:10.628027463 +0000
+@@ -457,7 +457,15 @@
+     }
+     // Prism's Focus comes from the gems it carries (1.5 a gem against a shard's 8): until it is as sturdy as the
+     // sturdiest base body, its shards are Health, in whichever family saves most.
+-    if (f.passive == Passive::gem_focus && my_max_health() < sturdiest_base_health) {
++    // Nor is it sturdy while a living enemy champion, at the Strength we last saw on it, takes its whole health in fewer
++    // than prism_hits basic attacks (back-to-back turns, an attack reset and a stun fit that many between two of our
++    // turns): live against Fish r8, a Vesper attack on the Prism killed it 2-9% of the time at 6+ hits, 31-81% below.
++    float top_strength = 0;
++    if (f.passive == Passive::gem_focus)
++        for (const auto& e : world.enemies)
++            if (e.alive && e.strength > top_strength) top_strength = e.strength;
++    constexpr float prism_hits = 6;
++    if (f.passive == Passive::gem_focus && my_max_health() < std::max(sturdiest_base_health, prism_hits * top_strength)) {
+         Emblem best = value(power, health_stat);
+         if (const auto e = value(bruiser, health_stat); e.saved > best.saved) best = e;
+         if (const auto e = value(jungle, health_stat); e.saved > best.saved) best = e;
+@@ -787,8 +795,16 @@
+         const int back = pathing.to_ally_spawn().at(here);
+         if (back == unreachable) return false;
+         const int hurt = my_health() < my_max_health() ? 1 : 0;
++        // Out-scaled (best_emblem's Health goal: an enemy seen takes our health in fewer than 6 basic attacks) with gold
++        // that buys a whole further enemy hit of Health: the trip is taken whatever the stat gain prices it at. The
++        // hoard rides on this body, and live against Fish r8 the Prism died holding a median 255 unspent gold.
++        float top_strength = 0;
++        for (const auto& e : world.enemies)
++            if (e.alive && e.strength > top_strength) top_strength = e.strength;
++        const float buys = static_cast<float>(gold / shard_price) * world.me().facts().health.growth;
++        const bool sturdier = top_strength > 0 && my_max_health() < 6 * top_strength && buys >= top_strength;
+         const float value = params::shop_gain_scale * affordable_prefix(world).gain + heal_rounds_now(world);
+-        if (!std::isfinite(value) || !(value > static_cast<float>(std::min(back, recall_turns(world) + hurt) + back))) return false;
++        if (!sturdier && (!std::isfinite(value) || !(value > static_cast<float>(std::min(back, recall_turns(world) + hurt) + back)))) return false;
+     } else {
+         const auto stop = home_trip(world, pathing, recall_turns(world), winning_bag(world));
+         if (stop.short_gold > 0) return false;

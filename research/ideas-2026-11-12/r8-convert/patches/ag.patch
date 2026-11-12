@@ -1,0 +1,12 @@
+--- a/src/economy/altar_guard.cc	2026-11-12 17:44:43.640606806 +0000
++++ b/src/economy/altar_guard.cc	2026-11-12 18:03:16.890484523 +0000
+@@ -143,6 +143,9 @@
+     const int a = guarded_altar(world);
+     const auto& tiles = stands(world, a);
+     if (tiles.empty()) return false;
++    // A stand under an awake camp's fire is no stand (01boss_battle's altar sits in two Monoliths' reach), and a
++    // camp's kill destroys the bag (combat.camp_kill).
++    if (safety.camp_damage(tiles[static_cast<std::size_t>(rank % static_cast<int>(tiles.size()))]) > 0) return false;
+     memory.claim = -1;
+     memory.farm_group = -1;
+     const vec2 alt = world.map().altars[a].pos;

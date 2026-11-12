@@ -141,6 +141,20 @@ def one(arg):
         cp["end" if r == n and r not in CPS else str(r)] = ent
         if r == n:
             cp["end"] = ent
+    # wealth (tributed + carried) per round, per side; series every 25 rounds
+    carried = [[0] * nR for _ in (0, 1)]
+    for c in champs:
+        for i in range(min(nR, len(c["gems"]))):
+            carried[c["team"]][i] += c["gems"][i] or 0
+    wealth = [[R["gems"][t][i] + carried[t][i] for i in range(nR)] for t in (0, 1)]
+    goldser = [[sum((c["earned"][i] or 0) for c in champs if c["team"] == t) for i in range(0, nR, 25)] for t in (0, 1)]
+
+    def lead(t, r):  # team t's wealth lead at the end of round r
+        i = max(0, min(r, nR) - 1)
+        return wealth[t][i] - wealth[1 - t][i]
+
+    series = {"every": 25, "wealth_us": wealth[us][::25], "wealth_op": wealth[op][::25], "trib_us": R["gems"][us][::25], "trib_op": R["gems"][op][::25],
+              "gold_us": goldser[us], "gold_op": goldser[op]}
     M = macro_mod.extract(g)
     L = losses_mod.extract(g)
     G = M["game"]
@@ -178,6 +192,8 @@ def one(arg):
                        "cf_recall": bool(e.get("cf", {}).get("recall")), "cf_altar": e.get("cf", {}).get("altar"),
                        "hp_frac": (c["hp"][i0] / c["maxHp"][i0]) if c["maxHp"][i0] else None, "maxhp": c["maxHp"][i0],
                        "cause": ev.get("cause") if ev else None, "camp": tags.get("camp"), "at": ev.get("at") if ev else None,
+                       "lead_before": lead(t, (e.get("r_hit") or e["r"]) - 1), "lead_after": lead(t, e["r"] + 30),
+                       "score_own": at(R["gems"][t], e["r"] - 1), "score_enemy": at(R["gems"][1 - t], e["r"] - 1),
                        "result": row["result"], "rounds": n})
     out = {
         "key": key, "dir": d, "map": row["map"], "side": row["our_side"], "result": row["result"], "rounds": n, "npicks": len(row["our_draft"]),
@@ -185,7 +201,7 @@ def one(arg):
         "group": row["group_id"], "position": row["position"], "end_reason": row["end_reason"], "our_gems": g.final_gems[us], "opp_gems": g.final_gems[op],
         "W": mp.W, "H": mp.H, "altars": len(mp.altars), "ngroups": len(mp.groups), "cp": cp, "flow": flow,
         "macro": {"break": G["break"], "window": G["window"], "cause": G["cause"], "win_parts": G["win_parts"], "whole": G["whole"], "gap_after": G["gap_after"]},
-        "champs": ch_rows, "first_trib": {"us": first_trib[us], "op": first_trib[op]}, "trib_n": {"us": trib_n[us], "op": trib_n[op]},
+        "series": series, "champs": ch_rows, "first_trib": {"us": first_trib[us], "op": first_trib[op]}, "trib_n": {"us": trib_n[us], "op": trib_n[op]},
         "trib_gems": {"us": trib_gems[us], "op": trib_gems[op]},
         "locks": {"us": locks[us], "op": locks[op]}, "blocked": {"us": blocked[us], "op": blocked[op]}, "lock_hits": {"us": lock_hits[us], "op": lock_hits[op]},
         "mono": {"us": mono[us], "op": mono[op]},

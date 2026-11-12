@@ -10,6 +10,113 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## (charybdis = 524, 2026-11-12) The out-scaled Prism against Fish r8: bag focus + the any-risk channel beat 524 by 1.1-1.3 head-to-head and gain against Mite and Flp4, level against the Fish r8 body; not shipped
+
+Note, patches and scripts: [ideas-2026-11-12/r8-scale/README.md](ideas-2026-11-12/r8-scale/README.md) (branch
+`r8-scale-20261112`). Arms are copies of charybdis 524 (`variants/r8s-*`, reference `variants/r8s-base`), read by
+`fgate --pool v4` at 100k against Flp4 / Mt3q ("std") and fr8-g25 / Mt3q ("fr8"), by study A's live fork, and
+head-to-head on fresh ladder-v4 maps. The programme's test was a gain against the Fish r8 body, which no arm met, so
+bots/charybdis is unchanged and the candidates await a decision.
+
+- **Candidates** (v4 batches 26-33, unplayed, 163,840 fresh games a read; head-to-head 40,800 games each):
+
+  | arm | head-to-head against 524 | fr8 | Fish r8 body alone | Mite body | std | Flp4 alone | fork |
+  |---|---|---|---|---|---|---|---|
+  | `r8s-c2` = bf3 + ar | 51.1% (50.6-51.6) | +0.36 ±0.29 | -0.14 ±0.44 | +0.85 ±0.38 | +0.64 ±0.26 | +0.44 ±0.35 | -0.39 ±1.62 |
+  | `r8s-c3` = c2 + phs | 51.3% (50.8-51.8) | +0.37 ±0.30 | -0.04 ±0.45 | +0.78 ±0.39 | +0.60 ±0.27 | +0.43 ±0.36 | +0.34 ±1.55 |
+
+  Against a second Fish r8 body (`fr8-g25f`) c2's Fish half reads about -0.47 ±0.63 on four batches (level).
+  Out-of-fuel turns in the head-to-head: c2 +2.5%, c3 +1.8%.
+- **bf3** (`model/safety.cc`, `fight.cc` `stand_lost_at`, `guard.cc` `step_guard`): a kill hands the killer the
+  victim's gems, so the fight simulation's enemy turns aim at our fighter carrying our side's richest bag when it is
+  worth a life or more, and any such carrier leaves a stand it falls in. Screens on v4 batches 8-11: +0.61 ±0.81 and
+  +0.67 ±0.47 fr8, +0.80 ±0.71 and +0.75 ±0.42 std. Plain bf gains less; bf2 (every member, allies' verdicts too) is
+  no better. The Prism's 100+ bag deaths are unchanged in the profile: a model correction, not a fix of the hoard kill.
+- **ar** (`bank.cc` `tribute_ok`): a winning channel's last `tribute_window` turns were kept at any risk; now only
+  while nothing in reach kills us first. +0.24 ±0.10 fr8 and +0.23 ±0.10 std on batches 9-11 (65-82 games differ a
+  batch).
+- **phs** (study B's arm on 524: a Prism Health goal of 6 enemy basic hits, with the shop trip for it): level alone
+  (+0.32 ±0.48 / +0.02 ±0.40) and as c3 against c2. The local body kills the hoard at under half the live rate, so
+  local gates cannot price it.
+- **Lose**: the Prism's gold forced into Greed-Health from its 1st / 2nd / 4th emblem (-4.00 / -1.90 / -1.32 fr8; its
+  max health at r600 goes 2,390 to 3,625 and its 100+ bag deaths rise 0.126 to 0.168 a Prism game); a retreat's walk
+  priced against a cast by the blows it spares (-0.71 / -0.83); a keeping Prism's farm discounted off our own ground
+  by measured hazard (-9.41 / -9.34).
+- **Level**: Greed-Health offered at its true rate through the shop's own pricing (it is almost never picked); a
+  retreat with any tile as its goal when no way home takes under two hits (hoard deaths rise 142 to 171 in the
+  profile); the camp-fire margin plus no altar-guard step through an awake camp's reach.
+- Don't retry: more Prism Health by itself, positional hoard caution, or a re-priced retreat (the retreat is at a
+  local optimum: only ~40% of the fatal run's turns move away from the killer, and both changes built on that fail).
+
+## (charybdis = 524, 2026-11-12) Converting the hoard against Fish r8: thirteen arms, none passes; allies banking in parallel is level against the bodies and loses 0.65 head-to-head
+
+Note, patches and scripts: [ideas-2026-11-12/r8-convert/README.md](ideas-2026-11-12/r8-convert/README.md) (branch
+`r8-convert-20261112`). Arms are copies of charybdis 524 (`variants/rc-*`, reference `variants/rc-524`), read by
+`fgate --pool v3` at 100k against Flp4 / Mt3q ("std") and fr8-g25 / Mt3q ("fr8"), by a 640-game replay probe against
+fr8-g25, by study A's live fork, and head-to-head on fresh ladder-v4 maps.
+
+- **Read as a family**: twelve gated arms, two reads each, forks and splits are thirty-odd intervals. Only the
+  held-out reads of the two arms the screens picked are estimates (v3 batches 26-33, 163,840 fresh games a read):
+
+  | arm | fr8 | std | head-to-head against 524 |
+  |---|---|---|---|
+  | `rc-deep`: a tribute longer than tribute_window goes to an altar 16+ steps inside our half | +0.04 ±0.07 | +0.04 ±0.06 | 49.9% of 27,200 (49.4-50.5) |
+  | `rc-c2`: that, and Prism takes no ally's capture past a 26-turn channel | +0.09 ±0.23 | +0.13 ±0.20 | 49.35% of 40,800 (48.9-49.8), two samples 49.4% and 49.3% |
+
+- **Screens** (v3 batches 16-17 or 16-19, fr8 / std): soft cap at 50 turn ends inert (+0.04 / -0.01), at 26 level
+  (+0.02 ±0.32 / +0.05 ±0.29), at 13 loses (-1.42 / -1.50); escort on multi-site maps with lock-breaking level
+  (+0.13 / -0.21) and lock cancels unchanged; the survival stack (cm, phs, jit, no guard stand under camp fire) level
+  (+0.01 / -0.16), with the soft cap -0.06 / -0.09; Prism not sole holder of gold-heavy captures loses (-0.35 /
+  -0.58); a kept bag barred from groups where its expected loss a round exceeds our income loses (-5.73 / -6.41,
+  live fork -9.10 ±2.11); a long winning channel left for a fight we win halves lock cancels and doubles our own
+  (probe only).
+- **Facts for later work** (640 games of 524 against fr8-g25): the carrier already owns the Tribute emblem in 90% of
+  winning bags of 500+; channels of 21+ turn ends complete 74% with no enemy within 16 at the start and 17-46% with
+  any, 100% at an altar 15+ inside our half and 25% at one in the middle; Prism with 100+ gems dies 0.13% of 8-round
+  windows on our half, 0.45% in the middle, 0.87% on the enemy's.
+- Don't retry: a softer or conditional cap on the carry (no local gain at any level, a head-to-head cost at 26),
+  bodies at the altar against the lock, positional hoard caution.
+
+## (v118 live, 2026-11-12) v118 against Fish r8, 345 live games traced: the Prism's hoard killed by Fish's gold-fed Vesper is the main loss; fifteen hoard-caution arms lose or are level
+
+Two independent studies of the same 345 games (198-147; 340 distinct, 195-145), each with exact re-runs of
+`bots/baselines/v118` on Fish's recorded inputs (345/345 release re-runs exact, fuel included):
+[ideas-2026-11-12/v118-fish/README.md](ideas-2026-11-12/v118-fish/README.md) (study A) and
+[ideas-2026-11-12/v118-fish-b/README.md](ideas-2026-11-12/v118-fish-b/README.md) (study B). Per-game rows:
+`replays/pulls/v118-fish-2026-11-12.json`.
+
+- **Where the losses are.** A winning bag (score + bag at 1,000+) held: 193 of 214 won; without one, 5 of 131. A
+  100+ gem bag lost to a champion: 76-77 losses, 9-10 wins; the bag is the Prism's in most and Fish's Vesper the
+  killer in about three quarters (her Strength a median 465 and max health 6,200 at the kill; the Prism's max health
+  2,300, and it dies with a median 255 gold unspent). Bags over 500 gems convert worse (98% under 500, 73% at 700+):
+  channels of 41-70 turns complete 24%, 71+ 4%. The rest are out-farmed or overrun games with 3+ early deaths on our
+  own half, outnumbered; no decision isolated. Side, pick count and altar count show nothing.
+- **Why, from the traces.** The Prism dies retreating: on a run of want_home turns (median 6) before most of these
+  deaths, home a median 21 tiles away, the killer in sight a median 28 rounds before the run began. The stand verdict
+  looks `pursuit_steps` = 2 turns out and `Safety::lethal` one enemy turn set ahead; a 4-5-hit kill takes two to
+  three rounds. The retreat itself is sound (5% of retreat streaks end in death).
+- **v118 has no opponent detection** (`opp_detect` is only in `variants/c520-mx`), so Fish's new priority encoding
+  explains none of the r2 to r8 drop. **Emblem lab 6 did not gain against r8**: with 304 v117 r8 games in the scrim
+  log v117 is at 56.3%, and on shared cells v118 won 174 to v117's 171 (CHANGES 524's 57.4% against 49.7% of 165 was
+  an early sample).
+- **Study A's arms** (copies of `variants/lab-emb6-c520-ps`, `variants/v118f-*`; fgate pool v3 batches 16-17 at
+  100k, std / fr8 / live fork): the retreat keeps its recall when nothing can hit this turn -3.60 / -2.77 (carriers
+  only -2.55 / -1.67 / -1.90); the hoard flees a duel-winning enemy within recall reach -2.31 / -3.47 / -4.04; bank
+  once such an enemy has shown -10.31 / -12.42 / -5.55 (both together -12.66 / -14.69 / -6.77); keep the bag only
+  below 350 -6.05 / -8.63 / -6.33, below 500 -2.77 / -3.41 / -1.66; carriers keep two more camp phases of health in
+  hand level (-0.29 ±0.45 / +0.16 ±0.50 / -0.15 ±1.13). A replay counterfactual had said 90% of refused recalls
+  would land; an enemy came within 5 tiles in 69% of them.
+- **Study B's arms** (`variants/v118fb-*`; one fgate batch each, v3 batch 16, fr8-g25 and Mt3q): the Prism's
+  Health goal of 6 enemy hits with a shop trip level (-0.21 ±0.50; without the trip nothing changes, the gold is not
+  spent); just-in-time banking paced by the Prism's own collection rate level (-0.09 ±0.53); no hoarding when
+  out-scaled -1.11 ±0.63 at 6 hits and -0.37 ±0.60 at 4 (the signal fires too late: the Prism still holds 100+ gems
+  at its live death round in 31 of 33); a blunt channel cap level at 50 turns (-0.24 ±0.48) and -3.92 ±0.72 at 35.
+- **Measurement.** The fr8-g25 body under-models the hoard kill (from live-loss positions it lets us win 27%), so
+  local gates show the cost of hoard caution, not its live benefit; `v118-fish/livefork_arms.py` continues v118's
+  live r8 positions with Fish's real items and agreed in sign with the gates on six arms. `live_trace_bot.py`'s CS/CC
+  lines change v118's play; `v118-fish/tracebot.py` has lines that keep it exact.
+- Don't retry: earlier recalls, fleeing or banking on sight of a stronger enemy, or a cap on the hoard.
+
 ## Tune lab round 9 on lab-emb6-c520-ps (2026-11-12): SPSA on 19 economy and fight constants is level, 50.06% at 200k
 
 The lab filler's tune round (SPSA as localq's tune rounds: 19 knobs, 706 iterations on 40 fresh ladder-v4 suites

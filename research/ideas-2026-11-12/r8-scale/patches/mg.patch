@@ -1,0 +1,16 @@
+diff -ruN -x .cambc -x compile_commands.json r8s-base/src/economy/altar_guard.cc r8s-mg/src/economy/altar_guard.cc
+--- r8s-base/src/economy/altar_guard.cc	2026-11-12 17:44:44.663636875 +0000
++++ r8s-mg/src/economy/altar_guard.cc	2026-11-12 18:50:34.115834734 +0000
+@@ -164,6 +164,12 @@
+         set_tile(goal, stand);
+         field.emplace(make_field(pathing.static_walls(), goal));
+     }
++    // A camp's kill destroys the bag (combat.camp_kill): carrying one, the guard takes no step that only leads through
++    // an awake camp's reach (step_safely's straight fallback), and waits where it stands.
++    if (bag_at_stake(world) >= params::brake_bag && safety.avoid_within(my_position(), vision_radius)) {
++        pathing.step_towards(*field, &safety.avoid());
++        return true;
++    }
+     step_safely(world, pathing, *field, safety);
+     return true;
+ }
