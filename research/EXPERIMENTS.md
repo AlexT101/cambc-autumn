@@ -10,13 +10,13 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
-## (charybdis = 524, 2026-11-12) The out-scaled Prism against Fish r8: bag focus + the any-risk channel beat 524 by 1.1-1.3 head-to-head and gain against Mite and Flp4, level against the Fish r8 body; not shipped
+## (charybdis = 524, 2026-11-12) The out-scaled Prism against Fish r8: bag focus + the any-risk channel beat 524 by 1.1-1.3 head-to-head and gain against Mite and Flp4, level against the Fish r8 body; c2 shipped as charybdis 525
 
 Note, patches and scripts: [ideas-2026-11-12/r8-scale/README.md](ideas-2026-11-12/r8-scale/README.md) (branch
 `r8-scale-20261112`). Arms are copies of charybdis 524 (`variants/r8s-*`, reference `variants/r8s-base`), read by
 `fgate --pool v4` at 100k against Flp4 / Mt3q ("std") and fr8-g25 / Mt3q ("fr8"), by study A's live fork, and
-head-to-head on fresh ladder-v4 maps. The programme's test was a gain against the Fish r8 body, which no arm met, so
-bots/charybdis is unchanged and the candidates await a decision.
+head-to-head on fresh ladder-v4 maps. The programme's test was a gain against the Fish r8 body, which no arm met;
+`r8s-c2` was merged as CHANGES 525 at the user's request after the replication below, and c3's phs is open in TODO.
 
 - **Candidates** (v4 batches 26-33, unplayed, 163,840 fresh games a read; head-to-head 40,800 games each):
 

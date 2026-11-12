@@ -103,6 +103,7 @@ struct Side {
     int quiet_until = 0, quiet_alive = -1;
     float quiet_damage = 0;
     int weak = -2; // weakest(), or -2 when it must be found again
+    bool focus = false; // their turns aim at `self` while it lives (bag_focus())
     int arrival = never; // plain: the next turn a living member comes into reach
     bool plain = true; // every kit plain
 
@@ -350,7 +351,7 @@ unsigned stun_skips(const Side& self, int turn) {
 int aim_at(const Side& us, int watched, float damage) {
     if (watched < 0) return -1;
     const auto& f = us.fighters[watched];
-    if (fells(f, damage)) return watched;
+    if (fells(f, damage) || (us.focus && f.health > 0)) return watched;
     return f.link >= 0 && fells(us.fighters[f.link], damage) ? f.link : -1;
 }
 
@@ -359,7 +360,7 @@ int aim_at(const Side& us, int watched, float damage) {
 bool aims_elsewhere(const Side& us, int watched, int weak, float damage) {
     if (watched < 0) return false;
     const auto& f = us.fighters[watched];
-    if (watched != weak && fells(f, damage)) return true;
+    if (watched != weak && (fells(f, damage) || (us.focus && f.health > 0))) return true;
     return f.link >= 0 && f.link != weak && fells(us.fighters[f.link], damage);
 }
 
@@ -385,6 +386,7 @@ template <int N>
         damage = self.quiet_damage;
         if (const int a = aim_at(other, watched, damage); a >= 0) target = a, back = other.fighters[a].retaliation;
         if (target >= 0) other.hurt(damage, target);
+        if (other.focus && target >= 0) other.lowered(target);
         // With no cast each living attacker takes one reflection; no per-member hit tape is needed.
         if (back > 0)
             each<N>(count, [&](int i) {
@@ -451,6 +453,7 @@ template <int N>
     if (target < 0) return damage;
     if (const int a = aim_at(other, watched, damage); a >= 0) target = a, back = other.fighters[a].retaliation;
     other.hurt(damage, target);
+    if (other.focus) other.lowered(target);
     if (back > 0)
         each<N>(count, [&](int i) {
             if (hits[i] > 0) self.hurt_one(i, static_cast<float>(hits[i]) * back);
@@ -970,12 +973,25 @@ const Fighter& fighter(const World& world, const ChampionBelief& c, std::uint32_
     return made_fighters.fighter[slot];
 }
 
+// A kill hands the killer the victim's gems (combat.kill), so their turns aim at the richest bag: ours, when it
+// is the largest of our side's and worth a life or more (params::gem_value a gem against params::life_value).
+// A linked body's stake is both bags.
+int stake(const World& world, const ChampionBelief& c) {
+    const auto* p = linked_partner(world, c);
+    return std::max(0, c.gems) + (p && p->alive ? std::max(0, p->gems) : 0);
+}
+
 // An empty side's members, bit i for from[i]: Side::add() for each, kept in locals.
 void fill(Side& side, const World& world, const std::vector<ChampionBelief>& from, unsigned bits, std::uint32_t& made) {
     int count = 0, alive = 0;
     bool plain = true;
+    int mine = -1, most = 0;
     for (; bits && count < max_fighters; bits &= bits - 1) {
         const auto& c = from[static_cast<std::size_t>(std::countr_zero(bits))];
+        if (c.side == team::ally) {
+            if (c.is_self) mine = stake(world, c);
+            else if (const auto* p = linked_partner(world, c); !(p && p->is_self)) most = std::max(most, stake(world, c));
+        }
         if (c.is_self) side.self = count;
         auto& g = side.fighters[count];
         g = fighter(world, c, made);
@@ -987,6 +1003,7 @@ void fill(Side& side, const World& world, const std::vector<ChampionBelief>& fro
     side.count = count;
     side.alive = alive;
     side.plain = plain;
+    side.focus = mine > most && params::gem_value * static_cast<float>(mine) >= params::life_value;
 }
 
 // Where it strikes from: a visible enemy's teleport lands before it acts.

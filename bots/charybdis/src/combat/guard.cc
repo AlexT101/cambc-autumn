@@ -528,7 +528,8 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
     };
     if (!shared) g.expose_here(here);
     // Prism too keeps off every tile where it would fall (stand_lost_at).
-    const bool linked = partner(world) != nullptr || world.me().facts().passive == Passive::gem_focus;
+    const bool linked = partner(world) != nullptr || world.me().facts().passive == Passive::gem_focus
+                        || params::gem_value * static_cast<float>(bag_at_stake(world)) >= params::life_value;
     // Unless the list filled up, the foes hold every visible threat that could hit a tile this near.
     const bool all_listed = n < static_cast<int>(g.foes.size());
     // The tiles more exposed than ours by `bound`, and who would fight on each by it.

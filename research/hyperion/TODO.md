@@ -15,6 +15,24 @@ EXPERIMENTS.
   plan is [GATE-PLACEMENT.md](GATE-PLACEMENT.md).
 - Keep the teleport, Tavi and Willow code.
 
+## Charybdis: the out-scaled Prism's Health and shop trip (2026-11-12)
+
+Against Fish r8 the Prism's hoard is killed by a gold-fed Vesper (a median 465 Strength against 2,300 max health), and
+the Prism dies holding a median 255 gold unspent ([v118-fish-b](../ideas-2026-11-12/v118-fish-b/README.md)). `r8s-c3`
+= 525 + phs (`r8-scale/patches/phs.patch`, `shop.cc`): the Prism's shards stay Health until six basic attacks of the
+strongest enemy Strength seen fit its max health, and it takes the shop trip when it is under that and its gold buys
+one more such hit.
+- Known: level locally on every read. As the only difference between c3 and c2 on 64,512 paired games a body, a
+  third of games play out differently and the flips balance (net +0.05 / 0.00 / +0.05 points against fr8-g25, Flp4,
+  Mt3q), with wins no slower. On Fish's recorded inputs the Prism's health at its live death rises 300+ in 13 of 37
+  games; the goal without the trip changes nothing. Forcing its gold into Greed-Health loses (EXPERIMENTS).
+- Open, measure: what the trips cost and buy inside a game. Profile c3 against c2 on replays (the Prism's farm income,
+  purchases, trips, Focus, 100+ bag deaths) against fr8-g25, and from live r8 positions (`v118-fish/livefork_arms.py`).
+  The local body kills the hoard at under half the live rate, so a level win rate may hide a cost and a benefit that
+  cancel: a Fish body fitted to the hoard kill (0.29 Prism deaths with 100+ gems a Prism game live) would price it.
+- Open, improve: a form that reaches more of the deaths with gold unspent (39 of 58 hold 150+), e.g. the trip priced
+  by the bag riding on the body, or shopping sooner once out-scaled, without the farm cost positional caution paid.
+
 ## Charybdis fuel in fights (2026-11-12)
 
 On 520 the Prism's own fuel no longer pays; the team's +1.5 at 200k is spread over out-of-fuel turns, gates and the

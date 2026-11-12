@@ -4891,3 +4891,35 @@ Results against c520-ps (`fgate --pool v3`, unmetered bodies, maps no gate had p
   Smoke against `variants/lab-emb6-c520-ps` on the 256 ladder games: 125-131, no failed games or broken drafts.
 
 Evidence: EXPERIMENTS "Emblem lab round 6 on c520-ps". Frozen as `variants/chy-emb6-524` (= bots/charybdis).
+
+## 525: Bag focus in the fight model, and no any-risk end to a winning channel (charybdis, 2026-11-12)
+
+Two pieces from the r8-scale programme ([r8-scale](../ideas-2026-11-12/r8-scale/README.md), arm `r8s-c2` = bf3 + ar;
+patches `r8-scale/patches/`), built after 345 traced live games of v118 against Fish r8.
+- **Bag focus** (`model/safety.cc` `stake`, `fill`, `aim_at`, `aims_elsewhere`): a kill hands the killer the victim's
+  gems, so in the fight simulation the enemy's turns aim at our own fighter while it carries our side's richest bag
+  and that bag is worth a life or more (`gem_value` a gem against `life_value`); before, they hit our weakest member
+  first. A linked body's stake is both bags.
+- **Any carrier of such a bag leaves a stand it falls in** (`combat/fight.cc` `stand_lost_at`, `combat/guard.cc`
+  `step_guard`), as the Prism and the linked pair already did.
+- **A winning channel's last turns** (`economy/bank.cc` `tribute_ok`) were kept at any risk; now only while nothing in
+  reach kills us before it ends. At the round limit the bag is lost either way, so that last chance stays.
+
+Results against 524 at 100k, own drafts, release builds, on maps no A/B had played (two independent samples: the
+programme's on `fgate --pool v4` batches 26-33, a replication on batches 34-45):
+
+| read | programme | replication |
+|---|---|---|
+| head-to-head | **51.1% (50.6-51.6)** of 40,800 | **51.1% (50.7-51.5)** of 60,520 |
+| against Flp4 | +0.44 ±0.35 | +0.65 (+0.37 to +0.93) |
+| against the Mite body Mt3q | +0.85 ±0.38 | +0.31 (0.00 to +0.62) |
+| against the Fish r8 body fr8-g25 | -0.14 ±0.44 | -0.02 (-0.38 to +0.33) |
+
+- **Verdict:** about +1.1 head-to-head and a gain against Flp4 and the Mite body; level against the Fish r8 body, which
+  it was built for. The Prism's 100+ bag deaths are unchanged in the profile: a model correction, not a fix of the
+  hoard kill. Merged at the user's request.
+- **Fuel:** out-of-fuel turns +2.5% and +2.8% in the two head-to-heads; no failed games, broken drafts or early losses
+  in any run. `draft/` is untouched.
+- **Not in it:** the Prism's Health goal with its shop trip (`r8s-c3`), level locally on every read; open in TODO.
+
+Evidence: EXPERIMENTS "The out-scaled Prism against Fish r8". Frozen as `variants/chy-bagfocus-525` (= bots/charybdis).

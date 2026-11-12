@@ -921,7 +921,10 @@ bool any_risk(const World& world, int channel_turns) {
 
 // A channel still running at the round limit scores nothing.
 bool tribute_ok(const World& world, Safety& safety, const Memory& memory, int turns) {
-    return turns <= rounds_left(world) && (any_risk(world, turns) || tribute_safe(safety, memory, turns));
+    // A winning channel's last turns score nothing if what reaches us ends it by killing us first: the risk taken is
+    // the lost race, not our fall (at the round limit the bag is lost either way, so that risk stays whole).
+    return turns <= rounds_left(world)
+           && (rounds_left(world) <= turns + endgame_slack || tribute_safe(safety, memory, turns));
 }
 
 // The turn ends a Tribute emblem would cut off the tribute just started, for its price (Income). A
