@@ -4,13 +4,18 @@ existing submission, never a re-upload). With no candidate, the rest version is 
 
 Per candidate (live queue / ocean line, built and smoked by live_sched.prepare): the full gate is core + ext of set v1
 against every opponent in refsets.json (52 groups each), the same cells the rest version plays as control, so each
-candidate pairs against the rest version cell by cell. The rest version's control groups on any refset run first,
-during its rest; the first group under a new refset captures that opponent's current bot as the pin.
+candidate pairs against the rest version cell by cell. The first group under a new refset captures that opponent's
+current bot as the pin.
 
-Batch cycle: rest version active, its control done, nothing in flight, and quota room for a full batch -> upload (first
-batch) or activate the candidate, append the next `room` gate tasks and write data/BATCH (the runner pauses replay
-collection and raises its in-flight cap) -> once those tasks are created and every group has played (or the quota is
-spent), activate the rest version. Hourly while resting: Fish/Mite/BattleCats opponent-change observations
+Control runs at the end (user, 2026-11-12): while any candidate is waiting, the quota goes to candidate batches and
+the rest version's control groups are held (data/HOLD-TASKS.json: pending, not dropped). They are created only once
+no candidate is waiting, while the rest version sits active; a candidate's gate is reported when its own groups are
+in, and again with the full pairing once the control has played.
+
+Batch cycle: rest version active, nothing in flight, and quota room for a full batch (or, once, whatever fits when
+sched/BATCH-NOW exists) -> upload (first batch) or activate the candidate, append the next `room` gate tasks and write
+data/BATCH (the runner pauses replay collection and raises its in-flight cap) -> once those tasks are created and every
+group has played (or the quota is spent), activate the rest version. Hourly while resting: Fish/Mite/BattleCats opponent-change observations
 (logged + wake only; testing pins never change automatically).
 
 State: state.json 'batches'. Report: py tools/live_batches.py report
@@ -144,6 +149,8 @@ class Batches:
         rsets_now = s.refsets()
         resting = live == sel == rest and (cur is None or cur['phase'] == 'rest')
         self.observe(st, B, rest, rsets_now, resting)
+        # A queued line counts as waiting too: control must not slip in while the next candidate builds.
+        self.hold_control(rest, hold=cur is not None or bool(s.queue_lines()))
         if cur is None:
             self.batch_file(False)
             self.plan_rest(B, rest, rsets_now)
@@ -151,14 +158,48 @@ class Batches:
             if c is None:
                 if live != rest or sel != rest:
                     self.activate(B, rest, 'no candidate')
+                self.final(B, rest)
                 s.save(st)
                 return
+            self.hold_control(rest, hold=True)
             cur = B['cur'] = {'cand': c, 'label': c['label'], 'version': None, 'rsets': rsets_now, 'phase': 'rest',
                               'batches': [], 'picked_at': s.now()}
-            s.log(f"batches: next candidate {c['label']} on {rsets_now}; control v{rest} first")
+            s.log(f"batches: next candidate {c['label']} on {rsets_now}; v{rest} control held until candidates finish")
             s.save(st)
         getattr(self, 'phase_' + cur['phase'])(st, B, cur, live, sel)
         s.save(st)
+
+    def hold_control(self, rest, hold):
+        tasks, created, finished, dropped, _ = self.ls.state()
+        ids = sorted(t['id'] for t in tasks if t['version'] == rest and t.get('purpose') == 'set'
+                     and t['id'] not in created and t['id'] not in dropped) if hold else []
+        f = self.ls.DATA / 'HOLD-TASKS.json'
+        try:
+            if json.loads(f.read_text()) == ids:
+                return
+        except (OSError, ValueError):
+            pass
+        tmp = f.with_suffix('.tmp')
+        tmp.write_text(json.dumps(ids) + '\n')
+        tmp.replace(f)
+        self.s.log(f'batches: {len(ids)} v{rest} control groups held' if hold else f'batches: v{rest} control released')
+
+    def final(self, B, rest):
+        """Once the control has played, the full pairing of every candidate reported without it."""
+        todo = [c for c in B['done'] if not c.get('final')]
+        if not todo:
+            return
+        tasks, created, finished, dropped, _ = self.ls.state()
+        if any(t['version'] == rest and t.get('purpose') == 'set' and t['id'] not in created and t['id'] not in dropped
+               for t in tasks) or not self.drained() or not self.collected(rest):
+            return
+        for c in todo:
+            c['final'] = paired(self.ls, c['version'], rest, c['rsets'])
+            rec = {'event_id': f"batch-final-v{c['version']}", 'version': c['version'], 'label': c['label'],
+                   'rest': rest, 'paired_vs_rest': c['final'], 'note': 'control complete', 'at': self.s.now()}
+            self.ls.append_jsonl(self.s.H / 'gates.jsonl', rec)
+            self.s.wake(rec)
+            self.s.log(f"batches: final v{c['version']} ({c['label']}) vs v{rest}: {json.dumps(c['final'])}")
 
     def plan_rest(self, B, rest, rsets):
         tasks = {t['id'] for t in self.ls.read_jsonl(self.ls.DATA / 'tasks.jsonl')}
@@ -185,7 +226,9 @@ class Batches:
             return
         self.plan_rest(B, rest, cur['rsets'])
         unplanned, planned_pending, tasks, created, dropped = self.gate_tasks(cur)
-        rest_pending = [t for t in tasks if t['version'] == rest and t['id'] not in created and t['id'] not in dropped]
+        # Held control groups wait for the end; only other rest-version groups (opp-checks) hold a batch back.
+        rest_pending = [t for t in tasks if t['version'] == rest and t.get('purpose') != 'set'
+                        and t['id'] not in created and t['id'] not in dropped]
         last = cur['batches'][-1] if cur['batches'] else None
         if last and not last.get('reported') and self.collected(cur['version']):
             last['reported'] = self.s.now()
@@ -207,6 +250,9 @@ class Batches:
         room, cap = self.room()
         # Wait for a full batch: the rolling hour frees up, less one hourly observation per opponent.
         need = min(todo, cap - len(cur['rsets']))
+        now_file = s.H / 'BATCH-NOW'
+        if now_file.exists():
+            need = 1   # operator: start with whatever fits
         if room < need or room <= 0:
             self.note(B, 'rest', f"batches: {cur['label']} waits for quota: room {room}, batch needs {need} "
                                  f"({todo} groups left)")
@@ -223,6 +269,7 @@ class Batches:
         for t in unplanned[:n]:
             ls.append_jsonl(ls.DATA / 'tasks.jsonl', t)
         cur['batches'].append({'n': n + len(planned_pending), 'room': room, 'start': s.now()})
+        now_file.unlink(missing_ok=True)
         self.batch_file(True)
         s.log(f"batches: {cur['label']} v{cur['version']} batch {len(cur['batches'])}: "
               f"{n + len(planned_pending)} groups (room {room})")

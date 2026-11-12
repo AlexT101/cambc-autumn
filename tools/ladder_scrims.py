@@ -308,6 +308,15 @@ def group_done(detail):
 
 # ---------------------------------------------------------------- run
 
+def held_tasks():
+    """Task ids the live scheduler holds back for now (data/HOLD-TASKS.json; e.g. control groups until candidates
+    have played). They stay pending, not dropped."""
+    try:
+        return set(json.loads((DATA / "HOLD-TASKS.json").read_text()))
+    except (OSError, ValueError):
+        return set()
+
+
 def create(task, source, retries=2):
     args = ["match-groups", "create", task["opp_id"], "--maps", ",".join(g["map_id"] for g in task["games"]),
             "--sides", ",".join(g["side"] for g in task["games"]), "--json"]
@@ -436,9 +445,10 @@ def cmd_run(args):
                         time.sleep(args.tick)
                         continue
                     live, selected = check_live(inflight, "before create")
+                    held = held_tasks()
                     ready = []
                     for t in pend:
-                        if t["version"] != live or selected != live:
+                        if t["version"] != live or selected != live or t["id"] in held:
                             continue
                         source = None
                         if t["pin"] == "ref":

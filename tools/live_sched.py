@@ -17,6 +17,11 @@ scheduler writes PAUSE and submits nothing until an agent has checked and remove
 groups only while live == selected and marks groups in flight at a switch suspect). submit() activates only the
 version whose note is ours, never the newest version blindly.
 
+Batch mode (2026-11-12, BATCH_MODE; live_batches.py): v115 rests on the book and each candidate is active only for
+quota-sized batches of its gate. Standing rule (user): control runs at the end. While any candidate is queued or under
+test, the quota goes to candidate batches and v115's control/reference groups are held; they are created only when
+no candidate is waiting, with v115 active.
+
 Each finished gate appends to gates.jsonl and touches ../parked/live-gate.ready (the coordinator respawns the
 reporting agent). Log: sched.log. State: state.json. Stop: touch STOP in the state dir.
 
