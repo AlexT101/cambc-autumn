@@ -162,6 +162,56 @@ Paired results on the 128 ladder maps against mf-c2, 8 members, 2,048 games each
   v115 / v116 / v117. It does not close the body's r100 gold gap either.
 - Not pursued.
 
+## Fight fidelity, and the fight body mf-f9
+
+**Statistics.** `fstats.py` gives per-game fight statistics:
+- kills and deaths by Vesper and Prism, and deaths carrying 11+ gems;
+- engagements: champion damage clustered with a gap of 6 rounds; kills per engagement, overall and for the side
+  that hit first;
+- retreat after a hit, binned by health and bag.
+
+`vstats.py` and `vacts.py` cover Mite's Vesper: gold, Strength, items, attacks and damage. `fcmp.py` prints the
+table, live against bodies, on the same cells.
+
+**What mf-c2 misses** (v116 live against 2 noise members, 512 games):
+
+| | live | mf-c2 | mf-f9 |
+|---|---|---|---|
+| Mite kills a game | 6.73 | 5.48 | 6.24 |
+| Mite kills / engagement | 0.319 | 0.251 | 0.275 |
+| Mite kills / engagement it started | 0.464 | 0.351 | 0.394 |
+| share of engagements Mite started | 0.345 | 0.429 | 0.409 |
+| Mite Vesper kills (games with her) | 2.90 | 2.14 | 2.35 |
+| Mite Prism deaths (games with Prism) | 2.21 | 1.67 | 1.88 |
+| our deaths | 7.03 | 5.80 | 6.58 |
+| our losses / engagement we started | 0.243 | 0.175 | 0.193 |
+| Mite Vesper's gold by r150 | 484 | 376 | 366 |
+| Mite Vesper's champion damage | 8,192 | 5,938 | 5,983 |
+
+- Real Mite starts fewer fights, and the ones it starts kill more. It punishes the fights we start.
+- Its Vesper is fed and fights more: 26% more attacks on champions and 21% more damage an attack.
+- Both sides deal more champion damage live than in local games.
+
+**Layers and constants tried** (2 members unless noted):
+- **Targeting rule** (`rule_target.py`, basic attacks on the lowest-health foe in reach), as mf-c10: changes
+  nothing (kills / engagement 0.256).
+- **Vesper carry** feeds Vesper (her r150 gold 404-410) but removes the fight gains: mf-f7 0.249, mf-f10 0.254.
+- **Kill-seeking constants** (`chip_value`, how much chip damage is worth against a kill; `life_value`, the
+  worth of our own life): a sweep of 9 bodies on one member, then the best two on a second.
+- **mf-f9** = mf-c2 + chip_value 0.03 + life_value x0.35 is the best fit. Mite values kills over chip damage and
+  its own lives cheaply.
+
+**mf-f9 calibration.** Our win % on the ladder, 8 members:
+- v115 61.8 (live 61.5), v116 67.4 (live 66.2), v117 69.9 (live 68.8). That is the closest yet; mf-c2 gave
+  62.7 / 68.5 / 69.8.
+- livefork, body − live: +0.3 ±2.6 (mf-c2 +0.2).
+
+**Not reproduced:** the fed Vesper. Her gold, damage and kills stay those of mf-c2.
+
+**Opponent classification.** opp_detect reads every mf body as unknown: 256 of 256 games against mf-c2
+(`oppd_read.py`). The bodies write our packed turn order, not Mite's priorities. Exploit gates against them use a
+forced test copy and read the fresh-Mite row.
+
 ## Files
 
 - `live_ds.py`: our live scrims against a Mite pin, unzipped (`~/tmp-offload/mitefit/live/`).
