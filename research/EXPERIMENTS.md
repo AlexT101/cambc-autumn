@@ -10,6 +10,26 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## Draft lab round 19 on lab-emb6-c520-ps (2026-11-12): draft18's model refit on 1M ladder-v4 games loses, 49.48% at 200k
+
+The lab filler's draft round (commit c8bca2924) refit draft18's F92 model on `variants/lab-emb6-c520-ps` (999,996
+games on fresh ladder-v4 suites; plain fit at draft18's starting penalties, the search's fit having run out of time):
+`variants/lab-draft19-lab-emb6-c520-ps`, the draft only. Native parity 0 team mismatches on 676 maps; first turn max
+9.78M (base 9.16M). Its teams match draft18's on 62.5% of 3-pick maps and ~41% of 4- and 5-pick maps.
+
+Results against lab-emb6-c520-ps (`tools/fgate.py --pool v4`, unmetered run-time bodies, both sides; v4 batches 4-7,
+maps no gate had played):
+
+| gate | fuel | fresh win% (95% CI) | games | Fish / Mite | verdict |
+|---|---|---|---|---|---|
+| Flp4 / Mt3q | 200k | **49.48% (49.13-49.83)** | 81,920 | 49.63 / 49.33 | REJECT (LLR low -3.08) |
+| Flp4 / mf-c2, 2 batches | 200k | 49.85% (49.30-50.39) | 40,960 | 49.59 / 50.11 | fixed read |
+
+Ladder side read -1.07 ±1.55. No 100k run (no 200k gain). The new draft did not break on unseen maps: in all 20 runs
+(107,520 games, both bots) no failed games, no games lost by round 5, no DRAFT-UNFINISHED / PLAN-CHECK and no
+DRAFT-CAPPED. A refit of the same model on more games moves a large share of teams and loses about half a point, which
+suggests draft18's fit is not short of data: a later draft round should bring a new feature or mechanism, not a refit.
+
 ## Emblem lab round 6 on c520-ps (2026-11-12, the lab filler's first round): six emblem edits, 50.80% at 200k and 50.59% at 100k on fresh ladder-v3 maps
 
 The lab filler (research/ideas-2026-11-12/labs, user 2026-11-12: labs on idle compute) ran round 5's edit lab
