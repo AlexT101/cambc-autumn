@@ -57,6 +57,18 @@ def _live_versions():
 
 _live_versions()
 
+
+def _baseline_versions():
+    # A live upload frozen in bots/baselines/v<N> (its masked source, model/prio_stream.h included) before the scheduler
+    # has written its gates.jsonl record. A gates.jsonl row wins: its workspace is the one uploaded.
+    for d in sorted((REPO / "bots/baselines").glob("v[0-9]*")):
+        if d.name not in VERSIONS and (d / "src/model/prio_stream.h").is_file():
+            VERSIONS[d.name] = {"commit": None, "src": str(d / "src"), "bot": "bots/ocean", "dir": f"replays/{d.name}", "live": True,
+                                "manifest": f"replays/{d.name}/manifest.json", "trace_bot": f"replays/{d.name}/trace-bot"}
+
+
+_baseline_versions()
+
 class Version:
     def __init__(self, name):
         if name not in VERSIONS:
