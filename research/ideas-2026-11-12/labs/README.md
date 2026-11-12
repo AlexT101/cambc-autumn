@@ -16,6 +16,11 @@ ocean 501. No lab has run on 520.
 - **Order.** `LIST` gives the kinds in priority order. The next round is the first kind with no round yet on the
   current base. When the list is done, the filler waits for `BASE` to change and then runs the list again on the new
   base.
+- **Emblem opponents.** `EMB_OPPONENTS.json` (`opponents` shares, `opponent_bots` dirs), when present, replaces the emb
+  round's default opponents; a round copies it at setup. elab plays plain bot dirs, so a run-time fgate body is used
+  as baked one-member copies (`experiment_config.h` returning a fixed seed and salt), checked to replay the run-time
+  body game for game first. From 2026-11-12 ~16:20 it holds the Fish r8 body (`fr8-g25-s952/953`) and `mf-f9-s952/953`
+  at 0.5 each: 256/256 ladder games identical in winner and length to the run-time bodies at the same seed.
 - **Start.** A round starts only after 3 polls a minute apart in which nobody else runs a gate, A/B, lab, bench or
   mapgen (Python or node running fgate, ab.py, run_batched, solo, lqgate, mapgen, the labs, tune or bench), and at
   most 6 main-pool slots are held by others.

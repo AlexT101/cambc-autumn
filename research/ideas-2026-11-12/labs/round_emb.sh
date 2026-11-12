@@ -2,7 +2,7 @@
 # round_emb.sh ROUND_DIR: emblem lab round 5's edit lab (tools/emblab README "Round 5", EXPERIMENTS "Emblem lab round
 # 5") on the round's base: the same library (331 edits, rebuilt on the base), screen (six rank cuts) and replication
 # (the 20 survivors on new games to n_eff 150k each), against a second lab team (0.5) and the gate's Fish and Mite
-# bodies at noise seeds the gate never reaches (952, 953). Round 5's calibration is replaced by one warm batch at equal
+# bodies at noise seeds 952 and 953 by default (~/tmp-offload/labs/EMB_OPPONENTS.json overrides). Round 5's calibration is replaced by one warm batch at equal
 # shares. Candidate: the replicated edits at +0.25 points and z >= 2 (round 5's shipped set: one past z 2.5 and the
 # three near-misses at z 2.0-2.3 all held in A/Bs), greedily without conflicts, as a plain bot (edits.py table).
 source /home/ubuntu/cambc-autumn/research/ideas-2026-11-12/labs/common.sh
@@ -10,16 +10,22 @@ LAB=lab-$ID; LD=$D/lab; mkdir -p $LD; ln -sfn $LD replays/emblab/$LAB
 E="python3 tools/emblab/elab.py"
 mkmaps 200
 if [ ! -f $D/setup.done ]; then
+  # Opponents: $L/EMB_OPPONENTS.json ({"opponents": shares, "opponent_bots": dirs}) when present, frozen into the round.
+  [ -f $D/opponents.json ] || { [ -f $L/EMB_OPPONENTS.json ] && cp $L/EMB_OPPONENTS.json $D/opponents.json; }
   python3 tools/emblab/edits.py build --base $SRC --out $LD/edits.json --r4 --structural > $D/edits.log 2>&1 || fail EDITS
   python3 - "$LD" "$SRC" "$D" "$SEED" <<'PY' || fail CONFIG
-import json, sys
+import json, os, sys
 ld, base, d, seed = sys.argv[1:]
-json.dump({"seed": int(seed) % 100000, "source": base, "registry": f"{ld}/edits.json",
-           "opponents": {"self": 0.5, "fish": 0.25, "mite": 0.25},
-           "opponent_bots": {"fish": ["bots/variants/spar-dvn952-Flp4", "bots/variants/spar-dvn953-Flp4"],
-                             "mite": ["bots/variants/spar-dvn952-Mt3q", "bots/variants/spar-dvn953-Mt3q"]},
+opp = {"opponents": {"self": 0.5, "fish": 0.25, "mite": 0.25},
+       "opponent_bots": {"fish": ["bots/variants/spar-dvn952-Flp4", "bots/variants/spar-dvn953-Flp4"],
+                         "mite": ["bots/variants/spar-dvn952-Mt3q", "bots/variants/spar-dvn953-Mt3q"]}}
+if os.path.exists(f"{d}/opponents.json"):
+    opp = {k: v for k, v in json.load(open(f"{d}/opponents.json")).items() if k in ("opponents", "opponent_bots")}
+assert all(os.path.isdir(b) for bots in opp["opponent_bots"].values() for b in bots), opp
+json.dump({"seed": int(seed) % 100000, "source": base, "registry": f"{ld}/edits.json", **opp,
            "pool": [f"{d}/maps/fresh-*"], "auto": None, "none_share": 0.08, "solo_share": 0.12}, open(f"{ld}/config.json", "w"), indent=1)
 PY
+  ev "opponents: $(python3 -c "import json;c=json.load(open('$LD/config.json'));print(c['opponents'], c['opponent_bots'])")"
   $E init --lab $LAB > $D/init.log 2>&1 || fail INIT
   $E drafts --lab $LAB > $D/drafts.log 2>&1 || fail DRAFTS
   touch $D/setup.done; ev "setup: $(tail -n 1 $D/edits.log); $(tail -n 1 $D/init.log | cut -c1-200); $(tail -n 1 $D/drafts.log | cut -c1-160)"
