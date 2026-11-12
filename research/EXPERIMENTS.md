@@ -27,6 +27,18 @@ bots/charybdis is unchanged and the candidates await a decision.
 
   Against a second Fish r8 body (`fr8-g25f`) c2's Fish half reads about -0.47 ±0.63 on four batches (level).
   Out-of-fuel turns in the head-to-head: c2 +2.5%, c3 +1.8%.
+- **Replication** (the primary checkout, against `variants/chy-emb6-524`; v4 batches 34-45, grown for it and
+  unplayed, 61,440 fresh games a bot a body; head-to-head 60,520 games each on seeds 8850000-8850088; script and
+  logs `~/tmp-offload/v118-ab/`):
+
+  | arm | head-to-head against 524 | Fish r8 body | Flp4 | Mite body |
+  |---|---|---|---|---|
+  | `r8s-c2` | 51.1% (50.7-51.5) | -0.02 (-0.38 to +0.33) | +0.65 (+0.37 to +0.93) | +0.31 (0.00 to +0.62) |
+  | `r8s-c3` | 51.1% (50.7-51.5) | +0.04 (-0.33 to +0.41) | +0.61 (+0.32 to +0.90) | +0.33 (+0.02 to +0.65) |
+
+  The same picture: about +1.1 head-to-head and +0.6 against Flp4, nothing against the Fish r8 body; the Mite gain
+  is smaller here (+0.3 against +0.8). c3 equals c2 on every read, so phs adds nothing locally. Out-of-fuel turns
+  +2.8% (c2) and +2.4% (c3); no failed games or broken drafts.
 - **bf3** (`model/safety.cc`, `fight.cc` `stand_lost_at`, `guard.cc` `step_guard`): a kill hands the killer the
   victim's gems, so the fight simulation's enemy turns aim at our fighter carrying our side's richest bag when it is
   worth a life or more, and any such carrier leaves a stand it falls in. Screens on v4 batches 8-11: +0.61 ±0.81 and
