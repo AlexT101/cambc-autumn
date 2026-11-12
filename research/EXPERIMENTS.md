@@ -18347,3 +18347,38 @@ travel (+18k mean first-turn fuel, despite a smaller maximum); transformed-featu
 pruning (only -574 mean, 542/1,536 regressions); a clear-line certificate (superseded by the cheaper 49-bit flood).
 Previous 491/506 successes and failed ward-cache/bound experiments informed the choices. No live or strength gate;
 no exception to replay identity was used.
+
+## (fishr8, 2026-11-12) Fish r8: a Vesper carry, a fed Vesper killing Prism's hoard; body fr8-g25 (10 points easy); opp_detect r8 fix; no counter
+
+Notes and scripts: [ideas-2026-11-12/fishr8/README.md](ideas-2026-11-12/fishr8/README.md).
+
+**What changed.**
+- Draft:
+  - Vesper is now Fish's first pick in most cells. Vendetta was dropped in 166 of 340 cells and Marcella in 120.
+  - Fish's ranked win rate went from 57.5% to 74.7%.
+- Play:
+  - Vesper carries: 0.79 of Fish's capture gold by r100 (r2: 0.57), and her Strength and max HP at r600 are 460 and
+    6.7k (289 and 3.8k).
+  - She makes 62% of our deaths. On cells with an unchanged draft, v118 still lost 20 wins of 74, so the play
+    changed, not just the draft.
+- Our Prism loses 99 gems a game to her (r2: 21). In 24% of Prism games she takes 100 or more, at a median bag of
+  215, and we win 6% of those.
+
+**Body.** `--fish-body fr8-g25`: c520-ps with the r8 draft table and model, vcarry, Fish's Vesper build and gold price
+x2.5. Our win % on 168 ranked maps, 4 members:
+
+| our bot | live r8 | fr8-g25 | rt-Flp4 |
+|---|---|---|---|
+| v115 | pending | 58.6 of 1,344 | – |
+| v116 | pending | 64.6 of 1,344 | – |
+| v117 | 49.7 (42.1-57.3) of 165 | 67.0 of 1,344 | 82.9 |
+| v118 | 57.4 (52.2-62.6) of 345 | 68.2 of 1,344 | 84.5 |
+
+- livefork (70 v117 r8 games): body minus live is +9.6 ±4.1.
+- The body misses Fish's early gold and its fights. Packing variants (rule_packv) made it easier.
+
+**opp_detect.** r8 writes `old << 20` plus random bits. The fix (`oppd-r8.patch`, 3 lines) reads r8 as Fish in
+52 / 76 / 89% of instances by r100 / r300 / r500 (0% before), with no false Fish reads on other teams.
+
+**Counter.** None built. Prism's hoard is the loss channel, but banking or caution for it has lost in every form tried.
+The body under-represents it (37 gems a game to Vesper, against 99 live).
