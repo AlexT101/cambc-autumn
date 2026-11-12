@@ -1367,6 +1367,7 @@ bool mite_tribute_habit(const World& world, Pathing& pathing, Safety& safety, co
 bool can_tribute_safely(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
     if (retaining_gems(world, pathing)) return false;
     if (!can_tribute_here(world)) return false;
+    if (finish_heal(world, pathing, safety)) return false; // heal before the winning channel
     return tribute_ok(world, safety, memory, tribute_turns(world, my_gems()));
 }
 

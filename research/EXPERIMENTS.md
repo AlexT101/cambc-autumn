@@ -18232,7 +18232,7 @@ Results against chy-life (520), 100k, fgate, unmetered Flp4/Mt3q bodies:
 - Fuel is level (+0.06 out-of-fuel turns a game).
 
 Verdict: ZONE. Take c520-ps on judgement, as the best version: a consistent held-out gain with a shown mechanism and
-level fuel. Comms is dropped. The patch against chy-life is for the teammate to take into bots/charybdis. It is queued
+level fuel. Comms is dropped. Shipped as charybdis 522 (the patch applied to 521). It is queued
 live at priority 89, in place of the dropped c519-cmps line.
 
 ## (mitefit, 2026-11-12) A current-Mite body (mf-c2) calibrates on live; a Mite-only constant tune is null

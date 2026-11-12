@@ -551,6 +551,42 @@ bool drawn_home_at(const World& world, Pathing& pathing, Safety& safety, vec2 p,
     return drawn_home(world, safety, hold);
 }
 
+// A Prism carrying the bag that wins the game heals before its tribute: below the health one round of
+// every living enemy's strikes takes (capped at full), it neither starts the channel nor walks the bag
+// on, but goes home, by the recall when that is sooner. A winning bag's channel is long (a turn per 10
+// gems, ~55 at the median), and a hurt Prism standing in it is what the enemy kills. Not in a channel
+// already (continue_tribute judges that), nor once the round limit leaves no time for the trip home,
+// out and the channel. Guards (params::finish_lead, finish_no_prism): the enemy's clock, its gems short
+// beyond the bags we saw over its recent tribute rate, runs past that trip; the enemy drafted no Prism.
+bool finish_heal(const World& world, Pathing& pathing, Safety& safety) {
+    if constexpr (!params::finish_heal) return false;
+    if (world.me().facts().passive != Passive::gem_focus || !winning_bag(world)) return false;
+    if (my_state().contains(cambc::champion_state::submitting_gems) || test(world.map().ally_spawn, my_position())) return false;
+    float burst = 0;
+    int carried = 0;
+    for (const auto& e : world.enemies) {
+        if (params::finish_no_prism && e.facts().passive == Passive::gem_focus) return false;
+        if (!e.alive) continue;
+        const auto& s = safety.strike_of(e);
+        float most = 0;
+        for (int d = 0; d <= s.reach && d <= Strike::max_reach; ++d) most = std::max(most, s.damage[static_cast<std::size_t>(d)]);
+        burst += most;
+        carried += std::max(0, e.gems);
+    }
+    if (my_health() >= std::min(my_max_health(), burst)) return false;
+    // closing() reads true for every winning bag (its race is already run): the round limit alone binds here.
+    const int out = pathing.to_any_altar().at(recall_landing(world));
+    if (out == unreachable) return false;
+    const int trip = recall_turns(world) + 1 + out + tribute_turns(world, static_cast<int>(my_gems()));
+    if (rounds_left(world) <= trip + endgame_margin) return false;
+    if constexpr (params::finish_lead) {
+        const int need = static_cast<int>(cambc::constants::winning_gems) - world.score.enemy - carried;
+        const float rate = world.enemy_rate();
+        if (need <= 0 || (rate > 0 && static_cast<float>(need) <= rate * static_cast<float>(trip))) return false;
+    }
+    return true;
+}
+
 // Retreat: low under the recall line (bar finishing a camp), a pack's zone (drawn_home), a camp we
 // could no longer walk out of, or a stand we lose (stand_lost_at). A hold that outlasts what can
 // reach us to its payout keeps us through all but the camps (hold_outlasts). The work guard keeps
@@ -573,7 +609,7 @@ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memor
     if (world.me().facts().heals() && !holding_capture(world, pathing) && !contesting(world) && exposure_here(world, safety).enemy
         && !willow_stands(world))
         return true;
-    return stand_lost_at(world, safety, hold);
+    return finish_heal(world, pathing, safety) || stand_lost_at(world, safety, hold);
 }
 
 // The last round we act before e's channel completes, at its turn start in channel_end_round.

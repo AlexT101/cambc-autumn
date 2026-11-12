@@ -335,6 +335,7 @@ int hold_rounds(const World& world, Pathing& pathing, vec2 p);
 bool hold_outlasts(Safety& safety, float damage, vec2 p, int rounds);
 bool paying_soon(const World& world, Safety& safety, vec2 p, int turns);
 bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
+bool finish_heal(const World& world, Pathing& pathing, Safety& safety);
 // want_home's recall line and pack zone (drawn_home) at p, as if we stood there with last round's loss `damage`.
 bool drawn_home_at(const World& world, Pathing& pathing, Safety& safety, vec2 p, float damage);
 const ChampionBelief* prey(const World& world, Pathing& pathing, Safety& safety);

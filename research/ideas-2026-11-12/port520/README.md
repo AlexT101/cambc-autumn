@@ -1,8 +1,8 @@
 # psafe-a (and comms + psafe-a) ported to charybdis 520 (port520, 2026-11-12)
 
 The port519 stack ([port519/README.md](../../ideas-2026-11-11/port519/README.md)) moved onto `variants/chy-life`
-(= bots/charybdis, CHANGES 520). It was read against chy-life at 100k on fresh maps no gate had played. Nothing here
-touches `bots/charybdis`.
+(= bots/charybdis, CHANGES 520). It was read against chy-life at 100k on fresh maps no gate had played. `c520-ps.patch`
+was later applied to 521 and shipped as CHANGES 522.
 
 **Recommendation: take `c520-ps` (psafe-a alone) into charybdis.** It reads 50.27% (50.11-50.44) of 245,760 games
 against 520. Comms adds nothing on 520 (-0.07 ±0.24), so leave it out. The patch is `c520-ps.patch`; from inside
@@ -81,7 +81,7 @@ out-of-fuel turns a game).
 - c520-cmps is no better and carries the larger shared-bytes change, so leave it out.
 - chy-life itself is the fallback if live disagrees.
 
-For the teammate: apply `c520-ps.patch` to bots/charybdis (`patch -p2` from inside it). It touches `bot_parts.h`,
+Shipped as CHANGES 522. To reapply: `c520-ps.patch` to bots/charybdis (`patch -p2` from inside it). It touches `bot_parts.h`,
 `combat/fight.cc`, `economy/bank.cc`, `model/world.{cc,h}` and `params.h`. `params::finish_heal`, `finish_lead` and
 `finish_no_prism` are the guard's switches.
 

@@ -754,6 +754,8 @@ public:
     // Our tributed gems a round over the later half of the game so far: it follows the economy's
     // growth, unlike the whole game's average.
     float ally_rate() const;
+    // The same for the enemy's tributed gems.
+    float enemy_rate() const;
     bitboard visible; // this turn's vision (ours and our ward's)
     // An enemy was seen changing priority: its team's order for next round can change until each
     // has acted, and unseen ones' ranks are guesses.
@@ -803,6 +805,7 @@ private:
     Tributing tributing_enemies() const;
     void update_scores(const Tributing& tributing);
     std::vector<int> ally_scores_; // by round
+    std::vector<int> enemy_scores_; // by round
 
     std::unique_ptr<StaticMap> static_;
     const ChampionBelief* me_ = nullptr; // &allies[self_index], set with the beliefs

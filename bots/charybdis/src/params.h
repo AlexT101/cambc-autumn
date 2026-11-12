@@ -143,6 +143,14 @@ inline constexpr int pursuit_steps = 2;
 inline constexpr float heal_trip_fraction = 0.5362846f;
 // Turns ahead a tribute's safety is judged over, each turn of the channel.
 inline constexpr int tribute_window = 11;
+// A Prism carrying the game's winning bag goes home to heal before its tribute (fight.cc
+// finish_heal) while below the health one round of every living enemy's strikes takes. The guards:
+// `finish_lead`, only while the enemy's clock (its gems short over its recent tribute rate) runs past
+// our trip home and on to an altar; `finish_no_prism`, only while the enemy drafted no Prism (a hoard
+// it carries puts its clock out of sight).
+inline constexpr bool finish_heal = true;
+inline constexpr bool finish_lead = true;
+inline constexpr bool finish_no_prism = false;
 // Most rounds to wait at a camp for it to return. Also bounds the wait after a recall out to farm.
 inline constexpr int max_wait = 2;
 // The weight on gold in farm choice of Tavi on its gold maps (MapEconomy::tavi_map):

@@ -2931,6 +2931,11 @@ World::Tributing World::tributing_enemies() const {
         ally_scores_.resize(round + 1, ally_scores_.empty() ? ally : ally_scores_.back());
         ally_scores_[round] = ally;
     }
+    if (enemy_scores_.empty()) enemy_scores_.reserve(cambc::constants::max_rounds + 1);
+    if (static_cast<int>(enemy_scores_.size()) <= round) {
+        enemy_scores_.resize(round + 1, enemy_scores_.empty() ? enemy : enemy_scores_.back());
+        enemy_scores_[round] = enemy;
+    }
     // No tribute landed: an ended channel was cancelled, and its bag kept.
     if (enemy_delta <= 0) return;
 
@@ -2974,6 +2979,12 @@ float World::ally_rate() const {
     const int from = std::max(first_round, round / 2);
     if (round <= from || from >= static_cast<int>(ally_scores_.size())) return 0;
     return static_cast<float>(score.ally - ally_scores_[from]) / static_cast<float>(round - from);
+}
+
+float World::enemy_rate() const {
+    const int from = std::max(first_round, round / 2);
+    if (round <= from || from >= static_cast<int>(enemy_scores_.size())) return 0;
+    return static_cast<float>(score.enemy - enemy_scores_[from]) / static_cast<float>(round - from);
 }
 
 void World::debug_output() const {

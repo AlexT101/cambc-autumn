@@ -4790,3 +4790,50 @@ Against `variants/chy-life` (= 520), own drafts, the rt bodies:
 - Batch 0, 10,240 paired games: out-of-fuel turns 62,640 -> 56,061 (-10.5%), win -0.09 points (3.5% of results change).
 
 It meets the 10% target 514 left open. Frozen as `variants/chy-gs` (= bots/charybdis).
+
+## 522: A hurt Prism with the winning bag heals before its tribute (charybdis, 2026-11-12)
+
+psafe-a from [ideas-2026-11-11/prismsafe](../ideas-2026-11-11/prismsafe/README.md), on 521 through
+[port520](../ideas-2026-11-12/port520/README.md)'s `c520-ps.patch`. A winning bag (the Prism's gems plus our score
+reach 1,000) is in 52% of games, huge (median 542) and already at an altar, so its risk is the ~57-turn channel: it is
+started 2.3 times a game, 72% of the time below full health, and the Prism dies carrying the bag in 4.3% of those games
+(40% of them lost).
+- `fight.cc` `finish_heal`, OR'ed before `stand_lost_at` in the retreat test: a Prism carrying the winning bag, off its
+  spawn and not in a channel, below min(full health, every living enemy's best one-round strike, summed) goes home
+  (the recall kept while it is sooner) instead of starting the channel or walking on. `bank.cc`
+  `can_tribute_safely` refuses the start.
+- Guards: the round limit leaves the trip (recall, heal turn, walk out, channel) plus `endgame_margin`; and
+  `params::finish_lead`, the enemy's clock (its gems short beyond the bags in sight, over `World::enemy_rate`, its
+  tribute rate over the later half of the game, new) runs past that trip. `params::finish_no_prism` (only against a
+  team without a Prism) is off.
+
+Every read is fgate at real fuel on fresh ladder-v2 maps, own drafts, the unmetered Flp4 and Mt3q bodies.
+
+Results against each base:
+
+| base | fuel, batches | win% (95% CI) | games | Fish | Mite | out-of-fuel turns a game (base) |
+|---|---|---|---|---|---|---|
+| 517 `charybdis-cb9f86d` | 200k, 0 (chose the arm) | 50.23 (50.08-50.37) | 20,480 | 50.23 | 50.22 | |
+| 517 | 200k, 16-19 | 50.17 (50.09-50.25) | 81,920 | 50.10 | 50.24 | |
+| 517 | 100k, 0-3 | 50.19 (49.88-50.50) | 81,920 | 49.92 | 50.46 | |
+| 517 | 100k, 4-9 | 50.29 (50.04-50.54) | 122,880 | 50.31 | 50.27 | +1.7% over 0-9 |
+| 519 `charybdis-p3` | 100k, 63-74 (unplayed) | 50.24 (50.06-50.41) | 245,760 | 50.21 | 50.26 | 6.732 (6.675) |
+| **520 `chy-life`** | 100k, 75-86 (unplayed) | **50.27 (50.11-50.44)** | 245,760 | 50.29 | 50.26 | 6.811 (6.752) |
+
+- **Verdict:** ZONE on every base (520: low SPRT +13.58, high -12.04), shipped on judgement: the same size on three
+  bases, held out each time, with a shown mechanism and level fuel.
+- **Mechanism:** Prism deaths carrying the winning bag 60 -> 44 on 517 (2,560 games, 200k) and 115 -> 83 on 520
+  (5,120 games, 100k; -28%); winning-bag games won 95.9% -> 96.3%.
+- **The other arms** on 517 (200k, batch 0): with the Prism guard too 50.18%, without the clock guard 50.11% and
+  50.16% (level), full health as the line 49.87% (it saves the most bags but costs 27 rounds a win).
+- **Comms slots on top** (`c520-cmps`): -0.07 ±0.24 on 520 (+0.10 on 517, +0.08 on 519), left out.
+- **Later paired reads against 520** (Flp4 and mf-c1 bodies, 100k, 40,960 games a bot a pool): +0.05 ±0.32 on
+  ladder-v2, -0.08 on ladder-v3, +0.19 on ladder-v4, too small a sample to show it.
+- **Live** as v117 (520 + this), net wins on shared games: against v116 (519) Fish 0 of 256, Mite +7 of 256,
+  BattleCats +8 of 256; against v115 (ocean 506) Fish +13 of 261, Mite +6 of 65.
+- **On 521:** not gated again. 521 changed `bot.cc` only, which the patch does not touch, so the source is
+  `variants/c520-ps` with 521's `bot.cc`. Smoke against `variants/chy-gs` (= 521): 130-126 on the 256 ladder games, no
+  failed game or broken draft.
+
+Evidence: EXPERIMENTS "Prism safety on the game-ending tribute", "comms + psafe-a ported to 519" and "psafe-a ported
+to 520". Frozen as `variants/chy-psafe` (= bots/charybdis).
