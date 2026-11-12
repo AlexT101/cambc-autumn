@@ -1,0 +1,88 @@
+diff -ru charybdis-p3/src/bot_parts.h rg-own/src/bot_parts.h
+--- charybdis-p3/src/bot_parts.h	2026-11-12 01:26:42.985432616 +0000
++++ rg-own/src/bot_parts.h	2026-11-12 03:27:55.030224806 +0000
+@@ -199,14 +199,14 @@
+ // worth, whichever is shorter. The recall takes `channel` turns (`overlap` of them spent anyway on a
+ // capture's remaining rounds), then `hurt`, the heal turn (a recall lands at turn start and healing
+ // waits for a turn end on spawn, free if the first step out ends on spawn), then `from_spawn`, the
+-// walk from the landing tile. The stop is worth the heal, and the next emblem once `gold_in` more
+-// gold completes it; nothing once the bag wins or the end is close. Never a recall that reaches the
++// walk from the landing tile. The stop is worth the heal, and what our gold buys there (`prefix`), or the
++// next emblem once `gold_in` more gold completes it if more; nothing once the bag wins or the end is close. Never a recall that reaches the
+ // altar after `deadline`, too late to tribute the bag.
+ struct HomeTrip {
+     int channel, from_spawn, hurt, deadline;
+-    float heal = 0, emblem = 0;
++    float heal = 0, emblem = 0, prefix = 0;
+     std::uint32_t short_gold = ~0u; // gold still needed for the emblem; never reached by default
+-    float value(std::uint32_t gold_in) const { return heal + (gold_in >= short_gold ? emblem : 0.0f); }
++    float value(std::uint32_t gold_in) const { return heal + std::max(prefix, gold_in >= short_gold ? emblem : 0.0f); }
+     float rounds(int walk, int overlap, std::uint32_t gold_in) const {
+         const int arrive = std::max(0, channel - overlap) + hurt + from_spawn;
+         if (from_spawn == unreachable || arrive > deadline) return static_cast<float>(walk);
+@@ -216,8 +216,7 @@
+ 
+ // Empty-handed, the way to a group by way of spawn, in rounds: the recall's `channel`, `hurt` (the
+ // heal turn), the walk `out` from spawn and any wait for its respawn `respawn` rounds away, less
+-// `value`, what the stop is worth as HomeTrip prices it (the heal, and the next emblem if our gold
+-// completes it). Never below the channel.
++// `value`, what the stop is worth as HomeTrip prices it (the heal, and what our gold buys there). Never below the channel.
+ struct FarmRecall {
+     int channel = 0, hurt = 0;
+     float value = 0;
+diff -ru charybdis-p3/src/economy/shop.cc rg-own/src/economy/shop.cc
+--- charybdis-p3/src/economy/shop.cc	2026-11-11 18:50:25.013295741 +0000
++++ rg-own/src/economy/shop.cc	2026-11-12 03:27:55.034181678 +0000
+@@ -612,6 +612,13 @@
+     return {quote.next, quote.count, quote.gain * rounds};
+ }
+ 
++// What the gold we carry buys on spawn, as a stop's value: rounds saved, at params::stop_gold_scale.
++float stop_gold(const World& world) {
++    if (my_gold() < shard_price) return 0;
++    const float gain = params::stop_gold_scale * affordable_prefix(world).gain;
++    return std::isfinite(gain) ? std::max(0.0f, gain) : 0.0f;
++}
++
+ HomeTrip home_trip(const World& world, Pathing& pathing, int channel, bool wins) {
+     const auto& field = pathing.to_any_altar();
+     const vec2 land = recall_landing(world);
+@@ -634,17 +641,21 @@
+     const std::uint32_t gold = my_gold();
+     t.short_gold = gold >= p.next.cost ? 0 : p.next.cost - gold;
+     t.emblem = p.gain;
++    t.prefix = stop_gold(world);
+     return t;
+ }
+ 
+-// The stop's value as home_trip prices it for an empty bag: the heal, and the next emblem once our
+-// gold completes it; nothing once the end is close.
++// The stop's value as home_trip prices it for an empty bag: the heal, and what our gold buys there or
++// the next emblem once our gold completes it; nothing once the end is close.
+ FarmRecall farm_recall(const World& world, Pathing& pathing, int channel) {
+     FarmRecall r{channel, my_health() < my_max_health() ? 1 : 0, 0.0f};
+     if (closing(world, pathing)) return r;
+     r.value = heal_rounds_now(world);
+-    if (shops_at_home(world))
+-        if (const auto& p = prices(world); my_gold() >= p.next.cost && std::isfinite(p.gain)) r.value += p.gain;
++    if (shops_at_home(world)) {
++        float emblem = 0;
++        if (const auto& p = prices(world); my_gold() >= p.next.cost && std::isfinite(p.gain)) emblem = p.gain;
++        r.value += std::max(emblem, stop_gold(world));
++    }
+     return r;
+ }
+ 
+diff -ru charybdis-p3/src/params.h rg-own/src/params.h
+--- charybdis-p3/src/params.h	2026-11-11 18:50:25.015295767 +0000
++++ rg-own/src/params.h	2026-11-12 03:27:55.027619211 +0000
+@@ -232,6 +232,9 @@
+ inline constexpr float fight_camp_prior = 490.12277f;
+ // wants_shop: a shopping trip goes when shop_gain_scale x the purchase's saving (plus the heal) beats the trip.
+ inline constexpr float shop_gain_scale = 0.75106156f;
++// A stop at spawn (HomeTrip, FarmRecall) is also worth this share of all our gold buys there (affordable_prefix),
++// not only the next emblem once our gold completes it.
++inline constexpr float stop_gold_scale = 1.0f;
+ // safety_params::hit_given_reach and recall_risk (model/safety.h), tunable here.
+ inline constexpr float hit_given_reach = 0.2338928f;
+ inline constexpr float recall_risk = 0.20703878f;

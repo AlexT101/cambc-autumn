@@ -17850,3 +17850,32 @@ numbers and tools: [battlecats/README.md](ideas-2026-11-12/battlecats/README.md)
 - **A body** needs the draft table, the priority writer and the Prism-bank rule first; then the fight rules and
   builds (Vesper Bruiser-Strength ×7, Marcella/HoR Bruiser-Focus). It must take a per-game seed. Sketch only, not
   built.
+
+## (charybdis, 2026-11-12) Unspent gold in the recall value: enemy side no effect, own side REJECT
+
+User idea: put unspent gold into the recall value, as a share of gold earned plus a constant, or depending on game
+state or time. Base and REF `variants/charybdis-p3` (519). Details, fits and patches: `research/ideas-2026-11-12/recallgold/`.
+
+- **Enemy side** (`params::recall_value`, 66.3, the worth of cancelling an enemy's kept recall). The recall takes its
+  gold home to shop, and that gold is hidden. Against the bodies, the gold on a kept recall we cancelled averaged 101.
+  It is best predicted by the gold the enemy's stats show it spent: 25.6 + 3.3% of it, R² 0.10, where the hidden
+  earned gold gives 0.19. The round (0.008), our own earned (0.003) and the score (0.024) predict little. The arms
+  keep the mean at 66.3: `rg-s100` (all of it follows that gold), `rg-s50` (half), and `rg-score` (gold from the higher score).
+- **Own side** (`HomeTrip`/`FarmRecall` stop value: heal + the next emblem only once gold completes it). The arms also
+  count what all our gold buys there (`affordable_prefix`): `rg-own` at scale 1, `rg-own75` at `shop_gain_scale`.
+
+Results against charybdis-p3 (fgate 200k, pool batches 0-11):
+
+| arm | win% (95% CI) | fresh maps | Fish | Mite | verdict |
+|---|---|---|---|---|---|
+| rg-s100 | 49.99 (49.93-50.05) | 10,240 | +0.00 | -0.03 | no effect (0.2% of games differ); stopped at 5 batches |
+| rg-s50 | 49.98 (49.94-50.02) | 10,240 | -0.03 | -0.01 | no effect; stopped |
+| rg-score | 49.98 (49.94-50.02) | 10,240 | -0.01 | -0.02 | no effect; stopped |
+| rg-own | 49.61 (49.31-49.90) | 20,480 | 49.63 | 49.58 | REJECT |
+| rg-own75 | 49.65 (49.42-49.88) | 30,720 | 49.51 | 49.78 | REJECT |
+
+- **Mechanism** (2,560 paired games at 200k). rg-own lands 2.7 more of our recalls a game and holds 14% less gold
+  while alive. It ends games with 61 less team gold (REF 868) and has 178 less gold on our cancelled recalls. Earned
+  gold is level to slightly down. The losses are on multi-site maps; one-site maps are level. The enemy-side arms
+  change 0.7-2.4% of games: a blow on a recalling enemy is taken for its own worth either way.
+- **Verdict:** merge none; not run at 100k (no 200k gain). The base already spends gold about as well as these forms.
