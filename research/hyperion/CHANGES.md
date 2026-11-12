@@ -4860,3 +4860,34 @@ matches 2,500 random terrain cases. No behavior exception, changed budget or str
 
 Evidence, failed attempts and reproduction: [charybdis-draftfuel](../charybdis-draftfuel/README.md), EXPERIMENTS
 "Charybdis draft first-turn fuel". Frozen as `variants/chy-draftfuel-523` (= bots/charybdis).
+
+## 524: Emblem lab 6: six emblem and shop edits (charybdis, 2026-11-12)
+
+Emblem lab round 6 ([labs](../ideas-2026-11-12/labs/), `tools/emblab`) on `variants/c520-ps` (520 + psafe-a). The
+patch is `labs/patches/lab-emb6-c520-ps.patch` and touches `emblem_table.h` and `shop.cc` only. Six edits replicated
+at z >= 2 on 1.12M lab games:
+- Collectors valued for champion damage (+0.68).
+- Diversify after Collectors (+0.61).
+- Prism home health k7 (+0.49).
+- Prism Collectors Strength k11 (+0.42).
+- Prism Collectors Focus k8 (+0.39).
+- Tribute price x0.5 (+0.28).
+
+Results against c520-ps (`fgate --pool v3`, unmetered bodies, maps no gate had played):
+
+| gate | fuel | fresh win% (95% CI) | games | Fish / Mite |
+|---|---|---|---|---|
+| Flp4 / Mt3q | 200k | **50.80 (50.55-51.05)** | 143,360 | 50.45 / 51.15 |
+| Flp4 / mf-c2 | 200k | 51.37 (50.85-51.89) | 40,960 | 50.51 / 52.24 |
+| Flp4 / Mt3q | 100k | **50.59 (50.35-50.83)** | 204,800 | 50.61 / 50.57 |
+| Flp4 / mf-c2 | 100k | 50.72 (50.13-51.31) | 40,960 | 50.62 / 50.82 |
+
+- **Verdict:** a gain at both budgets. At 100k it is just on the accept side: the estimate is past 50.5, the CI clears
+  50, and the SPRT did not stop.
+- **Live as v118** (= c520-ps + this): against v117 on shared cells, Fish 0 of 245, Mite +6 of 240, BattleCats 0 of
+  240. Against the new Fish (r8), v118 won 195/340 (57.4%) where v117 won 49.7% of 165. Merged at the user's request
+  (v118 is the live bot).
+- **On 523:** applied cleanly, since 521-523 did not touch these files, so both files equal `variants/lab-emb6-c520-ps`'s.
+  Smoke against `variants/lab-emb6-c520-ps` on the 256 ladder games: 125-131, no failed games or broken drafts.
+
+Evidence: EXPERIMENTS "Emblem lab round 6 on c520-ps". Frozen as `variants/chy-emb6-524` (= bots/charybdis).

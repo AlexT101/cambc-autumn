@@ -111,6 +111,7 @@ void fold_upkeep(const StaticMap& map) {
     upkeep_tiles.clear();
 }
 
+float lab_flag[] = {1000.0f, 1000.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.5f, 1.0f};
 // An emblem with shards owned short of it, which best_emblem finishes before any other.
 struct Begun {
     int family, stat;
@@ -331,7 +332,28 @@ float reactive_tribute(const IncomeRates& rates) {
 // Prospector's extra gems per gem as the farming they save; gold (Prospector's, Treasure's,
 // Hunter's) at `per_gold` saved per gold, earned evenly until our share of the gems still to farm is
 // done at our pace (or the game ends) and so spent on average halfway there.
+float passive_saved_raw(const World& world, const IncomeRates& rates, const cambc::enum_map<cambc::item_type>& owned, int family, float per_gold);
+// Emblem lab: a passive's price x its flag; coll_priced prices Collectors' champion damage (x the flag) as Skirmish's.
 float passive_saved(const World& world, const IncomeRates& rates, const cambc::enum_map<cambc::item_type>& owned, int family, float per_gold) {
+    float m = 1;
+    switch (family) {
+    case skirmish: m = lab_flag[8]; break;
+    case treasure: m = lab_flag[9]; break;
+    case prospector: m = lab_flag[10]; break;
+    case capture: m = lab_flag[11]; break;
+    case hunter: m = lab_flag[12]; break;
+    case tribute: m = lab_flag[13]; break;
+    case collectors: {
+        if (lab_flag[14] <= 0 || has_family(owned, collectors)) return 0;
+        int n = 1;
+        for (int f = monster; f < collectors; ++f) n += has_family(owned, f);
+        return lab_flag[14] * params::fight_weight * lab_flag[7] * fight_share() * (1.0f - 1.0f / (1.0f + 0.01f * static_cast<float>(n)));
+    }
+    default: break;
+    }
+    return m * passive_saved_raw(world, rates, owned, family, per_gold);
+}
+float passive_saved_raw(const World& world, const IncomeRates& rates, const cambc::enum_map<cambc::item_type>& owned, int family, float per_gold) {
     if (has_family(owned, family)) return 0;
     const auto& prior = income_prior(world.map());
     const auto& f = world.me().facts();
@@ -354,7 +376,7 @@ float passive_saved(const World& world, const IncomeRates& rates, const cambc::e
         return gold * treasure_gold * base;
     }
     case hunter: return gold * paid * static_cast<float>(hunter_kill_gold) / static_cast<float>(kill_base_gold) * kill_gold;
-    case skirmish: return params::fight_weight * fight_share() * (1.0f - 1.0f / skirmish_dealt);
+    case skirmish: return params::fight_weight * lab_flag[7] * fight_share() * (1.0f - 1.0f / skirmish_dealt);
     default: return 0;
     }
 }
@@ -369,7 +391,7 @@ Emblem current_emblem(const World& world, const Build& bought, const cambc::enum
     const UpkeepBasis basis = upkeep_basis(world, u, others, now);
     const float base = upkeep_cost(basis, now);
     // The fight value's shared terms stay outside the candidate loop.
-    const float fight_scale = params::fight_weight * fight_share();
+    const float fight_scale = params::fight_weight * lab_flag[7] * fight_share();
     const float p_now = std::max(1.0f, f.raw_output(now.strength, now.focus)) * now.max_health / now.taken;
     const bool collecting = has_family(owned, collectors); // every new family adds to its camp damage
     const auto value = [&](int family, int stat) __attribute__((always_inline)) -> Emblem {
@@ -417,6 +439,12 @@ Emblem current_emblem(const World& world, const Build& bought, const cambc::enum
         for (const int family : {prospector, capture, treasure, hunter, tribute, skirmish})
             if (const float saved = shards.saved + passive_saved(world, rates, owned, family, gold_saves); saved > best.saved)
                 best = {family, shards.stat, saved, emblem_price, saved - shards.saved};
+        if (lab_flag[14] > 0 && !has_family(owned, collectors)) {
+            Emblem c = value(collectors, a);
+            if (const auto e = value(collectors, b); e.saved > c.saved) c = e;
+            const float passive = passive_saved(world, rates, owned, collectors, gold_saves);
+            if (c.saved + passive > best.saved) best = {collectors, c.stat, c.saved + passive, emblem_price, passive};
+        }
         return best;
     };
     if (const auto b = begun_emblem(world, owned)) {
@@ -481,6 +509,43 @@ Emblem reactive_over(const World& world, const Build& bought, const Emblem& e, c
     return best;
 }
 
+// Emblem lab flags (tools/emblab/structural.py); at their defaults every hook leaves the choice as it was.
+Emblem lab_pinned(const World& world, const Build& bought, const cambc::enum_map<cambc::item_type>* items, int family, int stat) {
+    pin_family = family, pin_stat = stat;
+    const Emblem e = current_emblem(world, bought, items);
+    pin_family = -1;
+    return e;
+}
+// A new emblem the flags force, or -1: Collectors once coll_at distinct families are owned; Greed in the main stat
+// from ordinal greed_from on.
+int lab_forced(const World& world, const cambc::enum_map<cambc::item_type>& owned, int ordinal) {
+    if (lab_flag[1] < 100 && !has_family(owned, collectors)) {
+        int n = 0;
+        for (int family = monster; family <= collectors; ++family) n += has_family(owned, family);
+        if (static_cast<float>(n) >= lab_flag[1]) return collectors * 3 + main_stat(world);
+    }
+    if (static_cast<float>(ordinal) >= lab_flag[0]) return greed * 3 + main_stat(world);
+    return -1;
+}
+// diversify: with Collectors owned, a family already owned gives way to the first one not owned. stat_bN: the
+// emblems of ordinals 3N..3N+2 in Health (1) or the main stat (2).
+Emblem lab_adjust(const World& world, const Build& bought, const cambc::enum_map<cambc::item_type>* items,
+                  const cambc::enum_map<cambc::item_type>& owned, int ordinal, const Emblem& e) {
+    int family = e.family, stat = e.stat;
+    if (lab_flag[2] > 0 && has_family(owned, collectors) && has_family(owned, family))
+        for (const int f : {skirmish, durability, monster, jungle, prospector, capture, treasure, hunter, home, tribute, power, bruiser})
+            if (!has_family(owned, f)) {
+                family = f;
+                break;
+            }
+    if (ordinal < 12) {
+        const float s = lab_flag[3 + ordinal / 3];
+        if (s == 1) stat = health_stat;
+        else if (s == 2) stat = main_stat(world);
+    }
+    return family == e.family && stat == e.stat ? e : lab_pinned(world, bought, items, family, stat);
+}
+
 // The current logic's emblem, except that a new one is the learned one (tools/emblab) for our pick count, type and
 // count of emblems owned (`items`, what we would own, else ours), unless its passive is already ours: what
 // buy_shards buys, so prices() and affordable_prefix() forecast the same.
@@ -492,10 +557,12 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
     unsigned ordinal = 0;
     for (int family = monster; family <= collectors; ++family)
         for (int stat = strength_stat; stat <= health_stat; ++stat) ordinal += owned[emblem_of(family, stat)];
-    if (ordinal >= std::size(learned_arm[0][0])) return reactive_over(world, bought, current_emblem(world, bought, items), items);
+    if (const int forced = lab_forced(world, owned, static_cast<int>(ordinal)); forced >= 0)
+        return reactive_over(world, bought, lab_pinned(world, bought, items, forced / 3, forced % 3), items);
+    if (ordinal >= std::size(learned_arm[0][0])) return reactive_over(world, bought, lab_adjust(world, bought, items, owned, static_cast<int>(ordinal), current_emblem(world, bought, items)), items);
     const int arm = learned_arm[picks - 3][type][ordinal], family = arm / 3;
     if (arm == 255 || (family != power && family != bruiser && has_family(owned, family)))
-        return reactive_over(world, bought, current_emblem(world, bought, items), items);
+        return reactive_over(world, bought, lab_adjust(world, bought, items, owned, static_cast<int>(ordinal), current_emblem(world, bought, items)), items);
     Emblem e;
     {
         struct Pin {
@@ -504,7 +571,7 @@ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::en
         } pin{family, arm % 3};
         e = current_emblem(world, bought, items);
     }
-    return reactive_over(world, bought, e, items);
+    return reactive_over(world, bought, lab_adjust(world, bought, items, owned, static_cast<int>(ordinal), e), items);
 }
 
 // True if any shard was bought.
