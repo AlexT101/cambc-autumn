@@ -20,6 +20,7 @@ Round 4 (ocean): only buy_shards' own calls draw (lab_shopping; ocean's best_emb
 every other debug_block but main.cc's OOF line is compiled out (lab_off), so the 1 MiB stdout cap never cuts an
 EMB3 line and games cost no printing."""
 import json
+import re
 import sys
 from functools import lru_cache
 from pathlib import Path
@@ -348,19 +349,45 @@ BEST = "Emblem best_emblem(const World& world, const Build& bought = {}, const c
 BEGUN = "// An emblem with shards owned short of it, which best_emblem finishes before any other.\nstruct Begun {"
 
 
-def edit_patches(baked=None):
+BAKED = re.compile(r"^float lab_flag\[\] = \{([^}]*)\};\n", re.M)
+
+
+def baked_in(text):
+    """The flag values of a shop.cc that already has the hooks with constant flags (a lab candidate used as a base),
+    else None."""
+    m = BAKED.search(text)
+    if not m:
+        return None
+    vals = [float(v.strip().rstrip("f")) for v in m.group(1).split(",")]
+    assert len(vals) == len(FLAGS), f"{len(vals)} baked flags, {len(FLAGS)} known"
+    return dict(zip((n for n, _ in FLAGS), vals))
+
+
+def shop_patched(text, baked=None):
+    """shop.cc as an edit vehicle (baked None) or a candidate with these flag values. On a base that already has the
+    hooks, its constants become the defaults and only the flag array is replaced, where the hooks expect it."""
+    base = baked_in(text)
+    if base is not None:
+        text = BAKED.sub("", text, count=1)
+    return patch_text(text, edit_patches(baked, base), SHOP)
+
+
+def edit_patches(baked=None, base=None):
     """shop.cc's patches for an edit vehicle; baked: {flag: value} for a candidate bot, which has no trainer table
-    (its flags are constants and its table is the edited emblem_table.h)."""
-    defaults = ", ".join(f"{float((baked or {}).get(n, d))!r}f" for n, d in FLAGS) or "0.0f"
+    (its flags are constants and its table is the edited emblem_table.h). base: the flags a base already bakes (its
+    hooks are in place, so FLAG_PATCHES are not applied again)."""
+    vals = {**dict(FLAGS), **(base or {}), **(baked or {})}
+    defaults = ", ".join(f"{float(vals[n])!r}f" for n, _ in FLAGS) or "0.0f"
+    hooks = [] if base is not None else FLAG_PATCHES
     if baked is not None:
-        return [[(BEGUN, f"float lab_flag[] = {{{defaults}}};\n" + BEGUN)]] + FLAG_PATCHES
+        return [[(BEGUN, f"float lab_flag[] = {{{defaults}}};\n" + BEGUN)]] + hooks
     return [
         [('#include "emblem_table.h"\n', '#include "emblem_table.h"\n#include "../draft/trainer.h"\n#include "../draft/edit_defs.h"\n#include <cstring>\n')],
         [(BEGUN, EDIT_WRAPPER.lstrip("\n").replace("FLAG_DEFAULTS", defaults) + BEGUN)],
         [(BEST, BEST + "    if (!lab_ready) lab_init();\n")],
         [("    const int arm = learned_arm[picks - 3][type][ordinal], family = arm / 3;\n",
           "    const int arm = lab_arm[picks - 3][type][ordinal], family = arm / 3;\n")],
-    ] + FLAG_PATCHES
+    ] + hooks
 
 
 def patch_text(text, edits, rel):
@@ -387,7 +414,7 @@ def make_edit(source, name, entries, defs):
     changes (the draft is untouched). defs: edits.defs_header's text."""
     source, target = Path(source), vehicle.VARIANTS / name
     blobs = {p.relative_to(source).as_posix(): p.read_bytes() for p in (source / "src").rglob("*") if p.is_file()}
-    blobs[SHOP] = patch_text(blobs[SHOP].decode(), edit_patches(), SHOP).encode()
+    blobs[SHOP] = shop_patched(blobs[SHOP].decode()).encode()
     blobs["src/draft/trainer.h"] = (HERE / "trainer.h").read_bytes()
     blobs["src/draft/trainer_table.h"] = edit_table_header(entries).encode()
     blobs["src/draft/edit_defs.h"] = defs.encode()
@@ -402,4 +429,4 @@ def make_edit(source, name, entries, defs):
 def bake_flags(bot, values):
     """A candidate bot directory's shop.cc with the flag hooks and these flag values as constants."""
     p = Path(bot) / SHOP
-    p.write_text(patch_text(p.read_text(), edit_patches(values), SHOP))
+    p.write_text(shop_patched(p.read_text(), values))
