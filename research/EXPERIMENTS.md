@@ -17575,3 +17575,67 @@ On `variants/chy18-cm2k3`, the consumers of told ally tiles whose radius is wide
 - Out-of-fuel turns are level in every arm. No 100k run, since no 200k read showed a gain. Nothing kept.
 - Allies that matter to a decision now are mostly in sight; patching radius tests with told tiles changes 4-7% of
   games, and the changes cancel out.
+
+## (charybdis, 2026-11-11) Phase 1 review fixes (findings-2026-11-11.md): level against 517, whole or without the inputs group; B2 and G1 alone level
+
+`variants/charybdis-fix1` = charybdis 517 + H1 and Phase 1 (B1 with a sure-kill spell first, A1, G2, G4's retry, B2,
+G1, F2, H4, H5b, H6, C6). Own drafts, real budget, `ab.py` on fresh `--mix ladder-v2`:
+
+| CAND | REF | win% (95% CI) | games | out-of-fuel turns CAND / REF |
+|---|---|---|---|---|
+| fix1, H1 at 1000 | charybdis-cb9f86d (517) | 49.6 (49.0-50.1) | 30,208 | 235,160 / 184,274 |
+| fix1, H1 at 1000 | 517 (first 1,024 maps) | 47.9 (45.7-50.1) | 2,048 | 15,170 / 12,162 |
+| fix1 without H1 | 517 (same maps) | 47.7 (45.5-49.9) | 2,048 | 12,381 / 11,914 |
+| fix1, H1 at 100 | fix1 without B2 | 50.0 (49.3-50.7) | 20,480 | 123,846 / 124,111 |
+| fix1, H1 at 100 | fix1 without G1 | 50.0 (49.3-50.7) | 20,480 | 124,659 / 124,044 |
+
+- H1's spin at 1000 fuel inflated the runner's out-of-fuel count by ~25%: about one turn a game ends its decide with
+  40-1000 fuel left, which end_turn would have finished, and the runner counts each spun-out one. The games are the
+  same. The threshold is now 100 (end_turn runs out under 40).
+- B2 (dash landings ranked by sight) and G1 (occupancy re-read after our actions) are level by themselves. The two
+  screens' REFs differ from each other only in B2 and G1, and their games match in winner and length on 16,235 of
+  20,480: the two fixes change about a fifth of games between them, with no net effect.
+- The inputs group (H5b, H6, C6, F2: fixes to values the heuristics read) out, as `variants/charybdis-fix1-noinp`
+  (the definite fixes H1, A1, B1, G2, G4, H4, plus B2 and G1), on fresh seeds 5400200-5400258:
+
+| CAND | REF | win% (95% CI) | games | out-of-fuel turns CAND / REF |
+|---|---|---|---|---|
+| fix1-noinp | charybdis-cb9f86d (517) | 50.0 (49.4-50.5) | 30,208 | 184,046 / 180,083 |
+| fix1 | fix1-noinp | 49.9 (49.3-50.5) | 30,208 | 184,137 / 182,108 |
+
+- Every read is level: neither the definite set nor the inputs group moves the win rate. Out-of-fuel turns are
+  within ~2% at H1's threshold of 100.
+- Gate (`fgate.py`, real budget, batches 0-7, capped at 8): fix1 against 517 **50.08% (49.81-50.36)** of 163,840
+  fresh games (+0.08 ±0.28; Fish 50.12, Mite 50.04; ladder side read 50.00 ±1.25). Undecided at the cap: LLR high
+  -6.91 (no gain of 0.5), low +2.61. Not REJECT, which is the plan's bar for shipping these fixes.
+- Maps: 5400000-5400058 (30k run), 5400100-5400139 (screens) and 5400200-5400258 (inputs group),
+  `maps/suites/chy-fix1/`, `chy-screen/`, `chy-noinp/`.
+
+## (charybdis, 2026-11-12) Camp kills without captures: incidental or free; the fixes do not win where they act
+
+User: champions "hit the middle one gem camp groups but dont capture it ... they kill but don't capture" (live v108,
+`02treasure_box`, 16 single-cluster groups round the altar). Full note: `research/ideas-2026-11-11/campkill/README.md`.
+
+- Cause, from the replay and debug traces: kills outpace captures. While holding a capture, `hold_capture` hits other
+  groups in reach for free; Cassi's damage spell, overkilling her target, is redirected to another harmless group
+  (`camp_cast`); one-turn hits in passing clear groups that were never the champion's claim. The cleared groups wait
+  and are mostly captured later by us. Not a valuation ("too low value") problem.
+- Frequency, charybdis-cb9f86d at 200k vs the Fish/Mite bodies: on 256 fresh ladder-v2 maps (seed 5310001, 1,024
+  games) 3.6 of our 61 clears a game are not captured within 8 rounds, costing ~23 non-free attack turns a game (~0.5%
+  of champion-rounds); on treasure-box 18.9 of 65 (half the turns free, from a capture tile). 24 cluster-heavy maps
+  (9%) hold 46% of the cluster episodes.
+- Arms (no constants): `ck-cast` (no overkill redirect when the cast finishes the group), `ck-pass` (a ranged
+  champion with a cleared, unheld claim makes no passing hit and keeps the claim), `ck-both`.
+
+Results against charybdis-cb9f86d (200k, paired: same maps, noise seeds, sides, bodies):
+
+| CAND | suite | diff, points (95% CI) | games | changed | OOF turns/game CAND / REF |
+|---|---|---|---|---|---|
+| ck-cast | 24 heavy fresh maps + treasure-box, x16 seeds | -1.62 (+-1.88) | 1,600 | 236 | 0.259 / 0.249 |
+| ck-pass | same | -0.56 (+-0.61) | 1,600 | 25 | 0.235 / 0.249 |
+| ck-cast | 256 fresh maps | +0.10 (+-0.88) | 1,024 | 21 | 0.030 / 0.026 |
+| ck-pass | 256 fresh maps | -0.10 (+-0.33) | 1,024 | 3 | 0.028 / 0.026 |
+| ck-both | 256 fresh maps | +0.10 (+-0.88) | 1,024 | 21 | 0.032 / 0.026 |
+
+- Heavy-suite mechanism: ck-cast +1.2 prompt cluster clears and +6 gems captured promptly a game, ck-pass none; neither
+  wins. No fgate: the arms change 0.3-2% of fresh games, and where they act they read negative. Closed, nothing kept.
