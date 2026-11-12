@@ -15,7 +15,7 @@ live version stays up.
 Outside submissions (2026-11-09): each loop reads `submissions list --json`. A version not in our history (a
 teammate's upload) is logged and wakes the agent once; if live or selected is not our newest history version, the
 scheduler writes PAUSE and submits nothing until an agent has checked and removed it (the runner itself creates
-groups only while live == selected and marks groups in flight at a switch suspect). submit() activates only the
+groups only while live == selected; a group plays the version selected at its creation). submit() activates only the
 version whose note is ours, never the newest version blindly.
 
 Batch mode (2026-11-12, BATCH_MODE; live_batches.py): v115 rests on the book and each candidate is active only for
@@ -28,9 +28,10 @@ reporting agent). Log: sched.log. State: state.json. Stop: touch STOP in the sta
 
 Run: setsid nohup py tools/live_sched.py >> ~/tmp-offload/handoff/sched/sched.out 2>&1 < /dev/null &
 Its state dir (LIVE_SCHED_DIR, default ~/tmp-offload/handoff/sched) holds state.json, sched.log, gates.jsonl,
-refsets.json, build/ and the STOP / PAUSE / HOLD files; wake files go to its parent's parked/.
+refsets.json, build/ and the STOP / PAUSE / HOLD files; wake files go to its parent's parked/. One scheduler at a
+time: a second exits at once (sched.lock).
 """
-import datetime, json, os, re, shutil, subprocess, sys, time
+import datetime, fcntl, json, os, re, shutil, subprocess, sys, time
 from pathlib import Path
 
 R = Path(__file__).resolve().parents[1]
@@ -499,6 +500,15 @@ def main():
     from live_r6_campaign import Campaign
     from live_opponent_campaign import Panel
     from live_batches import Batches
+    lock = open(H / 'sched.lock', 'a+')
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        lock.seek(0)
+        sys.exit(f'another live_sched.py holds {H / "sched.lock"} (pid {lock.read().strip() or "?"})')
+    lock.truncate(0)
+    lock.write(str(os.getpid()))
+    lock.flush()
     log(f'scheduler start pid {os.getpid()}')
     version_check = VersionCheck(ls, H, log, wake)
     opponent_detector = OpponentDetector(ls, save, log, wake, now)

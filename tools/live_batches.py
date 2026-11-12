@@ -17,11 +17,14 @@ sched/<choose> (one of our versions, replayed on the repinned opponents; or a bo
 all), then repin those opponents to a new refset (captured by its first group, so the then-latest bot) and play the
 chosen bot on it in batches; the control then also covers the new refset's cells.
 
-Batch cycle (throughput, user 2026-11-12): rest version active, nothing in flight, and any quota room -> upload (first
-batch) or activate the candidate and append its whole gate; the runner creates the groups back to back as far as the
-quota allows and the rest as it frees up, the candidate staying live meanwhile -> once every group is created and has
-played, activate the rest version. Hourly while resting: Fish/Mite/BattleCats opponent-change observations
-(logged + wake only; testing pins never change automatically).
+Batch cycle (user 2026-11-12 ~15:50: the candidate is active only around its creates): rest version active, none of
+its opp-check groups waiting, and any quota room -> upload (first batch) or activate the candidate and append its whole
+gate; once live == selected == candidate the runner creates what the quota allows -> as soon as nothing more can be
+created (quota spent or gate all created), activate the rest version again, without waiting for the groups to play.
+Our bot is bound to a group when it is created, to the version selected then (verified 2026-11-12: a v117 group whose
+matches were all still queued when v118 was selected played v117), so groups in flight never hold a switch back.
+Hourly while resting: Fish/Mite/BattleCats opponent-change observations (logged + wake only; testing pins never change
+automatically).
 
 To test a version at full rate: write its number to sched/REST (rest_file); with nothing queued its gate on the
 refsets in refsets.json is planned and played as the quota allows. Other maps or opponents: `ladder_scrims.py plan`
@@ -149,18 +152,34 @@ class Batches:
         done = {e['group'] for e in events if e['ev'] in ('played', 'finished')}
         return not any(e['ev'] == 'created' and e['group'] not in done for e in events)
 
-    def activate(self, B, target, why, sel=None):
+    def activate(self, B, target, why, sel=None, locked=False):
+        """Selects `target` (through the API's token bucket). Under live_lock, so never during a runner create pass;
+        `locked`: the caller holds it."""
         if sel == target:
             return   # selected: the platform is building it (an old version is rebuilt on activation); don't re-queue
         last = B.get('_activate', {})
         if last.get('target') == target and time.time() - last.get('t', 0) < RETRY:
             return
-        with self.ls.live_lock(self.ls.DATA):
-            if not self.drained():
-                return
-            rc, out = self.s.sh(['cambc', 'submissions', 'activate', str(target)])
+        if not locked:
+            with self.ls.live_lock(self.ls.DATA):
+                return self.activate(B, target, why, sel, locked=True)
+        try:
+            self.ls.cambc('submissions', 'activate', str(target))
+            res = 'ok'
+        except self.ls.CambcError as e:
+            res = f'failed: {str(e)[-100:]}'
         B['_activate'] = {'target': target, 't': time.time()}
-        self.s.log(f'batches: activate existing v{target} ({why}): rc {rc} {out.strip()[-100:]}')
+        self.s.log(f'batches: activate existing v{target} ({why}): {res}')
+
+    def creatable(self, cur):
+        """Groups of the candidate the runner could still create now: quota room and pending tasks not held (a task
+        waiting for its pin's capture group counts: that group plays within minutes)."""
+        _, planned_pending, *_ = self.gate_tasks(cur)
+        held = self.ls.held_tasks()
+        pending = [t for t in planned_pending if t['id'] not in held]
+        if not pending:
+            return 0
+        return min(len(pending), max(0, self.room()[0]))
 
     def batch_file(self, on):
         f = self.ls.DATA / 'BATCH'
@@ -372,24 +391,22 @@ class Batches:
                         and t['id'] not in created and t['id'] not in dropped]
         last = cur['batches'][-1] if cur['batches'] else None
         if last and not last.get('reported') and self.collected(cur['version']):
+            # Log only: with a switch per quota refill, a wake per batch would flood the coordinator (the gate wakes).
             last['reported'] = self.s.now()
             res = paired(ls, cur['version'], rest, cur['rsets'])
             self.s.log(f"batches: batch {len(cur['batches'])} of v{cur['version']} collected; paired {json.dumps(res)}")
-            self.s.wake({'event_id': f"batch-v{cur['version']}-{len(cur['batches'])}", 'batch_done': cur['label'],
-                         'version': cur['version'], 'paired_vs_rest': res, 'minutes_live': minutes(B, time.time()),
-                         'at': self.s.now()})
-        if rest_pending or not self.drained():
-            self.note(B, 'rest', f"batches: {cur['label']} waits: v{rest} has {len(rest_pending)} groups to create "
-                                 f"or groups are in flight")
+        # Groups in flight don't matter (bound at creation); the rest version's own groups still need it selected.
+        if rest_pending:
+            self.note(B, 'rest', f"batches: {cur['label']} waits: v{rest} has {len(rest_pending)} groups to create")
             return
         todo = (len(specs(ls, 0, cur['rsets'], None)) if cur['version'] is None
                 else len(unplanned) + len(planned_pending))
         if cur['version'] and todo == 0:
-            self.finish(st, B, cur)   # every group has played; its result follows once collected (report_done)
+            self.finish(st, B, cur)   # every group is created; its result follows once collected (report_done)
             return
         room, cap = self.room()
         # Throughput (user, 2026-11-12): no wait for a full batch. The candidate goes live as soon as any quota is
-        # free and stays live until its whole gate has played; the runner creates what the quota allows as it frees.
+        # free, only until the runner has created what the quota allows (phase_batch).
         if room <= 0:
             self.note(B, 'rest', f"batches: {cur['label']} waits for quota: room {room} ({todo} groups left)")
             return
@@ -425,31 +442,37 @@ class Batches:
         self.batch_file(True)
         if not (live == sel == cur['version']):
             self.s.log(f"batches: v{cur['version']} no longer live (live v{live} selected v{sel}); ending batch")
-        else:
-            with self.ls.live_lock(self.ls.DATA):
-                if not self.drained():
-                    return
-                _, planned_pending, *_ = self.gate_tasks(cur)
-                if planned_pending:
-                    return   # the runner creates them as the quota frees up; the candidate stays live meanwhile
-        cur['batches'][-1]['end'] = self.s.now()
-        cur['phase'] = 'activate_rest'
-        self.activate(B, B['rest'], 'batch played', sel)
+            cur['batches'][-1]['end'] = self.s.now()
+            cur['phase'] = 'activate_rest'
+            self.activate(B, B['rest'], 'batch ended', sel)
+            return
+        # Under the runner's lock: no create pass is under way, so what is created now is all this batch gets.
+        with self.ls.live_lock(self.ls.DATA):
+            n = self.creatable(cur)
+            if n:
+                self.note(B, 'batch', f"batches: v{cur['version']} live: runner has {n} groups to create")
+                return
+            _, created, *_ = self.ls.state()
+            cur['batches'][-1].update(end=self.s.now(), created=sum(
+                1 for e in created.values() if e.get('live') == cur['version'] and e['at'] >= cur['batches'][-1]['start']))
+            cur['phase'] = 'activate_rest'
+            self.activate(B, B['rest'], 'batch created', sel, locked=True)
+        B.pop('_note', None)
 
     def phase_activate_rest(self, st, B, cur, live, sel):
         if live == sel == B['rest']:
             self.batch_file(False)
             cur['phase'] = 'rest'
             cur['batches'][-1]['rest_at'] = self.s.now()
-            self.s.log(f"batches: batch {len(cur['batches'])} of v{cur['version']} played; v{B['rest']} active again "
+            self.s.log(f"batches: batch {len(cur['batches'])} of v{cur['version']} created; v{B['rest']} active again "
                        f"(minutes live {minutes(B, time.time())})")
         else:
             self.activate(B, B['rest'], 'restore', sel)
 
     def finish(self, st, B, cur):
-        B['done'].append({k: v for k, v in cur.items() if k != 'cand'} | {'phase': 'played', 'done_at': self.s.now()})
+        B['done'].append({k: v for k, v in cur.items() if k != 'cand'} | {'phase': 'created', 'done_at': self.s.now()})
         B['cur'] = None
-        self.s.log(f"batches: gate v{cur['version']} ({cur['label']}) played; result once collected")
+        self.s.log(f"batches: gate v{cur['version']} ({cur['label']}) all created; result once collected")
 
     def report_done(self, st, B):
         """A finished candidate's gate result, once its games are collected (control may still be held)."""

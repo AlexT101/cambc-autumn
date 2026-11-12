@@ -17,9 +17,12 @@ live submission: tasks of another version wait (submit or `cambc submissions act
 plays the opponent's bot from the first group queued against it under that ref name (refs.json), usable once that
 group has played, so every version meets the same opponent bot; `none` plays its current.
 State is append-only jsonl, so `run` resumes where it stopped; it exits after `--max-errors` failures in a row.
-A group's games are labelled with the version live at its creation, so `run` creates only while live == selected, and
-when either changes (someone else's submission or activation) it logs a `live_change` event and marks every group in
-flight `suspect`; games() leaves suspect groups out (a game may have played the other version)."""
+The platform binds our bot to a group when the group is created, to the version *selected* then (2026-11-08: a group
+created at live 93 / selected 94 played v94; 2026-11-12: a v117 group whose matches were all still queued when v118
+was selected played v117). So `run` creates only while live == selected, labels a group's games with that version, and
+re-reads both every --recheck creates and after each pass, all under live_lock (the scheduler switches under it too).
+A switch seen at a re-read marks only the groups created since the previous read `suspect` (they may have bound to the
+new selection); games() leaves suspect groups out. Groups in flight at a switch are unaffected."""
 
 import argparse
 from ladder_coordination import live_lock, probe_active
@@ -434,7 +437,7 @@ def cmd_run(args):
         f"poll {args.poll}s")
     errors, last_pass, last_poll, no_task = 0, 0.0, 0.0, None
     waiting_note = None
-    seen_ls, last_ls = None, 0.0
+    seen_ls = None
     # A played group's ten downloads take ten API calls. One collector thread keeps them serial and off the loop
     # (its calls wait while a create pass runs) and writes the finished event after the games, so the scheduler
     # sees a group as uncollected until its games are recorded.
@@ -470,20 +473,22 @@ def cmd_run(args):
             log(msg)
             waiting_note = msg
 
-    def check_live(inflight, why):
-        # Another submission or activation while groups are in flight: those games may have played it.
-        nonlocal seen_ls, last_ls
+    unconfirmed = []   # groups created since the last live/selected read
+
+    def check_live(why):
+        # A switch between two reads may have bound the groups created between them to the new selection.
+        nonlocal seen_ls
         cur = live_version()
-        last_ls = time.monotonic()
         if seen_ls is not None and cur != seen_ls:
             log(f"live/selected changed v{seen_ls[0]}/v{seen_ls[1]} -> v{cur[0]}/v{cur[1]} ({why}): "
-                f"{len(inflight)} groups in flight marked suspect")
+                f"{len(unconfirmed)} groups created since the last read marked suspect")
             append_jsonl(DATA / "events.jsonl", {"ev": "live_change", "at": now(), "from": list(seen_ls),
-                                                 "to": list(cur), "inflight": [e["group"] for e in inflight]})
-            for e in inflight:
+                                                 "to": list(cur), "unconfirmed": [e["group"] for e in unconfirmed]})
+            for e in unconfirmed:
                 append_jsonl(DATA / "events.jsonl", {"ev": "suspect", "group": e["group"], "task": e["task"],
                                                      "at": now(), "why": f"live/selected {list(seen_ls)} -> {list(cur)}"})
         seen_ls = cur
+        unconfirmed.clear()
         return cur
 
     def runnable(pend, refs, over):
@@ -526,7 +531,7 @@ def cmd_run(args):
             if limit - used - (0 if cand[0][0]["priority"] >= 100 else args.reserve) <= 0:
                 note(f"quota {used}/{limit}, reserve {args.reserve}: waiting (resets {qq.get('resetsAt')})")
                 return made
-            live, selected = check_live(playing, "before create")
+            live, selected = check_live("before create")
             ready = [c for c in cand if c[0]["version"] == live] if selected == live else []
             if not ready:
                 note(f"nothing runnable: live v{live}, selected v{selected}, pending versions "
@@ -565,17 +570,18 @@ def cmd_run(args):
                           "refset": t.get("refset"), "is_ref": is_ref, "quota_used": used}
                     append_jsonl(DATA / "events.jsonl", ev)
                     made.append(ev)
+                    unconfirmed.append(ev)
                     log(f"created {t['id']} -> {gid[:8]} (v{live}, quota {used}/{limit}"
                         f"{', ref' if is_ref else ''}{', pinned ' + source[:8] if source else ''})")
                     if len(made) % args.recheck == 0:
-                        if check_live(playing + made, "during create") != (live, selected):
+                        if check_live("during create") != (live, selected):
                             return made
                         qq = quota().get("quota") or {}
                         used, limit = max(used, qq.get("used", used)), qq.get("limit") or limit
             finally:
                 _PRIORITY.clear()
             if made:
-                check_live(playing + made, "after create")
+                check_live("after create")
                 waiting_note = None
         return made
 
@@ -626,8 +632,6 @@ def cmd_run(args):
                                 log(f"played {ev['task']} {ev['group'][:8]}: {done[ev['group']]}")
                                 over.add(ev["group"])
                         playing = [e for e in playing if e["group"] not in done]
-                        if playing and time.monotonic() - last_ls >= 60:
-                            check_live(playing, "poll")
                     with collecting_lock:
                         for ev in open_groups:
                             if (ev["group"] in over and ev["group"] not in collecting
