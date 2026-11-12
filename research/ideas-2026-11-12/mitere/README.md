@@ -528,6 +528,79 @@ lost.
 **msf.** Clear loss against both bodies. Mite's willingness to stand is not a free kill for our bot: it fights back
 at full strength.
 
+## 12. Not feeding Mite's Vesper: her kills cannot be walked away from
+
+### How the deaths happen
+
+Data: live r7, her 717 kills of our bodies after round 13 (`vdeath.py`, `vdeath2.py`, `ventry.py`, `vstretch.py`).
+
+**She is fed, and most victims enter her reach at full health.**
+- Her Strength (median by phase): 110 before r300, 265 at r300-600, 465 at r600-900, 705 after r900. That is the
+  Greed-Strength build of section 4.
+- 56% of victims are at full health when they come within 6 of her. Still, in 33% of her kills the victim was
+  within two of her hits of death on entry (48% within three).
+- She lands a hit and an attack reset's second hit in the same turn.
+
+**It is not an ambush.**
+- The victim spends a median 6 rounds within 6 of her before dying.
+- 82% of the damage it takes in that stretch is hers.
+- At entry we usually outnumber her locally: Mite bodies within 5, minus her, minus ours, is −1 or less in 72% of
+  kills.
+- At entry the victim sees her in 56% of kills. Of the kills where it cannot, a third are her in a bush and the
+  rest are walls.
+
+**Victims do not hit back.**
+- Across the last 8 rounds of each kill, the victim sees her and she is out of its attack range in 47% of
+  victim-rounds, which take 34% of her damage. The victim attacks no one in those rounds.
+- In 12.5% of rounds it sees her within its range and still does not attack (21% of her damage).
+- It hits her in only 6% of rounds.
+- Over its last 6 rounds, 52% of victims attack no one at all. Their moves are split evenly between toward, away,
+  sideways and standing still.
+
+**Danger by distance** (`vdeath2.py` near rows: our bodies within 6 of her, sampled every other round).
+
+| her hits to kill the body | her dash | distance | her kill within 5 rounds | share of her kills |
+|---|---|---|---|---|
+| ≤ 2 | on cooldown | 3 | 51% | 10% |
+| ≤ 2 | on cooldown | 4 | 24% | 11% |
+| ≤ 2 | on cooldown | 5-6 | 5-9% | 7% |
+| ≤ 2 | ready | 3-5 | 21-57% | 14% |
+| any | any | 6 | 1-6% | 13% |
+
+- Bodies within three of her hits of death hold 70% of her kills.
+
+### Why walking away cannot work
+
+- Her one-turn reach is 6: one walk step, a 2-step dash and attack range 3. Our personal sight is also 6.
+- So a body can rarely see her from outside her reach, and stepping away 1 a turn does not outrun walk plus dash.
+- c520-ps's safety (`model/safety.cc`) already models her dash and reset, so it rejects tiles where her next turn
+  kills.
+- That leaves only planning further ahead: leaving while she still needs two turns.
+
+### The arm
+
+- **Change:** c520-mv / mvf counts a Mite Vesper's Strength twice in safety (`hit_strength`,
+  `mite_vesper_turns = 2`, the two-turn margin). Safety then flees her, and judges local fights against her lost, while
+  she still needs two turns to kill.
+- **Testing:** the forced copy, as in section 11. Patch: `x3-avoid-c520-mv.patch`.
+
+| CAND vs c520-ps | read | result |
+|---|---|---|
+| c520-mvf | paired against mf-c2, ladder members 1-4, 1,022 pairs (`vmech.py`) | −8.3 (221 flips). Our deaths to her rise from 1.57 to 1.82 a game (after r400: 1.21 to 1.48), and all deaths from 5.12 to 5.64. Her deaths fall from 0.77 to 0.61. Gems banked fall from 896 to 826. |
+| c520-mvf | livefork v116, fed Vesper, against mf-c2 (`fork_arms.py`) | −3.66 ±1.30 overall. By fork round: r100 −2.31 ±2.3, r300 −3.88 ±2.0, r600 −5.34 ±2.0 (worst where she is most fed). |
+| c520-mvf | fgate `--pool v4`, 200k, 1 batch (`gatemv.sh`) | 46.90% (46.18-47.63) of 20,480. Fresh, Mite 45.37; fresh, Fish 48.44. REJECT. |
+
+### Verdict
+
+- Not feeding her cannot be bought with avoidance.
+- Fleeing a dasher with range 3 gives her free hits and gives up the fights we win: she dies less often, and we die
+  to her more often.
+- Her kills are the price of contesting the map against a fed carry. The remaining levers are macro:
+  - deny her gold and farm early, before she is fed;
+  - kill her while her Strength is low (her deaths per game are already 1.09 in our wins against 0.29 in hers);
+  - change itemisation against her burst.
+- None of these is a cheap rule, so this stops here.
+
 ## Files
 
 - **Python tools** (this folder):
@@ -552,6 +625,11 @@ at full strength.
     - livefork: `fork_arms.py`, with its read `fork_read.py`.
     - Gate: `gatemx.sh`.
     - Forks are in `~/tmp-offload/vg/fork/`.
+  - Section 12:
+    - Live reads: `vdeath.py`, `vdeath2.py`, `ventry.py`, `vstretch.py`. Their rows are in `~/tmp-offload/mitere/`.
+    - Patch: `x3-avoid-c520-mv.patch`.
+    - Runs: `mechmv.sh` (forks and the paired runs), read by `vmech.py`.
+    - Gate: `gatemv.sh`.
   - `tools/*_remote.sh`: the big-arm queries.
 - **Data** under `~/tmp-offload/mitere/`:
   - `raw/` (rows, replays, the 05 maps' replays, platform map list);

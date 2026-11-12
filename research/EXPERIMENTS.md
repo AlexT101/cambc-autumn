@@ -139,6 +139,17 @@ replays (11-10 to 11-12), our 375 live scrims against r7, and 48k capture rows.
     Kills rise by 1.4 a game, but deaths rise by 1.1 and gems lost by 20.
   - Zoning carriers was not built. Our presence within 4 tiles cuts the tribute starts of Mite carriers from
     20-27% to 9%, but the bag is banked later, so it delays banking rather than denying it.
+- **Not feeding Mite's Vesper by avoiding her (c520-mvf: safety counts her Strength twice) loses.**
+  - Live, she is fed: median Strength 465 at r600-900. 56% of her victims enter her reach at full health and stay a
+    median 6 rounds, taking 82% of their damage from her and rarely hitting back.
+  - Her one-turn reach (walk, dash 2, range 3) equals our sight, 6, so walking away does not escape her.
+  - The arm (patch in `x3-avoid-c520-mv.patch`):
+    - paired against mf-c2: −8.3, and our deaths to her rise from 1.57 to 1.82 a game while hers fall from 0.77 to
+      0.61;
+    - live forks: −3.66 ±1.30 (r600 −5.34);
+    - fgate pool v4, 200k: 46.90% (46.18-47.63) of 20,480, REJECT.
+  - These deaths are not cheaply avoidable. What is left is macro (deny her gold early, kill her before she is fed,
+    itemise against her burst).
 
 ## Forking live Mite games, and per-composition constants (2026-11-12): forks work and find a known gain at about a fresh gate's cost a game; the body plays on 5-7 points weaker than Mite from live positions; no pick-count interaction in 2.7M SPSA games
 
