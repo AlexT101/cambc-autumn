@@ -36,6 +36,36 @@ Ladder side reads +1.34 (200k) and +1.25 (100k). No failed games or early losses
 the accept line (50.5) and the CI clear of 50, but the gate's SPRT did not reach ACCEPT before it narrowed. Not merged
 (teammate owns bots/charybdis): candidate and patch for the coordinator.
 
+## Ladder-v4 mapgen, the full pool on every feature (2026-11-12): a classifier still told ladder-v3 from the 168 maps (open frames, arenas, close spawns); ladder-v4 fixes that; win rates and order don't move
+
+Notes: [ideas-2026-11-12/ladderv3/README.md](ideas-2026-11-12/ladderv3/README.md), "Full pool".
+
+- **The gap.** A classifier on all 130 per-map features told ladder-v3 from the 168 published maps: AUC 0.63, against
+  a null of 0.50 ± 0.03. It did so on things compare.py's list never tested:
+  - the ladder leaves its 2-tile frame open on 41% of maps (v3: 19%);
+  - 13% of ladder maps are hole-framed arenas (v3: 7%);
+  - 14% of ladder maps have close spawns, spawn_rel < 0.5 (v3: 4%, which the spawn gates excluded).
+- **The fix.** `--mix ladder-v4` is ladder-v3 with a full-pool layer (`POOL_FIT`) on its generated entries. It opens
+  the frame (winding barriers keep their ends, so their detours stay), adds arenas and `near` spawns, and gives the 05
+  part fewer barriers. ladder-v3 and every older mix make the same bytes.
+- **Held-out check** (seeds 7370001-7370008). Classifier AUC is 0.54 forest and 0.55 logistic, against a null of
+  0.50 ± 0.04. No metric of compare.py's list is off at p < 0.01, against the 168 or the 05 maps.
+
+Results against the bodies (rt-Flp4 and mf-c1, 100k fuel; pool-v4 b000-b003, 40,960 games a bot):
+
+| bot | ladder-v3 fresh | ladder-v4 fresh | v4 minus v3 |
+|---|---|---|---|
+| c520-ps | 77.4% (77.0-77.8) | 77.7% (77.3-78.1) | +0.3 ±0.6 |
+| chy-life | 77.5% (77.1-77.9) | 77.5% (77.1-77.9) | +0.0 ±0.6 |
+| oc-dfuel-506 | 69.4% (68.9-69.8) | 69.3% (68.8-69.7) | -0.1 ±0.6 |
+
+- **Paired differences**, v3 to v4:
+  - c520-ps minus chy-life: -0.08 to +0.19 (±0.32);
+  - charybdis minus ocean: +8.1 to +8.4.
+- **By feature.** Close-spawn maps run about a point below the rest for all three bots, and open frames about a point
+  above.
+- `fgate.py --pool v4` plays pool-v4 (opt-in; 2500000-2500127).
+
 ## Ladder-v3 mapgen for the 170-map pool (2026-11-12): ranked play is uniform over the 170 (05 maps 24.7%); ladder-v3 matches them; the bots' order and win rates don't move
 
 Notes: [ideas-2026-11-12/ladderv3/README.md](ideas-2026-11-12/ladderv3/README.md). Ranked play since the 05 maps went

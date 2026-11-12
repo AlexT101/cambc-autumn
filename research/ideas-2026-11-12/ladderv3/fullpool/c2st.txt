@@ -1,0 +1,8 @@
+pooled: 16 of 16 slots
+v3       forest    AUC 0.626 (sd 0.033)   null 0.502 (sd 0.031)
+   top: f.fill_edge 0.043, f.fill_corner 0.022, f.camp_ratio 0.022, f.boundary 0.022, f.reach_frac 0.021, reach_frac 0.020, spawn_rel 0.020, f.spawn_rel 0.019, bbox fill (3+ groups) 0.017, f.openness 0.017, walls 0.017, f.camp_density 0.017
+v3       logistic  AUC 0.613 (sd 0.023)   null 0.488 (sd 0.042)
+v4       forest    AUC 0.537 (sd 0.049)   null 0.498 (sd 0.045)
+   top: f.boundary 0.024, f.openness 0.019, f.camp_ratio 0.019, f.fill_corner 0.019, bbox fill (3+ groups) 0.018, f.altar_centre 0.017, gold_cluster share 0.017, walls 0.017, reach_frac 0.017, f.reach_frac 0.017, gem_cluster share 0.017, f.walls 0.017
+v4       logistic  AUC 0.549 (sd 0.033)   null 0.507 (sd 0.040)
+features 130, ladder maps 168, reps 20

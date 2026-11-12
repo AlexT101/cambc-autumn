@@ -120,6 +120,16 @@ function rows(g, rng, s) {
   }
 }
 
+// The 2-tile frame open (POOL_FIT border_clear): the ladder keeps walls and holes off the edge more often than
+// scattered terrain does. Winding barriers keep their ends (keep), which seal the detour they make; opened, over half
+// their detours went. The frame is its own mirror, so the map stays symmetric.
+function clearBorder(g, keep = null) {
+  for (let y = 0; y < g.H; y++) for (let x = 0; x < g.W; x++) {
+    const i = y * g.W + x;
+    if ((x < 2 || y < 2 || x >= g.W - 2 || y >= g.H - 2) && (g.t[i] === WALL || g.t[i] === HOLE) && !keep?.[i]) g.t[i] = GROUND;
+  }
+}
+
 function holes(g, rng, s) {
   if (s.holes === 'lakes') {
     const n = valueNoise(rng, g.W, g.H, rng.uniform(8, 18), 3), cut = quantile(n, 1 - (s.lake_amount ?? s.hole_amount));
@@ -972,14 +982,18 @@ export function gaps(g, rng, n) {
 // Long barriers across the way between the spawns, attached to alternate sides (calibration 2's winding maps,
 // like the ladder's meander, comb or twisty): walls, or 1-thick hole lines that a dash crosses (shortcut,
 // reverse-spiral, cuts).
-function barriers(g, rng, s) {
+function barriers(g, rng, s, mark = null) {
   const alongX = g.sym === 'horizontal' || (g.sym === 'rotational' && g.W >= g.H), len = alongX ? g.W : g.H, across = alongX ? g.H : g.W;
   const n = rng.int(1, 3), kind = rng.chance(s.winding_holes ?? 0.6) ? HOLE : WALL, thick = kind === HOLE ? 1 : rng.int(1, 2);
   const lo = Math.round(0.12 * len), hi = Math.floor(len / 2) - 2, first = rng.chance(0.5);
   if (hi - lo < 4) return;
   for (let k = 0; k < n; k++) {
     const p = Math.round(lo + (hi - lo) / n * (k + rng.uniform(0.2, 0.8))), low = (k % 2 === 0) === first, reach = Math.round(across * rng.uniform(0.7, 0.92));
-    for (let a = low ? 0 : across - reach; a < (low ? reach : across); a++) for (let t = 0; t < thick; t++) alongX ? g.set(p + t, a, kind) : g.set(a, p + t, kind);
+    for (let a = low ? 0 : across - reach; a < (low ? reach : across); a++) for (let t = 0; t < thick; t++) {
+      const [x, y] = alongX ? [p + t, a] : [a, p + t];
+      g.set(x, y, kind);
+      if (mark && g.in(x, y)) mark[g.mirror(g.idx(x, y))] = mark[g.idx(x, y)] = 1;
+    }
   }
 }
 
@@ -1362,6 +1376,20 @@ const DEFAULTS_V4 = {
 };
 const V4_PRESETS = {};
 
+// ---- the full-pool layer (2026-11-12, `suite --mix ladder-v4`; research/ideas-2026-11-12/ladderv3/README.md, "Full
+// pool"): a classifier on every metric, against all 168 ladder maps, still told calibrations 3 and 4 from the ladder,
+// on three things the per-metric fit never saw: the ladder keeps its 2-tile frame open (41% of maps, generated 19%),
+// has hole-framed arenas (13% with under half the frame playable, generated 7%) and close spawns (14% under spawn_rel
+// 0.5, generated 4%: the spawn gates excluded them). Plan entries pick the layer with { fit }; each part is fitted so
+// its generated three quarters (the rest are mutated ladder maps) match its ladder maps. The ladder's partly blocked
+// frames are mostly barriers run to the edge (its detour maps' frames are 92-99% open), so maps without winding
+// barriers get the open frame (border_clear 0.9) and the 05 maps, with half the detours, fewer barriers (winding).
+// Over calibration 3 ('pool') or 4 ('pool05'); without { fit } nothing here is drawn.
+const POOL_FIT = {
+  pool: { border_clear: 0.9, spawn_mode: { none: 85, near: 13, mid: 2 }, shape: { none: 86, circle: 4, diamond: 4, star: 3, blob: 3 }, void_kind: { hole: 3, wall: 1 }, core_kind: 'hole' },
+  pool05: { border_clear: 1, winding: 0.25, spawn_mode: { none: 79, near: 19, mid: 2 }, shape: { none: 86, circle: 4, diamond: 4, star: 3, blob: 3 }, void_kind: { hole: 3, wall: 1 }, core_kind: 'hole' },
+};
+
 // The base of the exotic presets: every dimension sampled wide, each preset pinning one or two.
 const EXOTIC = {
   size: [30, 100], aspect: { square: 3, wide: 2, thin: 0.6 }, symmetry: { rotational: 4, horizontal: 2, vertical: 2 },
@@ -1540,8 +1568,8 @@ const KEEP_OBJECT = new Set(['camp_mix', 'altar_bands', 'contested_mix', 'camp_b
 const SKIP_KEYS = new Set(['doc', 'exotic', 'altar_zone', 'designed', 'family']);
 
 function sampleSpecV2(rng, preset, overrides) {
-  const v3 = overrides.calib >= 3, v4 = overrides.calib >= 4, p = PRESETS[preset];
-  const layers = [v4 ? DEFAULTS_V4 : v3 ? DEFAULTS_V3 : DEFAULTS_V2, p.exotic ? EXOTIC : {}, p.design ? DESIGN : {}, p, V2_PRESETS[preset] ?? {}, (v3 && V3_PRESETS[preset]) || {}, (v4 && V4_PRESETS[preset]) || {}];
+  const v3 = overrides.calib >= 3, v4 = overrides.calib >= 4, p = PRESETS[preset], fit = POOL_FIT[overrides.fit];
+  const layers = [v4 ? DEFAULTS_V4 : v3 ? DEFAULTS_V3 : DEFAULTS_V2, fit ?? {}, p.exotic ? EXOTIC : {}, p.design ? DESIGN : {}, p, V2_PRESETS[preset] ?? {}, (v3 && V3_PRESETS[preset]) || {}, (v4 && V4_PRESETS[preset]) || {}];
   const campMode = sampleValue(rng, overrides.camp_mode ?? Object.assign({}, ...layers).camp_mode);
   const src = Object.assign({}, ...layers, CAMP_MODES[campMode], overrides, { camp_mode: campMode }), spec = { preset };
   if (src.altar_zone === 'mid') src.altar_mode = 'central';
@@ -1549,7 +1577,10 @@ function sampleSpecV2(rng, preset, overrides) {
     if (SKIP_KEYS.has(k) || v === undefined) continue;
     spec[k] = KEEP_OBJECT.has(k) && typeof v === 'object' && !Array.isArray(v) ? v : sampleValue(rng, v);
   }
-  for (const k of ['spawn_bush', 'altar_near', 'shared_altar', 'home_camp', 'winding', 'unleak', 'unnarrow', 'altar_twin', 'dash_cuts', 'starter']) if (typeof spec[k] === 'number') spec[k] = rng.chance(spec[k]);
+  for (const k of ['spawn_bush', 'altar_near', 'shared_altar', 'home_camp', 'winding', 'unleak', 'unnarrow', 'altar_twin', 'dash_cuts', 'starter', 'border_clear']) if (typeof spec[k] === 'number') spec[k] = rng.chance(spec[k]);
+  if (spec.spawn_mode === 'none') delete spec.spawn_mode;
+  // A shaped arena needs a spawn inside its mask, which only placeSpawnMode looks for.
+  if (fit && spec.shape && spec.shape !== 'none' && !spec.spawn_mode) spec.spawn_mode = 'far';
   if (typeof spec.camp_bias !== 'string') spec.camp_bias = 'spread';
   if (typeof spec.lake_amount === 'string') spec.lake_amount = rng.uniform(...spec.lake_amount.split('-').map(Number));
   if (typeof spec.bush_amount === 'string') spec.bush_amount = rng.uniform(...spec.bush_amount.split('-').map(Number));
@@ -1589,6 +1620,9 @@ function sampleSpecV2(rng, preset, overrides) {
   if (spec.altar_mode === 'many') { spec.altars = rng.int(5, 9); spec.altar_spacing = rng.int(4, 6); }
   delete spec.altar_cfg;
   spec.spawn_min = spec.spawn_min_abs !== undefined ? spec.spawn_min_abs : spec.spawn_floor !== undefined && !spec.design ? spec.spawn_floor : spec.design ? Math.max(spec.spawn_floor ?? 18, 0.3 * Math.max(W, H)) : spec.spawn_mode === 'near' ? 16 : spec.spawn_mode === 'mid' ? 20 : Math.max(12, (spec.spawn_mode ? 0.4 : 0.42) * Math.max(W, H));
+  // Close spawns: the ladder's are 8-36 tiles apart on foot, under the size-scaled walk floor. placeSpawnMode's pool
+  // already bounds the gap (a walk is never shorter), so that floor goes.
+  if (fit && (spec.spawn_mode === 'near' || spec.spawn_mode === 'mid')) spec.spawn_min = 1;
   return spec;
 }
 
@@ -1648,10 +1682,12 @@ export function generate(preset, seed, overrides = {}, attempts = 40) {
       }
       g.mask = shapeMask(g, rng, spec);
       TERRAIN[spec.terrain](g, rng, spec);
-      if (spec.winding) barriers(g, rng, spec);
+      const barrier = spec.border_clear && spec.winding ? new Uint8Array(g.t.length) : null;
+      if (spec.winding) barriers(g, rng, spec, barrier);
       if (g.mask) applyMask(g, g.mask, spec);
       holes(g, rng, spec);
       despeckle(g);
+      if (spec.border_clear && !g.mask && spec.holes !== 'moat') clearBorder(g, barrier);
       bushes(g, rng, spec);
       g.symmetrize();
       if (spec.unleak || spec.unnarrow) tidy(g, spec);

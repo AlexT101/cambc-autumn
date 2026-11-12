@@ -60,6 +60,10 @@ const P05_PLAN = [['ladder05', 63, { calib: 4, over: 1.6 }], [{ mutate: 'random0
 // Ranked play (2026-11-11 23:10 to 11-12 08:30, 113,965 games, top teams' too) draws the 170 pool maps uniformly,
 // so the 42 05 maps are 42/170 of it: ladder-v2's 256 maps stand for the 128, and 84 05-style maps for the 42.
 const LADDER_V3_PLAN = [...LADDER_PLAN, ...P05_PLAN];
+// ladder-v4 (2026-11-12): ladder-v3 with the full-pool layer (generate.mjs POOL_FIT) on its generated entries; the
+// mutated ones are ladder maps, frame and spawns included.
+const withFit = (plan, fit) => plan.map(([what, n, e]) => typeof what === 'string' ? [what, n, { ...e, fit }] : [what, n, e]);
+const LADDER_V4_PLAN = [...withFit(LADDER_PLAN, 'pool'), ...withFit(P05_PLAN, 'pool05')];
 // Suite mixes: the plan, the calibration, how counts are drawn (fixed or varied per seed) and how candidates are
 // kept ('diverse': farthest-point picks from --oversample (3) times the count; 'first': the first that succeed,
 // in seed order, from 1.3 times the count, so the suite keeps the sampler's distribution). The -v1 mixes remake
@@ -68,6 +72,7 @@ const MIXES = {
   ladder: { plan: LADDER_PLAN, calib: 2, counts: 'fixed', select: 'first', over: 1.3 },
   'ladder-v2': { plan: LADDER_PLAN, calib: 3, counts: 'fixed', select: 'first', over: 1.3 },
   'ladder-v3': { plan: LADDER_V3_PLAN, calib: 3, counts: 'fixed', select: 'first', over: 1.3 },
+  'ladder-v4': { plan: LADDER_V4_PLAN, calib: 3, counts: 'fixed', select: 'first', over: 1.3 },
   'ladder-05': { plan: P05_PLAN, calib: 4, counts: 'fixed', select: 'first', over: 1.3 },
   paradigms: { plan: PARADIGM_PLAN, calib: 3, counts: 'fixed', select: 'first', over: 1.5 },
   varied: { plan: PLAN, calib: 2, counts: 'varied', select: 'diverse', over: 3 },

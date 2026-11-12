@@ -29,6 +29,8 @@ serve every candidate, so a changed bot needs a new dir.
   plus the 05 maps' style at their 42/170 share of ranked play; research/ideas-2026-11-12/ladderv3/). Its batch
   configs and parts live under suites-v3/ and its run names end -Pv3, so no v2 batch or cached REF run is reused for
   it. Grow it with `py tools/fgate_batch.py grow SEEDS DIR... --pool v3`.
+- --pool v4 (opt-in) is the same for FGATE_HOME/pool-v4: `--mix ladder-v4` maps (ladder-v3 with the full-pool layer:
+  open frames, hole-framed arenas and close spawns at the ladder's rates), suites-v4/ and -Pv4.
 """
 import argparse, fcntl, hashlib, importlib.util, json, math, os, random, re, subprocess, sys, time
 from pathlib import Path
@@ -45,8 +47,8 @@ PART = 320       # maps a suite (see suite())
 # The ladder side read: the pinned 128 maps (default; every run before 2026-11-12) or all maps under maps/ (--ladder all).
 # A set other than the 128 has its own opponent config and run names, so its REF runs never mix with the 128's.
 LADDER = '128'
-# The fresh pool: v2 (FGATE_HOME/pool, --mix ladder-v2; the default) or v3 (pool-v3, --mix ladder-v3), each with its
-# own suite dirs, batch configs and run names.
+# The fresh pool: v2 (FGATE_HOME/pool, --mix ladder-v2; the default), v3 (pool-v3, --mix ladder-v3) or v4 (pool-v4,
+# --mix ladder-v4), each with its own suite dirs, batch configs and run names.
 POOL = 'v2'
 TIMEOUT = 600    # seconds a game; an unmetered body cannot run out of fuel, so only this stops a hung one
 LO, SCREEN, LIVE = math.log(0.05 / 0.95), math.log(0.95 / 0.05), math.log(99)
@@ -139,13 +141,13 @@ def pool_tag():
 
 
 def is05(name):
-    """A ladder-v3 map of the 05 maps' part (calibration 4's ladder05, or a 05 map under random edits)."""
+    """A ladder-v3 or ladder-v4 map of the 05 maps' part (calibration 4's ladder05, or a 05 map under random edits)."""
     return name.startswith('gen-ladder05-') or name.startswith('mut-05')
 
 
 def grow(dirs, seeds, which='v2'):
     """Append the maps under dirs to the pool, after the ones it has (so batches already played keep their maps):
-    byte-new against the pool and the ladder, one per layout key, in a seeded order. The v3 pool interleaves the 05
+    byte-new against the pool and the ladder, one per layout key, in a seeded order. The v3 and v4 pools interleave the 05
     part with the rest at their share of the added maps, so every batch holds it at that share, not a draw of it."""
     import shutil, tempfile
     home = pool_dir(which); path = home / 'index.json'
@@ -171,7 +173,7 @@ def grow(dirs, seeds, which='v2'):
         new.append(([r['name'], int(f['altars'] == 1 or (f['altars'] == 2 and (f.get('altar_centre') or 0) < 0.06))], r['key']))
     random.Random(len(idx['maps'])).shuffle(new)
     tranche = {'maps': len(new), 'seeds': seeds, 'added': time.strftime('%Y-%m-%d')}
-    if which == 'v3':
+    if which in ('v3', 'v4'):
         a, b = [x for x in new if is05(x[0][0])], [x for x in new if not is05(x[0][0])]
         # Each next map from the part furthest behind its share.
         new, ia, ib = [], 0, 0
@@ -309,9 +311,9 @@ def main(argv=None):
     ap.add_argument('--ladder', choices=('128', 'all'), default='128',
                     help='the ladder side read: the pinned 128 maps (default, comparable with every earlier gate) or all maps '
                     'under maps/ (its own opponent configs and run names, so REF plays it afresh)')
-    ap.add_argument('--pool', choices=('v2', 'v3'), default='v2',
+    ap.add_argument('--pool', choices=('v2', 'v3', 'v4'), default='v2',
                     help='the fresh pool: v2 (default, --mix ladder-v2) or v3 (pool-v3, --mix ladder-v3: the 05 maps\' style at '
-                    'their share of ranked play; its own batch configs and run names, so REF plays it afresh)')
+                    'their share of ranked play; its own batch configs and run names, so REF plays it afresh) or v4 (pool-v4, --mix ladder-v4)')
     a = ap.parse_args(argv)
     global LADDER, POOL
     LADDER, POOL = a.ladder, a.pool
@@ -458,10 +460,10 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-    if sys.argv[1:2] == ['grow']:  # py tools/fgate_batch.py grow SEEDS DIR... [--pool v3]: add generated maps to a pool
+    if sys.argv[1:2] == ['grow']:  # py tools/fgate_batch.py grow SEEDS DIR... [--pool v3|v4]: add generated maps to a pool
         rest = sys.argv[3:]; which = 'v2'
         if '--pool' in rest: k = rest.index('--pool'); which = rest[k + 1]; del rest[k:k + 2]
-        if which not in ('v2', 'v3'): raise SystemExit(f'unknown pool {which}: v2 or v3')
+        if which not in ('v2', 'v3', 'v4'): raise SystemExit(f'unknown pool {which}: v2, v3 or v4')
         grow(rest, sys.argv[2], which)
     else:
         main()

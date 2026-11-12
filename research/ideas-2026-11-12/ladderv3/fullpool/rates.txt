@@ -1,0 +1,13 @@
+[128] ladder   fe==1 0.312 fe<.5 0.133 | sr<.5 0.125 sr<.7 0.180 | n 128
+[128] v3       fe==1 0.167 fe<.5 0.066 | sr<.5 0.035 sr<.7 0.149 | n 2048
+[128] v4       fe==1 0.327 fe<.5 0.106 | sr<.5 0.113 sr<.7 0.220 | n 2048
+[05] ladder   fe==1 0.725 fe<.5 0.125 | sr<.5 0.200 sr<.7 0.275 | n 40
+[05] v3       fe==1 0.257 fe<.5 0.080 | sr<.5 0.065 sr<.7 0.152 | n 672
+[05] v4       fe==1 0.610 fe<.5 0.104 | sr<.5 0.202 sr<.7 0.304 | n 672
+[all] ladder   fe==1 0.411 fe<.5 0.131 | sr<.5 0.143 sr<.7 0.202 | n 168
+[all] v3       fe==1 0.190 fe<.5 0.070 | sr<.5 0.043 sr<.7 0.150 | n 2720
+[all] v4       fe==1 0.397 fe<.5 0.106 | sr<.5 0.135 sr<.7 0.241 | n 2720
+v3 vs ladder[all]: p<0.01 3, p<0.05 7; lowest fill_edge 9.9e-09, fill_corner 4.0e-03, altar_near 8.2e-03, camp_ratio 1.3e-02, altar_centre 1.3e-02, spawn_rel 3.1e-02
+v3 vs ladder[05]: p<0.01 2, p<0.05 5; lowest fill_edge 4.6e-08, fill_corner 8.2e-04, altar_centre 1.4e-02, max_group 3.1e-02, altar_near 3.8e-02, choke_rel 1.6e-01
+v4 vs ladder[all]: p<0.01 2, p<0.05 3; lowest altar_centre 7.0e-03, fill_corner 9.6e-03, choke 3.0e-02, boundary 5.2e-02, detour 5.6e-02, camp_ratio 7.3e-02
+v4 vs ladder[05]: p<0.01 1, p<0.05 1; lowest altar_centre 3.8e-03, max_group 5.8e-02, spawn_rel 6.9e-02, altar_slots 9.1e-02, reach_frac 1.1e-01, fill_corner 1.1e-01

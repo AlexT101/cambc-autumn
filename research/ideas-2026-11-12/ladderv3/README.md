@@ -133,3 +133,114 @@ Two caveats:
 - A v3 gate starts REF's cache afresh (16 batches, 4 already played for chy-life).
 - If the coordinator believes the final leans to the newest maps beyond their ranked share, ladder-05 can be
   weighted up. Nothing measured here supports that: the devs' pool and ranked play both weigh every map equally.
+
+## Full pool: ladder-v4 (2026-11-12, later the same day)
+
+The user asked to "consider considering full ladder map pool for features in map gen". I read this as: check the
+generator against the whole pool on every feature at once, not just against compare.py's 74 metrics one at a time,
+and fit whatever that finds. ladder-v3 bytes are unchanged. The fit is a new mix, `--mix ladder-v4`, with its own
+pool, `--pool v4`.
+
+### What the whole pool still showed
+
+- **Joint test** ([c2st.py](c2st.py), [fullpool/c2st.txt](fullpool/c2st.txt)). A classifier on all 130 per-map
+  features scores 168 ladder maps against as many generated ones (5-fold, 20 draws). The null fits two generated draws
+  against each other.
+
+  | set | forest AUC | logistic AUC | null |
+  |---|---|---|---|
+  | v2 | 0.64 | 0.60 | 0.50 ± 0.03 |
+  | v3 | 0.63 | 0.61 | 0.50 ± 0.03 |
+
+  So v3 is still told apart, about 4 sd above null. The classifier leaned on `fill_edge`, `fill_corner`, `boundary`
+  and `spawn_rel`.
+- **Every metric** ([ksall.py](ksall.py)). KS on all 56 scalar metrics finds v3 off at p < 0.01 on three:
+  - `fill_edge` (p 1e-8);
+  - `fill_corner`;
+  - `altar_near`, which follows spawn distance.
+  
+  None of the three is in compare.py's list.
+- **The causes, each measured on the 168:**
+  - *Open frame.* The ladder leaves its 2-tile frame free of walls and holes on 41% of maps (31% of the 128, 72.5% of
+    the 05 maps). v3 does so on 19%: scattered walls and lakes land on the edge as often as anywhere.
+  - *Arenas.* 13% of ladder maps are hole- or wall-framed arenas, with under half the frame playable. v3 has 7%.
+  - *Close spawns.* 14% of ladder maps have spawn_rel under 0.5 (walk distance under half the mean side). v3 has 4%.
+    Calibration 2's spawn gates (walk ≥ 0.42 of the long side, gap ≥ 0.45 of the short side) exclude them outright.
+  - The 05 author reused older layouts: 05cassette is 04keyhole (90x41, spawns 31 apart, altar 15), and likewise
+    clouds/standing-stones, crop-circle/sunburst, picnic/plaza, pods/bridges and runway/gap. So the close-spawn
+    shapes recur.
+
+### The layer
+
+`POOL_FIT` in generate.mjs is chosen per plan entry with `{ fit: 'pool' }` (over calibration 3) or `'pool05'` (over
+calibration 4). Mutated entries are untouched: they are ladder maps, frame and spawns included.
+
+- `border_clear` clears walls and holes from the frame. It applies 0.9 of the time to the 128 part and always to the
+  05 part. It never applies to shaped maps or moats, and winding barriers keep their ends.
+  - The barrier ends matter. Opening them halved the barrier maps' detours (detour ≥ 2: 30% to 13%).
+  - The ladder agrees: its detour maps' frames are 92-99% open, so the barriers there reach the edge.
+- `pool05` sets `winding` to 0.25. The 05 maps have half the 128's detours (10% against 20%).
+- `spawn_mode` adds `near` 13% (05: 19%) and `mid` 2%. Their walk floor goes: placeSpawnMode's own gap bounds the walk.
+- `shape` adds circle, diamond, star or blob arenas on 14% of generated maps, with a void of hole (3) or wall (1).
+  Shaped maps use `far` spawns inside the mask.
+
+The weights were fitted on tuning seeds 7340001-7340016, then 7350001-7350008 and 7360001-7360008. Both of those
+became tuning sets when the barrier fix came after them. Byte identity was checked with the same seeds at HEAD and in
+the working tree for ladder, ladder-v2, ladder-v3, ladder-05, paradigms and varied: all six identical.
+
+### Validation on held-out seeds 7370001-7370008 (2,720 maps)
+
+| check | v3 | v4 |
+|---|---|---|
+| classifier AUC, forest / logistic (null 0.50 ± 0.04) | 0.63 / 0.61 | 0.54 / 0.55 |
+| all 56 metrics vs the 168, p < 0.01 | 3 | 2 (`altar_centre` 0.007, inherited; `fill_corner` 0.010) |
+| all 56 metrics vs the 05 maps, p < 0.01 | 2 | 1 (`altar_centre`, inherited from calibration 4) |
+| compare.py's 74 vs the 168, p < 0.01 / p < 0.05 | 0 / 1 (`spawn_rel` 0.031) | 0 / 1 (short side 0.029) |
+| compare.py's 74 vs the 05 maps, p < 0.01 / p < 0.05 | 0 / 1 | 0 / 0 |
+| open frame, all / 128 / 05 (ladder 0.41 / 0.31 / 0.73) | 0.19 / 0.17 / 0.26 | 0.40 / 0.33 / 0.61 |
+| arenas (ladder 0.13) | 0.07 | 0.11 |
+| spawn_rel < 0.5, all / 128 / 05 (ladder 0.14 / 0.13 / 0.20) | 0.04 / 0.04 / 0.07 | 0.14 / 0.11 / 0.20 |
+| detour ≥ 2 (ladder 0.18) | 0.15 | 0.15 |
+
+Files: [fullpool/compare-170.md](fullpool/compare-170.md), [fullpool/compare-05.md](fullpool/compare-05.md),
+[fullpool/ks-all-170.md](fullpool/ks-all-170.md), [fullpool/ks-all-05.md](fullpool/ks-all-05.md) and
+[fullpool/rates.txt](fullpool/rates.txt).
+
+What remains:
+- `altar_centre` against the 05 maps, carried from calibration 4.
+- Short side, slightly large (p 0.029). Arenas and `far` spawns fail more often on small maps.
+- Beyond that the classifier finds nothing it can use.
+
+### Win rates: [fullpool/results.md](fullpool/results.md) ([analyse4.py](analyse4.py))
+
+Setup: pool-v4 b000-b003 (10,240 fresh maps), the step-3 bots, the same bodies (rt-Flp4, mf-c1-lv3) and fuel 100k.
+
+| bot | v2 | v3 | v4 | v4 minus v3 |
+|---|---|---|---|---|
+| c520-ps | 77.1 | 77.4 | 77.7 | +0.3 ±0.6 |
+| chy-life | 77.0 | 77.5 | 77.5 | +0.0 ±0.6 |
+| oc-dfuel-506 | 68.9 | 69.4 | 69.3 | −0.1 ±0.6 |
+
+- **Paired differences (maps as units)**, from v2 to v3 to v4:
+  - c520-ps − chy-life: +0.05, −0.08, +0.19 (±0.32);
+  - charybdis − ocean: +8.2, +8.1, +8.4 (±0.6).
+- **The order does not change.**
+- **By feature, on v4 maps** (c520-ps / chy-life / oc-dfuel-506):
+  - Close-spawn maps run about a point below the rest: 76.3 / 76.0 / 68.2 against 78.0 / 77.8 / 69.5.
+  - Open frames run about a point above.
+  - All three bots move together, so the mix shift cancels in a pairwise gate.
+
+### Recommendation
+
+The full-pool fit is real: v3 was distinguishable from the pool and v4 is not.
+
+It does not change today's verdicts. Win rates move under 0.3 points and the bot order holds, so gates on pool-v3
+stay valid and nothing needs rerunning.
+
+Use `--pool v4` for new gates:
+- It is the closer target, at no cost. pool-v4 holds 43,327 maps, 16 batches (2500000-2500127), with the 05 part
+  at 24.7% in each. REF's cache starts afresh, as with any new pool (chy-life and oc-dfuel-506 have b000-b003).
+- Use it especially for changes that touch close-spawn or early-fight play. A v3 gate gives close spawns a third of
+  their ranked weight (4.5% of maps against 14%).
+
+Keep running gates on v3. Their bytes are unchanged.
