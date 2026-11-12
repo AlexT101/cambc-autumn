@@ -10,6 +10,38 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## Mite's rules from replays (2026-11-12): its priority is a state machine; it retreats below 0.4 health or with 11+ gems, never for numbers; Vesper is its gold sink and killer; its draft is a map-feature model
+
+Analysis only; no games. Details: [ideas-2026-11-12/mitere](ideas-2026-11-12/mitere/README.md). Data: 495 ranked Mite
+replays (11-10 to 11-12), our 375 live scrims against r7, and 48k capture rows.
+
+- **Map pool:** the platform pool is now 170 maps. 42 `05*` maps entered ranked play at 11-11 23:10.
+- **Draft:**
+  - deterministic per (map, side) and independent of the opponent;
+  - map-specific on the new maps from their first game, so a feature model;
+  - a depth-4 tree predicts new-map teams 61% and the 5-pick variable slot 76%;
+  - 9% of cells changed since 11-10.
+- **Priority** = `state << 10 | body index << 7 | seen-enemy mask`. The states are quiet, contact (enemy within 4),
+  alert (enemy 5-6), retreat, kill and channel. Identical since 11-10.
+- **Retreat:** health < 0.40 (66-77% against 1-3% above 0.6), or a bag of 11+ with an enemy within about 4 (55-91%;
+  bag ≤ 8: ≤ 6%). Numbers never enter. Retreating bodies still hit 37-41% of their turns.
+- **Fighting:** basic attacks on the lowest absolute health, spells on the nearest. No carrier preference. Far
+  teammates do not converge on fights.
+- **Macro:**
+  - an opening pack: early clears by 2.5 bodies against our 1.9;
+  - Vesper captures and takes 50-59% of the gold, and builds Greed-Strength;
+  - small middle-altar banks, median bag 24;
+  - Prism, when drafted, is a finisher bank: 7 of 52 complete against us;
+  - crystals as wall shortcuts, 4 a game;
+  - locks only after about r350;
+  - wards re-placed on cooldown.
+- **Against us** (r7, Mite 34%):
+  - its wins come through our deaths (9.65 against 3.24 a game) and gems lost (364 against 52);
+  - its Vesper makes 3.86 kills a game in its wins;
+  - its Vesper dies 1.09 times a game in our wins and 0.29 in its wins.
+  - Live, charybdis and ocean are level on small maps, so the local small-map gap is not seen against real Mite.
+- **Leads (untested):** focus Mite's Vesper; 2-on-1 empty healthy Mite bodies; zone its carriers.
+
 ## Forking live Mite games, and per-composition constants (2026-11-12): forks work and find a known gain at about a fresh gate's cost a game; the body plays on 5-7 points weaker than Mite from live positions; no pick-count interaction in 2.7M SPSA games
 
 Notes, the runner subcommand and scripts: [ideas-2026-11-12/forkcomp/README.md](ideas-2026-11-12/forkcomp/README.md).
