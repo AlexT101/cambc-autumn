@@ -104,7 +104,9 @@ class Batches:
         done = {e['group'] for e in events if e['ev'] in ('played', 'finished')}
         return not any(e['ev'] == 'created' and e['group'] not in done for e in events)
 
-    def activate(self, B, target, why):
+    def activate(self, B, target, why, sel=None):
+        if sel == target:
+            return   # selected: the platform is building it (an old version is rebuilt on activation); don't re-queue
         last = B.get('_activate', {})
         if last.get('target') == target and time.time() - last.get('t', 0) < RETRY:
             return
@@ -157,7 +159,7 @@ class Batches:
             c = s.prepare(st)
             if c is None:
                 if live != rest or sel != rest:
-                    self.activate(B, rest, 'no candidate')
+                    self.activate(B, rest, 'no candidate', sel)
                 self.final(B, rest)
                 s.save(st)
                 return
@@ -222,7 +224,7 @@ class Batches:
         s, ls, rest = self.s, self.ls, B['rest']
         self.batch_file(False)
         if live != rest or sel != rest:
-            self.activate(B, rest, 'rest')
+            self.activate(B, rest, 'rest', sel)
             return
         self.plan_rest(B, rest, cur['rsets'])
         unplanned, planned_pending, tasks, created, dropped = self.gate_tasks(cur)
@@ -276,7 +278,7 @@ class Batches:
         cur['phase'] = 'activate_batch'
         B.pop('_note', None)
         if live != cur['version']:
-            self.activate(B, cur['version'], 'batch')
+            self.activate(B, cur['version'], 'batch', sel)
 
     def phase_activate_batch(self, st, B, cur, live, sel):
         self.batch_file(True)
@@ -284,7 +286,7 @@ class Batches:
             cur['phase'] = 'batch'
             cur['batches'][-1]['live_at'] = self.s.now()
         else:
-            self.activate(B, cur['version'], 'batch')
+            self.activate(B, cur['version'], 'batch', sel)
 
     def phase_batch(self, st, B, cur, live, sel):
         self.batch_file(True)
@@ -299,7 +301,7 @@ class Batches:
                     return   # the runner creates them next
         cur['batches'][-1]['end'] = self.s.now()
         cur['phase'] = 'activate_rest'
-        self.activate(B, B['rest'], 'batch played')
+        self.activate(B, B['rest'], 'batch played', sel)
 
     def phase_activate_rest(self, st, B, cur, live, sel):
         if live == sel == B['rest']:
@@ -309,7 +311,7 @@ class Batches:
             self.s.log(f"batches: batch {len(cur['batches'])} of v{cur['version']} played; v{B['rest']} active again "
                        f"(minutes live {minutes(B, time.time())})")
         else:
-            self.activate(B, B['rest'], 'restore')
+            self.activate(B, B['rest'], 'restore', sel)
 
     def finish(self, st, B, cur):
         res = paired(self.ls, cur['version'], B['rest'], cur['rsets'])
