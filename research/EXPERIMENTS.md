@@ -10,6 +10,32 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## Emblem lab round 6 on c520-ps (2026-11-12, the lab filler's first round): six emblem edits, 50.80% at 200k and 50.59% at 100k on fresh ladder-v3 maps
+
+The lab filler (research/ideas-2026-11-12/labs, user 2026-11-12: labs on idle compute) ran round 5's edit lab
+(tools/emblab `elab.py`, same 331-edit library rebuilt on the base) on `variants/c520-ps` (520 + psafe-a), its own
+fresh ladder-v2 pool (seeds 7700000-7700199, 50,905 maps), against a second lab team (0.5) and the Fish/Mite bodies
+at noise seeds 952/953. 3.6M games in ~3.5 h on a shared box; the vehicles played as plain bots at 100M (3/3).
+Replication (the screen's 20 survivors on 1.12M new games): six edits at +0.25 and z >= 2, combined as
+`variants/lab-emb6-c520-ps` (`emblem_table.h` and `shop.cc` only; patch `labs/patches/lab-emb6-c520-ps.patch`):
+collectors-priced-x1 +0.68 (z 5.4), diversify-after-collectors +0.61 (4.7), prism-home-hp-k7 +0.49 (3.9),
+prism-collectors-str-k11 +0.42 (3.3), prism-collectors-foc-k8 +0.39 (3.1), price-tribute-x0.5 +0.28 (2.2). The one
+placebo in the replication read +0.06.
+
+Results against c520-ps (`tools/fgate.py --pool v3`, unmetered run-time bodies, both sides; v3 batches 8-14 at 200k,
+16-25 at 100k, maps no gate had played; 2490500-2490629 grown for it):
+
+| gate | fuel | fresh win% (95% CI) | games | Fish / Mite | verdict |
+|---|---|---|---|---|---|
+| Flp4 / Mt3q | 200k | **50.80% (50.55-51.05)** | 143,360 | 50.45 / 51.15 | NARROWED, gain (screen) |
+| Flp4 / mf-c2, 2 batches | 200k | 51.37% (50.85-51.89) | 40,960 | 50.51 / 52.24 | fixed read |
+| Flp4 / Mt3q | 100k | **50.59% (50.35-50.83)** | 204,800 | 50.61 / 50.57 | NARROWED (no SPRT stop; high LLR -0.63) |
+| Flp4 / mf-c2, 2 batches | 100k | 50.72% (50.13-51.31) | 40,960 | 50.62 / 50.82 | fixed read |
+
+Ladder side reads +1.34 (200k) and +1.25 (100k). No failed games or early losses. At 100k the point estimate is past
+the accept line (50.5) and the CI clear of 50, but the gate's SPRT did not reach ACCEPT before it narrowed. Not merged
+(teammate owns bots/charybdis): candidate and patch for the coordinator.
+
 ## Ladder-v3 mapgen for the 170-map pool (2026-11-12): ranked play is uniform over the 170 (05 maps 24.7%); ladder-v3 matches them; the bots' order and win rates don't move
 
 Notes: [ideas-2026-11-12/ladderv3/README.md](ideas-2026-11-12/ladderv3/README.md). Ranked play since the 05 maps went
