@@ -12,6 +12,11 @@ the rest version's control groups are held (data/HOLD-TASKS.json: pending, not d
 no candidate is waiting, while the rest version sits active; a candidate's gate is reported when its own groups are
 in, and again with the full pairing once the control has played.
 
+After the queue, before the control: sched/after-queue.json steps (kind repin_replay) wake "choose bot", wait for
+sched/<choose> (one of our versions, replayed on the repinned opponents; or a bot dir, built, uploaded and played on
+all), then repin those opponents to a new refset (captured by its first group, so the then-latest bot) and play the
+chosen bot on it in batches; the control then also covers the new refset's cells.
+
 Batch cycle: rest version active, nothing in flight, and quota room for a full batch (or, once, whatever fits when
 sched/BATCH-NOW exists) -> upload (first batch) or activate the candidate, append the next `room` gate tasks and write
 data/BATCH (the runner pauses replay collection and raises its in-flight cap) -> once those tasks are created and every
@@ -152,24 +157,93 @@ class Batches:
         resting = live == sel == rest and (cur is None or cur['phase'] == 'rest')
         self.observe(st, B, rest, rsets_now, resting)
         # A queued line counts as waiting too: control must not slip in while the next candidate builds.
-        self.hold_control(rest, hold=cur is not None or bool(s.queue_lines()))
+        after = self.after_steps(B)
+        self.hold_control(rest, hold=cur is not None or bool(s.queue_lines()) or bool(after))
         if cur is None:
             self.batch_file(False)
             self.plan_rest(B, rest, rsets_now)
             c = s.prepare(st)
-            if c is None:
+            if c is None and after:
+                cur = self.start_after(st, B, after[0])
+                if cur is None:   # waiting for the bot choice: v115 active, control held
+                    if live != rest or sel != rest:
+                        self.activate(B, rest, 'awaiting choice', sel)
+                    s.save(st)
+                    return
+            elif c is None:
                 if live != rest or sel != rest:
                     self.activate(B, rest, 'no candidate', sel)
                 self.final(B, rest)
                 s.save(st)
                 return
-            self.hold_control(rest, hold=True)
-            cur = B['cur'] = {'cand': c, 'label': c['label'], 'version': None, 'rsets': rsets_now, 'phase': 'rest',
-                              'batches': [], 'picked_at': s.now()}
-            s.log(f"batches: next candidate {c['label']} on {rsets_now}; v{rest} control held until candidates finish")
-            s.save(st)
+            else:
+                self.hold_control(rest, hold=True)
+                cur = B['cur'] = {'cand': c, 'label': c['label'], 'version': None, 'rsets': rsets_now,
+                                  'phase': 'rest', 'batches': [], 'picked_at': s.now()}
+                s.log(f"batches: next candidate {c['label']} on {rsets_now}; v{rest} control held until candidates "
+                      f"finish")
+                s.save(st)
         getattr(self, 'phase_' + cur['phase'])(st, B, cur, live, sel)
         s.save(st)
+
+    def after_steps(self, B):
+        """Steps of sched/after-queue.json not done yet: they run once the queue is empty, before the control."""
+        try:
+            steps = json.loads((self.s.H / 'after-queue.json').read_text())
+        except (OSError, ValueError):
+            return []
+        return [x for x in steps if x['id'] not in B.setdefault('after_done', [])]
+
+    def start_after(self, st, B, step):
+        """repin_replay: wake 'choose bot' and wait for sched/<step['choose']> (a version we uploaded, replayed on the
+        repinned opponents only, or a bot dir, built and uploaded as usual and played on every opponent). Then repin;
+        the new refset's pin is the opponent's current bot when the first group under it is created."""
+        if step['kind'] != 'repin_replay':
+            raise ValueError(f"unknown after-queue step {step}")
+        choice = self.s.H / step['choose']
+        if not choice.exists():
+            if B.get('after_wait') != step['id']:
+                B['after_wait'] = step['id']
+                self.s.log(f"batches: after-queue {step['id']} ready: choose bot (write {choice}: version or bot dir)")
+                self.s.wake({'event_id': f"after-{step['id']}-choose", 'note': f"{step['id']} ready: choose bot",
+                             'write': str(choice), 'at': self.s.now()})
+            return None
+        val = choice.read_text().strip().removeprefix('v')
+        f = self.s.H / 'refsets.json'
+        old = self.s.refsets()
+        new = dict(old, **step['refsets'])
+        cand, version, rsets = None, None, {o: new[o] for o in step['refsets']}
+        if val.isdigit():
+            version = int(val)
+            if version not in {h['version'] for h in st['history']}:
+                raise ValueError(f'{choice}: v{version} is not one of our submissions')
+            label = f"v{version} {step['id']} replay"
+        else:
+            d = Path(val)
+            label = d.name
+            c = dict(kind='queue', label=label, dir=str(d), base=f"live-main506 (= v{B['rest']})",
+                     line=f"after-queue {step['id']}: {d}", prio=0,
+                     note=f"arm {label} on live-main506 (= v{B['rest']}); {step['id']} pins"[:80])
+            cand, err = self.s.build(c)
+            if err:
+                self.s.log(f"batches: after-queue {step['id']}: {label} failed to build: {err[:200]}")
+                self.s.wake({'event_id': f"after-{step['id']}-build-failed", 'error': err[:300], 'at': self.s.now()})
+                choice.rename(choice.with_suffix('.failed'))
+                return None
+            rsets = dict(new)
+        if old != new:
+            (self.s.H / f"refsets.json.bak-{step['id']}").write_text(json.dumps(old, indent=2) + '\n')
+            tmp = f.with_suffix('.tmp')
+            tmp.write_text(json.dumps(new, indent=2) + '\n')
+            tmp.replace(f)
+        B['after_done'].append(step['id'])
+        cur = B['cur'] = {'cand': cand, 'label': label, 'version': version, 'rsets': rsets, 'phase': 'rest',
+                          'batches': [], 'picked_at': self.s.now(), 'after_step': step['id']}
+        self.s.log(f"batches: after-queue {step['id']}: refsets {old} -> {new}; {label} on {rsets}; control still held")
+        self.s.wake({'event_id': f"after-{step['id']}", 'repin': new, 'previous': old, 'bot': label,
+                     'rsets': rsets, 'at': self.s.now()})
+        self.s.save(st)
+        return cur
 
     def hold_control(self, rest, hold):
         tasks, created, finished, dropped, _ = self.ls.state()
