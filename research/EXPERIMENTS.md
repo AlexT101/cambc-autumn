@@ -17879,3 +17879,33 @@ Results against charybdis-p3 (fgate 200k, pool batches 0-11):
   gold is level to slightly down. The losses are on multi-site maps; one-site maps are level. The enemy-side arms
   change 0.7-2.4% of games: a blow on a recalling enemy is taken for its own worth either way.
 - **Verdict:** merge none; not run at 100k (no 200k gain). The base already spends gold about as well as these forms.
+
+## (charybdis, 2026-11-12) BattleCats exploits behind a three-team priority classifier: inert on the bodies, queued live
+
+User: "dont need to build stand in. but do classify them. try a few quick / simple exploits ... (finals is bo21)"; then
+"fix mite classification". Base `variants/charybdis-p3` (519). Details: `research/ideas-2026-11-12/bcexploit/`.
+
+- **Classifier** (`model/opp_detect`; variants `bcx-det`, `bcx-x`, `bcx-live`). Per instance, from the priorities of
+  enemies in sight: a class holds once its core reads reach 2-3 and at most one counted read in 11 falls outside its
+  encoding. BattleCats: approach levels `L − 7m`, m ≥ 9. Fish: its rank code. Mite: its quiet and channel values,
+  plain or shifted `<< 10`, which is its 11-11 encoding.
+  - Recall per instance at r100 / r300 / r1000: BattleCats 0.55 / 0.80 / 0.99; Mite r7 0.42 / 0.74 / 0.94 (r6 0.43 /
+    0.70 / 0.94); Fish 0.58 / 0.78 / 0.99. The limit is sight.
+  - Wrong calls: none among the three. 17 other teams stay unknown, except Sponge as Mite (2.5% at r300) and one
+    policy wonk instance as BattleCats.
+  - BattleCats' 04:22 version (5 check games): same drafts and encoding, read at 0.74 / 1.00.
+  - Fuel +209 a turn; bench 16/16 identical.
+- **Exploits on a BattleCats read:**
+  - lock dodge: no tribute start that a visible BattleCats lock carrier can reach before it lands;
+  - keep our lock for its Prism bank channel: no proactive lock against a BattleCats team with a Prism.
+
+Results against charybdis-p3 (fgate 200k, pool batches 0-1):
+
+| arm | win% (95% CI) | games | changed vs detector alone |
+|---|---|---|---|
+| bcx-x | 50.04 (49.97-50.12) | 40,960 | 3 of 21,504 (length only) |
+| bcx-det | 50.04 (49.97-50.12) | 40,960 | n/a |
+
+- **Verdict:** inert where BattleCats is absent. BattleCats itself can only be read live: `bcx-live` is queued at
+  priority 88 (paired against v116 on Fish r2 / Mite r7 / BattleCats r7). It carries an `OPPD` printf trace (+94
+  fuel a turn); `live_trace.py` tabulates it.
