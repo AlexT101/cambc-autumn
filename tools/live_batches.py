@@ -35,20 +35,56 @@ from ladder_opp_check import Evidence, InvalidComparison
 
 REST = 115
 RESERVE = 10          # the runner's --reserve: quota kept free for teammates
-PARTS = (('core', 99), ('ext', 90))
+PARTS = (('v1', 'core', 99), ('v1', 'ext', 90))
+# 2026-11-12: the pool grew to 170 (42 '05' maps). Their cells play only once the platform has accepted a group on them:
+# PROBE, the rest version's first new-map control group, is created ahead of the held control to find out.
+NEW = ('p170', 'new', 80)
+PROBE = f'v{REST}-p170new-r2-fish-01'
+
+
+def new_maps(ls, tasks=None):
+    """'ok' once PROBE was created, 'refused' if the runner dropped it, else 'pending'."""
+    events = ls.read_jsonl(ls.DATA / 'events.jsonl')
+    if any(e['ev'] == 'created' and e['task'] == PROBE for e in events):
+        return 'ok'
+    return 'refused' if any(e['ev'] == 'dropped' and e['task'] == PROBE for e in events) else 'pending'
+
+
+def parts(ls, rest=False):
+    """Gate parts: the 128-map set v1, plus the new maps once accepted (the rest version plans them already, held)."""
+    st = new_maps(ls)
+    return PARTS + ((NEW,) if st == 'ok' or (rest and st == 'pending') else ())
+
+
+def cyclic_groups(maps):
+    """Every (map, side) cell once, in five-game groups of five distinct maps: all maps on side a, then on side b,
+    cut in fives (any five consecutive cells have distinct maps); a short last group is filled from the first cells."""
+    cells = [(m, s) for s in 'ab' for m in maps]
+    groups = [cells[i:i + 5] for i in range(0, len(cells), 5)]
+    last = groups[-1]
+    for c in cells:
+        if len(last) == 5:
+            break
+        if c[0]['name'] not in {m['name'] for m, _ in last}:
+            last.append(c + ('filler',))
+    out = [[{'map': c[0]['name'], 'map_id': c[0]['id'], 'side': c[1], **({'filler': True} if len(c) > 2 else {})}
+            for c in g] for g in groups]
+    assert all(len(g) == 5 and len({x['map_id'] for x in g}) == 5 for g in out)
+    return out
 OBS_EVERY = 3600
 RETRY = 90            # seconds between repeated activation requests
 
 
-def specs(ls, version, rsets, now):
+def specs(ls, version, rsets, now, part_list=None):
     """Gate tasks with plan's ids (`ladder_scrims.py plan`), so the rest version's planned control matches them."""
-    maps = ls.load_set('v1')
     out = []
-    for part, prio in PARTS:
+    for setname, part, prio in part_list or parts(ls):
+        maps = ls.load_set(setname)
+        groups = ls.set_groups(maps[part], maps['core']) if setname == 'v1' else cyclic_groups(maps[part])
         for k, (opp, rs) in enumerate(rsets.items()):
             oid, name = ls.TEAMS[opp]
-            for i, g in enumerate(ls.set_groups(maps[part], maps['core']), 1):
-                out.append({'id': f'v{version}-v1{part}-{rs}-{opp}-{i:02d}', 'version': version, 'set': 'v1',
+            for i, g in enumerate(groups, 1):
+                out.append({'id': f'v{version}-{setname}{part}-{rs}-{opp}-{i:02d}', 'version': version, 'set': setname,
                             'part': part, 'purpose': 'set', 'opp_id': oid, 'opp_name': name, 'pin': 'ref',
                             'refset': rs, 'games': g, 'priority': prio, 'order': i, 'planned': now,
                             'campaign': 'batches', '_k': k})
@@ -157,6 +193,7 @@ class Batches:
         resting = live == sel == rest and (cur is None or cur['phase'] == 'rest')
         self.observe(st, B, rest, rsets_now, resting)
         # A queued line counts as waiting too: control must not slip in while the next candidate builds.
+        self.report_done(st, B)
         after = self.after_steps(B)
         self.hold_control(rest, hold=cur is not None or bool(s.queue_lines()) or bool(after))
         if cur is None:
@@ -247,7 +284,7 @@ class Batches:
 
     def hold_control(self, rest, hold):
         tasks, created, finished, dropped, _ = self.ls.state()
-        ids = sorted(t['id'] for t in tasks if t['version'] == rest and t.get('purpose') == 'set'
+        ids = sorted(t['id'] for t in tasks if t['version'] == rest and t.get('purpose') == 'set' and t['id'] != PROBE
                      and t['id'] not in created and t['id'] not in dropped) if hold else []
         f = self.ls.DATA / 'HOLD-TASKS.json'
         try:
@@ -279,7 +316,7 @@ class Batches:
 
     def plan_rest(self, B, rest, rsets):
         tasks = {t['id'] for t in self.ls.read_jsonl(self.ls.DATA / 'tasks.jsonl')}
-        new = [t for t in specs(self.ls, rest, rsets, self.s.now()) if t['id'] not in tasks]
+        new = [t for t in specs(self.ls, rest, rsets, self.s.now(), parts(self.ls, rest=True)) if t['id'] not in tasks]
         for t in new:
             self.ls.append_jsonl(self.ls.DATA / 'tasks.jsonl', t)
         if new:
@@ -320,8 +357,7 @@ class Batches:
         todo = (len(specs(ls, 0, cur['rsets'], None)) if cur['version'] is None
                 else len(unplanned) + len(planned_pending))
         if cur['version'] and todo == 0:
-            if last and last.get('reported'):
-                self.finish(st, B, cur)
+            self.finish(st, B, cur)   # every group has played; its result follows once collected (report_done)
             return
         room, cap = self.room()
         # Wait for a full batch: the rolling hour frees up, less one hourly observation per opponent.
@@ -388,16 +424,26 @@ class Batches:
             self.activate(B, B['rest'], 'restore', sel)
 
     def finish(self, st, B, cur):
-        res = paired(self.ls, cur['version'], B['rest'], cur['rsets'])
-        rec = {'event_id': f"batch-gate-v{cur['version']}", 'version': cur['version'], 'label': cur['label'],
-               'rest': B['rest'], 'rsets': cur['rsets'], 'batches': cur['batches'], 'paired_vs_rest': res,
-               'minutes_live': minutes(B, time.time()), 'at': self.s.now()}
-        self.ls.append_jsonl(self.s.H / 'gates.jsonl', rec)
-        self.s.wake(rec)
-        st['reported'].append(cur['version'])
-        B['done'].append({k: v for k, v in cur.items() if k != 'cand'} | {'result': res, 'done_at': self.s.now()})
+        B['done'].append({k: v for k, v in cur.items() if k != 'cand'} | {'phase': 'played', 'done_at': self.s.now()})
         B['cur'] = None
-        self.s.log(f"batches: gate v{cur['version']} ({cur['label']}) done: {json.dumps(res)}")
+        self.s.log(f"batches: gate v{cur['version']} ({cur['label']}) played; result once collected")
+
+    def report_done(self, st, B):
+        """A finished candidate's gate result, once its games are collected (control may still be held)."""
+        for c in B['done']:
+            if 'result' in c or not self.collected(c['version']):
+                continue
+            c['result'] = paired(self.ls, c['version'], B['rest'], c['rsets'])
+            c['phase'] = 'done'
+            rec = {'event_id': f"batch-gate-v{c['version']}-{c.get('after_step', 'gate')}", 'version': c['version'],
+                   'label': c['label'], 'rest': B['rest'], 'rsets': c['rsets'], 'batches': c['batches'],
+                   'paired_vs_rest': c['result'], 'minutes_live': minutes(B, time.time()), 'at': self.s.now()}
+            self.ls.append_jsonl(self.s.H / 'gates.jsonl', rec)
+            self.s.wake(rec)
+            if c['version'] not in st['reported']:
+                st['reported'].append(c['version'])
+            self.s.log(f"batches: gate v{c['version']} ({c['label']}) collected: {json.dumps(c['result'])}")
+            self.s.save(st)
 
     # ------------------------------------------------------------ hourly opponent observations (rest version only)
 
@@ -481,7 +527,7 @@ def report():
     print(f"rest v{B['rest']}; minutes live since {B['started_at']}: {minutes(B, time.time())}")
     cands = B['done'] + ([B['cur']] if B['cur'] else [])
     for i, c in enumerate(cands):
-        print(f"\n{c['label']} v{c.get('version')} ({c['phase'] if 'result' not in c else 'done'}), "
+        print(f"\n{c['label']} v{c.get('version')} ({c['phase']}), "
               f"{len(c['batches'])} batches")
         if not c.get('version'):
             continue

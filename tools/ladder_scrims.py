@@ -484,7 +484,8 @@ def cmd_run(args):
                             try:
                                 gid, out = create(t, source)
                             except CambcError as e:
-                                if "HTTP 400" not in str(e):
+                                # A request the API refuses (4xx, e.g. an unknown map) is dropped; rate limits are retried.
+                                if not re.search(r"HTTP 4\d\d", str(e)) or "HTTP 429" in str(e):
                                     raise
                                 append_jsonl(DATA / "events.jsonl", {"ev": "dropped", "task": t["id"], "at": now(),
                                                                      "why": str(e)[-300:]})
