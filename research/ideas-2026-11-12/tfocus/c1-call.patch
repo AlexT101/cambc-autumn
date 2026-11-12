@@ -1,0 +1,198 @@
+diff --git a/chy-tfocus-b525/src/bot.cc b/chy-tfocus-c1/src/bot.cc
+index 7ee00cd..983877e 100644
+--- a/chy-tfocus-b525/src/bot.cc
++++ b/chy-tfocus-c1/src/bot.cc
+@@ -755,6 +755,21 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
+     comms::claim(memory.claim);
+     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);
+     comms::chasing(world.round, world.me().alive && decision == Branch::chase);
++    {
++        // The enemy we struck this turn, else last turn, the weakest if several: allies weight it.
++        int call = -1;
++        float least = 0;
++        for (const auto mask : {engaged, engaged_before}) {
++            for (const auto& e : world.enemies) {
++                const auto h = static_cast<std::uint32_t>(e.handle);
++                if (h >= 32 || !(mask >> h & 1u) || !e.alive || !e.visible || e.max_health <= 0) continue;
++                const float f = e.health / e.max_health;
++                if (call < 0 || f < least) call = e.index, least = f;
++            }
++            if (call >= 0) break;
++        }
++        comms::focus(world.round, world.me().alive ? call : -1);
++    }
+     if (!world.is_stale()) publish_turn_order(world, comms::priority_payload(world));
+     memory.live_claim = live_claim;
+     memory.round = world.round;
+diff --git a/chy-tfocus-b525/src/combat/plan.cc b/chy-tfocus-c1/src/combat/plan.cc
+index 2876046..e3da090 100644
+--- a/chy-tfocus-b525/src/combat/plan.cc
++++ b/chy-tfocus-c1/src/combat/plan.cc
+@@ -17,6 +17,7 @@
+ #include "self_abilities.h"
+ #include "../model/world.h"
+ #include "../model/follow.h"
++#include "../model/comms.h"
+ 
+ namespace aph {
+ 
+@@ -235,6 +236,7 @@ struct Unit {
+     float full = 0;               // a foe's max health with its shield
+     float retaliation = 0, partner = no_partner_bound, bag = 0;
+     float taken = 1; // damage it takes per point dealt (a Durability emblem)
++    float called = 0; // allies' expected blows on it next (comms::called_blow), after taken
+     bool foe = true, spawn = false, stunnable = false, recall = false;
+     float stun = 0;                             // Marcella's armed attack's stun
+     float stop = 0;                             // a kill's worth beyond hit_worth (kill_stops)
+@@ -726,6 +728,15 @@ struct Search {
+         const int k = u[t].link;
+         return k < 0 || u[t].partner >= no_partner_bound ? u[t].partner : std::min(h[k], u[k].belief->health);
+     }
++    // hit_worth, on an enemy allies call priced at the health it has once their blows land
++    // (comms::called_blow): the sqrt in kill_distance makes damage there worth more, the assist
++    // into their kill included. Never below the plain worth: the call may not be kept.
++    float worth(int t, float d) const {
++        const auto& x = u[t];
++        const float v = hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full);
++        if (x.called <= 0 || x.spawn || d >= h[t] - 0.01f) return v;
++        return std::max(v, hit_worth(d, h[t] - x.called, false, x.bag, partner(t), x.full));
++    }
+     // A kill takes the partner with it.
+     void lose(int t, float d, Node& s) {
+         if ((h[t] -= d) > 0.01f) return;
+@@ -1304,6 +1315,7 @@ bool Search::read() {
+         x.partner = partner_bound(world, e);
+         x.bag = params::gem_value * static_cast<float>(pair_gems(world, e));
+         x.spawn = test(enemy_spawn, e.pos);
++        x.called = comms::called_blow(world, e) * e.taken;
+         x.stunnable = !stunned && e.facts().passive != Passive::stun_immune;
+         x.recall = recall;
+         x.stun = arms && x.stunnable ? stun_worth(world, e, true) : 0.0f;
+@@ -1403,7 +1415,7 @@ bool Search::hit_unit(int t, Node& s) {
+     const auto splashed = [&](int k) { return splash && k != t && dist(u[k].pos, x.pos) <= 1; };
+     if (x.foe) {
+         const bool m = x.link >= 0 && moot(t, d, splashed(x.link), dealt(x.link));
+-        if (!m) value += hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full) + cancel(t, d, false, s);
++        if (!m) value += worth(t, d) + cancel(t, d, false, s);
+         if (!m && s.armed && x.stunnable && !(s.stunned >> t & 1)) value += x.stun, s.stunned |= static_cast<std::uint16_t>(1u << t);
+         retaliation += x.retaliation;
+     } else {
+@@ -1416,7 +1428,7 @@ bool Search::hit_unit(int t, Node& s) {
+             const auto& o = u[j];
+             if (o.foe) {
+                 const bool m = o.link >= 0 && moot(j, dealt(j), splashed(o.link) && o.link > j, dealt(o.link));
+-                if (!m) value += hit_worth(dealt(j), h[j], o.spawn, o.bag, partner(j), o.full) + cancel(j, dealt(j), false, s);
++                if (!m) value += worth(j, dealt(j)) + cancel(j, dealt(j), false, s);
+                 retaliation += o.retaliation;
+             }
+             lose(j, dealt(j), s);
+@@ -1447,7 +1459,7 @@ bool Search::spell_unit(const Spell& sp, int t, Node& s) {
+     const float d = x.spell[sp.slot];
+     const float back = d > 0 ? x.retaliation : 0.0f;
+     if (x.suicidal[sp.slot] || (back > 0 && s.hurt + back >= shielded)) return false;
+-    float v = hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full) + cancel(t, d, x.spell_stuns[sp.slot], s) - back;
++    float v = worth(t, d) + cancel(t, d, x.spell_stuns[sp.slot], s) - back;
+     if (x.spell_stun[sp.slot] > 0 && !(s.stunned >> t & 1)) v += x.spell_stun[sp.slot], s.stunned |= static_cast<std::uint16_t>(1u << t);
+     if (d <= 0 && v <= 0) return false;
+     lose(t, d, s);
+@@ -1471,7 +1483,7 @@ float Search::centre_value(const Centre& c, int slot, const Node& s, bool& ok, f
+         const float d = x.spell[slot];
+         if (d > 0) v -= x.retaliation, back += x.retaliation;
+         if (x.link >= 0 && moot(t, d, x.link > t && (c.foes >> x.link & 1), u[x.link].spell[slot])) continue;
+-        v += hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full);
++        v += worth(t, d);
+         if (cancels(t, d, x.spell_stuns[slot], s)) v += params::recall_value;
+         if (!(s.stunned >> t & 1)) v += x.spell_stun[slot];
+     }
+@@ -1514,7 +1526,7 @@ bool Search::land_at(int c, Node& s) {
+         if (h[t] <= 0) continue;
+         struck |= x.land > 0 || x.land_stun > 0 || (x.land_stuns && x.recall);
+         const bool m = x.link >= 0 && moot(t, x.land, x.link > t && dist(L, u[x.link].pos) <= land_radius, u[x.link].land);
+-        if (!m) value += hit_worth(x.land, h[t], x.spawn, x.bag, partner(t), x.full) + cancel(t, x.land, x.land_stuns, s);
++        if (!m) value += worth(t, x.land) + cancel(t, x.land, x.land_stuns, s);
+         if (!m && x.land_stun > 0 && !(s.stunned >> t & 1)) value += x.land_stun, s.stunned |= static_cast<std::uint16_t>(1u << t);
+         retaliation += x.land > 0 ? x.retaliation : 0.0f;
+         lose(t, x.land, s);
+diff --git a/chy-tfocus-b525/src/model/comms.cc b/chy-tfocus-c1/src/model/comms.cc
+index 0593447..b48c961 100644
+--- a/chy-tfocus-b525/src/model/comms.cc
++++ b/chy-tfocus-c1/src/model/comms.cc
+@@ -3,6 +3,7 @@
+ #include <bit>
+ #include <utility>
+ #include <vector>
++#include "safety.h"
+ #include "support_mailbox.h"
+ #include "turn_order.h"
+ #include "world.h"
+@@ -128,6 +129,13 @@ bool chasing_value = false;
+ // Above the claim (0-7) and support mailbox (8-10): the chase bit, then its posting round mod 4.
+ constexpr int chase_shift = 11;
+ static_assert(support_mailbox::payload_shift + 3 <= chase_shift && chase_shift + 3 <= priority_payload_bits);
++int focus_round = -1, focus_enemy = -1;
++
++// Members of a complete pair post support intents in the bits the others post their focus call in.
++bool posts_support(const World& world, const ChampionBelief& a) {
++    const auto pair = support_pair(world);
++    return pair[0] && pair[1] && (pair[0] == &a || pair[1] == &a);
++}
+ 
+ static_assert(support_mailbox::protected_mate == 0 && support_mailbox::healer == 1); // support_pair's order
+ 
+@@ -324,7 +332,23 @@ std::uint32_t priority_payload(const World& world) {
+                                                                                      pair[0]->alive && pair[1]->alive));
+     if (chasing_round == world.round && chasing_value)
+         payload |= 1u << chase_shift | static_cast<std::uint32_t>(world.round & 3) << (chase_shift + 1);
++    if (focus_round == world.round && focus_enemy >= 0 && focus_enemy < 7 && !posts_support(world, world.me()))
++        payload |= static_cast<std::uint32_t>(focus_enemy + 1) << support_mailbox::payload_shift;
+     return payload;
+ }
+ 
++void focus(int round, int enemy) { focus_round = round, focus_enemy = enemy; }
++
++// A payload read this round was set at the caller's latest turn: this round or last.
++float called_blow(const World& world, const ChampionBelief& e) {
++    float blow = 0;
++    for (const auto& a : world.allies) {
++        if (a.is_self || !a.alive || !a.visible || posts_support(world, a)) continue;
++        const auto p = payload_of(world, a);
++        if (p < 0 || static_cast<int>(p >> support_mailbox::payload_shift & 7) != e.index + 1) continue;
++        blow += params::focus_follow * strike(a, next_turn_round(world, a)).at(dist(a.pos, e.pos));
++    }
++    return blow;
++}
++
+ } // namespace aph::comms
+diff --git a/chy-tfocus-b525/src/model/comms.h b/chy-tfocus-c1/src/model/comms.h
+index 5d352b5..b0705cf 100644
+--- a/chy-tfocus-b525/src/model/comms.h
++++ b/chy-tfocus-c1/src/model/comms.h
+@@ -45,7 +45,13 @@ void support_intent(int round, bool positive);
+ // this round or last.
+ void chasing(int round, bool chasing);
+ bool ally_chasing(const World& world, const ChampionBelief& a);
+-// Our priority payload: the claim, support intents and chase bit posted this turn.
++// Our focus call this turn: the enemy (index) we struck, -1 for none. Posted in the support
++// mailbox's bits by allies outside a complete support pair, which never use them.
++void focus(int round, int enemy);
++// The damage allies in sight that call enemy e expect to add on their next turns
++// (params::focus_follow of each one's strike at its distance), before e's `taken`.
++float called_blow(const World& world, const ChampionBelief& e);
++// Our priority payload: the claim, support intents, chase bit and focus call posted this turn.
+ std::uint32_t priority_payload(const World& world);
+ // The group an ally (by index) claims, -1 for none or while it is dead.
+ inline int claim_of(const World& world, int ally) {
+diff --git a/chy-tfocus-b525/src/params.h b/chy-tfocus-c1/src/params.h
+index d8ae6e7..dffb7aa 100644
+--- a/chy-tfocus-b525/src/params.h
++++ b/chy-tfocus-c1/src/params.h
+@@ -222,6 +222,9 @@ inline constexpr float stun_tribute_horizon = 10;
+ // Each point of damage short of a kill is worth this much of itself; the rest of the kill's worth
+ // comes as the target weakens (kill_distance).
+ inline constexpr float chip_value = 0.24669105f;
++// An ally's focus call (comms::called_blow): the share of its next blow we count on. Measured: a unit
++// that struck an enemy strikes it again the next round 51.5% of the time while it stays in reach.
++inline constexpr float focus_follow = 0.5f;
+ 
+ // Altar control (economy/altar_guard.cc) on one-altar maps: guarding starts at enemy tributed >=
+ // altar_enemy_min and enemy - ours >= altar_gap, and stops below altar_gap_off; it also holds while a body

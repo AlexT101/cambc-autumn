@@ -18612,3 +18612,24 @@ Results against chy-emb6-524 (fgate `--pool v4`, 200k, bodies fr8-g25 / mf-c2, b
 **Verdict:** drop; not run at 100k (no 200k gain). Splitting Vesper and Prism trades the pack's clears and Prism's
 safety for a gold bonus worth ~20-40 gold, and both halves lose apart. As with mitere 10, our wins come from the
 Prism's bag inside the pack, not from who holds the gold.
+
+## (charybdis, 2026-11-12) A team focus call like Fish r8's: we already converge, and the smallest call changes nothing
+
+User: "have we tried stealing the focus call?" Base `variants/chy-tfocus-b525` (= 525). Notes, scripts and patch:
+[ideas-2026-11-12/tfocus/README.md](ideas-2026-11-12/tfocus/README.md).
+
+- **Convergence.** A reachable pair is two of a team's strikers in one round that could each have hit the other's
+  target. Fish r8 live puts 85.7% of them on one target. Our planner puts 84.3% (525 against the bodies) and 76.4% (v117/v118, live
+  against Fish r8). A single unit keeps its target 93% of the time it strikes again. When pairs split, the targets
+  have equal health fractions.
+- **Kills.** Agreeing rounds against split ones, stratified, give enemy deaths within 3 rounds of +1.7 points (local) and
+  +0.1 (live) for our planner, and +6.4 for Fish. If every split round agreed, that would be about 0.02 kills a game.
+- **The call** (`tfocus/c1-call.patch`): each unit posts the enemy it struck in priority bits 8-10, which only members of a complete
+  support pair use. The strike search prices a called enemy at its health after the caller's expected next blow
+  (0.5 × its `strike()`, a measured 51.5% follow-through). It leaves convergence unchanged on 512 ladder games
+  against fr8-g25 and mf-f9: reachable pairs 84.3% → 84.6%, persistence 74.0 → 73.7, engagement kills 0.473 → 0.466. A
+  full-blow weight (c2) gives 84.7%. The call is read 39 times a game, but at a median 5% of the target's health it
+  shifts the price about 3%, and danger and reach decide the remaining splits.
+
+**Verdict:** we already converge, and nothing was gated, since the mechanism did not move. A call would need a weight that
+overrides the safety pricing, and the dilution bound is about 0.3 points.
