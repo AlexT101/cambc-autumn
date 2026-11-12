@@ -281,6 +281,8 @@ bool mend_hit(const World& world, const Memory& memory);
 
 // economy/camps.cc
 template <class Allowed> CampAttackTargets camp_attack_targets(const World& world, Allowed allowed, CampAttackTargets* resources = nullptr);
+// camp_attack_targets whether or not our attack is spent: for the hit after an attack reset.
+template <class Allowed> CampAttackTargets camp_targets_in_reach(const World& world, Allowed allowed, CampAttackTargets* resources = nullptr);
 bool attack_camp_target(const World& world, const CampAttackTarget& target);
 int attack_camp_targets(const World& world, const CampAttackTargets& targets);
 template <class Allowed> int attack_camp(const World& world, Allowed allowed);
@@ -341,6 +343,8 @@ vec2 chase_aim(const World& world, Pathing& pathing, Safety& safety);
 bool chase_with_guard(const World& world, Pathing& pathing, Safety& safety, const Pathing::GuardState& guard);
 const ChampionBelief* stoppable_winning_tribute(const World& world);
 bool ally_stops(const World& world, const ChampionBelief& e);
+// A champion's turn start in `round`, where its channel completes.
+Moment turn_start(const World& world, const ChampionBelief& c, int round);
 const ChampionBelief* game_ender(const World& world);
 void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e);
 bool holds_hard_stop(const World& world, const ChampionBelief& e);

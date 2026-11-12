@@ -4677,3 +4677,42 @@ fresh `ladder-v2` seeds 92000-92119: **50.4% (CI ~50.0-50.8)**; out-of-fuel turn
 50.5% of 10,240 (dev). Fixes 3, 5 and the press stay out: they hold their gain only at 2x fuel; see the
 [fuel handoff](../macro-atlas/HANDOFF-fuel.md). Frozen as
 `variants/charybdis-cb9f86d` (= bots/charybdis).
+
+## 518: Review fixes, phases 1 and 2 (charybdis, 2026-11-12)
+
+The verified review [findings-2026-11-11](../charybdis/findings-2026-11-11.md), its first two phases.
+
+Phase 1, failed or stale actions:
+- `main.cc` (H1): with under 100 fuel before end_turn (it runs out under 40), run out in a spin and play next round's
+  turn, which running out inside end_turn would end unplayed.
+- `fight.cc` (B1): stopping a tributing game ender, Marcella takes a sure kill (damage spell, then a basic attack on
+  it), else her stunning reset on it, before any cast that would spend her one cast.
+- `bank.cc` (A1): a lock spares a visible ally's winning tribute only if it lands before the first winning enemy
+  tribute there.
+- `bank.cc`, `abilities.cc` (G2, G4): a crystal or landing cast that a hidden unit fails, spending nothing, tries the
+  next-best landing.
+- `self_abilities.cc` (B2): dash_to_attack ranks landings that see the target first.
+- `pathing.cc` (G1): occupancy is read again after our own actions, so a champion we kill frees its tile.
+- `world.cc` (F2, H4, H6): our emblem flags are re-read after a purchase; camps are re-read after an update that ran
+  out of fuel; a camp hit within camp_sleep_time phases of its last reading is awake (`<=`).
+- `farm.cc`, `guard.cc` (H5b, C6): our live position after a strike move; a Varg ally's work reach without splash.
+
+Phase 2, model corrections:
+- `plan.cc` (D1): our Durability on the strike search's enemy blows.
+- `safety.cc`, `farm.cc`, `plan.cc` (C4, C5): camp damage through camp_taken (Jungle); also each fighter's own
+  camp_taken for camp hits on an ally in the fight sim and turns_to_harm_idle, and an ally's camp_taken and shield in
+  wake()'s ally-kill check.
+- `safety.cc` (B3): a stun-immune self drops stuns and stun-only hits (bound, tally, touched, threats_at, other_hits,
+  may_be_hit).
+- `abilities.cc`, `plan.cc` (B4/D6): Ren-retaliation suicide checks, and the camp-wake ones beside them, count our live
+  shield; Heart of Ruin's scale still reads health.
+- `plan.cc`, `abilities.cc`, `emblems.h`, `camps.cc` (D2, D2b): Skirmish on damage to unseen enemies and in
+  damage_to's fallback; camp spells no longer count Collectors twice.
+- `self_abilities.cc`, `camps.cc` (C2): the attack-reset hit on camps takes the basic attack's best target.
+- `bank.cc` (A5): the turn-end tribute habit counts toward the Tribute emblem's price.
+- `safety.cc`: braces around two `debug_block`s, which ended clang's dangling-else warnings (the same games).
+
+Against `variants/charybdis-cb9f86d` (517), real 100k fuel, own drafts: phase 1 alone level (49.6% of 30,208; its
+gate 50.08% of 163,840 fresh against the bodies); phases 1 and 2 **51.0% (50.4-51.6) of 30,208** on fresh seeds
+5400300-5400358, and in the gate +0.40 ±0.29 against the bodies over 10 batches (ZONE: no loss, short of the ACCEPT
+bar). Out-of-fuel turns +4%. Details in EXPERIMENTS.md. Frozen as `variants/charybdis-fix2` (= bots/charybdis).

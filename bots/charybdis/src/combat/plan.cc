@@ -104,8 +104,10 @@ bool read_board(const World& world, Board& b, int reach) {
                          e.max_health + shield, kill_stops(world, e)};
     }
     if (b.n == 0) return false;
-    b.health = my_health();
-    b.strength = my_strength() * damage_scale(f.passive, b.health, my_max_health()) * champion_dealt_factor();
+    const float health = my_health();
+    b.strength = my_strength() * damage_scale(f.passive, health, my_max_health()) * champion_dealt_factor();
+    // With our shield, which absorbs Ren's retaliation; Heart of Ruin's scale counts health alone.
+    b.health = health + my_live_shield(world);
     return true;
 }
 
@@ -397,6 +399,7 @@ struct Search {
 
     vec2 here;
     float strength = 0, health = 0, step = 0, dash_cost = 0, shield_amount = 0;
+    float shielded = 0; // health and our live shield, which absorbs Ren's retaliation and camp hits (`health` drives Heart of Ruin's scale)
     float camp_taken = -1; // camp_hit_factor(), read on first need
     float champion_dealt = 1; // champion_dealt_factor(), which strength includes
     int range = 1, land_radius = 0;
@@ -1057,6 +1060,7 @@ void Search::read_spells() {
             raw = my_damage(s);
         } catch (const cambc::error&) {
         }
+        const float dealt = raw * skirmish_dealt_factor(); // raw has no Skirmish, which a champion target adds
         auto& sp = spells[s];
         sp.slot = s;
         sp.unit = a.target == Targeting::unit;
@@ -1070,12 +1074,12 @@ void Search::read_spells() {
             try {
                 lost = raw > 0 ? my_damage_to(s, e.handle) : 0.0f;
             } catch (const cambc::error&) {
-                lost = std::clamp(raw * x.taken - x.shield, 0.0f, x.health - x.shield);
+                lost = std::clamp(dealt * x.taken - x.shield, 0.0f, x.health - x.shield);
             }
             // Health lost after the shield, which x.health counts; the shield drains by the reduced damage.
-            x.spell[s] = x.shield <= 0 ? lost : lost > 0 ? lost + x.shield : std::min(raw * x.taken, x.shield);
+            x.spell[s] = x.shield <= 0 ? lost : lost > 0 ? lost + x.shield : std::min(dealt * x.taken, x.shield);
             x.spell_stun[s] = a.stuns && x.stunnable ? stun_worth(world, e, raw > 0) : 0.0f;
-            x.suicidal[s] = raw > 0 && x.retaliation >= health;
+            x.suicidal[s] = raw > 0 && x.retaliation >= shielded;
             if (sp.unit && x.cast_legal == 0) x.cast_legal = viewers(x.pos, ability_range);
         }
         if (sp.ground) {
@@ -1090,6 +1094,7 @@ void Search::add_unseen(int s, float raw) {
     const auto& a = f.abilities[s];
     const auto& enemy_spawn = world.map().enemy_spawn;
     n_unseen = 0;
+    const float dealt = raw * skirmish_dealt_factor(); // raw has no Skirmish
     for (const auto& e : world.enemies) {
         if (!e.alive || e.visible || !e.tracked || board_empty(e.possible)) continue;
         const int count = static_cast<int>(board_count(e.possible));
@@ -1097,11 +1102,11 @@ void Search::add_unseen(int s, float raw) {
         const float hp = e.health > 0 ? e.health : e.max_health;
         const float stun = a.stuns ? stun_worth(world, e, raw > 0) : 0.0f;
         const float back = raw > 0 ? e.retaliation() * world.me().taken : 0.0f;
-        const bool suicidal = back >= health && back > 0;
+        const bool suicidal = back >= shielded && back > 0;
         const float bag = params::gem_value * static_cast<float>(pair_gems(world, e)), bound = partner_bound(world, e);
         for (auto p : positions_within(e.possible, here, a.reach())) {
             if (n_unseen == max_unseen) break;
-            const float worth = hit_worth(std::min(raw * e.taken, hp), hp, test(enemy_spawn, p), bag, bound, e.max_health) + stun - back;
+            const float worth = hit_worth(std::min(dealt * e.taken, hp), hp, test(enemy_spawn, p), bag, bound, e.max_health) + stun - back;
             plan_tables.unseen[n_unseen++] = {p, 1.0f / static_cast<float>(count), worth, suicidal};
         }
     }
@@ -1221,6 +1226,7 @@ bool Search::read() {
     can_attack = state.contains(cambc::champion_state::can_attack);
     can_cast = state.contains(cambc::champion_state::can_cast);
     health = record.health;
+    shielded = health + my_live_shield(world);
     // Off our start tile with the cast unspent, the goal walked: this is the search after it.
     walked_first = here != world.turn_start;
     champion_dealt = champion_dealt_factor();
@@ -1316,7 +1322,7 @@ bool Search::read() {
                 auto& x = u[i];
                 if (dist(here, x.pos) > grid_r + land_radius) continue;
                 const float lost = raw > 0 ? my_damage_to(dash, x.belief->handle) : 0.0f, sh = x.shield;
-                x.land = sh <= 0 ? lost : lost > 0 ? lost + sh : std::min(raw * x.taken, sh);
+                x.land = sh <= 0 ? lost : lost > 0 ? lost + sh : std::min(raw * skirmish_dealt_factor() * x.taken, sh);
                 x.land_stun = a.stuns && x.stunnable ? stun_worth(world, *x.belief, raw > 0) : 0.0f;
             }
         } catch (const cambc::error&) {
@@ -1355,7 +1361,7 @@ bool Search::read() {
             // The landing hits unseen enemies too, which land_at cannot price: keep it off a
             // tracked Ren whose retaliation kills us, as cast_at_enemies does.
             for (const auto& e : world.enemies)
-                if (unseen_suicidal(e, health, world.me().taken))
+                if (unseen_suicidal(e, shielded, world.me().taken))
                     for (auto p : positions_within(e.possible, here, grid_r + land_radius)) mark(p, land_bad);
         }
         land_here = landings(cell(here));
@@ -1396,7 +1402,7 @@ bool Search::hit_unit(int t, Node& s) {
         }
         s.touched |= touch1(x.pos);
     }
-    if (s.hurt + retaliation >= health) return false;
+    if (s.hurt + retaliation >= shielded) return false;
     value -= retaliation;
     if (value < 0 || (!x.foe && value <= 0 && !(vendetta && kill))) return false;
     s.hurt += retaliation;
@@ -1419,7 +1425,7 @@ bool Search::spell_unit(const Spell& sp, int t, Node& s) {
     const auto& x = u[t];
     const float d = x.spell[sp.slot];
     const float back = d > 0 ? x.retaliation : 0.0f;
-    if (x.suicidal[sp.slot] || (back > 0 && s.hurt + back >= health)) return false;
+    if (x.suicidal[sp.slot] || (back > 0 && s.hurt + back >= shielded)) return false;
     float v = hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full) - back;
     if (d > 0 && d < h[t] - 0.01f && !x.spawn && x.recall) v += params::recall_value;
     if (x.spell_stun[sp.slot] > 0 && !(s.stunned >> t & 1)) v += x.spell_stun[sp.slot], s.stunned |= static_cast<std::uint16_t>(1u << t);
@@ -1449,7 +1455,7 @@ float Search::centre_value(const Centre& c, int slot, const Node& s, bool& ok, f
         if (d > 0 && d < h[t] - 0.01f && !x.spawn && x.recall) v += params::recall_value;
         if (!(s.stunned >> t & 1)) v += x.spell_stun[slot];
     }
-    ok = ok && (back == 0 || s.hurt + back < health);
+    ok = ok && (back == 0 || s.hurt + back < shielded);
     return v;
 }
 
@@ -1492,7 +1498,7 @@ bool Search::land_at(int c, Node& s) {
         retaliation += x.land > 0 ? x.retaliation : 0.0f;
         lose(t, x.land, s);
     }
-    if (s.hurt + retaliation >= health) return false;
+    if (s.hurt + retaliation >= shielded) return false;
     s.hurt += retaliation;
     s.touched |= class_touch[k];
     s.value += value - retaliation;
@@ -1569,7 +1575,7 @@ bool Search::wake(std::uint32_t touched, vec2 E, float& cost, float& on_us) {
                 const auto& o = world.allies[static_cast<std::size_t>(w.ally)];
                 if (real_recall(o) || o.channel == Channel::tribute) return false;
                 if (const int at = world.map().group_at(o.pos); at >= 0 && world.camps[at].state == CampState::cleared) return false;
-                if ((ally_hit[static_cast<std::size_t>(w.ally)] += w.strength) >= o.health) return false;
+                if ((ally_hit[static_cast<std::size_t>(w.ally)] += w.strength * o.camp_taken) >= o.health + (o.visible ? o.shield : 0.0f)) return false;
                 cost += w.strength * (o.acted ? 1.0f : 0.5f);
             }
         }
@@ -1610,7 +1616,7 @@ template <class Mid> void Search::offer(Grid ends, float v, const Node& s, std::
         float x = v;
         if (s.touched) {
             float cost, on_us;
-            if (!wake_at(s.touched, c, cost, on_us) || s.hurt + on_us >= health) return;
+            if (!wake_at(s.touched, c, cost, on_us) || s.hurt + on_us >= shielded) return;
             x -= cost;
         }
         const auto place = [&](bool keep, float val, std::int8_t mate, bool first) __attribute__((always_inline)) {
@@ -1828,7 +1834,7 @@ void Search::grow(const Node& s) {
                     float v = centre_value(ce, sp.slot, s, ok, back);
                     if (!ok) continue;
                     float cost = 0, on_us = 0;
-                    if ((ce.touched | s.touched) && (!wake_here(ce.touched | s.touched, cost, on_us) || s.hurt + back + on_us >= health))
+                    if ((ce.touched | s.touched) && (!wake_here(ce.touched | s.touched, cost, on_us) || s.hurt + back + on_us >= shielded))
                         continue;
                     v -= cost;
                     std::uint16_t mask = 0;
@@ -2138,6 +2144,8 @@ bool strike_possible(const World& world) {
             }
     float best_total = -1e30f;
     int chosen = -1, queries = 0, priced = 0, share_stops = 0, bound_stops = 0;
+    // Safety's blows are raw: our Durability is applied here.
+    const float taken = world.me().taken;
     bool capped = false;
     for (;;) {
         int i = -1;
@@ -2222,7 +2230,7 @@ bool strike_possible(const World& world) {
         bool cut = false;
         for (int m = 0; m < no && !cut; ++m) {
             const auto& sk = strikers[order[m].second];
-            const float b = safety_params::hit_given_reach * safety.blow(*sk.e, p).damage;
+            const float b = safety_params::hit_given_reach * safety.blow(*sk.e, p).damage * taken;
             ++queries;
             // A miss leaves every candidate, and so the total, as it was.
             if (b == 0) continue;
@@ -2247,7 +2255,7 @@ bool strike_possible(const World& world) {
             bool added = false;
             for (int m = 0; m < k; ++m)
                 if (!world.enemies[static_cast<std::size_t>(at[m].enemy)].visible && at[m].blow.damage != 0)
-                    add(at[m].enemy, safety_params::hit_given_reach * at[m].blow.damage, -1), added = true;
+                    add(at[m].enemy, safety_params::hit_given_reach * at[m].blow.damage * taken, -1), added = true;
             if (added) total = top(), t.total = total;
         }
         // The step guard covers radius 1-2 only. Left inexact, a hidden blocker's re-plan skips it too.
@@ -2273,7 +2281,7 @@ bool strike_possible(const World& world) {
             if (t.done || dist(p, here) == grid_r) continue;
             const int nk = gather(t.c);
             for (int k = 0; k < ns; ++k) {
-                const float b = safety_params::hit_given_reach * strikers[k].strike->at(dist(p, strikers[k].e->pos));
+                const float b = safety_params::hit_given_reach * strikers[k].strike->at(dist(p, strikers[k].e->pos)) * taken;
                 for (int j = 0; j < nk; ++j)
                     if (!(cand[j].removed >> strikers[k].e->index & 1)) cand[j].d += b * factor(cand[j].leaf, strikers[k].hor);
             }

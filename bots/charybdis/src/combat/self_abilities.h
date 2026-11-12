@@ -29,6 +29,11 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
 // before abilities.cc's casts, which share the one cast per turn, and the plain one after.
 // `group`: only that group's camps.
 bool reset_and_attack_enemy(const World& world, bool stunning_only = false);
+// Stops e's tribute, in reach and stunnable, with Marcella's stunning reset: the damage spell and a
+// basic attack on e instead where they surely kill it, else the stunning reset after attack_enemy's
+// attack (on e if it declines) if ours is unspent. False if it can't: having done nothing, or, should
+// the cast still fail after ready(), only that attack.
+bool stun_reset_at(const World& world, const ChampionBelief& e);
 bool reset_and_attack_camp(const World& world, int group);
 // A camp tile lies within `range` of p.
 bool camp_in_reach(const World& world, vec2 p, int range);

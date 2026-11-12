@@ -72,6 +72,7 @@ struct Fighter {
     int shield_until;  // own turn at whose start the shield is lost; never: no shield
     float retaliation; // Ren: damage back per hit taken
     float taken;       // damage it takes per point dealt (a Durability emblem)
+    float camp_taken;  // camp damage it takes per point (Durability and Jungle)
     int link;          // Cassi or Issac: the other body, which dies with this one
 };
 
@@ -95,6 +96,8 @@ struct Side {
     int self = -1; // our own fighter
     int stunned = 0; // members that lose their next turn
     float camp = 0;  // camp damage taken with each of the other side's turns
+    float camp_raw = 0; // the same before the taker's camp_taken: an ally it falls on has its own Jungle
+    float camp_hit(const Fighter& f) const { return camp_raw * f.camp_taken; }
     // Own turns before `quiet_until` are only the basic attacks, `quiet_damage` in all, while
     // nobody is stunned and `alive` stays `quiet_alive`.
     int quiet_until = 0, quiet_alive = -1;
@@ -254,6 +257,7 @@ void make_fighter(const ChampionBelief& c, int turn_round, Fighter& f, Kit& kit)
     f.shield_until = shielded ? c.shield_turns : never;
     f.retaliation = c.retaliation();
     f.taken = c.taken;
+    f.camp_taken = c.camp_taken;
     f.link = -1;
 }
 
@@ -480,7 +484,7 @@ float act(Side& self, Side& other, int watched = -1) {
     // Only u's health changes in here.
     const bool aimed = aims_elsewhere(us, watched, static_cast<int>(&u - us.fighters.data()), them.quiet_damage);
     // Each as hurt() takes it, through the target's Durability.
-    const float camp = us.camp * u.taken, on_us = them.quiet_damage * u.taken, on_them = us.quiet_damage * e.taken;
+    const float camp = us.camp_hit(u), on_us = them.quiet_damage * u.taken, on_them = us.quiet_damage * e.taken;
     for (; t < end; ++t) {
         float us_ = u.shield, uh = u.health, es = e.shield, eh = e.health;
         if ((t % 2 == 0) == they_first) {
@@ -513,7 +517,7 @@ int play_reflected(Side& us, Side& them, int t, int end, bool they_first, int wa
         float camp_hit = 0;
         if (their_turn && us.camp > 0) {
             camp = us.self >= 0 && us.fighters[us.self].health > 0 ? &us.fighters[us.self] : &target;
-            camp_hit = us.camp * camp->taken;
+            camp_hit = us.camp_hit(*camp);
             if (camp->shield != 0 || !(camp_hit < camp->health - (camp == &target ? damage : 0.0f))) break;
         }
         bool safe = true;
@@ -559,7 +563,7 @@ int play_quiet(Side& us, Side& them, int t, int end, bool they_first, int watche
     // The camps hit us (hurt_by_camps()), who may not be the weakest.
     Fighter* s = us.camp > 0 && us.self >= 0 && us.self != wu && us.fighters[us.self].health > 0 ? &us.fighters[us.self] : nullptr;
     if (s && s->shield != 0) return t;
-    const float camp = s ? 0.0f : us.camp * u.taken, on_self = s ? us.camp * s->taken : 0.0f;
+    const float camp = s ? 0.0f : us.camp_hit(u), on_self = s ? us.camp_hit(*s) : 0.0f;
     // Neither side's alive or stunned changes in here: only their turns run out.
     const int their_end = them.alive == them.quiet_alive && them.stunned == 0 ? them.quiet_until : them.turn;
     const int our_end = us.alive == us.quiet_alive && us.stunned == 0 ? us.quiet_until : us.turn;
@@ -853,21 +857,21 @@ Trade trade(Side& us, Side& them, bool they_first = true, bool need_falls = true
     t.enemies = them.count;
     if constexpr (debug_fights) t.our_health = us.health(), t.their_health = them.health();
     if (them.count == 0) return t;
-    if constexpr (check_fight_exits) debug_block({ debug_sides = {us, them}; });
+    if constexpr (check_fight_exits) { debug_block({ debug_sides = {us, them}; }); }
     debug_block({ aim_sides = {us, them, us, them}; });
     bool unknown = false, lost_unknown = false;
     const auto [we_kill, they_kill] = simulate<debug_fights>(us, them, they_first, &t.self_falls, fight_horizon, debug_fights ? &t.dealt : nullptr,
                                                              need_falls ? nullptr : &unknown, settle && need_falls && !debug_fights ? &lost_unknown : nullptr);
     t.falls_known = !unknown;
     t.lost_known = !lost_unknown;
-    if constexpr (check_fight_exits) debug_block({
+    if constexpr (check_fight_exits) { debug_block({
         // An early end (outlives, overwhelmed) must agree with the fight played out.
         bool falls = false;
         std::array<float, 4> dealt{};
         const auto [a, b] = simulate<true>(debug_sides[0], debug_sides[1], they_first, &falls, fight_horizon, &dealt);
         if ((t.lost_known && (b > 0) != (they_kill > 0)) || (t.falls_known && falls != t.self_falls))
             std::printf("FIGHT-EXIT-MISMATCH %d %d %d %d %d\n", cambc::round_number(), b, they_kill, falls, t.self_falls);
-    });
+    }); }
     // PZFIX2: the fight played out with and without aim_at(), and the early ends against the first.
     debug_block({
         bool on = false, off = false;
@@ -2371,7 +2375,7 @@ std::span<const Safety::CampHit> Safety::awake_members() {
             for (const auto& o : world_.allies)
                 if (n < static_cast<int>(others.at.size()) && o.alive && o.visible && !o.is_self && !gone(o)) {
                     if (!o.acted) later = true;
-                    else if (n_fallers < static_cast<int>(fallers.size()) && o.health + o.shield <= max_group_strength(world_) * o.taken)
+                    else if (n_fallers < static_cast<int>(fallers.size()) && o.health + o.shield <= max_group_strength(world_) * o.camp_taken)
                         fallers[static_cast<std::size_t>(n_fallers++)] = static_cast<std::int8_t>(n);
                     others.at[n++] = {o.pos, &o, -1, -2};
                 }
@@ -2484,7 +2488,7 @@ std::span<const Safety::CampHit> Safety::awake_members() {
         bool track = false, doubt = false;
         for (int i = 0; i < n_fallers && !track && c.awake == Awake::awake; ++i) {
             const auto& o = others.at[fallers[static_cast<std::size_t>(i)]];
-            track = box_out(o) <= groups[g].reach && o.belief->health + o.belief->shield <= groups[g].strength * o.belief->taken;
+            track = box_out(o) <= groups[g].reach && o.belief->health + o.belief->shield <= groups[g].strength * o.belief->camp_taken;
         }
         if (shield_doubt_later && later) {
             if (ours < 0) ours = my_health() + (world_.me().shield_slot >= 0 ? shield_value(world_.me().handle) : 0.0f);
@@ -2511,7 +2515,7 @@ std::span<const Safety::CampHit> Safety::awake_members() {
                 if (track && target >= 0 && n_onto < static_cast<int>(onto.size()))
                     if (const auto& o = *others.at[target].belief; o.side == team::ally && o.acted)
                         onto[static_cast<std::size_t>(n_onto++)] = {m.pos, target_d - first(others.at[target]), camp_stunned(m.handle) && test(world_.visible, m.pos),
-                                                                    static_cast<std::int8_t>(target), m.strength * o.taken};
+                                                                    static_cast<std::int8_t>(target), m.strength * o.camp_taken};
                 emit(m, reach, tie);
             }
         }
@@ -2830,11 +2834,14 @@ int Safety::walk_in(const ChampionBelief& e, vec2 p, int horizon) {
     return std::max(1, enemy_reach::distance(world_, e, acts_from(e), p, reach + horizon) - reach);
 }
 
+Blow felt(Blow b, bool stun_immune);
+
 int Safety::threats_at(vec2 p, std::array<ThreatAt, 16>& out, bool unseen_only) {
     int n = 0;
+    const bool immune = world_.me().facts().passive == Passive::stun_immune;
     if (built_) {
         for (const auto& t : threats())
-            if (n < static_cast<int>(out.size()) && !(unseen_only && t.visible)) out[n++] = {t.enemy, t.at(p)};
+            if (n < static_cast<int>(out.size()) && !(unseen_only && t.visible)) out[n++] = {t.enemy, felt(t.at(p), immune)};
         return n;
     }
     for (auto left = live_enemies(); left; left &= left - 1) {
@@ -2843,9 +2850,9 @@ int Safety::threats_at(vec2 p, std::array<ThreatAt, 16>& out, bool unseen_only) 
         const auto& x = foe(e);
         if (x.strike.reach < 0) continue;
         if (e.visible) {
-            if (!unseen_only) out[n++] = {e.index, blow(e, p)};
+            if (!unseen_only) out[n++] = {e.index, felt(blow(e, p), immune)};
         } else if (x.weight > 0) {
-            out[n++] = {e.index, unseen_blow(e, x, p)};
+            out[n++] = {e.index, felt(unseen_blow(e, x, p), immune)};
         }
     }
     return n;
@@ -2873,10 +2880,11 @@ Blow Safety::unseen_blow(const ChampionBelief& e, const Foe& x, vec2 p) {
 bool Safety::other_hits(vec2 p, int enemy) {
     constexpr int kept = 16;
     int n = 0;
+    const bool immune = world_.me().facts().passive == Passive::stun_immune;
     if (built_) {
         for (const auto& t : threats()) {
             if (n++ == kept) break;
-            if (t.enemy != enemy && t.at(p).hits) return true;
+            if (t.enemy != enemy && felt(t.at(p), immune).hits) return true;
         }
         return false;
     }
@@ -2886,7 +2894,7 @@ bool Safety::other_hits(vec2 p, int enemy) {
         const auto& x = foe(e);
         if (x.strike.reach < 0 || (!e.visible && !(x.weight > 0))) continue;
         ++n;
-        if (e.index != enemy && (e.visible ? blow(e, p) : unseen_blow(e, x, p)).hits) return true;
+        if (e.index != enemy && felt(e.visible ? blow(e, p) : unseen_blow(e, x, p), immune).hits) return true;
     }
     return false;
 }
@@ -3026,6 +3034,12 @@ bool Safety::any_threat() {
     return false;
 }
 
+// A blow as it lands on us: a stun-immune self takes no stun, and a hit that only stuns does nothing.
+Blow felt(Blow b, bool stun_immune) {
+    if (stun_immune) b.hits = b.hits && !(b.stuns && b.damage <= 0), b.stuns = false;
+    return b;
+}
+
 float Safety::damage_bound(vec2 p, bool double_unacted, float blow_scale) {
     float total = camp_damage(p, true, true);
     each_threat(p, [&](const ChampionBelief& e, const Blow& b) {
@@ -3038,7 +3052,9 @@ Safety::Bound Safety::bound(vec2 p, float blow_scale) {
     Bound out;
     out.damage = out.doubled = camp_damage(p, true, true);
     float safe = 1;
-    each_threat(p, [&](const ChampionBelief& e, const Blow& b) {
+    const bool immune = world_.me().facts().passive == Passive::stun_immune;
+    each_threat(p, [&](const ChampionBelief& e, const Blow& raw) {
+        const Blow b = felt(raw, immune);
         out.damage += b.damage * blow_scale;
         out.doubled += b.damage * (struck(e).repeats ? 2.0f : 1.0f) * blow_scale;
         out.hits |= b.hits;
@@ -3094,7 +3110,8 @@ float Safety::damage_ceiling(vec2 p, bool double_unacted, float blow_scale) {
 
 bool Safety::touched(vec2 p, float blow_scale) {
     if (camp_damage(p, true, true) > 0) return true;
-    return any_threat_at(p, [&](const Blow& b) { return b.hits || b.damage * blow_scale > 0; });
+    const bool immune = world_.me().facts().passive == Passive::stun_immune;
+    return any_threat_at(p, [&](const Blow& b) { return felt(b, immune).hits || b.damage * blow_scale > 0; });
 }
 
 Safety::Tally Safety::tally(vec2 p, float blow_scale) {
@@ -3107,6 +3124,7 @@ Safety::Tally Safety::tally(vec2 p, float blow_scale) {
 
 // each_threat's order and terms, from where the last call stopped.
 void Safety::tally_on(Tally& t, vec2 p, float blow_scale, bool first) {
+    const bool immune = world_.me().facts().passive == Passive::stun_immune;
     while (t.left) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(t.left))];
         t.left &= t.left - 1;
@@ -3121,6 +3139,7 @@ void Safety::tally_on(Tally& t, vec2 p, float blow_scale, bool first) {
             if (x.asked != p) x.asked = p, x.near = possible_within(e, p, s.reach);
             if (x.near) b = s.blow(0);
         } else continue;
+        b = felt(b, immune);
         t.damage += b.damage * blow_scale;
         t.hits |= b.hits;
         t.stuns |= b.hits && b.stuns;
@@ -3130,7 +3149,8 @@ void Safety::tally_on(Tally& t, vec2 p, float blow_scale, bool first) {
 
 bool Safety::may_be_hit(vec2 p) {
     bool hit = false;
-    each_threat(p, [&](const ChampionBelief&, const Blow& b) { hit |= b.hits; });
+    const bool immune = world_.me().facts().passive == Passive::stun_immune;
+    each_threat(p, [&](const ChampionBelief&, const Blow& b) { hit |= felt(b, immune).hits; });
     return hit;
 }
 
@@ -3570,6 +3590,7 @@ Trade Safety::stand_trade(const StandRoster& r, bool falls) {
     walk_allies_in(world_, us, key & 0xFFFFu, enemies);
     // camp_damage() counts our Durability, which hurt() applies.
     us.camp = r.camp / world_.me().taken;
+    us.camp_raw = r.camp / world_.me().camp_taken;
     // With nobody in reach yet, we strike first: they must still win.
     return trade(us, them, (key >> 16) != 0, falls, falls);
 }
@@ -3583,7 +3604,9 @@ int Safety::turns_to_harm_idle(const ChampionBelief& c, vec2 p, int horizon, flo
     f.health -= keep;
     if (f.health <= 0) return 1;
     us.add(f);
-    us.camp = camp_damage(p, false) / world_.me().taken; // hurt() applies c's Durability, camp_damage() ours
+    // camp_damage() counts our Durability and Jungle; c, alone on its side, takes it through its own (hurt() applies its Durability).
+    us.camp_raw = camp_damage(p, false) / world_.me().camp_taken;
+    us.camp = us.camp_raw * c.camp_taken / c.taken;
     for (auto left = seen_enemies(); left; left &= left - 1) {
         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
         if (gone(e)) continue;

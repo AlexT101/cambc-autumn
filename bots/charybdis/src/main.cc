@@ -105,6 +105,9 @@ constexpr std::uint64_t late_floor = 1500;
 // 506k turns (fuel campaign 4); at 3.5k out-of-fuel turns rose 1.1% in the A/B, at 5k they held.
 constexpr std::uint64_t refresh_floor = 5000;
 constexpr std::uint64_t turn_fuel = 100000; // twice it on a champion's first turn
+// end_turn runs out under 40, with room for the check before it. No higher: the runner counts a spun-out
+// turn as out of fuel, and ~1 turn a game ends with 40-1000 left.
+constexpr std::uint64_t end_turn_fuel = 100;
 
 template <class F> bool run(const char* phase, F&& f) {
     debug_block({ aph::fuel_phase() = phase; });
@@ -365,6 +368,15 @@ int main() {
             });
             aph::note_shortcut("out-of-fuel");
             if (!finished_late) continue;
+        }
+        // Run out inside end_turn and next round's turn only finishes it, unplayed: with too little left,
+        // run out here instead and play next round's turn in full. The fuel burnt is lost at turn end anyway.
+        if (aph::fuel() < end_turn_fuel) {
+            // `now`, not `round`: a turn that finished late ends in the round after it began.
+            while (aph::round_now() == now) {
+            }
+            late = false;
+            continue;
         }
         cambc::end_turn();
     }

@@ -20,6 +20,41 @@ constexpr float min_landing_value = 250;
 
 bool cast_walked(const World& world) { return my_position() != world.turn_start; }
 
+// Landings a hidden unit failed this turn (the failed use spent nothing), kept off its next plans.
+struct FailedLandings {
+    bitboard tiles{cambc::uninitialized};
+    int round = -1;
+    std::uint32_t champion = 0;
+};
+FailedLandings& failed_landings() {
+    static FailedLandings f;
+    return f;
+}
+
+bool failed_this_turn(const World& world) {
+    const auto& f = failed_landings();
+    return f.round == world.round && f.champion == static_cast<std::uint32_t>(world.me().handle);
+}
+
+void note_failed_landing(vec2 p) {
+    auto& f = failed_landings();
+    const auto round = static_cast<int>(turn_round());
+    const auto me = static_cast<std::uint32_t>(static_cast<cambc::handle_champion_t>(cambc::self()));
+    if (f.round != round || f.champion != me) clear_board(f.tiles), f.round = round, f.champion = me;
+    set_tile(f.tiles, p);
+}
+
+bool landing_failed(const World& world, vec2 p) { return failed_this_turn(world) && test(failed_landings().tiles, p); }
+
+// `off` and this turn's failed landings: the `also` of dash_landings_from.
+const bitboard* landings_off(const World& world, const bitboard* off) {
+    if (!failed_this_turn(world)) return off;
+    if (!off) return &failed_landings().tiles;
+    static bitboard both{cambc::uninitialized};
+    or_into(*off, failed_landings().tiles, both);
+    return &both;
+}
+
 bool castable(const World& world, int slot) {
     const auto& a = world.me().facts().abilities[slot];
     return a.hits_enemies() && !(a.excludes_walking && cast_walked(world)) && world.me().ability_ready(slot, world.round);
@@ -43,12 +78,28 @@ struct Cast {
             if (camp) return cast_slot_on(slot, static_cast<cambc::handle_camp_t>(*camp));
             const bool cast = cast_slot(slot, tile);
             outside_dashes() += cast && dash;
+            // Refused without an error: a hidden unit holds the landing.
+            if (!cast && dash) note_failed_landing(tile);
             return cast;
         } catch (const cambc::error&) {
             return false;
         }
     }
 };
+
+// A landing cast that a hidden unit failed is planned again without that landing; capped, for fuel, at
+// the other champions (each failure is a different unit).
+template <class Plan> bool execute_retrying(const World& world, Plan plan, bool* attempted = nullptr) {
+    auto cast = plan();
+    if (attempted) *attempted = cast.slot >= 0;
+    for (int tries = static_cast<int>(world.allies.size() - 1 + world.enemies.size());; --tries) {
+        world.throw_if_stale();
+        if (cast.execute()) return true;
+        if (!cast.dash || tries <= 0 || !landing_failed(world, cast.tile)) return false;
+        cast = plan();
+        if (cast.slot < 0) return false;
+    }
+}
 
 float raw_damage(int slot) {
     try {
@@ -58,8 +109,9 @@ float raw_damage(int slot) {
     }
 }
 
-// Health lost after mitigation and shields, capped at health. `native`: the engine's figure.
-float damage_to(int slot, cambc::handle_champion_t target, float raw, bool* native = nullptr) {
+// Health lost after mitigation and shields, capped at health. `native`: the engine's figure; else raw
+// (which has Collectors) with Skirmish and the target's `taken`, shields aside.
+float damage_to(int slot, cambc::handle_champion_t target, float raw, float taken, bool* native = nullptr) {
     if (native) *native = false;
     if (raw <= 0) return 0;
     try {
@@ -67,7 +119,7 @@ float damage_to(int slot, cambc::handle_champion_t target, float raw, bool* nati
         if (native) *native = true;
         return damage;
     } catch (const cambc::error&) {
-        return std::min(raw, record_of(target).health);
+        return std::min(raw * skirmish_dealt_factor() * taken, record_of(target).health);
     }
 }
 
@@ -252,7 +304,7 @@ Cast best_landing(int slot, float min_value, const std::vector<Target>& targets,
 struct SlotHit {
     int slot;
     float raw;            // before the target's mitigation
-    float taken, health;  // ours
+    float taken, health;  // ours; health with our shield, which absorbs the retaliation
     // A damaging hit on Ren costs its retaliation, as the plan search prices it.
     float back(const ChampionBelief& e) const { return raw > 0 ? e.retaliation() * taken : 0.0f; }
     bool suicidal(const ChampionBelief& e) const { return raw > 0 && e.retaliation() * taken >= health; }
@@ -281,7 +333,7 @@ void area_targets(const World& world, const AbilityFacts& a, const SlotHit& hit,
             if (!live) continue;
             const float health = live->health;
             bool native = false;
-            const float damage = damage_to(hit.slot, e.handle, hit.raw, lethal ? &native : nullptr);
+            const float damage = damage_to(hit.slot, e.handle, hit.raw, e.taken, lethal ? &native : nullptr);
             const float stun = health > 0 && damage >= health - 0.01f ? kill_stops(world, e)
                                : a.stuns && !e.stun_pending          ? stun_worth(world, e, hit.raw > 0)
                                                                      : 0;
@@ -297,7 +349,7 @@ void area_targets(const World& world, const AbilityFacts& a, const SlotHit& hit,
                 continue;
             }
             const float health = e.health > 0 ? e.health : e.max_health;
-            const float damage = std::min(hit.raw * e.taken, health);
+            const float damage = std::min(hit.raw * skirmish_dealt_factor() * e.taken, health);
             const float stun = damage >= health - 0.01f ? kill_stops(world, e) : a.stuns ? stun_worth(world, e, hit.raw > 0) : 0;
             // Off and on its spawn: the tiles differ only in that.
             const float off_spawn = hit_worth_of(world, e, damage, health, false) + stun - hit.back(e);
@@ -350,7 +402,7 @@ Cast enemy_cast(const World& world, float walk, bool lethal_only = false, std::o
         }
         not_into(free_stun, not_free);
     }
-    const SlotHit base{0, 0, world.me().taken, my_health()};
+    const SlotHit base{0, 0, world.me().taken, my_health_and_shield(world)};
     const bitboard* risk = nullptr;
     for (int s = 0; s < 2; ++s) {
         if (!ready[s]) continue;
@@ -379,7 +431,7 @@ Cast enemy_cast(const World& world, float walk, bool lethal_only = false, std::o
                 if (!live) continue;
                 const float health = live->health;
                 bool native = false;
-                const float damage = damage_to(s, e.handle, hit.raw, escape_enemy || lethal_only ? &native : nullptr);
+                const float damage = damage_to(s, e.handle, hit.raw, e.taken, escape_enemy || lethal_only ? &native : nullptr);
                 if (lethal_only && !(native && health > 0 && damage >= health)) continue;
                 const bool stuns = a.stuns && !e.stun_pending;
                 // Escaping, a walk-excluding cast must kill the sole threat or stun it before it acts:
@@ -403,7 +455,7 @@ Cast enemy_cast(const World& world, float walk, bool lethal_only = false, std::o
         if (targets.empty()) continue;
         if (a.lands()) {
             // It moves us: worth at least min_landing_value, whatever walk it replaces.
-            const bitboard* landings = &dash_landings_from(world.map(), here, &off);
+            const bitboard* landings = &dash_landings_from(world.map(), here, landings_off(world, &off));
             if (lethal_only) {
                 static bitboard eligible{cambc::uninitialized};
                 and_into(*landings, lethal, eligible);
@@ -532,8 +584,8 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
     if (attackers_only)
         for (const auto& m : members) floor_value = std::min(floor_value, m.health);
     const bool sole_finish = all_visible && live == 1;
-    // Native raw includes outgoing passives but not Monster and Collectors, which depend on the target.
-    const float dealt = camp_dealt_factor();
+    // Native raw includes outgoing passives and Collectors, but not Monster, which depends on the target.
+    const float dealt = monster_dealt_factor();
 
     Cast best;
     for (int s = 0; s < 2; ++s) {
@@ -564,7 +616,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
         for (int other : world.map().groups_near(here, a.reach()))
             if (other != group && world.camps[other].state == CampState::alive) draw_alive_members(world, other, skip, radius);
         if (raw > 0) {
-            const float health = my_health();
+            const float health = my_health_and_shield(world);
             for (const auto& e : world.enemies)
                 if (unseen_suicidal(e, health, world.me().taken))
                     for (auto p : positions_within(e.possible, here, a.reach())) draw_square(skip, p, static_cast<float>(radius));
@@ -572,7 +624,7 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
         if (a.lands()) {
             // Not into the reach of another group's monsters.
             const auto& threats = landing_threats(world, group, here);
-            best.offer(best_landing(s, floor, targets, dash_landings_from(world.map(), here, &skip), here, a.radius, [&](vec2 p) {
+            best.offer(best_landing(s, floor, targets, dash_landings_from(world.map(), here, landings_off(world, &skip)), here, a.radius, [&](vec2 p) {
                 for (const auto& t : threats)
                     if (dist(p, t.pos) <= t.reach) return false;
                 return true;
@@ -603,9 +655,8 @@ Cast camp_cast(const World& world, int group, bool attackers_only, bool any_valu
     return best;
 }
 
-bool execute_camp_cast(const World& world, const Cast& selected) {
-    world.throw_if_stale();
-    const bool cast = selected.execute();
+template <class Plan> bool execute_camp_cast(const World& world, Plan plan) {
+    const bool cast = execute_retrying(world, plan);
     world.throw_if_stale();
     camp_hits() += cast;
     return cast;
@@ -622,10 +673,7 @@ bool cast_at_enemies(const World& world, float walk, bool lethal_only, bool* att
     world.throw_if_stale();
     if (attempted) *attempted = false;
     try {
-        const auto cast = enemy_cast(world, walk, lethal_only);
-        world.throw_if_stale();
-        if (attempted) *attempted = cast.slot >= 0;
-        return cast.execute();
+        return execute_retrying(world, [&] { return enemy_cast(world, walk, lethal_only); }, attempted);
     } catch (const cambc::error&) {
         return false;
     }
@@ -635,10 +683,7 @@ bool cast_at_enemies_for_escape(const World& world, int enemy, float walk, bool&
     world.throw_if_stale();
     attempted = false;
     try {
-        const auto cast = enemy_cast(world, walk, false, enemy);
-        world.throw_if_stale();
-        attempted = cast.slot >= 0;
-        const bool accepted = cast.execute();
+        const bool accepted = execute_retrying(world, [&] { return enemy_cast(world, walk, false, enemy); }, &attempted);
         world.throw_if_stale();
         return accepted;
     } catch (const cambc::error&) {
@@ -649,7 +694,7 @@ bool cast_at_enemies_for_escape(const World& world, int enemy, float walk, bool&
 bool cast_at_camp(const World& world, int group, bool attackers_only, bool any_value) {
     world.throw_if_stale();
     try {
-        return execute_camp_cast(world, camp_cast(world, group, attackers_only, any_value));
+        return execute_camp_cast(world, [&] { return camp_cast(world, group, attackers_only, any_value); });
     } catch (const cambc::error&) {
         return false;
     }
@@ -683,7 +728,7 @@ bool cast_at_camp_on_approach(const World& world, int group) {
                 return false;
     }
     try {
-        return execute_camp_cast(world, camp_cast(world, group, false, false, true));
+        return execute_camp_cast(world, [&] { return camp_cast(world, group, false, false, true); });
     } catch (const cambc::error&) {
         return false;
     }

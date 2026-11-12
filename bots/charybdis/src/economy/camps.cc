@@ -17,9 +17,8 @@ float live_health(const World& world, int g, int i) {
 // The members in reach of a basic attack, of groups `allowed` accepts, best first: most damage
 // removed per point of health, Varg's splash adding the members beside it in the same units. With
 // `resources`, harmless groups' members also go there, leaving the ordinary list as it was.
-template <class Allowed> CampAttackTargets camp_attack_targets(const World& world, Allowed allowed, CampAttackTargets* resources) {
+template <class Allowed> CampAttackTargets camp_targets_in_reach(const World& world, Allowed allowed, CampAttackTargets* resources) {
     CampAttackTargets targets;
-    if (!my_can_attack()) return targets;
     const int range = world.me().facts().attack_range();
     const vec2 here = my_position();
     if (!camp_in_reach(world, here, range)) return targets;
@@ -63,6 +62,14 @@ template <class Allowed> CampAttackTargets camp_attack_targets(const World& worl
         if (resource) insert(*resources, {g, i, score});
     }
     return targets;
+}
+
+template <class Allowed> CampAttackTargets camp_attack_targets(const World& world, Allowed allowed, CampAttackTargets* resources) {
+    if (!my_can_attack()) {
+        CampAttackTargets none;
+        return none;
+    }
+    return camp_targets_in_reach(world, allowed, resources);
 }
 
 bool attack_camp_target(const World& world, const CampAttackTarget& target) {
@@ -147,7 +154,7 @@ float camp_scale(const ChampionBelief& c) {
 float camp_output(const ChampionBelief& c) { return std::max(1.0f, c.facts().raw_output(c.strength, c.focus) * camp_scale(c)); }
 
 struct OwnFactors {
-    float camp_hit, camp_dealt, champion_dealt;
+    float camp_hit, camp_dealt, champion_dealt, skirmish_only, monster_only;
 };
 const OwnFactors& own_factors() {
     static unsigned read_at = ~0u;
@@ -157,7 +164,8 @@ const OwnFactors& own_factors() {
         const auto& owned = my_items();
         const auto dealt = dealt_with(owned);
         f = {(has_family(owned, jungle) ? jungle_camp_taken : 1.0f) * (has_family(owned, durability) ? durability_taken : 1.0f),
-             dealt.camp, dealt.champion};
+             dealt.camp, dealt.champion, has_family(owned, skirmish) ? skirmish_dealt : 1.0f,
+             has_family(owned, monster) ? monster_camp_dealt : 1.0f};
     }
     return f;
 }
@@ -167,6 +175,8 @@ const OwnFactors& own_factors() {
 float camp_hit_factor() { return own_factors().camp_hit; }
 float camp_dealt_factor() { return own_factors().camp_dealt; }
 float champion_dealt_factor() { return own_factors().champion_dealt; }
+float skirmish_dealt_factor() { return own_factors().skirmish_only; }
+float monster_dealt_factor() { return own_factors().monster_only; }
 
 namespace {
 

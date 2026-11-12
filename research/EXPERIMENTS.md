@@ -17639,3 +17639,27 @@ Results against charybdis-cb9f86d (200k, paired: same maps, noise seeds, sides, 
 
 - Heavy-suite mechanism: ck-cast +1.2 prompt cluster clears and +6 gems captured promptly a game, ck-pass none; neither
   wins. No fgate: the arms change 0.3-2% of fresh games, and where they act they read negative. Closed, nothing kept.
+
+## (charybdis, 2026-11-12) Phase 2 review fixes on Phase 1: +1.0 against 517 (ab.py)
+
+`variants/charybdis-fix2` = `charybdis-fix1` (Phase 1 + H1) + Phase 2 of `research/charybdis/findings-2026-11-11.md`
+(D1, C4, C5, B3, B4/D6, C2, D2, D2b, A5; A3 reverted, so the bot still goes to lock the first altar within 1 of a
+tributer), plus the leftovers its audit found in the same classes:
+- B4/D6's shield in plan.cc's two camp-wake suicide checks.
+- D2's Skirmish and the target's `taken` in damage_to's fallback.
+- B3's stun filter in Safety::threats_at, other_hits and may_be_hit.
+- Each fighter's own camp_taken for camp hits on an ally in the fight sim, and in turns_to_harm_idle.
+- An ally's camp_taken and shield in wake()'s ally-kill check.
+Own drafts, real budget, fresh `--mix ladder-v2` seeds 5400300-5400358:
+
+| CAND | REF | win% (95% CI) | games | out-of-fuel turns CAND / REF |
+|---|---|---|---|---|
+| fix2 | charybdis-cb9f86d (517) | **51.0 (50.4-51.6)** | 30,208 | 186,632 / 179,507 |
+
+- Phase 1 alone read level (above), so the gain is Phase 2's. Out-of-fuel turns are up ~4%.
+- Gate (`fgate.py`, real budget, from batch 0; REF cached for 0-7), stopped by hand after 10 batches: **+0.40 ±0.29**
+  against the bodies on 25,600 fresh maps (Fish +0.32, Mite +0.48; ladder side read +1.15). ZONE at batch 8 (low H1:
+  no loss; high H0 at batch 7: not the ACCEPT bar's +0.5), LLR high -2.52, low +5.90 at batch 10. Shipped as
+  charybdis 518 on that and the +1.0 head to head.
+- Left out: the guard's exposure windows still count stun-only hits (Cassi's) for Marcella. Filtering only the tile
+  side would make that foe read as reaching beyond us.

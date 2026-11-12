@@ -92,7 +92,9 @@ inline int& siege_group() {
 // after self_acted(), which every action calls first (so one that throws still clears them), as does
 // every stale check once the round has moved on. A ward and a priority change neither.
 inline bool self_fresh = false, gems_fresh = false;
-[[gnu::always_inline]] inline void self_acted() { self_fresh = gems_fresh = false; }
+// Bumped by self_acted(): Pathing reads occupancy again after one of our actions, which may have killed.
+inline unsigned own_actions = 0;
+[[gnu::always_inline]] inline void self_acted() { self_fresh = gems_fresh = false, ++own_actions; }
 
 // Initialised after cambc::detail::cached_self, which cambc.h defines first; 0 in the draft.
 inline const std::uint32_t my_handle_value =

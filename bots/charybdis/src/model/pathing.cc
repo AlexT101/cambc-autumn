@@ -697,6 +697,9 @@ void Pathing::occupied_into(bitboard& out) {
 
 const bitboard& Pathing::blocked() {
     if (dashes_seen_ != outside_dashes()) invalidate();
+    // A kill of ours frees its tile, which the occupancy boards drop at once. Only these are read again:
+    // invalidate() would also drop the failed-descent memos.
+    if (actions_seen_ != own_actions) actions_seen_ = own_actions, blocked_fresh_ = false;
     if (!blocked_fresh_) {
         occupied_into(blocked_);
         set_tile(blocked_, my_pos(), false);
@@ -710,6 +713,7 @@ void Pathing::invalidate() {
     blocked_fresh_ = false;
     pos_fresh_ = false;
     dashes_seen_ = outside_dashes();
+    actions_seen_ = own_actions;
 }
 
 vec2 Pathing::my_pos() {

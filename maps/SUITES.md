@@ -1028,3 +1028,10 @@ re-measured"; used).
 
 **Charybdis vs astraeus (2026-11-11):** `--mix ladder-v2`, under `suites/chy-ast/fresh-{seed}`, symlinked into `merged/chy-ast`:
 - 5300000–5300077, 19,968 maps: `bots/charybdis` and `bots/ocean` each against `bots/astraeus` (own drafts), with the ladder maps, `replays/ab/chy-vs-ast-40k/` and `oc-vs-ast-40k/` (used).
+
+
+**Charybdis Phase 1 fixes (2026-11-11):** `--mix ladder-v2`:
+- 5400000–5400058, 15,104 maps, under `suites/chy-fix1/fresh-{seed}`, symlinked into `merged/chy-fix1`: `variants/charybdis-fix1` against `variants/charybdis-cb9f86d`, `replays/ab/chy-fix1-vs-517/` (used); its first 4 seeds also `chy-oof-fix1`, `chy-oof-noh1`.
+- 5400100–5400139, 10,240 maps, under `suites/chy-screen/fresh-{seed}`, symlinked into `merged/chy-screen`: `charybdis-fix1` against `charybdis-fix1-nob2` and `-nog1`, `replays/ab/chy-fix1-vs-nob2/`, `chy-fix1-vs-nog1/` (used).
+- 5400200–5400258, 15,104 maps, under `suites/chy-noinp/fresh-{seed}`, symlinked into `merged/chy-noinp`: `charybdis-fix1-noinp` against `charybdis-cb9f86d`, and `charybdis-fix1` against `charybdis-fix1-noinp`, `replays/ab/chy-noinp-vs-517/`, `chy-fix1-vs-noinp/` (used).
+- 5400300–5400358, 15,104 maps, under `suites/chy-fix2/fresh-{seed}`, symlinked into `merged/chy-fix2`: `charybdis-fix2` against `charybdis-cb9f86d`, `replays/ab/chy-fix2-vs-517/` (used).

@@ -411,7 +411,10 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
 
     // Shopping, heals and shields do not move us.
     const bool on_spawn = test(world.map().ally_spawn, my_position());
-    if (shop(world, memory, on_spawn, on_spawn || world.me().facts().passive == Passive::remote_shop)) home.reset();
+    if (shop(world, memory, on_spawn, on_spawn || world.me().facts().passive == Passive::remote_shop)) {
+        world.reread_self();
+        home.reset();
+    }
     fixc_bush_threatened = false;
     if (!world.me().can_act(world.round)) return;
     fixc_bush_threatened = fixc_bush_threat(world, safety);

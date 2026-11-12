@@ -682,6 +682,8 @@ public:
     }
 
     const ChampionBelief& me() const { return *me_; }
+    // Our record again mid-turn, after a purchase: its stats and the emblems they make.
+    void reread_self() { update_champion(allies[static_cast<std::size_t>(self_index)], false); }
     // An enemy alive and in view, as of the last update or observe.
     bool enemy_seen() const {
         if (!enemy_seen_known_) {
@@ -833,6 +835,8 @@ private:
     std::array<int, 2> ranked_round_{-1, -1};
     int updated_round_ = -1;
     int previous_update_ = -1; // updated_round_ before this round's update()
+    // The last update() ran out of fuel and resumed a round on: its camp reads are dated a round early.
+    bool update_resumed_ = false;
     int stuns_read_ = -1;
     // An enemy seen restarting a recall in consecutive turns unhurt: its team feints as we do, so an
     // unkept recall is not believed to land.

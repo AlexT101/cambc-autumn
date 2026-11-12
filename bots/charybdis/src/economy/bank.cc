@@ -79,9 +79,14 @@ bool our_side(const StaticMap& map, int a) {
                 continue;
             // Placing one also cancels an enemy's tribute there: its bag stays out of the score.
             bool enemy_tribute = false, winning = false;
+            std::optional<Moment> enemy_win; // when the first winning enemy tribute here lands
             for (const auto& e : world.enemies)
-                if (e.alive && e.visible && e.channel == Channel::tribute && dist(e.pos, p) <= cambc::constants::submit_gems_range)
-                    enemy_tribute = true, winning |= enemy_tribute_wins(world, e);
+                if (e.alive && e.visible && e.channel == Channel::tribute && dist(e.pos, p) <= cambc::constants::submit_gems_range) {
+                    enemy_tribute = true;
+                    if (!enemy_tribute_wins(world, e)) continue;
+                    winning = true;
+                    if (const auto t = turn_start(world, e, e.channel_end_round); !enemy_win || t < *enemy_win) enemy_win = t;
+                }
             if (enemy_tribute != (pass == 0)) continue;
             // With no tribute to cancel, only altars on our side, or the one we guard, are worth denying.
             if (!enemy_tribute && !our_side(map, a) && !keep_guard_lock(world, a)) continue;
@@ -90,7 +95,9 @@ bool our_side(const StaticMap& map, int a) {
             for (const auto& ally : world.allies)
                 if (!ally.is_self && ally.alive && ally.channel == Channel::tribute && dist(ally.pos, p) <= cambc::constants::submit_gems_range)
                     tributing = true,
-                    ours_wins |= world.score.ally + ally.gems >= static_cast<int>(cambc::constants::winning_gems);
+                    // Only if it lands first. An unseen ally's channel end is an old reading: trusted as before.
+                    ours_wins |= world.score.ally + ally.gems >= static_cast<int>(cambc::constants::winning_gems)
+                                 && (!ally.visible || !enemy_win || turn_start(world, ally, ally.channel_end_round) < *enemy_win);
             if (tributing && (!winning || ours_wins)) continue;
             const auto note_own_lock = [&] {
                 if (own_lock_round.size() < map.altars.size()) own_lock_round.resize(map.altars.size(), -1);
@@ -915,6 +922,17 @@ bool tribute_ok(const World& world, Safety& safety, const Memory& memory, int tu
     return turns <= rounds_left(world) && (any_risk(world, turns) || tribute_safe(safety, memory, turns));
 }
 
+// The turn ends a Tribute emblem would cut off the tribute just started, for its price (Income). A
+// restart of a cancelled channel (no tribute of its size since) counts only the gems it adds.
+void count_tribute_cut(const World& world) {
+    const int bag = static_cast<int>(my_gems());
+    const auto cut = [](int g) { return tribute_turns(g, false) - tribute_turns(g, true); };
+    static int pending = 0, score_at = 0;
+    const bool restart = pending > 0 && bag >= pending && world.score.ally - score_at < pending;
+    income.tribute_cut += static_cast<float>(restart ? std::max(0, cut(bag) - cut(pending)) : cut(bag));
+    pending = bag, score_at = world.score.ally;
+}
+
 // At an unlocked altar in reach. The caller judged the turn's start tile safe; anywhere else, at an
 // altar carry_bag gave up waiting at, or at one believed locked (the caller skipped it), is judged again.
 bool submit_here(const World& world, Safety& safety, Memory& memory) {
@@ -934,13 +952,7 @@ bool submit_here(const World& world, Safety& safety, Memory& memory) {
         throw_if_stale();
         try {
             self_acted(), me.submit_gems(altars[a].pos);
-            const int bag = static_cast<int>(my_gems());
-            const auto cut = [](int g) { return tribute_turns(g, false) - tribute_turns(g, true); };
-            // A restart of a cancelled channel (no tribute of its size since) counts only the gems it adds.
-            static int pending = 0, score_at = 0;
-            const bool restart = pending > 0 && bag >= pending && world.score.ally - score_at < pending;
-            income.tribute_cut += static_cast<float>(restart ? std::max(0, cut(bag) - cut(pending)) : cut(bag));
-            pending = bag, score_at = world.score.ally;
+            count_tribute_cut(world);
             return true;
         } catch (const cambc::error&) {
         }
@@ -1039,23 +1051,35 @@ bool take_hop(const World& world, Pathing& pathing, Safety& safety, const Memory
             }
             return fire;
         };
-        vec2 best{-1, -1};
-        int best_steps = unreachable;
-        bool best_delays = true;
-        float best_fire = 0;
-        for (const vec2 l : targets.positions()) {
-            const bool delays = returning && world.map().group_at(l) == farm;
-            const int s = field.at(l);
-            if (s == unreachable || (delays != best_delays ? delays : s > best_steps) || watched(l)) continue;
-            const float fire = ring_fire(l);
-            if (delays == best_delays && s == best_steps && fire >= best_fire) continue;
-            best = l, best_steps = s, best_delays = delays, best_fire = fire;
-        }
-        if (best.x < 0) return false;
-        throw_if_stale();
-        try {
-            if (self_acted(), cambc::self().consumables()[cambc::consumable_type::tp_crystal].use(best)) return true;
-        } catch (const cambc::error&) {
+        // A hidden unit on the landing fails the use, spending nothing: the next best then. Each failure is
+        // a different unit; capped, for fuel, at the other champions and the ring's camps.
+        int tries = static_cast<int>(world.allies.size() - 1 + world.enemies.size());
+        for (const int g : hop.ring) tries += static_cast<int>(world.map().groups[g].members.size());
+        for (bool first = true;; first = false) {
+            vec2 best{-1, -1};
+            int best_steps = unreachable;
+            bool best_delays = true;
+            float best_fire = 0;
+            for (const vec2 l : targets.positions()) {
+                const bool delays = returning && world.map().group_at(l) == farm;
+                const int s = field.at(l);
+                if (s == unreachable || (delays != best_delays ? delays : s > best_steps) || watched(l)) continue;
+                const float fire = ring_fire(l);
+                if (delays == best_delays && s == best_steps && fire >= best_fire) continue;
+                best = l, best_steps = s, best_delays = delays, best_fire = fire;
+            }
+            if (best.x < 0) {
+                if (first) return false;
+                break;
+            }
+            throw_if_stale();
+            try {
+                if (self_acted(), cambc::self().consumables()[cambc::consumable_type::tp_crystal].use(best)) return true;
+            } catch (const cambc::error&) {
+                break;
+            }
+            if (--tries <= 0) break;
+            set_tile(targets, best, false);
         }
     }
     step_safely(world, pathing, pathing.to_hop(h), safety);
@@ -1331,6 +1355,7 @@ bool mite_tribute_habit(const World& world, Pathing& pathing, Safety& safety, co
     throw_if_stale();
     try {
         self_acted(), cambc::self().submit_gems(world.map().altars[a].pos);
+        count_tribute_cut(world);
         return true;
     } catch (const cambc::error&) {
     }

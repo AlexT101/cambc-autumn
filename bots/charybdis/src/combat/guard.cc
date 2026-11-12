@@ -132,7 +132,8 @@ PackZone& pack_members_of(const World& world, Safety& safety) {
     pz.round = world.round;
     pz.n = 0;
     const auto& map = world.map();
-    const vec2 here = world.me().pos;
+    // Not me().pos (the turn-start tile): the strike search may have moved us. Off the map, we were killed.
+    const vec2 now = my_position(), here = now.x >= 0 ? now : world.me().pos;
     const float health = pz.health;
     const bool hurt = health < params::hurt_health_fraction * pz.max_health || pz.bag >= params::brake_bag;
     // A pack in our half has come to fight there; healthy elsewhere, we came to fight.

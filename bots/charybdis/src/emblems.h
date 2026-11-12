@@ -43,5 +43,9 @@ float camp_hit_factor();
 float camp_dealt_factor();
 // A Skirmish emblem's owner hits champions 10% harder, a Collectors one 1% per emblem family owned.
 float champion_dealt_factor();
+// Skirmish alone: the engine's target-free damage_amount() has Collectors but not Skirmish.
+float skirmish_dealt_factor();
+// Monster alone: camp_dealt_factor() without the Collectors that damage_amount() already has.
+float monster_dealt_factor();
 
 } // namespace aph

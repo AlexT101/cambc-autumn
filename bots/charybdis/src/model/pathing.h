@@ -539,6 +539,7 @@ private:
     std::uint32_t pos_round_ = 0;
     bool pos_fresh_ = false;
     unsigned dashes_seen_ = 0; // outside_dashes() when our tile was last read
+    unsigned actions_seen_ = 0; // own_actions when occupancy was last read
 };
 
 } // namespace aph

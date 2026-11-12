@@ -1801,6 +1801,7 @@ void World::update() {
     guard("camps", [&] { update_camps(); });
     guard("altars", [&] { update_altars(); });
     guard("scores", [&] { update_scores(tributing); });
+    update_resumed_ = resumed();
 }
 
 [[gnu::flatten]] void World::observe() {
@@ -1967,7 +1968,31 @@ void World::update_champion(ChampionBelief& b, bool full) {
     b.focus = info->focus;
     b.scale = damage_scale(b.facts().passive, b.health, b.max_health) * b.dealt;
     b.stats_round = round;
-    if (!full && last_seen == round) return; // nothing else changes during our turn
+    // Emblems change only with a shard bought, which adds to a stat, or with Tavi's sales. Prism's
+    // Focus also moves with its gems.
+    const auto read_emblems = [&] {
+        const auto passive = b.facts().passive;
+        const std::array<float, 4> key{b.max_health, b.strength, b.focus, passive == Passive::gem_focus ? static_cast<float>(b.gems) : 0.0f};
+        // Compared as bits: the stats are never NaN, and none reads as -0.
+        if (!wasm_i32x4_all_true(wasm_i32x4_eq(wasm_v128_load(key.data()), wasm_v128_load(b.items_key.data()))) || passive == Passive::remote_shop) {
+            b.items_key = key;
+            const auto e = engine::emblems(h);
+            b.fast_recall = e.home;
+            b.taken = e.durability ? durability_taken : 1.0f;
+            b.camp_taken = b.taken * (e.jungle ? jungle_camp_taken : 1.0f);
+            b.fast_tribute = e.tribute;
+            b.fast_capture = e.capture;
+            b.prospector = e.prospector;
+            b.dealt = e.dealt;
+            b.camp_dealt = e.camp_dealt;
+            b.scale = damage_scale(passive, b.health, b.max_health) * b.dealt; // as above, with this `dealt`
+        }
+    };
+    if (!full && last_seen == round) {
+        // Nothing else changes during our turn, but our purchases can make an emblem.
+        if (b.is_self) read_emblems();
+        return;
+    }
     if (!b.is_self) b.stun_pending = b.facts().passive != Passive::stun_immune && stun_pending(b.handle);
     // Also in observe() for a champion first seen after our move: a recall then still tells when
     // it lands, and its cooldowns show casts made out of sight.
@@ -2016,24 +2041,7 @@ void World::update_champion(ChampionBelief& b, bool full) {
     }
     // In observe() too, for a champion first seen after our move.
     b.gems = engine::gems(h);
-    // Emblems change only with a shard bought, which adds to a stat, or with Tavi's sales. Prism's
-    // Focus also moves with its gems.
-    const auto passive = b.facts().passive;
-    const std::array<float, 4> key{b.max_health, b.strength, b.focus, passive == Passive::gem_focus ? static_cast<float>(b.gems) : 0.0f};
-    // Compared as bits: the stats are never NaN, and none reads as -0.
-    if (!wasm_i32x4_all_true(wasm_i32x4_eq(wasm_v128_load(key.data()), wasm_v128_load(b.items_key.data()))) || passive == Passive::remote_shop) {
-        b.items_key = key;
-        const auto e = engine::emblems(h);
-        b.fast_recall = e.home;
-        b.taken = e.durability ? durability_taken : 1.0f;
-        b.camp_taken = b.taken * (e.jungle ? jungle_camp_taken : 1.0f);
-        b.fast_tribute = e.tribute;
-        b.fast_capture = e.capture;
-        b.prospector = e.prospector;
-        b.dealt = e.dealt;
-        b.camp_dealt = e.camp_dealt;
-        b.scale = damage_scale(passive, b.health, b.max_health) * b.dealt; // as above, with this `dealt`
-    }
+    read_emblems();
     // kept_recall, from the state and channel time read above.
     b.recall_kept = b.channel == Channel::recall && left && *left < b.recall_turns() - 1;
     // A real recall shows a fresh start once; two turns in a row is a cancel and restart.
@@ -2571,7 +2579,7 @@ struct World::CampViews {
 // member read asleep then that still is. Damage or a stun wakes every asleep member, which sleeps again
 // no sooner than 3 camp phases on, so no member's health has changed. Most visible groups, most turns.
 bool World::camp_settled(const CampGroup& G, CampBelief& c) {
-    if (c.state_round != round - 1) return false;
+    if (c.state_round != round - 1 || update_resumed_) return false;
     const bool respawning = c.state == CampState::respawning && c.respawn_round == c.read_respawn && round < c.respawn_round;
     if (!respawning && !(c.state == CampState::alive && c.awake == Awake::asleep && c.witness >= 0)) return false;
     const auto& members = G.members;
@@ -2675,7 +2683,9 @@ bool World::camp_settled(const CampGroup& G, CampBelief& c) {
                 }
                 const float hp = live ? engine::camp_health(m.handle).value_or(0.0f) : 0.0f;
                 if (hp < health[i] - 1e-3f) {
-                    if (now - health_round[i] < cambc::constants::camp_sleep_time) {
+                    // Hit at the earliest just after that reading: the next camp phase counts as occupied,
+                    // so it sleeps at the earliest camp_sleep_time + 1 phases on.
+                    if (now - health_round[i] <= cambc::constants::camp_sleep_time) {
                         c.last_damaged_round = now;
                         awake = Awake::awake;
                         woke = true;

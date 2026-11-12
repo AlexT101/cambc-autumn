@@ -1133,8 +1133,9 @@ const ChampionBelief* game_ender(const World& world) {
     return best;
 }
 
-// A stop that cancels the ender's channel: a stun ready for our next turn, or a lock for its altar. Only that stop
-// decides the game before the channel lands; a walking ender, or a channel we can only damage, is fought as priced.
+// A stop that cancels the ender's channel: a stun ready for our next turn, or a lock for its altar, the only
+// one in its range. Only that stop decides the game before the channel lands; a walking ender, or a channel we
+// can only damage, is fought as priced.
 bool holds_hard_stop(const World& world, const ChampionBelief& e) {
     if (e.channel != Channel::tribute) return false;
     if (e.facts().passive != Passive::stun_immune && world.me().ready_stun_reach(world.round + 1) >= 0) return true;
@@ -1152,6 +1153,8 @@ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const
     const auto act = [&](bool hit) {
         place_lock(world);
         if (!hit) return;
+        // Marcella's stunning reset cancels the channel. It goes before any cast, which would take its one cast.
+        if (tributing && stun_reset_at(world, e)) return;
         cast_at_enemies(world, !tributing && dist(me.position(), e.pos) > world.me().facts().attack_range() ? escape_step_value : 0.0f);
         if (attack_enemy(world)) reset_and_attack_enemy(world);
     };

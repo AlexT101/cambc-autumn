@@ -739,7 +739,9 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
         float ready_in = shield_ready_in;
         if (ready_in > 0) {
             int trip = unreachable;
-            for (const auto& m : groups[g].members) trip = std::min(trip, std::max(0, dist(world.me().pos, m.pos) - range));
+            // Not me().pos (the turn-start tile): the strike search may have moved us. Off the map, we were killed.
+            const vec2 now = my_position(), here = now.x >= 0 ? now : world.me().pos;
+            for (const auto& m : groups[g].members) trip = std::min(trip, std::max(0, dist(here, m.pos) - range));
             ready_in = std::max(0.0f, ready_in - static_cast<float>(trip));
         }
         return shielded_clear(soften * min_camp_damage(world, g, strength, &rounds, reflect), rounds, shield, ready_in) <= spare_health
@@ -1068,7 +1070,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             if (a.is_self || !a.alive || !a.visible || comms::claim_of(world, a.index) != g || !test(groups[g].threat(), a.pos))
                 continue;
             float rounds = 0;
-            const float damage = min_camp_damage(world, g, camp_output(a), &rounds, a.retaliation(), a.facts().attack_range(), home_survivable(a));
+            const float damage = a.camp_taken * min_camp_damage(world, g, camp_output(a), &rounds, a.retaliation(), a.facts().attack_range(), home_survivable(a));
             if (a.health - damage < params::recall_health_fraction * a.max_health) return true;
         }
         return false;
@@ -1112,7 +1114,8 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             }
             *kept = {true, a.visible, a.pos.x, a.pos.y, belief.geometry_version, arrival.dash_ready, arrival.recall_delay, first_turn, -1};
         }
-        arrival.reach = f.basic_reach();
+        // Not basic_reach(): Varg's splash reaches a member only through a hit on one within its attack range.
+        arrival.reach = f.attack_range();
         // Readiness and walking exclusions can only delay this earliest effect.
         for (const auto& ability : f.abilities)
             if (ability.kind == AbilityKind::damage) arrival.reach = std::max(arrival.reach, ability.reach());

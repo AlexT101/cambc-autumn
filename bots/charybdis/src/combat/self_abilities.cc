@@ -189,7 +189,7 @@ struct Landings {
 
 // A landing's score when several things count: lower is better, compared field by field.
 struct Rank {
-    bool out_of_range = false; // dash_to_attack: the target is beyond our attack from it
+    int out_of_reach = 0; // dash_to_attack: 0 the target in range and sight, 1 in range unseen, 2 beyond range
     float danger = 0;
     int steps = 0;
     auto operator<=>(const Rank&) const = default;
@@ -473,6 +473,51 @@ bool reset_and_attack_enemy(const World& world, bool stunning_only) {
     return true;
 }
 
+bool stun_reset_at(const World& world, const ChampionBelief& e) {
+    const auto& f = world.me().facts();
+    const int slot = f.slot_of(AbilityKind::attack_reset);
+    if (slot < 0 || !f.abilities[slot].stuns || !e.alive || !e.visible || e.facts().passive == Passive::stun_immune
+        || dist(my_position(), e.pos) > f.attack_range() || ready(world, AbilityKind::attack_reset) < 0)
+        return false;
+    try {
+        if (stun_pending(e.handle)) return false;
+    } catch (const cambc::error&) {
+        return false;
+    }
+    // A sure kill stops the tribute too and also takes the bag: the damage spell, then a basic attack, on e.
+    if (const int spell = ready(world, AbilityKind::damage); spell >= 0 && f.abilities[spell].target == Targeting::unit) {
+        try {
+            const float lost = my_damage_to(spell, e.handle), health = record_of(e.handle).health;
+            const bool spell_kills = lost >= health - 0.01f;
+            // Health lost means the shield is spent.
+            const bool kills = spell_kills || (my_can_attack() && lost > 0 && health - lost <= my_strength() * champion_dealt_factor() * e.taken);
+            if (kills && cast_slot_on(spell, e.handle)) {
+                try {
+                    if (!spell_kills) attack_champion(e.handle);
+                } catch (const cambc::error&) {
+                }
+                return true;
+            }
+        } catch (const cambc::error&) {
+            // Refused (after a walk it excludes): the stun still stops the tribute.
+        }
+    }
+    // The reset needs a spent attack: attack_enemy's pick, else e.
+    if (my_can_attack() && !attack_enemy(world)) {
+        try {
+            attack_champion(e.handle);
+        } catch (const cambc::error&) {
+            return false;
+        }
+    }
+    if (!cast(slot)) return false;
+    try {
+        attack_champion(e.handle);
+    } catch (const cambc::error&) {
+    }
+    return true;
+}
+
 // Monsters never move: the tiles within each range of a camp tile are kept.
 bool camp_in_reach(const World& world, vec2 p, int range) {
     static std::array<std::optional<bitboard>, 4> near;
@@ -496,28 +541,23 @@ bool reset_and_attack_camp(const World& world, int group) {
     if (!camp_in_reach(world, here, range)) return false;
     const int reset = ready(world, AbilityKind::attack_reset);
     if (reset < 0) return false;
-    const auto& members = map.groups[group].members;
-    std::optional<cambc::camp> best;
-    float best_health = 0;
-    for (auto p : positions_within(live_camp_tiles(), here, range)) {
-        if (map.group_at(p) != group) continue;
-        for (int i = 0; i < static_cast<int>(members.size()); ++i) {
-            if (members[i].pos != p) continue;
+    const auto targets = camp_targets_in_reach(world, [group](int g) { return g == group; });
+    if (targets.n == 0) return false;
+    // A Vendetta kill readies the reset again, so it need not be held: its best sure kill, if any.
+    int best = 0;
+    bool refunded = false;
+    if (f.passive == Passive::reset_on_kill)
+        for (int k = 0; k < targets.n && !refunded; ++k) {
             try {
-                auto camp = map.groups[group].camp(i);
-                const float h = camp.health();
-                if (!best || h < best_health) best = camp, best_health = h;
+                refunded = map.groups[group].camp(targets.found[k].member).health() <= my_strength() * camp_dealt_factor();
             } catch (const cambc::error&) {
             }
+            if (refunded) best = k;
         }
-    }
-    if (!best) return false;
-    // A Vendetta kill readies the reset again, so it need not be held.
-    const bool refunded = f.passive == Passive::reset_on_kill && best_health <= my_strength() * camp_dealt_factor();
     if (!refunded && engagement_near(world, here, f.basic_reach() + (f.ranged ? 0 : 1))) return false;
     if (!cast(reset)) return false;
     try {
-        self_acted(), cambc::self().attack(*best);
+        self_acted(), cambc::self().attack(map.groups[group].camp(targets.found[best].member));
     } catch (const cambc::error&) {
     }
     ++camp_hits();
@@ -586,9 +626,13 @@ bool dash_to_attack(const World& world, Pathing& pathing, const ChampionBelief* 
     const auto& threats = threats_near(world, here);
     const auto& spawn = world.map().from_ally_spawn();
     const vec2 at = target->pos;
+    // An attack needs the target in sight: a landing beside a bush or round a corner can lose it.
+    const bool ward = own_ward_sees(world, at);
+    const auto viewers = ward ? Reach::Window{} : attack_viewers(world, at, range);
+    const auto sees = [&](vec2 p) { return ward || (viewers & Reach::Window::bit(Reach::Window::at(p.x - at.x, p.y - at.y))); };
     const auto landings = ranked(
         within(pathing.dash_landings(), at, range + walk),
-        [&](vec2 p) { return Rank{dist(p, at) > range, danger(threats, p), spawn.at(p)}; },
+        [&](vec2 p) { return Rank{dist(p, at) > range ? 2 : sees(p) ? 0 : 1, danger(threats, p), spawn.at(p)}; },
         [&](vec2 p, const Rank&) { return !landing_harmful(world, p); });
     return dash_to_first(dash, pathing, landings);
 }
