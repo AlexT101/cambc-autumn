@@ -18633,3 +18633,33 @@ User: "have we tried stealing the focus call?" Base `variants/chy-tfocus-b525` (
 
 **Verdict:** we already converge, and nothing was gated, since the mechanism did not move. A call would need a weight that
 overrides the safety pricing, and the dilution bound is about 0.3 points.
+
+## (charybdis, 2026-11-12) Interrupting Fish r8's big tributes: lock and stun cancels only delay the bag; level
+
+Lead: Fish r8 starts 4.2 tributes of 100+ gems a game (fishr8 README). Base `variants/chy-525` (= 525). Notes,
+scripts and patches: [ideas-2026-11-12/bigtrib/README.md](ideas-2026-11-12/bigtrib/README.md).
+
+- **Live r8** (244 games, `btrib.py`):
+  - Winning starts (1.9 a game) are already fought by the game-ender: 302 stunned and 66 locked, but Fish restarts,
+    and we won 3 of the 56 games where one occurred.
+  - Non-winning starts (2.29 a game, median 192 gems): 69% score. A lock-holder of ours is within 8 of the altar at 51%,
+    but within 2 only once. The carrier dies in 2%, since it is mostly the fed Vesper (median 3.7k health).
+  - Losses end at 1000 with us at a median 312 gems, so delays cannot convert them.
+- **Arms** (`interrupt_turn`, forced and general):
+  - bt-wl: walk to the altar's lock tiles while the channel has time, for a bag worth a life, by safe steps.
+  - bt-ws: wl, and walk into a ready stun's reach.
+  - bt-wlc: wl, and the trip outranks a retreat.
+  - Mechanism (256 games against fr8-g25): wlc doubles lock cancels of 100+ bags (0.17 → 0.35 a game) and ws raises
+    stun cancels 0.60 → 1.04. Fish's gems by r600 are unchanged (307.6 / 306.3 / 305.3): the bags are restarted.
+
+Results against chy-525:
+
+| arm | livefork r8 (members 1-2 / 3-4, ±SE) | fgate 200k fresh, 4 batches | Fish | Mite | verdict |
+|---|---|---|---|---|---|
+| bt-wl | +0.37 ±0.55 / +0.13 ±0.55 | 50.04% (49.84-50.23) of 81,920 | 49.93 | 50.15 | level |
+| bt-ws | −0.20 ±0.62 / −0.43 ±0.61 | – | | | level |
+| bt-wlc | +0.03 ±0.70 / −0.63 ±0.65 | – | | | level |
+
+**Verdict:** no ship, and no 100k run. A cancel keeps the bag carried, and Fish restarts it. The TODO item on walking
+to lock is closed.
+

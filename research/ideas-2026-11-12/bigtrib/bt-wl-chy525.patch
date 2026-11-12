@@ -1,0 +1,99 @@
+diff -ru chy-525/src/bot.cc bt-wl/src/bot.cc
+--- chy-525/src/bot.cc	2026-11-12 13:16:04.503484706 +0000
++++ bt-wl/src/bot.cc	2026-11-12 23:12:12.645913731 +0000
+@@ -536,6 +536,7 @@
+     }
+     if (guard_turn(world, pathing, safety, memory, strike_guard)) return;
+     if (chase_with_guard(world, pathing, safety, strike_guard)) return;
++    if (interrupt_turn(world, pathing, safety, memory)) return;
+     if (contest_capture(world, pathing, memory)) {
+         decision = Branch::contest;
+         return;
+diff -ru chy-525/src/economy/altar_guard.cc bt-wl/src/economy/altar_guard.cc
+--- chy-525/src/economy/altar_guard.cc	2026-11-11 18:50:25.012457020 +0000
++++ bt-wl/src/economy/altar_guard.cc	2026-11-12 23:12:06.734512998 +0000
+@@ -168,6 +168,72 @@
+     return true;
+ }
+ 
++// The carried locks of a visible ally (sdk read, as ally_stops does).
++int ally_locks(const ChampionBelief& a) {
++    std::array<std::uint32_t, 4> counts{};
++    const auto lock = cambc::detail::raw_consumable_ids[static_cast<std::size_t>(cambc::consumable_type::altar_lock)];
++    return cambc::detail::sdk_champion_consumables(static_cast<std::uint32_t>(a.handle), counts.data()) == 0 ? static_cast<int>(counts[lock]) : 0;
++}
++
++// Walk to cancel a visible enemy's tribute of a bag worth a life: to a lock tile of its altar (place_lock at the
++// turn end cancels it, and the altar stays shut until five hits), or (interrupt_mode 2) into reach of a ready
++// stun. Only if we arrive before the channel lands, by safe steps, without a bag of our own worth a life (it
++// would walk the bag to their carrier), and, for the lock, if no visible ally with one is nearer the altar.
++// A cancel keeps the bag carried: it costs them the channel so far, the lock's hits and a whole new channel.
++bool interrupt_turn(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
++    if constexpr (params::interrupt_mode == 0) return false;
++    if (!my_can_move() || params::gem_value * static_cast<float>(my_gems()) >= params::life_value) return false;
++    const auto& me = world.me();
++    const auto& altars = world.map().altars;
++    const vec2 here = my_position();
++    const bool lock = carried_locks() > 0;
++    const int stun = params::interrupt_mode >= 2 ? me.ready_stun_reach(world.round + 1) : -1;
++    if (!lock && stun < 0) return false;
++    const ChampionBelief* best = nullptr;
++    int best_altar = -1;
++    bool best_lock = false;
++    for (const auto& e : world.enemies) {
++        if (!e.alive || !e.visible || e.channel != Channel::tribute) continue;
++        if (params::gem_value * static_cast<float>(e.gems) < params::life_value) continue;
++        const int a = tribute_altar(world, e.pos);
++        if (a < 0) continue;
++        if (best && best->gems >= e.gems) continue;
++        bool use_lock = lock && !world.altars[a].ally_lock;
++        if (use_lock)
++            for (const auto& ally : world.allies)
++                if (!ally.is_self && ally.alive && ally.channel == Channel::tribute && dist(ally.pos, altars[a].pos) <= cambc::constants::submit_gems_range)
++                    use_lock = false; // our own lock would cancel it
++        if (use_lock) {
++            const int mine = dist(here, altars[a].pos);
++            for (const auto& ally : world.allies)
++                if (!ally.is_self && ally.alive && ally.visible && !held_by_channel(ally)) {
++                    const int theirs = dist(ally.pos, altars[a].pos);
++                    if ((theirs < mine || (theirs == mine && ally.index < me.index)) && ally_locks(ally) > 0) use_lock = false;
++                }
++        }
++        const bool use_stun = !use_lock && stun >= 0 && e.facts().passive != Passive::stun_immune;
++        if (!use_lock && !use_stun) continue;
++        best = &e, best_altar = a, best_lock = use_lock;
++    }
++    if (!best) return false;
++    static bitboard goal{cambc::uninitialized};
++    clear_board(goal);
++    if (best_lock) goal |= altars[best_altar].lock_tiles();
++    else goal.draw_chebyshev(best->pos, static_cast<float>(stun)), goal &= world.map().open_for_us;
++    if (test(goal, here)) return false; // there: the turn end's lock, or the strike search's stun
++    const Field field = make_field(pathing.static_walls(), goal);
++    const int steps = field.at(here);
++    // A lock goes down at the turn end of the last step; an exclusive stun the turn after it.
++    const int turns = last_round_before_channel_ends(world, *best) - world.round;
++    if (steps == unreachable || steps > turns + (best_lock ? 1 : 0)) return false;
++    debug_block({ std::printf("INTERRUPT %d %u %s gems %d steps %d turns %d\n", world.round, my_handle(), best_lock ? "lock" : "stun", best->gems, steps, turns); });
++    decision = Branch::guard_altar;
++    memory.claim = -1;
++    memory.farm_group = -1;
++    step_safely(world, pathing, field, safety);
++    return true;
++}
++
+ } // namespace
+ 
+ } // namespace aph
+diff -ru chy-525/src/params.h bt-wl/src/params.h
+--- chy-525/src/params.h	2026-11-12 13:28:45.822985403 +0000
++++ bt-wl/src/params.h	2026-11-12 23:12:12.645719308 +0000
+@@ -219,6 +219,8 @@
+ // stun_worth prices a tributing enemy's bag by the rounds a stun puts off its tribute: the whole
+ // bag at this many (untuned).
+ inline constexpr float stun_tribute_horizon = 10;
++// interrupt_turn (economy/altar_guard.cc): 0 off, 1 walk to lock a big tribute's altar, 2 also into a ready stun's reach.
++inline constexpr int interrupt_mode = 1;
+ // Each point of damage short of a kill is worth this much of itself; the rest of the kill's worth
+ // comes as the target weakens (kill_distance).
+ inline constexpr float chip_value = 0.24669105f;

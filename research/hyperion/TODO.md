@@ -197,8 +197,8 @@ Each needs an A/B (check EXPERIMENTS first). Bundle removals and keep them if le
 - **Removals:** `keep_walk`'s free-stun logic in `enemy_cast` (still used by retreat and the game-ender intercept),
   replaced by a plain threshold; ground casts at unseen enemies (`max_unseen_tiles`); kite's contested branch;
   probabilistic `threatened()` (risky: it gates recalls). Ren's specials change only on ladder evidence.
-- **Behaviour:** walk to lock an altar where a visible enemy tributes a big bag (`Altar::lock_tiles()` as goals);
-  `spell_clear_rounds` pricing tested both ways.
+- **Behaviour:** `spell_clear_rounds` pricing tested both ways. (Walking to lock a big enemy tribute: done 2026-11-12,
+  level, EXPERIMENTS "Interrupting Fish r8's big tributes".)
 - **Farm and capture pricing** (judgement calls): an enemy hold that pays before we arrive priced as respawning at
   payout + respawn (skipping it lost, CHANGES 181); an empty cleared group unseen for capture + respawn rounds as
   probably taken; `stun_worth` counting a tributer's whole bag though a cancel only delays it; `gems_short` minus
