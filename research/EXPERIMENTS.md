@@ -150,6 +150,12 @@ replays (11-10 to 11-12), our 375 live scrims against r7, and 48k capture rows.
     - fgate pool v4, 200k: 46.90% (46.18-47.63) of 20,480, REJECT.
   - These deaths are not cheaply avoidable. What is left is macro (deny her gold early, kill her before she is fed,
     itemise against her burst).
+  - The rounds where a victim sees her in its range and attacks no one (12.5% of its last rounds) are expected:
+    - 23%: she kills it before its turn.
+    - 8%: it is stunned, loses its turn or is channelling.
+    - 5%: it casts instead.
+    - 58%: a ranged body walks, which spends its attack, so the strike search chose the step.
+    - Out of fuel is ruled out: those turns keep their turn-end recall feint. No fix (`vidle.py`).
 
 ## Forking live Mite games, and per-composition constants (2026-11-12): forks work and find a known gain at about a fresh gate's cost a game; the body plays on 5-7 points weaker than Mite from live positions; no pick-count interaction in 2.7M SPSA games
 

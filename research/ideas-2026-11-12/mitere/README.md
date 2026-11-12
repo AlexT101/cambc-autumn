@@ -601,6 +601,34 @@ Data: live r7, her 717 kills of our bodies after round 13 (`vdeath.py`, `vdeath2
   - change itemisation against her burst.
 - None of these is a cheap rule, so this stops here.
 
+### Seen, in range, no attack: expected, not a bug (`vidle.py`)
+
+The 569 victim-rounds of `vstretch.py`'s seen / in range / no attack class (12.5%), replayed to the victim's own turn
+(her walks and dashes before its slot), break down as follows.
+
+| what happened at the victim's turn | share |
+|---|---|
+| killed before its turn (she acts first) | 23% |
+| stunned 5%, no turn events (lost turn) 2%, tribute or teleport 1% | 8% |
+| cast instead (dash, heal, CC, a spell at her) | 5% |
+| she moved out of range first | 1% |
+| ranged body walked away and ended out of range | 21% |
+| ranged body walked and ended still in range (sideways 16%, toward 12%, away 9%) | 37% |
+| stood, cancelled its recall feint, no attack | 5% |
+
+**The walks are choices, not lost actions.**
+- 98% of these victims are ranged, and a ranged walk spends the basic attack (cambc-rules `turn.ranged`).
+- So each of these walks is the strike search choosing the step over the shot. `combat/plan.cc` offers a ranged walk
+  alone as a leaf and scores hit worth, plus the goal's step, less the expected damage at the end tile.
+- A chip on a fed Vesper is worth little against her kill distance. Section 11 shows that raising it does not pay.
+
+**Out of fuel is not the cause.**
+- An out-of-fuel turn loses its turn-end recall feint.
+- Only 2 of 332 walking victims lack it, against 5.1% of all our walk-without-attack turns.
+
+**Nothing here to fix.** The only unexplained rest is the 26 stood-without-attacking rounds: 0.6% of the stretch
+rounds and about 0.1 deaths per game at most, too small to chase.
+
 ## Files
 
 - **Python tools** (this folder):
