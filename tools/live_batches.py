@@ -403,12 +403,19 @@ def report():
     if not B:
         sys.exit('batch mode has not started')
     print(f"rest v{B['rest']}; minutes live since {B['started_at']}: {minutes(B, time.time())}")
-    for c in B['done'] + ([B['cur']] if B['cur'] else []):
+    cands = B['done'] + ([B['cur']] if B['cur'] else [])
+    for i, c in enumerate(cands):
         print(f"\n{c['label']} v{c.get('version')} ({c['phase'] if 'result' not in c else 'done'}), "
               f"{len(c['batches'])} batches")
-        if c.get('version'):
-            for opp, r in paired(ls, c['version'], B['rest'], c['rsets']).items():
-                print(f"  {opp:<5} {r['refset']:<4} cand {r['cand_wins']}/{r['cells']}  v{B['rest']} "
+        if not c.get('version'):
+            continue
+        # Against the rest version, then against each earlier candidate on the same pins.
+        refs = [(B['rest'], f"v{B['rest']}")] + [(o['version'], o['label']) for o in cands[:i]
+                                                  if o.get('version') and o['rsets'] == c['rsets']]
+        for ref, name in refs:
+            print(f"  against {name}:")
+            for opp, r in paired(ls, c['version'], ref, c['rsets']).items():
+                print(f"    {opp:<5} {r['refset']:<4} cand {r['cand_wins']}/{r['cells']}  ref "
                       f"{r['rest_wins']}/{r['cells']}  net {r['net']:+d}  flips {r['flips_for']}-{r['flips_against']} "
                       f"z {r['z']:+.2f}")
 
