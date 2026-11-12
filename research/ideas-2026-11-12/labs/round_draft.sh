@@ -56,9 +56,12 @@ if [ ! -f $D/cand.done ]; then
   ./copybot -f ${BASE#bots/} $CAND > $D/cand.log 2>&1 || fail COPYBOT
   rm -f bots/$CAND/READY
   node tools/draftlab/model.mjs cpp --lab replays/draftlab/$MODEL --out bots/$CAND/src/draft/draft_model.h >> $D/cand.log 2>&1 || fail CPP
-  node tools/draftlab/native.mjs --lab replays/draftlab/$MODEL maps maps $D/maps/fresh-$SEED --src bots/$CAND/src/draft > $D/parity.log 2>&1 || fail PARITY-RUN
-  grep 'team mismatches' $D/parity.log | grep -qv ' 0 team mismatches, 0 C++ failures' && fail "PARITY: $(grep 'team mismatches' $D/parity.log | tr '\n' ' ')"
-  grep -q 'team mismatches' $D/parity.log || fail PARITY-OUTPUT
+  # native.mjs exits 1 on any feature difference, last-digit float ones included (draft19: 121 of 676 maps, teams all
+  # equal); what ships is the team, so the gate is the summary line: no key or team mismatch, no C++ failure.
+  node tools/draftlab/native.mjs --lab replays/draftlab/$MODEL maps maps $D/maps/fresh-$SEED --src bots/$CAND/src/draft > $D/parity.log 2>&1
+  S=$(grep ' maps: .* key mismatches' $D/parity.log | tail -n 1)
+  [ -n "$S" ] || fail PARITY-OUTPUT
+  echo "$S" | grep -q ' 0 key mismatches' && echo "$S" | grep -q ' 0 team mismatches, 0 C++ failures' || fail "PARITY: $S"
   for b in ${SRC#bots/} $CAND; do
     python3 tools/draftlab/firstturn.py --sample $LD/maps.jsonl --need --bot bots/$b --jobs 8 --name $ID-$(basename $b) > $D/firstturn-$(basename $b).out 2>&1 || fail FIRSTTURN-RUN
   done
@@ -66,6 +69,6 @@ if [ ! -f $D/cand.done ]; then
   ob=$(over $(basename $SRC)); oc=$(over $(basename $CAND))
   [ -n "$oc" ] && [ -n "$ob" ] && [ "$oc" -le "$ob" ] || fail "FIRSTTURN: drafts over 10M cand $oc, base $ob"
   rm -rf bots/variants/firstturn-$ID-*
-  candidate "draft model refitted on $BN ($MODEL, $(cat $D/model.kind) fit, $(wc -l < $LD/games.slim.jsonl) games); $(grep 'team mismatches' $D/parity.log | tail -n 1 | cut -c1-80); first-turn drafts over 10M: $oc (base $ob)"
+  candidate "draft model refitted on $BN ($MODEL, $(cat $D/model.kind) fit, $(wc -l < $LD/games.slim.jsonl) games); $(echo "$S" | grep -o '[0-9]* maps: 0 key mismatches')/0 team mismatches; first-turn drafts over 10M: $oc (base $ob)"
   touch $D/cand.done
 fi
