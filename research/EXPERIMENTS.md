@@ -10,6 +10,28 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## Forking live Mite games, and per-composition constants (2026-11-12): forks work and find a known gain at about a fresh gate's cost a game; the body plays on 5-7 points weaker than Mite from live positions; no pick-count interaction in 2.7M SPSA games
+
+Notes, the runner subcommand and scripts: [ideas-2026-11-12/forkcomp/README.md](ideas-2026-11-12/forkcomp/README.md).
+
+- **Live forks.** `fastrunner livefork` (a runner copy, wasm engine) replays a live game exactly: our release build
+  against the harness puppet, 1,650 of 1,650 Mite games (v105-v112) on the live score. At rounds 100/300/600 it swaps
+  fresh bots in and plays to the end. The body's draft memory is its own plan for Mite's real picks (forced-pick
+  draft); a swapped-in variant of ours gets its own the same way. Mite's memory cannot be had, so the body starts cold.
+- **Body fidelity.** From the same live positions the rt-Mt3q body plays on weaker than real Mite: our win +7.4 ± 1.4
+  points at r100, +4.9 ± 1.2 at r300, +1.3 ± 1.3 at r600. About 4 of the r100 gap is the body's cold start (local
+  forks against a warm body: +4.5 ± 2.3, gone by r600). Full games on the same maps and sides: 71.3% against the
+  body, 62.1% live against Mite. Our own side cold-started: no bias (-0.4 ± 1.2).
+- **A/B power.** chy-life − chy-519 swapped in at the same forks reads +0.81 ± 0.36 (8,892 candidate arm plays; r300
+  forks alone +1.82 ± 0.56), against +1.23 ± 0.18 on the fresh gate (61,440 candidate games). Information a
+  candidate play: 0.75x the fresh gate's (r300 alone 4x, picked after the fact); an arm is ~0.6x a game's CPU.
+  Positions only on ladder maps and from old matchups: a second read, not a gate.
+- **Pick-count split** (`picksplit.py` on lq-tune1, s88, s87b, oc6 and oc5's games.jsonl, 2.7M paired games): the
+  score gradient's change between 3/4/5-pick games has omnibus permutation p 0.105, 0.52, 0.085, 0.84, 0.215. The
+  debiased bound on a split's gain is ≤ +0.72 points, never beyond its null's 95%, and no constant flips sign or
+  replicates across runs. Fish vs Mite split: p 0.97 and 0.75. Pick count is mostly map size (correlation 0.57 with
+  log area), already covered by the closed mapcond line. Not split.
+
 ## Prism deaths on charybdis (charybdis = 519, 2026-11-12): failed retreats and a fuel test on its carry picks; fix, own fall and Health shards pass the live bar at +1.23 (CHANGES 520)
 
 Notes, scripts and patches: [ideas-2026-11-12/prismlife/README.md](ideas-2026-11-12/prismlife/README.md). Arms are

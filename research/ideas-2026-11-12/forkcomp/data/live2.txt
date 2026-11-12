@@ -1,0 +1,19 @@
+live: 1120 games, 3008 forks, 0 games with errors
+main line reproduces the live score: 1120/1120
+complete forks 3008; arm rows with DRAFT-/PLAN- notes 0
+
+by fork round: mean our win from the fork (cluster SE), agreement rates
+round     n      puppet       body1  life+body1   519+body1   agree(b1,live) agree(b1,b2) agree(cold,b1)
+  100  1120    61.0±1.5    68.4±1.4    72.9±1.3    72.5±1.3     61.2%           nan%         nan%
+  300  1109    60.7±1.5    66.4±1.4    67.5±1.4    65.1±1.4     72.1%           nan%         nan%
+  600   779    53.9±1.8    55.6±1.8    56.9±1.8    57.9±1.8     79.3%           nan%         nan%
+  all  3008    59.0±1.5    64.3±1.0    66.8±1.0    66.0±1.0     69.9%           nan%         nan%
+
+paired contrasts (points of our win rate, cluster SE; sd of the per-fork difference)
+  body_minus_live: r100 +7.41±1.85 (sd 62)  r300 +5.68±1.58 (sd 52)  r600 +1.67±1.63 (sd 45)  rall +5.29±1.31 (sd 55)
+  life_minus_519: r100 +0.67±0.90 (sd 30)  r300 +1.53±0.69 (sd 23)  r600 -0.58±0.44 (sd 12)  rall +0.66±0.43 (sd 24)
+  r100: share of forks where life and 519 differ in outcome under either body seed: 28.7%
+  r300: share of forks where life and 519 differ in outcome under either body seed: 16.2%
+  r600: share of forks where life and 519 differ in outcome under either body seed: 5.0%
+
+CPU: arm mean 149 ms (median 130); main line + drafts per game 168 ms

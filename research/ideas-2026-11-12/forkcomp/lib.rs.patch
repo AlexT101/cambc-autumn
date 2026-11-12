@@ -1,0 +1,29 @@
+--- tools/fastengine/runner/src/lib.rs	2026-11-11 01:18:35.787412956 +0000
++++ replays/forkcomp/runner/src/lib.rs	2026-11-12 08:14:44.651080483 +0000
+@@ -34,6 +34,8 @@
+ mod scenario;
+ #[cfg(wasm_engine)]
+ mod forkgame;
++#[cfg(wasm_engine)]
++mod livefork;
+ 
+ /// cambc's __libc_start_main, with main replaced by ours when FASTRUNNER_MAIN is set.
+ type StartMain = unsafe extern "C" fn(
+@@ -62,7 +64,7 @@
+     // cambc command (build, bundle, ...) runs as stock, without us in its children.
+     if !libc::getenv(c"FASTRUNNER_MAIN".as_ptr()).is_null() && engine::is_cambc_process() {
+         let cmd = if argc > 1 { std::ffi::CStr::from_ptr(*argv.add(1)).to_bytes() } else { b"" };
+-        ours = matches!(cmd, b"run" | b"run-batch" | b"__worker" | b"__fastrunner" | b"__fuzzdf" | b"__pgotrain" | b"__wsnap" | b"scenario" | b"__scenario_worker" | b"forkgame" | b"__forkgame_worker");
++        ours = matches!(cmd, b"run" | b"run-batch" | b"__worker" | b"__fastrunner" | b"__fuzzdf" | b"__pgotrain" | b"__wsnap" | b"scenario" | b"__scenario_worker" | b"forkgame" | b"__forkgame_worker" | b"livefork");
+         if !ours {
+             libc::unsetenv(c"LD_PRELOAD".as_ptr());
+             libc::unsetenv(c"FASTRUNNER_MAIN".as_ptr());
+@@ -807,6 +809,8 @@
+         Some("forkgame") => return forkgame::main(&args[2..]),
+         #[cfg(wasm_engine)]
+         Some("__forkgame_worker") => return forkgame::worker_main(&args[2..]),
++        #[cfg(wasm_engine)]
++        Some("livefork") => return livefork::main(&args[2..]),
+         #[cfg(not(wasm_engine))]
+         Some("scenario") => bail!("fastrunner scenario needs the wasm engine (build.rs found no wasm2c or clang)"),
+         _ => {}
