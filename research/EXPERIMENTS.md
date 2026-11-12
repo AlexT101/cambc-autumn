@@ -10,6 +10,53 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## Prism safety on the game-ending tribute (charybdis = 517, 2026-11-12): a hurt Prism with the winning bag heals before its channel; +0.17 to +0.29, zone
+
+Notes, data and scripts: [ideas-2026-11-11/prismsafe/README.md](ideas-2026-11-11/prismsafe/README.md). Arms are
+`variants/psafe-{ab,a,b,0,abF}` (patches beside the README).
+
+**The mechanism** (REF, 2,560 games against the bodies at 200k): 52% of games have a winning bag (the Prism's gems
+plus our score reach 1,000). It is huge (median 542) and already at an altar, so its risk is the ~57-turn channel. The
+channel is started 2.3 times a game, 72% of the time below full health, and cancelled 2.0 times (by stuns, locks and
+our own choice). The bag is lost in 4.3% of those games (11% against an enemy Prism), and 40% of those games are lost.
+- **Change** (`finish_heal`): the Prism neither starts that channel nor walks on below min(full, every living enemy's
+  one-round strike); it goes home (recall kept, heal on spawn) while the enemy's clock (gems short over its recent
+  tribute rate) outlasts the trip home, out and the channel (a), and only if the enemy drafted no Prism (b).
+- **psafe-a is the pick**: it keeps the clock guard (a) and drops the Prism guard (b). With (a) the arms gain; without
+  it (b, 0) they are level. Full health as the line (abF) saves the most bags but costs 27 rounds a win and loses.
+
+Results against charybdis-cb9f86d (bodies Flp4/Mt3q, release, fgate units; "changed" is the share of games in the
+2,560-game mechanism run with a different result or length):
+
+| arm | gate | win% (95% CI) of games | Fish | Mite | changed | OOF turns (REF) | verdict |
+|---|---|---|---|---|---|---|---|
+| psafe-ab | 200k b0 | 50.18% (50.04-50.31) of 20,480 | 50.20 | 50.16 | 5.1% | 403 (402) | zone |
+| psafe-ab | 200k b16-19 | 50.14% (50.07-50.21) of 81,920 | 50.11 | 50.18 | | 2,327 (2,302) | zone |
+| psafe-a | 200k b0 | 50.23% (50.08-50.37) of 20,480 | 50.23 | 50.22 | 5.7% | 408 (402) | zone |
+| psafe-a | 200k b16-19 | 50.17% (50.09-50.25) of 81,920 | 50.10 | 50.24 | | 2,305 (2,302) | zone |
+| psafe-a | 100k b0-3 | 50.19% (49.88-50.50) of 81,920 | 49.92 | 50.46 | | | zone |
+| psafe-a | 100k b4-9 | 50.29% (50.04-50.54) of 122,880 | 50.31 | 50.27 | | 100k b0-9: 691,690 (679,816) | zone |
+| psafe-b | 200k b0 | 50.11% (49.95-50.26) of 20,480 | 50.16 | 50.06 | 5.7% | 402 (402) | level |
+| psafe-0 | 200k b0 | 50.16% (49.99-50.32) of 20,480 | 50.20 | 50.12 | 6.4% | 407 (402) | level |
+| psafe-abF | 200k b0 | 49.87% (49.66-50.08) of 20,480 | 49.98 | 49.77 | 23.0% | 402 (402) | loses |
+
+Mechanism (the same 2,560 games):
+
+| arm | winning bags lost (of ~1,339) | Prism deaths carrying one | rounds to win (both won) | net wins |
+|---|---|---|---|---|
+| REF | 58 | 60 | | |
+| psafe-ab | 44 | 46 | -0.5 | +2 |
+| psafe-a | 42 | 44 | -0.8 | +4 (9 gained, 5 lost) |
+| psafe-b | 44 | 46 | -0.6 | -3 |
+| psafe-0 | 42 | 43 | -1.0 | +0 |
+| psafe-abF | 34 | 35 | +27.0 | -5 |
+
+- Batches 16-19 and 4-9 were not used to pick the arm. They are pool batches, not newly grown maps.
+- The bodies kill our Prism about half as often as real Fish does, so this reads low locally.
+- At 100k, out-of-fuel turns rise 1.7% (games +0.3%).
+- Verdict: a small, consistent gain that sits in the zone at both budgets: +0.17 (CI 50.09-50.25) held out at 200k,
+  +0.25 pooled at 100k. It is a candidate for combo stacking, or to ship on judgement, not on the bar.
+
 ## Draft18 on charybdis (2026-11-11)
 
 A draft lab refit for charybdis (CHANGES 515): its Prism carry (507-512) makes Prism worth more than draft10 measured.

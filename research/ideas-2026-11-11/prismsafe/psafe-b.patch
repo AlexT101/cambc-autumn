@@ -1,0 +1,143 @@
+diff -ru charybdis-cb9f86d/src/bot_parts.h psafe-b/src/bot_parts.h
+--- charybdis-cb9f86d/src/bot_parts.h	2026-11-11 18:50:25.009994437 +0000
++++ psafe-b/src/bot_parts.h	2026-11-12 00:16:17.537536848 +0000
+@@ -333,6 +333,7 @@
+ bool hold_outlasts(Safety& safety, float damage, vec2 p, int rounds);
+ bool paying_soon(const World& world, Safety& safety, vec2 p, int turns);
+ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
++bool finish_heal(const World& world, Pathing& pathing, Safety& safety);
+ // want_home's recall line and pack zone (drawn_home) at p, as if we stood there with last round's loss `damage`.
+ bool drawn_home_at(const World& world, Pathing& pathing, Safety& safety, vec2 p, float damage);
+ const ChampionBelief* prey(const World& world, Pathing& pathing, Safety& safety);
+diff -ru charybdis-cb9f86d/src/combat/fight.cc psafe-b/src/combat/fight.cc
+--- charybdis-cb9f86d/src/combat/fight.cc	2026-11-11 22:52:51.346180780 +0000
++++ psafe-b/src/combat/fight.cc	2026-11-12 00:16:17.537365316 +0000
+@@ -550,6 +550,42 @@
+     return drawn_home(world, safety, hold);
+ }
+ 
++// A Prism carrying the bag that wins the game heals before its tribute: below the health one round of
++// every living enemy's strikes takes (capped at full), it neither starts the channel nor walks the bag
++// on, but goes home, by the recall when that is sooner. A winning bag's channel is long (a turn per 10
++// gems, ~55 at the median), and a hurt Prism standing in it is what the enemy kills. Not in a channel
++// already (continue_tribute judges that), nor once the round limit leaves no time for the trip home,
++// out and the channel. Guards (params::finish_lead, finish_no_prism): the enemy's clock, its gems short
++// beyond the bags we saw over its recent tribute rate, runs past that trip; the enemy drafted no Prism.
++bool finish_heal(const World& world, Pathing& pathing, Safety& safety) {
++    if constexpr (!params::finish_heal) return false;
++    if (world.me().facts().passive != Passive::gem_focus || !winning_bag(world)) return false;
++    if (my_state().contains(cambc::champion_state::submitting_gems) || test(world.map().ally_spawn, my_position())) return false;
++    float burst = 0;
++    int carried = 0;
++    for (const auto& e : world.enemies) {
++        if (params::finish_no_prism && e.facts().passive == Passive::gem_focus) return false;
++        if (!e.alive) continue;
++        const auto& s = safety.strike_of(e);
++        float most = 0;
++        for (int d = 0; d <= s.reach && d <= Strike::max_reach; ++d) most = std::max(most, s.damage[static_cast<std::size_t>(d)]);
++        burst += most;
++        carried += std::max(0, e.gems);
++    }
++    if (my_health() >= std::min(my_max_health(), burst)) return false;
++    // closing() reads true for every winning bag (its race is already run): the round limit alone binds here.
++    const int out = pathing.to_any_altar().at(recall_landing(world));
++    if (out == unreachable) return false;
++    const int trip = recall_turns(world) + 1 + out + tribute_turns(world, static_cast<int>(my_gems()));
++    if (rounds_left(world) <= trip + endgame_margin) return false;
++    if constexpr (params::finish_lead) {
++        const int need = static_cast<int>(cambc::constants::winning_gems) - world.score.enemy - carried;
++        const float rate = world.enemy_rate();
++        if (need <= 0 || (rate > 0 && static_cast<float>(need) <= rate * static_cast<float>(trip))) return false;
++    }
++    return true;
++}
++
+ // Retreat: low under the recall line (bar finishing a camp), a pack's zone (drawn_home), a camp we
+ // could no longer walk out of, or a stand we lose (stand_lost_at). A hold that outlasts what can
+ // reach us to its payout keeps us through all but the camps (hold_outlasts). The work guard keeps
+@@ -572,7 +608,7 @@
+     if (world.me().facts().heals() && !holding_capture(world, pathing) && !contesting(world) && exposure_here(world, safety).enemy
+         && !willow_stands(world))
+         return true;
+-    return stand_lost_at(world, safety, hold);
++    return finish_heal(world, pathing, safety) || stand_lost_at(world, safety, hold);
+ }
+ 
+ // The last round we act before e's channel completes, at its turn start in channel_end_round.
+diff -ru charybdis-cb9f86d/src/economy/bank.cc psafe-b/src/economy/bank.cc
+--- charybdis-cb9f86d/src/economy/bank.cc	2026-11-11 18:50:25.012681192 +0000
++++ psafe-b/src/economy/bank.cc	2026-11-12 00:16:17.537683010 +0000
+@@ -1340,6 +1340,7 @@
+ bool can_tribute_safely(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
+     if (retaining_gems(world, pathing)) return false;
+     if (!can_tribute_here(world)) return false;
++    if (finish_heal(world, pathing, safety)) return false; // heal before the winning channel
+     return tribute_ok(world, safety, memory, tribute_turns(world, my_gems()));
+ }
+ 
+diff -ru charybdis-cb9f86d/src/model/world.cc psafe-b/src/model/world.cc
+--- charybdis-cb9f86d/src/model/world.cc	2026-11-11 22:52:51.347606378 +0000
++++ psafe-b/src/model/world.cc	2026-11-11 23:59:44.134713854 +0000
+@@ -2911,6 +2911,11 @@
+         ally_scores_.resize(round + 1, ally_scores_.empty() ? ally : ally_scores_.back());
+         ally_scores_[round] = ally;
+     }
++    if (enemy_scores_.empty()) enemy_scores_.reserve(cambc::constants::max_rounds + 1);
++    if (static_cast<int>(enemy_scores_.size()) <= round) {
++        enemy_scores_.resize(round + 1, enemy_scores_.empty() ? enemy : enemy_scores_.back());
++        enemy_scores_[round] = enemy;
++    }
+     // No tribute landed: an ended channel was cancelled, and its bag kept.
+     if (enemy_delta <= 0) return;
+ 
+@@ -2956,6 +2961,12 @@
+     return static_cast<float>(score.ally - ally_scores_[from]) / static_cast<float>(round - from);
+ }
+ 
++float World::enemy_rate() const {
++    const int from = std::max(first_round, round / 2);
++    if (round <= from || from >= static_cast<int>(enemy_scores_.size())) return 0;
++    return static_cast<float>(score.enemy - enemy_scores_[from]) / static_cast<float>(round - from);
++}
++
+ void World::debug_output() const {
+     if constexpr (debug_beliefs) dump_beliefs();
+     if constexpr (debug_draw) {
+diff -ru charybdis-cb9f86d/src/model/world.h psafe-b/src/model/world.h
+--- charybdis-cb9f86d/src/model/world.h	2026-11-11 22:52:51.347606378 +0000
++++ psafe-b/src/model/world.h	2026-11-11 23:59:44.134195817 +0000
+@@ -750,6 +750,8 @@
+     // Our tributed gems a round over the later half of the game so far: it follows the economy's
+     // growth, unlike the whole game's average.
+     float ally_rate() const;
++    // The same for the enemy's tributed gems.
++    float enemy_rate() const;
+     bitboard visible; // this turn's vision (ours and our ward's)
+     // An enemy was seen changing priority: its team's order for next round can change until each
+     // has acted, and unseen ones' ranks are guesses.
+@@ -799,6 +801,7 @@
+     Tributing tributing_enemies() const;
+     void update_scores(const Tributing& tributing);
+     std::vector<int> ally_scores_; // by round
++    std::vector<int> enemy_scores_; // by round
+ 
+     std::unique_ptr<StaticMap> static_;
+     const ChampionBelief* me_ = nullptr; // &allies[self_index], set with the beliefs
+diff -ru charybdis-cb9f86d/src/params.h psafe-b/src/params.h
+--- charybdis-cb9f86d/src/params.h	2026-11-11 18:50:25.015295767 +0000
++++ psafe-b/src/params.h	2026-11-12 00:16:26.169935403 +0000
+@@ -143,6 +143,14 @@
+ inline constexpr float heal_trip_fraction = 0.5362846f;
+ // Turns ahead a tribute's safety is judged over, each turn of the channel.
+ inline constexpr int tribute_window = 11;
++// A Prism carrying the game's winning bag goes home to heal before its tribute (fight.cc
++// finish_heal) while below the health one round of every living enemy's strikes takes. The guards:
++// `finish_lead`, only while the enemy's clock (its gems short over its recent tribute rate) runs past
++// our trip home and on to an altar; `finish_no_prism`, only while the enemy drafted no Prism (a hoard
++// it carries puts its clock out of sight).
++inline constexpr bool finish_heal = true;
++inline constexpr bool finish_lead = false;
++inline constexpr bool finish_no_prism = true;
+ // Most rounds to wait at a camp for it to return. Also bounds the wait after a recall out to farm.
+ inline constexpr int max_wait = 2;
+ // The weight on gold in farm choice of Tavi on its gold maps (MapEconomy::tavi_map):
