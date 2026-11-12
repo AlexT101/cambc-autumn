@@ -18518,3 +18518,23 @@ cand − base in points:
 
 Neither went to fgate. No counter to ship: both mechanisms the data supports most directly fail from live positions.
 Items against her burst are left to the labs emb7 round.
+
+**The priority's low 20 bits** (`prio_decode.py`, 244 live r8 games): `low = MASK[slot][round] ^ payload`.
+- MASK is a fixed 20-bit value per Fish slot and round, the same in every game.
+- The payload is either `flag` alone (dead, channelling or hurt; 94.8% of values) or a team target message (5.1%):
+  `((((cd*4 + hb)*23 + dy+11)*23 + dx+11)*ne + j)*2 + flag`. j is the target (our champion (j−1) mod ne), (dx, dy)
+  its offset from the sender, hb its health quarter and cd its ability-ready bits.
+
+| field | fit |
+|---|---|
+| offset | 87% exact, 99.6% within a tile |
+| health quarter | 99.3% |
+| ability bits | 99.6% |
+| flag, dead units | 99.9% |
+
+It is a shared focus call: 86% of simultaneous messages name the round's modal target. The lead is short (median 2
+rounds), and half the calls never become damage.
+- **Classifier:** no gain over `v >> 20`; detection waits for the first sighting (54% by r100).
+- **Counter:** not testable locally, because the bodies do not write this channel. Reading Fish's focus to dodge it
+  belongs to the avoidance family that lost.
+- **Mask table:** `mask_r8.json`, rounds up to about 1,100.

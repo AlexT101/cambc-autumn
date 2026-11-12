@@ -40,7 +40,7 @@ Data:
 - Fish banks less often, with bigger bags: first tribute r195 became r235.
 
 **Priority encoding.**
-- r8 writes `old << 20` plus 20 random low bits, rewritten every round. `v >> 20` recovers the old `-rank - (n+1) level`.
+- r8 writes `old << 20` plus 20 low bits rewritten every round: a per-slot, per-round mask xored over a target message (section 5). `v >> 20` recovers the old `-rank - (n+1) level`.
 - In the rank, Heart of Ruin comes after Varg on the base-health tie.
 - opp_detect read r8 as unknown in 100% of instances.
 - `oppd-r8.patch` (3 lines, against `variants/c520-mx`'s `opp_detect.cc`) fixes it. Checked with `det_r8.py`
@@ -183,6 +183,56 @@ n = pairs, 308 games):
 **What carries over.** The opp_detect fix is ready, with Fish detection at 52% by r100 and 76% by r300 on live r8.
 `fr_forkarms.py` reads a Fish arm in about a minute.
 
+## 5. The r8 priority's low 20 bits: a masked team channel
+
+Fish r8 writes `v = (old << 20) + low`. The low bits looked random, but they carry each unit's target.
+
+**Format** (`prio_decode.py`; 244 live r8 games, 995k unit-rounds):
+
+    low = MASK[slot][round] ^ payload
+    payload = flag                                                                     (94.8% of values)
+            | ((((cd * 4 + hb) * 23 + dy + 11) * 23 + dx + 11) * ne + j) * 2 + flag      ( 5.1%)
+
+| field | meaning | fit |
+|---|---|---|
+| MASK | a fixed 20-bit value per slot (the unit's index in its team by id) and round, the same in every game | the modal value across games; 94.9% of values xor it to 0 or 1 |
+| flag | the sender is dead, recalling, tributing or hurt | dead 99.9%, recall/tribute 99.9-100%, alive under 40% health about 45%, healthy 1-4% |
+| j | its target: our champion (j − 1) mod ne by id (ne = our champion count) | |
+| dx, dy | the target's position relative to the sender, ±11 | 87% exact, 99.6% within one tile allowing a round of movement |
+| hb | the target's health quarter, min(3, ⌊4 hp / max⌋) | 99.3% |
+| cd | the target's two ability-ready bits | 99.6% |
+
+- **Payload range.** The payload stays under 2^17, so the mask's top 3 bits are bare. Only 0.1% of values (1,256)
+  decode to 2^17 or more.
+- **Timing.** A value read at round r was written at round r − 1, so decode it with MASK[slot][r − 1].
+- **The mask.** It is not a low-bit LCG and not mt19937 seeded with a small integer; I did not find the generator. The
+  table `mask_r8.json` holds slots 0-5 for rounds where at least 20 games agree, which is about r1-1,100.
+  Fish's ranked games could extend it.
+- **The old code.** It is unchanged: `v >> 20` is the r2 rank and level code.
+
+**What it says.** The team shares a focus target.
+- In rounds with two or more target messages, 68% name one target, and 86% of messages name the round's modal target.
+- A targeting episode starts at a median distance of 6. Half of the episodes see the target damaged within 12 rounds
+  (median lead 2), and 9% see it killed.
+- 78% of the messages come from Fish units one of ours can see, so our bot could read them.
+
+**Can we use it?**
+- **Classifier: no real gain.** One masked read is a certain Fish r8 call, with no false positives (a chance match is
+  about 2 in 2^20). Detection still waits for the first sighting, though: 54% of our instances by r100 and 78% by r300,
+  against 52% and 76% for the `v >> 20` fix already in `oppd-r8.patch`. The mask is also a 6 × 1,100 table of
+  20-bit values.
+- **Intentions: readable but thin.**
+  - When a visible Fish unit is engaged, we learn which of ours the team is focusing, and whether a unit is
+    retreating (the flag).
+  - The lead is about 2 rounds, and half the calls never become damage. Health and cooldowns we already see.
+  - The obvious use is for a focused unit (our hoarding Prism) to leave earlier. That is the avoidance family, which
+    has lost against Mite (mitere mvf −3.66 livefork) and here (fr8x-pgf, section 4).
+  - It cannot be tested locally: fr8-g25 and the other bodies do not write this channel, so only a live test could
+    read it.
+- **Fragility.** The mask, the field order and the bases are Fish's choice. Fish changed twice on 11-12, and any
+  change before the finals would silently break a decoder. A table-driven reader should check its fit rate live and
+  switch itself off when values stop xoring to small payloads.
+
 ## Files
 
 Data:
@@ -204,5 +254,7 @@ Body:
 Detector: `det_r8.py`, `oppd-r8.patch`.
 
 Counter arms: `x-pg-chy524.patch`, `x-vf-chy524.patch`, `fr_forkarms.py`.
+
+Priority channel: `prio_ds.py` (dataset), `prio_decode.py` (decoder and fit rates), `mask_r8.json` (the mask table).
 
 Working data is in `~/tmp-offload/fishr8/`.

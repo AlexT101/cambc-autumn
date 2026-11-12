@@ -17,7 +17,7 @@
  }
  
 -// Fish: v = -rank - (N+1) level; a quiet level is its health band (gems lower it), contact levels
-+// Fish: v = -rank - (N+1) level (from r8, 11-12, shifted up 20 bits over random low bits: v >> 20 reads it); a quiet level is its health band (gems lower it), contact levels
++// Fish: v = -rank - (N+1) level (from r8, 11-12, shifted up 20 bits over a masked low-bit channel: v >> 20 reads it); a quiet level is its health band (gems lower it), contact levels
  // are 101-116 either sign. Returns 2 for those, 1 for the residue alone, 0 otherwise.
  int fish_token(std::int32_t v, int n, int rank, const ChampionBelief& b) {
 +    if (v >= (1 << 20) || v <= -(1 << 20)) v >>= 20;
