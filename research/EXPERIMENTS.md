@@ -18538,3 +18538,65 @@ rounds), and half the calls never become damage.
 - **Counter:** not testable locally, because the bodies do not write this channel. Reading Fish's focus to dodge it
   belongs to the avoidance family that lost.
 - **Mask table:** `mask_r8.json`, rounds up to about 1,100.
+
+## (charybdis, 2026-11-12) Vesper and Prism on opposite sides of a split map: REJECT; routing apart and side carry both lose
+
+User idea: "when vv and prism are picked in same draft, perhaps try routing them to separate ways when camp value
+splits the map (so they can easily pick up camps as they are more high value than others)". "vv" read as Vesper
+(+33% gold); Vendetta has no capture passive. Base and REF `variants/chy-emb6-524` (524). Patch, scripts:
+`research/ideas-2026-11-12/vpsplit/`.
+
+- **The split (draft).** The line runs from our spawn's centre to theirs. Our half's groups (Monoliths aside) fall
+  left or right of it, outside a band of half the spawn's width. The split is on when the poorer side holds at least
+  half the richer side's value (gems + 0.3 gold). Vesper takes the side with more gold; Prism takes the other. The
+  draft measures it with the other plan facts, adding 6 bits to PlanFacts (plan version 18).
+  - On the ladder maps it is on for 65% of (map, side).
+  - Our team has both Vesper and Prism, with the split on, in 30% of games against mf-c2 (ladder) and 26% on fresh v4 maps.
+- **Play (`vps-524`):**
+  - Carrier by side: Vesper is the sole holder of groups with gold on her side. The Prism carry macro is generalised
+    as in mitefit's `rule_vcarry.py`. Prism keeps every other gem group.
+  - Routing: in farm, a group on the other carrier's side weighs `off_side` 0.5 for Vesper and for Prism.
+- **Arms:**
+  - `vps-524c`: carrier only (off_side 1).
+  - `vps-524w`: routing only (no Vesper carry).
+  - `vps-524r`: routing at 0.25.
+  - Games without the split play exactly as the base (0 flips on 605 ladder pairs).
+
+**Mechanism.** V+P split games only, paired against 524. Ladder: mf-c2, 200k, members 1-4, 308 pairs
+(`mech.sh`, `vpmech.py`). Fresh: gate batch 0 parts p0-p1, fr8-g25 and mf-c2, 676 pairs (`subset.sh`, `vpsub.py`).
+
+| | 524 | vps-524 | c (carrier) | w (routing) | r (routing 0.25) |
+|---|---|---|---|---|---|
+| Vesper's share of captured base gold, r100 (ladder) | 26% | 39% | 39% | 28% | 38% |
+| Base gold captured r100 / r200 (ladder) | 447 / 1029 | 414 / 969 | 450 / 996 | 419 / 1004 | 416 / 972 |
+| Earned gold r100 / r200 (ladder) | 519 / 1245 | 503 / 1226 | 547 / 1263 | 488 / 1224 | 502 / 1223 |
+| Team gems collected (fresh) | 1174 | 1106 | 1128 | 1127 | |
+| Prism gems submitted (fresh) | 453 | 344 | 352 | 392 | |
+| V,P on opposite sides, r20-200 (ladder) | 23% | 37% | 21% | 37% | 41% |
+| Deaths a game (ladder) | 3.55 | 4.40 | 3.92 | 4.64 | 4.60 |
+| Prism deaths (ladder) | 0.20 | 0.51 | 0.40 | 0.48 | 0.63 |
+| Win, ladder subset (308) | 74.0 | −1.6 ±3.1 | −1.9 ±2.9 | −1.0 ±3.3 | −5.2 ±3.1 |
+| Win, fresh subset (676) | 79.0 | **−6.1 ±2.1** | −4.1 ±2.0 | −5.8 ±2.1 | |
+
+- **Routing apart** costs the team its pack.
+  - Base gold captured falls about 30 by r100: Vesper's and Prism's clearing leaves the crews on the big groups.
+  - Deaths rise by about one a game, almost all after r400.
+  - Prism dies 2-3x as often and loses its bag (gems lost on deaths, ladder: 65 → 101; at 0.25, 130).
+  - The stronger the routing, the bigger the loss.
+- **Side carry** does what it should for gold: Vesper's share 26% → 39%, earned gold +19 by r100 and +43 by r200
+  (fresh). But it is mitere 10's trade again. The V-side mixed groups take ~100 gems from Prism's bag (submitted
+  453 → 352), and Prism, with less Focus, dies more (0.37 → 0.51 fresh).
+- Since the opposite-sides fraction only rises from 23% to 37% at 0.5, routing hard enough to really split them would
+  cost more still (r).
+
+Results against chy-emb6-524 (fgate `--pool v4`, 200k, bodies fr8-g25 / mf-c2, batch 0):
+
+| gate | fresh win% (95% CI) | Fish | Mite | ladder | V+P split subset (fresh, 676 pairs) | outcome |
+|---|---|---|---|---|---|---|
+| vps-524 (carrier + routing 0.5) | 48.45 (47.89-49.01) | 48.26 | 48.63 | 48.05 | −6.1 ±2.1 | REJECT (1 batch) |
+| vps-524c (carrier only) | 48.81 (48.30-49.32) | 49.02 | 48.59 | 50.98 | −4.1 ±2.0 | REJECT (1 batch) |
+| vps-524w (routing only) | 48.86 (48.33-49.39) | 48.55 | 49.16 | 49.61 | −5.8 ±2.1 | REJECT (1 batch) |
+
+**Verdict:** drop; not run at 100k (no 200k gain). Splitting Vesper and Prism trades the pack's clears and Prism's
+safety for a gold bonus worth ~20-40 gold, and both halves lose apart. As with mitere 10, our wins come from the
+Prism's bag inside the pack, not from who holds the gold.
