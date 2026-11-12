@@ -66,6 +66,14 @@ replays (11-10 to 11-12), our 375 live scrims against r7, and 48k capture rows.
   base gold (ours 36%; the Prism gem carry takes 24-31% of ours). Rule: gold groups go to Vesper, the Prism holds
   gem clusters. Worth about +29 gold by r100 and +46 by r200 in games with our Vesper (arithmetic, not played). The
   rest is Mite's pack on monster groups over far gem clusters (+45 base by r100; costs gems, so it needs an A/B).
+- **Rules 1 and 2 tried on c520-ps; neither pays.**
+  - Rule 1, gold to Vesper (mitefit's vc-c520, and my c520-vg), against mf-c2 in games where we have Vesper and
+    Prism. It reaches Mite's split (Vesper 50-54% of base gold) and +60 gold by r200, but costs about 100
+    collected gems a game, because the Prism carry is our gem engine. vc-c520 reads −10 on 208 pairs (mitefit's
+    8 members: −2.4 ±2.2). Not gated.
+  - Rule 2, the opening pack (c520-pk: lone gem clusters 0.5x before r100), on fgate pool v3 at 200k: 49.90%
+    (49.65-50.15) of 122,880, NARROWED. With mf-c2: 50.04% of 20,480. Dropped.
+  - Mite's gold-first opening does not carry over: our bot wins on gems.
 - **Leads (untested):** focus Mite's Vesper; 2-on-1 empty healthy Mite bodies; zone its carriers.
 
 ## Forking live Mite games, and per-composition constants (2026-11-12): forks work and find a known gain at about a fresh gate's cost a game; the body plays on 5-7 points weaker than Mite from live positions; no pick-count interaction in 2.7M SPSA games

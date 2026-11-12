@@ -1,0 +1,50 @@
+diff -ru c520-ps/src/economy/farm.cc c520-pk/src/economy/farm.cc
+--- c520-ps/src/economy/farm.cc	2026-11-12 04:37:42.922324948 +0000
++++ c520-pk/src/economy/farm.cc	2026-11-12 09:33:40.837143039 +0000
+@@ -1532,6 +1532,21 @@
+         return n_lead > 0 && than >= 0 && (g - first + n_groups) % n_groups < (than - first + n_groups) % n_groups;
+     };
+     const auto is_claimed = [&](int g) __attribute__((always_inline)) { return g < 256 && (claimed_bits[g >> 6] >> (g & 63) & 1); };
++    // Rule 2 (mitere section 9): in the opening plan's horizon, a pure gem cluster no visible off-spawn ally is nearer
++    // to is worth half (mitefit rule_pack.py's discount), so lone far trips give way to the monster groups the pack works.
++    const auto lone = [&](int g) {
++        if (world.round >= params::open_plan::horizon || map.groups[g].gold > 0 || map.groups[g].strength > 0) return 1.0f;
++        const vec2 c = map.groups[g].centre;
++        const int mine = dist(here, c);
++        bool lead = false;
++        for (const auto& a : world.allies)
++            if (a.alive && a.type == cambc::champion_type::vesper_vale) lead = false;
++        if (lead && world.me().type == cambc::champion_type::vesper_vale) return 1.0f;
++        for (const auto& a : world.allies)
++            if (!a.is_self && a.alive && a.visible && !test(map.ally_spawn, a.pos) && dist(a.pos, c) < mine
++                && (!lead || a.type == cambc::champion_type::vesper_vale)) return 1.0f;
++        return 0.500000f;
++    };
+     // Nearest to `first` first, every group from position k on is at least r_k - D from here (r_k
+     // from first's centre, D ours to it) and walks no fewer steps. Once the most any of them holds,
+     // that close and cleared at once, cannot beat the best (only rising), none of them can change
+@@ -2089,7 +2104,7 @@
+             // No capture rounds but a keeping Prism's: the claimer holds it, and the crew moves on once it is cleared.
+             // A crew we are in holds us against small pulls: one member leaving shrinks it for the rest.
+             const float value = rate(world, plain * part + carry, trip + rounds + hold + trips_home(static_cast<float>(trips)))
+-                                * (op && memory.claim == g ? crew_hold(g) : 1.0f);
++                                * (op && memory.claim == g ? crew_hold(g) : 1.0f) * lone(g);
+             // Only a better share counts, and the final pick takes none a group of our own beats.
+             if (g == memory.mono_group) mono_seen = value;
+             if ((value < shared_value || (value == shared_value && !earlier(g, shared))) || (best >= 0 && value <= best_value) || too_late(rounds))
+@@ -2139,6 +2154,7 @@
+                 if (soften * min_camp_damage(world, g, strength + unclaimed_partner_output, &joint_rounds) * part <= spare_health)
+                     damage = 0, value = rate(world, worth * part, trip + joint_rounds + capture);
+             }
++            value *= lone(g);
+             if (damage > spare_health && !ally_engaged(world, g)) {
+                 if (value > risky_value || (value == risky_value && earlier(g, risky))) risky = g, risky_value = value, risky_steps = steps;
+                 continue;
+@@ -2239,6 +2255,7 @@
+                 }
+             }
+         }
++        value *= lone(g);
+         if (g == memory.mono_group) mono_seen = value;
+         if (late) continue;
+         if (value > best_value || (value == best_value && earlier(g, best)))

@@ -383,7 +383,7 @@ from base gold and 34 from the bonus multiplier.
 - Largest clump share at r20/40/60/80: M 0.84/0.78/0.70/0.67, O 0.79/0.68/0.63/0.61. Mite's pack frays slowly. It
   does not split at a fixed round.
 
-**Rule for our farm code, by size of the gain:**
+**Rule for our farm code, by size of the gain** (tested in section 10: rule 1 loses gems, rule 2 is level):
 1. **Gold groups go to Vesper.** When a group with gold is cleared or about to be, and our Vesper can reach a capture
    tile before the countdown ends, she holds it and no ally shares the tile, since a split share halves her bonus.
    Others hold only groups with no gold, or gold groups she can't reach. In charybdis this mainly means the Prism
@@ -404,6 +404,53 @@ from base gold and 34 from the bonus multiplier.
 of base gold at 56-58%. Check the body's Vesper share and its gem-cluster captures by r100 (live 0.5 a game in games
 where both sides have Vesper) before its group discount.
 
+## 10. Rules 1 and 2 on our bot (c520-ps): neither pays
+
+**Rule 1 (gold to Vesper) loses gems.**
+- Arms:
+  - mitefit's `vc-c520`: Vesper carries every gold group and the Prism keeps gem-only groups
+    (`../mitefit/rule_vcarry.py`).
+  - Mine, `c520-vg` (`rule1-c520-vg.patch`): the Prism stops being sole holder or carrier of a gold group while a
+    healthy Vesper is within 5 steps of it, and she holds it alone once on it.
+- Setup: against mf-c2, 200k fuel, ladder maps, noise members 1-2. Paired 512-game reads (`mech.sh`, `mechvc.sh`,
+  `rule1mech.py`, `paired.py`).
+
+Games with our Vesper and Prism (208 pairs):
+
+| | c520-ps | vc-c520 | c520-vg |
+|---|---|---|---|
+| Vesper's share of captured base gold by r100 | 27% | 54% | 50% |
+| Prism's share by r100 | 46% | 15% | 24% |
+| Gold at r100 / r200 | 513 / 1200 | 542 / 1260 | 537 / 1267 |
+| Team gems collected / submitted | 1217 / 937 | 1115 / 877 | 1141 / 910 |
+| Prism gems submitted | 418 | 197 | 311 |
+| Win % | 74.0 | 63.9 (−10.1; flips 29-50) | 73.1 (−1.0) |
+
+- The split reaches Mite's (56-58%), and the gold gain is the size section 9 predicted.
+- But the Prism carry is our gem engine. Taking the mixed groups from it costs about 100 collected gems a game,
+  which the 60 gold does not repay.
+- mitefit's 8-member read (2,048 games): vc-c520 −2.4 ±2.2; vc2 (Prism first, Vesper on pure-gold groups only)
+  +0.5. Neither arm was gated.
+
+**Rule 2 (opening pack on monster groups) is level.**
+- Arm: `c520-pk` (`rule2-c520-pk.patch`). Until the opening plan's horizon (r100), a pure gem cluster that no
+  visible off-spawn ally is nearer to is worth 0.5x in farm's choice. This is mitefit's `rule_pack.py` discount,
+  restricted to gem clusters.
+- Mechanism (1,020 pairs against mf-c2, members 1-4): gem-cluster captures by r100 fall from 2.1 to 1.7. Collected
+  gems are level (1119 vs 1113). Win −1.8 (152 flips).
+
+Results against c520-ps (fgate `--pool v3`, 200k fuel, batches from 8, `gatepk.sh`):
+
+| gate | win% (95% CI) | games | outcome |
+|---|---|---|---|
+| c520-pk, Flp4 + Mt3q | 49.90 (49.65-50.15) | 122,880 | NARROWED (high SPRT H0) |
+| c520-pk, Flp4 + mf-c2 | 50.04 (49.35-50.73) | 20,480 | undecided (1 batch) |
+
+- Fish 49.83, Mite 49.96, ladder side read 49.51.
+- Verdict: dropped. It is level within ±0.25 and not a meaningful change. Per the 200k-first rule, it gets no 100k
+  run.
+- Mite's gold-first opening does not carry over: our bot's wins come from gems.
+
 ## Files
 
 - **Python tools** (this folder):
@@ -418,6 +465,9 @@ where both sides have Vesper) before its group discount.
     `clearers.py`, `cohesion.py`, `ourloss.py`, `draftmap.py`.
   - `open2.py`: extracts opening clear episodes → `open2.jsonl.gz`. `open2a.py`, `open2b.py` and `open2c.py`
     analyse it.
+  - Section 10: `rule1-c520-vg.patch`, `rule2-c520-pk.patch` (diffs against c520-ps); `mech.sh`, `mechvc.sh`,
+    `mechpk.sh` (paired runs against mf-c2); `rule1mech.py`, `paired.py` (their reads); `gatepk.sh` (the gate).
+    Decoded games are in `~/tmp-offload/vg/ext/`.
   - `tools/*_remote.sh`: the big-arm queries.
 - **Data** under `~/tmp-offload/mitere/`:
   - `raw/` (rows, replays, the 05 maps' replays, platform map list);
