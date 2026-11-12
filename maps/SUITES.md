@@ -1037,3 +1037,6 @@ re-measured"; used).
 - 5400300–5400358, 15,104 maps, under `suites/chy-fix2/fresh-{seed}`, symlinked into `merged/chy-fix2`: `charybdis-fix2` against `charybdis-cb9f86d`, `replays/ab/chy-fix2-vs-517/` (used).
 - 5400400–5400458 and 5400500–5400558, 15,104 maps each, under `suites/chy-p3a/` and `suites/chy-p3b/` (`fresh-{seed}`), symlinked into `merged/chy-p3a` and `merged/chy-p3b`: `charybdis-p3a` and `charybdis-p3b` against `charybdis-fix2`, `replays/ab/chy-p3a-vs-518/`, `chy-p3b-vs-518/` (used).
 - 5400600–5400717, 30,208 maps, under `suites/chy-p3/fresh-{seed}`, symlinked into `merged/chy-p3`: `charybdis-p3` against `charybdis-fix2`, `replays/ab/chy-p3-vs-518-60k/` (used).
+
+**Lab filler (2026-11-12, research/ideas-2026-11-12/labs):** `--mix ladder-v2`, under `~/tmp-offload/labs/rounds/ID/maps/fresh-{seed}`:
+- 7700000-7799999 reserved: each filler round takes 10,000 seeds from 7700000 + 10,000 x (rounds before it); emb rounds use 200 suites, draft 100, tune 40 (training pools, used by their labs).
