@@ -1,0 +1,64 @@
+diff -ru bots/variants/chy-carry/src/combat/fight.cc bots/variants/chy-life/src/combat/fight.cc
+--- bots/variants/chy-carry/src/combat/fight.cc	2026-11-12 01:43:39.952604236 +0000
++++ bots/variants/chy-life/src/combat/fight.cc	2026-11-12 04:42:17.094528145 +0000
+@@ -538,7 +538,8 @@
+     if (reach.hit || pursued) safety.stand_walks(p, params::pursuit_steps, reach);
+     const auto roster = safety.stand_roster(p, reach, pursued ? params::pursuit_steps : 0, unseen);
+     if (roster.key == Safety::no_fight) return false;
+-    const bool falls = partner(world) != nullptr || lethal();
++    // Prism leaves a stand it falls in even where the team wins it: its death hands over the bag the team's gems ride in.
++    const bool falls = partner(world) != nullptr || world.me().facts().passive == Passive::gem_focus || lethal();
+     const auto t = safety.stand_trade(roster, falls);
+     return t.lost || (falls && t.self_falls);
+ }
+diff -ru bots/variants/chy-carry/src/combat/guard.cc bots/variants/chy-life/src/combat/guard.cc
+--- bots/variants/chy-carry/src/combat/guard.cc	2026-11-11 22:59:48.146149271 +0000
++++ bots/variants/chy-life/src/combat/guard.cc	2026-11-12 04:42:17.094621626 +0000
+@@ -527,7 +527,8 @@
+         if (const auto now = fuel(); now <= placing) costliest = std::max(placing - now, costliest - costliest / 8);
+     };
+     if (!shared) g.expose_here(here);
+-    const bool linked = partner(world) != nullptr;
++    // Prism too keeps off every tile where it would fall (stand_lost_at).
++    const bool linked = partner(world) != nullptr || world.me().facts().passive == Passive::gem_focus;
+     // Unless the list filled up, the foes hold every visible threat that could hit a tile this near.
+     const bool all_listed = n < static_cast<int>(g.foes.size());
+     // The tiles more exposed than ours by `bound`, and who would fight on each by it.
+diff -ru bots/variants/chy-carry/src/economy/shop.cc bots/variants/chy-life/src/economy/shop.cc
+--- bots/variants/chy-carry/src/economy/shop.cc	2026-11-11 18:50:25.013295741 +0000
++++ bots/variants/chy-life/src/economy/shop.cc	2026-11-12 04:42:17.094678487 +0000
+@@ -7,6 +7,14 @@
+ 
+ namespace {
+ 
++// The most base health of any champion (Ryth's and Marcella's 1200).
++inline constexpr float sturdiest_base_health = [] {
++    float most = 0;
++    for (const auto& c : champion_table) most = std::max(most, c.health.base);
++    return most;
++}();
++
++
+ // cambc::item_family's order, which the item enum's layout follows.
+ enum Family { monster, power, durability, treasure, jungle, home, bruiser, tribute, capture, prospector, hunter, skirmish, greed, collectors };
+ enum StatKind { strength_stat, focus_stat, health_stat };
+@@ -419,6 +427,19 @@
+         }
+         return e;
+     }
++    // Prism's Focus comes from the gems it carries (1.5 a gem against a shard's 8): until it is as sturdy as the
++    // sturdiest base body, its shards are Health, in whichever family saves most.
++    if (f.passive == Passive::gem_focus && my_max_health() < sturdiest_base_health) {
++        Emblem best = value(power, health_stat);
++        if (const auto e = value(bruiser, health_stat); e.saved > best.saved) best = e;
++        if (const auto e = value(jungle, health_stat); e.saved > best.saved) best = e;
++        if (const auto e = value(durability, health_stat); e.saved > best.saved) best = e;
++        if (!has_family(owned, monster))
++            if (const auto e = value(monster, health_stat); e.saved > best.saved) best = e;
++        if (!has_family(owned, home))
++            if (const auto e = value(home, health_stat); e.saved > best.saved) best = e;
++        return or_passive(best, health_stat, health_stat);
++    }
+     if (f.passive == Passive::gem_focus) {
+         Emblem best = value(power, health_stat);
+         if (const auto e = value(bruiser, health_stat); e.saved > best.saved) best = e;

@@ -231,7 +231,18 @@ bool Pathing::hop_ready(int hop) const {
     return h < hop_fields_.size() && hop_fields_[h] && h < landing_fields_.size() && landing_fields_[h];
 }
 
+bool Pathing::group_ready(int group) const {
+    const auto g = static_cast<std::size_t>(group);
+    return g < group_fields_.size() && group_fields_[g];
+}
+
 const Field& Pathing::to_group(int group) { return cached(entry(group_fields_, map().groups.size(), group), map().groups[group].tiles()); }
+
+bool Pathing::group_walking_ready(int group) const {
+    if (world_.me().facts().dash_kind() == 0) return group_ready(group);
+    const auto g = static_cast<std::size_t>(group);
+    return g < walking_group_fields_.size() && walking_group_fields_[g];
+}
 
 const Field& Pathing::to_group_walking(int group) {
     if (world_.me().facts().dash_kind() == 0) return to_group(group);

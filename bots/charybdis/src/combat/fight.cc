@@ -538,7 +538,8 @@ bool stand_lost_at(const World& world, Safety& safety, HoldAt& hold) {
     if (reach.hit || pursued) safety.stand_walks(p, params::pursuit_steps, reach);
     const auto roster = safety.stand_roster(p, reach, pursued ? params::pursuit_steps : 0, unseen);
     if (roster.key == Safety::no_fight) return false;
-    const bool falls = partner(world) != nullptr || lethal();
+    // Prism leaves a stand it falls in even where the team wins it: its death hands over the bag the team's gems ride in.
+    const bool falls = partner(world) != nullptr || world.me().facts().passive == Passive::gem_focus || lethal();
     const auto t = safety.stand_trade(roster, falls);
     return t.lost || (falls && t.self_falls);
 }

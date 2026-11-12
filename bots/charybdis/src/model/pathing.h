@@ -47,6 +47,9 @@ public:
     const Field& from_landings(int hop); // goals: StaticMap::hops[hop]'s landing tiles
     bool hop_ready(int hop) const;       // to_hop and from_landings made
     const Field& to_group(int group);    // goals: the group's camp tiles
+    // Made already: reading it costs no search, so a caller need not hold fuel back for one.
+    bool group_ready(int group) const;
+    bool group_walking_ready(int group) const; // to_group_walking's
     // to_group() walking only (blocked_for_us), whoever asks: the same for every ally, dash or not.
     const Field& to_group_walking(int group);
     // Static steps to tiles within `range` of the group's camp tiles, around the camps believed alive:

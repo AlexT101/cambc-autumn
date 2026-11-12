@@ -1,0 +1,349 @@
+diff -ru -x .cambc bots/variants/charybdis-p3/src/bot.cc bots/variants/pl-prof/src/bot.cc
+--- bots/variants/charybdis-p3/src/bot.cc	2026-11-11 22:59:48.145686815 +0000
++++ bots/variants/pl-prof/src/bot.cc	2026-11-12 03:50:47.730408019 +0000
+@@ -371,7 +371,9 @@
+     return g >= 0 && world.camps[g].state == CampState::cleared;
+ }
+ 
++std::uint64_t pf[8];
+ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
++    debug_block({ for (auto& x : pf) x = 0; pf[0] = fuel(); });
+     comeback::cooked(world); // every turn: the cook's hysteresis reads each round's scores
+     // Last turn's, for continue_recall: kept only while that recall is, else farm sets it again.
+     const int recall_farm = std::exchange(memory.recall_farm, -1);
+@@ -430,6 +432,7 @@
+     const bool mend = missing > 0 && missing > (camps_reach_spawn(world) ? safety.camp_damage(my_position()) + 0.01f : 0.0f);
+     bool leave = !mend && (home ? *home : want_home(world, pathing, safety, memory));
+     if (leave && fixc_commit(world, pathing)) leave = false;
++    debug_block({ pf[1] = fuel(); });
+     // Willow at work heals first, and the work goes on without the strike search.
+     const bool willow_free = willow && !mend && !leave;
+     const bool working = willow_free && support_work(world, pathing, safety, memory);
+@@ -483,6 +486,7 @@
+     const bool contested = contesting(world);
+     const bool holding = holding_capture(world, pathing) || contested;
+     const bool attacked = strikes && search_strikes(world, pathing, safety, memory, holding, contested);
++    debug_block({ pf[2] = fuel(); });
+     decision = holding ? Branch::hold : attacked ? Branch::attack : decision;
+     if (!cambc::self().is_alive() || (yielded && !holding)) return;
+     if (!my_can_attack() || !my_can_cast()) pathing.settle_guard(), see_stuns(world, safety), safety.refresh();
+@@ -509,6 +513,7 @@
+         }
+         guard_work(world, pathing, safety, memory.damage, avoid);
+     }
++    debug_block({ pf[3] = fuel(); });
+     if (banks_bag(world, pathing)) {
+         carry_bag(world, pathing, safety, memory, attacked, strike_guard);
+         return;
+@@ -609,6 +614,7 @@
+         if (const int g = walk_target(world, pathing, memory.farm_group); g >= 0) pathing.approach(g, walk_range(world, g));
+     const int claim = memory.claim;
+     decide(world, pathing, safety, memory);
++    debug_block({ pf[4] = fuel(); });
+     if (decision != Branch::wait_altar) memory.wait_altar = -1;
+     // A turn that takes Prism off its way withdraws the capture it carries (left_for_prism).
+     if (world.me().facts().passive == Passive::gem_focus) {
+@@ -747,6 +753,16 @@
+     memory.health = world.me().alive ? my_health() : 0;
+     if (world.me().alive) note_income_end(world);
+     upkeep.camp_turns += camp_hits() != camp_hits_before;
++    debug_block({
++        if (world.me().alive && world.me().facts().passive == Passive::gem_focus) {
++            int near = 99;
++            for (const auto& e : world.enemies)
++                if (e.alive && e.visible) near = std::min(near, dist(world.me().pos, e.pos));
++            std::printf("PF %d %u %c %d %llu %llu %llu %llu %llu %llu\n", world.round, my_handle(), static_cast<char>(decision), near,
++                        static_cast<unsigned long long>(pf[0]), static_cast<unsigned long long>(pf[1]), static_cast<unsigned long long>(pf[2]),
++                        static_cast<unsigned long long>(pf[3]), static_cast<unsigned long long>(pf[4]), static_cast<unsigned long long>(fuel()));
++        }
++    });
+     debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), static_cast<char>(decision), memory.farm_group, memory.claim); });
+ }
+ 
+diff -ru -x .cambc bots/variants/charybdis-p3/src/combat/fight.cc bots/variants/pl-prof/src/combat/fight.cc
+--- bots/variants/charybdis-p3/src/combat/fight.cc	2026-11-12 01:43:39.952604236 +0000
++++ bots/variants/pl-prof/src/combat/fight.cc	2026-11-12 03:34:27.261603779 +0000
+@@ -221,6 +221,70 @@
+ // The escape plan (model/escape.h) ranks ahead of all but HomeWalk: this turn's hit (Safety's) and the
+ // plan's after it, so a step away round the pursuers, or one hit now to be clear after, wins over a
+ // step clear now that the pursuers catch later; a step whose damage now would kill us goes last.
++// prismlife (params::pl::flee_blocked): an enemy in sight stands nearer our spawn than we do, by the walk, so the
++// way home leads past it and descending it ends at the edge of its reach. The step is instead the untouched one
++// farthest, by the walk, from every enemy in sight, nearer home among equals; with none farther than here we stay,
++// and the turn-end recall is the way home. False: not the case, or every step is touched (retreat_step's ranking).
++bool flee_blocked_step(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
++    const int mode = params::pl::flee_blocked;
++    if (mode == 0 || (mode == 1 && world.me().facts().passive != Passive::gem_focus)) return false;
++    const vec2 here = my_position();
++    const int steps = home.at(here);
++    static bitboard foes{cambc::uninitialized};
++    bool homeward = false, any = false;
++    for (const auto& e : world.enemies) {
++        if (!e.alive || !e.visible || !in_bounds(e.pos)) continue;
++        if (!any) clear_board(foes), any = true;
++        set_tile(foes, e.pos);
++        homeward |= home.at(e.pos) < steps;
++    }
++    if (!homeward) return false;
++    debug_block({ std::printf("FLEE %d %u seen\n", world.round, my_handle()); });
++    // Past sight and any one-turn reach, nothing tells two tiles apart.
++    constexpr int cap = vision_radius + Strike::max_reach;
++    if (!fuel_ok(end_reserve + search_cost_estimate(cap))) return false;
++    static cambc::distance_field away;
++    static bitboard visited{cambc::uninitialized};
++    away.compute_with_expansion_count(pathing.static_walls(), foes, visited, static_cast<std::uint16_t>(cap));
++    const auto far = [&](vec2 p) { return std::min(steps_at(away, p), cap); };
++    struct Option {
++        vec2 p;
++        int far, home;
++    };
++    Unwritten<Option, 8> scratch;
++    auto& options = scratch.a;
++    int n = 0;
++    const auto& blocked = pathing.blocked();
++    const float taken = world.me().taken;
++    for (const auto d : directions) {
++        const vec2 p = here + d;
++        if (!in_bounds(p) || test(blocked, p) || home.at(p) == unreachable || safety.touched(p, taken)) continue;
++        const Option o{p, far(p), home.at(p)};
++        int i = n++;
++        for (; i > 0 && (o.far > options[i - 1].far || (o.far == options[i - 1].far && o.home < options[i - 1].home)); --i) options[i] = options[i - 1];
++        options[i] = o;
++    }
++    if (n == 0) {
++        debug_block({ std::printf("FLEE %d %u touched\n", world.round, my_handle()); });
++        return false;
++    }
++    const bool safe_here = !safety.touched(here, taken);
++    const int far_here = far(here);
++    for (int i = 0; i < n; ++i) {
++        // Untouched here, a step no farther from them gains nothing.
++        if (safe_here && options[i].far <= far_here) {
++            debug_block({ std::printf("FLEE %d %u stay %d\n", world.round, my_handle(), far_here); });
++            return true;
++        }
++        if (pathing.try_move(options[i].p)) {
++            debug_block({ std::printf("FLEE %d %u step %d %d\n", world.round, my_handle(), far_here, options[i].far); });
++            return true;
++        }
++    }
++    debug_block({ std::printf("FLEE %d %u refused %d\n", world.round, my_handle(), static_cast<int>(safe_here)); });
++    return safe_here;
++}
++
+ void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
+     if (!my_can_move()) return;
+     const vec2 here = my_position();
+@@ -234,6 +298,8 @@
+         if (!beside_held || !pathing.descend(home, held)) pathing.step_towards(home);
+         return;
+     }
++    debug_block({ std::printf("RSTEP %d %u\n", world.round, my_handle()); });
++    if (flee_blocked_step(world, pathing, safety, home)) return;
+     // A walk the dash was put off for is the plan's to choose.
+     const bool walk_dash = walk_dash_deferred(world) && my_can_cast();
+     const auto& avoid = safety.avoid();
+@@ -504,6 +570,7 @@
+     if (health < params::recall_health_fraction * my_max_health() && health < recall_line(world, safety, hold.p) * my_max_health()
+         && !finishing_camp(world, hold.p) && !hold.keeps_us(safety))
+         return true;
++    if (params::pl::no_pack && world.me().facts().passive == Passive::gem_focus) return false;
+     return outmatched(world, safety, hold) && !hold.keeps_us(safety);
+ }
+ 
+@@ -538,7 +605,7 @@
+     if (reach.hit || pursued) safety.stand_walks(p, params::pursuit_steps, reach);
+     const auto roster = safety.stand_roster(p, reach, pursued ? params::pursuit_steps : 0, unseen);
+     if (roster.key == Safety::no_fight) return false;
+-    const bool falls = partner(world) != nullptr || lethal();
++    const bool falls = partner(world) != nullptr || (params::pl::falls_always && world.me().facts().passive == Passive::gem_focus) || lethal();
+     const auto t = safety.stand_trade(roster, falls);
+     return t.lost || (falls && t.self_falls);
+ }
+@@ -555,7 +622,26 @@
+ // reach us to its payout keeps us through all but the camps (hold_outlasts). The work guard keeps
+ // the economy's steps off the tiles beside us that the zone or the recall line would send us back
+ // from (combat/guard.cc).
++bool want_home_now(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
++
++// prismlife (params::pl::disengage): a retreat, once begun, goes on while an enemy may still walk into reach of us
++// within `disengage` turns: back at work on the edge of a stand we lose, we are caught by the next dash.
+ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
++    const bool now = want_home_now(world, pathing, safety, memory);
++    if (params::pl::disengage == 0 || world.me().facts().passive != Passive::gem_focus) return now;
++    if (params::pl::dis_bag > 0 && static_cast<int>(my_gems()) >= params::pl::dis_bag) return now;
++    static int leaving = -1000; // the last round we were leaving
++    if (now) {
++        leaving = world.round;
++        return true;
++    }
++    const vec2 here = my_position();
++    if (leaving < world.round - 2 || test(world.map().ally_spawn, here) || !safety.may_reach_within(here, params::pl::disengage)) return false;
++    leaving = world.round;
++    return true;
++}
++
++bool want_home_now(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
+     world.throw_if_stale();
+     const vec2 here = my_position();
+     if (test(world.map().ally_spawn, here)) return false;
+@@ -572,6 +658,7 @@
+     if (world.me().facts().heals() && !holding_capture(world, pathing) && !contesting(world) && exposure_here(world, safety).enemy
+         && !willow_stands(world))
+         return true;
++    if (params::pl::no_stand_lost && world.me().facts().passive == Passive::gem_focus) return false;
+     return stand_lost_at(world, safety, hold);
+ }
+ 
+@@ -1537,6 +1624,27 @@
+     return false;
+ }
+ 
++// prismlife (params::pl::walk_saved): what a retreat's walk is worth against a cast that excludes it. With a step out
++// of every reach, or out of reach already, escape_step_value: the walk is the retreat. With none, only the damage the
++// best step avoids before our next turn: a walk that stays in their reach gives up the cast for nothing.
++float retreat_walk_value(const World& world, Pathing& pathing, Safety& safety) {
++    const int mode = params::pl::walk_saved;
++    if (mode == 0 || (mode == 1 && world.me().facts().passive != Passive::gem_focus)) return escape_step_value;
++    const vec2 here = my_position();
++    const float taken = world.me().taken;
++    const float stay = safety.damage_bound(here, false, taken);
++    if (stay <= 0) return escape_step_value;
++    float least = stay;
++    const auto& blocked = pathing.blocked();
++    for (const auto d : directions) {
++        const vec2 p = here + d;
++        if (!in_bounds(p) || !test(world.map().open_for_us, p) || test(blocked, p)) continue;
++        least = std::min(least, safety.damage_bound(p, false, taken));
++        if (least <= 0) return escape_step_value;
++    }
++    return std::min(escape_step_value, stay - least);
++}
++
+ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     world.throw_if_stale();
+     auto& me = cambc::self();
+@@ -1576,7 +1684,7 @@
+     } else {
+         // After the walk, a cast that allows walking may still follow (Cassi's stun).
+         bool kept = false;
+-        if (!escape_walk(world, pathing, safety, kept) || my_can_cast()) cast_at_enemies(world, kept ? lethal_step_value : escape_step_value);
++        if (!escape_walk(world, pathing, safety, kept) || my_can_cast()) cast_at_enemies(world, kept ? lethal_step_value : retreat_walk_value(world, pathing, safety));
+         if (!me.is_alive()) return;
+         if (!my_can_attack() || !my_can_cast()) see_kills(world, pathing, safety);
+         // A tribute survives damage; a recall does not.
+diff -ru -x .cambc bots/variants/charybdis-p3/src/combat/guard.cc bots/variants/pl-prof/src/combat/guard.cc
+--- bots/variants/charybdis-p3/src/combat/guard.cc	2026-11-11 22:59:48.146149271 +0000
++++ bots/variants/pl-prof/src/combat/guard.cc	2026-11-12 03:04:11.055887376 +0000
+@@ -527,7 +527,7 @@
+         if (const auto now = fuel(); now <= placing) costliest = std::max(placing - now, costliest - costliest / 8);
+     };
+     if (!shared) g.expose_here(here);
+-    const bool linked = partner(world) != nullptr;
++    const bool linked = partner(world) != nullptr || (params::pl::falls_always && world.me().facts().passive == Passive::gem_focus);
+     // Unless the list filled up, the foes hold every visible threat that could hit a tile this near.
+     const bool all_listed = n < static_cast<int>(g.foes.size());
+     // The tiles more exposed than ours by `bound`, and who would fight on each by it.
+diff -ru -x .cambc bots/variants/charybdis-p3/src/economy/farm.cc bots/variants/pl-prof/src/economy/farm.cc
+--- bots/variants/charybdis-p3/src/economy/farm.cc	2026-11-12 00:21:56.161354703 +0000
++++ bots/variants/pl-prof/src/economy/farm.cc	2026-11-12 04:24:38.495620695 +0000
+@@ -1736,6 +1736,8 @@
+     // By group, whether the loop priced it by way of spawn (read for the best only).
+     static std::vector<std::uint8_t> routed;
+     if (static_cast<int>(routed.size()) != n_groups) routed.assign(n_groups, 0);
++    std::uint64_t pl_fuel0 = 0;
++    debug_block({ pl_fuel0 = fuel(); });
+     int k = 0;
+     for (; k < evaluated && room(); ++k) {
+         int g = order ? (*order)[k] : (first + k) % n_groups;
+@@ -2247,6 +2249,11 @@
+     }
+     read_g = -1;
+     if (k < evaluated) note_shortcut("farm-partial-evaluation");
++    debug_block({
++        if (world.me().facts().passive == Passive::gem_focus)
++            std::printf("FK %d %u %d %d %d %llu %llu %llu %d %d\n", world.round, my_handle(), k, evaluated, stop, static_cast<unsigned long long>(pl_fuel0),
++                        static_cast<unsigned long long>(fuel()), static_cast<unsigned long long>(loop_reserve()), static_cast<int>(banks_bag), static_cast<int>(opening));
++    });
+     need_zone();
+     // An ally's hold that pays more with us on it: the rounds we then hold free the holder, worth
+     // what our best cycle earns a round, so the walk is what it costs.
+diff -ru -x .cambc bots/variants/charybdis-p3/src/economy/shop.cc bots/variants/pl-prof/src/economy/shop.cc
+--- bots/variants/charybdis-p3/src/economy/shop.cc	2026-11-11 18:50:25.013295741 +0000
++++ bots/variants/pl-prof/src/economy/shop.cc	2026-11-12 03:30:19.895641187 +0000
+@@ -419,6 +419,18 @@
+         }
+         return e;
+     }
++    if (f.passive == Passive::gem_focus && params::pl::health_until > 0 && my_max_health() < static_cast<float>(params::pl::health_until)) {
++        // prismlife: Health shards only, in whichever family saves most.
++        Emblem best = value(power, health_stat);
++        if (const auto e = value(bruiser, health_stat); e.saved > best.saved) best = e;
++        if (const auto e = value(jungle, health_stat); e.saved > best.saved) best = e;
++        if (const auto e = value(durability, health_stat); e.saved > best.saved) best = e;
++        if (!has_family(owned, monster))
++            if (const auto e = value(monster, health_stat); e.saved > best.saved) best = e;
++        if (!has_family(owned, home))
++            if (const auto e = value(home, health_stat); e.saved > best.saved) best = e;
++        return or_passive(best, health_stat, health_stat);
++    }
+     if (f.passive == Passive::gem_focus) {
+         Emblem best = value(power, health_stat);
+         if (const auto e = value(bruiser, health_stat); e.saved > best.saved) best = e;
+@@ -699,7 +711,7 @@
+         const int back = pathing.to_ally_spawn().at(here);
+         if (back == unreachable) return false;
+         const int hurt = my_health() < my_max_health() ? 1 : 0;
+-        const float value = params::shop_gain_scale * affordable_prefix(world).gain + heal_rounds_now(world);
++        const float value = params::pl::shop_scale * params::shop_gain_scale * affordable_prefix(world).gain + heal_rounds_now(world);
+         if (!std::isfinite(value) || !(value > static_cast<float>(std::min(back, recall_turns(world) + hurt) + back))) return false;
+     } else {
+         const auto stop = home_trip(world, pathing, recall_turns(world), winning_bag(world));
+diff -ru -x .cambc bots/variants/charybdis-p3/src/model/escape.cc bots/variants/pl-prof/src/model/escape.cc
+--- bots/variants/charybdis-p3/src/model/escape.cc	2026-11-11 18:50:25.014234463 +0000
++++ bots/variants/pl-prof/src/model/escape.cc	2026-11-12 04:15:20.954194841 +0000
+@@ -276,6 +276,9 @@
+     active_ = dash_ = dash_now_ = false;
+     pass_[0].ready = pass_[1].ready = false;
+     const auto& self = world.me();
++    debug_block({
++        if (self.alive && fuel() < params::escape::min_fuel) std::printf("ESCSKIP %d %u %llu\n", world.round, my_handle(), static_cast<unsigned long long>(fuel()));
++    });
+     if (!self.alive || fuel() < params::escape::min_fuel || !ready_statics(world)) return;
+     const std::uint64_t start_fuel = fuel();
+     const vec2 here = my_position();
+diff -ru -x .cambc bots/variants/charybdis-p3/src/model/safety.cc bots/variants/pl-prof/src/model/safety.cc
+--- bots/variants/charybdis-p3/src/model/safety.cc	2026-11-12 01:56:13.790271063 +0000
++++ bots/variants/pl-prof/src/model/safety.cc	2026-11-12 03:04:11.056121539 +0000
+@@ -3645,7 +3645,8 @@
+ bool Safety::lethal(vec2 p) {
+     if (own_health_ < 0) own_health_ = my_health() + (world_.me().shield_slot >= 0 ? shield_value(world_.me().handle) : 0.0f);
+     // A turn ended on our spawn heals to full before any enemy acts (rules rounds.turn_end).
+-    const float health = test(world_.map().ally_spawn, p) ? own_health_ - my_health() + my_max_health() : own_health_;
++    const float share = world_.me().facts().passive == Passive::gem_focus ? params::pl::lethal_share : 1.0f;
++    const float health = share * (test(world_.map().ally_spawn, p) ? own_health_ - my_health() + my_max_health() : own_health_);
+     // Most turns no enemy is near enough; skip the threat build then.
+     // Blows by our Durability; camp_damage has it already.
+     const float taken = world_.me().taken;
+diff -ru -x .cambc bots/variants/charybdis-p3/src/params.h bots/variants/pl-prof/src/params.h
+--- bots/variants/charybdis-p3/src/params.h	2026-11-11 18:50:25.015295767 +0000
++++ bots/variants/pl-prof/src/params.h	2026-11-12 03:34:27.261367676 +0000
+@@ -305,4 +305,18 @@
+ inline constexpr int steps = 6;
+ } // namespace open_plan
+ 
++// prismlife experiment knobs (research/ideas-2026-11-12/prismlife): Prism only; all off is the base bot.
++namespace pl {
++inline constexpr bool no_stand_lost = false; // want_home ignores a lost stand
++inline constexpr bool no_pack = false;       // drawn_home ignores a pack's zone
++inline constexpr bool falls_always = false;  // a stand (and a guarded step) is lost if the Prism falls in it, lethal tile or not
++inline constexpr float lethal_share = 1.0f;  // Safety::lethal: worst damage against this share of health
++inline constexpr float shop_scale = 1.0f;    // wants_shop: the Prism's purchase gain times this
++inline constexpr int walk_saved = 0;         // a retreat's walk is worth the damage it avoids this round when no step is out of reach (1 Prism, 2 every walk-excluding caster)
++inline constexpr int health_until = 0;       // the Prism's shards are Health while its max health is below this (0: off; a large value: always)
++inline constexpr int dis_bag = 0;            // disengage applies only while the Prism carries fewer gems than this (0: always)
++inline constexpr int disengage = 0;          // a retreat goes on until no enemy may reach us within this many turns of walking (0: off)
++inline constexpr int flee_blocked = 0;       // retreat_step with an enemy in sight nearer our spawn than us: walk away from the enemies (1 Prism, 2 everyone)
++} // namespace pl
++
+ } // namespace aph::params

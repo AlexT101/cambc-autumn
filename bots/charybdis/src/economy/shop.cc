@@ -7,6 +7,14 @@ namespace aph {
 
 namespace {
 
+// The most base health of any champion (Ryth's and Marcella's 1200).
+inline constexpr float sturdiest_base_health = [] {
+    float most = 0;
+    for (const auto& c : champion_table) most = std::max(most, c.health.base);
+    return most;
+}();
+
+
 // cambc::item_family's order, which the item enum's layout follows.
 enum Family { monster, power, durability, treasure, jungle, home, bruiser, tribute, capture, prospector, hunter, skirmish, greed, collectors };
 enum StatKind { strength_stat, focus_stat, health_stat };
@@ -418,6 +426,19 @@ Emblem current_emblem(const World& world, const Build& bought, const cambc::enum
             e.saved += e.passive;
         }
         return e;
+    }
+    // Prism's Focus comes from the gems it carries (1.5 a gem against a shard's 8): until it is as sturdy as the
+    // sturdiest base body, its shards are Health, in whichever family saves most.
+    if (f.passive == Passive::gem_focus && my_max_health() < sturdiest_base_health) {
+        Emblem best = value(power, health_stat);
+        if (const auto e = value(bruiser, health_stat); e.saved > best.saved) best = e;
+        if (const auto e = value(jungle, health_stat); e.saved > best.saved) best = e;
+        if (const auto e = value(durability, health_stat); e.saved > best.saved) best = e;
+        if (!has_family(owned, monster))
+            if (const auto e = value(monster, health_stat); e.saved > best.saved) best = e;
+        if (!has_family(owned, home))
+            if (const auto e = value(home, health_stat); e.saved > best.saved) best = e;
+        return or_passive(best, health_stat, health_stat);
     }
     if (f.passive == Passive::gem_focus) {
         Emblem best = value(power, health_stat);

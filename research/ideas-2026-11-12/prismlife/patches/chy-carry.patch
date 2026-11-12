@@ -1,0 +1,99 @@
+diff -ru bots/variants/charybdis-p3/src/economy/capture.cc bots/variants/chy-carry/src/economy/capture.cc
+--- bots/variants/charybdis-p3/src/economy/capture.cc	2026-11-11 18:50:25.012681192 +0000
++++ bots/variants/chy-carry/src/economy/capture.cc	2026-11-12 04:37:42.922433179 +0000
+@@ -413,7 +413,7 @@
+ // another group h (standing on its hold, else its claim), first what is left of that: a counting hold's
+ // payout (after its walk there), else its walk to h and a whole hold; then the walk on from h. A live or
+ // respawning h, whose clear or return we cannot time, is past `bound`. Past it, bound + 1 as soon as the
+-// crow's steps show it; -1 short of fuel for a field. Once per group and round: every cleared group of
++// crow's steps show it; -1 short of fuel for a field still to make. Once per group and round: every cleared group of
+ // farm's loop asks.
+ int prism_eta(const World& world, Pathing& pathing, int g, const ChampionBelief& a, vec2 at, int bound) {
+     struct Eta {
+@@ -433,7 +433,7 @@
+     if (h == g || h >= n) h = -1;
+     if (h < 0) {
+         if (steps_to(G, at) > bound) return e.eta = bound + 1;
+-        if (!fuel_ok(full_field_cost_estimate() + end_reserve)) return e.eta = -1;
++        if (!pathing.group_walking_ready(g) && !fuel_ok(full_field_cost_estimate() + end_reserve)) return e.eta = -1;
+         return e.eta = team_walk_to(world, pathing, g, at);
+     }
+     const auto& H = map.groups[h];
+@@ -445,7 +445,9 @@
+     int on = unreachable;
+     for (const auto& m : H.members) on = std::min(on, steps_to(G, m.pos));
+     if (task(steps_to(H, at)) + on > bound) return e.eta = bound + 1;
+-    if (!fuel_ok(2 * full_field_cost_estimate() + end_reserve)) return e.eta = -1;
++    // Fuel for the fields still to make: one made already costs no search.
++    const int unmade = !pathing.group_walking_ready(g) + !pathing.group_walking_ready(h);
++    if (unmade > 0 && !fuel_ok(static_cast<std::uint64_t>(unmade) * full_field_cost_estimate() + end_reserve)) return e.eta = -1;
+     on = unreachable;
+     for (const auto& m : H.members) on = std::min(on, team_walk_to(world, pathing, g, m.pos));
+     return e.eta = task(team_walk_to(world, pathing, h, at)) + on;
+@@ -481,7 +483,7 @@
+     if (held && (left.lapsed || c.payout_round() - world.round < 2 || (g == kept_group && c.held_since == kept_since))) return Leave::no;
+     const int winning = static_cast<int>(cambc::constants::winning_gems);
+     // Short of fuel for a walk's field, the crow's steps: no more than the walk.
+-    const bool walks = fuel_ok(full_field_cost_estimate() + end_reserve);
++    const bool walks = pathing.group_walking_ready(g) || fuel_ok(full_field_cost_estimate() + end_reserve);
+     const auto walk_from = [&](vec2 p) { return walks ? team_walk_to(world, pathing, g, p) : steps_to(G, p); };
+     for (const auto& a : world.allies) {
+         if (a.is_self || !a.alive || a.facts().passive != Passive::gem_focus) continue;
+diff -ru bots/variants/charybdis-p3/src/economy/farm.cc bots/variants/chy-carry/src/economy/farm.cc
+--- bots/variants/charybdis-p3/src/economy/farm.cc	2026-11-12 00:21:56.161354703 +0000
++++ bots/variants/chy-carry/src/economy/farm.cc	2026-11-12 04:37:42.922324948 +0000
+@@ -2293,7 +2293,8 @@
+             if (best != g && worth >= 0 && !(rate(world, worth, static_cast<float>(least + (held ? 1 : capture_rounds(world)))) > best_value)) return;
+             int timer = 0;
+             if (held ? !prism_takeover(world, safety, G, timer, goal) : !prism_carries(world, safety, G, goal)) return;
+-            if (!fuel_ok(full_field_cost_estimate() + loop_reserve())) return;
++            // The fuel is for the field's search: made already, the read is free (the test dropped ~8% of Prism's gems).
++            if (!pathing.group_ready(g) && !fuel_ok(full_field_cost_estimate() + loop_reserve())) return;
+             int walk = pathing.to_group(g).at(here);
+             if (walk == unreachable) return;
+             // The field's nearest tile may be one we cannot take: the goal's, a step on at most beside it,
+@@ -2363,7 +2364,7 @@
+             if (worth >= 0 && !(rate(world, worth, rounds_at(steps_to(G, here))) > best_value)) continue;
+             bool seen = false;
+             for (const auto& m : G.members) seen |= enemy_may_see(world, m.pos);
+-            if (seen || !fuel_ok(full_field_cost_estimate() + loop_reserve())) continue;
++            if (seen || (!pathing.group_ready(g) && !fuel_ok(full_field_cost_estimate() + loop_reserve()))) continue;
+             const int walk = pathing.to_group(g).at(here);
+             if (walk == unreachable || walk > reach) continue;
+             const float value = rate(world, worth, rounds_at(walk));
+diff -ru bots/variants/charybdis-p3/src/model/pathing.cc bots/variants/chy-carry/src/model/pathing.cc
+--- bots/variants/charybdis-p3/src/model/pathing.cc	2026-11-11 23:08:52.451619489 +0000
++++ bots/variants/chy-carry/src/model/pathing.cc	2026-11-12 04:37:42.922055274 +0000
+@@ -231,8 +231,19 @@
+     return h < hop_fields_.size() && hop_fields_[h] && h < landing_fields_.size() && landing_fields_[h];
+ }
+ 
++bool Pathing::group_ready(int group) const {
++    const auto g = static_cast<std::size_t>(group);
++    return g < group_fields_.size() && group_fields_[g];
++}
++
+ const Field& Pathing::to_group(int group) { return cached(entry(group_fields_, map().groups.size(), group), map().groups[group].tiles()); }
+ 
++bool Pathing::group_walking_ready(int group) const {
++    if (world_.me().facts().dash_kind() == 0) return group_ready(group);
++    const auto g = static_cast<std::size_t>(group);
++    return g < walking_group_fields_.size() && walking_group_fields_[g];
++}
++
+ const Field& Pathing::to_group_walking(int group) {
+     if (world_.me().facts().dash_kind() == 0) return to_group(group);
+     auto& slot = entry(walking_group_fields_, map().groups.size(), group);
+diff -ru bots/variants/charybdis-p3/src/model/pathing.h bots/variants/chy-carry/src/model/pathing.h
+--- bots/variants/charybdis-p3/src/model/pathing.h	2026-11-11 22:59:48.146988162 +0000
++++ bots/variants/chy-carry/src/model/pathing.h	2026-11-12 04:37:42.921899972 +0000
+@@ -47,6 +47,9 @@
+     const Field& from_landings(int hop); // goals: StaticMap::hops[hop]'s landing tiles
+     bool hop_ready(int hop) const;       // to_hop and from_landings made
+     const Field& to_group(int group);    // goals: the group's camp tiles
++    // Made already: reading it costs no search, so a caller need not hold fuel back for one.
++    bool group_ready(int group) const;
++    bool group_walking_ready(int group) const; // to_group_walking's
+     // to_group() walking only (blocked_for_us), whoever asks: the same for every ally, dash or not.
+     const Field& to_group_walking(int group);
+     // Static steps to tiles within `range` of the group's camp tiles, around the camps believed alive:

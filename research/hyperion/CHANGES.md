@@ -4746,3 +4746,28 @@ Against `variants/charybdis-fix2` (518), real 100k fuel, own drafts:
 
 Shipped as fixes with no measured gain: they correct cases the bot handled wrongly, A2 among them a way to lose. Details
 in EXPERIMENTS.md. Frozen as `variants/charybdis-p3` (= bots/charybdis).
+
+## 520: Prism's carry picks without a needless fuel test, its own fall, Health shards first (charybdis, 2026-11-12)
+
+From [ideas-2026-11-12/prismlife](../ideas-2026-11-12/prismlife/README.md): the Prism dies in retreats, its retreat
+policy is at a local optimum, and a fifth of its deaths come from its own turns running short of fuel.
+- `farm.cc`, `capture.cc`, `pathing.cc`: farm's carry picks ('G', 'L', 'Q'), `prism_eta` and `leave_for_prism` held
+  fuel back for a distance field (`full_field_cost_estimate()` and the loop's reserve, 32-55k) though
+  `Pathing::to_group` is cached for the game: with the field made (`group_ready`, `group_walking_ready`) the test is
+  skipped. It had dropped ~8% of the Prism's gems. Identical at unlimited fuel.
+- `fight.cc`, `guard.cc`: `stand_lost_at` and `step_guard` count the Prism's own fall as Cassi's and Issac's: it
+  leaves a stand, and keeps off a tile, where it falls even if the team wins there.
+- `shop.cc`: the Prism's shards are Health until its max health reaches the sturdiest base health (1200): a Focus
+  shard is 8 Focus against 1.5 a carried gem.
+
+Against `variants/chy-519` (= 519, re-frozen: charybdis-p3's cached gate runs predate its last edit), real 100k fuel,
+own drafts, the rt bodies:
+- Gate from batch 1 (batch 0 chose the arms): ACCEPT at the screen after 3 batches, LIVE BAR after 6: **51.23%
+  (50.88-51.58) on 15,360 fresh maps, 122,880 games** (Fish 51.49, Mite 50.97, ladder 51.20); against the bodies
+  82.69% to 519's 81.46%.
+- The fuel fix alone (`variants/chy-carry`): NARROWED at 50.59% (50.34-50.83) on 17,920 fresh maps (a gain, short of the
+  accept bar alone).
+- On batch 0 (7,680 games, paired): Prism deaths a Prism game 0.373 -> 0.305 and 0.425 -> 0.351 (-18%), its gems
+  +8%, out-of-fuel turns 45,540 -> 45,632 (the Prism's own fight turns that ran out: 695 -> 589 on 2,560 games).
+
+Frozen as `variants/chy-life` (= bots/charybdis).

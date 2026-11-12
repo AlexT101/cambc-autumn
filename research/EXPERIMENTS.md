@@ -10,6 +10,60 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## Prism deaths on charybdis (charybdis = 519, 2026-11-12): failed retreats and a fuel test on its carry picks; fix, own fall and Health shards pass the live bar at +1.23 (CHANGES 520)
+
+Notes, scripts and patches: [ideas-2026-11-12/prismlife/README.md](ideas-2026-11-12/prismlife/README.md). Arms are
+`variants/pl-*` (knobs on 519), the candidates `variants/chy-carry` and `variants/chy-life`. Real 100k fuel, rt bodies.
+
+**How it dies** (2,560 games, and 1,280-game debug traces): 0.373 deaths a Prism game; games without one are won 92.9%,
+with one 60.4%.
+- 86% of its turns straight before a death are retreats. 74% of its retreats begin at 70%+ health (a lost stand 76%,
+  a pack's zone 11%, the recall line 7.5%); 2.5% reach our spawn.
+- Its model sees the danger (a turn ended at `worst_damage` of 70%+ of health dies before the next 7-65% of the time)
+  and it sees its killers (73-89% in its own sight). It is run down over 4-12 rounds.
+
+**The retreat policy is at a local optimum.** Paired with 519 on the same 2,560 (a) and 5,120 (b) games, points:
+
+| arm (Prism only) | win a / b | Prism deaths a game (519: 0.373 / 0.425) |
+|---|---|---|
+| no retreat from a lost stand | -6.05 | 0.813 |
+| no retreat from a pack's zone | +0.20 | 0.404 |
+| pursuit_steps 3 (everyone) | +0.47 | 0.375 |
+| lethal against 50-90% of health | +0.62 to +1.13 / m75 -0.35 | 0.368-0.382 / 0.438 |
+| an enemy between us and home: walk away from the enemies | +0.04 / +0.18 | 0.374 / 0.441 |
+| a retreat goes on until no enemy reaches within 3, 5 turns | -3.32, -4.80 / -2.46, -3.01 | 0.322, 0.311 / 0.349, 0.323 |
+| the same only below 20, 50, 100 gems | -0.43, -0.78, -1.45 / -0.74, -0.64, -0.94 | 0.352-0.333 / 0.400-0.362 |
+| shop trips at 2x, 4x the gain | -0.47, -1.64 / -0.61, -1.41 | 0.376, 0.375 / 0.424, 0.403 |
+| a retreat walk worth only the damage it avoids | +0.31 / -0.41 | 0.401 / 0.450 |
+| escape plan from 30k, 38k fuel | +0.04, +0.35 / -0.29, +0.20 | 0.384, 0.368 / 0.432, 0.417 |
+| the work guard worked out before the goal | +0.94 / +0.10 | 0.365 / 0.410 |
+
+- The Prism's time in the field is worth more than the deaths that leaving saves, at every bag size and against
+  every enemy draft. A 2,560-game win read moves by a point (m75's +1.13 did not repeat).
+
+**Fuel.** The Prism alone at 200k (debug builds charging the others back to 100k): its deaths -18.8%, its gems +10.6%,
+win +0.68; everyone at 200k: -15.0%, +9.8%, +1.76. Across the fuel arms its deaths follow its gems. Refunds of single
+scopes moved nothing; 30k credited after farm's loop gave +8.2% gems and -8.5% deaths, after decide nothing.
+- The cause: farm's carry picks and the allies' leave-for-Prism walks tested fuel for a field that is cached.
+- It runs out on 1.6% of its fight turns; the cast still goes out, and deaths after are no higher (6.0% against 6.1%).
+
+**Kept (CHANGES 520)**, paired on the same games (a / b):
+
+| arm | win | Prism deaths a game | Prism gems |
+|---|---|---|---|
+| the fuel test skipped for a made field (`chy-carry`) | +0.23 / +0.59 | 0.324 / 0.392 | +8.4% / +7.4% |
+| leaves a stand it falls in | +0.04 / -0.04 | 0.357 / 0.395 | |
+| Health shards for the first one, two, three, every emblem | +0.08, +0.23, +0.78, +0.08 / +1.35, +0.21, -0.51, -0.61 | 0.373, 0.344, 0.339, 0.346 / 0.400, 0.406, 0.415, 0.400 | |
+| all three (`chy-life`) | +0.86 / +1.09 | 0.305 / 0.351 | +7.6% / +8.4% |
+
+- Gate against `variants/chy-519` from batch 1: `chy-life` LIVE BAR H1 after 6 batches, 51.23% (50.88-51.58) on
+  15,360 fresh maps and 122,880 games (Fish 51.49, Mite 50.97, ladder 51.20; LLR 4.82); `chy-carry` alone NARROWED at
+  50.59% (50.34-50.83) on 17,920 fresh maps: a gain, short of the accept bar by itself.
+- A head-to-head against 519 was started and cancelled once the gate accepted.
+- Not built: a turn-end queue that makes the carry fields (pl-cf2: the Prism's gems +9.5%, win level), the Prism's
+  turns of 100k+ with 3+ enemies in sight (8-21% of them), and the escape plan's 50k gate (skips a quarter of its
+  planned retreats; lower gates were level).
+
 ## Prism safety on the game-ending tribute (charybdis = 517, 2026-11-12): a hurt Prism with the winning bag heals before its channel; +0.17 to +0.29, zone
 
 Notes, data and scripts: [ideas-2026-11-11/prismsafe/README.md](ideas-2026-11-11/prismsafe/README.md). Arms are

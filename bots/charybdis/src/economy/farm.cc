@@ -2293,7 +2293,8 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             if (best != g && worth >= 0 && !(rate(world, worth, static_cast<float>(least + (held ? 1 : capture_rounds(world)))) > best_value)) return;
             int timer = 0;
             if (held ? !prism_takeover(world, safety, G, timer, goal) : !prism_carries(world, safety, G, goal)) return;
-            if (!fuel_ok(full_field_cost_estimate() + loop_reserve())) return;
+            // The fuel is for the field's search: made already, the read is free (the test dropped ~8% of Prism's gems).
+            if (!pathing.group_ready(g) && !fuel_ok(full_field_cost_estimate() + loop_reserve())) return;
             int walk = pathing.to_group(g).at(here);
             if (walk == unreachable) return;
             // The field's nearest tile may be one we cannot take: the goal's, a step on at most beside it,
@@ -2363,7 +2364,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             if (worth >= 0 && !(rate(world, worth, rounds_at(steps_to(G, here))) > best_value)) continue;
             bool seen = false;
             for (const auto& m : G.members) seen |= enemy_may_see(world, m.pos);
-            if (seen || !fuel_ok(full_field_cost_estimate() + loop_reserve())) continue;
+            if (seen || (!pathing.group_ready(g) && !fuel_ok(full_field_cost_estimate() + loop_reserve()))) continue;
             const int walk = pathing.to_group(g).at(here);
             if (walk == unreachable || walk > reach) continue;
             const float value = rate(world, worth, rounds_at(walk));

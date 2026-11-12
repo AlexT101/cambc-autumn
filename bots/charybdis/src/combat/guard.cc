@@ -527,7 +527,8 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
         if (const auto now = fuel(); now <= placing) costliest = std::max(placing - now, costliest - costliest / 8);
     };
     if (!shared) g.expose_here(here);
-    const bool linked = partner(world) != nullptr;
+    // Prism too keeps off every tile where it would fall (stand_lost_at).
+    const bool linked = partner(world) != nullptr || world.me().facts().passive == Passive::gem_focus;
     // Unless the list filled up, the foes hold every visible threat that could hit a tile this near.
     const bool all_listed = n < static_cast<int>(g.foes.size());
     // The tiles more exposed than ours by `bound`, and who would fight on each by it.

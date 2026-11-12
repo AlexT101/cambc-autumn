@@ -1,0 +1,143 @@
+diff -ru -x .cambc bots/variants/charybdis-p3/src/bot.cc bots/variants/pl-trace/src/bot.cc
+--- bots/variants/charybdis-p3/src/bot.cc	2026-11-11 22:59:48.145686815 +0000
++++ bots/variants/pl-trace/src/bot.cc	2026-11-12 02:55:33.601252135 +0000
+@@ -686,6 +686,7 @@
+     // Home is reached on our spawn even where camp fire there keeps us below the health we fled at.
+     if (!record || health > memory.camp_fled || (memory.camp_fled >= 0 && test(world.map().ally_spawn, world.me().pos))) memory.camp_fled = -1;
+     decision = Branch::none;
++    pl_home_reason = 0;
+     debug_block({ print_aim_counts(world); }); // the previous turn's
+     sieged = false;
+     search.chose = false;
+@@ -703,6 +704,32 @@
+     // A failed act still posts the claim, the bag and the health that next turn's damage reads; a
+     // stale turn abandons the rest. Caught here rather than in main's run(), a StaleTurn costs one
+     // personality call and no second unwind (~1k).
++    // prismlife trace (debug builds): what the Prism's own model says of its tile and its steps, before and after the turn.
++    debug_block({
++        if (world.me().alive && world.me().facts().passive == Passive::gem_focus && !test(world.map().ally_spawn, world.me().pos)) {
++            Safety s2{world};
++            if (s2.live_enemies()) {
++                const vec2 at = world.me().pos;
++                const float taken = world.me().taken;
++                const float hp = my_health() + (world.me().shield_slot >= 0 ? shield_value(world.me().handle) : 0.0f);
++                int open = 0, safe = 0;
++                float least = 1e30f;
++                const auto& blocked = pathing.blocked();
++                for (const auto d : directions) {
++                    const vec2 q = at + d;
++                    if (!in_bounds(q) || !test(world.map().open_for_us, q) || test(blocked, q)) continue;
++                    ++open;
++                    const float w = s2.worst_damage(q, taken);
++                    least = std::min(least, w);
++                    safe += !s2.lethal(q);
++                }
++                const auto b = s2.bound(at, taken);
++                std::printf("PLS %d %u %d %d %d %d %d %d %d %d %d %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), at.x, at.y, static_cast<int>(hp),
++                            static_cast<int>(s2.worst_damage(at, taken)), static_cast<int>(s2.lethal(at)), open, safe, static_cast<int>(open ? least : -1),
++                            static_cast<int>(stunned_turn), static_cast<int>(b.doubled), static_cast<int>(b.stuns));
++            }
++        }
++    });
+     try {
+         act(world, pathing, safety, memory);
+     } catch (const StaleTurn&) {
+@@ -710,6 +737,22 @@
+     } catch (const std::exception& e) {
+         std::printf("r%u act error: %s\n", cambc::round_number(), e.what());
+     }
++    debug_block({
++        if (world.me().alive && cambc::self().is_alive() && world.me().facts().passive == Passive::gem_focus && !world.is_stale()) {
++            const vec2 at = my_position();
++            if (in_bounds(at) && !test(world.map().ally_spawn, at)) {
++                Safety s3{world};
++                if (s3.live_enemies()) {
++                    const float taken = world.me().taken;
++                    const float hp = my_health() + (world.me().shield_slot >= 0 ? shield_value(world.me().handle) : 0.0f);
++                    const auto b = s3.bound(at, taken);
++                    std::printf("PLE %d %u %d %d %d %d %d %c %d %d %llu %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), at.x, at.y, static_cast<int>(hp),
++                                static_cast<int>(s3.worst_damage(at, taken)), static_cast<int>(s3.lethal(at)), static_cast<char>(decision), static_cast<int>(b.doubled),
++                                static_cast<int>(b.stuns), static_cast<unsigned long long>(fuel()), pl_home_reason, static_cast<int>(100 * my_health() / my_max_health()));
++                }
++            }
++        }
++    });
+     try {
+         // Only the turn order reads this turn's stuns, and this short it keeps its last rank.
+         if (!world.is_stale() && (!end_tight || fuel_ok(posts_cost + stuns_cost))) see_stuns(world, safety);
+diff -ru -x .cambc bots/variants/charybdis-p3/src/bot_parts.h bots/variants/pl-trace/src/bot_parts.h
+--- bots/variants/charybdis-p3/src/bot_parts.h	2026-11-12 01:26:42.985432616 +0000
++++ bots/variants/pl-trace/src/bot_parts.h	2026-11-12 02:55:45.295716166 +0000
+@@ -61,6 +61,8 @@
+     prism_recovery = 'r', // Prism's recovery beside Willow
+ };
+ Branch decision = Branch::none;
++int pl_dh_reason = 0;
++int pl_home_reason = 0; // prismlife trace: want_home's last reason (1 line, 2 pack, 3 camp, 4 fled, 5 willow, 6 stand lost)
+ bool sieged = false;       // siege() or its heal trip ran this turn: act() keeps the siege
+ bool stunned_turn = false; // stunned at this turn's start
+ bool struck = false;       // the strike search ran this turn
+diff -ru -x .cambc bots/variants/charybdis-p3/src/combat/fight.cc bots/variants/pl-trace/src/combat/fight.cc
+--- bots/variants/charybdis-p3/src/combat/fight.cc	2026-11-12 01:43:39.952604236 +0000
++++ bots/variants/pl-trace/src/combat/fight.cc	2026-11-12 02:55:45.295601364 +0000
+@@ -500,11 +500,18 @@
+ // Low under p's recall line (bar finishing a camp), or in a pack's zone there.
+ bool drawn_home(const World& world, Safety& safety, HoldAt& hold) {
+     const float health = my_health();
++    pl_dh_reason = 0;
+     // Either line is at most recall_health_fraction: above it, no line needs working out.
+     if (health < params::recall_health_fraction * my_max_health() && health < recall_line(world, safety, hold.p) * my_max_health()
+-        && !finishing_camp(world, hold.p) && !hold.keeps_us(safety))
++        && !finishing_camp(world, hold.p) && !hold.keeps_us(safety)) {
++        pl_dh_reason = 1;
+         return true;
+-    return outmatched(world, safety, hold) && !hold.keeps_us(safety);
++    }
++    if (outmatched(world, safety, hold) && !hold.keeps_us(safety)) {
++        pl_dh_reason = 2;
++        return true;
++    }
++    return false;
+ }
+ 
+ // A stand at p we lose, or, linked or lethal there, one we fall in. Healthy on our own ground, they
+@@ -561,18 +568,21 @@
+     if (test(world.map().ally_spawn, here)) return false;
+     const float health = my_health();
+     HoldAt hold(world, pathing, here, memory.damage);
+-    if (drawn_home(world, safety, hold)) return true;
++    pl_home_reason = 0;
++    if (drawn_home(world, safety, hold)) return pl_home_reason = pl_dh_reason, true;
+     const int mono = mono_trapped(world, pathing, safety, memory, health);
+-    if (mono >= 0 ? mono == 1 : camp_trapped(world, pathing, safety, here, health, memory.siege)) return true;
++    if (mono >= 0 ? mono == 1 : camp_trapped(world, pathing, safety, here, health, memory.siege)) return pl_home_reason = 3, true;
+     // Once camps sent us home, only a heal brings us back: stepping back into their reach to work
+     // would take the hits again from no more health.
+-    if (memory.camp_fled >= 0 && !memory.siege) return true;
++    if (memory.camp_fled >= 0 && !memory.siege) return pl_home_reason = 4, true;
+     // Willow holds no fight: an enemy likely to hit it sends it home (its stations' guard keeps it off
+     // the same tiles), bar on a capture, which pays without one.
+     if (world.me().facts().heals() && !holding_capture(world, pathing) && !contesting(world) && exposure_here(world, safety).enemy
+         && !willow_stands(world))
+-        return true;
+-    return stand_lost_at(world, safety, hold);
++        return pl_home_reason = 5, true;
++    const bool pl_lost = stand_lost_at(world, safety, hold);
++    if (pl_lost) pl_home_reason = 6;
++    return pl_lost;
+ }
+ 
+ // The last round we act before e's channel completes, at its turn start in channel_end_round.
+diff -ru -x .cambc bots/variants/charybdis-p3/src/model/safety.h bots/variants/pl-trace/src/model/safety.h
+--- bots/variants/charybdis-p3/src/model/safety.h	2026-11-12 01:56:13.793206623 +0000
++++ bots/variants/pl-trace/src/model/safety.h	2026-11-12 02:46:32.192013329 +0000
+@@ -528,7 +528,9 @@
+     bool may_be_hit(vec2 p); // false only if no threat hits p
+     bool threatened_now(vec2 p);
+     // Every credible threat at full damage, plus camps.
++public:
+     float worst_damage(vec2 p, float blow_scale = 1);
++private:
+     // Its strike's reach; for one whose stun leaves it no turn before our next, its first turn's,
+     // as it still fights from then on.
+     int fight_reach(const ChampionBelief& e);

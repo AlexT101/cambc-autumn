@@ -413,7 +413,7 @@ bool prism_dominant(const World& world, const ChampionBelief& a) {
 // another group h (standing on its hold, else its claim), first what is left of that: a counting hold's
 // payout (after its walk there), else its walk to h and a whole hold; then the walk on from h. A live or
 // respawning h, whose clear or return we cannot time, is past `bound`. Past it, bound + 1 as soon as the
-// crow's steps show it; -1 short of fuel for a field. Once per group and round: every cleared group of
+// crow's steps show it; -1 short of fuel for a field still to make. Once per group and round: every cleared group of
 // farm's loop asks.
 int prism_eta(const World& world, Pathing& pathing, int g, const ChampionBelief& a, vec2 at, int bound) {
     struct Eta {
@@ -433,7 +433,7 @@ int prism_eta(const World& world, Pathing& pathing, int g, const ChampionBelief&
     if (h == g || h >= n) h = -1;
     if (h < 0) {
         if (steps_to(G, at) > bound) return e.eta = bound + 1;
-        if (!fuel_ok(full_field_cost_estimate() + end_reserve)) return e.eta = -1;
+        if (!pathing.group_walking_ready(g) && !fuel_ok(full_field_cost_estimate() + end_reserve)) return e.eta = -1;
         return e.eta = team_walk_to(world, pathing, g, at);
     }
     const auto& H = map.groups[h];
@@ -445,7 +445,9 @@ int prism_eta(const World& world, Pathing& pathing, int g, const ChampionBelief&
     int on = unreachable;
     for (const auto& m : H.members) on = std::min(on, steps_to(G, m.pos));
     if (task(steps_to(H, at)) + on > bound) return e.eta = bound + 1;
-    if (!fuel_ok(2 * full_field_cost_estimate() + end_reserve)) return e.eta = -1;
+    // Fuel for the fields still to make: one made already costs no search.
+    const int unmade = !pathing.group_walking_ready(g) + !pathing.group_walking_ready(h);
+    if (unmade > 0 && !fuel_ok(static_cast<std::uint64_t>(unmade) * full_field_cost_estimate() + end_reserve)) return e.eta = -1;
     on = unreachable;
     for (const auto& m : H.members) on = std::min(on, team_walk_to(world, pathing, g, m.pos));
     return e.eta = task(team_walk_to(world, pathing, h, at)) + on;
@@ -481,7 +483,7 @@ Leave leave_for_prism(const World& world, Pathing& pathing, int g, const LeftRec
     if (held && (left.lapsed || c.payout_round() - world.round < 2 || (g == kept_group && c.held_since == kept_since))) return Leave::no;
     const int winning = static_cast<int>(cambc::constants::winning_gems);
     // Short of fuel for a walk's field, the crow's steps: no more than the walk.
-    const bool walks = fuel_ok(full_field_cost_estimate() + end_reserve);
+    const bool walks = pathing.group_walking_ready(g) || fuel_ok(full_field_cost_estimate() + end_reserve);
     const auto walk_from = [&](vec2 p) { return walks ? team_walk_to(world, pathing, g, p) : steps_to(G, p); };
     for (const auto& a : world.allies) {
         if (a.is_self || !a.alive || a.facts().passive != Passive::gem_focus) continue;
