@@ -53,6 +53,13 @@ const PARADIGM_PLAN = [
   ['ring-road', 22], ['colosseum', 21], ['isles', 21], ['choke-web', 21], ['corridors', 21], ['stones', 21], ['mesa-field', 21], ['contours', 22],
   ['compartments', 21], ['braided-lanes', 22], ['home-keeps', 22], ['meander-river', 21],
 ];
+// The 05 maps' part of ladder-v3 (2026-11-12): calibration 4's ladder05 and the 05 maps under random edits, in the
+// same proportion as LADDER_PLAN's (a quarter edits). Its entries carry their own calibration and oversampling
+// (the third element: calib, over), so ladder-v3 keeps ladder-v2's entries, candidate seeds and maps unchanged.
+const P05_PLAN = [['ladder05', 63, { calib: 4, over: 1.6 }], [{ mutate: 'random05' }, 21, { calib: 4, over: 1.6 }]];
+// Ranked play (2026-11-11 23:10 to 11-12 08:30, 113,965 games, top teams' too) draws the 170 pool maps uniformly,
+// so the 42 05 maps are 42/170 of it: ladder-v2's 256 maps stand for the 128, and 84 05-style maps for the 42.
+const LADDER_V3_PLAN = [...LADDER_PLAN, ...P05_PLAN];
 // Suite mixes: the plan, the calibration, how counts are drawn (fixed or varied per seed) and how candidates are
 // kept ('diverse': farthest-point picks from --oversample (3) times the count; 'first': the first that succeed,
 // in seed order, from 1.3 times the count, so the suite keeps the sampler's distribution). The -v1 mixes remake
@@ -60,6 +67,8 @@ const PARADIGM_PLAN = [
 const MIXES = {
   ladder: { plan: LADDER_PLAN, calib: 2, counts: 'fixed', select: 'first', over: 1.3 },
   'ladder-v2': { plan: LADDER_PLAN, calib: 3, counts: 'fixed', select: 'first', over: 1.3 },
+  'ladder-v3': { plan: LADDER_V3_PLAN, calib: 3, counts: 'fixed', select: 'first', over: 1.3 },
+  'ladder-05': { plan: P05_PLAN, calib: 4, counts: 'fixed', select: 'first', over: 1.3 },
   paradigms: { plan: PARADIGM_PLAN, calib: 3, counts: 'fixed', select: 'first', over: 1.5 },
   varied: { plan: PLAN, calib: 2, counts: 'varied', select: 'diverse', over: 3 },
   fixed: { plan: PLAN, calib: 2, counts: 'fixed', select: 'diverse', over: 3 },
@@ -71,6 +80,9 @@ const LADDER_DIR = path.join(ROOT, 'maps');
 // The ladder mapgen samples mutation sources from and measures against: the 128 maps of 2026-11-05 that calibrations 2
 // and 3 were fitted to (tools/ladder128.txt), not whatever maps/ holds now, so a seed keeps making the same suite.
 const LADDER_FILES = () => fs.readFileSync(path.join(ROOT, 'tools/ladder128.txt'), 'utf8').split(/\s+/).filter(Boolean).map(n => `${n}.map26a`).sort();
+// The 05 maps calibration 4 was fitted to and `mutate random05` edits (40 of the 42 were in maps/ on 2026-11-12), pinned
+// for the same reason.
+const LADDER05_NAMES = () => fs.readFileSync(path.join(ROOT, 'tools/ladder05.txt'), 'utf8').split(/\s+/).filter(Boolean).sort();
 
 // The metric space of `diversity`, the nearest-ladder distance and the diverse pick.
 const FEATURES = {
@@ -383,9 +395,11 @@ function loadGrid(engine, file) {
 // Calibration 2 draws a pick-count edit from the ladder's picks for the map's area.
 function mutated(engine, source, seed, ops, calib = CALIB) {
   let base;
-  if (!ops?.length || source === 'random') {
+  if (!ops?.length || source === 'random' || source === 'random05') {
     const rng = makeRng(`mutation:${seed}`);
     if (source === 'random') source = rng.choice(LADDER_NAMES());
+    // By its full name (05waffle), which loadGrid finds under maps/; the name, not a path, keys the edits' seeds.
+    else if (source === 'random05') source = rng.choice(LADDER05_NAMES());
     if (calib >= 2) base = loadGrid(engine, source);
     if (!ops?.length) ops = randomOps(rng, calib >= 2 ? base.W * base.H : null);
   }
@@ -502,7 +516,8 @@ async function suite(opts) {
   if (!m) throw new Error(`unknown --mix ${mix}; one of ${Object.keys(MIXES).join(', ')}`);
   const def = { ...SUITES[name], plan: m.plan }, over = +(opts.oversample ?? m.over), seeds = seedList(opts.seed ?? def.seed), counts = new Map(seeds.map(seed => [seed, suiteCounts(def.plan, seed, m.counts, over)]));
   // 'first' suites number an entry's candidates below 1000 (the plan has under 100 entries), 'diverse' ones below 100.
-  const per = m.select === 'first' ? 1000 : 100, tries = (what, n) => Math.ceil(n * (typeof what === 'string' || m.select === 'first' ? over : 2));
+  // A plan entry's third element may set its own calibration and oversampling (P05_PLAN); the rest are overrides.
+  const per = m.select === 'first' ? 1000 : 100, tries = (what, n, eo = over) => Math.ceil(n * (typeof what === 'string' || m.select === 'first' ? eo : 2));
   if (m.select === 'first' && def.plan.length >= 100) throw new Error('a first-select plan needs under 100 entries');
   // Without --out the A/B suite is replaced in place: only its own seed and mix keep its maps.
   if (!opts.out && ((opts.seed !== undefined && String(opts.seed) !== String(def.seed)) || mix !== 'varied-v1'))
@@ -510,9 +525,11 @@ async function suite(opts) {
   if (seeds.length > 1 && !opts.out?.includes('{seed}')) throw new Error('several seeds need --out with {seed}, e.g. maps/suites/fresh/fresh-{seed}');
   // More than ~48 processes was slower on 96 cores (memory-bound, 2026-10-29): 10 suites in 9.2 s at 48, 10.3 at 94.
   const jobs = +(opts.jobs ?? Math.max(1, Math.min(48, os.availableParallelism() - 2))), tasks = [];
-  for (const seed of seeds) for (const [idx, [what, , extra]] of def.plan.entries())
-    for (let j = 0; j < (m.select === 'first' ? tries(what, counts.get(seed)[idx]) : counts.get(seed)[idx] * (typeof what === 'string' ? over : 2)); j++)
-      tasks.push({ seed, idx, what, extra, calib: m.calib, s: seed * 100000 + idx * per + j });
+  for (const seed of seeds) for (const [idx, [what, , entry]] of def.plan.entries()) {
+    const { calib: ecalib, over: eover, ...rest } = entry ?? {}, extra = entry && rest;
+    for (let j = 0; j < (m.select === 'first' ? tries(what, counts.get(seed)[idx], eover ?? over) : counts.get(seed)[idx] * (typeof what === 'string' ? over : 2)); j++)
+      tasks.push({ seed, idx, what, extra, calib: ecalib ?? m.calib, s: seed * 100000 + idx * per + j });
+  }
   const t0 = Date.now(), made = await makeCandidates(tasks, jobs), engine = await createEngine();
   console.log(`${tasks.length} candidates for ${seeds.length} suite(s) in ${((Date.now() - t0) / 1000).toFixed(1)} s in ${Math.min(jobs, tasks.length)} process(es)`);
   for (const seed of seeds) writeSuite(engine, def, seed, over, mix, counts.get(seed), path.resolve(opts.out?.replaceAll('{seed}', seed) ?? path.join(ROOT, def.dir)),

@@ -623,18 +623,34 @@ const SHARED_GROUPS_V3 = { gems: 3, guarded: 3.5, gold: 1, boss: 1.8, big: 2.2 }
 const HOME_GROUPS = { d: 2, dd: 3, ddd: 0.6, g: 1, Wd: 1.2, Wdd: 0.8, Wg: 0.5, Eddd: 0.3 };
 const LETTER = { W: 'wolf', E: 'elk', G: 'golem', M: 'monolith', g: 'gem_cluster', d: 'gold_cluster' };
 
+// Calibration 4's make-ups: the 40 05 maps of 2026-11-12 (share of a map's team A groups, maps weighted equally, in %;
+// research/ideas-2026-11-12/ladderv3/groups05.mjs). Mostly one monster guarding a compact block of clusters; 'big:'
+// is 10 cells or more here. Monolith groups come from `monoliths` (placed mid-map), not this table.
+const GROUPS_05 = {
+  Wgg: 7.9, 'big:guarded': 5.9, Wddd: 4.5, Wdd: 4.3, Wggg: 3.4, g: 2.9, WWdd: 2.9, ggggggggg: 2.7, d: 2.6, Eddd: 2.6, WWd: 2.4, Egggg: 2,
+  Edddd: 2, Wd: 2, ggg: 1.7, Wg: 1.7, Eggg: 1.7, gg: 1.5, Wdg: 1.4, Wdggg: 1.4, WWgg: 1.3, G: 1.3, Egg: 1.3, Edggg: 1.3, EWWgggg: 1.2,
+  EWWWWWddg: 1.2, Wdddd: 1.2, WWWWddddd: 1.2, Ed: 1.2, Ggggg: 1.2, gggg: 1.1, WWg: 1, WWdddd: 1, EEggggg: 1, Egggggggg: 1, W: 0.9,
+  WWddd: 0.8, WWWWWd: 0.8, WWWWW: 0.8, Edddddddd: 0.8, dd: 0.8, WWdg: 0.8, EWddd: 0.8, Wddddd: 0.7, Eggggg: 0.7, Wdgg: 0.6,
+  WWWddddd: 0.6, EEWdddddd: 0.6, EEdddddd: 0.6, WWWdd: 0.6, EEdddg: 0.6, EWWWddd: 0.5, EWggggggg: 0.5, Ggggggggg: 0.5, EEddddddd: 0.5,
+  Ggggggg: 0.5, EEdggg: 0.4, Edd: 0.4, E: 0.4, WWdgg: 0.3, EEgggg: 0.3, dggg: 0.3, Wddgg: 0.3, Gggggggg: 0.3, Wgggg: 0.3, Egggggg: 0.3,
+  Eddg: 0.3, EWWggggg: 0.2, EWdd: 0.2, Gg: 0.2, gggggg: 0.2, Gggggg: 0.2, WWggg: 0.2, EEgggggg: 0.2, EEgg: 0.2, WWddgg: 0.2, Gdddd: 0.2,
+  WWdddddd: 0.2, Edddgg: 0.2, WW: 0.2, Gddgggg: 0.2, WWgggg: 0.2, 'big:gold': 0.2, ddd: 0.2,
+};
+
 // Ladder maps differ in their groups more than independent draws would: singletons cluster on some maps (43% have
 // none, 9% are mostly singletons), and some maps are nearly all big groups or all clusters. Per map, single_mult
 // scales the one-cell make-ups, big_mult those of 3 cells or more, cluster_mult the cluster-only ones.
 // Calibration 3's ball_mult scales the gem-only make-ups of 3 or more cells and gold_mult the gold-only ones (the
 // ladder's gem balls sit on few maps, and half its maps have no gold-only group).
 const TABLES = new Map();
-const groupTable = (single = 1, big = 1, cl = 1, ball = 1, gold = 1, comp = 1) => {
-  const key = `${single}|${big}|${cl}|${ball}|${gold}|${comp}`;
-  if (!TABLES.has(key)) TABLES.set(key, Object.fromEntries(Object.entries(LADDER_GROUPS).map(([k, w]) => {
+const groupTable = (single = 1, big = 1, cl = 1, ball = 1, gold = 1, comp = 1, base = LADDER_GROUPS) => {
+  const key = `${base === LADDER_GROUPS ? '' : '05|'}${single}|${big}|${cl}|${ball}|${gold}|${comp}`;
+  if (!TABLES.has(key)) TABLES.set(key, Object.fromEntries(Object.entries(base).map(([k, w]) => {
     const n = k.startsWith('big:') ? 9 : k.length, clusters = k.startsWith('big:') ? k !== 'big:guarded' : /^[gd]+$/.test(k);
     const gemBall = n >= 3 && (k === 'big:gems' || /^g+$/.test(k)), goldOnly = k === 'big:gold' || /^d+$/.test(k);
-    return [k, w * (n === 1 ? +single : 1) * (n >= 3 ? +big : 1) * (clusters ? +cl : 1) * (gemBall ? +ball : 1) * (goldOnly ? +gold : 1) * (k.startsWith('big:') ? +comp : 1)];
+    // On the 05 maps pairs bunch with the singletons: 55% of maps have neither.
+    const small = n === 1 || (n === 2 && base === GROUPS_05);
+    return [k, w * (small ? +single : 1) * (n >= 3 ? +big : 1) * (clusters ? +cl : 1) * (gemBall ? +ball : 1) * (goldOnly ? +gold : 1) * (k.startsWith('big:') ? +comp : 1)];
   })));
   return TABLES.get(key);
 };
@@ -650,11 +666,21 @@ const LADDER_SHAPES = {
   8: { '.##./####/.##.': 23, '####/####': 23, '###/#.#/###': 23, '###/###/##.': 15, '#####/.###.': 8, '###/###/#.#': 8 },
   9: { '###/###/###': 1 },
 };
+// Calibration 4's: the 05 maps' (team A's groups of 3-9 cells), blocks almost without exception.
+const SHAPES_05 = {
+  3: { '##/#.': 99, '###': 1 },
+  4: { '##/##': 95, '###/.#.': 5 },
+  5: { '.#./###/.#.': 94, '###/##.': 6 },
+  6: { '###/###': 95, '##./###/.#.': 5 },
+  7: { '###/###/.#.': 1 },
+  8: { '####/####': 43, '###/###/##.': 43, '.##./####/.##.': 14 },
+  9: { '###/###/###': 1 },
+};
 // Per map, line_mult scales the one-row shapes: the ladder's lines sit on few maps (most have none).
 const SHAPE_TABLES = new Map();
-function shapeTable(n, line = 1) {
-  const key = `${n}|${line}`;
-  if (!SHAPE_TABLES.has(key)) SHAPE_TABLES.set(key, LADDER_SHAPES[n] && Object.fromEntries(Object.entries(LADDER_SHAPES[n]).map(([k, w]) => [k, w * (k.includes('/') ? 1 : +line)])));
+function shapeTable(n, line = 1, base = LADDER_SHAPES) {
+  const key = `${base === LADDER_SHAPES ? '' : '05|'}${n}|${line}`;
+  if (!SHAPE_TABLES.has(key)) SHAPE_TABLES.set(key, base[n] && Object.fromEntries(Object.entries(base[n]).map(([k, w]) => [k, w * (k.includes('/') ? 1 : +line)])));
   return SHAPE_TABLES.get(key);
 }
 // Cells of a shape string, under one of the 8 symmetries.
@@ -691,12 +717,13 @@ function placeMembers(rng, cells, types) {
 function composed(rng, make, s) {
   if (s?.calib >= 3) {
     if (make.startsWith('big:')) {
-      // The ladder has 0.7 groups of 6-9 cells a side and 0.09 of 10 or more (not shared).
-      const pal = make.slice(4), cells = rng.chance(0.75) ? shapeCells(rng, rng.weighted(LADDER_SHAPES[rng.weighted({ 6: 30, 7: 20, 8: 20, 9: 30 })])) : bigCells(rng, pal === 'gold');
+      // The ladder has 0.7 groups of 6-9 cells a side and 0.09 of 10 or more (not shared). Calibration 4's 'big:' is
+      // 10 or more only (its table lists the 6-9 cell make-ups).
+      const pal = make.slice(4), cells = s.calib >= 4 ? bigCells(rng, pal === 'gold') : rng.chance(0.75) ? shapeCells(rng, rng.weighted(LADDER_SHAPES[rng.weighted({ 6: 30, 7: 20, 8: 20, 9: 30 })])) : bigCells(rng, pal === 'gold');
       const P = { guarded: { gem_cluster: 4, gold_cluster: 3, wolf: 1, elk: 0.6, golem: 0.15 }, gems: { gem_cluster: 1 }, gold: { gold_cluster: 1 } }[pal], left = { golem: 3 };
       return placeMembers(rng, cells, cells.map(() => { let t = rng.weighted(P); if (left[t] === 0) t = 'gem_cluster'; else if (t in left) left[t]--; return t; }));
     }
-    const types = [...make].map(c => LETTER[c]), table = shapeTable(types.length, s.line_mult);
+    const types = [...make].map(c => LETTER[c]), table = shapeTable(types.length, s.line_mult, s.calib >= 4 ? SHAPES_05 : LADDER_SHAPES);
     return placeMembers(rng, table ? shapeCells(rng, rng.weighted(table)) : polyomino(rng, types.length, rng.uniform(0, 0.4)), types);
   }
   if (make.startsWith('big:')) {
@@ -710,17 +737,20 @@ function composed(rng, make, s) {
 Object.assign(TEMPLATES, {
   ladder_group: (rng, s) => composed(rng, rng.weighted(groupTable(s?.single_mult, s?.big_mult, s?.cluster_mult, s?.ball_mult, s?.gold_mult, s?.composed_mult)), s),
   gem_group: (rng, s) => composed(rng, rng.weighted(GEM_GROUPS), s),
+  group05: (rng, s) => composed(rng, rng.weighted(groupTable(s?.single_mult, s?.big_mult, s?.cluster_mult, s?.ball_mult, s?.gold_mult, s?.composed_mult, GROUPS_05)), s),
 });
 
 const CAMP_REACH = { wolf: 3, elk: 4, golem: 4, monolith: 5 };
 
 // By default no monster reaches within one step of either spawn (spawn_reach_gap 2). Calibration 1 kept every
 // camp camp_spawn_gap away as well, so spawn_reach_gap under 2 never brought a monster nearer (a bug); from
-// calibration 2 monsters keep reach + spawn_reach_gap and clusters camp_spawn_gap.
+// calibration 2 monsters keep reach + spawn_reach_gap and clusters camp_spawn_gap. Calibration 4 keeps every camp
+// camp_spawn_gap away as well (the 05 maps keep each camp 5 or more tiles from a spawn, monsters included).
 function campCellsOk(g, cells, s, shared) {
   const camps = g.allCamps(), mirrors = cells.map(([, x, y]) => g.mirrorXY(x, y));
   for (const [type, x, y] of cells) {
-    const gap = s.calib >= 2 ? (type in CAMP_REACH ? CAMP_REACH[type] + (s.spawn_reach_gap ?? 2) : s.camp_spawn_gap)
+    const gap = s.calib >= 4 ? Math.max(s.camp_spawn_gap, (CAMP_REACH[type] ?? 0) + (s.spawn_reach_gap ?? 2))
+      : s.calib >= 2 ? (type in CAMP_REACH ? CAMP_REACH[type] + (s.spawn_reach_gap ?? 2) : s.camp_spawn_gap)
       : Math.max(s.camp_spawn_gap, (CAMP_REACH[type] ?? 0) + (s.spawn_reach_gap ?? 2)), ag = s.camp_altar_gap ?? 1;
     if (!g.in(x, y) || g.get(x, y) !== GROUND || g.noCamp?.has(y * g.W + x)) return false;
     if (rectDist(g.spawn, x, y) < Math.max(1, gap) || rectDist(g.spawn, ...g.mirrorXY(x, y)) < Math.max(1, gap)) return false;
@@ -897,6 +927,20 @@ function homeGroup(g, rng, s) {
   return false;
 }
 
+// A group just outside team A's spawn exclusion, camp_spawn_gap tiles away (calibration 4's starter: half the 05
+// maps have a group exactly 5 from each spawn, a first farm); its mirror sits by team B's.
+function starterGroup(g, rng, s) {
+  const sp = g.spawn, r = s.camp_spawn_gap, cands = [];
+  for (let y = sp.y - r; y < sp.y + sp.h + r; y++) for (let x = sp.x - r; x < sp.x + sp.w + r; x++) if (g.in(x, y) && rectDist(sp, x, y) === r) cands.push([x, y]);
+  for (let guard = 0; guard < 6; guard++) {
+    const cells = TEMPLATES[rng.weighted(s.camp_mix)](rng, s);
+    // Each cell of the group in turn on the ring; the rest lie farther out or are refused.
+    for (const [x, y] of rng.shuffle(cands.slice()).slice(0, 30)) for (const [, cx, cy] of cells)
+      if (tryGroup(g, cells.map(([t, dx, dy]) => [t, x + dx - cx, y + dy - cy]), s)) return true;
+  }
+  return false;
+}
+
 // Gaps: a passage at most 3 wide is cut across by a line of holes, so only a dash (or a crystal)
 // gets through there.
 export function gaps(g, rng, n) {
@@ -957,6 +1001,7 @@ function placeCamps(g, rng, s) {
   if (s.calib >= 2) {
     for (let k = 0; k < (s.shared_groups ?? 0); k++) sharedGroup(g, rng, s, k === 0);
     if (s.home_camp) homeGroup(g, rng, s);
+    if (s.starter) starterGroup(g, rng, s);
   } else if (s.shared_camp) {
     const cx = Math.floor((g.W - 1) / 2), cy = Math.floor((g.H - 1) / 2), shapes = [[[0, 0]], [[0, 0], [1, 0]], [[0, 0], [0, 1]], [[0, 0], [1, 0], [0, 1]]];
     const type = rng.choice(['elk', 'wolf', 'gem_cluster']);
@@ -1302,6 +1347,21 @@ const DEFAULTS_V3 = {
 // classic and monolith-only drew no bushes on 17% and 40% of maps (the ladder: 3%).
 const V3_PRESETS = { classic: { shared_camp: undefined, bushes: { patches: 3, strips: 2, none: 0.1 } }, 'monolith-only': { bushes: { patches: 2, strips: 1, none: 0.1 } } };
 
+// ---- calibration 4 (2026-11-12, the 05 part of `suite --mix ladder-v3`; research/ideas-2026-11-12/ladderv3/):
+// calibration 3 refitted to the 40 05 maps, one author's style: 3x3 spawns with every camp 5 or more tiles away,
+// groups from GROUPS_05 in SHAPES_05's blocks (on most maps every group guarded; a few maps all clusters or
+// singletons), shared groups almost only on mirrored maps, more walls, fewer holes, bushes absent or plentiful.
+// Size, aspect, symmetry, picks and altars stay calibration 3's, which the 05 maps match.
+const SHARED_BY_SYM_V4 = { rotational: { 0: 96, 1: 4 }, mirror: SHARED_BY_SYM.mirror };
+const DEFAULTS_V4 = {
+  ...DEFAULTS_V3, spawn_size: 3, spawn_dims: 'none', camp_spawn_gap: 5, spawn_reach_gap: 1, home_camp: 0.03, starter: 0.3, camp_mix: { group05: 1 },
+  single_mult: { 0: 70, 1: 15, 5: 15 }, cluster_mult: { 0: 55, 1: 30, 4: 15 }, ball_mult: 1, gold_mult: { 0: 60, 1: 25, 3: 15 }, line_mult: 1, big_mult: 1, composed_mult: 0.6,
+  monoliths: { 0: 1.6, 1: 1 }, group_scale: 0.2,
+  terrain: { open: 1.8, scatter: 5, caves: 0.5, rooms: 1.5, lanes: 0.7, rings: 0.7, rows: 1 }, wall_density: [0.02, 0.3],
+  holes: { none: 11, lakes: 3, moat: 0.6, pits: 0.8 }, bushes: { none: 1, blobs: 2, patches: 2, strips: 1 }, bush_amount: { '0.015-0.06': 2, '0.06-0.12': 1, '0.12-0.25': 0.7 },
+};
+const V4_PRESETS = {};
+
 // The base of the exotic presets: every dimension sampled wide, each preset pinning one or two.
 const EXOTIC = {
   size: [30, 100], aspect: { square: 3, wide: 2, thin: 0.6 }, symmetry: { rotational: 4, horizontal: 2, vertical: 2 },
@@ -1374,6 +1434,7 @@ export const PRESETS = {
   huge: { doc: 'Large map (80-100), many objectives', size: [80, 100], aspect: { square: 3, wide: 1 }, picks: [4, 5], terrain: { scatter: 3, caves: 1, rooms: 1, rows: 1, open: 0.5 }, wall_density: [0.05, 0.12], altars: [3, 5], groups: [14, 24] },
   random: { doc: 'Everything sampled from the full legal space' },
   ladder: { doc: 'Every dimension at the ladder\'s rates (calibration 2, fitted 2026-11-05 to the 128 ladder maps)', groups: [3, 16] },
+  ladder05: { doc: 'The 05 maps\' style (with --calib 4, as in --mix ladder-v3): guarded compact blocks, 3x3 spawns kept clear', groups: [3, 14] },
   'monolith-only': {
     doc: 'One to three monoliths per side are the only gem source; every other camp is gold (like the ladder map "contest")',
     size: [40, 70], picks: { 4: 1, 5: 3 }, terrain: { open: 2, scatter: 3, rows: 0.5 }, wall_density: [0.01, 0.08],
@@ -1479,8 +1540,8 @@ const KEEP_OBJECT = new Set(['camp_mix', 'altar_bands', 'contested_mix', 'camp_b
 const SKIP_KEYS = new Set(['doc', 'exotic', 'altar_zone', 'designed', 'family']);
 
 function sampleSpecV2(rng, preset, overrides) {
-  const v3 = overrides.calib >= 3, p = PRESETS[preset];
-  const layers = [v3 ? DEFAULTS_V3 : DEFAULTS_V2, p.exotic ? EXOTIC : {}, p.design ? DESIGN : {}, p, V2_PRESETS[preset] ?? {}, (v3 && V3_PRESETS[preset]) || {}];
+  const v3 = overrides.calib >= 3, v4 = overrides.calib >= 4, p = PRESETS[preset];
+  const layers = [v4 ? DEFAULTS_V4 : v3 ? DEFAULTS_V3 : DEFAULTS_V2, p.exotic ? EXOTIC : {}, p.design ? DESIGN : {}, p, V2_PRESETS[preset] ?? {}, (v3 && V3_PRESETS[preset]) || {}, (v4 && V4_PRESETS[preset]) || {}];
   const campMode = sampleValue(rng, overrides.camp_mode ?? Object.assign({}, ...layers).camp_mode);
   const src = Object.assign({}, ...layers, CAMP_MODES[campMode], overrides, { camp_mode: campMode }), spec = { preset };
   if (src.altar_zone === 'mid') src.altar_mode = 'central';
@@ -1488,9 +1549,10 @@ function sampleSpecV2(rng, preset, overrides) {
     if (SKIP_KEYS.has(k) || v === undefined) continue;
     spec[k] = KEEP_OBJECT.has(k) && typeof v === 'object' && !Array.isArray(v) ? v : sampleValue(rng, v);
   }
-  for (const k of ['spawn_bush', 'altar_near', 'shared_altar', 'home_camp', 'winding', 'unleak', 'unnarrow', 'altar_twin', 'dash_cuts']) if (typeof spec[k] === 'number') spec[k] = rng.chance(spec[k]);
+  for (const k of ['spawn_bush', 'altar_near', 'shared_altar', 'home_camp', 'winding', 'unleak', 'unnarrow', 'altar_twin', 'dash_cuts', 'starter']) if (typeof spec[k] === 'number') spec[k] = rng.chance(spec[k]);
   if (typeof spec.camp_bias !== 'string') spec.camp_bias = 'spread';
   if (typeof spec.lake_amount === 'string') spec.lake_amount = rng.uniform(...spec.lake_amount.split('-').map(Number));
+  if (typeof spec.bush_amount === 'string') spec.bush_amount = rng.uniform(...spec.bush_amount.split('-').map(Number));
   let W, H, n = spec.size === 'ladder' ? rng.int(...rng.weighted(LADDER_LONG).split('-').map(Number)) : spec.size;
   if (spec.aspect === 'ladder') {
     const a = rng.weighted(LADDER_ASPECT), r = a === '1' ? 1 : a === 'mild' ? rng.uniform(1.05, 1.35) : a === 'medium' ? rng.uniform(1.4, 1.8) : rng.uniform(2, 3.1);
@@ -1519,7 +1581,7 @@ function sampleSpecV2(rng, preset, overrides) {
   const odd = v => v % 2 ? v : v < 100 ? v + 1 : v - 1;
   if (spec.shared_altars) { if (spec.symmetry !== 'vertical') W = odd(W); if (spec.symmetry !== 'horizontal') H = odd(H); }
   spec.width = W; spec.height = H;
-  if (spec.shared_groups === 'sym') spec.shared_groups = +rng.weighted((v3 ? SHARED_BY_SYM_V3 : SHARED_BY_SYM)[spec.symmetry === 'rotational' ? 'rotational' : 'mirror']);
+  if (spec.shared_groups === 'sym') spec.shared_groups = +rng.weighted((v4 ? SHARED_BY_SYM_V4 : v3 ? SHARED_BY_SYM_V3 : SHARED_BY_SYM)[spec.symmetry === 'rotational' ? 'rotational' : 'mirror']);
   if (spec.picks === 'area') spec.picks = +rng.weighted(PICKS_BY_AREA.find(([lim]) => W * H < lim)[1]);
   const scale = W * H / 2500;
   if (spec.group_scale && !spec.scale_counts) spec.groups = Math.max(2, Math.round(spec.groups * scale ** spec.group_scale));

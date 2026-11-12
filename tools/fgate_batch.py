@@ -24,7 +24,11 @@ serve every candidate, so a changed bot needs a new dir.
 - Ladder side read: the 128 ladder maps pinned in tools/ladder128.txt, whatever else maps/ holds (it has 170 from
   2026-11-12). --ladder all plays every map under maps/ instead, under its own opponent configs and run names
   (suffix -Lall), so REF's cached 128 runs are never reused for it or mixed with it.
-- Results: gate-logs/fgate-<cand>--<ref><bodies><fuel>[-Lall]-batch.json, and a "Results against <ref>" table.
+- Results: gate-logs/fgate-<cand>--<ref><bodies><fuel>[-Lall][-Pv3]-batch.json, and a "Results against <ref>" table.
+- --pool v3 (opt-in, 2026-11-12) draws the fresh batches from FGATE_HOME/pool-v3: `--mix ladder-v3` maps (ladder-v2's
+  plus the 05 maps' style at their 42/170 share of ranked play; research/ideas-2026-11-12/ladderv3/). Its batch
+  configs and parts live under suites-v3/ and its run names end -Pv3, so no v2 batch or cached REF run is reused for
+  it. Grow it with `py tools/fgate_batch.py grow SEEDS DIR... --pool v3`.
 """
 import argparse, fcntl, hashlib, importlib.util, json, math, os, random, re, subprocess, sys, time
 from pathlib import Path
@@ -41,7 +45,10 @@ PART = 320       # maps a suite (see suite())
 # The ladder side read: the pinned 128 maps (default; every run before 2026-11-12) or all maps under maps/ (--ladder all).
 # A set other than the 128 has its own opponent config and run names, so its REF runs never mix with the 128's.
 LADDER = '128'
-TIMEOUT = 600     # seconds a game; an unmetered body cannot run out of fuel, so only this stops a hung one
+# The fresh pool: v2 (FGATE_HOME/pool, --mix ladder-v2; the default) or v3 (pool-v3, --mix ladder-v3), each with its
+# own suite dirs, batch configs and run names.
+POOL = 'v2'
+TIMEOUT = 600    # seconds a game; an unmetered body cannot run out of fuel, so only this stops a hung one
 LO, SCREEN, LIVE = math.log(0.05 / 0.95), math.log(0.95 / 0.05), math.log(99)
 
 
@@ -111,8 +118,12 @@ def adopt(fg, rel):
     except OSError: shutil.rmtree(staging, ignore_errors=True)  # another gate adopted it first
 
 
+def pool_dir(which=None):
+    return HOME / ('pool' if (which or POOL) == 'v2' else f'pool-{which or POOL}')
+
+
 def pool():
-    return json.loads((HOME / 'pool/index.json').read_text())['maps']
+    return json.loads((pool_dir() / 'index.json').read_text())['maps']
 
 
 def ladder():
@@ -123,13 +134,27 @@ def ladder_tag():
     return '' if LADDER == '128' else f'-L{LADDER}'
 
 
-def grow(dirs, seeds):
+def pool_tag():
+    return '' if POOL == 'v2' else f'-P{POOL}'
+
+
+def is05(name):
+    """A ladder-v3 map of the 05 maps' part (calibration 4's ladder05, or a 05 map under random edits)."""
+    return name.startswith('gen-ladder05-') or name.startswith('mut-05')
+
+
+def grow(dirs, seeds, which='v2'):
     """Append the maps under dirs to the pool, after the ones it has (so batches already played keep their maps):
-    byte-new against the pool and the ladder, one per layout key, in a seeded order."""
+    byte-new against the pool and the ladder, one per layout key, in a seeded order. The v3 pool interleaves the 05
+    part with the rest at their share of the added maps, so every batch holds it at that share, not a draw of it."""
     import shutil, tempfile
-    path = HOME / 'pool/index.json'; idx = json.loads(path.read_text())
+    home = pool_dir(which); path = home / 'index.json'
+    if not path.exists():
+        (home / 'maps').mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({'maps': [], 'keys': [], 'tranches': []}))
+    idx = json.loads(path.read_text())
     sha = lambda p: hashlib.sha256(Path(p).read_bytes()).hexdigest()
-    seen = {sha(p) for p in [*(HOME / 'pool/maps').iterdir(), *(ROOT / 'maps').glob('*.map26a')]}
+    seen = {sha(p) for p in [*(home / 'maps').iterdir(), *(ROOT / 'maps').glob('*.map26a')]}
     names, keys = {n for n, _ in idx['maps']}, set(idx['keys'])
     with tempfile.TemporaryDirectory(dir=HOME) as td:
         subprocess.run(['node', str(ROOT / 'tools/draftlab/features.mjs'), *dirs, '--out', f'{td}/f.jsonl'], cwd=ROOT, check=True,
@@ -141,14 +166,24 @@ def grow(dirs, seeds):
         h = sha(src)
         if r['name'] in names or r['key'] in keys or h in seen: continue
         names.add(r['name']); keys.add(r['key']); seen.add(h)
-        shutil.copyfile(src, HOME / f'pool/maps/{r["name"]}.map26a')
+        shutil.copyfile(src, home / f'maps/{r["name"]}.map26a')
         f = r['f']
         new.append(([r['name'], int(f['altars'] == 1 or (f['altars'] == 2 and (f.get('altar_centre') or 0) < 0.06))], r['key']))
     random.Random(len(idx['maps'])).shuffle(new)
+    tranche = {'maps': len(new), 'seeds': seeds, 'added': time.strftime('%Y-%m-%d')}
+    if which == 'v3':
+        a, b = [x for x in new if is05(x[0][0])], [x for x in new if not is05(x[0][0])]
+        # Each next map from the part furthest behind its share.
+        new, ia, ib = [], 0, 0
+        while ia < len(a) or ib < len(b):
+            take_a = ib >= len(b) or (ia < len(a) and (ia + 1) * len(b) <= (ib + 1) * len(a))
+            new.append(a[ia] if take_a else b[ib]); ia += take_a; ib += not take_a
+        tranche['maps05'] = len(a)
     idx['maps'] += [m for m, _ in new]; idx['keys'] += [k for _, k in new]
-    idx['tranches'].append({'maps': len(new), 'seeds': seeds, 'added': time.strftime('%Y-%m-%d')})
+    idx['tranches'].append(tranche)
     tmp = path.with_suffix('.tmp'); tmp.write_text(json.dumps(idx)); tmp.rename(path)
-    print(f'{len(new)} of {len(rows)} maps added; the pool holds {len(idx["maps"])}')
+    print(f'{len(new)} of {len(rows)} maps added' + (f' ({tranche["maps05"]} of the 05 part)' if 'maps05' in tranche else '') +
+          f'; the pool holds {len(idx["maps"])}')
 
 
 def suite(maps, n, j):
@@ -156,7 +191,8 @@ def suite(maps, n, j):
     whole batch, so a batch never changes when the pool grows."""
     rows = maps[j * n:(j + 1) * n]
     if len(rows) < n: return None
-    base = HOME / f'suites/m{n}'; d = base / f'b{j:03d}'; cfg = base / f'b{j:03d}{ladder_tag()}.json'
+    src = pool_dir() / 'maps'
+    base = HOME / ('suites' if POOL == 'v2' else f'suites-{POOL}') / f'm{n}'; d = base / f'b{j:03d}'; cfg = base / f'b{j:03d}{ladder_tag()}.json'
     if not cfg.exists():
         base.mkdir(parents=True, exist_ok=True)
         with open(base / 'lock', 'w') as fh:
@@ -164,7 +200,7 @@ def suite(maps, n, j):
             if not cfg.exists():
                 d.mkdir(exist_ok=True)
                 for name, _ in rows:
-                    if not (d / f'{name}.map26a').exists(): os.symlink(HOME / f'pool/maps/{name}.map26a', d / f'{name}.map26a')
+                    if not (d / f'{name}.map26a').exists(): os.symlink(src / f'{name}.map26a', d / f'{name}.map26a')
                 noise = {name: j * n + i + 1 for i, (name, _) in enumerate(rows)}
                 noise.update({name: j + 1 for name in ladder()})
                 tmp = base / f'b{j:03d}{ladder_tag()}.json.tmp'
@@ -181,7 +217,7 @@ def suite(maps, n, j):
             for k, part in enumerate(parts):
                 part.mkdir(parents=True, exist_ok=True)
                 for name, _ in rows[k * PART:(k + 1) * PART]:
-                    if not (part / f'{name}.map26a').exists(): os.symlink(HOME / f'pool/maps/{name}.map26a', part / f'{name}.map26a')
+                    if not (part / f'{name}.map26a').exists(): os.symlink(src / f'{name}.map26a', part / f'{name}.map26a')
     return {'suites': ','.join(map(str, parts)) + (',ladder' if LADDER == '128' else f',ladder-{LADDER}'), 'config': cfg, 'sha': hashlib.sha256(cfg.read_bytes()).hexdigest(),
             'maps': dict(rows), 'games': 2 * (len(rows) + len(ladder()))}
 
@@ -266,9 +302,13 @@ def main(argv=None):
     ap.add_argument('--ladder', choices=('128', 'all'), default='128',
                     help='the ladder side read: the pinned 128 maps (default, comparable with every earlier gate) or all maps '
                     'under maps/ (its own opponent configs and run names, so REF plays it afresh)')
+    ap.add_argument('--pool', choices=('v2', 'v3'), default='v2',
+                    help='the fresh pool: v2 (default, --mix ladder-v2) or v3 (pool-v3, --mix ladder-v3: the 05 maps\' style at '
+                    'their share of ranked play; its own batch configs and run names, so REF plays it afresh)')
     a = ap.parse_args(argv)
-    global LADDER
-    LADDER = a.ladder
+    global LADDER, POOL
+    LADDER, POOL = a.ladder, a.pool
+    if not (pool_dir() / 'index.json').exists(): ap.error(f'{pool_dir()} has no index.json: grow it first (fgate_batch.py grow ... --pool {POOL})')
     if a.fuel is not None and a.fuel <= 0: ap.error('--fuel must be positive')
     if a.batch_maps <= 0 or a.first_batch < 0: ap.error('--batch-maps must be positive and --first-batch not negative')
     if not a.no_run and not LIB.is_file():
@@ -285,7 +325,7 @@ def main(argv=None):
     for v, known in ((a.fish_body, ['Flp'] + fg.FISH_PATCHES), (a.mite_body, ['Mt3p'] + fg.MITE_PATCHES)):
         if v not in known: ap.error(f'unknown body {v}: one of {", ".join(known)}')
     bodies = {'F': a.fish_body, 'M': a.mite_body}
-    fuel = ('' if a.fuel is None else f'-fuel{a.fuel}') + ladder_tag()
+    fuel = ('' if a.fuel is None else f'-fuel{a.fuel}') + ladder_tag() + pool_tag()
     maps, lad = pool(), set(ladder())
     opp = {o: f'variants/rt-{v}' for o, v in bodies.items()} if a.no_run else {o: body(fg, v) for o, v in bodies.items()}
 
@@ -410,7 +450,10 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-    if sys.argv[1:2] == ['grow']:  # py tools/fgate_batch.py grow SEEDS DIR...: add generated maps to the pool
-        grow(sys.argv[3:], sys.argv[2])
+    if sys.argv[1:2] == ['grow']:  # py tools/fgate_batch.py grow SEEDS DIR... [--pool v3]: add generated maps to a pool
+        rest = sys.argv[3:]; which = 'v2'
+        if '--pool' in rest: k = rest.index('--pool'); which = rest[k + 1]; del rest[k:k + 2]
+        if which not in ('v2', 'v3'): raise SystemExit(f'unknown pool {which}: v2 or v3')
+        grow(rest, sys.argv[2], which)
     else:
         main()

@@ -12,7 +12,7 @@ Index of what is under `maps/` (2026-11-05). Everything below `maps/suites/` and
 ## suites/fresh/
 
 Single-seed generated suites, `suites/fresh/fresh-<seed>/` (256 maps each, the directory name kept so `ab.py` labels and old notes still match). Remake a range with
-`node tools/mapgen/mapgen.mjs suite --seed A-B --mix MIX --out 'maps/suites/fresh/fresh-{seed}'` (at most ~30k maps, about 117 suites, per command). MIX is `ladder` for `ladder` suites (calibration 2, from 2026-11-05), `ladder-v2` for `ladder-v2` ones (calibration 3, from 2026-11-08; preferred for new programmes) and `varied-v1` for `varied` ones (calibration 1, 2026-10-30 to 2026-11-05; byte for byte only while `maps/` holds the same ladder maps). Suites made before 2026-10-30 came from an older generator and cannot be remade exactly.
+`node tools/mapgen/mapgen.mjs suite --seed A-B --mix MIX --out 'maps/suites/fresh/fresh-{seed}'` (at most ~30k maps, about 117 suites, per command). MIX is `ladder` for `ladder` suites (calibration 2, from 2026-11-05), `ladder-v2` for `ladder-v2` ones (calibration 3, from 2026-11-08; preferred for new programmes), `ladder-v3` for `ladder-v3` ones (ladder-v2 plus the 05 maps' style under calibration 4, from 2026-11-12) and `varied-v1` for `varied` ones (calibration 1, 2026-10-30 to 2026-11-05; byte for byte only while `maps/` holds the same ladder maps). Suites made before 2026-10-30 came from an older generator and cannot be remade exactly.
 
 | seeds | suites | mix (index.json) | remake with | made |
 |---|---|---|---|---|
@@ -273,6 +273,8 @@ Single-seed generated suites, `suites/fresh/fresh-<seed>/` (256 maps each, the d
 | 1700000-1700079, 1701000-1701119 | 51,200 | ladder-v2 | `--mix ladder-v2` (escape planner after 478: `merged/esc2-dev` = 1700000-1700079, 478's reference and fo-lean, used; `merged/esc2-held` = 1701000-1701119, held out for the CHANGES 480 merge and CHANGES 481's check against oc-cl2-seat5m, used twice) | 2026-11-09 |
 | 1702000-1702079, 1703000-1703079 | 40,960 | ladder-v2 | `--mix ladder-v2` (chase verdict, CHANGES 481: `merged/plan2-dev` = 1702000-1702079, cv-final-v2, used; `merged/plan3-dev` = 1703000-1703079, chase verdict fuel gate, CHANGES 483, cg-final-aimgate2, used) | 2026-11-09 |
 | 2417000-2417383 | 98,304 | ladder-v2 | `--mix ladder-v2`, in `~/tmp-offload/conditional-batch506/chanM/generated/{seed}` (2417000-2417191) and `~/tmp-offload/gatebatch/generated/{seed}` (2417192-2417383), not under `maps/`: the fresh-map gate's pool (`tools/fgate.py`, `~/tmp-offload/gatebatch/pool`: 97,535 of them, byte-new and one per layout key, in the pool's own order). Every gate walks the pool from its start, so these are the gate's maps and no held-out set; 2417384-2417999 are reserved for growing it | 2026-11-11 |
+| 2490000-2490127 | 43,520 | ladder-v3 | `--mix ladder-v3`, in `~/tmp-offload/gatebatch/generated-v3/{seed}`, not under `maps/`: the fresh-map gate's v3 pool (`tools/fgate.py --pool v3`, `~/tmp-offload/gatebatch/pool-v3`), first block; 2490128-2490999 are reserved for growing it | 2026-11-12 |
+| 7300001-7300015, 7310001-7310016, 7320001-7320008 | 39 | ladder, ladder-v2, ladder-05, ladder-v3, paradigms, varied | calibration 4's fit and checks, in `~/tmp-offload/ladderv3/`, not under `maps/`: byte identity against the old mapgen (7300001-7300015), `--mix ladder-05` tuning (7310001-7310016), `--mix ladder-v3` held-out validation (7320001-7320008; research/ideas-2026-11-12/ladderv3). Not for A/Bs | 2026-11-12 |
 
 ## suites/merged/
 

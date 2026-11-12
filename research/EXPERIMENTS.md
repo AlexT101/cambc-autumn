@@ -10,6 +10,27 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## Ladder-v3 mapgen for the 170-map pool (2026-11-12): ranked play is uniform over the 170 (05 maps 24.7%); ladder-v3 matches them; the bots' order and win rates don't move
+
+Notes: [ideas-2026-11-12/ladderv3/README.md](ideas-2026-11-12/ladderv3/README.md). Ranked play since the 05 maps went
+live (113,965 games, top-8 games too) draws every pool map equally (chi-square p 0.98), so the 42 05 maps are 24.7% of
+it, not about half. `--mix ladder-v3` is ladder-v2's 256 maps plus 84 in the 05 style (calibration 4, fitted to the
+40 05 maps in `maps/`: guarded compact blocks, 3x3 spawns with camps 5+ away, few shared groups, more walls). On
+held-out seeds it has 0 feature mismatches at p < 0.01 against the 168 published maps (ladder-v2: 2), and its 05 part
+0 against the 05 maps (ladder-v2: 12). `ladder` and `ladder-v2` make the same bytes as before.
+
+Results against the bodies (rt-Flp4 and mf-c1, 100k fuel; 4 fgate batches a pool, 40,960 games a bot a pool):
+
+| bot | ladder-v2 fresh | ladder-v3 fresh | v3's 05 part | v3 minus v2 |
+|---|---|---|---|---|
+| c520-ps | 77.1% (76.7-77.5) of 40,960 | 77.4% (77.0-77.8) of 40,960 | 79.4% of 10,112 | +0.3 ±0.6 |
+| chy-life | 77.0% (76.6-77.5) of 40,960 | 77.5% (77.1-77.9) of 40,960 | 79.3% of 10,112 | +0.5 ±0.6 |
+| oc-dfuel-506 | 68.9% (68.4-69.3) of 40,960 | 69.4% (68.9-69.8) of 40,960 | 69.9% of 10,112 | +0.5 ±0.6 |
+
+Paired, c520-ps minus chy-life is +0.05 ±0.32 on v2 and -0.08 ±0.32 on v3, and charybdis leads ocean by +8.2 on both
+(+9.5 on the 05 part). The 05 style favours charybdis more than ocean, as the real 05 maps did. `fgate.py --pool v3`
+plays pool-v3 (16 batches, 632 05-style maps in each); it is opt-in.
+
 ## Mite's rules from replays (2026-11-12): its priority is a state machine; it retreats below 0.4 health or with 11+ gems, never for numbers; Vesper is its gold sink and killer; its draft is a map-feature model
 
 Analysis only; no games. Details: [ideas-2026-11-12/mitere](ideas-2026-11-12/mitere/README.md). Data: 495 ranked Mite
