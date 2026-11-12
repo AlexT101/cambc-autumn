@@ -139,6 +139,15 @@ class Batches:
         _, created, finished, _, _ = self.ls.state()
         return all(e['group'] in finished for e in created.values() if e.get('live') == version)
 
+    def window_clear(self, rest):
+        import datetime
+        last = max((e['at'] for e in self.ls.read_jsonl(self.ls.DATA / 'events.jsonl')
+                    if e['ev'] == 'created' and e.get('live') not in (None, rest)), default=None)
+        if last is None:
+            return True
+        t = datetime.datetime.fromisoformat(last.replace('Z', '+00:00')).timestamp()
+        return time.time() - t > 3600
+
     def drained(self):
         """No group whose matches may still be playing (played/finished events; collection may lag)."""
         events = self.ls.read_jsonl(self.ls.DATA / 'events.jsonl')
@@ -365,7 +374,9 @@ class Batches:
         now_file = s.H / 'BATCH-NOW'
         if now_file.exists():
             need = 1   # operator: start with whatever fits
-        if room < need or room <= 0:
+        # Small rest-version use (opp-checks, a probe) or teammates' reserve must not stall a batch: once the rolling
+        # hour holds no candidate group, the window has refilled as far as batches are concerned.
+        if (room < need and not self.window_clear(rest)) or room <= 0:
             self.note(B, 'rest', f"batches: {cur['label']} waits for quota: room {room}, batch needs {need} "
                                  f"({todo} groups left)")
             return
