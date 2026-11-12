@@ -17781,3 +17781,26 @@ Results against charybdis-cb9f86d:
 
 Verdict: nothing amplifies. The stack worth taking is cm + ps (`variants/cbx-cmps`), a ZONE at 100k on held-out maps
 with level fuel, by judgement under the zone rule. Leave ck out. Leave gp-race out until its fuel cost is found.
+
+## (charybdis, 2026-11-12) comms + psafe-a ported to 519: +0.31 (ZONE); psafe-a alone +0.24 (ZONE) carries it
+
+The combo stack (cm2-k3 comms slots + psafe-a, +0.27 on 517) ported onto `variants/charybdis-p3` (= 519). The
+patches applied with offsets only, and 518-519's review fixes do not overlap either part: A1/A2/B1 handle the enemy's
+winning tribute, psafe-a our own Prism's, and no fix touches the comms or crew code. psafe-a alone ran beside it.
+Maps: pool batches 63-74, grown for this read from mapgen seeds 2448000-2448129 (`--mix ladder-v2`), unplayed by any
+gate. Details and patches: [port519/README.md](ideas-2026-11-11/port519/README.md).
+
+Results against charybdis-p3 (519), 100k, fgate, unmetered Flp4/Mt3q bodies:
+
+| arm | win% (95% CI) | games | Fish | Mite | OOF a game (REF 6.675) | verdict |
+|---|---|---|---|---|---|---|
+| **cm + ps** (`c519-cmps`) | **50.31 (50.05-50.57)** | 245,760 | +0.23 | +0.40 | 6.728 | **ZONE** (low +6.30, high -4.50) |
+| ps (`c519-ps`) | 50.24 (50.06-50.41) | 245,760 | +0.21 | +0.26 | 6.732 | ZONE (low +11.42, high -12.25) |
+| cm given ps (paired) | +0.08 ±0.25 points | 30,720 maps | +0.01 | +0.14 | | no detectable gain |
+
+- Both parts kept their size from 517 (ps +0.17 there, +0.24 here; cm given ps +0.10 there, +0.08 here). psafe-a
+  carries the stack; cm's ~+0.1 has never been distinguishable from zero on held-out maps.
+- Fuel is level: +0.05 out-of-fuel turns a game (+0.8%) for either arm, as on 517, against gp-race's +10%.
+
+Verdict: ZONE for both. cm + ps is the best point estimate; ps alone is the smaller change with the tighter read. Which
+to take into charybdis is the user's and teammate's call.

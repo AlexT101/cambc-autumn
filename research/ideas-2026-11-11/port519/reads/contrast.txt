@@ -1,0 +1,4 @@
+against charybdis-p3: batches [63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74] (12), fresh maps
+  cm+ps                                            all +0.31 ±0.26 (n 30,720)   Fish +0.22 ±0.35    Mite +0.40 ±0.38
+  ps alone                                         all +0.24 ±0.17 (n 30,720)   Fish +0.21 ±0.24    Mite +0.26 ±0.25
+  cm given ps (cm+ps - ps)                         all +0.08 ±0.25 (n 30,720)   Fish +0.01 ±0.34    Mite +0.14 ±0.38

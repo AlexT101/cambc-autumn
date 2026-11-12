@@ -1,0 +1,14 @@
+c519-ps against charybdis-p3: batches [63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74] (12), 12492 paired games differ
+  fresh             +0.24 ±0.17  (50.24%, 50.06-50.41) of 30,720 maps, 245,760 games
+  fresh Fish        +0.21 ±0.24  (50.21%, 49.97-50.45) of 30,720 maps, 122,880 games
+  fresh Mite        +0.26 ±0.25  (50.26%, 50.01-50.52) of 30,720 maps, 122,880 games
+  fresh one-site    +0.29 ±0.32  (50.29%, 49.97-50.61) of 8,682 maps, 69,456 games
+  fresh multi-site  +0.22 ±0.21  (50.22%, 50.01-50.42) of 22,038 maps, 176,304 games
+  ladder            +0.21 ±0.78  (50.21%, 49.44-50.99) of 1,536 maps, 12,288 games
+  LLR high (0.505/0.5075) -12.25, low (0.4975/0.50) +11.42 [-2.94 | +2.94 | live 4.60]
+  c519-ps        against Flp4: 83.79% of 64,512 (ladder maps included), out-of-fuel turns 7.66 a game, failed 0
+  c519-ps        against Mt3q: 79.54% of 64,512 (ladder maps included), out-of-fuel turns 5.80 a game, failed 0
+  charybdis-p3   against Flp4: 83.61% of 64,512 (ladder maps included), out-of-fuel turns 7.63 a game, failed 0
+  charybdis-p3   against Mt3q: 79.25% of 64,512 (ladder maps included), out-of-fuel turns 5.72 a game, failed 0
+  c519-ps        both bodies: out-of-fuel turns 6.732 a game of 129,024
+  charybdis-p3   both bodies: out-of-fuel turns 6.675 a game of 129,024
