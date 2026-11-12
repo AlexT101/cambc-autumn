@@ -25,4 +25,7 @@ struct ChaseRole {
 inline ChaseRole chase_role;
 void publish_turn_order(const World& world, std::uint32_t payload);
 
+// The priority our champion of this index publishes while dead, its payload aside.
+std::int32_t dead_packed_priority(int index);
+
 } // namespace aph

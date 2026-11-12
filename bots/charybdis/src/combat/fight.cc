@@ -615,16 +615,56 @@ CarrierTribute carrier_tribute(const World& world, const ChampionBelief& e, Carr
     return t;
 }
 
-// The turn (0: this one) our basic attacks alone kill e from `here`, walking into range first;
-// a melee hit can follow the last step in its turn. On its spawn it heals to full every turn end.
+// This turn's kill of e from `here` by a ready cast with the basic hits it leaves (`hit` each, before e's
+// taken): an attack reset's hit after the spent attack (a ranged walk spends it), or a unit damage spell.
+// One cast a turn; an excludes-walking spell neither follows a walk nor allows one.
+bool cast_kills_now(const World& world, const ChampionBelief& e, vec2 here, float hit) {
+    if (!e.visible || !my_can_cast()) return false;
+    const auto& self = world.me();
+    const auto& f = self.facts();
+    const int d = dist(here, e.pos), walk = std::max(0, d - f.attack_range());
+    const bool walked = my_position() != world.turn_start, moves = my_can_move();
+    const float hp = effective_hp(e) - 0.01f;
+    // In reach of a basic attack this turn: a ranged walk spends the attack, a melee one does not.
+    const bool reach_now = f.ranged ? walk == 0 : walk == 0 || (walk == 1 && moves);
+    const bool attack = my_can_attack();
+    const int basic = attack && reach_now ? 1 : 0;
+    for (int s = 0; s < 2; ++s) {
+        const auto& a = f.abilities[s];
+        if (!self.ability_ready(s, world.round)) continue;
+        if (a.kind == AbilityKind::attack_reset) {
+            // The reset restores a spent attack: after ours (or a ranged walk), one more hit.
+            const int n = attack ? (reach_now ? 2 : f.ranged && walk == 1 && moves ? 1 : 0) : (reach_now ? 1 : 0);
+            if (static_cast<float>(n) * hit >= hp) return true;
+        } else if ((a.kind == AbilityKind::damage || a.kind == AbilityKind::stun) && a.target == Targeting::unit) {
+            const bool excl = a.excludes_walking;
+            if ((excl && walked) || d > a.reach() + (excl || !moves ? 0 : 1)) continue;
+            float raw = 0;
+            try {
+                raw = my_damage(s);
+            } catch (const cambc::error&) {
+            }
+            // raw has Collectors but not Skirmish.
+            const int n = excl ? (attack && walk == 0 ? 1 : 0) : basic;
+            if (raw > 0 && raw * skirmish_dealt_factor() + static_cast<float>(n) * hit >= hp) return true;
+        }
+    }
+    return false;
+}
+
+// The turn (0: this one) our basic attacks kill e from `here`, walking into range first, or a ready
+// reset or unit damage spell this turn (cast_kills_now); a melee hit can follow the last step in its
+// turn. On its spawn it heals to full every turn end.
 int kill_turn(const World& world, const ChampionBelief& e, vec2 here) {
     const auto& self = world.me();
     const int walk = std::max(0, dist(here, e.pos) - self.facts().attack_range());
     const float hit = my_strength() * damage_scale(self.facts().passive, my_health(), my_max_health()) * champion_dealt_factor();
     if (hit <= 0) return unreachable;
     const float hits = std::max(1.0f, std::ceil(effective_hp(e) / hit));
+    const int turn = hits > unreachable ? unreachable : (self.facts().ranged ? walk : std::max(0, walk - 1)) + static_cast<int>(hits) - 1;
+    if (turn > 0 && cast_kills_now(world, e, here, hit)) return 0;
     if (hits > 1 && test(world.map().enemy_spawn, e.pos)) return unreachable;
-    return hits > unreachable ? unreachable : (self.facts().ranged ? walk : std::max(0, walk - 1)) + static_cast<int>(hits) - 1;
+    return turn;
 }
 
 // Our turns (walking: steps) from `here` to stop a carrier's bag from scoring, unreachable if it
@@ -1030,6 +1070,27 @@ bool chase_with_guard(const World& world, Pathing& pathing, Safety& safety, cons
 // A champion's turn start in `round`, where its channel completes.
 Moment turn_start(const World& world, const ChampionBelief& c, int round) { return {round, enemy_earliest_slot(world, c, round) - 1}; }
 
+std::optional<TributeWin> enemy_tributes_win(const World& world) {
+    const int need = static_cast<int>(cambc::constants::winning_gems) - world.score.enemy;
+    std::array<std::pair<Moment, int>, 8> t;
+    int n = 0, all = 0;
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible && e.channel == Channel::tribute && n < static_cast<int>(t.size())) all += e.gems, t[n++].second = e.gems;
+    if (all < need) return std::nullopt;
+    n = 0;
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible && e.channel == Channel::tribute && n < static_cast<int>(t.size()))
+            t[n++].first = turn_start(world, e, e.channel_end_round);
+    std::sort(t.begin(), t.begin() + n);
+    // Landings at one moment (an order we cannot tell apart) count together.
+    for (int i = 0, sum = 0; i < n;) {
+        const Moment m = t[i].first;
+        for (; i < n && t[i].first == m; ++i) sum += t[i].second;
+        if (sum >= need) return TributeWin{m, sum};
+    }
+    return std::nullopt;
+}
+
 // The earliest our winning bag's win lands: our tribute's end, or, none under way, a walk to the
 // nearest altar as the crow flies and a whole channel; and no sooner than the allies' tributes in
 // sight that gems_short counts.
@@ -1053,8 +1114,8 @@ Moment win_lands(const World& world) {
     return m;
 }
 
-// A visible enemy whose tribute wins them the game, in reach of a ready stun of ours, and lands
-// before our bag's win if ours wins; null if none.
+// A visible enemy whose tribute wins them the game (enemy_tribute_wins), in reach of a ready stun of
+// ours, the win landing before our bag's if ours wins; null if none.
 const ChampionBelief* stoppable_winning_tribute(const World& world) {
     if (!enemy_seen(world)) return nullptr;
     const auto& self = world.me();
@@ -1066,7 +1127,7 @@ const ChampionBelief* stoppable_winning_tribute(const World& world) {
             && dist(self.pos, e.pos) <= self.ready_stun_reach(world.round, walk)) {
             if (!winning_bag(world)) return &e;
             if (!win) win = win_lands(world);
-            if (turn_start(world, e, e.channel_end_round) < *win) return &e;
+            if (enemy_tributes_win(world)->lands < *win) return &e;
         }
     return nullptr;
 }
@@ -1096,8 +1157,9 @@ bool ally_stops(const World& world, const ChampionBelief& e) {
     return false;
 }
 
-// A visible enemy whose bag (both, for a walking Cassi and Issac) ends the game once tributed and that we
-// can stop: nothing we gain meanwhile counts unless our own bag wins first. The nearest; null if none.
+// A visible enemy whose bag (both, for a walking Cassi and Issac) ends the game once tributed, or whose
+// tribute wins it (enemy_tribute_wins), and that we can stop: nothing we gain meanwhile counts unless our
+// own bag wins first. The nearest; null if none.
 const ChampionBelief* game_ender(const World& world) {
     const int need = static_cast<int>(cambc::constants::winning_gems) - world.score.enemy;
     if (!enemy_seen(world)) return nullptr;
@@ -1113,7 +1175,7 @@ const ChampionBelief* game_ender(const World& world) {
         if (!e.alive || !e.visible) continue;
         const bool tributing = e.channel == Channel::tribute;
         // A tribute scores only the tributing body's bag; one by its spawn can still be stunned or locked.
-        if ((tributing ? e.gems : pair_gems(world, e)) < need || (!tributing && test(world.map().near_enemy_spawn, e.pos))) continue;
+        if (tributing ? !enemy_tribute_wins(world, e) : (pair_gems(world, e) < need || test(world.map().near_enemy_spawn, e.pos))) continue;
         if (!here) {
             here = my_position();
             if (winning_bag(world)) win = win_lands(world);
@@ -1121,7 +1183,7 @@ const ChampionBelief* game_ender(const World& world) {
         // Our winning bag wins unless their tribute lands first: under way, or at the end of a walk.
         if (win) {
             if (tributing) {
-                if (!(turn_start(world, e, e.channel_end_round) < *win)) continue;
+                if (!(enemy_tributes_win(world)->lands < *win)) continue;
             } else {
                 const auto t = carrier_tribute(world, e, carrier_walk(world, e));
                 if (!t.altar || !(turn_start(world, e, world.round + t.turns) < *win)) continue;

@@ -345,6 +345,13 @@ const ChampionBelief* stoppable_winning_tribute(const World& world);
 bool ally_stops(const World& world, const ChampionBelief& e);
 // A champion's turn start in `round`, where its channel completes.
 Moment turn_start(const World& world, const ChampionBelief& c, int round);
+// The visible enemy tributes' win: the first landing whose bag and those landing no later reach the
+// gems the enemy needs, and the gems tributed by then.
+struct TributeWin {
+    Moment lands;
+    int gems;
+};
+std::optional<TributeWin> enemy_tributes_win(const World& world);
 const ChampionBelief* game_ender(const World& world);
 void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e);
 bool holds_hard_stop(const World& world, const ChampionBelief& e);

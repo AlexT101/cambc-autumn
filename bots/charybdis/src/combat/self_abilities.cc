@@ -398,6 +398,7 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
         float partner; // Cassi or Issac: partner_bound
         float taken;   // damage it takes per point of our Strength (a Durability emblem)
         float full, bag, stop; // max health with the shield; hit_worth's bag; kill_stops
+        bool recall;           // recall_kept
     };
     static std::vector<Seen> seen; // kept across calls: allocating costs more than the work
     seen.clear();
@@ -412,6 +413,7 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
             const bool stunnable = stunnable_only && passive != Passive::stun_immune && !stun_pending(c);
             // A shield must be hit through before health: counted as health.
             float shield = 0, taken = 1, partner = no_partner_bound, full = live.max_health, bag = 0, stop = 0;
+            bool recall = false;
             for (const auto& e : world.enemies) {
                 if (!e.alive || !e.visible) continue;
                 if (e.pos == p) {
@@ -420,9 +422,10 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
                     bag = params::gem_value * static_cast<float>(pair_gems(world, e));
                     stop = kill_stops(world, e);
                     partner = partner_bound(world, e);
+                    recall = recall_kept(e);
                 }
             }
-            seen.push_back({c, p, health + shield, retaliation, stunnable, partner, taken, full + shield, bag, stop});
+            seen.push_back({c, p, health + shield, retaliation, stunnable, partner, taken, full + shield, bag, stop, recall});
         } catch (const cambc::error&) {
         }
     }
@@ -433,7 +436,9 @@ std::optional<cambc::handle_champion_t> attack_target(const World& world, bool s
     // As the strike search values a hit.
     const auto worth = [&](const Seen& s) {
         const float dealt = strength * s.taken;
-        return hit_worth(dealt, s.health, test(enemy_spawn, s.pos), s.bag, s.partner, s.full) + (dealt >= s.health - 0.01f ? s.stop : 0.0f);
+        const bool spawn = test(enemy_spawn, s.pos);
+        return hit_worth(dealt, s.health, spawn, s.bag, s.partner, s.full) + (dealt >= s.health - 0.01f ? s.stop : 0.0f)
+               + recall_cancel(dealt, s.health, spawn, s.recall);
     };
     std::optional<cambc::handle_champion_t> best;
     float best_value = 0, best_health = 0, best_pair = 0;

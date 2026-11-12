@@ -29,6 +29,15 @@ inline float kill_distance(float health, float full, float bag) {
 // once it takes that body below the bound.
 float hit_worth(float damage, float health, bool spawn, float bag, float partner, float full);
 
+// e, visible, recalls by a channel that will land (not the turn-end feint).
+bool recall_kept(const ChampionBelief& e);
+
+// Any damage cancels a recall: worth params::recall_value off its spawn, short of a kill (which takes
+// the bag instead).
+inline float recall_cancel(float damage, float health, bool spawn, bool recall) {
+    return recall && damage > 0 && damage < health - 0.01f && !spawn ? params::recall_value : 0.0f;
+}
+
 // The best enemy-hitting cast this turn, if worth it. An excludes-walking cast must also be worth
 // `walk`, the walk it forgoes, unless it stuns every visible enemy that could reach us next turn.
 // `lethal_only`: only a unit cast or a dash landing's area that kills a visible enemy (engine damage).
@@ -48,7 +57,8 @@ bool cast_at_camp(const World& world, int group, bool attackers_only = false, bo
 // A ranged caster's safe approach: a harmful unit target or at least two harmful ground targets.
 bool cast_at_camp_on_approach(const World& world, int group);
 
-// A visible enemy tributing a bag that wins them the game.
+// A visible enemy tributing a bag part of the enemy tributes' win (enemy_tributes_win), without which
+// the tributes landing by then fall short of it: stopping it stops that win.
 bool enemy_tribute_wins(const World& world, const ChampionBelief& e);
 
 // What killing e is worth beyond its health and bag: the tribute it cancels.

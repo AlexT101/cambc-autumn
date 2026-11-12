@@ -733,6 +733,8 @@ void set_turn_order(const World& world, Safety& safety) {
     follow::own = follow::posting;
 }
 
+std::int32_t dead_packed_priority(int index) { return packed_priority(dead_priority, index, 0); }
+
 void publish_turn_order(const World& world, std::uint32_t payload) {
     const std::int32_t priority = packed_priority(turn_rank, world.me().index, payload);
     try {

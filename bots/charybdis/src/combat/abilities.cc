@@ -123,10 +123,6 @@ float damage_to(int slot, cambc::handle_champion_t target, float raw, float take
     }
 }
 
-bool recall_kept(const ChampionBelief& e) {
-    return e.channel == Channel::recall && e.visible && aph::kept_recall(e.handle, e.recall_turns());
-}
-
 // hit_worth, and for damage short of a kill off its spawn, the recall it cancels.
 float hit_worth_of(const World& world, const ChampionBelief& e, float damage, float health, bool on_spawn) {
     const float v = hit_worth(damage, health, on_spawn, params::gem_value * static_cast<float>(pair_gems(world, e)),
@@ -135,6 +131,10 @@ float hit_worth_of(const World& world, const ChampionBelief& e, float damage, fl
 }
 
 } // namespace
+
+bool recall_kept(const ChampionBelief& e) {
+    return e.channel == Channel::recall && e.visible && aph::kept_recall(e.handle, e.recall_turns());
+}
 
 float hit_worth(float damage, float health, bool spawn, float bag, float partner, float full) {
     if (health <= 0) return 0;
@@ -665,8 +665,18 @@ template <class Plan> bool execute_camp_cast(const World& world, Plan plan) {
 } // namespace
 
 bool enemy_tribute_wins(const World& world, const ChampionBelief& e) {
-    return e.alive && e.visible && e.channel == Channel::tribute
-           && world.score.enemy + e.gems >= static_cast<int>(cambc::constants::winning_gems);
+    if (!e.alive || !e.visible || e.channel != Channel::tribute) return false;
+    const int need = static_cast<int>(cambc::constants::winning_gems) - world.score.enemy;
+    if (e.gems >= need) return true;
+    const auto win = enemy_tributes_win(world);
+    if (!win || win->lands < turn_start(world, e, e.channel_end_round)) return false;
+    // Of the tributes landing by the win, those whose stop keeps it short; with none, every one must be stopped.
+    if (win->gems - e.gems < need) return true;
+    for (const auto& o : world.enemies)
+        if (o.alive && o.visible && o.channel == Channel::tribute && !(win->lands < turn_start(world, o, o.channel_end_round))
+            && win->gems - o.gems < need)
+            return false;
+    return true;
 }
 
 bool cast_at_enemies(const World& world, float walk, bool lethal_only, bool* attempted) {

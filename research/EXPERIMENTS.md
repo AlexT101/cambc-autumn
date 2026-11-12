@@ -17710,3 +17710,36 @@ Own drafts, real budget, fresh `--mix ladder-v2` seeds 5400300-5400358:
   charybdis 518 on that and the +1.0 head to head.
 - Left out: the guard's exposure windows still count stun-only hits (Cassi's) for Marcella. Filtering only the tile
   side would make that foe read as reaching beyond us.
+
+## (charybdis, 2026-11-12) Review findings D4, A2, D5, H2 and E5, C1 on 518: both level
+
+Two batches from `research/charybdis/findings-2026-11-11.md`, each written by one agent and audited by another,
+against `variants/charybdis-fix2` (= 518). Own drafts, real budget, fresh `--mix ladder-v2`:
+
+| CAND | items | win% (95% CI) | games | out-of-fuel turns CAND / REF | seeds |
+|---|---|---|---|---|---|
+| charybdis-p3a | D4, A2, D5, H2 | 50.1 (49.6-50.7) | 30,208 | 184,395 / 182,140 | 5400400-5400458 |
+| charybdis-p3b | E5, C1 | 50.1 (49.5-50.6) | 30,208 | 189,621 / 190,343 | 5400500-5400558 |
+
+- p3a's items:
+  - D4: recall_value from basic attacks, reset hits, splash and landings, once a sequence and taken back on a kill.
+  - A2: tributes that win only together count as game-ending. An enemy is flagged if its bag wins alone, if its stop
+    keeps the combined win short, or, when no single stop does, for every member of the winning set.
+  - D5: kill_turn credits a ready reset hit or unit spell this turn, never both.
+  - H2: an unseen dead ally's priority is the dead one our bots publish, from the round after its first dead turn.
+  - Its audit found: A2's first rule flagged nothing when the win had gems to spare; a damage-free stun lost its
+    recall credit; D5 assumed an unspent attack. All three were fixed before the run.
+- p3b's items:
+  - E5: an ally blocks an enemy walk or landing only if it acts after the enemy.
+  - C1: finishing_camp adds each later group's fire for the rounds spent on the strikers before it. Groups go most
+    fire per round of work first (our strength/health targeting), and a group's rounds count its strikers only.
+- Neither batch moves the win rate. Most of their cases are rare: an endgame of combined tributes, a recall in reach,
+  multi-group camp fights.
+- Combined as `variants/charybdis-p3` (the two touch no common file):
+  - Gate (`fgate.py`, real budget, REF cached for 0-8): **NARROWED at batch 9, 50.09% (49.85-50.32)** of 184,320
+    fresh games against the bodies (+0.08 ±0.24; Fish 49.95, Mite 50.22; ladder side read 49.39 ±1.08). Low H1
+    (no loss) at batch 7, high H0 (no gain of 0.5) at batch 3. Out-of-fuel turns +1.0% (637,713 / 631,597, the same maps).
+  - Against `charybdis-fix2`, fresh seeds 5400600-5400717: **50.0% (49.6-50.4)** of 60,416; out-of-fuel turns
+    365,295 / 363,117 (+0.6%).
+  - Shipped as charybdis 519 with one later change, untested: on our spawn, C1's extra fire is skipped when the fire a
+    phase stays within home_survivable, as the solo clear already prices it.

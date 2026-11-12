@@ -509,6 +509,8 @@ struct ChampionBelief {
     bool stun_pending = false;
     // Turn-order priority for priority_round, and from the round after it.
     int priority = 0, next_priority = 0, priority_round = -1;
+    // An ally read dead: the first round its dead turns' priority surely applies in, kept until it is seen.
+    int dead_priority_from = -1;
     int rank = 0; // place in its team's turn order, from the priorities last read
     int prev_rank = 0; // its rank in the round of our previous update
     int next_rank = 0; // its rank from next round on, by next_priority

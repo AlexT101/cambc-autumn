@@ -4716,3 +4716,33 @@ Against `variants/charybdis-cb9f86d` (517), real 100k fuel, own drafts: phase 1 
 gate 50.08% of 163,840 fresh against the bodies); phases 1 and 2 **51.0% (50.4-51.6) of 30,208** on fresh seeds
 5400300-5400358, and in the gate +0.40 ±0.29 against the bodies over 10 batches (ZONE: no loss, short of the ACCEPT
 bar). Out-of-fuel turns +4%. Details in EXPERIMENTS.md. Frozen as `variants/charybdis-fix2` (= bots/charybdis).
+
+## 519: Review fixes D4, A2, D5, H2, E5, C1 (charybdis, 2026-11-12)
+
+The next six items of [findings-2026-11-11](../charybdis/findings-2026-11-11.md), in two batches that each had their
+own writer and auditor:
+- `plan.cc`, `self_abilities.cc`, `abilities.cc` (D4): a non-lethal hit off spawn on an enemy whose recall would land
+  takes params::recall_value from basic attacks, reset hits, Varg's splash and landings, as spells already did. The
+  strike search credits it once a sequence, and takes it back on a kill. A damage-free stun credits it the same way,
+  where its stun value had held it too.
+- `fight.cc`, `abilities.cc`, `bank.cc` (A2): visible enemy tributes that win only together are game-ending. An enemy
+  is the one to stop if its bag wins alone, if its stop keeps the combined win short, or, when no single stop does,
+  as one of every tribute landing by the win. The race against our own win uses the combined win's moment.
+- `fight.cc` (D5): kill_turn credits a ready reset hit or unit damage spell this turn, one cast at most, with the attack,
+  walk and excludes-walking rules.
+- `world.cc`, `turn_order.cc` (H2): an unseen dead ally takes the dead priority our bots publish, from the round after
+  its first dead turn, until it is seen again.
+- `safety.cc` (E5): an ally blocks an enemy's walk or landing only if it acts after that enemy, the timing dash paths
+  used.
+- `camps.cc` (C1): finishing_camp adds each later group's fire for the rounds spent on the strikers before it, most
+  fire per round of work first. On our spawn, fire within home_survivable a phase adds nothing, since each turn end
+  there heals us. That last check came after the runs below.
+
+Against `variants/charybdis-fix2` (518), real 100k fuel, own drafts:
+- 50.1% of 30,208 for each batch alone.
+- Combined: 50.0% (49.6-50.4) of 60,416 on fresh seeds 5400600-5400717.
+- Gate: NARROWED at 50.09% (49.85-50.32) of 184,320 fresh against the bodies (no loss, no gain).
+- Out-of-fuel turns +0.6 to +1.0%.
+
+Shipped as fixes with no measured gain: they correct cases the bot handled wrongly, A2 among them a way to lose. Details
+in EXPERIMENTS.md. Frozen as `variants/charybdis-p3` (= bots/charybdis).

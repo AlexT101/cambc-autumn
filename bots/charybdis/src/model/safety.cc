@@ -1902,9 +1902,9 @@ void Reach::build_geometry() {
         set_bounds();
         return;
     }
-    // Our champions around it, which block its walks and landings; they stay put through our turn.
-    // Its next turn is worked out on first need: an ally's belief and the ranks change only at the
-    // round's update (observe skips allies read this round).
+    // Our champions around it, which may block its walks, landings and dash paths; not us, whose tile
+    // is the one asked about or unknown until we move. Its next turn is worked out on first need: an
+    // ally's belief and the ranks change only at the round's update (observe skips allies read this round).
     struct Ally {
         vec2 pos;
         int index;
@@ -1921,30 +1921,29 @@ void Reach::build_geometry() {
             if (const auto& a = world.allies[static_cast<std::size_t>(k)]; ally_count < static_cast<int>(allies.size()) && a.alive && a.visible && !a.is_self)
                 allies[ally_count++] = {a.pos, k, 0, 0, false};
     }
-    // A dash path is barred only by those of ours still standing at its last chance to dash. Without
-    // a dash, pass is unread: fixed stays empty.
-    const int last_round = twice ? turn_round + 1 : turn_round,
-              last_slot = dash ? enemy_latest_slot(world, e, last_round) : 0;
+    // Only those of ours still standing at its last turn here block it (fixed): one acting before
+    // that turn may have moved off.
+    const int last_round = twice ? turn_round + 1 : turn_round;
+    int last_slot = -1; // read on first need
     Window occupied, fixed, in_bushes;
     for (int i = 0; i < ally_count; ++i)
         if (const vec2 p = allies[i].pos; dist(p, origin_) <= sets_radius) {
             const Window bit = win_bit(p.x - origin_.x + win_r, p.y - origin_.y + win_r);
             occupied |= bit;
-            if (!dash) continue;
             auto& ally = allies[i];
             if (!ally.known) {
                 const auto& a = world.allies[static_cast<std::size_t>(ally.index)];
                 ally.round = next_turn_round(world, a), ally.slot = world.slot(a, ally.round), ally.known = true;
             }
+            if (ally.round == last_round && last_slot < 0) last_slot = enemy_latest_slot(world, e, last_round);
             if (ally.round > last_round || (ally.round == last_round && ally.slot > last_slot)) fixed |= bit;
-            if (terrain(world.map()).bush(p)) in_bushes |= bit;
+            if (dash && terrain(world.map()).bush(p)) in_bushes |= bit;
         }
     units_ = occupied;
     splash_known_ = 0;
     const auto kind = static_cast<std::uint8_t>(twice | dash << 1);
     if ((sets_reusable_ || (!splash_ && sets_built_ && sets_camps_version_ == world.camp_geometry_version))
-        && sets_origin_ == origin_ && sets_kind_ == kind && sets_occupied_.lo == occupied.lo && sets_occupied_.hi == occupied.hi
-        && sets_fixed_.lo == fixed.lo && sets_fixed_.hi == fixed.hi) {
+        && sets_origin_ == origin_ && sets_kind_ == kind && sets_fixed_.lo == fixed.lo && sets_fixed_.hi == fixed.hi) {
         set_bounds();
         return;
     }
@@ -1952,11 +1951,10 @@ void Reach::build_geometry() {
     sets_camps_version_ = world.camp_geometry_version;
     sets_origin_ = origin_;
     sets_kind_ = kind;
-    sets_occupied_ = occupied;
     sets_fixed_ = fixed;
     const auto& st = static_window(world, origin_);
     // A dash path crosses no champion of ours it sees; one in a bush is taken as unseen.
-    Window pass = st.pass & ~(fixed & ~in_bushes), land = st.land & ~occupied;
+    Window pass = st.pass & ~(fixed & ~in_bushes), land = st.land & ~fixed;
     // The sets read the terrain only this far out (each walk or dash step one more), but Varg's
     // splash reads every live member.
     const Window camps = st.camps & tables.square[static_cast<std::size_t>(sets_radius)];

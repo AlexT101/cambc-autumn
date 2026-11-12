@@ -46,7 +46,7 @@ bool fixc_bush_threat(const World& world, Safety& safety) {
 
 // A retreat the pursuers win, so we fight instead: home is s steps off, and the visible enemies within a step of
 // their basic reach (each walks as fast as we do) hit for our health and shield in the s - 1 turns before the last
-// step heals us, while our basic attacks kill one of them with a turn to spare before those hits kill us standing.
+// step heals us, while we kill one of them (kill_turn) with a turn to spare before those hits kill us standing.
 // Only hit lately, with one enemy in sight within 8.
 bool fixc_commit(const World& world, Pathing& pathing) {
     if (!my_can_attack() || stunned_turn) return false;

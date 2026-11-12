@@ -84,8 +84,9 @@ static_assert([] {
 }());
 
 // A visible enemy's actions before our next turn on the map: the tiles it can walk to (over tiles
-// open to it, past visible allies of ours) or dash to (2 king steps over anything but walls, our
-// spawn, live camps and our champions it sees, onto a free tile), and from there a basic attack or
+// open to it, round visible allies of ours that stay put until its last turn) or dash to (2 king
+// steps over anything but walls, our spawn, live camps and those allies where it sees them, onto a
+// free tile), and from there a basic attack or
 // unit spell at a target in its sight (walls and bushes block it; a bush tile is seen only from its own cluster) or its own
 // ward's, when we see that ward, or a ground spell at any tile within 5; Varg's basic attacks also
 // at a unit beside the tile. Damage as Strike's.
@@ -160,10 +161,10 @@ private:
     // Its own ward, the only one that lends it sight, when we see it; else -1. Looked up on first need.
     static constexpr int unknown_ward = -2;
     mutable int ward_ = unknown_ward;
-    // What tiles_ were worked out for: kept while it stays put, our champions around it stay put
-    // and camp occupancy is unchanged (Varg still rebuilds its splash units near camps).
+    // What tiles_ were worked out for: kept while it stays put, the champions of ours blocking it
+    // are unchanged and camp occupancy is unchanged (Varg still rebuilds its splash units near camps).
     vec2 sets_origin_{-1, -1};
-    Window sets_occupied_, sets_fixed_;
+    Window sets_fixed_;
     std::uint8_t sets_kind_ = 0;
     bool sets_reusable_ = false, sets_built_ = false;
     std::uint32_t sets_camps_version_ = 0;

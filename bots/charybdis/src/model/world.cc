@@ -1888,6 +1888,8 @@ void World::update_champion(ChampionBelief& b, bool full) {
                 b.respawn_latest = round + cambc::constants::respawn_time + 1;
                 // Nothing reads where a dead champion could be.
                 b.tracked = false;
+                // Its next turn is a dead one at the latest, whose priority applies from the round after.
+                if (!enemy && !b.is_self) b.dead_priority_from = (slot(b, round) > slot(me(), round) ? round : round + 1) + 1;
             }
             b.alive = false;
             b.visible = false;
@@ -2069,9 +2071,17 @@ void World::read_priorities(bool new_round) {
             // ranks change when a round passes one unread.
             if (cambc::detail::sdk_bc_champion_priority(h, 0, &priority) != 0
                 || cambc::detail::sdk_bc_champion_priority(h, 1, &next_priority) != 0) {
+                // A dead ally's own turns set a known priority, which persists through its respawn.
+                if (b.dead_priority_from >= 0 && now >= b.dead_priority_from) {
+                    const std::int32_t dead = dead_packed_priority(b.index);
+                    stale |= (dead >> shift) != (b.next_priority >> shift);
+                    b.priority = b.next_priority = dead;
+                    continue;
+                }
                 stale |= (b.next_priority >> shift) != (b.priority >> shift) && ranked <= b.priority_round && b.priority_round < now;
                 continue;
             }
+            b.dead_priority_from = -1;
             if (b.side == team::enemy
                 && (next_priority != priority || (b.priority_round >= 0 && b.priority_round < now && priority != b.next_priority)))
                 enemy_change = true;

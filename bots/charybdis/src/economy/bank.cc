@@ -68,6 +68,7 @@ bool our_side(const StaticMap& map, int a) {
             near[n++] = a;
         }
     if (n == 0) return;
+    const auto win = enemy_tributes_win(world);
     // Altars with an enemy tributing first.
     for (int pass = 0; pass < 2; ++pass)
         for (int k = 0, end = n < 0 ? static_cast<int>(map.altars.size()) : n; k < end; ++k) {
@@ -78,15 +79,16 @@ bool our_side(const StaticMap& map, int a) {
                 && own_lock_round[a] >= world.altars[a].seen_round)
                 continue;
             // Placing one also cancels an enemy's tribute there: its bag stays out of the score.
-            bool enemy_tribute = false, winning = false;
-            std::optional<Moment> enemy_win; // when the first winning enemy tribute here lands
+            bool enemy_tribute = false;
+            int stopped = 0; // the gems of the enemy tributes' win it cancels
             for (const auto& e : world.enemies)
                 if (e.alive && e.visible && e.channel == Channel::tribute && dist(e.pos, p) <= cambc::constants::submit_gems_range) {
                     enemy_tribute = true;
-                    if (!enemy_tribute_wins(world, e)) continue;
-                    winning = true;
-                    if (const auto t = turn_start(world, e, e.channel_end_round); !enemy_win || t < *enemy_win) enemy_win = t;
+                    if (win && !(win->lands < turn_start(world, e, e.channel_end_round))) stopped += e.gems;
                 }
+            const bool winning = stopped > 0 && world.score.enemy + win->gems - stopped < static_cast<int>(cambc::constants::winning_gems);
+            std::optional<Moment> enemy_win; // when the win it stops lands
+            if (winning) enemy_win = win->lands;
             if (enemy_tribute != (pass == 0)) continue;
             // With no tribute to cancel, only altars on our side, or the one we guard, are worth denying.
             if (!enemy_tribute && !our_side(map, a) && !keep_guard_lock(world, a)) continue;

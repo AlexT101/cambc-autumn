@@ -841,13 +841,56 @@ bool finishing_camp(const World& world, vec2 here) {
     if (winning_bag(world)) return false;
     bool any = false;
     float damage = 0, soften = 0, strength = 0, reflect = 0;
+    // A group's strikers: their fire on us a round and the rounds to kill them (harmless members die last).
+    struct Clear {
+        int g;
+        float fire, rounds;
+    };
+    std::array<Clear, 16> clears;
+    int n = 0;
     world.each_stirring([&](int g) {
         if (!awake_over(world, g, here)) return;
         if (!any) soften = camp_hit_factor(), strength = camp_output(world.me()), reflect = world.me().retaliation();
         float rounds = 0;
         damage += soften * min_camp_damage(world, g, strength, &rounds, reflect);
         any = true;
+        if (n == static_cast<int>(clears.size())) return;
+        const auto& c = world.camps[g];
+        const auto& members = world.map().groups[g].members;
+        Clear x{g, 0, 0};
+        for (std::size_t i = 0; i < members.size(); ++i) {
+            const auto& m = members[i];
+            if (c.health[i] <= 0 || m.strength <= 0) continue;
+            x.rounds += std::ceil(c.health[i] / strength);
+            if (!c.member_asleep(i) && dist(here, m.pos) <= m.reach) x.fire += soften * m.strength;
+        }
+        // Most fire per round of work first, as our targeting (strength per health) kills them.
+        const auto before = [](const Clear& a, const Clear& b) { return a.fire * b.rounds > b.fire * a.rounds; };
+        int i = n++;
+        for (; i > 0 && before(x, clears[i - 1]); --i) clears[i] = clears[i - 1];
+        clears[i] = x;
     });
+    // Each group's strikers reaching us also fire through the rounds spent on the strikers before it,
+    // which its solo clear leaves out; a reflection fells them meanwhile. On our spawn, fire a phase
+    // within home_survivable costs nothing: each turn end there heals us (as the solo clear prices it).
+    float fire = 0;
+    for (int k = 0; k < n; ++k) fire += clears[k].fire;
+    if (test(world.map().ally_spawn, here) && fire <= soften * home_survivable(world.me())) n = 0;
+    float elapsed = 0;
+    for (int k = 0; k < n; ++k) {
+        const int g = clears[k].g;
+        if (elapsed > 0 && clears[k].fire > 0) {
+            const auto& c = world.camps[g];
+            const auto& members = world.map().groups[g].members;
+            for (std::size_t i = 0; i < members.size(); ++i) {
+                const auto& m = members[i];
+                if (c.health[i] <= 0 || m.strength <= 0 || c.member_asleep(i) || dist(here, m.pos) > m.reach) continue;
+                const float hits = reflect > 0 ? std::min(elapsed, std::ceil(c.health[i] / reflect)) : elapsed;
+                damage += soften * m.strength * hits;
+            }
+        }
+        elapsed += clears[k].rounds;
+    }
     return any && damage < params::finish_camp_health_fraction * my_health_and_shield(world);
 }
 

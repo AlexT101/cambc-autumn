@@ -51,6 +51,7 @@ struct Foe {
     float taken; // damage it takes per point of our Strength
     float full;  // max health with the shield
     float stop;  // a kill's worth beyond hit_worth (kill_stops)
+    bool recall; // recall_kept
 };
 
 using Healths = std::array<float, max_foes>;
@@ -91,17 +92,19 @@ bool read_board(const World& world, Board& b, int reach) {
         if (b.n == max_foes) break;
         if (!e.alive || !e.visible || e.stats_round != world.round || dist(b.here, e.pos) > reach) continue;
         float health = 0, shield = 0;
+        bool recall = false;
         try {
             if (!is_alive(e.handle)) continue;
             health = record_of(e.handle).health;
             shield = e.shield > 0 ? shield_value(e.handle) : 0.0f;
+            recall = recall_kept(e);
         } catch (const cambc::error&) {
             continue;
         }
         // A shield absorbs before health: to kill, the hits must go through both.
         b.foes[b.n++] = {&e, e.pos, health + shield, e.retaliation() * world.me().taken, partner_bound(world, e),
                          params::gem_value * static_cast<float>(pair_gems(world, e)), test(enemy_spawn, e.pos), e.taken,
-                         e.max_health + shield, kill_stops(world, e)};
+                         e.max_health + shield, kill_stops(world, e), recall};
     }
     if (b.n == 0) return false;
     const float health = my_health();
@@ -125,7 +128,8 @@ Hit best_hit(const Board& b, const Healths& h) {
         if (h[i] <= 0 || dist(b.here, f.pos) > b.range) continue;
         const auto worth = [&](const Foe& o, float health) {
             const float d = b.strength * o.taken;
-            return hit_worth(d, health, o.spawn, o.bag, o.partner, o.full) + (d >= health - 0.01f ? o.stop : 0.0f);
+            return hit_worth(d, health, o.spawn, o.bag, o.partner, o.full) + (d >= health - 0.01f ? o.stop : 0.0f)
+                   + recall_cancel(d, health, o.spawn, o.recall);
         };
         float value = worth(f, h[i]), retaliation = f.retaliation;
         if (b.splash)
@@ -236,6 +240,8 @@ struct Unit {
     float stop = 0;                             // a kill's worth beyond hit_worth (kill_stops)
     float land = 0, land_stun = 0;              // our landing's
     std::array<float, 2> spell{}, spell_stun{}; // per slot
+    bool land_stuns = false;                    // whether it stuns, whatever the stun is worth (a recall it cancels)
+    std::array<bool, 2> spell_stuns{};
     std::array<bool, 2> suicidal{};             // per slot: its retaliation would kill us
     int group = -1, member = -1, local = -1;    // camps
     std::int8_t hor = -1;                       // its index among enemy Hearts of Ruin
@@ -279,6 +285,7 @@ struct Node {
     // goal's walk or retreat's dash, which price what the leaf score cannot (later turns).
     bool owed : 1 = false;
     std::int8_t depth = 0;
+    std::uint8_t recalled = 0;     // foes whose recall cancel this turn has credited
     std::uint16_t stunned = 0;     // units stunned this turn
     std::uint16_t dead = 0;        // units killed this turn
     float value = 0, pending = 0; // pending: a cast's price a Vendetta kill would refund
@@ -289,6 +296,7 @@ struct Node {
     // The tiles of units killed before the walk, and before the dash, which it could cross or end on.
     Grid open_w = 0, open_d = 0;
 };
+static_assert(max_foes <= 8); // Node::recalled
 
 // A bulk copy charges per byte; fixed vector loads and stores copy the same representation.
 [[gnu::always_inline]] inline Node copy_node(const Node& from) {
@@ -725,14 +733,26 @@ struct Search {
         die(t, s);
         if (const int k = u[t].link; k >= 0) h[k] = 0, die(k, s);
     }
-    // A kill cancels a tribute, and a stun credited this turn on the dead takes no turn from it. Each
-    // of our champions stuns by one means, so the stun credited is the one nonzero stun value.
+    // A kill cancels a tribute, and a stun or recall cancel credited this turn on the dead takes no
+    // turn or recall from it. Each of our champions stuns by one means, so the stun credited is the
+    // one nonzero stun value.
     void die(int t, Node& s) const {
         const auto bit = static_cast<std::uint16_t>(1u << t);
         if (s.dead & bit) return;
         s.dead |= bit;
         const auto& x = u[t];
-        s.value += x.stop - (s.stunned & bit ? std::max({x.stun, x.land_stun, x.spell_stun[0], x.spell_stun[1]}) : 0.0f);
+        s.value += x.stop - (s.stunned & bit ? std::max({x.stun, x.land_stun, x.spell_stun[0], x.spell_stun[1]}) : 0.0f)
+                   - (s.recalled & bit ? params::recall_value : 0.0f);
+    }
+    // The first blow this turn to cancel t's recall takes params::recall_value: damage as
+    // recall_cancel prices it, or a stun (stun_worth's own, which the stun values here leave out).
+    bool cancels(int t, float d, bool stun, const Node& s) const {
+        return !(s.recalled >> t & 1) && u[t].recall && (stun || recall_cancel(d, h[t], u[t].spawn, true) > 0);
+    }
+    float cancel(int t, float d, bool stun, Node& s) const {
+        if (!cancels(t, d, stun, s)) return 0;
+        s.recalled |= static_cast<std::uint8_t>(1u << t);
+        return params::recall_value;
     }
     // Whether t's partner, hit later by the same blow (not yet counted), dies to it while t would
     // not: t's hit is then worth nothing beyond the partner's kill.
@@ -1078,7 +1098,8 @@ void Search::read_spells() {
             }
             // Health lost after the shield, which x.health counts; the shield drains by the reduced damage.
             x.spell[s] = x.shield <= 0 ? lost : lost > 0 ? lost + x.shield : std::min(dealt * x.taken, x.shield);
-            x.spell_stun[s] = a.stuns && x.stunnable ? stun_worth(world, e, raw > 0) : 0.0f;
+            x.spell_stuns[s] = a.stuns && x.stunnable;
+            x.spell_stun[s] = x.spell_stuns[s] ? stun_worth(world, e, true) : 0.0f;
             x.suicidal[s] = raw > 0 && x.retaliation >= shielded;
             if (sp.unit && x.cast_legal == 0) x.cast_legal = viewers(x.pos, ability_range);
         }
@@ -1244,13 +1265,13 @@ bool Search::read() {
     arms = reset >= 0 && f.abilities[reset].stuns;
     if (dash >= 0 && f.abilities[dash].lands()) lands = true, land_radius = f.abilities[dash].radius;
 
-    // Foes some end tile could hit, by attack or cast. Their stun buffs and recalls are read only
-    // when a stun or a cast could use them.
+    // Foes some end tile could hit, by attack or cast. Their stun buffs are read only when a stun
+    // could use them; any damage cancels a recall.
     const int reach = std::max(grid_r + range + (splash ? splash_radius : 0), ability_range + 1);
-    bool stuns = arms, casts = false, touches = (lands && dash_ready) || splash || vendetta;
+    bool stuns = arms, touches = (lands && dash_ready) || splash || vendetta;
     for (int s = 0; s < 2; ++s)
         if (ready[s] && f.abilities[s].hits_enemies())
-            stuns |= f.abilities[s].stuns, casts |= !f.abilities[s].lands(), touches |= f.abilities[s].target == Targeting::ground;
+            stuns |= f.abilities[s].stuns, touches |= f.abilities[s].target == Targeting::ground;
     const auto& enemy_spawn = world.map().enemy_spawn;
     for (const auto& e : world.enemies) {
         if (foes == max_foes) break;
@@ -1267,8 +1288,7 @@ bool Search::read() {
                 absorbs = e.shield > 0 ? buffs.shield : 0.0f;
                 stunned = stuns && buffs.stun_pending;
             }
-            recall = casts && e.channel == Channel::recall
-                     && aph::kept_recall(e.handle, e.recall_turns());
+            recall = e.channel == Channel::recall && aph::kept_recall(e.handle, e.recall_turns());
         } catch (const cambc::error&) {
             continue;
         }
@@ -1323,7 +1343,8 @@ bool Search::read() {
                 if (dist(here, x.pos) > grid_r + land_radius) continue;
                 const float lost = raw > 0 ? my_damage_to(dash, x.belief->handle) : 0.0f, sh = x.shield;
                 x.land = sh <= 0 ? lost : lost > 0 ? lost + sh : std::min(raw * skirmish_dealt_factor() * x.taken, sh);
-                x.land_stun = a.stuns && x.stunnable ? stun_worth(world, *x.belief, raw > 0) : 0.0f;
+                x.land_stuns = a.stuns && x.stunnable;
+                x.land_stun = x.land_stuns ? stun_worth(world, *x.belief, true) : 0.0f;
             }
         } catch (const cambc::error&) {
         }
@@ -1351,7 +1372,7 @@ bool Search::read() {
                         if (const vec2 p{at.x + dx, at.y + dy}; in_grid(p)) g |= gbit(cell(p));
             };
             for (int i = 0; i < foes; ++i)
-                if (u[i].land > 0 || u[i].land_stun > 0) mark(u[i].pos, land_hits);
+                if (u[i].land > 0 || u[i].land_stun > 0 || (u[i].land_stuns && u[i].recall)) mark(u[i].pos, land_hits);
             for (int k = 0; k < n_members; ++k)
                 if (dist(here, plan_tables.members[k].pos) <= grid_r + land_radius) mark(plan_tables.members[k].pos, land_bad);
             land_bad &= ~land_hits;
@@ -1382,7 +1403,7 @@ bool Search::hit_unit(int t, Node& s) {
     const auto splashed = [&](int k) { return splash && k != t && dist(u[k].pos, x.pos) <= 1; };
     if (x.foe) {
         const bool m = x.link >= 0 && moot(t, d, splashed(x.link), dealt(x.link));
-        if (!m) value += hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full);
+        if (!m) value += hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full) + cancel(t, d, false, s);
         if (!m && s.armed && x.stunnable && !(s.stunned >> t & 1)) value += x.stun, s.stunned |= static_cast<std::uint16_t>(1u << t);
         retaliation += x.retaliation;
     } else {
@@ -1395,7 +1416,7 @@ bool Search::hit_unit(int t, Node& s) {
             const auto& o = u[j];
             if (o.foe) {
                 const bool m = o.link >= 0 && moot(j, dealt(j), splashed(o.link) && o.link > j, dealt(o.link));
-                if (!m) value += hit_worth(dealt(j), h[j], o.spawn, o.bag, partner(j), o.full);
+                if (!m) value += hit_worth(dealt(j), h[j], o.spawn, o.bag, partner(j), o.full) + cancel(j, dealt(j), false, s);
                 retaliation += o.retaliation;
             }
             lose(j, dealt(j), s);
@@ -1426,8 +1447,7 @@ bool Search::spell_unit(const Spell& sp, int t, Node& s) {
     const float d = x.spell[sp.slot];
     const float back = d > 0 ? x.retaliation : 0.0f;
     if (x.suicidal[sp.slot] || (back > 0 && s.hurt + back >= shielded)) return false;
-    float v = hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full) - back;
-    if (d > 0 && d < h[t] - 0.01f && !x.spawn && x.recall) v += params::recall_value;
+    float v = hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full) + cancel(t, d, x.spell_stuns[sp.slot], s) - back;
     if (x.spell_stun[sp.slot] > 0 && !(s.stunned >> t & 1)) v += x.spell_stun[sp.slot], s.stunned |= static_cast<std::uint16_t>(1u << t);
     if (d <= 0 && v <= 0) return false;
     lose(t, d, s);
@@ -1452,7 +1472,7 @@ float Search::centre_value(const Centre& c, int slot, const Node& s, bool& ok, f
         if (d > 0) v -= x.retaliation, back += x.retaliation;
         if (x.link >= 0 && moot(t, d, x.link > t && (c.foes >> x.link & 1), u[x.link].spell[slot])) continue;
         v += hit_worth(d, h[t], x.spawn, x.bag, partner(t), x.full);
-        if (d > 0 && d < h[t] - 0.01f && !x.spawn && x.recall) v += params::recall_value;
+        if (cancels(t, d, x.spell_stuns[slot], s)) v += params::recall_value;
         if (!(s.stunned >> t & 1)) v += x.spell_stun[slot];
     }
     ok = ok && (back == 0 || s.hurt + back < shielded);
@@ -1464,13 +1484,14 @@ void Search::hit_centre(const Centre& c, int slot, Node& s) {
     float back;
     s.value += centre_value(c, slot, s, ok, back) - cast_cost;
     s.hurt += back;
-    // The stuns centre_value credited, all before a death can take one back.
+    // The recall cancels and stuns centre_value credited, all before a death can take one back.
     for (std::uint32_t m = c.foes; m; m &= m - 1) {
         const int t = std::countr_zero(m);
         const auto& x = u[t];
-        if (h[t] > 0 && x.spell_stun[slot] > 0
-            && !(x.link >= 0 && moot(t, x.spell[slot], x.link > t && (c.foes >> x.link & 1), u[x.link].spell[slot])))
-            s.stunned |= static_cast<std::uint16_t>(1u << t);
+        if (h[t] <= 0 || (x.link >= 0 && moot(t, x.spell[slot], x.link > t && (c.foes >> x.link & 1), u[x.link].spell[slot])))
+            continue;
+        (void)cancel(t, x.spell[slot], x.spell_stuns[slot], s);
+        if (x.spell_stun[slot] > 0) s.stunned |= static_cast<std::uint16_t>(1u << t);
     }
     for (std::uint32_t m = c.foes; m; m &= m - 1) {
         const int t = std::countr_zero(m);
@@ -1491,9 +1512,9 @@ bool Search::land_at(int c, Node& s) {
         const int t = std::countr_zero(near);
         const auto& x = u[t];
         if (h[t] <= 0) continue;
-        struck |= x.land > 0 || x.land_stun > 0;
+        struck |= x.land > 0 || x.land_stun > 0 || (x.land_stuns && x.recall);
         const bool m = x.link >= 0 && moot(t, x.land, x.link > t && dist(L, u[x.link].pos) <= land_radius, u[x.link].land);
-        if (!m) value += hit_worth(x.land, h[t], x.spawn, x.bag, partner(t), x.full);
+        if (!m) value += hit_worth(x.land, h[t], x.spawn, x.bag, partner(t), x.full) + cancel(t, x.land, x.land_stuns, s);
         if (!m && x.land_stun > 0 && !(s.stunned >> t & 1)) value += x.land_stun, s.stunned |= static_cast<std::uint16_t>(1u << t);
         retaliation += x.land > 0 ? x.retaliation : 0.0f;
         lose(t, x.land, s);
@@ -1887,14 +1908,14 @@ int strike_free(const World& world, Pathing& pathing, Safety& safety, const Inte
         if (reset_ready) bound = std::max(bound, f.attack_range() + walk);
         if (can_attack && dash_ready) bound = std::max(bound, f.attack_range() + dash_range);
     }
-    bool stuns = reset >= 0 && f.abilities[reset].stuns, casts = false;
+    bool stuns = reset >= 0 && f.abilities[reset].stuns;
     int shield = -1;
     for (int s = 0; s < 2; ++s) {
         const auto& a = f.abilities[s];
         if (!ready[s]) continue;
         if (a.kind == AbilityKind::heal) return 2;
         if (a.kind == AbilityKind::shield) shield = s;
-        if (a.hits_enemies()) stuns |= a.stuns, casts |= !a.lands();
+        if (a.hits_enemies()) stuns |= a.stuns;
         if ((a.kind == AbilityKind::damage || a.kind == AbilityKind::stun) && (a.target == Targeting::unit || a.target == Targeting::ground)
             && !(a.excludes_walking && walked_first)) {
             // Its centres include unseen enemies' tiles.
@@ -1916,7 +1937,7 @@ int strike_free(const World& world, Pathing& pathing, Safety& safety, const Inte
         try {
             if (!visible_record(e.handle)) continue;
             if (e.shield > 0 || stuns) (void)buff_state(e.handle);
-            if (casts && e.channel == Channel::recall) (void)aph::kept_recall(e.handle, e.recall_turns());
+            if (e.channel == Channel::recall) (void)aph::kept_recall(e.handle, e.recall_turns());
             any = true;
         } catch (const cambc::error&) {
         }
