@@ -4771,3 +4771,22 @@ own drafts, the rt bodies:
   +8%, out-of-fuel turns 45,540 -> 45,632 (the Prism's own fight turns that ran out: 695 -> 589 on 2,560 games).
 
 Frozen as `variants/chy-life` (= bots/charybdis).
+
+## 521: Fuel: goal steps not started on fuel they cannot finish (charybdis, 2026-11-12)
+
+`bot.cc`, on 520. From [ideas-2026-11-12/fightfuel](../ideas-2026-11-12/fightfuel/README.md): a turn that reached
+decide's goal steps (a bag, a shopping trip, a chase, a contest, a siege, the farm) with under 4k left, or the siege and
+farm with under 6k, ran out 98% and 99.7% of the time, 0.7 turns a game. Running out there unwinds past the posts: no
+claim, bag or turn order posted, `Memory::round` and `health` not updated (next turn reads no damage and no
+engagement), no recall, no turn end.
+- `decide` returns before those steps below `goal_least` (4k) and `farm_least` (6k); the turn's tail, turn order and
+  posts keep their own checks. Shortcut `goal-short`. Fuel-aware, identical at 100M, as 495's tail checks.
+- Higher lines were not taken: from 6k a third to half of these turns still finish.
+
+Against `variants/chy-life` (= 520), own drafts, the rt bodies:
+- **100M bench:** 52/52 `wide` replays byte-identical (`--opp charybdis`), +9 fuel a turn.
+- **Gate, batches 1-6:** out-of-fuel turns 427,568 -> 384,710 (**-10.0%**, 6.63 -> 5.96 a game) on 64,512 games a side;
+  49.94% (49.80-50.09) of 122,880 fresh (Fish 50.00, Mite 49.88): level.
+- Batch 0, 10,240 paired games: out-of-fuel turns 62,640 -> 56,061 (-10.5%), win -0.09 points (3.5% of results change).
+
+It meets the 10% target 514 left open. Frozen as `variants/chy-gs` (= bots/charybdis).

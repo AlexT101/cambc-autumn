@@ -1,0 +1,32 @@
+diff -ru -x .cambc bots/charybdis/src/combat/guard.cc bots/variants/sg-a16/src/combat/guard.cc
+--- bots/charybdis/src/combat/guard.cc	2026-11-12 04:51:16.764553867 +0000
++++ bots/variants/sg-a16/src/combat/guard.cc	2026-11-12 05:49:00.824857975 +0000
+@@ -498,6 +498,7 @@
+ 
+ // The tiles a step (or a ready dash) could end on that want_home would leave at once: stopping
+ // there hands the enemy the first strike. Cassi and Issac also keep off tiles where one would fall.
++inline constexpr std::uint64_t guard_after = 16000;
+ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int radius) {
+     world.throw_if_stale();
+     if (!enemy_seen(world)) return nullptr;
+@@ -515,8 +516,9 @@
+         costliest -= costliest / 8;
+         return nullptr;
+     }
+-    const auto floor = safety.fight_cost_estimate() + act_reserve;
+-    if (!fuel_ok(floor + costliest)) {
++    // What the turn spends after its step guard (the walk's search, the turn's end): measured, see guard_after.
++    const std::uint64_t floor = guard_after;
++    if (!fuel_ok(floor + 1000 * static_cast<std::uint64_t>(n))) {
+         note_shortcut("step-guard-entry");
+         // Else one dear placing keeps the guard off for as long as enemies stay near.
+         costliest -= costliest / 8;
+@@ -601,7 +603,7 @@
+     // False if fuel ran short.
+     const auto simulate = [&](std::uint32_t key, bool& lost, bool& falls) {
+         const auto* known = safety.known_fight_of(key);
+-        if (!known && !fuel_ok(safety.fight_cost_estimate() + act_reserve)) {
++        if (!known && !fuel_ok(safety.fight_cost_estimate() + floor)) {
+             note_shortcut("step-guard-sim");
+             return false;
+         }

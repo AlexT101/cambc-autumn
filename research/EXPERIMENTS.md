@@ -179,6 +179,78 @@ Notes, the runner subcommand and scripts: [ideas-2026-11-12/forkcomp/README.md](
   replicates across runs. Fish vs Mite split: p 0.97 and 0.75. Pick count is mostly map size (correlation 0.57 with
   log area), already covered by the closed mapcond line. Not split.
 
+## Fuel in fights on charybdis 520 (2026-11-12): the Prism's own fuel no longer pays, the team's +1.5 at 200k is spread thin, the step guard's gate cannot be bought; goal steps not started on fuel they cannot finish take out-of-fuel turns down 10% (level; CHANGES 521)
+
+Notes, scripts and patches: [ideas-2026-11-12/fightfuel/README.md](ideas-2026-11-12/fightfuel/README.md). REF
+`variants/chy-life` (= charybdis 520), rt bodies, real 100k fuel. Arms: debug builds under `--fuel 200000`, every
+instance charging itself back to 100k but for the arm's exemption, paired with the capped base on fgate pool batch 0
+(10,240 games an arm; a paired read moves by about ±0.45). Gates: fgate on batches 1-6 and 75-86 (REF's half cached).
+
+**Where 200k pays** (points against everyone at 100k; Prism deaths a Prism game, base 0.333):
+
+| arm | win | Prism deaths |
+|---|---|---|
+| everyone at 200k | +1.52 | 0.299 |
+| the Prism alone at 200k (before 520: +0.68, deaths -19%) | -0.20 | 0.320 |
+| everyone but the Prism at 200k | +1.20 | 0.321 |
+| 100k credited after the world update on turns with an enemy in sight / with none | +0.56 / +0.13 | 0.306 / 0.326 |
+| the first turn at 400k / rounds 1-20 / rounds 1-100 at 200k | +0.18 / +0.35 / +0.68 | 0.334 / 0.337 / 0.328 |
+| no turn runs out, every gate cutting as at 100k | +0.34 | 0.324 |
+
+**Gates made free** (the test passes, its work costs the turn nothing):
+
+| gate | win | Prism deaths |
+|---|---|---|
+| all six below | +0.31 | 0.324 |
+| step guard (entry, sim, look): everyone / the Prism's only / the others' only | +0.89 / -0.09 / +0.74 | 0.331 / 0.328 / 0.335 |
+| escape plan and its slack pass | +0.12 | 0.329 |
+| chase verdict | -0.40 | 0.336 |
+| prey's candidates | +0.08 | 0.331 |
+| farm loop | +0.16 | 0.327 |
+| turn order | -0.21 | 0.340 |
+
+- **The Prism's fuel is spent.** Its turn at 200k, its guard, its escape plan and its chase verdict free: all level.
+  520's carry fix was its share. Its out-of-fuel turns are 0.95 a game, 0.04 of them in a retreat.
+- **The team's prize is no one thing.** Out-of-fuel turns are worth about a third of a point, the six gates about as
+  much, the opening rounds about half; nothing but the whole and the non-Prism half clears two standard errors.
+- **Profile** (debug games, per-turn scopes): a turn with an enemy in sight spends 9-10k on the world update, 10-14k
+  on want_home (p90 20-26k), 16k on the strike search when it runs (p99 45k), 21k on the farm when it runs, 3-4k on
+  the turn order. 5.9 turns a game run out, 4.8 with an enemy in sight; fight turns run out 2.1% of the time in
+  rounds 21-50 and 0.3% after round 400. By champion type and by function the cost is even (heavy turns' largest self
+  cost: farm_turn 7.5%, make_field 4.2%).
+
+**The step guard's gate** keeps back 35-45k for a placing that costs 0.4k at the median (8.9k on the turns it cuts,
+where it has 34k left and the turn ends decide with 19-20k unused). Staged gates that keep back only what a turn
+spends after the guard (measured: 12.6k median, 18k p90), each new fight keeping its own estimate (`sg-a20`, `sg-a16`,
+`sg-a12`: entry cuts 55 -> 4 a game, sim cuts 0.7 -> 29, out-of-fuel turns +6%):
+
+| candidate | fresh | maps (games) |
+|---|---|---|
+| sg-a20 | -0.07 ±0.30 | 15,360 (122,880) |
+| sg-a16 | -0.11 ±0.31 | 15,360 (122,880) |
+| sg-a12 | +0.05 ±0.31 | 15,360 (122,880) |
+
+Level, as on astraeus (GATE-PLACEMENT item A) and ocean: the guards added cost what they are worth. 74% of the cut
+placings would guard nothing. Not retried without a guard verdict that needs no new fight.
+
+**Carry fields made at the turn's end** (`chy-cf2`, prismlife's pl-cf2 on 520: the queue makes the `to_group` fields
+the Prism's carry picks read, one a turn): +0.14 ±0.20 on batches 1-6, -0.00 ±0.14 held out on 75-86, 368,640 games in
+all. Level; dropped.
+
+**Goal steps not started on fuel they cannot finish** (`chy-gs`, `patches/chy-gs.patch`): decide returns before its
+goal steps with under 4k left and before the siege and farm with under 6k, where the turn ran out 98% and 99.7% of the
+time (0.7 turns a game), losing its posts, next turn's read of this one and its recall for nothing done.
+- 100M: 52/52 `wide` replays identical (`bench.py --opp charybdis`).
+- Real budget, batch 0, release: out-of-fuel turns 62,640 -> 56,061 (-10.5%) on 10,240 paired games, win -0.09 (z -0.48).
+- Gate, batches 1-6: 49.94% (49.80-50.09) of 122,880, Fish 50.00 / Mite 49.88; out-of-fuel turns 427,568 -> 384,710
+  (-10.0%, 6.63 -> 5.96 a game). ZONE: level.
+- Meets the 10% target TODO kept open for charybdis. Fuel-aware and identical at 100M, as 495's tail checks were.
+  Shipped as CHANGES 521.
+
+**Closed from prismlife's list:** heavy Prism fight turns (its fuel no longer pays), the turn-end carry fields (level),
+fuel tests guarding cached results (none left; the guard's reserve is the one over-sized, and level to shrink), a
+cheaper escape plan (the plan free is +0.12).
+
 ## Prism deaths on charybdis (charybdis = 519, 2026-11-12): failed retreats and a fuel test on its carry picks; fix, own fall and Health shards pass the live bar at +1.23 (CHANGES 520)
 
 Notes, scripts and patches: [ideas-2026-11-12/prismlife/README.md](ideas-2026-11-12/prismlife/README.md). Arms are

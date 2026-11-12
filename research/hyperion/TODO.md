@@ -15,12 +15,16 @@ EXPERIMENTS.
   plan is [GATE-PLACEMENT.md](GATE-PLACEMENT.md).
 - Keep the teleport, Tavi and Willow code.
 
-## Charybdis fuel target (2026-11-11)
+## Charybdis fuel in fights (2026-11-12)
 
-CHANGES 514 is exact at 100M but does not meet the requested **10% fewer exhausted turns**:
-fresh 4,096 paired games give -3.51% OOF and -1.43% shortcuts, both CIs including zero; release is level.
-The user requested closure without new ideas. See [fuel C](../charybdis-fuelC/README.md) before resuming: it
-records the rejected bounds/caches/copies and remaining call-site reach and dash-plan leads.
+On 520 the Prism's own fuel no longer pays; the team's +1.5 at 200k is spread over out-of-fuel turns, gates and the
+opening, none of them a lever alone ([fightfuel](../ideas-2026-11-12/fightfuel/README.md)).
+- CHANGES 521 (goal steps not started under 4k, the siege and farm under 6k) took out-of-fuel turns down 10%, the
+  target 514 left open. [Fuel C](../charybdis-fuelC/README.md) records the exact cuts already tried.
+- Open: the turn's tail still runs out 0.68 times a game (the second strike search 0.19, the ward 0.12, heal and
+  shield 0.11, the tribute habit's want_home 0.07); the strike search 0.9 times from 43k at the median.
+- Open: a step guard whose verdict needs no new fight on fuel-short turns. The guard free is the one gate with a
+  price (+0.9); every way of paying for it from the turn's own fuel is level.
 
 ## Charybdis: the rest of ATLAS's lethal-model change (2026-11-11)
 
