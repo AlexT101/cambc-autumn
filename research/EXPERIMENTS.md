@@ -18679,3 +18679,30 @@ Results against chy-525:
 **Verdict:** no ship, and no 100k run. A cancel keeps the bag carried, and Fish restarts it. The TODO item on walking
 to lock is closed.
 
+
+## (charybdis, 2026-11-13) The rest of ATLAS on 525 (fixes 3, 5, the press) against fr8-g25 and mf-f9: +0.5 at 200k, nothing at 100k; no way of paying for it holds
+
+Note, patches and tools: [ideas-2026-11-12/atlas525/README.md](ideas-2026-11-12/atlas525/README.md). Follow-up to
+"The rest of ATLAS (fixes 3, 5, the press) at the real budget" on 517. Results against chy-525 (fgate `--pool v4
+--fish-body fr8-g25 --mite-body mf-f9`, batches 0-3, 81,920 fresh games an arm; OOF a game CAND / REF, Fish body):
+
+| arm | fuel | win% (95% CI) | Fish | Mite | OOF a game | verdict |
+|---|---|---|---|---|---|---|
+| atl-np (fixes 3 + 5) | 200k | 50.16 (49.93-50.39) | 50.29 | 50.03 | 0.07 / 0.07 | ZONE, small |
+| atl-pf (all, as ATLAS's final) | 200k | 50.52 (50.12-50.91) | 50.30 | 50.74 | 0.09 / 0.07 | gain, mostly Mite |
+| atl-pf | 100k | 49.20 (48.72-49.68) | 49.43 | 48.98 | 8.82 / 6.74 | loses |
+| atl-np | 100k | 49.80 (49.38-50.23) | 49.65 | 49.96 | 7.26 / 6.74 | level |
+| atl-ns (press without sims) | 100k | 49.58 (49.11-50.04) | 49.46 | 49.69 | 7.62 / 6.74 | level-negative |
+| atl-pk (press sim from fights already played) | 100k | 49.53 (49.06-49.99) | 49.50 | 49.55 | 7.82 / 6.74 | loses |
+| atl-pk0 (pk without fixes 3, 5) | 100k | 49.60 (49.15-50.05) | 49.48 | 49.72 | 7.56 / 6.74 | level-negative |
+| atl-pfc (pf, no press after a fuel-cut turn) | 100k | 49.37 (48.89-49.85) | 49.20 | 49.54 | 8.18 / 6.74 | loses |
+| atl-pkc (pk, the same) | 100k | 49.91 (49.45-50.37) | 50.02 | 49.80 | 7.75 / 6.74 | level, best |
+
+- Livefork from live r8 positions (415 games, 7,652 pairs): atl-pf −0.21 ±0.55, atl-np −0.41 ±0.44.
+- Against Fish the whole change is worth +0.3 at 200k with or without the press; the press's extra is Mite's.
+- Fixes 3 and 5 cost little in release (100M bench: mean equal, p99 +2%; OOF +8% at 100k); a cached `stunner_near`
+  (identical 52/52) saved nothing (+0.01%): the debug profile's per-call costs were the profiling scopes'.
+- The press loses at 100k at any price of its own: sim-free or cache-only presses still lose ~0.45, as the fights
+  they start cut the step guard at entry on 15-19% of press turns. Cuts persist (a press turn after a cut turn is cut
+  48% of the time, 16% otherwise); skipping the press then adds +0.2 to +0.4 but only reaches level.
+- Nothing kept. What would pay is fight turns that fit 100k, not a cheaper press.

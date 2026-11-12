@@ -1,0 +1,33 @@
+diff -ruN -x .cambc -x build -x compile_commands.json atl-pk/src/combat/fight.cc atl-pk0/src/combat/fight.cc
+--- atl-pk/src/combat/fight.cc	2026-11-12 23:26:12.415334422 +0000
++++ atl-pk0/src/combat/fight.cc	2026-11-12 23:34:08.854603118 +0000
+@@ -268,7 +268,7 @@
+     if (held)
+         for (const auto d : directions) beside_held |= in_bounds(here + d) && test(*held, here + d);
+     std::array<ComingCast, 8> coming;
+-    const int casts = fuel_ok(params::refine_fuel) ? coming_casts(world, coming) : 0;
++    const int casts = 0; // atl-pk0: fix 5 off
+     const bool far = !safety.avoid_within(here, vision_radius);
+     if (far && !casts) {
+         if (!beside_held || !pathing.descend(home, held)) pathing.step_towards(home);
+@@ -418,7 +418,7 @@
+         std::stable_sort(group.begin(), group.begin() + m, by_index);
+         for (int i = 0; i < m; ++i) {
+             // lethal (~1k a tile) is read only down to the first step it spares.
+-            if (survivable && !options[group[i]].dashes && fuel_ok(params::refine_fuel) && safety.lethal(options[group[i]].p)) {
++            if (false && survivable) { // atl-pk0: the merge fix's lethal reads off
+                 debug_block({ std::printf("PZFIX4L %d %u %d,%d\n", world.round, my_handle(), options[group[i]].p.x, options[group[i]].p.y); });
+                 last[lasts++] = group[i];
+                 continue;
+diff -ruN -x .cambc -x build -x compile_commands.json atl-pk/src/model/safety.cc atl-pk0/src/model/safety.cc
+--- atl-pk/src/model/safety.cc	2026-11-12 23:08:37.562117333 +0000
++++ atl-pk0/src/model/safety.cc	2026-11-12 23:34:08.854259314 +0000
+@@ -3674,7 +3674,7 @@
+     if (!built_ && live_enemies() && !seen_ && (known_ & unseen_) != unseen_ && camp_damage(p, true, true) < health && unseen_beyond(p))
+         return false;
+     // Short of fuel, the follow-up of a stun is left out, as are the reads it needs.
+-    const bool stun = fuel_ok(params::refine_fuel) && stunner_near(p);
++    const bool stun = false; // atl-pk0: fix 3 off
+     if (!stun && !built_ && (damage_ceiling(p, false, taken) < health || damage_bound(p, false, taken) < health)) return false;
+     const float first = worst_damage(p, taken);
+     if (first >= health || !stun) return first >= health;

@@ -1,0 +1,12 @@
+diff -ruN -x .cambc -x build -x compile_commands.json atl-pf/src/params.h atl-np/src/params.h
+--- atl-pf/src/params.h	2026-11-12 23:08:22.065502525 +0000
++++ atl-np/src/params.h	2026-11-12 23:10:00.849179452 +0000
+@@ -290,7 +290,7 @@
+ // press_taken's escape plan (escape::min_fuel) and its walk's lethal reads come on top of the turn's own work.
+ namespace press {
+ inline constexpr int min_window = 2;
+-inline constexpr std::uint64_t min_fuel = 60000;
++inline constexpr std::uint64_t min_fuel = ~std::uint64_t{0}; // atl-np: the press off
+ } // namespace press
+ // Fuel left below which safety's refinements fall back to the reads they refine: a stun's follow-up in lethal(),
+ // coming_casts' ranking in retreat, the lethal reads of reached escape steps. Each lethal() then costs ~1k again.

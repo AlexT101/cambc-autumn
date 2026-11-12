@@ -50,6 +50,9 @@ CHANGES 517 took fixes 1, 2 and 4. Fixes 3 and 5 and the disarmed-enemy press ad
 (51.8% of 19,200 in all) but are level or below at 100k, out-of-fuel turns +21-114%. Make them cheap enough to keep
 the gain at the real budget: [HANDOFF-fuel](../macro-atlas/HANDOFF-fuel.md) has the measurements, the remaining
 diff and the method.
+On 525 (2026-11-13, [atlas525](../ideas-2026-11-12/atlas525/README.md)): against fr8-g25 and mf-f9 the whole change is
++0.52 at 200k (+0.3 against Fish, the rest Mite's) and 49.2% at 100k; fixes 3 + 5 alone 49.8%; sim-free,
+cache-only and cut-aware presses 49.4-49.9%. Closed unless fight turns themselves fit 100k.
 
 ## Ocean fuel target (2026-11-07)
 

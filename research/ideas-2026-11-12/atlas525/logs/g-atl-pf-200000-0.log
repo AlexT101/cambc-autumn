@@ -1,0 +1,18 @@
+batch  1: fresh 2560 maps +0.63 ±0.77 LLR high +0.02 low +1.22 [-2.94 | 2.94 | live 4.60] | ladder +1.37 | fresh F +0.12 M +1.15 one +0.59 multi +0.65 | 1794 games differ
+batch  2: fresh 5120 maps +0.59 ±0.56 LLR high -0.10 low +2.17 [-2.94 | 2.94 | live 4.60] | ladder +0.10 | fresh F +0.30 M +0.88 one +0.16 multi +0.77 | 1906 games differ
+batch  3: fresh 7680 maps +0.56 ±0.46 LLR high -0.30 low +3.12 [-2.94 | 2.94 | live 4.60] | ladder -0.78 | fresh F +0.27 M +0.85 one +0.21 multi +0.71 | 1894 games differ
+batch  4: fresh 10240 maps +0.52 ±0.40 LLR high -0.66 low +3.93 [-2.94 | 2.94 | live 4.60] | ladder -0.68 | fresh F +0.30 M +0.74 one -0.08 multi +0.76 | 1792 games differ
+{"cand": "variants/atl-pf", "ref": "variants/chy-525", "outcome": "undecided", "mode": "batch", "batches": 4, "batch_maps": 2560, "first_batch": 0, "cambc": "5.0.1", "fuel": 200000, "bodies": "run-time, unmetered (fr8-g25/mf-f9)", "fresh": [0.518, 0.396], "ladder": [-0.684, 1.899], "fresh_fish": [0.298, 0.559], "fresh_mite": [0.737, 0.567], "fresh_one_site": [-0.076, 0.765], "fresh_multi_site": [0.761, 0.462], "ladder_fish": [0.781, 2.746], "ladder_mite": [-2.148, 2.859], "fresh_units": 10240, "llr_high": -0.658, "llr_low": 3.935, "zone_at_units": null, "screen_at_units": null, "low_h1_at_units": 7680, "high_h0_at_units": null, "cand_win_pct": 75.99, "ref_win_pct": 75.47, "games": 86016, "errors": 0, "early_losses": 0, "wall_seconds": 717.3, "games_started": 75264, "ladder_minus_fresh": [-1.202, 1.94]}
+
+Results against chy-525 (atl-pf; bodies fr8-g25/mf-f9 unmetered, our fuel 200000, 4 batches):
+| read | win% (95% CI) | maps | games |
+|---|---|---|---|
+| fresh (decides) | 50.52% (50.12-50.91) | 10,240 | 81,920 |
+| fresh, Fish | 50.30% (49.74-50.86) | 10,240 | 40,960 |
+| fresh, Mite | 50.74% (50.17-51.30) | 10,240 | 40,960 |
+| fresh, one-site | 49.92% (49.16-50.69) | 2,980 | 23,840 |
+| fresh, multi-site | 50.76% (50.30-51.22) | 7,260 | 58,080 |
+| ladder (side read) | 49.32% (47.42-51.22) | 512 | 4,096 |
+Ladder minus fresh: -1.20 ±1.94 points.
+undecided. LLR high -0.66, low +3.93 [-2.94 | 2.94 | live 4.60]. Against the bodies: CAND 75.99%, REF 75.47%. Failed games 0, lost by round 5 0.
+75,264 games started here in 12.0 min (377,759 games/h).
