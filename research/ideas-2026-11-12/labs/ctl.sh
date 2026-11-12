@@ -1,8 +1,9 @@
 #!/bin/bash
-# ctl.sh status | start | pause | resume | stop | kill | base BOTDIR
+# ctl.sh status | start | pause | resume | stop | kill | base BOTDIR | rerun ID
 #   status: filler and round state.  start: launch the filler (if not running).  pause/resume: no new rounds / allow.
 #   stop: the filler exits (a running round goes on).  kill: end the running round now (its process group; it is
-#   marked failed and posted).  base: set BASE for the next round.
+#   marked failed and posted).  base: set BASE for the next round.  rerun ID: restart round ID from its done-files
+#   (stop the filler first, or it marks a killed round CRASH; clears exit/posted/fail).
 L=/home/ubuntu/tmp-offload/labs; R=/home/ubuntu/cambc-autumn
 up() { [ -f $L/filler.pid ] && kill -0 $(cat $L/filler.pid) 2>/dev/null; }
 cur() { for d in $L/rounds/*/; do [ -f $d/pid ] && [ ! -f $d/exit ] && kill -0 $(cat $d/pid) 2>/dev/null && echo ${d%/}; done; }
@@ -21,5 +22,7 @@ case $1 in
   kill) d=$(cur); [ -n "$d" ] || { echo "no round running"; exit 0; }
         echo "killed by ctl.sh" > $d/fail; kill -TERM -$(cat $d/pid); echo "sent TERM to round $(basename $d)'s group" ;;
   base) [ -d $R/$2/src ] || { echo "no $R/$2/src"; exit 1; }; echo $2 > $L/BASE; echo "BASE = $2" ;;
-  *) sed -n 2,6p $0 ;;
+  rerun) d=$L/rounds/$2; [ -f $d/round.json ] || { echo "no round $2"; exit 1; }; rm -f $d/exit $d/posted $d/fail
+         cd $R && python3 -c "import sys;sys.path.insert(0,'$R/research/ideas-2026-11-12/labs');import filler;from pathlib import Path;filler.start(Path('$d'),filler.conf())" ;;
+  *) sed -n 2,7p $0 ;;
 esac

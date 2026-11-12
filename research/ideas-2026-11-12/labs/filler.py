@@ -184,7 +184,9 @@ def start(d, c):
                CAMBC_BIN=str(R / "tools/fastengine/runner/fastrunner"), FASTRUNNER_MODE="native",
                PATH=f"/home/ubuntu/venv/bin:{Path.home()}/.cargo/bin:{os.environ.get('PATH', '')}", VIRTUAL_ENV="/home/ubuntu/venv")
     env.pop("CAMBC_SLOT_DIR", None)
-    env.pop("CAMBC_SLOTS", None)
+    # The machine-wide pool size everyone else uses (/etc/environment: 86, a memory cap): unset, cpu_slots would take
+    # cores - 2 = 94 and the lab would play on slots 86-93, outside the pool the gates share.
+    env["CAMBC_SLOTS"] = os.environ.get("CAMBC_SLOTS") or "86"
     script = HERE / f"round_{i['kind']}.sh"
     (d / "exit").unlink(missing_ok=True)
     wrap = f'nice -n 19 bash {script} {d}; echo $? > {d}/exit'
