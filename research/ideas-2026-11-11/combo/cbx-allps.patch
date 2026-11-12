@@ -1,0 +1,560 @@
+diff -ruN -x .cambc -x compile_commands.json -x READY bots/variants/charybdis-cb9f86d/src/bot.cc bots/variants/cbx-allps/src/bot.cc
+--- bots/variants/charybdis-cb9f86d/src/bot.cc	2026-11-11 22:52:51.346180780 +0000
++++ bots/variants/cbx-allps/src/bot.cc	2026-11-11 23:54:35.859882903 +0000
+@@ -373,6 +373,7 @@
+ 
+ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     comeback::cooked(world); // every turn: the cook's hysteresis reads each round's scores
++    note_standing(world);
+     // Last turn's, for continue_recall: kept only while that recall is, else farm sets it again.
+     const int recall_farm = std::exchange(memory.recall_farm, -1);
+     if (!world.me().alive || !banks_bag(world, pathing)) memory.banking = false;
+diff -ruN -x .cambc -x compile_commands.json -x READY bots/variants/charybdis-cb9f86d/src/bot_parts.h bots/variants/cbx-allps/src/bot_parts.h
+--- bots/variants/charybdis-cb9f86d/src/bot_parts.h	2026-11-11 18:50:25.009994437 +0000
++++ bots/variants/cbx-allps/src/bot_parts.h	2026-11-12 01:41:33.504801868 +0000
+@@ -333,6 +333,7 @@
+ bool hold_outlasts(Safety& safety, float damage, vec2 p, int rounds);
+ bool paying_soon(const World& world, Safety& safety, vec2 p, int turns);
+ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
++bool finish_heal(const World& world, Pathing& pathing, Safety& safety);
+ // want_home's recall line and pack zone (drawn_home) at p, as if we stood there with last round's loss `damage`.
+ bool drawn_home_at(const World& world, Pathing& pathing, Safety& safety, vec2 p, float damage);
+ const ChampionBelief* prey(const World& world, Pathing& pathing, Safety& safety);
+@@ -377,6 +378,17 @@
+ int gems_short(const World& world, int horizon = static_cast<int>(cambc::constants::max_rounds));
+ const ChampionBelief* partner(const World& world);
+ int bag_at_stake(const World& world);
++// Each team's standing in the race to the win: tributed gems and the bags its living bodies carry, which
++// score once tributed (ours as seen, else as posted; theirs as last seen).
++struct Standing {
++    int ally = 0, enemy = 0;
++};
++Standing standing(const World& world);
++// Each turn: this round's standings, for standing_pace.
++void note_standing(const World& world);
++// A team's standing gained a round over the later half of the game so far (as World::ally_rate), net of
++// bags lost on death; 0 before there is a half to read.
++float standing_pace(const World& world, bool enemy);
+ AltarWalk& altar_walk();
+ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w);
+ const AltarAccess& altar_access(const World& world, Pathing& pathing);
+@@ -467,6 +479,12 @@
+     int trips = 0, claimers = 0, n_expected = 0;
+     std::array<int, 8> expected{};
+ };
++// An unseen living ally's tile as its comms slot tells it this round or last: a cell centre, within
++// comms::told_error() of where it stood.
++inline bool told_tile(const World& world, const ChampionBelief& a, vec2& at) {
++    int round = -1;
++    return params::comms_slots && !a.is_self && a.alive && !a.visible && comms::told_ally(a.index, at, round) && round >= world.round - 1;
++}
+ // What plan_crew, share_damage and crew_available read of each ally, read once for a farm call
+ // (nothing in its loop changes them), in ally order; the costlier parts on first need.
+ // `line` is the recall line plans are priced at.
+@@ -481,12 +499,14 @@
+         // crew_available: 0 never, 1 unless it claims the group, 2 by the distances below.
+         mutable std::uint8_t avail;
+         mutable bool harmless_claim, on_cleared;
+-        mutable vec2 claim_centre, on_centre;
++        mutable bool told; // out of sight, placed by its slot's tile (`told_at`)
++        mutable vec2 claim_centre, on_centre, told_at;
+     };
+     std::array<Ally, 16> at;
+     int n = 0;
+     float line = 0, my_hp = 0, my_max = 0;
+     vec2 here{};
++    const World* world = nullptr;
+     // The living allies other than us that claim a group, in ally order: each group's claimers
+     // without a pass over every ally.
+     std::array<std::uint8_t, 16> claiming{};
+diff -ruN -x .cambc -x compile_commands.json -x READY bots/variants/charybdis-cb9f86d/src/combat/fight.cc bots/variants/cbx-allps/src/combat/fight.cc
+--- bots/variants/charybdis-cb9f86d/src/combat/fight.cc	2026-11-11 22:52:51.346180780 +0000
++++ bots/variants/cbx-allps/src/combat/fight.cc	2026-11-12 01:41:33.504957380 +0000
+@@ -550,6 +550,42 @@
+     return drawn_home(world, safety, hold);
+ }
+ 
++// A Prism carrying the bag that wins the game heals before its tribute: below the health one round of
++// every living enemy's strikes takes (capped at full), it neither starts the channel nor walks the bag
++// on, but goes home, by the recall when that is sooner. A winning bag's channel is long (a turn per 10
++// gems, ~55 at the median), and a hurt Prism standing in it is what the enemy kills. Not in a channel
++// already (continue_tribute judges that), nor once the round limit leaves no time for the trip home,
++// out and the channel. Guards (params::finish_lead, finish_no_prism): the enemy's clock, its gems short
++// beyond the bags we saw over its recent tribute rate, runs past that trip; the enemy drafted no Prism.
++bool finish_heal(const World& world, Pathing& pathing, Safety& safety) {
++    if constexpr (!params::finish_heal) return false;
++    if (world.me().facts().passive != Passive::gem_focus || !winning_bag(world)) return false;
++    if (my_state().contains(cambc::champion_state::submitting_gems) || test(world.map().ally_spawn, my_position())) return false;
++    float burst = 0;
++    int carried = 0;
++    for (const auto& e : world.enemies) {
++        if (params::finish_no_prism && e.facts().passive == Passive::gem_focus) return false;
++        if (!e.alive) continue;
++        const auto& s = safety.strike_of(e);
++        float most = 0;
++        for (int d = 0; d <= s.reach && d <= Strike::max_reach; ++d) most = std::max(most, s.damage[static_cast<std::size_t>(d)]);
++        burst += most;
++        carried += std::max(0, e.gems);
++    }
++    if (my_health() >= std::min(my_max_health(), burst)) return false;
++    // closing() reads true for every winning bag (its race is already run): the round limit alone binds here.
++    const int out = pathing.to_any_altar().at(recall_landing(world));
++    if (out == unreachable) return false;
++    const int trip = recall_turns(world) + 1 + out + tribute_turns(world, static_cast<int>(my_gems()));
++    if (rounds_left(world) <= trip + endgame_margin) return false;
++    if constexpr (params::finish_lead) {
++        const int need = static_cast<int>(cambc::constants::winning_gems) - world.score.enemy - carried;
++        const float rate = world.enemy_rate();
++        if (need <= 0 || (rate > 0 && static_cast<float>(need) <= rate * static_cast<float>(trip))) return false;
++    }
++    return true;
++}
++
+ // Retreat: low under the recall line (bar finishing a camp), a pack's zone (drawn_home), a camp we
+ // could no longer walk out of, or a stand we lose (stand_lost_at). A hold that outlasts what can
+ // reach us to its payout keeps us through all but the camps (hold_outlasts). The work guard keeps
+@@ -572,7 +608,7 @@
+     if (world.me().facts().heals() && !holding_capture(world, pathing) && !contesting(world) && exposure_here(world, safety).enemy
+         && !willow_stands(world))
+         return true;
+-    return stand_lost_at(world, safety, hold);
++    return finish_heal(world, pathing, safety) || stand_lost_at(world, safety, hold);
+ }
+ 
+ // The last round we act before e's channel completes, at its turn start in channel_end_round.
+diff -ruN -x .cambc -x compile_commands.json -x READY bots/variants/charybdis-cb9f86d/src/economy/bank.cc bots/variants/cbx-allps/src/economy/bank.cc
+--- bots/variants/charybdis-cb9f86d/src/economy/bank.cc	2026-11-11 18:50:25.012681192 +0000
++++ bots/variants/cbx-allps/src/economy/bank.cc	2026-11-12 01:41:33.505122823 +0000
+@@ -203,6 +203,37 @@
+ 
+ const ChampionBelief* partner(const World& world) { return linked_partner(world, world.me()); }
+ 
++Standing standing(const World& world) {
++    Standing s{world.score.ally, world.score.enemy};
++    for (const auto& a : world.allies)
++        if (a.alive) s.ally += a.is_self ? static_cast<int>(my_gems()) : a.visible ? a.gems : comms::bag_of(world, a.index);
++    for (const auto& e : world.enemies)
++        if (e.alive) s.enemy += e.gems;
++    return s;
++}
++
++namespace {
++std::array<std::vector<int>, 2> standing_log; // by round: ours, theirs
++} // namespace
++
++void note_standing(const World& world) {
++    const Standing s = standing(world);
++    for (int t = 0; t < 2; ++t) {
++        auto& log = standing_log[static_cast<std::size_t>(t)];
++        const int now = t ? s.enemy : s.ally;
++        if (log.empty()) log.reserve(cambc::constants::max_rounds + 1);
++        if (static_cast<int>(log.size()) <= world.round) log.resize(static_cast<std::size_t>(world.round) + 1, log.empty() ? now : log.back());
++        log[static_cast<std::size_t>(world.round)] = now;
++    }
++}
++
++float standing_pace(const World& world, bool enemy) {
++    const auto& log = standing_log[enemy ? 1 : 0];
++    const int from = std::max(world.first_round, world.round / 2);
++    if (world.round <= from || from >= static_cast<int>(log.size()) || world.round >= static_cast<int>(log.size())) return 0;
++    return static_cast<float>(log[static_cast<std::size_t>(world.round)] - log[static_cast<std::size_t>(from)]) / static_cast<float>(world.round - from);
++}
++
+ // What a death would hand over: both bags for Cassi and Issac (an unseen partner's as posted).
+ int bag_at_stake(const World& world) {
+     const auto* p = partner(world);
+@@ -1340,6 +1371,7 @@
+ bool can_tribute_safely(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
+     if (retaining_gems(world, pathing)) return false;
+     if (!can_tribute_here(world)) return false;
++    if (finish_heal(world, pathing, safety)) return false; // heal before the winning channel
+     return tribute_ok(world, safety, memory, tribute_turns(world, my_gems()));
+ }
+ 
+diff -ruN -x .cambc -x compile_commands.json -x READY bots/variants/charybdis-cb9f86d/src/economy/camps.cc bots/variants/cbx-allps/src/economy/camps.cc
+--- bots/variants/charybdis-cb9f86d/src/economy/camps.cc	2026-11-11 18:50:25.012681192 +0000
++++ bots/variants/cbx-allps/src/economy/camps.cc	2026-11-11 23:54:35.862097072 +0000
+@@ -796,8 +796,10 @@
+     return 0.999f * (attackers / (strength + reflect * static_cast<float>(count)) + rest / strength);
+ }
+ 
+-// Our share of the gems still to farm before either team reaches the win or the game ends, at the
+-// team's tribute rate and at our own pace.
++// Our share of the gems still to farm before either team reaches the win or the game ends, in standings
++// (tributed plus carried): the gems we still need, at our pace, until the round limit or the enemy's win at
++// its pace. Tributed scores alone read a hoarding Prism's bag as gems still to farm and its rare tributes as a
++// slow pace, and the enemy's gems to the win as ours to farm whatever its pace.
+ float gems_share(const World& world) {
+     static BagKey last;
+     static float kept = 0;
+@@ -806,11 +808,16 @@
+     last = key;
+     int alive = 0;
+     for (const auto& a : world.allies) alive += a.alive;
+-    const int rounds = bag_rounds_left(world);
+-    int left = std::min(gems_short(world), static_cast<int>(cambc::constants::winning_gems) - world.score.enemy);
+-    if (const float rate = world.ally_rate(); rate > 0) left = std::min(left, static_cast<int>(rate * static_cast<float>(rounds)));
+-    return kept = std::min(static_cast<float>(std::max(0, left)) / static_cast<float>(std::max(1, alive)),
+-                           static_cast<float>(rounds) / rounds_per_gem);
++    const int win = static_cast<int>(cambc::constants::winning_gems);
++    const Standing s = standing(world);
++    float rounds = static_cast<float>(rounds_left(world));
++    if (const float theirs = standing_pace(world, true); theirs > 0)
++        rounds = std::min(rounds, static_cast<float>(std::max(0, win - s.enemy)) / theirs);
++    float left = static_cast<float>(std::max(0, win - s.ally));
++    // No pace to read yet: the enemy's gems to the win stand in for the game's length.
++    const float ours = standing_pace(world, false);
++    left = ours > 0 ? std::min(left, ours * rounds) : std::min(left, static_cast<float>(std::max(0, win - s.enemy)));
++    return kept = std::min(left / static_cast<float>(std::max(1, alive)), rounds / rounds_per_gem);
+ }
+ 
+ // A live group, awake or maybe, whose monsters not read asleep reach p.
+diff -ruN -x .cambc -x compile_commands.json -x READY bots/variants/charybdis-cb9f86d/src/economy/capture.cc bots/variants/cbx-allps/src/economy/capture.cc
+--- bots/variants/charybdis-cb9f86d/src/economy/capture.cc	2026-11-11 18:50:25.012681192 +0000
++++ bots/variants/cbx-allps/src/economy/capture.cc	2026-11-11 23:54:32.359910421 +0000
+@@ -381,14 +381,14 @@
+ // longer the group stands empty for an enemy to take, and each candidate builds a field.
+ int carry_reach() { return 2 * cambc::constants::capture_time; }
+ 
+-// Where ally a is, seen or as it posted it (comms_ally) within the last 2 rounds; in `slack` the steps
+-// it may have closed since (a posted tile is to within 2).
++// Where ally a is, seen or as it posted it (comms_ally, or its slot's cell) within the last 2 rounds; in
++// `slack` the steps it may have closed since (a posted tile is to within comms::told_error()).
+ bool recent_tile(const World& world, const ChampionBelief& a, vec2& at, int& slack) {
+     constexpr int recent = 2;
+     if (a.visible) return at = a.pos, slack = 0, true;
+     int told = -1;
+     if (params::comms_ally && comms::told_ally(a.index, at, told) && told >= world.round - recent && told > a.pos_round)
+-        return slack = world.round - told + 2, true;
++        return slack = world.round - told + comms::told_error(), true;
+     if (a.pos_source == Source::seen && a.pos_round >= world.round - recent && in_bounds(a.pos))
+         return at = a.pos, slack = world.round - a.pos_round, true;
+     return false;
+diff -ruN -x .cambc -x compile_commands.json -x READY bots/variants/charybdis-cb9f86d/src/economy/crew.cc bots/variants/cbx-allps/src/economy/crew.cc
+--- bots/variants/charybdis-cb9f86d/src/economy/crew.cc	2026-11-11 18:50:25.012681192 +0000
++++ bots/variants/cbx-allps/src/economy/crew.cc	2026-11-11 23:54:32.367755745 +0000
+@@ -102,7 +102,7 @@
+ 
+ void read_avail(const World& world, const CrewAllies& allies, const CrewAllies::Ally& x) {
+     x.has_avail = true;
+-    x.avail = 0, x.harmless_claim = x.on_cleared = false;
++    x.avail = 0, x.harmless_claim = x.on_cleared = x.told = false;
+     const auto& a = *x.a;
+     if (a.is_self || !a.alive || farms_gold(world, a)) return;
+     const auto& map = world.map();
+@@ -110,15 +110,20 @@
+         x.avail = 1;
+         return;
+     }
+-    if (!a.visible) return;
++    // Out of sight, its slot's tile places it: crew_available_radius reaches past our vision.
++    if (!a.visible && !told_tile(world, a, x.told_at)) return;
++    x.told = !a.visible;
++    const vec2 at = x.told ? x.told_at : a.pos;
+     const int n = static_cast<int>(map.groups.size());
+     const bool harmless = x.claim < 0 || (x.claim < n && map.groups[x.claim].strength <= 0);
+-    if (harmless && dist(a.pos, allies.here) <= params::crew_available_radius) {
++    if (harmless && dist(at, allies.here) <= params::crew_available_radius) {
+         x.avail = 1;
+         return;
+     }
+     x.avail = 2;
+     if (x.claim >= 0 && harmless) x.harmless_claim = true, x.claim_centre = map.groups[x.claim].centre;
++    // A cell centre is no tile it stands on.
++    if (x.told) return;
+     if (const int on = map.group_at(a.pos); on >= 0 && world.camps[on].state == CampState::cleared)
+         x.on_cleared = true, x.on_centre = map.groups[on].centre;
+ }
+@@ -145,7 +150,7 @@
+     if (a.avail == 0 || a.claim == g) return false;
+     if (a.avail == 1) return true;
+     const vec2 centre = world.map().groups[g].centre;
+-    if (dist(a.a->pos, centre) > params::crew_available_radius) return false;
++    if (dist(a.told ? a.told_at : a.a->pos, centre) > params::crew_available_radius) return false;
+     if (a.claim < 0) return true;
+     if (a.harmless_claim && dist(a.claim_centre, centre) <= params::crew_near_radius) return true;
+     return a.on_cleared && dist(a.on_centre, centre) <= params::crew_near_radius;
+@@ -155,6 +160,7 @@
+     // One read of our own record: each accessor reads the engine again.
+     const auto& me = my_record();
+     out.here = {me.x, me.y};
++    out.world = &world;
+     out.my_hp = me.health, out.my_max = me.max_health;
+     out.line = line, out.n = 0, out.n_claiming = 0, out.self_slot = -1;
+     out.n_joinable = -1, out.avail_group = -1;
+@@ -174,8 +180,20 @@
+ std::uint32_t crew_claimer_bits(const CrewAllies& allies, int g) {
+     std::uint32_t bits = 0;
+     for (int k = 0; k < allies.n_claiming; ++k)
+-        if (const int i = allies.claiming[static_cast<std::size_t>(k)]; allies.at[static_cast<std::size_t>(i)].seen && allies.at[static_cast<std::size_t>(i)].claim == g)
+-            bits |= 1u << i;
++        if (const int i = allies.claiming[static_cast<std::size_t>(k)]; allies.at[static_cast<std::size_t>(i)].claim == g) {
++            const auto& x = allies.at[static_cast<std::size_t>(i)];
++            bool counts = x.seen;
++            // Out of sight, the tile it posts (comms_slots) says whether it is at the group, over a sight
++            // within crew_seen_rounds: it may have left since (a recall, a heal trip).
++            if (vec2 at{-1, -1}; !x.a->visible && params::comms_slots) {
++                if (int told = -1; comms::told_ally(x.a->index, at, told)) {
++                    const vec2 centre = allies.world->map().groups[g].centre;
++                    counts = std::max(0, dist(at, centre) - x.a->facts().attack_range())
++                             <= std::max(0, dist(allies.here, centre) - allies.world->me().facts().attack_range()) + 2;
++                }
++            }
++            if (counts) bits |= 1u << i;
++        }
+     return bits;
+ }
+ 
+@@ -300,7 +318,7 @@
+     const vec2 centre = world.map().groups[g].centre;
+     for (std::uint32_t b = crew_available_bits(world, allies, g); b; b &= b - 1) {
+         const auto& a = allies.at[static_cast<std::size_t>(std::countr_zero(b))];
+-        free[n_free++] = {dist(a.a->pos, centre), a.a->index};
++        free[n_free++] = {dist(a.told ? a.told_at : a.a->pos, centre), a.a->index};
+     }
+     std::sort(free.begin(), free.begin() + n_free);
+     for (int i = 0; i < n_free && 1 + plan.claimers + plan.n_expected < cap && plan.trips > 0; ++i) {
+@@ -309,7 +327,8 @@
+         more.expected[more.n_expected++] = slot;
+         const auto& a = allies.at[static_cast<std::size_t>(slot)];
+         more.output += crew_output(a);
+-        if (a.a->alive && in_time(a)) joins |= 1u << slot;
++        // One placed by its slot adds output only, as a claimer out of sight does.
++        if (a.a->alive && !a.told && in_time(a)) joins |= 1u << slot;
+         price(more);
+         if (more.trips >= plan.trips) break;
+         plan = more;
+diff -ruN -x .cambc -x compile_commands.json -x READY bots/variants/charybdis-cb9f86d/src/economy/shop.cc bots/variants/cbx-allps/src/economy/shop.cc
+--- bots/variants/charybdis-cb9f86d/src/economy/shop.cc	2026-11-11 18:50:25.013295741 +0000
++++ bots/variants/cbx-allps/src/economy/shop.cc	2026-11-11 23:54:35.862999224 +0000
+@@ -556,7 +556,9 @@
+         kept.gain = share * kept.next.saved * rounds_per_gem;
+         kept.per_gold = params::gold_price_scale * share * kept.next.saved / static_cast<float>(std::max(1u, kept.next.cost));
+         const float a = static_cast<float>(params::mid_gold_rise), b = static_cast<float>(params::mid_gold_hold),
+-                    c = static_cast<float>(params::mid_gold_end), t = static_cast<float>(std::max(world.score.ally, world.score.enemy));
++                    c = static_cast<float>(params::mid_gold_end);
++        const Standing st = standing(world);
++        const float t = static_cast<float>(std::max(st.ally, st.enemy));
+         const float h = t < a ? t / a : t <= b ? 1.0f : std::max(0.0f, (c - t) / (c - b));
+         kept.per_gold *= 1.0f + (params::mid_gold - 1.0f) * h;
+     }
+diff -ruN -x .cambc -x compile_commands.json -x READY bots/variants/charybdis-cb9f86d/src/main.cc bots/variants/cbx-allps/src/main.cc
+--- bots/variants/charybdis-cb9f86d/src/main.cc	2026-11-11 22:38:08.634547560 +0000
++++ bots/variants/cbx-allps/src/main.cc	2026-11-11 23:54:32.360388558 +0000
+@@ -326,7 +326,7 @@
+         const auto now = aph::my_position();
+         const bool moved = world->me().alive && now.x >= 0 && now != world->sight_pos();
+         const bool refresh = moved && aph::fuel_ok(refresh_floor);
+-        run("comms send", [&] { aph::comms::send(*world, moved, refresh); });
++        run("comms send", [&] { aph::comms::send(*world, now, moved, refresh); });
+         run("debug", [&] { world->debug_output(); });
+         if (!aph::fuel_ok(late_floor)) return;
+         if (!world->is_stale())
+diff -ruN -x .cambc -x compile_commands.json -x READY bots/variants/charybdis-cb9f86d/src/model/comms.cc bots/variants/cbx-allps/src/model/comms.cc
+--- bots/variants/charybdis-cb9f86d/src/model/comms.cc	2026-11-11 18:50:25.014199593 +0000
++++ bots/variants/cbx-allps/src/model/comms.cc	2026-11-11 23:54:32.361463382 +0000
+@@ -50,6 +50,9 @@
+     BitField ally;
+     std::uint64_t ally_bits = 0;
+     int cell = 1, cells_y = 1;
++    // comms_slots: a slot value below pos_base is a claim + 1, from it on a cell. pos_on: the cells fit.
++    bool pos_on = false;
++    int pos_base = 1 << 30, max_x = 0, max_y = 0;
+     int period(int g) const { return camp_offset[g + 1] - camp_offset[g]; }
+ };
+ 
+@@ -75,12 +78,24 @@
+     const int bag_width = width_of(128 * static_cast<std::uint64_t>(L.team));
+     const int claim_width = std::min(width_of(static_cast<std::uint64_t>(groups) + 1), (64 - bag_width) / L.team);
+     L.claim_cap = (1 << claim_width) - 1;
+-    for (int i = 0; i < L.team; ++i) L.claim[static_cast<std::size_t>(i)] = field(claim_width);
+-    L.bag = field(bag_width);
+     const int camp_width = static_cast<int>(std::bit_width(static_cast<std::uint64_t>(L.camp_offset.back())));
++    // The camp record stays wherever it fitted before; the slots share what is left.
++    const bool camp_fits = L.team * claim_width + bag_width + camp_width <= 64;
++    const int slot_width = params::comms_slots ? std::min(16, (64 - bag_width - (camp_fits ? camp_width : 0)) / L.team) : claim_width;
++    for (int i = 0; i < L.team; ++i) L.claim[static_cast<std::size_t>(i)] = field(slot_width);
++    L.bag = field(bag_width);
+     L.camp_on = shift + camp_width <= 64;
+     if (L.camp_on) L.camp = field(camp_width);
+-    if (params::comms_ally && L.camp_on)
++    if (params::comms_slots) {
++        const int base = std::min(groups, L.claim_cap) + 1;
++        const auto room = (std::uint64_t{1} << slot_width) - static_cast<std::uint64_t>(base);
++        for (int c = 1; c <= std::max(map.width, map.height) && !L.pos_on; ++c) {
++            const auto nx = static_cast<std::uint64_t>((map.width + c - 1) / c), ny = static_cast<std::uint64_t>((map.height + c - 1) / c);
++            if (nx * ny <= room) L.cell = c, L.cells_y = static_cast<int>(ny), L.pos_base = base, L.pos_on = true;
++        }
++        L.max_x = map.width - 1, L.max_y = map.height - 1;
++    }
++    if (params::comms_ally && L.camp_on && !params::comms_slots)
+         for (const int c : {1, 3, 5}) {
+             const auto cells = static_cast<std::uint64_t>((map.width + c - 1) / c) * static_cast<std::uint64_t>((map.height + c - 1) / c);
+             const int width = width_of(cells * 4 * static_cast<std::uint64_t>(L.team) + 1);
+@@ -120,6 +135,13 @@
+ };
+ std::array<Told, 8> told_allies;
+ 
++// comms_slots, our own slot: the claim as last posted, the turns it still stays up, and its round.
++struct Slot {
++    std::uint64_t claim = 0;
++    int hold = 0, round = -(1 << 20);
++};
++Slot slot;
++
+ support_mailbox::State support;
+ int support_intent_round = -1;
+ bool support_intent_value = false;
+@@ -190,7 +212,9 @@
+     for (const auto& a : world.allies) {
+         if (a.is_self || a.index >= L.team) continue;
+         const auto p = payload_of(world, a);
+-        detail::posts.claims[a.index] = p >= 0 ? static_cast<int>(p & 0xff) - 1 : static_cast<int>(L.claim[static_cast<std::size_t>(a.index)].get(bits)) - 1;
++        // A slot holding a tile leaves the claim as last read.
++        if (const int v = static_cast<int>(L.claim[static_cast<std::size_t>(a.index)].get(bits)); p >= 0) detail::posts.claims[a.index] = static_cast<int>(p & 0xff) - 1;
++        else if (v < L.pos_base) detail::posts.claims[a.index] = v - 1;
+     }
+     if (const auto v = L.ally.get(bits); L.ally_on && (state.fresh & L.ally_bits) && v != 0) {
+         const auto code = v - 1, kinds = 4 * static_cast<std::uint64_t>(L.team);
+@@ -210,7 +234,7 @@
+ 
+ // No teammate acts during our turn: the bits are still those receive() read, if it read them this
+ // round. Older bits would overwrite what teammates wrote since, as would a turn finishing late.
+-void send(World& world, bool moved, bool refresh) {
++void send(World& world, vec2 now, bool moved, bool refresh) {
+     if (state.now_round != world.round || (finish_late() && world.resumed())) return;
+     const auto& L = layout(world);
+     auto bits = state.now;
+@@ -246,7 +270,14 @@
+     if (me < L.team) {
+         const auto& field = L.claim[static_cast<std::size_t>(me)];
+         const auto claim = static_cast<std::uint64_t>(world.me().alive && mine >= 0 && mine < L.claim_cap ? mine + 1 : 0);
+-        if (field.get(bits) != claim) field.set(bits, claim), dirty = true;
++        auto value = claim;
++        if (L.pos_on) {
++            if (claim != slot.claim) slot.claim = claim, slot.hold = 1, slot.round = round;
++            else if (slot.hold > 0) --slot.hold, slot.round = round;
++            else if (round - slot.round >= params::slot_refresh || !world.me().alive || now.x < 0) slot.round = round;
++            else value = static_cast<std::uint64_t>(L.pos_base + now.x / L.cell * L.cells_y + now.y / L.cell);
++        }
++        if (field.get(bits) != value) field.set(bits, value), dirty = true;
+     }
+ 
+     // One poster a round, by index among the allies that are not healers, while a healer lives.
+@@ -287,7 +318,17 @@
+ 
+ void bag(int gems) { detail::posts.my_bag = gems; }
+ 
++int told_error() { return layout_.pos_on ? layout_.cell / 2 : 2; }
++
+ bool told_ally(int ally, vec2& at, int& round) {
++    if (const auto& L = layout_; L.pos_on) {
++        if (ally < 0 || ally >= L.team) return false;
++        const int cell = static_cast<int>(L.claim[static_cast<std::size_t>(ally)].get(state.now)) - L.pos_base, h = L.cell / 2;
++        if (cell < 0) return false;
++        at = {std::min(cell / L.cells_y * L.cell + h, L.max_x), std::min(cell % L.cells_y * L.cell + h, L.max_y)};
++        round = state.now_round;
++        return true;
++    }
+     if (ally < 0 || ally >= 8 || told_allies[static_cast<std::size_t>(ally)].round < 0) return false;
+     at = told_allies[static_cast<std::size_t>(ally)].at;
+     round = told_allies[static_cast<std::size_t>(ally)].round;
+diff -ruN -x .cambc -x compile_commands.json -x READY bots/variants/charybdis-cb9f86d/src/model/comms.h bots/variants/cbx-allps/src/model/comms.h
+--- bots/variants/charybdis-cb9f86d/src/model/comms.h	2026-11-11 18:50:25.014234463 +0000
++++ bots/variants/cbx-allps/src/model/comms.h	2026-11-11 23:54:32.362498415 +0000
+@@ -18,11 +18,14 @@
+ } // namespace detail
+ 
+ // An ally's (by index) own position as it last posted it (params::comms_ally), to within 2; false if never.
++// With params::comms_slots: the centre of the cell in its slot now, posted at its latest turn.
+ bool told_ally(int ally, vec2& at, int& round);
++// How far a told tile can be from the ally when it posted it, in steps: half a slot cell, or 2 for comms_ally's record.
++int told_error();
+ // What teammates posted since our previous turn, merged into the world.
+ void receive(World& world);
+ // At the turn's end. With `refresh`, re-read vision first.
+-void send(World& world, bool moved, bool refresh);
++void send(World& world, vec2 now, bool moved, bool refresh);
+ // The gems we carry, posted when it changes.
+ void bag(int gems);
+ // The gems an ally (by index) carries as it last posted, rounded up to a multiple of 4 and capped
+diff -ruN -x .cambc -x compile_commands.json -x READY bots/variants/charybdis-cb9f86d/src/model/world.cc bots/variants/cbx-allps/src/model/world.cc
+--- bots/variants/charybdis-cb9f86d/src/model/world.cc	2026-11-11 22:52:51.347606378 +0000
++++ bots/variants/cbx-allps/src/model/world.cc	2026-11-12 01:41:33.505362506 +0000
+@@ -2911,6 +2911,11 @@
+         ally_scores_.resize(round + 1, ally_scores_.empty() ? ally : ally_scores_.back());
+         ally_scores_[round] = ally;
+     }
++    if (enemy_scores_.empty()) enemy_scores_.reserve(cambc::constants::max_rounds + 1);
++    if (static_cast<int>(enemy_scores_.size()) <= round) {
++        enemy_scores_.resize(round + 1, enemy_scores_.empty() ? enemy : enemy_scores_.back());
++        enemy_scores_[round] = enemy;
++    }
+     // No tribute landed: an ended channel was cancelled, and its bag kept.
+     if (enemy_delta <= 0) return;
+ 
+@@ -2956,6 +2961,12 @@
+     return static_cast<float>(score.ally - ally_scores_[from]) / static_cast<float>(round - from);
+ }
+ 
++float World::enemy_rate() const {
++    const int from = std::max(first_round, round / 2);
++    if (round <= from || from >= static_cast<int>(enemy_scores_.size())) return 0;
++    return static_cast<float>(score.enemy - enemy_scores_[from]) / static_cast<float>(round - from);
++}
++
+ void World::debug_output() const {
+     if constexpr (debug_beliefs) dump_beliefs();
+     if constexpr (debug_draw) {
+diff -ruN -x .cambc -x compile_commands.json -x READY bots/variants/charybdis-cb9f86d/src/model/world.h bots/variants/cbx-allps/src/model/world.h
+--- bots/variants/charybdis-cb9f86d/src/model/world.h	2026-11-11 22:52:51.347606378 +0000
++++ bots/variants/cbx-allps/src/model/world.h	2026-11-12 01:41:33.505560658 +0000
+@@ -750,6 +750,8 @@
+     // Our tributed gems a round over the later half of the game so far: it follows the economy's
+     // growth, unlike the whole game's average.
+     float ally_rate() const;
++    // The same for the enemy's tributed gems.
++    float enemy_rate() const;
+     bitboard visible; // this turn's vision (ours and our ward's)
+     // An enemy was seen changing priority: its team's order for next round can change until each
+     // has acted, and unseen ones' ranks are guesses.
+@@ -799,6 +801,7 @@
+     Tributing tributing_enemies() const;
+     void update_scores(const Tributing& tributing);
+     std::vector<int> ally_scores_; // by round
++    std::vector<int> enemy_scores_; // by round
+ 
+     std::unique_ptr<StaticMap> static_;
+     const ChampionBelief* me_ = nullptr; // &allies[self_index], set with the beliefs
+diff -ruN -x .cambc -x compile_commands.json -x READY bots/variants/charybdis-cb9f86d/src/params.h bots/variants/cbx-allps/src/params.h
+--- bots/variants/charybdis-cb9f86d/src/params.h	2026-11-11 18:50:25.015295767 +0000
++++ bots/variants/cbx-allps/src/params.h	2026-11-12 01:41:33.505647330 +0000
+@@ -48,6 +48,13 @@
+ // Each ally but the healers posts its own position in turn, in the shared bytes' free bits, for
+ // Willow's follow (support.cc); off on maps where it does not fit (comms.cc).
+ inline constexpr bool comms_ally = true;
++// Slot comms: each ally's claim field is one slot, as wide as the shared bytes allow after the bag and camp
++// records. It holds the claim when that changes (for two turns, so teammates on both sides of the turn
++// order read it) and every slot_refresh rounds, and the ally's own tile otherwise (a c x c cell, c the
++// smallest that fits). It replaces comms_ally's record. With it, a claimer out of sight still counts in
++// its group's crew while the tile in its slot is no farther from the group than we are, by 2.
++inline constexpr bool comms_slots = true;
++inline constexpr int slot_refresh = 8;
+ // tools/draftlab/parity.py's copies only: print the model draft's features and team in draft round 0
+ // (debug builds), to compare with features.mjs and model.mjs.
+ constexpr bool draft_parity = false;
+@@ -143,6 +150,14 @@
+ inline constexpr float heal_trip_fraction = 0.5362846f;
+ // Turns ahead a tribute's safety is judged over, each turn of the channel.
+ inline constexpr int tribute_window = 11;
++// A Prism carrying the game's winning bag goes home to heal before its tribute (fight.cc
++// finish_heal) while below the health one round of every living enemy's strikes takes. The guards:
++// `finish_lead`, only while the enemy's clock (its gems short over its recent tribute rate) runs past
++// our trip home and on to an altar; `finish_no_prism`, only while the enemy drafted no Prism (a hoard
++// it carries puts its clock out of sight).
++inline constexpr bool finish_heal = true;
++inline constexpr bool finish_lead = true;
++inline constexpr bool finish_no_prism = false;
+ // Most rounds to wait at a camp for it to return. Also bounds the wait after a recall out to farm.
+ inline constexpr int max_wait = 2;
+ // The weight on gold in farm choice of Tavi on its gold maps (MapEconomy::tavi_map):

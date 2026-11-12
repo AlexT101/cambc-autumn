@@ -1,0 +1,14 @@
+cbx-gp against charybdis-cb9f86d: batches [51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62] (12), 30911 paired games differ
+  fresh             -0.06 ±0.28  (49.94%, 49.67-50.22) of 30,720 maps, 245,760 games
+  fresh Fish        -0.19 ±0.37  (49.81%, 49.44-50.18) of 30,720 maps, 122,880 games
+  fresh Mite        +0.07 ±0.40  (50.07%, 49.67-50.47) of 30,720 maps, 122,880 games
+  fresh one-site    +0.22 ±0.50  (50.22%, 49.71-50.72) of 8,695 maps, 69,560 games
+  fresh multi-site  -0.17 ±0.33  (49.83%, 49.50-50.16) of 22,025 maps, 176,200 games
+  ladder            -0.75 ±1.27  (49.25%, 47.98-50.52) of 1,536 maps, 12,288 games
+  LLR high (0.505/0.5075) -8.66, low (0.4975/0.50) +0.83 [-2.94 | +2.94 | live 4.60]
+  cbx-gp         against Flp4: 82.91% of 64,512 (ladder maps included), out-of-fuel turns 8.09 a game, failed 0
+  cbx-gp         against Mt3q: 78.73% of 64,512 (ladder maps included), out-of-fuel turns 6.01 a game, failed 0
+  charybdis-cb9f86d against Flp4: 83.04% of 64,512 (ladder maps included), out-of-fuel turns 7.38 a game, failed 0
+  charybdis-cb9f86d against Mt3q: 78.79% of 64,512 (ladder maps included), out-of-fuel turns 5.48 a game, failed 0
+  cbx-gp         both bodies: out-of-fuel turns 7.053 a game of 129,024
+  charybdis-cb9f86d both bodies: out-of-fuel turns 6.430 a game of 129,024

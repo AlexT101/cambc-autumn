@@ -17743,3 +17743,41 @@ against `variants/charybdis-fix2` (= 518). Own drafts, real budget, fresh `--mix
     365,295 / 363,117 (+0.6%).
   - Shipped as charybdis 519 with one later change, untested: on our spawn, C1's extra fire is skipped when the fire a
     phase stays within home_survivable, as the solo clear already prices it.
+
+## (charybdis, 2026-11-12) Stacking today's small gains: no amplification; comms + psafe-a add to +0.27 (ZONE), gp-race and the ally consumers do not hold up
+
+The user asked: "try combining positive variants like 50.1 changes together to see if they have amplified effect". Parts
+on `variants/charybdis-cb9f86d` (= 517): cm (comms slots, cm2-k3), gp (gp-race), ck (allypos C + K), and later ps
+(psafe-a, at the coordinator's request). The draft nudge was left out (user: "probably remove this"). Each read is on
+maps none of its parts was picked on: 200k on pool batches 16-31, and 100k on 51-62 (53-62 grown from mapgen seeds
+2425000-2425099). Details and patches: [combo/README.md](ideas-2026-11-11/combo/README.md).
+
+Results against charybdis-cb9f86d:
+
+| arm | fuel | win% (95% CI) | games | Fish | Mite | OOF a game (REF) | verdict |
+|---|---|---|---|---|---|---|---|
+| cm | 200k | 50.22 (50.01-50.43) | 327,680 | +0.27 | +0.16 | 0.052 (0.053) | ZONE |
+| gp | 200k | 50.12 (49.90-50.34) | 327,680 | +0.13 | +0.12 | 0.055 (0.053) | ZONE |
+| cm+gp | 200k | 50.16 (49.94-50.39) | 327,680 | +0.15 | +0.18 | 0.056 (0.053) | ZONE |
+| cm+ck | 200k | 50.21 (49.99-50.42) | 327,680 | +0.23 | +0.19 | 0.053 (0.053) | ZONE |
+| cm+gp+ck | 200k | 50.25 (50.03-50.47) | 327,680 | +0.19 | +0.30 | 0.056 (0.053) | ZONE |
+| cm | 100k | 50.08 (49.82-50.33) | 245,760 | +0.07 | +0.09 | 6.43 (6.43) | level |
+| gp | 100k | 49.94 (49.67-50.22) | 245,760 | -0.19 | +0.07 | 7.05 (6.43) | no gain |
+| cm+gp | 100k | 50.17 (49.89-50.45) | 245,760 | +0.06 | +0.28 | 7.03 (6.43) | low H1 only |
+| cm+ck | 100k | 49.92 (49.65-50.18) | 245,760 | -0.02 | -0.14 | 6.50 (6.43) | no gain |
+| cm+gp+ck | 100k | 49.94 (49.66-50.22) | 245,760 | -0.22 | +0.10 | 7.10 (6.43) | no gain |
+| ps | 100k | 50.17 (49.99-50.36) | 245,760 | +0.07 | +0.28 | 6.52 (6.43) | ZONE |
+| **cm+ps** | 100k | **50.27 (50.01-50.53)** | 245,760 | +0.38 | +0.16 | 6.53 (6.43) | **ZONE** |
+| cm+gp+ck+ps | 100k | 50.16 (49.88-50.43) | 245,760 | +0.10 | +0.21 | 7.16 (6.43) | low H1 only |
+
+- Paired contrasts on the same maps: every interaction is within noise of zero (cm x gp -0.18 ±0.29 at 200k, +0.15
+  ±0.36 at 100k; cm x ps +0.02 ±0.25). The full cm+gp+ck stack against cm alone: +0.03 ±0.22 at 200k, -0.14 ±0.28 at
+  100k. ps adds +0.19 to +0.21 on top of anything, its own size.
+- gp and ck shrank to about zero on held-out maps (gp given cm -0.06 / +0.09; ck given cm -0.01 / -0.16): regression
+  to the mean for arms picked at +0.1-0.2.
+- gp costs about 0.6 out-of-fuel turns a game at 100k (+10%) in every arm that holds it. Its earlier gate was at
+  200k only, where this does not show. Not yet measured: whether it is the per-turn `note_standing` / `standing()`
+  compute or play closer to the budget.
+
+Verdict: nothing amplifies. The stack worth taking is cm + ps (`variants/cbx-cmps`), a ZONE at 100k on held-out maps
+with level fuel, by judgement under the zone rule. Leave ck out. Leave gp-race out until its fuel cost is found.
