@@ -40,9 +40,13 @@ def _live_versions():
     except OSError:
         return
     for line in lines:
-        e = json.loads(line).get("entry") or {}
+        rec = json.loads(line); e = rec.get("entry") or {}
         if e.get("workspace") and e.get("version") is not None:
             seen.setdefault(e["version"], set()).add(e["workspace"])
+        elif rec.get("version") is not None and rec.get("label") and not e:
+            # A batch-mode record (live_batches.py) names no workspace: its label's one build dir, if exactly one.
+            ws = [str(d) for d in (SCHED / "build").glob(f'{rec["label"]}-[0-9]*') if d.is_dir()]
+            if len(ws) == 1: seen.setdefault(rec["version"], set()).add(ws[0])
     for num, wss in sorted(seen.items()):
         src = Path(next(iter(wss))) / "bots/ocean/src"
         if len(wss) > 1 or f"v{num}" in VERSIONS or not src.is_dir():

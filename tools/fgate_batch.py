@@ -222,6 +222,13 @@ def suite(maps, n, j):
             'maps': dict(rows), 'games': 2 * (len(rows) + len(ladder()))}
 
 
+def ready_body(v):
+    """A body dir built elsewhere (e.g. research/ideas-2026-11-12/mitefit/mkbody.py: --mite-body mf-c1): variants/<v>
+    carrying the run-time import, used as it is."""
+    h = ROOT / 'bots/variants' / v / 'src/experiment_config.h'
+    return h.is_file() and 'import_module' in h.read_text()
+
+
 def body(fg, version):
     """variants/rt-<version>: noise body 1 of that version with its seed and salt read at run time. Built once."""
     name = f'variants/rt-{version}'; dst = ROOT / 'bots' / name; mark = Path(fg.LOCKS) / f'built-rt-{version}'
@@ -323,11 +330,12 @@ def main(argv=None):
     if td[0] != td[1]:
         ap.error(f'test_draft differs (CAND {td[0]}, REF {td[1]}): a paired gate needs both bots on the same draft')
     for v, known in ((a.fish_body, ['Flp'] + fg.FISH_PATCHES), (a.mite_body, ['Mt3p'] + fg.MITE_PATCHES)):
-        if v not in known: ap.error(f'unknown body {v}: one of {", ".join(known)}')
+        if v not in known and not ready_body(v):
+            ap.error(f'unknown body {v}: one of {", ".join(known)}, or a ready run-time body dir variants/{v}')
     bodies = {'F': a.fish_body, 'M': a.mite_body}
     fuel = ('' if a.fuel is None else f'-fuel{a.fuel}') + ladder_tag() + pool_tag()
     maps, lad = pool(), set(ladder())
-    opp = {o: f'variants/rt-{v}' for o, v in bodies.items()} if a.no_run else {o: body(fg, v) for o, v in bodies.items()}
+    opp = {o: f'variants/{v}' if ready_body(v) else f'variants/rt-{v}' if a.no_run else body(fg, v) for o, v in bodies.items()}
 
     def rname(bot, o, j):
         return f'fb{fg.ENG}-{os.path.basename(bot.rstrip("/")).removeprefix("oc-")}-{bodies[o]}-m{a.batch_maps}b{j:03d}{fuel}'
