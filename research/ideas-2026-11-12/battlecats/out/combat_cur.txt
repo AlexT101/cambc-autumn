@@ -1,0 +1,45 @@
+1605 games ['cur'] Counter({'us': 956, 'other': 464, 'Fish': 110, 'Mite': 75})
+
+== bc target choice, 27892 attacks/casts with 2+ enemy champions in reach (random pick would match 0.47):
+  lowest hp 72.3%, lowest hp fraction 71.6%, nearest 87.4%, most gems 52.0% of 14354 with a carrier present
+  chosen/expected by type: Prism 1.17, Cassi 1.15, Ren 1.15, Issac 1.14, Heart of Ruin 1.04, Vendetta 1.03, Varg 0.94, Tavi 0.94, Willow 0.94, Ryth 0.93, Stellar 0.92, Marcella 0.78, Vesper Vale 0.78
+
+== opp target choice, 41764 attacks/casts with 2+ enemy champions in reach (random pick would match 0.47):
+  lowest hp 76.0%, lowest hp fraction 74.9%, nearest 80.1%, most gems 60.0% of 24171 with a carrier present
+  chosen/expected by type: Cassi 1.40, Prism 1.40, Willow 1.28, Vendetta 1.16, Ren 1.04, Heart of Ruin 0.99, Varg 0.96, Ryth 0.93, Vesper Vale 0.91, Issac 0.89, Marcella 0.75
+
+== bc with an enemy within 3 (round-start positions): P(moves away), P(hits a champion), P(dies this round)
+  hp <.25   n= 26184 away 0.61 hit 0.24 died 0.218
+  hp <.5    n= 61866 away 0.49 hit 0.39 died 0.025
+  hp <.75   n=102816 away 0.34 hit 0.45 died 0.006
+  hp >=.75  n=214882 away 0.26 hit 0.41 died 0.004
+  enemies-allies within 5 = -2 n= 77625 away 0.25 hit 0.41 died 0.016
+  enemies-allies within 5 = -1 n=106930 away 0.29 hit 0.42 died 0.015
+  enemies-allies within 5 = +0 n=141423 away 0.35 hit 0.41 died 0.018
+  enemies-allies within 5 = +1 n= 58094 away 0.44 hit 0.38 died 0.031
+  enemies-allies within 5 = +2 n= 21676 away 0.48 hit 0.36 died 0.072
+
+== opp with an enemy within 3 (round-start positions): P(moves away), P(hits a champion), P(dies this round)
+  hp <.25   n= 24320 away 0.56 hit 0.31 died 0.223
+  hp <.5    n= 53160 away 0.51 hit 0.41 died 0.026
+  hp <.75   n= 97485 away 0.38 hit 0.47 died 0.006
+  hp >=.75  n=231249 away 0.29 hit 0.46 died 0.005
+  enemies-allies within 5 = -2 n= 94546 away 0.27 hit 0.43 died 0.010
+  enemies-allies within 5 = -1 n=104740 away 0.34 hit 0.44 died 0.015
+  enemies-allies within 5 = +0 n=132660 away 0.39 hit 0.46 died 0.020
+  enemies-allies within 5 = +1 n= 54492 away 0.45 hit 0.45 died 0.037
+  enemies-allies within 5 = +2 n= 19776 away 0.43 hit 0.48 died 0.064
+
+== kills / deaths per game (BC perspective), and how
+ vs us (956): BC kills 5.1 (gems taken 115), BC deaths 7.1 (camp 0.22, gems lost 134)
+   BC killers: Prism 1.09, Marcella 0.95, Vendetta 0.85, Heart of Ruin 0.63, Vesper Vale 0.52, Cassi 0.46 | victims: C&I 1.74, Prism 0.73, Heart of Ruin 0.51, Willow 0.51, Marcella 0.35, Vesper Vale 0.34
+   BC dead: C&I 2.60, Heart of Ruin 1.35, Vendetta 0.84, Marcella 0.84, Varg 0.44, Prism 0.33 | kill cause: {'Attack': 2435, 'Cast ability': 2478}
+ vs Fish (110): BC kills 6.8 (gems taken 64), BC deaths 8.1 (camp 0.19, gems lost 146)
+   BC killers: Heart of Ruin 1.41, Vendetta 1.31, Prism 1.26, Marcella 1.15, Vesper Vale 0.46, Cassi 0.40 | victims: C&I 2.17, Heart of Ruin 1.42, Vendetta 1.05, Marcella 0.92, Willow 0.77, Vesper Vale 0.35
+   BC dead: C&I 3.15, Heart of Ruin 1.58, Vendetta 0.89, Marcella 0.86, Prism 0.48, Ryth 0.40 | kill cause: {'Cast ability': 368, 'Attack': 376}
+ vs Mite (75): BC kills 6.4 (gems taken 113), BC deaths 6.5 (camp 0.25, gems lost 115)
+   BC killers: Prism 1.49, Vendetta 1.25, Vesper Vale 1.07, Heart of Ruin 0.76, Cassi 0.52, Marcella 0.48 | victims: C&I 2.23, Heart of Ruin 1.27, Tavi 1.00, Vesper Vale 0.83, Prism 0.44, Vendetta 0.37
+   BC dead: C&I 2.56, Heart of Ruin 1.05, Vendetta 0.87, Marcella 0.63, Varg 0.52, Ryth 0.36 | kill cause: {'Attack': 279, 'Cast ability': 204}
+ vs other (464): BC kills 8.0 (gems taken 107), BC deaths 6.0 (camp 0.19, gems lost 106)
+   BC killers: Vendetta 1.59, Marcella 1.50, Heart of Ruin 1.18, Prism 1.14, Vesper Vale 0.84, Cassi 0.72 | victims: C&I 1.70, Heart of Ruin 1.56, Vesper Vale 0.91, Marcella 0.91, Willow 0.64, Varg 0.63
+   BC dead: C&I 2.27, Heart of Ruin 1.12, Marcella 0.67, Vendetta 0.66, Varg 0.31, Prism 0.27 | kill cause: {'Attack': 2034, 'Cast ability': 1674}

@@ -17804,3 +17804,49 @@ Results against charybdis-p3 (519), 100k, fgate, unmetered Flp4/Mt3q bodies:
 
 Verdict: ZONE for both. cm + ps is the best point estimate; ps alone is the smaller change with the tighter read. Which
 to take into charybdis is the user's and teammate's call.
+
+## (analysis, 2026-11-12) BattleCats reverse-engineered: fixed draft, type-ranked priorities, a Prism bank; a fourth classifier class
+
+No games played. Data: big-arm capture rows for every BattleCats match since 11-05 (58,964) and the 3,564 decoded
+replays since 11-08 (1,605 of the current version, from 11-10 09:00 UTC; 956 of them against us). Full note,
+numbers and tools: [battlecats/README.md](ideas-2026-11-12/battlecats/README.md).
+
+- **Draft:** a fixed table per (map, side); 99.4% of current ranked games repeat their cell. Our picks add nothing
+  to predicting its later picks, so it does not counter-pick.
+  - C&I 99%, HoR 89%. Prism, when picked, is always pick 0, on gem-cluster-rich maps.
+  - C&I entered on 11-09, in a 24-hour rollout.
+- **Priorities:** v = L or L + 7 when quiet (carrying or empty), with L = 13 − rank in a fixed type order (HoR > Varg
+  > Ryth > Marcella > Ren > Issac > Vendetta > Willow/Vesper > Prism > Cassi).
+  - Approach levels: L − 7m, with m rising about 2 a tile as the nearest seen enemy closes.
+  - Flags: 40 retreat, 35 chase, 38 strike.
+  - These cover 99.6% of its counted reads.
+- **Macro:** Prism keeps every share it gets (476 gems a game) and channels only when its bag covers what is still
+  needed to win.
+  - The channel: median r702, 57 turns, one escort. It completes 19% against us, 50% against others.
+  - The others pay in small bags (median 25).
+  - 35% of its locks land on a live enemy tribute, median 3 rounds after it starts.
+  - Enemy 150+ tributes complete 24% against it.
+- **Fight:** basic attacks go to the lowest absolute health in reach, spells mostly to the nearest. The retreat flag
+  is graded by health (64% under 10% health, 24% at 20-30%, ~3% above half) and is never raised by the bag.
+- **Against us:** it wins 29.5% of 2,100 current games.
+  - In its wins we die 10.3 times a game (3.2 in ours) and lose 256 gems to kills (58).
+  - Our Prism dies 1.74 a game (0.31); BattleCats' gem-fed Prism is its main killer.
+  - It does well on one- and two-altar maps (03twisty 17/17).
+- **Does it classify us?** No evidence: the same encoding and map-matched rates as against others, with plain
+  causes for the differences. Its play is randomised from round 2.
+- **Classifier:** three BattleCats tokens give a 4-class model, per instance on games from 11-11:
+
+  | round | BC recall | BC precision |
+  |---|---|---|
+  | 1 (draft) | 0.78 | 0.95 |
+  | 50 | 0.91 | 0.97 |
+  | 100 | 0.95 | 0.98 |
+  | 300 | 0.98 | 0.99 |
+
+  - Other teams read as BattleCats ≤ 3% (Trzy 14% at r300). Team Kungarna shares half the encoding and reads as
+    BattleCats unless trained as "other".
+  - **Mite's 11-11 version** (new values 1,044,480+, 129-392, 2097) **is read as "other"** by the 11-09 tables: recall
+    0.64 at r100. Refit before trusting `opp::mite`.
+- **A body** needs the draft table, the priority writer and the Prism-bank rule first; then the fight rules and
+  builds (Vesper Bruiser-Strength ×7, Marcella/HoR Bruiser-Focus). It must take a per-game seed. Sketch only, not
+  built.

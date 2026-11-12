@@ -1,0 +1,26 @@
+1605 games ['cur'] Counter({'us': 956, 'other': 464, 'Fish': 110, 'Mite': 75})
+
+== bc: first capture round median 26, captures by r300 mean 20.2
+ first-capture distance rank among all groups (0 = nearest): [(0, 873), (1, 343), (2, 125), (3, 75), (4, 38), (12, 30)]
+ capture #1: Wolf+/own 26.4%, Gold cl/own 24.9%, Elk+/own 23.7%, Gem cl/own 9.6%, Wolf/own 4.9%, Wolf+/mid 2.4%, Gold cl/mid 2.0%
+ capture #2: Wolf+/own 28.7%, Elk+/own 19.1%, Gold cl/own 18.4%, Gem cl/own 14.4%, Wolf+/mid 3.7%, Wolf/own 3.1%, Elk+/mid 2.7%
+ capture #3: Wolf+/own 31.6%, Gold cl/own 18.8%, Elk+/own 12.9%, Gem cl/own 12.4%, Gem cl/mid 5.7%, Wolf+/mid 5.7%, Gold cl/mid 3.4%
+ captures r<=300 by side: {'own': '74.9%', 'mid': '16.1%', 'enemy': '9.0%'}  by type: {'Wolf+': '32.7%', 'Gem cl': '24.6%', 'Gold cl': '24.6%', 'Elk+': '14.4%', 'Wolf': '2.6%', 'Clusters mix': '0.6%', 'Golem+': '0.3%', 'Elk': '0.1%', 'Golem': '0.0%'}
+
+== opp: first capture round median 24, captures by r300 mean 18.8
+ first-capture distance rank among all groups (0 = nearest): [(0, 860), (1, 294), (2, 140), (3, 74), (4, 55), (8, 39)]
+ capture #1: Elk+/own 26.4%, Gold cl/own 22.8%, Wolf+/own 22.7%, Gem cl/own 13.0%, Wolf/own 3.9%, Elk+/mid 3.7%, Gem cl/mid 2.2%
+ capture #2: Wolf+/own 26.7%, Elk+/own 19.9%, Gold cl/own 16.6%, Gem cl/own 13.1%, Wolf+/mid 4.8%, Gem cl/mid 4.4%, Wolf/own 3.7%
+ capture #3: Wolf+/own 32.9%, Gold cl/own 14.5%, Elk+/own 13.2%, Gem cl/own 12.2%, Gem cl/mid 6.5%, Wolf+/mid 5.4%, Wolf/own 3.0%
+ captures r<=300 by side: {'own': '74.5%', 'mid': '17.7%', 'enemy': '7.8%'}  by type: {'Wolf+': '34.0%', 'Gem cl': '25.1%', 'Gold cl': '20.5%', 'Elk+': '15.8%', 'Wolf': '3.0%', 'Clusters mix': '0.7%', 'Golem+': '0.5%', 'Golem': '0.1%', 'Elk': '0.1%', 'Monolith': '0.0%'}
+
+== checkpoints (BC minus opponent), mean over games
+ us (956 games, BC wins 30.6%): r100: gems -10 gold -11 kills -0.0 (n956) | r200: gems -24 gold -52 kills -0.2 (n956) | r400: gems -49 gold -210 kills -0.5 (n941) | r600: gems -70 gold -392 kills -0.9 (n768) | r1000: gems -39 gold -183 kills -1.1 (n254)
+ Fish (110 games, BC wins 42.7%): r100: gems -10 gold -66 kills -0.1 (n110) | r200: gems -15 gold -117 kills -0.1 (n110) | r400: gems -55 gold -144 kills -0.2 (n109) | r600: gems -87 gold -195 kills -0.5 (n96) | r1000: gems -136 gold -452 kills -0.4 (n28)
+ Mite (75 games, BC wins 37.3%): r100: gems -1 gold -55 kills -0.2 (n75) | r200: gems -19 gold -93 kills -0.1 (n75) | r400: gems -66 gold -93 kills -0.1 (n75) | r600: gems -103 gold +144 kills +0.5 (n65) | r1000: gems -103 gold +2343 kills +1.2 (n19)
+ other (464 games, BC wins 67.9%): r100: gems -2 gold +40 kills +0.1 (n464) | r200: gems +4 gold +127 kills +0.3 (n464) | r400: gems +23 gold +351 kills +0.6 (n461) | r600: gems +41 gold +729 kills +0.8 (n409) | r1000: gems +52 gold +1739 kills +1.6 (n159)
+bc: enemy-side captures per game 5.8
+opp: enemy-side captures per game 5.6
+
+BC capture gems by champion: Vendetta 18.3%, Prism 17.9%, Marcella 14.5%, Heart of Ruin 13.0%, Varg 10.3%, Issac 9.2%, Vesper Vale 7.1%, Cassi 6.1%, Ryth 2.5%, Willow 0.9%, Ren 0.1%
+BC capture gold by champion: Vendetta 23.4%, Vesper Vale 17.7%, Heart of Ruin 13.6%, Varg 12.3%, Marcella 9.3%, Issac 8.4%, Prism 5.9%, Cassi 5.7%, Ryth 2.7%, Ren 0.6%, Willow 0.4%
