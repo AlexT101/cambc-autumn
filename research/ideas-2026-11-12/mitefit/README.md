@@ -122,7 +122,45 @@ SPSA setup:
 The gates are in `gate1.sh`: fgate fixed reads from pool batch 30, against the Fish body with mf-c2, mf-c1 and
 Mt3q, plus a head-to-head against c520-ps on a fresh suite (seed 7931000).
 
-RESULTS-PLACEHOLDER
+Results against c520-ps (mft1-c520; fgate v2 pool from batch 30, 2 batches; Flp4 with each Mite body, unmetered;
+100k fuel):
+
+| read | win% (95% CI) | maps | games |
+|---|---|---|---|
+| fresh, with mf-c2 | 50.02% (49.33-50.70) | 5,120 | 40,960 |
+| fresh Mite, mf-c2 | 50.09% (49.01-51.16) | 5,120 | 20,480 |
+| fresh Mite, mf-c1 (the training body) | 49.48% (48.38-50.58) | 5,120 | 20,480 |
+| fresh Mite, Mt3q | 49.45% (48.54-50.37) | 5,120 | 20,480 |
+| fresh Fish, Flp4 | 49.94% (49.10-50.79) | 5,120 | 20,480 |
+| ladder side read, with mf-c2 | 50.68% (47.57-53.80) | 256 | 2,048 |
+| h2h, fresh ladder-v2 suite 7931000 | 51.2% (46.8-55.5) | 256 | 512 |
+
+- Null everywhere, the training body included.
+- The SPSA never learned: training win against the static members was flat at 71% in every 100 iterations.
+- No Mite-specific constant set beats our constants, in line with forkcomp's finding from past SPSA logs that
+  splitting constants by opponent buys at most 0.07 points.
+
+tune2 was the same SPSA against mf-c2 members on 40 fresh ladder-v3 suites (`tune2.sh`). It stopped at iteration 21
+and was not resumed, because tune1 never learned and the best bot had moved on (lab-emb6-c520-ps).
+
+## Vesper carry (rule_vcarry.py), mitere's rule 1
+
+The Prism carry macro, generalised to Vesper for groups with gold.
+
+Paired results on the 128 ladder maps against mf-c2, 8 members, 2,048 games each:
+
+| bot | our win% | paired difference | Vesper share by r100 | Prism max bag |
+|---|---|---|---|---|
+| c520-ps | 69.8 | | 0.41 | 441 |
+| vc-c520, Vesper takes every gold group | 67.3 | −2.4 ±2.2 | 0.57 | 334 |
+| vc2-c520, Prism keeps every gem group | 70.3 | +0.5 ±1.9 | 0.43 | 456 |
+
+- vc-c520 copies Mite's gold split. But in games with both Vesper and Prism the Prism loses about half its gems,
+  and those games lose about 10 points (mitere's paired read).
+- vc2-c520 barely moves anything: pure-gold groups are rare.
+- As a body layer, mf-c8 (mf-c2 + vcarry) calibrates the same as mf-c2: our win% 63.2 / 68.5 / 70.6 for
+  v115 / v116 / v117. It does not close the body's r100 gold gap either.
+- Not pursued.
 
 ## Files
 

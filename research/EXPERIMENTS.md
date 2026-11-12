@@ -18107,3 +18107,57 @@ Results against chy-life (520), 100k, fgate, unmetered Flp4/Mt3q bodies:
 Verdict: ZONE. Take c520-ps on judgement, as the best version: a consistent held-out gain with a shown mechanism and
 level fuel. Comms is dropped. The patch against chy-life is for the teammate to take into bots/charybdis. It is queued
 live at priority 89, in place of the dropped c519-cmps line.
+
+## (mitefit, 2026-11-12) A current-Mite body (mf-c2) calibrates on live; a Mite-only constant tune is null
+
+The task was to fit a body to current Mite (live pin r7) and tune our constants against it. Details:
+[mitefit/README.md](ideas-2026-11-12/mitefit/README.md).
+
+**The body, `variants/mf-c2`.** It is c520-ps with:
+- Mite r7's exact picks per ladder map and side. Mite's draft is deterministic per cell. Elsewhere it uses an r7
+  pick model.
+- 0.2 run-time noise on the 19 lab knobs.
+- Mite's retreat rule as constants (mitere): hurt line 0.40, bag brake 11, never stays when hurt or carrying, and
+  numbers never send a healthy body home.
+
+`fgate.py --mite-body mf-c2` takes it.
+
+Results against Mite r7, our win %, live against bodies:
+
+| our bot | live | Mt3q | mf-c1 (no retreat rule) | mf-c2 |
+|---|---|---|---|---|
+| v115 oc-dfuel-506 | 61.5 (49.7-73.4) of 65 | 74.0 | 57.4 | 62.7 |
+| v116 charybdis-p3 | 66.2 (60.4-71.9) of 260 | 77.4 | 64.3 | 68.5 |
+| v117 c520-ps | 66.9 (59.2-74.6) of 145 | 78.9 | 66.7 | 69.8 |
+
+- Body columns are the 128 ladder maps, both sides, 8 noise members: 2,048 games each, ±2.0.
+- livefork (v116 live games forked at r100/300/600), body − live: Mt3q +4.7 ±2.6, mf-c1 −0.8, mf-c2 +0.2.
+- The body reproduces the 00stampede loss.
+
+**Mite's rules as layers** (locks, opening pack, Vesper holds and build, Vesper carry) each moved their own
+statistic toward live, but cost the body early gold and made it easier: our win rate rose to 71-74%. None was kept.
+
+**Mite-only SPSA** (`tune1.sh`):
+- 19 knobs, 600 iterations against six static mf-c1 members, on 40 fresh ladder-v2 suites.
+- Training win was flat at 71% throughout.
+
+Results against c520-ps (mft1-c520; fgate v2 pool from batch 30, 2 batches; 100k):
+
+| read | win% (95% CI) | games |
+|---|---|---|
+| fresh Mite, mf-c2 | 50.09 (49.01-51.16) | 20,480 |
+| fresh Mite, mf-c1 | 49.48 (48.38-50.58) | 20,480 |
+| fresh Mite, Mt3q | 49.45 (48.54-50.37) | 20,480 |
+| fresh Fish | 49.94 (49.10-50.79) | 20,480 |
+| h2h, fresh ladder-v2 suite | 51.2 (46.8-55.5) | 512 |
+
+Verdict: null. There is no Mite-specific constant gain. The same SPSA against mf-c2 on ladder-v3 (tune2) stopped
+at iteration 21 and was not resumed.
+
+**Vesper carry** (mitere rule 1, `rule_vcarry.py`): paired against c520-ps on the ladder, against mf-c2, 2,048
+games:
+- vc-c520 (Vesper takes every gold group): −2.4 ±2.2. Vesper's share of gold rose from 0.41 to 0.57, but the Prism
+  lost gems.
+- vc2-c520 (Prism keeps every gem group): +0.5 ±1.9.
+
+Neither was gated.
