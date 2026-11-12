@@ -40,6 +40,11 @@ replays (11-10 to 11-12), our 375 live scrims against r7, and 48k capture rows.
   - its Vesper makes 3.86 kills a game in its wins;
   - its Vesper dies 1.09 times a game in our wins and 0.29 in its wins.
   - Live, charybdis and ocean are level on small maps, so the local small-map gap is not seen against real Mite.
+- **Opening farm:** Mite earns 478 gold by r100 against our 413. Clear speed, travel, idle and capture timing are
+  level; the gap is Vesper's +33%. Mite drafts her 86% of the time (we 61%), and she holds 56-58% of its captured
+  base gold (ours 36%; the Prism gem carry takes 24-31% of ours). Rule: gold groups go to Vesper, the Prism holds
+  gem clusters. Worth about +29 gold by r100 and +46 by r200 in games with our Vesper (arithmetic, not played). The
+  rest is Mite's pack on monster groups over far gem clusters (+45 base by r100; costs gems, so it needs an A/B).
 - **Leads (untested):** focus Mite's Vesper; 2-on-1 empty healthy Mite bodies; zone its carriers.
 
 ## Forking live Mite games, and per-composition constants (2026-11-12): forks work and find a known gain at about a fresh gate's cost a game; the body plays on 5-7 points weaker than Mite from live positions; no pick-count interaction in 2.7M SPSA games

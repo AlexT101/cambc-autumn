@@ -327,6 +327,83 @@ In order of likely impact:
    first, contact last) matches.
 10. **Draft on fresh maps:** use `draftmap.py`'s tree, or better, Mite's own table where the map is a ladder map.
 
+## 9. Opening farm efficiency, first 200 rounds (`open2.py`, `open2a.py`, `open2b.py`, `open2c.py`)
+
+r7 live (375 games against v115-v117); ranked v2 (78 games) agrees. M = Mite, O = ours. Base gold is the groups'
+reward before bonuses; Vesper's passive is +33% gold on her capture shares.
+
+**Earned gold** at r50/100/150/200: M 206/478/770/1061, O 168/413/696/989. Capture gold by r100: M 449 (base 378,
+x1.19), O 385 (base 348, x1.11). The rest (kills, passives) is about 28 for each. So the r100 gap of 65 is about 30
+from base gold and 34 from the bonus multiplier.
+
+**The multiplier is Vesper, and it is certain.**
+- Mite drafts Vesper 86% of the time, we 61% (v116 59%, v117 59%).
+- In games where a side has Vesper, she holds this share of its captured base gold by r100: M 58%, O 37% (v115 39%,
+  v116 38%, v117 29%).
+- Mite's Vesper captures 91% of the gold groups she hit; ours 77%.
+- Our leak is the Prism. It holds 24% (v116) and 31% (v117) of our gold by r100, against Mite's 4-6%. That is 108
+  base gold a game in games where both sides have Vesper.
+
+**Same games, by who has Vesper.** Gold at r100 and r200; Vesper's share of base gold and base gold, both by r100:
+
+| Mite V | ours V | n | r100 M / O | r200 M / O | V share M / O | base M / O |
+|---|---|---|---|---|---|---|
+| yes | yes | 209 | 595 / 514 | 1303 / 1245 | 56% / 36% | 481 / 436 |
+| yes | no | 113 | 350 / 304 | 816 / 702 | 58% / 0% | 256 / 253 |
+| no | yes | 20 | 385 / 285 | 803 / 739 | 0% / 44% | 316 / 234 |
+| no | no | 33 | 236 / 231 | 519 / 502 | 0% / 0% | 183 / 177 |
+
+- With no Vesper on either side the two farm level.
+- With only Mite's Vesper, the bonus alone covers the gap (0.33 × 0.58 × 256 ≈ 49 against a gap of 46).
+- With both, the gap of 81 is base (+45) plus routing (0.33 × 0.20 × 436 ≈ 29).
+
+**Clear mechanics: nearly the same for both** (r7, clears by the team before r200):
+
+| group | M rounds hit→clear (median) | M attackers | O rounds | O attackers | arrival spread (both, median) |
+|---|---|---|---|---|---|
+| Wolf+ (80 gold, 10 gems) | 16 | 2.73 | 18 | 2.23 | 6 |
+| Elk+ (140 gold, 29 gems) | 17 | 4.21 | 18 | 3.59 | 6-7 |
+| Gold or gem cluster | 2-4 | 1.4-1.6 | 2-4 | 1.2-1.3 | 1-3 |
+
+- Body-rounds per clear are equal (Wolf+ 47 against 45, Elk+ 84 against 83). Mite brings one more body and finishes
+  2 rounds sooner.
+- Team gap from a clear to its next first hit: median 7 for both (p75 12 against 13).
+- Body-rounds: camp 29% against 27%, move 49% against 51%, hold 9% each, idle 6% each.
+- Capture lands 6-7 rounds after the clear for both. Shares per capture are about 1.06: one holder.
+- The non-holding clearers hit the next group before the capture lands 33% of the time (ours 31%), and within 10
+  rounds 49% (ours 43%).
+
+**Group choice and the pack.**
+- Mite's first clear is the nearest group (distance rank 0) at r15, with 3.98 bodies and 96 gold. Ours is rank 1 at
+  r18, with 3.0 bodies and 79 gold.
+- Its next five clears average 70-79 gold, ours 59-66. By r200 it clears 3.0 gem clusters a game, we clear 5.1
+  (single bodies, median rank 9, 26 steps out).
+- In games where both sides have Vesper, captures by r100: M Elk+ 1.4, Wolf+ 2.3, gem clusters 0.5; O Elk+ 1.1,
+  Wolf+ 2.0, gem clusters 1.4.
+- Largest clump share at r20/40/60/80: M 0.84/0.78/0.70/0.67, O 0.79/0.68/0.63/0.61. Mite's pack frays slowly. It
+  does not split at a fixed round.
+
+**Rule for our farm code, by size of the gain:**
+1. **Gold groups go to Vesper.** When a group with gold is cleared or about to be, and our Vesper can reach a capture
+   tile before the countdown ends, she holds it and no ally shares the tile, since a split share halves her bonus.
+   Others hold only groups with no gold, or gold groups she can't reach. In charybdis this mainly means the Prism
+   carry macro leaves gold groups to Vesper and takes gem clusters.
+   - Gain, from the +33% rule applied to measured gold, not played: 0.33 × (56% − 36%) × 436 ≈ +29 gold by r100 and
+     0.33 × (49% − 35%) × 1003 ≈ +46 by r200, in games with our Vesper. Averaged over all games (Vesper in about
+     60%): about +18 by r100 and +28 by r200.
+   - Cost: Vesper waits about 6 rounds on the tile, which Mite accepts. She gets the mixed groups' gems (Wolf+ 10,
+     Elk+ 29), so the Prism carries fewer gems.
+2. **Opening pack on monster groups (inferred).** Until about r100, the pack takes the nearest monster groups
+   together (Elk+, Wolf+) and visits gem clusters only on the way. This explains the base gap (+45 by r100 in games
+   where both have Vesper: +0.3 Elk+ and +0.3 Wolf+ captures against −0.9 gem clusters). It also costs about 13 gems
+   a skipped cluster, so it needs an A/B, not arithmetic.
+3. **Draft Vesper more often.** This is the largest single term but a draft change. At Mite's 58% share, Vesper is
+   worth 0.33 × 0.58 × base ≈ 80 gold by r100 in a game where both sides have Vesper.
+
+**For the body (mitefit):** the live targets in games where Mite has Vesper are 509 gold at r100 and Vesper's share
+of base gold at 56-58%. Check the body's Vesper share and its gem-cluster captures by r100 (live 0.5 a game in games
+where both sides have Vesper) before its group discount.
+
 ## Files
 
 - **Python tools** (this folder):
@@ -339,6 +416,8 @@ In order of likely impact:
   - Analyses: `states.py`, `rthr.py`, `alert.py`, `target.py`, `retreat.py`, `conv.py`, `econ.py`, `bank.py`,
     `banktrig.py`, `macro2.py`, `tele.py`, `lockbuy.py`, `wards.py`, `build.py`, `build2.py`, `opening.py`,
     `clearers.py`, `cohesion.py`, `ourloss.py`, `draftmap.py`.
+  - `open2.py`: extracts opening clear episodes → `open2.jsonl.gz`. `open2a.py`, `open2b.py` and `open2c.py`
+    analyse it.
   - `tools/*_remote.sh`: the big-arm queries.
 - **Data** under `~/tmp-offload/mitere/`:
   - `raw/` (rows, replays, the 05 maps' replays, platform map list);
