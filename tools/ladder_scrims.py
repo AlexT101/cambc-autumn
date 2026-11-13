@@ -25,7 +25,8 @@ A switch seen at a re-read marks only the groups created since the previous read
 new selection); games() leaves suspect groups out. Groups in flight at a switch are unaffected."""
 
 import argparse
-from ladder_coordination import live_lock, probe_active
+from contextlib import contextmanager, nullcontext
+from ladder_coordination import control_priority, live_lock, probe_active, wait_for_control
 import fcntl
 import hashlib
 import json
@@ -93,13 +94,46 @@ class CambcError(RuntimeError):
     pass
 
 
+class ControlReadLimited(CambcError):
+    def __init__(self, command, retry_after):
+        super().__init__(f'{command}: HTTP 429 before creates')
+        self.retry_after = retry_after
+
+
+_READ_RETRY = threading.local()
+
+
+@contextmanager
+def defer_control_reads(enabled):
+    previous = getattr(_READ_RETRY, 'defer', False)
+    _READ_RETRY.defer = enabled
+    try:
+        yield
+    finally:
+        _READ_RETRY.defer = previous
+
+
 def cambc(*args, timeout=300, retries=4, limited_retries=8, spaced=True):
-    """Runs the CLI without proactive pacing; retries server rate-limit responses.
+    """Unpaced CLI calls; control priority only suppresses competing background requests.
 
     spaced remains accepted for callers that distinguish local CLI operations.
     """
+    command = args[:2]
+    control = bool(args) and (args[0] == 'submissions' or command in
+                             (('match-groups', 'quota'), ('match-groups', 'create')))
+    background = command in (('matches', 'list'), ('matches', 'download'), ('matches', 'summary'),
+                             ('match-groups', 'show'))
+    with control_priority(DATA) if control else nullcontext(None) as renew:
+        return _cambc(args, timeout, retries, limited_retries, renew, background)
+
+
+def _cambc(args, timeout, retries, limited_retries, renew, background):
     attempt = limited = 0
     while True:
+        if renew:
+            renew()
+        elif background:
+            wait_for_control(DATA)
         try:
             r = subprocess.run(["cambc", *args], capture_output=True, text=True, encoding="utf-8", errors="replace",
                                timeout=timeout)
@@ -113,6 +147,10 @@ def cambc(*args, timeout=300, retries=4, limited_retries=8, spaced=True):
         wait = re.search(r"retry after (\d+) seconds", out)
         if r.returncode == 0:
             return r.stdout
+        if (getattr(_READ_RETRY, 'defer', False)
+                and args[:2] in (('submissions', 'list'), ('match-groups', 'quota'))
+                and re.search(r'HTTP\s+429\b', out)):
+            raise ControlReadLimited(' '.join(args[:2]), int(wait.group(1)) if wait else 60)
         if wait and limited < limited_retries:
             limited += 1
             time.sleep(min(60, int(wait.group(1)) * 2 ** (limited - 1)))
@@ -412,6 +450,7 @@ def cmd_run(args):
     log(f"run: pid {os.getpid()}, reserve {args.reserve}, inflight {args.inflight or 'no cap'}, pace {args.pace}s, "
         f"poll {args.poll}s")
     errors, last_pass, last_poll, no_task = 0, 0.0, 0.0, None
+    limited_reads = 0
     waiting_note = None
     seen_ls = None
     # A played group's ten downloads take ten API calls. One collector thread keeps them serial and off the loop
@@ -498,16 +537,18 @@ def cmd_run(args):
         with live_lock(DATA):
             if probe_active(DATA):
                 return made
-            q = quota()
-            qq = q.get("quota") or {}
-            used, limit = qq.get("used", 0), qq.get("limit") or 100
-            if not q.get("ready", True):
-                note("quota not ready (no live submission?)")
-                return made
-            if limit - used - (0 if cand[0][0]["priority"] >= 100 else args.reserve) <= 0:
-                note(f"quota {used}/{limit}, reserve {args.reserve}: waiting (resets {qq.get('resetsAt')})")
-                return made
-            live, selected = check_live("before create")
+            # Only an empty confirmation window can yield the switch lock on a read-only 429.
+            with defer_control_reads(not unconfirmed):
+                q = quota()
+                qq = q.get("quota") or {}
+                used, limit = qq.get("used", 0), qq.get("limit") or 100
+                if not q.get("ready", True):
+                    note("quota not ready (no live submission?)")
+                    return made
+                if limit - used - (0 if cand[0][0]["priority"] >= 100 else args.reserve) <= 0:
+                    note(f"quota {used}/{limit}, reserve {args.reserve}: waiting (resets {qq.get('resetsAt')})")
+                    return made
+                live, selected = check_live("before create")
             ready = [c for c in cand if c[0]["version"] == live] if selected == live else []
             if not ready:
                 note(f"nothing runnable: live v{live}, selected v{selected}, pending versions "
@@ -588,6 +629,7 @@ def cmd_run(args):
                     if cand and (key != no_task or time.monotonic() - last_pass >= retry_delay):
                         last_pass = time.monotonic()
                         made = create_pass(cand, playing)
+                        limited_reads = 0
                         no_task = key if made is None else None
                         playing += made or []
                 # One sweep of the match list finds the groups that have played; a played group without its games
@@ -612,6 +654,14 @@ def cmd_run(args):
                                 collecting.add(ev["group"])
                                 to_collect.put((by_id[ev["task"]], ev))
                 errors = 0
+            except ControlReadLimited as e:
+                limited_reads += 1
+                wait = min(60, max(1, e.retry_after) * 2 ** min(limited_reads - 1, 6))
+                log(f'{e}; switch lock released, retry in {wait}s')
+                # Shared priority quiets downloads, but the scheduler can acquire it and activate now.
+                with control_priority(DATA):
+                    time.sleep(wait)
+                continue
             except (CambcError, OSError, ValueError, KeyError) as e:
                 errors += 1
                 wait = min(1800, 60 * 2 ** (errors - 1))

@@ -322,6 +322,10 @@ py tools/version_record.py 50                        # our version 50's record p
   - **API pacing:** no local token bucket, minimum call gap, or reserved API tokens. The CLI wrapper
     retries server `retry after N seconds` responses with bounded exponential backoff. The platform's rolling
     scrim quota still controls group creation. Source tasks may skip losing replay downloads as above.
+    Activation, submission checks and creation take priority over background API calls using shared,
+    renewable 90-second leases; crashed owners release priority immediately, and stopped owners expire.
+    A read-only 429 before any unconfirmed creates releases the switch lock before backing off, so activation
+    can proceed. Confirmation after creates retains the lock and the existing suspect-group protection.
   - **Latest book as REST:** `research/ideas-2026-11-13/rbook/loss_live.py upload` uses the tracked
     `live_test.sh --rest` helper after local verification. The uploaded book becomes REST immediately while
     its live checks continue; ranked activation is not evidence that qualification passed. Ordinary strength
