@@ -504,3 +504,32 @@ source/current provenance is in `hour36-mite-r13-incompatibility.json` in the wo
 also embedded in the tracked receipt. Parent owns the already queued three-cell
 same-v134 current-Mite comparison, repin decision and any host eligibility work.
 The 23-cell r13 eligibility proposal remains unqueued pending that decision.
+
+## 2026-11-13 21:32 UTC: fresh r14 local book, explicit draft reachability screen
+
+Parent confirmed same-v134 current Mite regressions and cancelled stale r13
+eligibility before submission. Fresh132/r14 capture is
+`01a1d6cd-2c33-7999-a960-ab7bd32a52c1`; Fish remains r9. Parent owns the69-group
+baseline and scheduler163320; runner2787885, REST134. No worker queue/API changes.
+
+New work `loss-v132-r9-mite-r14` uses the unchanged exact531 profile and an85-cell
+pool of cached r13 winning recordings, all explicitly unverified against r14.
+Original source pin/match provenance remains intact. Same531 no-book v134 recovery
+sources are excluded because they provide no new line; older alternatives remain
+where available. No generic source sweep. Raw/ent files are hardlinked; fingerprints
+are recorded afresh. All candidate source ZIP CRCs passed.
+
+User-approved `validation-policy.json` flag `skip_unreachable_provisional_drafts`
+screens provisional entries before selection freezes. Identical ordered own picks
+and changed ordered enemy picks cannot match the recorded draft key; these are
+deferred with both matches, original/target refsets and picks. Different own picks
+remain eligible with normal collateral checks. Other work defaults unchanged.
+58 offline book tests pass, including ordered picks, forced variations, proven
+sources and source metadata immutability.
+
+Local-only builder324236 (`rbook-host132-mite-r14-build`) started21:31:59 at231 known
+Mite cells/85losses, freezing2Fish+6Mite candidates. Seventeen unreachable Mite lines
+were screened; four proven Fish lines await new-Mite collateral outcomes. Builder
+has no uploader; reconcile later baseline coverage before any release. Metadata,
+candidate/defer ledger and captured pins are in the new work. No release cycle
+started, and no change to the published134 artifact/digest.

@@ -111,6 +111,26 @@ def eligible_candidates(chosen, baseline, pins):
     return kept,deferred
 
 
+def screen_provisional_drafts(chosen, baseline, sources, pins):
+    kept, deferred = [], []
+    for cell in chosen:
+        source = sources[cell['key'].rsplit('-',1)[1]]
+        base = baseline[(cell['opp'],cell['map'],cell['side'])]
+        provisional = (source.get('target_pin_proven') is False
+                       and source.get('target_refset') == pins[cell['opp']])
+        if (provisional and source.get('our_picks') and source.get('opp_picks')
+                and base.get('opp_picks') and source['our_picks'] == base.get('our_picks')
+                and source['opp_picks'] != base['opp_picks']):
+            deferred.append(dict(**cell,reason='unreachable provisional draft: same own picks, changed enemy picks',
+                                 source_match=source['match'],source_refset=source.get('refset'),
+                                 target_refset=base.get('refset'),baseline_match=base['match'],
+                                 our_picks=source['our_picks'],source_opp_picks=source['opp_picks'],
+                                 baseline_opp_picks=base['opp_picks']))
+        else:
+            kept.append(cell)
+    return kept,deferred
+
+
 def build(work, version, pins, resume=False, bot_name=None, versions=DEFAULT_SOURCE_VERSIONS, host_profile=None):
     versions = source_versions(versions)
     submitted = next((h for h in sched.load()['history'] if h['version'] == version), None)
@@ -149,12 +169,17 @@ def build(work, version, pins, resume=False, bot_name=None, versions=DEFAULT_SOU
         for opp, pin in pins.items():
             chosen += rbuild.select(selection,ls.TEAMS[opp][1],pin,opp)
         chosen,deferred = eligible_candidates(chosen,baseline,pins)
-        write(work/'deferred-candidates.json',deferred)
-        if not chosen:
-            raise RuntimeError('No target-pin wins on host losses yet')
         # select() names an exact recording; a per-cell deduplicated view can hide that match.
         from loss_live_plan import source_rows
         rows = source_rows(work,pins)
+        policy_path = work/'validation-policy.json'
+        policy = json.loads(policy_path.read_text()) if policy_path.exists() else {}
+        if policy.get('skip_unreachable_provisional_drafts'):
+            chosen,unreachable = screen_provisional_drafts(chosen,baseline,rows,pins)
+            deferred.extend(unreachable)
+        write(work/'deferred-candidates.json',deferred)
+        if not chosen:
+            raise RuntimeError('No target-pin wins on host losses yet')
         forced = []
         for cell in chosen:
             source = rows[cell['key'].rsplit('-',1)[1]]

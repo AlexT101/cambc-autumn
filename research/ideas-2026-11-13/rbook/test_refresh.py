@@ -15,6 +15,26 @@ import loss_live_plan
 
 
 class RefreshGates(unittest.TestCase):
+    def test_provisional_draft_screen_preserves_forced_and_matching_lines(self):
+        entries=[dict(key=f'map-a-v126-{name}',opp='mite',map=name,side='a')
+                 for name in ('dead','forced','matching','ordered','proven')]
+        sources={name:dict(match=f'source-{name}',our_picks=['A','B'],opp_picks=['C','D'],
+                           refset='r13',target_refset='r14',target_pin_proven=False)
+                 for name in ('dead','forced','matching','ordered','proven')}
+        base={('mite',e['map'],'a'):dict(match=f"base-{e['map']}",refset='r14',
+                                        our_picks=['A','B'],opp_picks=['C','E']) for e in entries}
+        base['mite','forced','a']['our_picks']=['B','A']
+        base['mite','matching','a']['opp_picks']=['C','D']
+        base['mite','ordered','a']['opp_picks']=['D','C']
+        sources['proven']['target_pin_proven']=True
+        before=json.dumps(sources,sort_keys=True)
+        kept,deferred=loss_refresh.screen_provisional_drafts(entries,base,sources,dict(mite='r14'))
+        self.assertEqual({e['map'] for e in kept},{'forced','matching','proven'})
+        self.assertEqual({e['map'] for e in deferred},{'dead','ordered'})
+        self.assertEqual(deferred[0]['source_refset'],'r13')
+        self.assertEqual(deferred[0]['baseline_match'],'base-dead')
+        self.assertEqual(json.dumps(sources,sort_keys=True),before)
+
     def test_live_step_prefix_preserves_first_book_and_distinguishes_increment(self):
         first=dict(host_version=128,bot='/repo/bots/variants/rbook-loss-v128')
         increment=dict(first,bot='/repo/bots/variants/rbook-loss-v128-r13-increment2')
