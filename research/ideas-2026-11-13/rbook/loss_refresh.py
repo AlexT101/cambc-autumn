@@ -21,6 +21,18 @@ sys.path.insert(0, str(ROOT/'tools'))
 import ladder_scrims as ls
 import live_sched as sched
 
+DEFAULT_SOURCE_VERSIONS = '117,118,119,125,126'
+
+
+def source_versions(value):
+    parts = value.split(',')
+    if not parts or any(not p.isdigit() or int(p) < 1 for p in parts):
+        raise ValueError('Source versions must be positive comma-separated integers')
+    versions = [int(p) for p in parts]
+    if len(set(versions)) != len(versions):
+        raise ValueError('Duplicate source version')
+    return ','.join(map(str, versions))
+
 
 def baseline_rows(version, pins):
     return [r for r in ls.games(version) if r.get('purpose') == 'set' and r.get('pin') == 'ref'
@@ -70,7 +82,8 @@ def variant_name(version, bot_name=None):
     return name
 
 
-def build(work, version, pins, resume=False, bot_name=None):
+def build(work, version, pins, resume=False, bot_name=None, versions=DEFAULT_SOURCE_VERSIONS):
+    versions = source_versions(versions)
     submitted = next((h for h in sched.load()['history'] if h['version'] == version), None)
     if not submitted or submitted.get('label') != 'chy-525f' or submitted.get('masked') is not False:
         raise RuntimeError('This builder requires the matching unmasked chy-525f baseline')
@@ -81,15 +94,16 @@ def build(work, version, pins, resume=False, bot_name=None):
     baseline = {(r['opp_name'].split()[-1].lower(),r['map'],r['side']):r
                 for r in baseline_rows(version,pins)}
     extra = work/'foreign-extra.tsv'
-    selection = types.SimpleNamespace(versions='117,118,119,125,126', host_version=version,
+    selection = types.SimpleNamespace(versions=versions, host_version=version,
                                       host_losses_only=True, extra_uncovered_only=True,
                                       extra=extra if extra.exists() else None)
     if resume:
         started = json.loads((work/'build-started.json').read_text())
         frozen = json.loads((work/'selection.json').read_text())
         if (not host.is_dir() or started.get('bot') != str(host)
-                or frozen['host_version'] != version or frozen['pins'] != pins):
-            raise RuntimeError('Resume artifacts do not match this host and pins')
+                or frozen['host_version'] != version or frozen['pins'] != pins
+                or frozen.get('source_versions', DEFAULT_SOURCE_VERSIONS) != versions):
+            raise RuntimeError('Resume artifacts do not match this host, pins or source versions')
         (work/'forced-candidates.txt').write_text(''.join(k+'\n' for k in frozen['forced_keys']))
     else:
         chosen = []
@@ -106,7 +120,8 @@ def build(work, version, pins, resume=False, bot_name=None):
             base = baseline[(cell['opp'],cell['map'],cell['side'])]
             if source['our_picks'] != base['our_picks']:
                 forced.append(cell['key'])
-        write(work/'selection.json',dict(host_version=version,pins=pins,policy='confirmed host losses only',
+        write(work/'selection.json',dict(host_version=version,pins=pins,source_versions=versions,
+              policy='confirmed host losses only',
               baseline={opp:dict(cells=sum(k[0]==opp for k in baseline),
                                  losses=sum(k[0]==opp and r['result']=='loss' for k,r in baseline.items()))
                         for opp in pins},candidates=chosen,forced_keys=forced))
@@ -178,6 +193,8 @@ def main():
     ap.add_argument('--work',type=Path,required=True)
     ap.add_argument('--host-version',type=int,required=True)
     ap.add_argument('--bot-name',help='distinct directory name under bots/variants (default rbook-loss-vHOST_VERSION)')
+    ap.add_argument('--source-versions',type=source_versions,default=DEFAULT_SOURCE_VERSIONS,
+                    help='winning recording versions; frozen at selection and checked on resume')
     ap.add_argument('--mite-pin',required=True)
     ap.add_argument('--fish-pin',default='r8')
     ap.add_argument('--after-step',action='append',required=True)
@@ -199,7 +216,7 @@ def main():
                 time.sleep(30)
             if (a.work/'STOP').exists():
                 return
-            build(a.work,a.host_version,pins,resume=a.resume,bot_name=a.bot_name)
+            build(a.work,a.host_version,pins,resume=a.resume,bot_name=a.bot_name,versions=a.source_versions)
         except Exception as error:
             write(a.work/'build-state.json',dict(phase='held',at=ls.now(),error=repr(error)))
             raise

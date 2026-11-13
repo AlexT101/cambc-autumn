@@ -262,3 +262,75 @@ The worker did NOT launch a competing restart. Future live_test.sh restarts use 
 own systemd user service (unique unit, --collect), with explicit working directory,
 PATH and append logs; startup failure propagates. Mocked launch/failure cases plus
 quota-boundary tests pass (18 release-driver tests). Current529campaign remains parent-owned.
+
+### Parent runner pacing restart, after 17:56 UTC
+
+Current runner PID924258, scheduler PID924283, reserve0. Parent fixed the 120s unchanged-task
+backoff during a fresh BATCH: runner now polls at normal --pace20 while live. Parent reports
+5runner and10JIT tests pass;490/680 requested529games submitted. REST remains131; book
+worker made no restart. Local finish_release.py watches the39 inc2 check cells and validates
+provenance/results only after529creation completes; it cannot upload or mutate the queue.
+
+### Follow-through after 529 and inc2 checks
+
+User additionally requires fresh Fish/Mite current-opponent detection on131 at the first
+spare quota AFTER current529 and inc2 checks, without blocking529slots or changing its
+fixed Fishr8/Miter13 pins. Droppedhour33 left the last clean rolling observation at16:36.
+The worker prepared opponent-detection-plan.json in inc2 work: the existing five core
+map/sides, same-version target-pin/current comparisons. It has NOT queued those extra
+observations yet. Reuse equivalent completed131 evidence where available; otherwise queue
+only the needed detection groups after priority work. If a real behavior change is proved,
+continue loss-only repin/book updates, not speculative bot experiments.
+
+Parent's subsequent scheduler-only restart: PID1185343; runner924258 unchanged, reserve0.
+Its <=180s imminent-refill grace keeps529 active for near-term quota rather than switching
+through REST;12JIT tests pass. Book worker did not restart or alter this campaign.
+
+### 2026-11-13 18:50 UTC: increment2 release qualification complete
+
+v131 remains REST under the explicit latest-book policy, but is NOT fully qualified:
+31/39 requested wins, all11 groups collected. Pinned Fish r8 2/2 and Mite r13 7/7;
+current Fish2/10 and Mite20/20. All39 requested replay ZIPs pass CRC; strict group,
+map/side, own-version and source-pin provenance passed;69 first-work hashes unchanged.
+Durable evidence: increment2-live-results.json; full runtime audits in
+/home/ubuntu/tmp-offload/rbook/loss-v128-r13-increment2. The release watcher exited on
+Required win failed for current Fish00elkring/a; no duplicate upload or REST rollback.
+
+Fish's change is not a host-version comparison artifact: pinned and current
+00interlock/b both use v131, the same seed and engine/hash. Pinned r8 wins and exactly
+replays its recording; current Fish loses after first divergence at round index2.
+All10 current Fish samples diverge early (indices0–13):8 losses,2 handover wins.
+Hour34 detector comparisons also differ on all5 cells for both Fish and Mite using
+v131 on both sides of each comparison. HOWEVER all20 current Mite book wins are
+byte-identical to their r13 recordings. A change versus Mite's older rolling snapshot
+is not enough to call the r13 book stale; a direct r13/core check is queued first.
+No worker-created detection groups were needed for hour34; existing hourly checks resumed.
+
+### Deferred refresh behind Charybdis531
+
+Parent owns v132 Charybdis531 full680 on fixed Fishr8/Miter13 versus529, scheduler
+PID1871727 and runner924258, reserve0. The worker has not changed this campaign.
+Appended ahead=false steps before hold-control: loss-book-mite-r13-snapshot-check
+(one same-v131 pinned group, compare to saved hour34 current after checking original
+row positions and aligning by map/side); loss-book-fish-r9-host-v128 (340 distinct
+cells/69 groups, existing unmasked host); loss-book-fish-r9-rest-v131 (latest book on
+confirmed matching host losses only). They start after531 and yield to queued candidates.
+Fishr9 is captured by the first future baseline group, not fabricated from observations.
+
+Work /home/ubuntu/tmp-offload/rbook/loss-v128-fish-r9 contains refresh-plan.json and
+advance_refresh.py. Independent copies of181 raw/ent caches plus fp.json; no shared
+mutable directories/JSON, no foreign candidates from old Fish pins. One bounded
+rbook-fish-r9-cycle.service waits on the scheduler, conditionally refreshes Mite only
+if the direct r13 check differs, builds at70% source collection after complete matching
+host baselines, then uses loss_live's single-upload/REST helper and full live checks.
+It preserves all13 late natural Mite wins when retaining r13, checks the prior artifacts,
+and stops on failed gates, ownership changes or duplicate/restart ambiguity. It never
+clears control markers or activates/uploads directly. No agents or big-arm capture.
+Current phase and failures: cycle-state.json; output: cycle.log. Restart requires explicit
+state reconciliation; do not blindly rerun it. Existing parked/live-gate.ready receives
+only a final published/held event. The parent has not been handed the routine book work.
+
+loss_refresh.py now accepts --source-versions, default unchanged117,118,119,125,126;
+next cycle adds131. Selection freezes this list and rejects resume drift.22 refresh
+tests pass; four offline comparator checks preserve reordered-cell identity and reject
+seed/own-version mismatches. The old frozen selections remain valid with defaults.

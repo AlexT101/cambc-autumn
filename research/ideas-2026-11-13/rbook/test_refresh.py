@@ -148,6 +148,23 @@ class RefreshGates(unittest.TestCase):
                 self.assertEqual(json.loads((work/'selection.json').read_text()),frozen)
                 with self.assertRaisesRegex(RuntimeError,'artifacts do not match'):
                     loss_refresh.build(work,128,dict(mite='r14'),resume=True)
+                versions=loss_refresh.DEFAULT_SOURCE_VERSIONS+',131'
+                with self.assertRaisesRegex(RuntimeError,'source versions'):
+                    loss_refresh.build(work,128,dict(mite='r13'),resume=True,versions=versions)
+                self.assertEqual(run.call_count,1)
+                frozen['source_versions']=versions
+                (work/'selection.json').write_text(json.dumps(frozen))
+                with self.assertRaisesRegex(RuntimeError,'sizing reached'):
+                    loss_refresh.build(work,128,dict(mite='r13'),resume=True,versions=versions)
+                args=run.call_args.args[0]
+                self.assertEqual(args[args.index('--versions')+1],versions)
+                select.assert_not_called()
+                self.assertEqual(json.loads((work/'selection.json').read_text()),frozen)
+
+    def test_source_versions_reject_invalid_or_duplicate_uploads(self):
+        for value in ('', '0', '-1', '126,,131', '126,126', '126,unknown'):
+            with self.subTest(value=value),self.assertRaises(ValueError):
+                loss_refresh.source_versions(value)
 
     def test_partial_sources_still_require_complete_host_baseline(self):
         pins=dict(mite='r13')

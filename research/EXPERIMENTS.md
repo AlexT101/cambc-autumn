@@ -19063,3 +19063,19 @@ Against charybdis 525 (`variants/chy-bagfocus-525`), own drafts, release, 100k f
 
 **Verdict:** kept as a bot of its own, not a main bot. Two implementer rounds; the draft lab refit was not run.
 
+
+
+### 2026-11-13 — v131 partial loss book: pinned checks pass, current Fish changed
+
+171-entry Fishr8/Miter13 book (97Fish74Mite) retained all13 late natural Mite wins;
+local exact verification171/171 and shared02guardians/b Mite replay passed. Live requested
+checks31/39: pinned Fish2/2, pinned Mite7/7, current Fish2/10, current Mite20/20. These are
+book coverage checks, not a strength gate. All39 replay ZIP CRCs and source provenance
+passed; all69 protected first-book hashes stayed unchanged. Same-own-version131,
+same-engine/seed00interlock/b wins exactly against Fishr8 but loses against current Fish
+(first divergence2); all10 current Fish replays diverge, with2 successful handovers.
+All20 current Mite book replays remain exact r13 wins despite a changed older rolling
+snapshot; a direct r13 comparison is required before declaring that pin stale. REST131
+is retained under the user's latest-book policy; qualification failed on8 current-Fish
+losses. Fish refresh queued behind the teammate's531 campaign, loss-only, no new upload.
+Evidence: [increment2 live audit](ideas-2026-11-13/rbook/increment2-live-results.json).
