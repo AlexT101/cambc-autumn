@@ -10,6 +10,16 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## (charybdis book, 2026-11-13) Foreign Mite wins: three locally exact candidates, live identity pending
+
+A read-only capture query since 08:00 found 454 other-team wins against Mite on 203 map/side cells; 10
+ranked recordings were cached. Three cached candidates passed the Fish draft compatibility screen and
+reproduced exactly against their recorded opponent puppets (seeded priority, forced drafts). NEETCoders'
+02harvest a fills an x2 hole; Fish's 04yin_yang a and 05space_station b overlap old-pin Mite entries.
+This is replay qualification, not a strength gate or proof of the current Mite version. None admitted to
+ranked REST: target-pin live validation and combined-book checks remain. Script, provenance and artifacts:
+[rbook-foreign/README.md](ideas-2026-11-13/rbook-foreign/README.md).
+
 ## (charybdis book v126, 2026-11-13) Exact-book sweep and reporting correction
 
 The existing x2 sweep played 208/208 wins against Fish r8 and 202/202 against Mite r10 on its requested book

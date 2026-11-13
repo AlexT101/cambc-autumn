@@ -1,5 +1,32 @@
 # Other teams' wins against Fish r8 in the replay book (2026-11-13)
 
+## Mite refresh, 11:25 UTC
+
+`mine_mite.py` reads big-arm's capture database without platform requests and fetches a bounded set of
+cached ranked wins by other teams. It excludes our team, screens forced drafts against the existing Fish
+entries, and writes `candidates.json`, `summary.json` and an rbuild-compatible `provisional.tsv`.
+Timestamps and matching drafts do not establish the opponent version. **Do not admit these entries to
+the ranked book until they pass live validation against the target pin.**
+
+The first pull since 08:00 found 454 foreign wins on 203 map/side cells (ranked and unranked), with 10 cached
+ranked recordings and three cached candidates passing the Fish draft screen. All three reproduce exactly
+against their recorded opponent puppets on `variants/rbook-mite-foreign-r11`, using seeded priorities:
+
+| cell | winning team | existing x2 Mite entry |
+|---|---|---|
+| 02harvest a | NEETCoders | none |
+| 04yin_yang a | Intercontinental Fish | yes, old pin |
+| 05space_station b | Intercontinental Fish | yes, old pin |
+
+All three require forced picks. Work and recordings:
+`/home/ubuntu/tmp-offload/rbook-foreign/mite-refresh-r11/`; local verification: `verify/verify.json` (3/3).
+The three-entry qualification bot is **not a replacement REST bot**. The r11 refresh currently uses our
+own sweep wins only; foreign entries remain pending target-pin validation and combined-book checks.
+The forced-draft fallback check against `variants/chy-525f` completed all three games with zero bad
+drafts/guards (one win; this tiny sample is not a strength measurement).
+
+## Earlier Fish work
+
 The question: which other teams' wins against Fish r8 can the replay book play, on cells where we have no win of ours?
 The book is in `../rbook/`.
 

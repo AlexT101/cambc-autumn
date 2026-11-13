@@ -46,6 +46,13 @@ opponent observations remain active, and another refresh needs a new refset/work
 
 ## Teammate and host strength
 
+User also requested other teams' Mite wins. `../rbook-foreign/mine_mite.py` found three cached ranked
+recordings compatible with the Fish draft screen; all three reproduce exactly locally. 02harvest a is
+uncovered by x2; 04yin_yang a and 05space_station b have old-pin entries. All force their drafts. Work:
+`/home/ubuntu/tmp-offload/rbook-foreign/mite-refresh-r11/`. These remain provisional until target-pin live
+validation and combined-book checks; refresh_build.py intentionally does not consume provisional.tsv.
+The three-entry qualification variant must never replace ranked REST. See the foreign README for evidence.
+
 fish:0 is idle after the overnight runs; CASTOR c11 remains unmerged. Shared coordination note:
 `/home/ubuntu/tmp-offload/handoff/CODEX-TAKEOVER-20261113.md`. No new fuel/no-lock experiment started.
 New host candidate and control must both be book-free (including forced draft), on identical pins/cells.
