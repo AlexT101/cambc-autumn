@@ -213,6 +213,24 @@ class SchedPhases(unittest.TestCase):
         self.b.phase_rest({}, self.B, self.cur, 118, 118)
         self.assertEqual((self.cur["phase"], self.activated), ("rest", []))
 
+    def test_short_quota_gap_keeps_candidate_but_long_gap_restores(self):
+        ls.append_jsonl(ls.DATA/'tasks.jsonl',ctask(0))
+        self.cur.update(phase='batch',batches=[dict(start=ls.now())])
+        for seconds, expected in ((15,'batch'),(lb.REFILL_GRACE+60,'activate_rest')):
+            reset = lb.datetime.datetime.fromtimestamp(time.time()+seconds,lb.datetime.timezone.utc).isoformat()
+            with mock.patch.object(ls,'quota',return_value={'quota':dict(used=100,limit=100,resetsAt=reset)}):
+                self.b.phase_batch({},self.B,self.cur,117,117)
+            self.assertEqual(self.cur['phase'],expected)
+        self.assertEqual(self.activated,[("submissions","activate","118")])
+
+    def test_completed_campaign_restores_even_with_imminent_refill(self):
+        t=ctask(0);ls.append_jsonl(ls.DATA/'tasks.jsonl',t);self.create(t,117)
+        self.cur.update(phase='batch',task_ids=[t['id']],batches=[dict(start=ls.now())])
+        with mock.patch.object(ls,'quota') as quota:
+            self.b.phase_batch({},self.B,self.cur,117,117)
+        quota.assert_not_called()
+        self.assertEqual(self.cur['phase'],'activate_rest')
+
     def test_all_created_finishes_without_waiting_for_play(self):
         for i in range(10):
             t = ctask(i)

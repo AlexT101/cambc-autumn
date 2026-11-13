@@ -301,6 +301,9 @@ py tools/version_record.py 50                        # our version 50's record p
   the runner default and `live_restart_runner.sh` reserve zero: use spare capacity, yielding priority when a teammate requests a burst) and the rest as quota frees up, pins each opponent to its
   first group's bot (`--source-group`, usable once that group has played), and downloads every game's bundle and summary;
   `status`, `report --by side,map` and `pair OLD NEW` (paired flips between our versions) read the jsonl data.
+  During a live batch the runner checks activation every `--pace` seconds. If queued work remains and quota will
+  return within three minutes, the scheduler keeps the candidate active to avoid two unnecessary activations;
+  longer quota gaps and fully submitted campaigns restore the latest book.
   - **Outcome-only baselines:** `data/OUTCOME-ONLY-VERSIONS.json` optionally lists versions whose pinned `set`
     games need only outcomes and drafts from group detail. These rows explicitly say `collection: outcome_only`
     and have no replay/summary metrics. Use only for book-free host-loss selection; other versions and all

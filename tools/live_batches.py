@@ -19,8 +19,8 @@ chosen bot on it in batches; the control then also covers the new refset's cells
 
 Batch cycle (user 2026-11-12 ~15:50: the candidate is active only around its creates): rest version active, none of
 its opp-check groups waiting, and any quota room -> upload (first batch) or activate the candidate and append its whole
-gate; once live == selected == candidate the runner creates what the quota allows -> as soon as nothing more can be
-created (quota spent or gate all created), activate the rest version again, without waiting for the groups to play.
+gate; once live == selected == candidate the runner creates what the quota allows -> when the gate is all created
+or quota is spent with no refill due within three minutes, activate rest without waiting for the groups to play.
 Our bot is bound to a group when it is created, to the version selected then (verified 2026-11-12: a v117 group whose
 matches were all still queued when v118 was selected played v117), so groups in flight never hold a switch back.
 Hourly while resting: Fish/Mite/BattleCats opponent-change observations (logged + wake only; testing pins never change
@@ -40,6 +40,7 @@ State: state.json 'batches'. Report: py tools/live_batches.py report
 """
 import json
 import math
+import datetime
 import sys
 import time
 from pathlib import Path
@@ -86,6 +87,7 @@ def cyclic_groups(maps):
     return out
 OBS_EVERY = 3600
 RETRY = 90            # seconds between repeated activation requests
+REFILL_GRACE = 180    # a short refill wait costs less than two platform activations
 
 
 def specs(ls, version, rsets, now, part_list=None):
@@ -242,6 +244,7 @@ class Batches:
 
     def room(self):
         q = self.ls.quota().get('quota') or {}
+        self._last_quota = q
         limit = q.get('limit') or 100
         return limit - q.get('used', 0) - RESERVE, limit - RESERVE
 
@@ -580,9 +583,21 @@ class Batches:
             return
         # Under the runner's lock: no create pass is under way, so what is created now is all this batch gets.
         with self.ls.live_lock(self.ls.DATA):
+            self._last_quota = None
             n = self.creatable(cur)
             if n:
                 self.note(B, 'batch', f"batches: v{cur['version']} live: runner has {n} groups to create")
+                return
+            # creatable reads quota only when unheld work remains. Do not pay two activation delays
+            # for a gap shorter than a typical round trip; completed campaigns still restore immediately.
+            q = self._last_quota or {}
+            try:
+                until_refill = datetime.datetime.fromisoformat(q['resetsAt']).timestamp() - time.time()
+            except (KeyError, TypeError, ValueError):
+                until_refill = None
+            if RESERVE == 0 and until_refill is not None and 0 <= until_refill <= REFILL_GRACE:
+                self.note(B, 'batch', f"batches: v{cur['version']} stays active for imminent quota refill "
+                          f"at {q['resetsAt']}")
                 return
             _, created, *_ = self.ls.state()
             cur['batches'][-1].update(end=self.s.now(), created=sum(
