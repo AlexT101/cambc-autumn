@@ -1,0 +1,154 @@
+diff -ru bots/variants/chy-525/src/bot.cc bots/variants/bag-carrier-prey-trace/src/bot.cc
+--- bots/variants/chy-525/src/bot.cc	2026-11-12 13:16:04.503484706 +0000
++++ bots/variants/bag-carrier-prey-trace/src/bot.cc	2026-11-13 00:56:20.556615929 +0000
+@@ -762,6 +762,7 @@
+     if (world.me().alive) note_income_end(world);
+     upkeep.camp_turns += camp_hits() != camp_hits_before;
+     debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), static_cast<char>(decision), memory.farm_group, memory.claim); });
++    trace_bags(world, static_cast<char>(decision));
+ }
+ 
+ } // namespace aph
+diff -ru bots/variants/chy-525/src/bot_parts.h bots/variants/bag-carrier-prey-trace/src/bot_parts.h
+--- bots/variants/chy-525/src/bot_parts.h	2026-11-12 13:28:45.818322409 +0000
++++ bots/variants/bag-carrier-prey-trace/src/bot_parts.h	2026-11-13 00:56:20.556532168 +0000
+@@ -340,6 +340,7 @@
+ bool drawn_home_at(const World& world, Pathing& pathing, Safety& safety, vec2 p, float damage);
+ const ChampionBelief* prey(const World& world, Pathing& pathing, Safety& safety);
+ vec2 chase_aim(const World& world, Pathing& pathing, Safety& safety);
++void trace_bags(const World& world, char decision);
+ // A successful chase keeps its guard; a failed one restores the work guard.
+ bool chase_with_guard(const World& world, Pathing& pathing, Safety& safety, const Pathing::GuardState& guard);
+ const ChampionBelief* stoppable_winning_tribute(const World& world);
+diff -ru bots/variants/chy-525/src/combat/fight.cc bots/variants/bag-carrier-prey-trace/src/combat/fight.cc
+--- bots/variants/chy-525/src/combat/fight.cc	2026-11-12 22:24:17.864543095 +0000
++++ bots/variants/bag-carrier-prey-trace/src/combat/fight.cc	2026-11-13 00:56:20.556379476 +0000
+@@ -742,13 +742,31 @@
+     return std::max(0, dist(here, *t.altar) - submit - range) < t.turns ? steps : unreachable;
+ }
+ 
++// Debug trace (bag-carrier-prey): what prey() made of each enemy carrying 50+ gems this turn.
++struct BagNote {
++    std::uint32_t handle;
++    char why;
++};
++std::array<BagNote, 8> bag_notes{};
++int n_bag_notes = 0, bag_notes_round = -1;
++void bag_note(const World& world, const ChampionBelief& e, char why) {
++    debug_block({
++        if (bag_notes_round != world.round) bag_notes_round = world.round, n_bag_notes = 0;
++        if (pair_gems(world, e) < 50) return;
++        for (int i = 0; i < n_bag_notes; ++i)
++            if (bag_notes[i].handle == static_cast<std::uint32_t>(e.handle)) { bag_notes[i].why = why; return; }
++        if (n_bag_notes < 8) bag_notes[n_bag_notes++] = {static_cast<std::uint32_t>(e.handle), why};
++    });
++}
++
+ // prey's tests before the fight: e is worth chasing from `here` if that fight is won. `held`: the
+ // gems of a cleared group it stands on.
+ bool preyable(const World& world, Safety& safety, const ChampionBelief& e, vec2 here, int range, int& held) {
+-    if (dist(here, e.pos) > vision_radius || test(world.map().near_enemy_spawn, e.pos)) return false;
++    if (dist(here, e.pos) > vision_radius) return bag_note(world, e, 'v'), false;
++    if (test(world.map().near_enemy_spawn, e.pos)) return bag_note(world, e, 's'), false;
+     // A teleport under way cannot fight back, but leaves unless we reach it before it lands.
+     if (e.teleport_pending() && std::max(0, dist(here, e.pos) - range) > last_round_before_channel_ends(world, e) - world.round)
+-        return false;
++        return bag_note(world, e, 't'), false;
+     // Out of reach on its own ground only when hurt or carrying a bag we can stop: fights at
+     // central altars straddle the line, and a beaten enemy otherwise escapes a step across it,
+     // but a bag has to stop at an altar to score, and a kill takes it. An enemy holding a
+@@ -757,9 +775,10 @@
+     held = g >= 0 && world.camps[g].state == CampState::cleared ? world.map().groups[g].gems : 0;
+     if (!(comeback::cooked(world) && pair_gems(world, e) >= params::comeback::bar_bag) && dist(here, e.pos) > range && !own_ground(world, e.pos) && e.health >= params::hurt_health_fraction * e.max_health && held == 0
+         && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable))
+-        return false;
++        return bag_note(world, e, 'i'), false;
+     // Every tile in reach of it would make us retreat at once.
+-    return !pack_covers(world, safety, e.pos, range);
++    if (pack_covers(world, safety, e.pos, range)) return bag_note(world, e, 'c'), false;
++    return bag_note(world, e, 'p'), true;
+ }
+ 
+ // The fight we press: a visible enemy we struck or chased on our previous turn, off its spawn's edge,
+@@ -923,12 +942,12 @@
+     // farm, walking off mid-fight from a hurter enemy, not take us out of danger.
+     if (const auto* p = pressed(world)) {
+         int held = 0;
+-        if (preyable(world, safety, *p, here, range, held) && !escapes(world, pathing, *p)) return p;
++        if (preyable(world, safety, *p, here, range, held) && !escapes(world, pathing, *p)) return bag_note(world, *p, 'K'), p;
+     }
+     // A teammate's pressed fight is joined as our own.
+     if (const auto* p = team_pressed(world)) {
+         int held = 0;
+-        if (preyable(world, safety, *p, here, range, held) && !escapes(world, pathing, *p)) return p;
++        if (preyable(world, safety, *p, here, range, held) && !escapes(world, pathing, *p)) return bag_note(world, *p, 'J'), p;
+     }
+     std::optional<float> strength; // read once a candidate needs it
+     // Cassi or Issac falling takes the other body and both bags: a won fight that costs us is lost.
+@@ -949,6 +968,7 @@
+         int i = n++;
+         for (; i > 0 && order[i - 1].first > cost; --i) order[i] = order[i - 1];
+         order[i] = {cost, &e};
++        bag_note(world, e, 'S');
+     }
+     if (n == 0) return nullptr;
+     const auto live = my_record();
+@@ -997,6 +1017,7 @@
+     for (int i = 0; i < n; ++i) {
+         if (!fuel_ok(safety.fight_cost_estimate() + reserve)) {
+             note_shortcut("prey-cut-short");
++            for (int k = i; k < n; ++k) bag_note(world, *order[k].second, 'f');
+             break;
+         }
+         const auto& target = *order[i].second;
+@@ -1025,10 +1046,11 @@
+         // Enemies who walk to the target in time join the fight.
+         const auto late = key == Safety::no_fight ? 0u : safety.late(target.pos, key);
+         const std::pair<std::uint64_t, std::uint32_t> fight{std::uint64_t{key} << 32 | delayed, late};
+-        if (std::find(lost.begin(), lost.begin() + n_lost, fight) != lost.begin() + n_lost) continue;
++        if (std::find(lost.begin(), lost.begin() + n_lost, fight) != lost.begin() + n_lost) { bag_note(world, target, 'l'); continue; }
+         int u = 0;
+         while (u < n_unasked && unasked[u].fight != fight) ++u;
+         if (u < n_unasked && !escapes(world, pathing, *unasked[u].target)) {
++            bag_note(world, target, 'l');
+             lost[n_lost++] = fight;
+             unasked[u] = unasked[--n_unasked];
+             continue;
+@@ -1053,15 +1075,35 @@
+         }
+         if ((!t.lost && !(linked && t.self_falls)) || (!linked && comeback::accept_lost(world, t, target))) {
+             if (u < n_unasked) unasked[u] = unasked[--n_unasked];
+-            if (escapes(world, pathing, target)) continue;
+-            return &target;
++            if (escapes(world, pathing, target)) { bag_note(world, target, 'E'); continue; }
++            return bag_note(world, target, 'A'), &target;
+         }
++        bag_note(world, target, t.lost ? 'L' : 'Y');
+         if (u < n_unasked) unasked[u].target = &target;
+         else unasked[n_unasked++] = {fight, &target, t};
+     }
+     return nullptr;
+ }
+ 
++// Debug trace: each visible enemy carrying 50+ gems in vision, our turn's branch and prey's verdict on it
++// ('-': prey did not run this turn).
++void trace_bags(const World& world, char decision) {
++    debug_block({
++        if (!world.me().alive) return;
++        const vec2 here = my_position();
++        for (const auto& e : world.enemies) {
++            if (!e.alive || !e.visible || pair_gems(world, e) < 50) continue;
++            char why = '-';
++            if (bag_notes_round == world.round)
++                for (int i = 0; i < n_bag_notes; ++i)
++                    if (bag_notes[i].handle == static_cast<std::uint32_t>(e.handle)) why = bag_notes[i].why;
++            std::printf("BCP %d %u %c %u %d %d %c %.2f %.2f %d %d %d\n", world.round, my_handle(), decision, static_cast<std::uint32_t>(e.handle),
++                        pair_gems(world, e), dist(here, e.pos), why, e.health / std::max(1.0f, e.max_health), my_health() / std::max(1.0f, my_max_health()),
++                        static_cast<int>(my_gems()), own_ground(world, e.pos) ? 1 : 0, static_cast<int>(e.channel));
++        }
++    });
++}
++
+ bool chase(const World& world, Pathing& pathing, Safety& safety) {
+     // After the strike search, chase only walks: the search priced and passed on its dash and casts,
+     // and strike_after makes the hits from where the walk ends.

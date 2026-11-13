@@ -10,6 +10,29 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## (charybdis = 525, 2026-11-13) Bag-carrier prey against Fish r8: isolated Fish carriers away from its Vesper are rare and we already take them; abandoned before building
+
+Note, scripts and the trace patch: [ideas-2026-11-13/bag-carrier-prey/README.md](ideas-2026-11-13/bag-carrier-prey/README.md).
+- **Idea.** A kill takes the victim's bag, and Fish r8 banks late. Pursue a non-Vesper carrier of a bag worth a life
+  while Fish's Vesper is far, 2+ of ours are near, and no enemy who could join out-strikes us.
+- **The body is fit to read it.** fr8-g25's carriers hold 75-80% of live's carrier rounds and bags. Spells (50+ gems,
+  not Vesper): 2.9-3.5 a game against 3.07 live. We kill 32% of the "opp" spells (Vesper > 8, 2+ of ours within 6),
+  as live does.
+- **The opp turns are pack fights.**
+  - Live: 1.6 other Fish within 6 of the carrier, and we hit the carrier in 83% of those spells.
+  - Local trace of chy-525 (640 debug games at 200k, `variants/bag-carrier-prey-trace`): no other Fish within 8 in
+    14% of opp unit-turns, three or more in 47%.
+  - What we did in opp unit-turns: retreat 25%, fight lost 17%, chase 9.5%, escapes 3.3%.
+- **Isolated carriers** (opp with no other Fish within 8):
+  - Live: 0.73 episodes a game. Their spells end 0.17 a game in our kill and 0.20 in Fish's tribute.
+  - Local: 0.47 episodes a game, ending 0.13 in our kill and 0.15 in Fish's tribute.
+  - The trace's isolated fights called lost are 65% Cassi or Issac, where the 600-health Cassi falls first.
+- **Ceiling.** A third of the banked isolated bags is under 0.1 kills a game, under half a point against Fish.
+  Not built or gated (dilution rule).
+- **Don't retry** carrier pursuit gated on isolation or local numbers. The banked bags live inside Fish's pack, where
+  the hunts lost (49.5%, 48.6%, 46.4%). A revival needs a reason the fight model is wrong against that pack,
+  read from live positions.
+
 ## (charybdis = 525, 2026-11-13) Why games against Fish r8 are won: no team beats it more on the same cells; wins part from losses only in fights after r200; banning our Vesper (the one cross-team draft signal) loses against the bodies
 
 Note and scripts: [ideas-2026-11-13/fwin/README.md](ideas-2026-11-13/fwin/README.md).
