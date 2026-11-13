@@ -306,6 +306,30 @@ bool ward_site_boards(const StaticMap& map, int site, std::uint64_t floor, bitbo
     return true;
 }
 
+struct WardSiteBoards {
+    bitboard near{cambc::uninitialized}, far{cambc::uninitialized};
+    int site = -1;
+};
+
+WardSiteBoards& ward_boards(int site) {
+    // Static geometry, retained only after every required bush cluster is known.
+    // The last slot is a fallback for larger maps.
+    constexpr int limit = 512;
+    union Storage {
+        WardSiteBoards boards[limit + 1];
+        constexpr Storage() {}
+        ~Storage() {}
+    };
+    static Storage storage;
+    static bool made[limit + 1];
+    const int i = site < limit ? site : limit;
+    if (!made[i]) {
+        std::construct_at(&storage.boards[i]);
+        made[i] = true;
+    }
+    return storage.boards[i];
+}
+
 // 3 a tile of `near` and 1 of the rest of `far` (near within far) a ward on w sees. w's cluster must be found.
 int ward_value(const StaticMap& map, vec2 w, const bitboard& near, const bitboard& far) {
     static bitboard sight{cambc::uninitialized};
@@ -373,6 +397,14 @@ bool place_ward(const World& world, Memory& memory, bool start) {
         int site = -2, allied = -1;
     } looked;
     if (looked.here == here && looked.ward == memory.ward && looked.site == site && looked.allied == allied_near) return false;
+    static std::uint64_t no_ward[128];
+    const int cell = tile_index(here);
+    const std::uint64_t key = (static_cast<std::uint64_t>(site + 2) << 32)
+        | (static_cast<std::uint64_t>(in_bounds(memory.ward) ? tile_index(memory.ward) + 1 : 0) << 16)
+        | static_cast<unsigned>(cell + 1);
+    std::uint64_t* const previous = allied_near == 0 && map_width * map_height <= 10000
+        ? &no_ward[cell % 128] : nullptr;
+    if (previous && *previous == key) return false;
     const int asked_site = site;
     if (start) {
         const vec2 drafted = site >= 0 ? map.drafted_ward(site) : vec2{-1, -1};
@@ -394,12 +426,10 @@ bool place_ward(const World& world, Memory& memory, bool start) {
         note_shortcut("ward-fuel");
         return false;
     }
-    static bitboard site_near{cambc::uninitialized}, site_far{cambc::uninitialized};
-    static int boards_site = -1;
-    if (site >= 0 && site != boards_site) {
-        boards_site = -1; // the boards are rewritten whether or not they finish
-        // A stand tile's cluster still growing: here alone this time.
-        if (ward_site_boards(map, site, floor, site_near, site_far)) boards_site = site;
+    WardSiteBoards* boards = site >= 0 ? &ward_boards(site) : nullptr;
+    if (boards && site != boards->site) {
+        boards->site = -1;
+        if (ward_site_boards(map, site, floor, boards->near, boards->far)) boards->site = site;
         else note_shortcut("ward-no-site-clusters"), site = -1;
         if (!fuel_ok(least + 2 * ward_candidate_cost)) {
             note_shortcut("ward-fuel");
@@ -412,10 +442,13 @@ bool place_ward(const World& world, Memory& memory, bool start) {
         draw_square(*b, here, static_cast<float>(b == &near ? ability_range : ward_reach));
         *b &= map.open_for_them;
         drop(*b, own);
-        if (site >= 0) *b |= b == &near ? site_near : site_far;
+        if (site >= 0) *b |= b == &near ? boards->near : boards->far;
     }
     const int old = in_bounds(memory.ward) ? ward_value(map, memory.ward, near, far) : 0;
-    const auto remember = [&] { looked = {here, memory.ward, asked_site, allied_near}; };
+    const auto remember = [&] {
+        looked = {here, memory.ward, asked_site, allied_near};
+        if (previous) *previous = key;
+    };
     // Every candidate sees within 8 of here at most: when that bound fails the margin, none passes.
     const int bound = static_cast<int>(2 * count_within(near, here, ward_reach) + count_within(far, here, ward_reach));
     if (static_cast<float>(bound) <= ward_replace_margin * static_cast<float>(old)) {
@@ -450,20 +483,26 @@ bool place_ward(const World& world, Memory& memory, bool start) {
         }
         const int v = ward_value(map, p, near, far);
         if (static_cast<float>(v) <= ward_replace_margin * static_cast<float>(old)) continue;
-        // Ties go to the draft's tile.
-        int i = n++;
-        for (; i > 0 && (order[static_cast<std::size_t>(i - 1)].first < v || (order[static_cast<std::size_t>(i - 1)].first == v && p == drafted)); --i)
-            order[static_cast<std::size_t>(i)] = order[static_cast<std::size_t>(i - 1)];
-        order[static_cast<std::size_t>(i)] = {v, p};
+        order[static_cast<std::size_t>(n++)] = {v, p};
     }
     if (!start && !cut && n == 0 && site == asked_site) remember();
     // A unit unseen on the tile (a teammate's ward in a bush) refuses it without an error.
-    for (int i = 0; i < n; ++i)
-        if (const vec2 p = order[static_cast<std::size_t>(i)].second; try_ward(p, memory)) {
+    for (int i = 0; i < n; ++i) {
+        int best = -1;
+        for (int j = 0; j < n; ++j) {
+            const auto& candidate = order[static_cast<std::size_t>(j)];
+            if (candidate.first < 0) continue;
+            if (best < 0 || candidate.first > order[best].first ||
+                (candidate.first == order[best].first && candidate.second == drafted)) best = j;
+        }
+        const auto [value, p] = order[static_cast<std::size_t>(best)];
+        order[static_cast<std::size_t>(best)].first = -1;
+        if (try_ward(p, memory)) {
             warded_round = world.round;
-            debug_block({ std::printf("WARD %d %u %d %d %d %d\n", world.round, my_handle(), p.x, p.y, order[static_cast<std::size_t>(i)].first, old); });
+            debug_block({ std::printf("WARD %d %u %d %d %d %d\n", world.round, my_handle(), p.x, p.y, value, old); });
             return true;
         }
+    }
     return false;
 }
 // What we see changed mid-turn. Safety's beliefs are fixed for its life, so it starts again.

@@ -1,0 +1,56 @@
+{
+  "wide-production": {
+    "games": 52,
+    "identical": 48,
+    "differences": [
+      [
+        "00interlock",
+        "b"
+      ],
+      [
+        "01boss-battle",
+        "b"
+      ],
+      [
+        "gen-chambers-102206117",
+        "b"
+      ],
+      [
+        "gen-huge-shared-102107800",
+        "a"
+      ]
+    ],
+    "reference": "base528-id.json",
+    "candidate": "oneturn528-id.json"
+  },
+  "coverage-production": {
+    "games": 108,
+    "identical": 106,
+    "differences": [
+      [
+        "02stalactites",
+        "a"
+      ],
+      [
+        "04horseshoes",
+        "b"
+      ]
+    ],
+    "reference": "base528-cov.json",
+    "candidate": "oneturn528-cov.json"
+  },
+  "wide-controlled-preparation": {
+    "games": 52,
+    "identical": 52,
+    "differences": [],
+    "reference": "base528-wide-noprep.json",
+    "candidate": "oneturn528-wide-noprep.json"
+  },
+  "coverage-controlled-preparation": {
+    "games": 108,
+    "identical": 108,
+    "differences": [],
+    "reference": "base528-cov-noprep.json",
+    "candidate": "oneturn528-cov-noprep.json"
+  }
+}

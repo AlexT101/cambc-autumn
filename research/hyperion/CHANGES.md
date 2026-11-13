@@ -4997,3 +4997,24 @@ fresh games; Fish 51.38, Mite 51.36, one-site 51.49, multi-site 51.32, ladder si
 
 Frozen as `variants/chy-528` (= bots/charybdis).
 
+## 529: Reuse ward geometry and settle bounded threat queries (charybdis, 2026-11-13)
+
+Fuel-only pass on 527, rebased onto 528 with its pursuit fix preserved. Ward placement retains completed site
+geometry and exact negative searches, and selects candidates in the same order without sorting all of them.
+Prism premiums reuse equal horizons and are not calculated on the post-combat return to an existing farm target;
+emblem pins share their pricing basis. Altar stands filter unreachable camp members once. Camp retreat settles
+adjacent exits and low-health cases without a field. A champion that cannot act twice before our next turn needs
+no enemy turn window for that predicate. No draft, reserve, search budget or strategic threshold changes.
+
+Independent 4,096-game fresh ladder-v2 confirmation, own drafts, cambc 5.0.1 native runner:
+**release exhausted turns 30,821 → 27,056 (-12.22%)**, wins **50.34% (48.81–51.87)**. Debug bench:
+**33,813 → 29,433 (-12.95%)**, shortcuts **2,346,213 → 2,173,803 (-7.35%)**, mean fuel -1.09%.
+No failed games, broken/capped drafts or losses by round five. Map-paired bootstrap exhaustion intervals are
+-15.44..-9.09% release and -15.97..-9.95% debug; the point estimates meet the 10% target.
+
+Bench at 100M: 154/160 production replays identical across wide and all-champion/large-group coverage.
+The six differences are isolated to the existing budget-limited route preparation: with only that preparation
+disabled in both diagnostic copies, **160/160 replays are byte-identical**. Production keeps preparation.
+Details, manifests, source hashes and rejected experiments: [fuel-527](../fuel-527/README.md).
+
+Frozen as `variants/chy-fuel-529` (= bots/charybdis).

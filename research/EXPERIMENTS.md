@@ -10,6 +10,29 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## (charybdis 529, 2026-11-13) Fuel: target met, 12.22% fewer exhausted release turns
+
+Worked alone. Started from 527, preserved the concurrent 528 pursuit change, and shipped exact fuel cuts as 529.
+On 4,096 unused ladder-v2 games: release OOF **30,821 → 27,056 (-12.22%)**, 50.34% wins; debug OOF
+**33,813 → 29,433 (-12.95%)**, shortcuts **2,346,213 → 2,173,803 (-7.35%)**. No failed games or broken drafts.
+The point estimates meet 10%; release's map-paired 95% interval is -15.44..-9.09%. Full evidence and reproduction:
+[fuel-527/README.md](fuel-527/README.md). The 100M bench has 154/160 identical production replays and 160/160
+with the existing budget-limited route preparation held constant in diagnostic copies; all champions and large
+camp groups are covered.
+
+- Kept: ward site geometry and exact negative-search caches, candidate selection instead of full sorting,
+  equal-horizon Prism premium reuse and delayed premium calculation, shared emblem pricing, altar-member
+  reach bounds, direct camp exits, and the rule-derived at-most-one-turn threat predicate.
+- Rejected: a large negative-ward cache added ~50k first-use fuel and **18.2% OOF**, despite steady-state savings.
+  Use unconstructed/static-zero storage and compact exact keys; initialization can dominate the objective.
+- Discarded: tighter unclaimed-group Prism pruning failed identity (29/52). Clamped ground loops, fallback
+  stand-trade memoization, earlier search-node-cap exits, explicit health/Fighter copies and reused Reach order
+  were negligible or dearer. Deferred exact retreat damage saved ~3 mean fuel; SIMD rank/window endpoints
+  saved too little to retain.
+- Lessons: profile exhausted turns and startup separately; use runner OOF counts (recovery traces miss consecutive
+  exhaustion), match debug/release builds, and confirm unused maps. The ward bundle alone read -4.8% OOF on 528's
+  debug development set but -12.1% in release; the final held-out result, not the most flattering screen, is the gate.
+
 ## (charybdis = 525, 2026-11-13) Macro programme mac13: eight orchestrators at 2x fuel; CASTOR's consistent Prism-gem pricing + shop timing wins 54.1% at 100k, 54.85% with no locks
 
 Eight independent orchestrators (argo, castor, dione, eos, hecate, kronos, nyx, selene), 02:00-10:00 UTC, each A/B

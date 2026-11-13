@@ -1,0 +1,435 @@
+--- a/src/bot.cc
++++ b/src/bot.cc
+@@ -306,6 +306,30 @@
+     return true;
+ }
+ 
++struct WardSiteBoards {
++    bitboard near{cambc::uninitialized}, far{cambc::uninitialized};
++    int site = -1;
++};
++
++WardSiteBoards& ward_boards(int site) {
++    // Static geometry, retained only after every required bush cluster is known.
++    // The last slot is a fallback for larger maps.
++    constexpr int limit = 512;
++    union Storage {
++        WardSiteBoards boards[limit + 1];
++        constexpr Storage() {}
++        ~Storage() {}
++    };
++    static Storage storage;
++    static bool made[limit + 1];
++    const int i = site < limit ? site : limit;
++    if (!made[i]) {
++        std::construct_at(&storage.boards[i]);
++        made[i] = true;
++    }
++    return storage.boards[i];
++}
++
+ // 3 a tile of `near` and 1 of the rest of `far` (near within far) a ward on w sees. w's cluster must be found.
+ int ward_value(const StaticMap& map, vec2 w, const bitboard& near, const bitboard& far) {
+     static bitboard sight{cambc::uninitialized};
+@@ -373,6 +397,14 @@
+         int site = -2, allied = -1;
+     } looked;
+     if (looked.here == here && looked.ward == memory.ward && looked.site == site && looked.allied == allied_near) return false;
++    static std::uint64_t no_ward[128];
++    const int cell = tile_index(here);
++    const std::uint64_t key = (static_cast<std::uint64_t>(site + 2) << 32)
++        | (static_cast<std::uint64_t>(in_bounds(memory.ward) ? tile_index(memory.ward) + 1 : 0) << 16)
++        | static_cast<unsigned>(cell + 1);
++    std::uint64_t* const previous = allied_near == 0 && map_width * map_height <= 10000
++        ? &no_ward[cell % 128] : nullptr;
++    if (previous && *previous == key) return false;
+     const int asked_site = site;
+     if (start) {
+         const vec2 drafted = site >= 0 ? map.drafted_ward(site) : vec2{-1, -1};
+@@ -394,12 +426,10 @@
+         note_shortcut("ward-fuel");
+         return false;
+     }
+-    static bitboard site_near{cambc::uninitialized}, site_far{cambc::uninitialized};
+-    static int boards_site = -1;
+-    if (site >= 0 && site != boards_site) {
+-        boards_site = -1; // the boards are rewritten whether or not they finish
+-        // A stand tile's cluster still growing: here alone this time.
+-        if (ward_site_boards(map, site, floor, site_near, site_far)) boards_site = site;
++    WardSiteBoards* boards = site >= 0 ? &ward_boards(site) : nullptr;
++    if (boards && site != boards->site) {
++        boards->site = -1;
++        if (ward_site_boards(map, site, floor, boards->near, boards->far)) boards->site = site;
+         else note_shortcut("ward-no-site-clusters"), site = -1;
+         if (!fuel_ok(least + 2 * ward_candidate_cost)) {
+             note_shortcut("ward-fuel");
+@@ -412,10 +442,13 @@
+         draw_square(*b, here, static_cast<float>(b == &near ? ability_range : ward_reach));
+         *b &= map.open_for_them;
+         drop(*b, own);
+-        if (site >= 0) *b |= b == &near ? site_near : site_far;
++        if (site >= 0) *b |= b == &near ? boards->near : boards->far;
+     }
+     const int old = in_bounds(memory.ward) ? ward_value(map, memory.ward, near, far) : 0;
+-    const auto remember = [&] { looked = {here, memory.ward, asked_site, allied_near}; };
++    const auto remember = [&] {
++        looked = {here, memory.ward, asked_site, allied_near};
++        if (previous) *previous = key;
++    };
+     // Every candidate sees within 8 of here at most: when that bound fails the margin, none passes.
+     const int bound = static_cast<int>(2 * count_within(near, here, ward_reach) + count_within(far, here, ward_reach));
+     if (static_cast<float>(bound) <= ward_replace_margin * static_cast<float>(old)) {
+@@ -450,20 +483,26 @@
+         }
+         const int v = ward_value(map, p, near, far);
+         if (static_cast<float>(v) <= ward_replace_margin * static_cast<float>(old)) continue;
+-        // Ties go to the draft's tile.
+-        int i = n++;
+-        for (; i > 0 && (order[static_cast<std::size_t>(i - 1)].first < v || (order[static_cast<std::size_t>(i - 1)].first == v && p == drafted)); --i)
+-            order[static_cast<std::size_t>(i)] = order[static_cast<std::size_t>(i - 1)];
+-        order[static_cast<std::size_t>(i)] = {v, p};
++        order[static_cast<std::size_t>(n++)] = {v, p};
+     }
+     if (!start && !cut && n == 0 && site == asked_site) remember();
+     // A unit unseen on the tile (a teammate's ward in a bush) refuses it without an error.
+-    for (int i = 0; i < n; ++i)
+-        if (const vec2 p = order[static_cast<std::size_t>(i)].second; try_ward(p, memory)) {
++    for (int i = 0; i < n; ++i) {
++        int best = -1;
++        for (int j = 0; j < n; ++j) {
++            const auto& candidate = order[static_cast<std::size_t>(j)];
++            if (candidate.first < 0) continue;
++            if (best < 0 || candidate.first > order[best].first ||
++                (candidate.first == order[best].first && candidate.second == drafted)) best = j;
++        }
++        const auto [value, p] = order[static_cast<std::size_t>(best)];
++        order[static_cast<std::size_t>(best)].first = -1;
++        if (try_ward(p, memory)) {
+             warded_round = world.round;
+-            debug_block({ std::printf("WARD %d %u %d %d %d %d\n", world.round, my_handle(), p.x, p.y, order[static_cast<std::size_t>(i)].first, old); });
++            debug_block({ std::printf("WARD %d %u %d %d %d %d\n", world.round, my_handle(), p.x, p.y, value, old); });
+             return true;
+         }
++    }
+     return false;
+ }
+ // What we see changed mid-turn. Safety's beliefs are fixed for its life, so it starts again.
+--- a/src/combat/fight.cc
++++ b/src/combat/fight.cc
+@@ -405,6 +405,14 @@
+     health += my_live_shield(world);
+     // The coming camp phase if we stay this turn, then the tiles walked through.
+     if (health <= dps) return true;
++    if (health <= dps + dps && !finishing_camp(world)) return true;
++    // An open neighbouring exit makes the field distance one, with no hits on the walk out.
++    const auto& area = safety.camp_area();
++    for (const auto d : directions) {
++        const vec2 p = here + d;
++        if (in_bounds(p) && !test(area, p) && test(world.map().standable, p))
++            return health <= dps + dps && !finishing_camp(world);
++    }
+     bool dashing = false;
+     const auto* field = camp_exit_way(world, pathing, safety, here, &dashing);
+     float hits;
+--- a/src/economy/altar_guard.cc
++++ b/src/economy/altar_guard.cc
+@@ -93,10 +93,19 @@
+     tiles.clear();
+     const auto& map = world.map();
+     const vec2 alt = map.altars[a].pos;
++    const int r = params::altar_stand_radius;
++    // Only members within reach + r of the altar can reach a stand (dist is Chebyshev).
++    struct Near {
++        vec2 pos;
++        int reach;
++    };
++    std::vector<Near> near;
++    for (const auto& g : map.groups)
++        for (const auto& m : g.members)
++            if (m.strength > 0 && dist(m.pos, alt) <= m.reach + r) near.push_back({m.pos, m.reach});
+     const auto in_camp_reach = [&](vec2 p) {
+-        for (const auto& g : map.groups)
+-            for (const auto& m : g.members)
+-                if (m.strength > 0 && dist(m.pos, p) <= m.reach) return true;
++        for (const auto& m : near)
++            if (dist(m.pos, p) <= m.reach) return true;
+         return false;
+     };
+     struct Scored {
+@@ -104,7 +113,6 @@
+         vec2 p;
+     };
+     std::vector<Scored> all, safe;
+-    const int r = params::altar_stand_radius;
+     for (int dx = -r; dx <= r; ++dx)
+         for (int dy = -r; dy <= r; ++dy) {
+             const vec2 p{alt.x + dx, alt.y + dy};
+--- a/src/economy/capture.cc
++++ b/src/economy/capture.cc
+@@ -159,6 +159,7 @@
+ // it later. Else the bag goes to an altar, and a hurt one leaves a hold. Read from a's bag (team_bag), its
+ // health only while in sight, and the team's score, so allies agree.
+ bool keeps_bag(const World& world, const ChampionBelief& a, int gems) {
++    if (a.facts().passive != Passive::gem_focus) return false;
+     const auto& map = world.map();
+     const int bag = team_bag(world, a);
+     return a.facts().passive == Passive::gem_focus && (!(a.is_self || a.visible) || a.health >= params::hurt_health_fraction * a.max_health)
+@@ -206,8 +207,8 @@
+         std::uint32_t observations = ~0u, gems = ~0u;
+         int bag = -1;
+         float focus = -1, rate = 0, to_win = 0;
+-        int margin = 0, last = -1 << 30;
+-        float growth = 0; // at `last`
++        int margin = 0;
++        float horizon = -1, growth = 0;
+     };
+     static std::array<Kept, 16> kept;
+     auto& k = kept[static_cast<std::size_t>(a.index) & 15];
+@@ -219,10 +220,12 @@
+         const float per_gem = cambc::constants::passive_abilities::prism_focus_per_gem;
+         const float output = (f.raw_output(a.strength, a.focus + per_gem) - f.raw_output(a.strength, a.focus)) * camp_scale(a);
+         k = {world.round, world.observations, my_gems(), bag, a.focus, output * tf.per_output, tf.to_win,
+-             rounds_left(world) - map.width - map.height - endgame_margin, -1 << 30, 0.0f};
+-    }
+-    if (const int last = k.margin - tribute_turns(bag + gems, a.fast_tribute); last != k.last)
+-        k.last = last, k.growth = std::expm1(k.rate * std::max(0.0f, std::min(k.to_win, static_cast<float>(last))));
++             rounds_left(world) - map.width - map.height - endgame_margin, -1.0f, 0.0f};
++    }
++    const int last = k.margin - tribute_turns(bag + gems, a.fast_tribute);
++    const float horizon = std::max(0.0f, std::min(k.to_win, static_cast<float>(last)));
++    // Different bags usually reach the same win horizon.
++    if (horizon != k.horizon) k.horizon = horizon, k.growth = std::expm1(k.rate * horizon);
+     const float growth = k.growth;
+     const int room = static_cast<int>(cambc::constants::winning_gems) - world.score.ally - bag - gems;
+     return std::max(0.0f, std::min(growth, static_cast<float>(room) / static_cast<float>(gems)));
+--- a/src/economy/farm.cc
++++ b/src/economy/farm.cc
+@@ -978,42 +978,6 @@
+     auto& gold_context = memo.gold_context;
+     if (gold_context == 0 || per_gold != last_per_gold || tribute_gold != last_tribute_gold)
+         last_per_gold = per_gold, last_tribute_gold = tribute_gold, ++gold_context;
+-    // A Prism keeping its gems (keeps_gems) gains prism_premium on each gem of a capture it takes part in:
+-    // every pick type, the carries' 'G' and 'L' too. Off Prism, the gems of a group a keeping Prism ally
+-    // claims go to its bag (sole_capture_holder, left_for_prism): our part of them carries its premium.
+-    // Applied past the kept facts, which hold none of it. Not on a Monolith or a capture that wins.
+-    // prism_premium only falls with the gems, so `keep_most`, a gem's at 1 (the most of any Prism ally's
+-    // off Prism), bounds every group's: the prunes add it to the gems' price as tribute_gold is.
+-    const bool keeper = keeps, feeder = world.me().facts().passive != Passive::gem_focus;
+-    float keep_most = 0;
+-    std::array<const ChampionBelief*, 4> fed_by{}; // the claiming Prism allies, off Prism
+-    std::array<int, 4> fed_claim{};
+-    int n_fed = 0;
+-    if (short_by > 1 && keeper) keep_most = prism_premium(world, world.me(), 1);
+-    if (short_by > 1 && feeder)
+-        for (const auto& a : world.allies)
+-            if (const int claim = comms::claim_of(world, a.index);
+-                !a.is_self && a.alive && a.facts().passive == Passive::gem_focus && claim >= 0 && n_fed < static_cast<int>(fed_by.size()))
+-                if (const float p = prism_premium(world, a, 1); p > 0) keep_most = std::max(keep_most, p), fed_by[n_fed] = &a, fed_claim[n_fed++] = claim;
+-    const auto keep_bonus = [&](const CampGroup& G) __attribute__((always_inline)) {
+-        if (!(keep_most > 0) || G.gems <= 0 || G.gems >= short_by || G.has_monolith) return 0.0f;
+-        if (keeper) return prism_premium(world, world.me(), G.gems);
+-        const int g = static_cast<int>(&G - &groups[0]);
+-        float most = 0;
+-        for (int i = 0; i < n_fed; ++i)
+-            if (fed_claim[i] == g) most = std::max(most, prism_premium(world, *fed_by[i], G.gems));
+-        return most;
+-    };
+-    const float bound_tribute = tribute_gold + keep_most;
+-    debug_block({
+-        static int traced = -1;
+-        if (keeper && world.round / 25 != traced) {
+-            traced = world.round / 25;
+-            const auto& tf = team_farm(world);
+-            std::printf("PREM r=%d bag=%u foc=%.1f prem=%.4f rho=%.6f towin=%.0f out=%.1f\n", world.round, my_gems(), world.me().focus, keep_most,
+-                        tf.per_output, tf.to_win, camp_output(world.me()));
+-        }
+-    });
+     const float spells = world.me().facts().ranged ? spell_output(world.me()) : 0.0f, basic = std::max(1.0f, basic_output(world.me()));
+     auto& last_clearing = memo.last_clearing;
+     auto& clearing = memo.clearing;
+@@ -1046,6 +1010,42 @@
+         walk_on(g);
+         return true;
+     }
++    // A Prism keeping its gems (keeps_gems) gains prism_premium on each gem of a capture it takes part in:
++    // every pick type, the carries' 'G' and 'L' too. Off Prism, the gems of a group a keeping Prism ally
++    // claims go to its bag (sole_capture_holder, left_for_prism): our part of them carries its premium.
++    // Applied past the kept facts, which hold none of it. Not on a Monolith or a capture that wins.
++    // prism_premium only falls with the gems, so `keep_most`, a gem's at 1 (the most of any Prism ally's
++    // off Prism), bounds every group's: the prunes add it to the gems' price as tribute_gold is.
++    const bool keeper = keeps, feeder = world.me().facts().passive != Passive::gem_focus;
++    float keep_most = 0;
++    std::array<const ChampionBelief*, 4> fed_by{}; // the claiming Prism allies, off Prism
++    std::array<int, 4> fed_claim{};
++    int n_fed = 0;
++    if (short_by > 1 && keeper) keep_most = prism_premium(world, world.me(), 1);
++    if (short_by > 1 && feeder)
++        for (const auto& a : world.allies)
++            if (const int claim = comms::claim_of(world, a.index);
++                !a.is_self && a.alive && a.facts().passive == Passive::gem_focus && claim >= 0 && n_fed < static_cast<int>(fed_by.size()))
++                if (const float p = prism_premium(world, a, 1); p > 0) keep_most = std::max(keep_most, p), fed_by[n_fed] = &a, fed_claim[n_fed++] = claim;
++    const auto keep_bonus = [&](const CampGroup& G) __attribute__((always_inline)) {
++        if (!(keep_most > 0) || G.gems <= 0 || G.gems >= short_by || G.has_monolith) return 0.0f;
++        if (keeper) return prism_premium(world, world.me(), G.gems);
++        const int g = static_cast<int>(&G - &groups[0]);
++        float most = 0;
++        for (int i = 0; i < n_fed; ++i)
++            if (fed_claim[i] == g) most = std::max(most, prism_premium(world, *fed_by[i], G.gems));
++        return most;
++    };
++    const float bound_tribute = tribute_gold + keep_most;
++    debug_block({
++        static int traced = -1;
++        if (keeper && world.round / 25 != traced) {
++            traced = world.round / 25;
++            const auto& tf = team_farm(world);
++            std::printf("PREM r=%d bag=%u foc=%.1f prem=%.4f rho=%.6f towin=%.0f out=%.1f\n", world.round, my_gems(), world.me().focus, keep_most,
++                        tf.per_output, tf.to_win, camp_output(world.me()));
++        }
++    });
+     // The recall started at this turn's end reaches a group by way of spawn
+     // (FarmRecall), kept by recall_to_farm under the same tests; this turn's walk is spent either
+     // way. Not where the recall would be cancelled or not started, nor out of a pocket (its own way).
+--- a/src/economy/shop.cc
++++ b/src/economy/shop.cc
+@@ -383,19 +383,44 @@
+     }
+ }
+ 
++// Every current_emblem call of one best_emblem call (through lab_pinned and reactive_over too) has its
++// arguments, with nothing changed between them: what they share is worked out once a best_emblem call.
++unsigned emblem_call = 0;
++struct EmblemShared {
++    unsigned call = ~0u;
++    Build now;
++    UpkeepBasis basis;
++    float base, fight_scale, p_now;
++    bool collecting;
++    int best_stat_main = -1; // best_stat's emblem for this main stat, once worked out
++    Emblem best_stat;
++    int passive_family = -1; // a begun emblem's passive for this family, once worked out
++    float passive;
++};
++EmblemShared emblem_shared;
++
+ // `bought`: the stats of shards bought since the turn's start; `items`: what we would then own.
+ Emblem current_emblem(const World& world, const Build& bought, const cambc::enum_map<cambc::item_type>* items) {
+     const auto& f = world.me().facts();
+     const auto& owned = items ? *items : my_items();
+-    const Build now = build_of(world, owned, bought);
+-    float others;
+-    const Upkeep u = priced_upkeep(world, others);
+-    const UpkeepBasis basis = upkeep_basis(world, u, others, now);
+-    const float base = upkeep_cost(basis, now);
+-    // The fight value's shared terms stay outside the candidate loop.
+-    const float fight_scale = params::fight_weight * lab_flag[7] * fight_share();
+-    const float p_now = std::max(1.0f, f.raw_output(now.strength, now.focus)) * now.max_health / now.taken;
+-    const bool collecting = has_family(owned, collectors); // every new family adds to its camp damage
++    auto& sh = emblem_shared;
++    if (sh.call != emblem_call) {
++        sh.call = emblem_call;
++        sh.best_stat_main = sh.passive_family = -1;
++        sh.now = build_of(world, owned, bought);
++        float others;
++        const Upkeep u = priced_upkeep(world, others);
++        sh.basis = upkeep_basis(world, u, others, sh.now);
++        sh.base = upkeep_cost(sh.basis, sh.now);
++        // The fight value's shared terms stay outside the candidate loop.
++        sh.fight_scale = params::fight_weight * lab_flag[7] * fight_share();
++        sh.p_now = std::max(1.0f, f.raw_output(sh.now.strength, sh.now.focus)) * sh.now.max_health / sh.now.taken;
++        sh.collecting = has_family(owned, collectors); // every new family adds to its camp damage
++    }
++    const Build& now = sh.now;
++    const UpkeepBasis& basis = sh.basis;
++    const float base = sh.base, fight_scale = sh.fight_scale, p_now = sh.p_now;
++    const bool collecting = sh.collecting;
+     const auto value = [&](int family, int stat) __attribute__((always_inline)) -> Emblem {
+         const unsigned left = shards_needed(family) - owned[shard_of(family, stat)];
+         Build b = now;
+@@ -449,10 +474,17 @@
+         }
+         return best;
+     };
++    // best_stat for the main stat, as shared.
++    const auto best_main = [&](int main) {
++        if (sh.best_stat_main != main) sh.best_stat = best_stat(main), sh.best_stat_main = main;
++        return sh.best_stat;
++    };
+     if (const auto b = begun_emblem(world, owned)) {
+         Emblem e = value(b->family, b->stat);
+         if (b->passive) {
+-            e.passive = passive_saved(world, income_rates(world), owned, b->family, per_gold(best_stat(main_stat(world))));
++            if (sh.passive_family != b->family)
++                sh.passive = passive_saved(world, income_rates(world), owned, b->family, per_gold(best_main(main_stat(world)))), sh.passive_family = b->family;
++            e.passive = sh.passive;
+             e.saved += e.passive;
+         }
+         return e;
+@@ -486,7 +518,7 @@
+         return or_passive(best, health_stat, focus_stat);
+     }
+     const int main = main_stat(world);
+-    Emblem best = best_stat(main);
++    Emblem best = best_main(main);
+     return or_passive(best, main, health_stat);
+ }
+ 
+@@ -552,6 +584,7 @@
+ // count of emblems owned (`items`, what we would own, else ours), unless its passive is already ours: what
+ // buy_shards buys, so prices() and affordable_prefix() forecast the same.
+ Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::enum_map<cambc::item_type>* items = nullptr) {
++    ++emblem_call;
+     const int picks = economy_pick_count(world), type = static_cast<int>(world.me().type);
+     if (picks < 3 || picks > 5) return current_emblem(world, bought, items);
+     const auto& owned = items ? *items : my_items();
+--- a/src/model/safety.cc
++++ b/src/model/safety.cc
+@@ -1231,6 +1231,8 @@
+ const Strike& strike_with(const ChampionBelief& c, unsigned slots) { return strike_slots(c, slots).value; }
+ 
+ int turns_before_ours(const World& world, const ChampionBelief& c) {
++    if (c.visible && c.acted && turn_lost(c)) return 0;
++    if (c.teleport_pending() && c.channel_end_round > world.round + 1) return 0;
+     // An enemy's order is a window (turn_window.h): unseen, it may still act this round while an
+     // enemy turn after ours is unaccounted for; next round, the likeliest few take the slots before ours.
+     const bool enemy = c.side == team::enemy;
+@@ -1248,6 +1250,12 @@
+ int turns_before_ours(const World& world, const ChampionBelief& c, int& known) {
+     if (known < 0) known = turns_before_ours(world, c);
+     return known;
++}
++
++// A champion with no turn left this round cannot strike twice before our next one.
++bool twice_before_ours(const World& world, const ChampionBelief& c, int& turns) {
++    if ((c.visible && c.acted) || turn_lost(c) || (c.teleport_pending() && c.channel_end_round > world.round)) return false;
++    return turns_before_ours(world, c, turns) >= 2;
+ }
+ 
+ bool enemy_blow_repeats(const World& world, const ChampionBelief& e, int& turns) {
+@@ -1306,7 +1314,7 @@
+     const float hs = hit_strength(c), hf = hit_focus(c);
+     if (!m.standing_known) m.standing_known = true, m.standing = compute_strike(f, hs, hf, m.slots, true);
+     const auto& st = m.standing;
+-    if (turns_before_ours(world, c, turns) < 2) return st;
++    if (!twice_before_ours(world, c, turns)) return st;
+     const auto& m2 = strike_memo(c, round + 1);
+     const auto& s2 = m2.value;
+     if (m.ahead_known && m.ahead_slots == m2.slots) return m.ahead;
+@@ -1340,7 +1348,7 @@
+         && (world.slot(c, world.round) > world.my_slot_now() || enemy_may_act_after_us(world, c))
+         && !(c.at < Moment{world.round, world.slot(c, world.round)}))
+         return moved_strike(world, c, m, round, turns);
+-    if (turns_before_ours(world, c, turns) < 2) return s;
++    if (!twice_before_ours(world, c, turns)) return s;
+     // Its second turn falls in the next round: a walk first, then what is ready by then.
+     const auto& m2 = strike_memo(c, round + 1);
+     const auto& s2 = m2.value;
+@@ -2800,7 +2808,7 @@
+ [[gnu::noinline]] void Safety::build_reach(const ChampionBelief& e, Reach& r) {
+     reached_ |= static_cast<std::uint16_t>(1u << e.index);
+     auto& x = struck(e);
+-    r.build(world_, e, next_turn_round(world_, e), turns_before_ours(world_, e, x.turns) >= 2);
++    r.build(world_, e, next_turn_round(world_, e), twice_before_ours(world_, e, x.turns));
+ }
+ 
+ const Reach& Safety::reach_of(const ChampionBelief& e) {

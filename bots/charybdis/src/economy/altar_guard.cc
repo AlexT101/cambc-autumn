@@ -93,10 +93,19 @@ const std::vector<vec2>& stands(const World& world, int a) {
     tiles.clear();
     const auto& map = world.map();
     const vec2 alt = map.altars[a].pos;
+    const int r = params::altar_stand_radius;
+    // Only members within reach + r of the altar can reach a stand (dist is Chebyshev).
+    struct Near {
+        vec2 pos;
+        int reach;
+    };
+    std::vector<Near> near;
+    for (const auto& g : map.groups)
+        for (const auto& m : g.members)
+            if (m.strength > 0 && dist(m.pos, alt) <= m.reach + r) near.push_back({m.pos, m.reach});
     const auto in_camp_reach = [&](vec2 p) {
-        for (const auto& g : map.groups)
-            for (const auto& m : g.members)
-                if (m.strength > 0 && dist(m.pos, p) <= m.reach) return true;
+        for (const auto& m : near)
+            if (dist(m.pos, p) <= m.reach) return true;
         return false;
     };
     struct Scored {
@@ -104,7 +113,6 @@ const std::vector<vec2>& stands(const World& world, int a) {
         vec2 p;
     };
     std::vector<Scored> all, safe;
-    const int r = params::altar_stand_radius;
     for (int dx = -r; dx <= r; ++dx)
         for (int dy = -r; dy <= r; ++dy) {
             const vec2 p{alt.x + dx, alt.y + dy};

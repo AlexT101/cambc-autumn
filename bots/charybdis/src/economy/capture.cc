@@ -159,6 +159,7 @@ int team_bag(const World& world, const ChampionBelief& a) {
 // it later. Else the bag goes to an altar, and a hurt one leaves a hold. Read from a's bag (team_bag), its
 // health only while in sight, and the team's score, so allies agree.
 bool keeps_bag(const World& world, const ChampionBelief& a, int gems) {
+    if (a.facts().passive != Passive::gem_focus) return false;
     const auto& map = world.map();
     const int bag = team_bag(world, a);
     return a.facts().passive == Passive::gem_focus && (!(a.is_self || a.visible) || a.health >= params::hurt_health_fraction * a.max_health)
@@ -206,8 +207,8 @@ float prism_premium(const World& world, const ChampionBelief& a, int gems) {
         std::uint32_t observations = ~0u, gems = ~0u;
         int bag = -1;
         float focus = -1, rate = 0, to_win = 0;
-        int margin = 0, last = -1 << 30;
-        float growth = 0; // at `last`
+        int margin = 0;
+        float horizon = -1, growth = 0;
     };
     static std::array<Kept, 16> kept;
     auto& k = kept[static_cast<std::size_t>(a.index) & 15];
@@ -219,10 +220,12 @@ float prism_premium(const World& world, const ChampionBelief& a, int gems) {
         const float per_gem = cambc::constants::passive_abilities::prism_focus_per_gem;
         const float output = (f.raw_output(a.strength, a.focus + per_gem) - f.raw_output(a.strength, a.focus)) * camp_scale(a);
         k = {world.round, world.observations, my_gems(), bag, a.focus, output * tf.per_output, tf.to_win,
-             rounds_left(world) - map.width - map.height - endgame_margin, -1 << 30, 0.0f};
+             rounds_left(world) - map.width - map.height - endgame_margin, -1.0f, 0.0f};
     }
-    if (const int last = k.margin - tribute_turns(bag + gems, a.fast_tribute); last != k.last)
-        k.last = last, k.growth = std::expm1(k.rate * std::max(0.0f, std::min(k.to_win, static_cast<float>(last))));
+    const int last = k.margin - tribute_turns(bag + gems, a.fast_tribute);
+    const float horizon = std::max(0.0f, std::min(k.to_win, static_cast<float>(last)));
+    // Different bags usually reach the same win horizon.
+    if (horizon != k.horizon) k.horizon = horizon, k.growth = std::expm1(k.rate * horizon);
     const float growth = k.growth;
     const int room = static_cast<int>(cambc::constants::winning_gems) - world.score.ally - bag - gems;
     return std::max(0.0f, std::min(growth, static_cast<float>(room) / static_cast<float>(gems)));

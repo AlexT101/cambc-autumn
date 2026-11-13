@@ -978,6 +978,38 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
     auto& gold_context = memo.gold_context;
     if (gold_context == 0 || per_gold != last_per_gold || tribute_gold != last_tribute_gold)
         last_per_gold = per_gold, last_tribute_gold = tribute_gold, ++gold_context;
+    const float spells = world.me().facts().ranged ? spell_output(world.me()) : 0.0f, basic = std::max(1.0f, basic_output(world.me()));
+    auto& last_clearing = memo.last_clearing;
+    auto& clearing = memo.clearing;
+    if (const FarmClearing now{strength, reflect, spells, basic, range}; clearing == 0 || !(now == last_clearing))
+        last_clearing = now, ++clearing;
+    // After a fight's search, the turn's walk goes on to last turn's choice (a bag is banked): the
+    // fight has already taken the turn's work, and the evaluation is done again once it is over.
+    // The loop below would weigh no group, so none of its setup is read (~5-7k, on turns the
+    // search has left short). The memo contexts above still advance: some kept facts read more
+    // than their context holds, and skipping a turn's context changed later choices.
+    if (struck && memory.farm_group >= 0) {
+        if (banks_bag) return false;
+        if (world.is_stale()) return true;
+        need_zone();
+        memory.crew = memory.claim == memory.farm_group && memory.crew;
+        memory.claim = memory.farm_group;
+        // A spawn stand of the group heals what its fire takes (home_stands): held and fired from, or
+        // walked to, before the walk on, which would leave it. Not a Monolith, staged below.
+        const int g = memory.farm_group;
+        static bitboard near{cambc::uninitialized};
+        if (!groups[g].has_monolith && home_stands_near(world, pathing, safety, g, range, near)) {
+            if (test(near, here)) {
+                if (my_can_attack()) attack_camp(world, [&](int h) { return h == g; });
+                cast_at_camp(world, g);
+                reset_and_attack_camp(world, g);
+                return true;
+            }
+            if (pathing.step_towards_funded(near, end_reserve)) return true;
+        }
+        walk_on(g);
+        return true;
+    }
     // A Prism keeping its gems (keeps_gems) gains prism_premium on each gem of a capture it takes part in:
     // every pick type, the carries' 'G' and 'L' too. Off Prism, the gems of a group a keeping Prism ally
     // claims go to its bag (sole_capture_holder, left_for_prism): our part of them carries its premium.
@@ -1014,38 +1046,6 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
                         tf.per_output, tf.to_win, camp_output(world.me()));
         }
     });
-    const float spells = world.me().facts().ranged ? spell_output(world.me()) : 0.0f, basic = std::max(1.0f, basic_output(world.me()));
-    auto& last_clearing = memo.last_clearing;
-    auto& clearing = memo.clearing;
-    if (const FarmClearing now{strength, reflect, spells, basic, range}; clearing == 0 || !(now == last_clearing))
-        last_clearing = now, ++clearing;
-    // After a fight's search, the turn's walk goes on to last turn's choice (a bag is banked): the
-    // fight has already taken the turn's work, and the evaluation is done again once it is over.
-    // The loop below would weigh no group, so none of its setup is read (~5-7k, on turns the
-    // search has left short). The memo contexts above still advance: some kept facts read more
-    // than their context holds, and skipping a turn's context changed later choices.
-    if (struck && memory.farm_group >= 0) {
-        if (banks_bag) return false;
-        if (world.is_stale()) return true;
-        need_zone();
-        memory.crew = memory.claim == memory.farm_group && memory.crew;
-        memory.claim = memory.farm_group;
-        // A spawn stand of the group heals what its fire takes (home_stands): held and fired from, or
-        // walked to, before the walk on, which would leave it. Not a Monolith, staged below.
-        const int g = memory.farm_group;
-        static bitboard near{cambc::uninitialized};
-        if (!groups[g].has_monolith && home_stands_near(world, pathing, safety, g, range, near)) {
-            if (test(near, here)) {
-                if (my_can_attack()) attack_camp(world, [&](int h) { return h == g; });
-                cast_at_camp(world, g);
-                reset_and_attack_camp(world, g);
-                return true;
-            }
-            if (pathing.step_towards_funded(near, end_reserve)) return true;
-        }
-        walk_on(g);
-        return true;
-    }
     // The recall started at this turn's end reaches a group by way of spawn
     // (FarmRecall), kept by recall_to_farm under the same tests; this turn's walk is spent either
     // way. Not where the recall would be cancelled or not started, nor out of a pocket (its own way).

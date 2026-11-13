@@ -405,6 +405,14 @@ bool camp_trapped(const World& world, Pathing& pathing, Safety& safety, vec2 her
     health += my_live_shield(world);
     // The coming camp phase if we stay this turn, then the tiles walked through.
     if (health <= dps) return true;
+    if (health <= dps + dps && !finishing_camp(world)) return true;
+    // An open neighbouring exit makes the field distance one, with no hits on the walk out.
+    const auto& area = safety.camp_area();
+    for (const auto d : directions) {
+        const vec2 p = here + d;
+        if (in_bounds(p) && !test(area, p) && test(world.map().standable, p))
+            return health <= dps + dps && !finishing_camp(world);
+    }
     bool dashing = false;
     const auto* field = camp_exit_way(world, pathing, safety, here, &dashing);
     float hits;

@@ -26,9 +26,11 @@ EXPERIMENTS.
   [one-site-lock.diff](../overseer-2026-11-13/patches/one-site-lock.diff) (buy only on one-site maps; level with
   no-lock in the mirror), `git apply -p0` from the repo root. Verify on more fgate batches and live before shipping
   either; the 20-variant policy study is [locks/RESULTS.md](../overseer-2026-11-13/locks/RESULTS.md).
-- Open: a fuel pass on 527/528. At 100k they have 15-19% more out-of-fuel turns than 525, and CASTOR's pieces read
-  about 1 point lower at 100k than at 2x (55.2 -> 54.1); the ward search's exact cuts are in
-  [ward-fuel.md](../overseer-2026-11-13/ward-fuel.md), the rest (Prism premium, shop timing, medic) is unprofiled.
+- Done: the 527/528 fuel pass shipped as **529**. Independent 4,096-game confirmation against 528:
+  release out-of-fuel turns **-12.22%**, debug **-12.95%**, shortcuts **-7.35%**; 50.34% release wins.
+  Exact ward geometry/search cuts, Prism premium and shop reuse, altar stands, camp exits and bounded
+  threat queries; [evidence and rejected experiments](../fuel-527/README.md). This meets the requested
+  10% exhaustion reduction; it does not establish that every gap to 525 or 2x fuel is closed.
 
 ## Scylla, and what it showed about charybdis (2026-11-13)
 

@@ -383,19 +383,44 @@ float passive_saved_raw(const World& world, const IncomeRates& rates, const camb
     }
 }
 
+// Every current_emblem call of one best_emblem call (through lab_pinned and reactive_over too) has its
+// arguments, with nothing changed between them: what they share is worked out once a best_emblem call.
+unsigned emblem_call = 0;
+struct EmblemShared {
+    unsigned call = ~0u;
+    Build now;
+    UpkeepBasis basis;
+    float base, fight_scale, p_now;
+    bool collecting;
+    int best_stat_main = -1; // best_stat's emblem for this main stat, once worked out
+    Emblem best_stat;
+    int passive_family = -1; // a begun emblem's passive for this family, once worked out
+    float passive;
+};
+EmblemShared emblem_shared;
+
 // `bought`: the stats of shards bought since the turn's start; `items`: what we would then own.
 Emblem current_emblem(const World& world, const Build& bought, const cambc::enum_map<cambc::item_type>* items) {
     const auto& f = world.me().facts();
     const auto& owned = items ? *items : my_items();
-    const Build now = build_of(world, owned, bought);
-    float others;
-    const Upkeep u = priced_upkeep(world, others);
-    const UpkeepBasis basis = upkeep_basis(world, u, others, now);
-    const float base = upkeep_cost(basis, now);
-    // The fight value's shared terms stay outside the candidate loop.
-    const float fight_scale = params::fight_weight * lab_flag[7] * fight_share();
-    const float p_now = std::max(1.0f, f.raw_output(now.strength, now.focus)) * now.max_health / now.taken;
-    const bool collecting = has_family(owned, collectors); // every new family adds to its camp damage
+    auto& sh = emblem_shared;
+    if (sh.call != emblem_call) {
+        sh.call = emblem_call;
+        sh.best_stat_main = sh.passive_family = -1;
+        sh.now = build_of(world, owned, bought);
+        float others;
+        const Upkeep u = priced_upkeep(world, others);
+        sh.basis = upkeep_basis(world, u, others, sh.now);
+        sh.base = upkeep_cost(sh.basis, sh.now);
+        // The fight value's shared terms stay outside the candidate loop.
+        sh.fight_scale = params::fight_weight * lab_flag[7] * fight_share();
+        sh.p_now = std::max(1.0f, f.raw_output(sh.now.strength, sh.now.focus)) * sh.now.max_health / sh.now.taken;
+        sh.collecting = has_family(owned, collectors); // every new family adds to its camp damage
+    }
+    const Build& now = sh.now;
+    const UpkeepBasis& basis = sh.basis;
+    const float base = sh.base, fight_scale = sh.fight_scale, p_now = sh.p_now;
+    const bool collecting = sh.collecting;
     const auto value = [&](int family, int stat) __attribute__((always_inline)) -> Emblem {
         const unsigned left = shards_needed(family) - owned[shard_of(family, stat)];
         Build b = now;
@@ -449,10 +474,17 @@ Emblem current_emblem(const World& world, const Build& bought, const cambc::enum
         }
         return best;
     };
+    // best_stat for the main stat, as shared.
+    const auto best_main = [&](int main) {
+        if (sh.best_stat_main != main) sh.best_stat = best_stat(main), sh.best_stat_main = main;
+        return sh.best_stat;
+    };
     if (const auto b = begun_emblem(world, owned)) {
         Emblem e = value(b->family, b->stat);
         if (b->passive) {
-            e.passive = passive_saved(world, income_rates(world), owned, b->family, per_gold(best_stat(main_stat(world))));
+            if (sh.passive_family != b->family)
+                sh.passive = passive_saved(world, income_rates(world), owned, b->family, per_gold(best_main(main_stat(world)))), sh.passive_family = b->family;
+            e.passive = sh.passive;
             e.saved += e.passive;
         }
         return e;
@@ -486,7 +518,7 @@ Emblem current_emblem(const World& world, const Build& bought, const cambc::enum
         return or_passive(best, health_stat, focus_stat);
     }
     const int main = main_stat(world);
-    Emblem best = best_stat(main);
+    Emblem best = best_main(main);
     return or_passive(best, main, health_stat);
 }
 
@@ -552,6 +584,7 @@ Emblem lab_adjust(const World& world, const Build& bought, const cambc::enum_map
 // count of emblems owned (`items`, what we would own, else ours), unless its passive is already ours: what
 // buy_shards buys, so prices() and affordable_prefix() forecast the same.
 Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::enum_map<cambc::item_type>* items = nullptr) {
+    ++emblem_call;
     const int picks = economy_pick_count(world), type = static_cast<int>(world.me().type);
     if (picks < 3 || picks > 5) return current_emblem(world, bought, items);
     const auto& owned = items ? *items : my_items();
