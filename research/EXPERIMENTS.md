@@ -10,6 +10,10 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## (charybdis 529, 2026-11-13) Full book-free live ladder: gain against Mite, Fish level
+
+Unmasked v129 (`bbc7cddb6`, Charybdis 529) versus book-free v128 (525 + fuel 01-02), **all 170 ladder maps, both sides, Fish r8 and Mite r13: 680 unique cells**. Exact opponent source groups match between versions. Fish **194/340 vs 197/340** (-3; paired flips 56 for / 59 against); Mite **226/340 vs 204/340** (+22;65 for / 43 against). Total **420/680 (61.8%) vs 401/680 (59.0%)**, +19 wins / +2.8 points. The gain is concentrated against this Mite pin; Fish is essentially level. These completed outcomes supersede early partial reads. Uploaded candidate source was verified byte-identical to the frozen commit, with own drafts and no book masking. [Per-cell evidence and protocol](ideas-2026-11-13/chy529-live/README.md). Full replay collection continues separately.
+
 ## (charybdis 530, 2026-11-13) Macro round mx: six independent orchestrators, one gain (IAPETUS's stop-due)
 
 Six orchestrators (TETHYS, RHEA, PHOEBE, THEIA, CRIUS, IAPETUS) each owned a macro refactor of 529 in their own
