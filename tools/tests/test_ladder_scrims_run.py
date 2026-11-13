@@ -1,5 +1,4 @@
-"""`ladder_scrims.py run` against a fake CLI: bursts to the quota, pins usable once played, call spacing, creates
-ahead of downloads. python -m unittest discover -s tools/tests -p test_ladder_scrims_run.py -v"""
+"""`ladder_scrims.py run` against a fake CLI: bursts to the quota, pins usable once played, unpaced calls, and server retry handling. python -m unittest discover -s tools/tests -p test_ladder_scrims_run.py -v"""
 import json
 import sys
 import tempfile
@@ -9,6 +8,7 @@ import types
 import unittest
 import uuid
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import ladder_scrims as ls  # noqa: E402
@@ -17,8 +17,7 @@ GAP = 0.02
 
 
 class FakeApi:
-    """The platform behind `cambc`: a rolling quota, groups that finish `play` seconds after creation, and a 429 for
-    calls that start less than GAP apart."""
+    """The platform behind `cambc`: a rolling quota and groups that finish after `play` seconds."""
 
     def __init__(self, limit=100, used=0, play=0.5, live=118):
         self.limit, self.used, self.play, self.live = limit, used, play, live
@@ -40,13 +39,7 @@ class FakeApi:
             return types.SimpleNamespace(returncode=0, stdout="{}", stderr="")
         with self.lock:
             t = time.monotonic()
-            early = t - self.last < GAP * 0.5   # thread jitter is a few ms of a 20 ms gap
-            self.last = t
             self.calls.append((t, a[0], a[1] if len(a) > 1 else "", threading.current_thread().name))
-            if early:
-                self.limited += 1
-                return types.SimpleNamespace(returncode=1, stdout="", stderr="error: Rate limit exceeded (HTTP 429); "
-                                                                             "retry after 0 seconds")
             out = ""
             if a[:2] == ["match-groups", "quota"]:
                 out = json.dumps({"ready": True, "quota": {"used": self.used, "limit": self.limit}})
@@ -80,10 +73,9 @@ def task(i, version=118, pin="ref", prio=90):
 class RunTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.saved = (ls.DATA, ls.REPLAYS, ls.CALL_GAP, ls.subprocess.run, ls.ROOT, ls.REFILL)
+        self.saved = (ls.DATA, ls.REPLAYS, ls.subprocess.run, ls.ROOT)
         self.main_thread = ls.threading.main_thread
-        ls.DATA, ls.REPLAYS, ls.CALL_GAP = Path(self.tmp.name) / "data", Path(self.tmp.name) / "replays", GAP
-        ls.REFILL = 1 / GAP   # the bucket never empties here: test_bucket covers it
+        ls.DATA, ls.REPLAYS = Path(self.tmp.name) / "data", Path(self.tmp.name) / "replays"
         ls.ROOT = Path(self.tmp.name)
         ls.DATA.mkdir()
 
@@ -93,7 +85,7 @@ class RunTest(unittest.TestCase):
             self.th.join(30)
         time.sleep(1.5)   # the collector sees the stop within a second
         ls.threading.main_thread = self.main_thread
-        ls.DATA, ls.REPLAYS, ls.CALL_GAP, ls.subprocess.run, ls.ROOT, ls.REFILL = self.saved
+        ls.DATA, ls.REPLAYS, ls.subprocess.run, ls.ROOT = self.saved
         self.tmp.cleanup()
 
     def start(self, api, tasks, **over):
@@ -147,38 +139,24 @@ class RunTest(unittest.TestCase):
         self.assertFalse(any(e["ev"] == "dropped" for e in ev))
         self.assertEqual(len(ls.read_jsonl(ls.DATA / "games.jsonl")), 400)
 
-    def test_calls_are_spaced_and_creates_go_first(self):
-        api = FakeApi(play=0.2)
-        self.start(api, [task(i, pin="none") for i in range(40)])
-        self.wait(lambda: len(self.created()) == 40)
-        self.th.join(60)
-        self.assertEqual(api.limited, 0)
-        idx = [i for i, c in enumerate(api.calls) if c[1:3] == ("match-groups", "create")]
-        between = api.calls[idx[0]:idx[-1] + 1]
-        self.assertFalse([c for c in between if c[3] != self.th.name])   # no download inside the burst
-        self.assertLessEqual(sum(c[1:3] != ("match-groups", "create") for c in between), 6)   # rechecks only
+    def test_successful_calls_have_no_local_wait(self):
+        self.th = threading.current_thread()
+        result=types.SimpleNamespace(returncode=0,stdout='ok',stderr='')
+        with mock.patch.object(ls.subprocess,'run',return_value=result), mock.patch.object(ls.time,'sleep') as sleep:
+            for _ in range(40):
+                self.assertEqual(ls.cambc('matches','list'),'ok')
+            sleep.assert_not_called()
+        self.assertFalse((ls.DATA/'api.lock').exists())
 
-    def test_bucket(self):
-        # A burst of BUCKET calls a gap apart, then the refill rate; a background thread leaves KEEP tokens.
-        ls.REFILL, self.th = 1 / (4 * GAP), threading.current_thread()
-        ls.threading.main_thread = lambda th=self.th: th
-        t0, times = time.monotonic(), []
-        for _ in range(int(ls.BUCKET * 1.5) + 12):   # a call a gap refills a quarter token: empty after 32
-            ls._space_calls()
-            times.append(time.monotonic() - t0)
-        burst, tail = times[int(ls.BUCKET) - 1], (times[-1] - times[-5]) / 4
-        self.assertLess(burst, ls.BUCKET * GAP * 2)
-        self.assertGreater(tail, 3 * GAP)
-        got = []
-        bg = threading.Thread(target=lambda: (ls._space_calls(), got.append(time.monotonic())))
-        t1 = time.monotonic()
-        bg.start()
-        bg.join(30)
-        self.assertGreater(got[0] - t1, ls.KEEP * 4 * GAP * 0.8)   # waited for KEEP + 1 tokens
-        ls._limited()
-        t2 = time.monotonic()
-        ls._space_calls()
-        self.assertGreater(time.monotonic() - t2, 3 * GAP)
+    def test_server_rate_limit_is_retried(self):
+        self.th = threading.current_thread()
+        limited=types.SimpleNamespace(returncode=1,stdout='',stderr='HTTP 429; retry after 2 seconds')
+        success=types.SimpleNamespace(returncode=0,stdout='ok',stderr='')
+        with mock.patch.object(ls.subprocess,'run',side_effect=[limited,limited,success]) as run, \
+             mock.patch.object(ls.time,'sleep') as sleep:
+            self.assertEqual(ls.cambc('matches','list'),'ok')
+            self.assertEqual(run.call_count,3)
+            self.assertEqual(sleep.call_args_list,[mock.call(2),mock.call(4)])
 
     def test_reserve_and_other_versions_wait(self):
         api = FakeApi(used=85, play=0.2)

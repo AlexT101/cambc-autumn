@@ -313,11 +313,9 @@ py tools/version_record.py 50                        # our version 50's record p
     or replay comparisons. The file is read per collected group; removing an ID restores future full collection,
     but does not backfill previously skipped files. Prefer this task policy over an outcome-only version rule for
     source versions: an existing outcome-only version rule still takes precedence and suppresses winning downloads.
-  - **API pacing:** every call goes through a token bucket shared by our processes (`data/api.lock`: 24 calls of
-    burst, one more every 3.5 s, at least 1 s apart; the limit measured 2026-11-12 was ~30 calls at one a second, then
-    one every 3-4 s). Creates go first, the match-list sweep for played groups second (100 matches a call), and the
-    collector's downloads (ten calls a group) leave 8 tokens for them, so collection can run an hour behind a full
-    burst. Results don't wait for it: a `played` event carries the group's results (`WWLWW`).
+  - **API pacing:** no local token bucket, minimum call gap, or reserved API tokens. The CLI wrapper
+    retries server `retry after N seconds` responses with bounded exponential backoff. The platform's rolling
+    scrim quota still controls group creation. Source tasks may skip losing replay downloads as above.
   - **To test a version at full rate:** write its number to `sched/REST` (the scheduler activates it between
     candidates and plans its gate on `refsets.json`), or with the scheduler stopped activate it and `plan` its tasks.
 - **live_sched.py** is the unattended live-gate scheduler (one at a time: `setsid nohup py tools/live_sched.py >> ~/tmp-offload/handoff/sched/sched.out 2>&1 < /dev/null &`).

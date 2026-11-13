@@ -42,8 +42,8 @@ class SwitchApi(FakeApi):
 
 class RunnerSuspect(base.RunTest):
     # The base class's own tests run in their module.
-    test_burst_then_refill = test_calls_are_spaced_and_creates_go_first = None
-    test_bucket = test_reserve_and_other_versions_wait = None
+    test_burst_then_refill = test_successful_calls_have_no_local_wait = None
+    test_server_rate_limit_is_retried = test_reserve_and_other_versions_wait = None
 
     def events(self, kind):
         return [e for e in ls.read_jsonl(ls.DATA / "events.jsonl") if e["ev"] == kind]

@@ -11,8 +11,8 @@ Requires `cambc login`. Data in research/ladder-scrims-2026-11-06/ (README.md, S
 A task is one five-game group: our submission version, an opponent, five (map, side) games, a pin and a priority.
 `run` creates every pending task whose version is live, back to back, as far as the team's rolling quota (`cambc
 match-groups quota`, 100 groups an hour since 2026-11-07) has room beyond `--reserve` (tasks of priority >= 100 may use
-it), and looks again every `--pace` seconds, so quota that frees up is used at once. API calls start at least a second
-apart across all our processes (data/api.lock), and creates go ahead of polls and downloads. It never switches the
+it), and looks again every `--pace` seconds, so quota that frees up is used at once. API requests have no proactive
+pacing; server rate-limit responses are retried with backoff. It never switches the
 live submission: tasks of another version wait (submit or `cambc submissions activate N` to run them). Pins: `ref`
 plays the opponent's bot from the first group queued against it under that ref name (refs.json), usable once that
 group has played, so every version meets the same opponent bot; `none` plays its current.
@@ -93,68 +93,13 @@ class CambcError(RuntimeError):
     pass
 
 
-# The API's limit, measured 2026-11-12 on 68 creates: about 30 calls pass at one a second, then one every 3-4 s.
-# Modelled as a token bucket shared by all our processes (data/api.lock): BUCKET calls of burst, one more every
-# 1 / REFILL seconds, never less than CALL_GAP apart. Threads other than the main one (the collector's downloads) leave
-# KEEP tokens for it, and wait while _PRIORITY is set, so creates and polls always have a burst ready.
-_CALL, CALL_GAP, BUCKET, REFILL, KEEP = threading.Lock(), 1.0, 24.0, 1 / 3.5, 8.0
-_PRIORITY = threading.Event()   # set while `run` creates groups: other threads' calls wait
-
-
-def _bucket(update):
-    """Reads data/api.lock under its lock, applies update(tokens, last_call, now) -> (tokens, last_call, result) and
-    writes it back; None if the file cannot be used."""
-    try:
-        fd = os.open(DATA / "api.lock", os.O_RDWR | os.O_CREAT, 0o664)
-    except OSError:
-        return None
-    with os.fdopen(fd, "r+") as f:
-        fcntl.flock(f, fcntl.LOCK_EX)
-        now = time.time()
-        try:
-            st = json.loads(f.read() or "{}")
-            tokens, last, t = float(st["tokens"]), float(st["last"]), float(st["t"])
-        except (ValueError, KeyError, TypeError):
-            tokens, last, t = BUCKET, 0.0, now
-        tokens = min(BUCKET, tokens + max(0.0, now - t) * REFILL)
-        tokens, last, result = update(tokens, min(last, now), now)   # a stamp from the future (clock step) is dropped
-        f.seek(0)
-        f.truncate()
-        f.write(json.dumps({"tokens": tokens, "last": last, "t": now}))
-        return result
-
-
-def _space_calls():
-    background = threading.current_thread() is not threading.main_thread()
-    need = 1.0 + (KEEP if background else 0.0)
-
-    def take(tokens, last, now):
-        wait = max((need - tokens) / REFILL, last + CALL_GAP - now)
-        return (tokens, last, wait) if wait > 0 else (tokens - 1.0, now, 0.0)
-
-    while True:
-        if background and _PRIORITY.is_set():
-            time.sleep(0.2)
-            continue
-        with _CALL:
-            wait = _bucket(take)
-        if not wait:   # taken, or no lock file: go
-            return
-        time.sleep(min(wait, 1.0))   # in short steps: a waiting download yields to a create pass that starts
-
-
-def _limited():
-    """A 429: the server's bucket is empty whatever ours says."""
-    _bucket(lambda tokens, last, now: (0.0, last, None))
-
-
 def cambc(*args, timeout=300, retries=4, limited_retries=8, spaced=True):
-    """Runs the CLI, honouring its "retry after N seconds" rate-limit replies (with growing waits: the reply's own
-    N is often too short to clear the burst window). spaced=False is for commands that never reach the API."""
+    """Runs the CLI without proactive pacing; retries server rate-limit responses.
+
+    spaced remains accepted for callers that distinguish local CLI operations.
+    """
     attempt = limited = 0
     while True:
-        if spaced:
-            _space_calls()
         try:
             r = subprocess.run(["cambc", *args], capture_output=True, text=True, encoding="utf-8", errors="replace",
                                timeout=timeout)
@@ -170,8 +115,7 @@ def cambc(*args, timeout=300, retries=4, limited_retries=8, spaced=True):
             return r.stdout
         if wait and limited < limited_retries:
             limited += 1
-            _limited()
-            time.sleep(min(60, int(wait.group(1)) * 2 ** (limited - 1)))   # plus the wait for a token
+            time.sleep(min(60, int(wait.group(1)) * 2 ** (limited - 1)))
             continue
         if attempt == retries:
             raise CambcError(f"cambc {' '.join(args[:3])}: {out.strip()[-400:]}")
@@ -563,48 +507,44 @@ def cmd_run(args):
                      f"{sorted({c[0]['version'] for c in cand})}")
                 return None   # no task for the live version: the loop looks again later, or when the tasks change
             capturing = set()
-            _PRIORITY.set()
-            try:
-                for t, source, is_ref in ready:
-                    if limit - used - (0 if t["priority"] >= 100 else args.reserve) <= 0:
-                        break   # by priority: no later task may use more
-                    if args.inflight and len(playing) + len(made) >= args.inflight:
+            for t, source, is_ref in ready:
+                if limit - used - (0 if t["priority"] >= 100 else args.reserve) <= 0:
+                    break   # by priority: no later task may use more
+                if args.inflight and len(playing) + len(made) >= args.inflight:
+                    break
+                key = (t.get("refset"), t["opp_id"])
+                if is_ref:
+                    if key in capturing:
+                        continue   # one group captures the pin; the rest follow once it has played
+                    capturing.add(key)
+                try:
+                    gid, out = create(t, source)
+                except CambcError as e:
+                    msg = str(e)
+                    if "HTTP 429" in msg or not re.search(r"HTTP 4\d\d", msg):
+                        raise
+                    if re.search(r"quota|limit", msg, re.I):
+                        log(f"create refused on quota, pass ends: {msg[-200:]}")
                         break
-                    key = (t.get("refset"), t["opp_id"])
-                    if is_ref:
-                        if key in capturing:
-                            continue   # one group captures the pin; the rest follow once it has played
-                        capturing.add(key)
-                    try:
-                        gid, out = create(t, source)
-                    except CambcError as e:
-                        msg = str(e)
-                        if "HTTP 429" in msg or not re.search(r"HTTP 4\d\d", msg):
-                            raise
-                        if re.search(r"quota|limit", msg, re.I):
-                            log(f"create refused on quota, pass ends: {msg[-200:]}")
-                            break
-                        # A request the API refuses (4xx, e.g. an unknown map) is dropped; rate limits are retried.
-                        append_jsonl(DATA / "events.jsonl", {"ev": "dropped", "task": t["id"], "at": now(),
-                                                             "why": msg[-300:]})
-                        log(f"dropped {t['id']}: {e}")
-                        continue
-                    used += 1
-                    ev = {"ev": "created", "task": t["id"], "group": gid, "at": now(), "live": live,
-                          "selected": selected, "source_group": source, "opp_id": t["opp_id"],
-                          "refset": t.get("refset"), "is_ref": is_ref, "quota_used": used}
-                    append_jsonl(DATA / "events.jsonl", ev)
-                    made.append(ev)
-                    unconfirmed.append(ev)
-                    log(f"created {t['id']} -> {gid[:8]} (v{live}, quota {used}/{limit}"
-                        f"{', ref' if is_ref else ''}{', pinned ' + source[:8] if source else ''})")
-                    if len(made) % args.recheck == 0:
-                        if check_live("during create") != (live, selected):
-                            return made
-                        qq = quota().get("quota") or {}
-                        used, limit = max(used, qq.get("used", used)), qq.get("limit") or limit
-            finally:
-                _PRIORITY.clear()
+                    # A request the API refuses (4xx, e.g. an unknown map) is dropped; rate limits are retried.
+                    append_jsonl(DATA / "events.jsonl", {"ev": "dropped", "task": t["id"], "at": now(),
+                                                         "why": msg[-300:]})
+                    log(f"dropped {t['id']}: {e}")
+                    continue
+                used += 1
+                ev = {"ev": "created", "task": t["id"], "group": gid, "at": now(), "live": live,
+                      "selected": selected, "source_group": source, "opp_id": t["opp_id"],
+                      "refset": t.get("refset"), "is_ref": is_ref, "quota_used": used}
+                append_jsonl(DATA / "events.jsonl", ev)
+                made.append(ev)
+                unconfirmed.append(ev)
+                log(f"created {t['id']} -> {gid[:8]} (v{live}, quota {used}/{limit}"
+                    f"{', ref' if is_ref else ''}{', pinned ' + source[:8] if source else ''})")
+                if len(made) % args.recheck == 0:
+                    if check_live("during create") != (live, selected):
+                        return made
+                    qq = quota().get("quota") or {}
+                    used, limit = max(used, qq.get("used", used)), qq.get("limit") or limit
             if made:
                 check_live("after create")
                 waiting_note = None
