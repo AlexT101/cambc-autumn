@@ -5018,3 +5018,37 @@ disabled in both diagnostic copies, **160/160 replays are byte-identical**. Prod
 Details, manifests, source hashes and rejected experiments: [fuel-527](../fuel-527/README.md).
 
 Frozen as `variants/chy-fuel-529` (= bots/charybdis).
+
+## 530: A winning tribute is stopped when its stop is due, and a won stand is left only for a fall worth more than its group (charybdis, 2026-11-13)
+
+IAPETUS's macro programme (overseer round mx; branch `mx-iapetus-20261113` @3bf1525b5, notes
+[mx-iapetus](../mx-iapetus/NOTES.md)). Two lines on 529, both about when to give a fight up:
+
+- **Stop due (line D, the larger part).** In the mirror the loser's costliest Prism deaths came from `stop_game_ender`:
+  the enemy's hoarding Prism starts a winning tribute (a channel of `ceil(bag/10)` turn ends, 30-150 rounds left), our
+  bodies run in at once to stun it and die (63% of 5,208 such runs within 25 rounds). A stun or lock cancels a channel
+  whenever it lands, but an early one frees the channeller and lets it restart. `stop_due` (`combat/fight.cc`) holds
+  the stop until the rounds to the channel's last stop are within our steps to it plus one ability cooldown (each enemy
+  stunner can cost us one turn in that window, and a stun spent meanwhile is back). `ender_to_stop` keeps a deferred
+  ender's channel in mind while it is out of sight (a channel cannot move). The bank and turn branches stop an ender,
+  and cancel our own tribute or recall for it, only when due; a stun on a winning channel that is not due is worth 0
+  (`combat/abilities.cc`).
+- **Contest judgement (line B).** A Prism, Cassi & Issac, or a carrier whose bag is worth a life leaves a stand the team
+  wins only when its fall (max health + life + bag at `gem_value`, Prism premium, both of C&I's bodies) costs more than
+  the contested group's gem stake to both sides in the race (`fall_outweighs`, new `economy/contest.cc`); otherwise the
+  stand is played on past our fall to whether the team wins (`Safety::stand_trade`'s new `settle`). `guard.cc` uses
+  the same test, and `farm.cc` keeps a contested group as the target while the team is at work on it and wins the stand
+  there (`team_invested`, `group_contest`), except over a bag's way to an altar or a game-winning capture.
+
+Against chy-ref (= 529) at 2x fuel, own drafts, fresh ladder-v4: held out **53.3% (52.8-53.8) of 40,800** (dev 53.0,
+hold 53.3, conf 53.4, x1 53.5). Ablation on train: stop_due alone ~52.5, contest alone held out 51.1 of 30,600.
+Mechanism (1,000 debug games): enemy deaths 8.5 → 10.3 a game, ours flat; ender runs 5.2 → 3.9; our Prism deaths
+0.90 → 0.70. RHEA's independent `c8-urgency` (the same "stop only when its clock requires it" idea) read 52.5 of 2,040.
+
+Overseer read at normal fuel against 529, own drafts, release: **52.9% (52.4-53.4) of 40,120** on unused ladder-v4
+`maps/suites/overseer-mx/iap100k` (seeds 61490100-61490158). Out-of-fuel turns 318,049 / 309,008 (+3%). No failed
+game or broken draft. Line B alone at 100k read 50.3% (49.8-50.8) of 40,120 (seeds 61490000-61490058): its 2x gain
+does not survive normal fuel; the commit keeps it as the base D was measured on. Not yet gated against the bodies
+(`fgate.py`) or live; a fuel pass is planned first.
+
+Frozen as `variants/chy-530` (= bots/charybdis = `variants/ia-prism-3bf1525`).

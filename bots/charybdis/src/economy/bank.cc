@@ -1459,9 +1459,9 @@ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memo
     decision = Branch::tribute_kept;
     // The enemy's winning tribute, while we hold a hard stop for it (holds_hard_stop) or a ready stun
     // in reach, is the game: ours waits, unless ours wins first or, winning later, an ally stops theirs in time.
-    const auto* ender = game_ender(world);
+    const auto* ender = ender_to_stop(world);
     const auto* stop = ender && holds_hard_stop(world, *ender) ? ender : stoppable_winning_tribute(world);
-    if (stop && !(winning_bag(world) && ally_stops(world, *stop))) {
+    if (stop && stop_due(world, *stop) && !(winning_bag(world) && ally_stops(world, *stop))) {
         throw_if_stale();
         try {
             self_acted(), me.cancel_submit_gems();
@@ -1493,7 +1493,7 @@ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memo
 bool continue_recall(World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home, int recall_farm) {
     auto& me = cambc::self();
     decision = Branch::recall_kept;
-    if (const auto* ender = game_ender(world); ender && holds_hard_stop(world, *ender)) {
+    if (const auto* ender = ender_to_stop(world); ender && holds_hard_stop(world, *ender) && stop_due(world, *ender)) {
         throw_if_stale();
         try {
             self_acted(), me.cancel_recall();

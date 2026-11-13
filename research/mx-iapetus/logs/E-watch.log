@@ -1,0 +1,6 @@
+17:03 E start: copied ia-contest -> ia-watch; relay record (comms tribute field after ally), World::note_tribute, known_tribute generalises enemy_tributes_win/enemy_tribute_wins/game_ender/place_lock to unseen channels
+17:10 mirror study (scripts/E/relay_potential.py): 100+ enemy tributes seen by a defender complete 12%, unseen 90%. Game-ending 100+ tributes: 480/1020 games; 309 seen by the loser, 115 of those with a non-seeing stunner/lock carrier able to reach within 4 before the end; 171 unseen.
+17:10 dbg1 (ladder 256, relay record placed after ally): 49.6%; the record fit on 2/256 maps (claims+bag+camp+ally fill 64 bits).
+17:10 rebased onto ia-prism-v1 (D's stop_due) per IAPETUS; record redesigned: shares the ally record's slot (ally only on healer teams), enemy x altar x [tile] x end mod 32 x bag class (8: cancel, 6 power-of-2 buckets, game-winning); watch behind params::altar_watch (off for r1).
+17:11 dbg2 (v1 = relay + known-tribute enders on D's stop_due): ladder 53.1% of 256, record fits 76% of maps (tile 52%), posts 10.7/game (2.9 winning class, 2.0 cancels), reads 42.8/game, OOF 21/16. r1 train started (ia-watch-v1).
+17:18 r1 train 52.7 [51.7-53.6] OOF 1098/652 (base ia-prism-v1 same maps 53.6 [52.6-54.5], OOF 1071/646). r2 = v2 (end period 64: a 32 period posted long channels ending early, which read stop_due too soon) started.

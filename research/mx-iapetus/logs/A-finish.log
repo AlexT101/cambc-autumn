@@ -1,0 +1,58 @@
+# A-finish log (finish window: stop ETA for long winning channels)
+
+[pre] Feasibility on the mirror study extract (400 games, omniscient positions): with every enemy a stopper (stun by
+reach, or a lock within 2 of the altar), a window (stop ETA > channel turns) exists in 495 of 59,386 winning-bag rounds
+(0.8%), in 23 of 275 games with a winning bag; without locks 734 rounds, 35 games. Big-tribute (100+) outcomes by
+whether any enemy saw the tributer at its start: seen 3,608 starts, 11% complete; unseen 1,346, 56% complete; oracle
+ETA > turns 274 starts, 100% complete.
+[dbg1] Literal design (every enemy binds by its lower bound; wait only when one alone in sight binds and its death
+opens the window): 256 debug ladder games, 50.4%. Window evaluations at an altar: 1,144; binding 3-5 in 1,014, safe 0
+in 922; shut 27 times. Unseen lower bounds (last tile less rounds since) fall to 0 within a few rounds, so the start
+rule almost never binds and the fallback (today's start) decides. Not given a train read.
+[dbg2] Informed (an unseen enemy binds only if its possible tiles are within sight of the tile; dead ones never):
+256 debug games 49.2%; shut 6,300 of 6,929 evaluations; one game waited r767-1800 (enemy rate 0: clock = rounds
+left). Added: the wait lasts one respawn (60 rounds) per winning bag from its first shut round.
+[r1] v1 = informed + 60-round wait budget (kept as bots/variants/ia-finish-v1). Train 10,200 games: 49.7% (5072-5128),
+CI 48.8-50.7; OOF CAND 1120 turns in 617 games, REF 951 in 607. Mechanism (first 1,000 games): big (100+) starts/game
+CAND 4.87 vs REF 4.88; completion 18.6% vs 18.9%; cancels/game stun 2.12 vs 2.03, lock 0.75 vs 0.72, manual 0.97 vs
+1.09; rounds in cancelled big channels/game 55.4 vs 53.5; 100+ bag deaths/game 0.322 vs 0.329; lag 1000-wealth->win
+median 59 vs 59, p75 183 vs 149, p90 585 vs 497; races 315, CAND won 49.2%.
+  Long (>11 turn) winning starts: CAND 3,303, of which 2,343 with both sides seeing each other, nearest enemy 4-7 in
+  2,337; completion 4% (seen 3%, unseen 22%). 1,546 of them come 300+ rounds after the bag's first long start: the
+  60-round budget runs out early in long stalemates and today's start resumes. Next: no budget (the enemy clock and the
+  round limit end the wait).
+[r2] v2 = informed, no wait budget (enemy clock and round limit end the wait). Train 10,200: 49.2% (5019-5181), CI
+48.2-50.2; OOF CAND 1464 in 644 games vs REF 968 in 622. Results: tribute-ended games 4753-4963, round-limit games
+266-218 (CAND-REF). Mechanism (1,000 games, 48.7%): big starts/game CAND 4.73 vs REF 7.45; completion 17.1% vs
+11.2%; stun cancels 1.59 vs 3.06, lock 0.76 vs 1.26; cancelled-channel rounds 45.4 vs 79.7; 100+ bag deaths 0.407 vs
+0.378; lag median 73 vs 71, p75 273 vs 216, p90 1118 vs 952 (games much longer on both sides); races 270, CAND 49.6%.
+Winning-bag conversion when first to a winning bag: CAND 261/303, REF 270/304.
+  Long winning starts by sight: CAND both-see 1,186 (r1 2,343), we-blind-they-see 1,197 (r1 654). 1,879 of 2,383
+  "they see" starts are within 6 of an enemy ward; every "they see" class completes 2-4%, "they blind" 12-20%.
+  Waiting where the holder stands opens no window: wards watch the altar and visible enemies stay to fight.
+[v3] v3 = no waiting in place. An enemy binds if it is in our sight, may be in sight of the tile (possible, tracked),
+or its last-seen ward sees the tile (alive or dead). A long winning channel is shut only when another reachable altar
+fits on arrival (nearest such) and the enemy clock outlasts walk + channel; else today's start. Kept: continue keeps
+a channel that fits, stopper kill value, altar choice when carrying. Fuel: clock checked first, possible-distance
+search shared across tools, a crow-distance prefilter on altars (OOF debug ladder: 56 -> 18 vs REF 15).
+[r3] v3 (kept as bots/variants/ia-finish-v3). Train 10,200: 49.9% (5086-5114), CI 48.9-50.8; OOF 1193/631 vs 949/602.
+Mechanism (1,000 games, 49.7%): big starts/game 6.45 vs 6.50, completion 13.7% vs 13.2%, stun 2.71 vs 2.64, lock 1.05
+vs 1.08, manual 1.72 vs 1.84, cancelled-channel rounds 72.0 vs 73.4, 100+ bag deaths 0.391 vs 0.377, lag median 67 vs
+67 (p75 189 vs 196, p90 952 vs 969); races 262, CAND 49.2%. Debug ladder: shut 2 of 1,146 evaluations: a ward or a
+visible stopper watches every other altar too, so v3 is today's start plus the keep, targeting and altar choice.
+[r4] v4 = v3 + stopper kill value for every visible binding stopper (not only a sole one): 49.9% (5085-5115), CI
+48.9-50.8; OOF 1207/632 vs 952/603. One game from v3: targeting does nothing measurable.
+[audit] Read-only auditor. Fixed: the keep (continue_tribute) bypassed tribute_ok while being hit (stop_eta prices no
+damage) -> now also needs no damage last round; dash speed missing (+2 tiles a dash, a dash a cooldown); bank_gems'
+altar override ran without the clock/round-limit conditions; dead wait branch removed; lock buyable on own spawn;
+unseen lag +1. Not changed (documented): informed binding ignores enemies unseen 4+ rounds (track_horizon 3) and
+dead ones without a ward; the crow-distance prefilter rejects (conservative) rather than accepts; per-round caches
+ignore same-turn kills/reveals.
+[r5] v5 = v4 + audit fixes: 50.1% (5109-5091), CI 49.1-51.1; OOF 1220/628 vs 956/603.
+[smoke] ladder 256: 50.8%, 0 failed, no DRAFT-UNFINISHED/PLAN-CHECK, but OOF 62 vs 18: 45 in one game (03the-front,
+20+ altars), the Prism holding a winning bag off-channel: finish_altar's scan. Fix: the scan stops below 50k fuel
+(half the rules' turn; it is optional, the nearest altar serves). Smoke again: 50.8%, 0 failed, OOF 17 vs 18.
+[r6] final (bots/variants/ia-finish): 50.1% (5107-5093), CI 49.1-51.0; OOF 994/621 vs 955/603.
+Conclusion: no version reads above the reference. Starting only channels that can finish is right per attempt
+(seen starts complete 2-4%, unseen 12-22%), but no window comes: with lower bounds every enemy binds; with informed
+binding, waiting in place lets the enemy catch up (r2), and moving to an open altar almost never finds one (wards).

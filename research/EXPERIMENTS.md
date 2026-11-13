@@ -10,6 +10,29 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## (charybdis 530, 2026-11-13) Macro round mx: six independent orchestrators, one gain (IAPETUS's stop-due)
+
+Six orchestrators (TETHYS, RHEA, PHOEBE, THEIA, CRIUS, IAPETUS) each owned a macro refactor of 529 in their own
+worktree, every A/B against a frozen 529 at 2x fuel, own drafts, 10k+ games on their own fresh ladder-v4 suites
+(seeds 614x0000-614x9999). Overseer notes: [overseer-mx-2026-11-13](overseer-mx-2026-11-13/README.md). RHEA, CRIUS
+and PHOEBE were ended early (17:30 UTC, usage); TETHYS, THEIA and IAPETUS were still running at this commit.
+
+- **Kept (CHANGES 530):** IAPETUS's stop_due + contest judgement, 53.3 held out at 2x, **52.9 of 40,120 at 100k**.
+- **Level at 100k:** IAPETUS line B (contest judgement) alone, 51.1 held out at 2x but 50.3 (49.8-50.8) of 40,120 at 100k.
+- **Level or lost (2x, vs 529):**
+  - RHEA: enemy-presence pricing 50.1/50.3; Prism duel hunt 44.8 (spacing -5) / 49.9; mid_exposure 1.0/1.7/2.2
+    flat or worse (1.36 is the optimum); post-retreat group bar 46.5; ally-claim recall 50.1; worst-case-safe tribute
+    windows 32-41 (holders win by channelling where the worst case says unsafe); bag-as-swing carry 48.4.
+  - PHOEBE: Prism hub for allies 50.0, lethal-exposure avoidance 50.3, state-priced fight stakes 50.1-50.4 (unaudited
+    bugs), crew caps 49.1-49.4, gold-efficiency power 0/-1 46.5-47.6; never buying locks 50.35 of 20,400 held out.
+  - CRIUS: Prism collector 49.6, Elk/Golem crews 49.6, contact-loss hazard in farm pricing 49.9 (deaths -4-10%, no
+    wins), state-priced fight stakes 50.3, denial-valued middle groups -3 (whoever wakes a middle group takes it 88%).
+- **Shared lessons:** the first Prism death decides most games (survivor's team wins 92-94%); every cautious rule
+  around the Prism or a winning tribute lost, since farm time given up outweighs deaths avoided; single-mechanism
+  changes bind widely but read level (RHEA's `bind.py`: once a game diverges its result flips ~24% each way, so a
+  change needs both reach and an edge). The gain came from removing an overcommitment (running at a channel long
+  before its stop is due), not from adding caution.
+
 ## (charybdis 529, 2026-11-13) Fuel: target met, 12.22% fewer exhausted release turns
 
 Worked alone. Started from 527, preserved the concurrent 528 pursuit change, and shipped exact fuel cuts as 529.

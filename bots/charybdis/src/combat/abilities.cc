@@ -154,6 +154,9 @@ float kill_stops(const World& world, const ChampionBelief& e) {
 
 float stun_worth(const World& world, const ChampionBelief& e, bool damaging) {
     if (e.facts().passive == Passive::stun_immune) return 0;
+    // A winning tribute's stun before its stop is due (stop_due) gains nothing: the channeller would not act, and the
+    // stun frees it.
+    if (e.channel == Channel::tribute && enemy_tribute_wins(world, e) && !stop_due(world, e)) return 0;
     // The turn it loses: in sight, what that turn's strike deals at our nearest body (cooldowns as
     // they will be then); else its damage a turn. A stunned tributer keeps its bag: the stun only
     // puts off its tribute, by the lost turn and a channel restarted whole.

@@ -490,9 +490,9 @@ public:
     // may strike p in its turns between our next turn and the one after. At least 1.
     int pursuit_gain(const ChampionBelief& e);
     StandRoster stand_roster(vec2 p, const StandReach& reach, int approach, bool unseen);
-    // `falls` as for fight(); without walkers or camps it is fight(p). With `falls`, our fall settles
-    // it (Trade::lost_known).
-    Trade stand_trade(const StandRoster& r, bool falls);
+    // `falls` as for fight(); without walkers or camps it is fight(p). With `settle` (and `falls`), our
+    // fall settles it (Trade::lost_known); without, the fight plays on past it to whether we lose.
+    Trade stand_trade(const StandRoster& r, bool falls, bool settle);
     // Their turns for the enemies (the unseen by unseen_approach) and camps to kill us at p if we never
     // act (channelling), each enemy walking a step a turn until in reach; 0 if not within `horizon` turns.
     int turns_to_kill_idle(vec2 p, int horizon);

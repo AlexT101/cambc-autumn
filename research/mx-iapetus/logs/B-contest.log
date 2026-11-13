@@ -1,0 +1,49 @@
+=== B-contest (ia-contest) log ===
+2026-11-13 15:15 UTC  v1 built (copy of chy-ref):
+  - stand_lost_at: falls rule priced. Prism / Cassi&Issac / bag>=life carriers / lethal: leave a stand the team wins
+    only when fall_cost (max hp + life_value + bag*gem_value, Prism bag at 1+prism_premium, both bodies for C&I)
+    > gains (kill_distance of every enemy in the fight when the fight kills them all + group_stake of the
+    contested group: gems/gold to us (Prism premium) + to the enemy). stand_trade gains a settle flag; the
+    priced call plays the fight past our fall (settle=false) so lost / kills are known.
+  - step_guard: same pricing for linked/lethal tiles (kills from the tile's fight).
+  - farm: a contested group (visible enemy within crew_enemy_radius) whose stand (everyone in sight within
+    crew_enemy_radius of it) is lost is skipped unless the team is invested; the previous farm choice is kept
+    (mode 'X') when the team is invested and that stand is won.
+  - new economy/contest.cc; contest_claim (claim, else farm choice) set at decide's start.
+  A/B r1: mx-iapetus-B-r1 on maps/suites/mxi/train (10,200 games), 2x fuel.
+15:20 r1 (v1, now bots/variants/ia-contest-v1): train 47.5% [46.5-48.5], 10200 games, OOF CAND 1370 / REF 885.
+  Replay sample (1000 games, analyze macro): contest_win 49.0 vs 51.0 (won_gems 100 vs 95), captured own half 795 vs 802,
+  mid 110 vs 110, enemy half 96 vs 103; tributed 731 vs 761; outnumbering +2.3pt, outnumbered -1.6pt; deaths 7.33 vs 7.13/game.
+  Debug ladder smoke (256, 45.3%): retreat-branch turns 260.6 vs 263.0 a game (pricing barely changes how often bodies
+  leave), but deaths 8.5 vs 7.0 a game (Cassi pair +0.3, Prism +0.3, Prism bag gems lost 105 vs 82). Farm contest reads
+  per game: 563 lost / 442 won; KEEP (commit) 6.7. Reading: counting the kills as what holding wins is wrong in the
+  mirror: the enemy that loses a stand leaves (it gives way) after killing our body, so the kills never come while our
+  fall does. v2: gains = the contested group's stake only (to us and to the enemy), no kills.
+15:30 r2 (v2 = v1 without kills in the gains; bots/variants/ia-contest-v2): train 47.1% [46.2-48.1], 10200, OOF 1398 / 888.
+  No better than r1: the kills were not what cost the 2.5 points. Debug smokes show +1.2 deaths a game for CAND on the
+  ladder maps, but traced deaths after a priced stay (0.08/game) or a KEEP (0.11) explain little; the debug builds
+  also paid for a CONTEST printf per group read (fuel), so the debug death excess is suspect (release r1 sample: +0.2).
+  Found: group_stake priced gold at Prices::per_gold (up to 3.8 gems a gold: an emblem price, not a race value) and
+  counted it for both sides -> stakes ~10k on gold groups. The farm skip fired on the current choice 27 times a game
+  (lost reads 563 vs won 442 a game: the read puts every enemy within 12 in at once, striking first).
+  v3: no farm skip (ablation of the most frequent change), stake = gems only (ours with Prism premium + theirs).
+15:45 r3 (v3 = v2 - farm skip, gems-only stake; bots/variants/ia-contest-v3): train 50.9% [49.9-51.8], 10200, OOF 941 / 849.
+  The skip was the ~3.5-point loser (r2 sample: contest_win 47.8 vs 52.2, own_lost +1.6pt, mid/enemy-half captures -8/-13):
+  its stand read (every enemy within 12 in at once, striking first) reads most contested groups lost, so we gave them up.
+  r3 sample (1000 games, 52.4% there): contests won 5.08 vs 4.76 a game, contested gems 136 vs 123; captured own/mid/enemy
+  half 763/139/111 vs 750/134/103; tributed 761 vs 717; deaths 10.23 vs 10.69 a game; Prism 51+ bag deaths 0.458 vs 0.417,
+  Prism bag gems lost 154 vs 142.
+  v4 = v3 + stand_lost_at plays the fight settled first (as chy-ref) and fully only when the fall is worth taking (fuel),
+  + may_expect: a crew is still expected at a contested strong group unless group_contest reads that stand lost.
+15:55 r4 (v4; bots/variants/ia-contest-v4): train 50.3% [49.4-51.3], 10200, OOF 1014 / 842. No gain over v3 (50.9): the
+  crew expectation at won contested groups adds nothing measurable (the read is won only ~44% of the time, mostly where
+  the team already outnumbers). v3/v4 pooled ~50.6% over 20,400 games.
+16:05 Auditor (read-only): no correctness bugs; bit layouts, settle/memo semantics, no-group parity with chy-ref verified.
+  Risks raised and handled in the final bots/variants/ia-contest: the commit could override a banking choice or a
+  game-winning capture (now skipped when banks_bag or best wins); the second (full) stand_trade ran unguarded (now
+  fuel-gated, falling back to the settled answer: leave); group_contest's fuel-short answer is now 2 (no commit).
+  Not changed (untested direction): the fall cost counts the bag once while the stake counts group gems for both
+  sides (auditor: biases toward staying); lethal tiles are priced too.
+  Final = v3 + lazy settle in stand_lost_at + these fixes (may_expect back to chy-ref's). Smoke mx-iapetus-B-smoke:
+  256 ladder games 49.2% [43.2-55.3], 0 failed, 0 DRAFT-UNFINISHED / PLAN-CHECK, OOF 19 / 29.
+  Patch: research/mx-iapetus/patches/B-contest-final.diff.

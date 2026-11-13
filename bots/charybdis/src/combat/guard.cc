@@ -497,7 +497,8 @@ const bitboard* step_guard_cover(const World& world, Safety& safety, vec2 here, 
 }
 
 // The tiles a step (or a ready dash) could end on that want_home would leave at once: stopping
-// there hands the enemy the first strike. Cassi and Issac also keep off tiles where one would fall.
+// there hands the enemy the first strike. Cassi and Issac also keep off tiles where one would fall
+// for less than holding there wins (fall_outweighs), as Prism and a big bag's carrier do.
 const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int radius) {
     world.throw_if_stale();
     if (!enemy_seen(world)) return nullptr;
@@ -527,7 +528,7 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
         if (const auto now = fuel(); now <= placing) costliest = std::max(placing - now, costliest - costliest / 8);
     };
     if (!shared) g.expose_here(here);
-    // Prism too keeps off every tile where it would fall (stand_lost_at).
+    // Prism too keeps off the tiles where it would fall (stand_lost_at).
     const bool linked = partner(world) != nullptr || world.me().facts().passive == Passive::gem_focus
                         || params::gem_value * static_cast<float>(bag_at_stake(world)) >= params::life_value;
     // Unless the list filled up, the foes hold every visible threat that could hit a tile this near.
@@ -673,7 +674,7 @@ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int ra
         if (k == 2 && !linked && !safety.lethal(q)) continue;
         if (k == 0 || k == 1) lost = falls = k == 1;
         else if (!simulate(key, lost, falls)) return any ? &guard : nullptr;
-        if (lost || (falls && (linked || safety.lethal(q)))) {
+        if (lost || (falls && (linked || safety.lethal(q)) && fall_outweighs(world, q))) {
             if (!any) clear_board(guard), any = true;
             set_tile(guard, q);
         }

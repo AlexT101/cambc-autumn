@@ -65,6 +65,8 @@ bool sieged = false;       // siege() or its heal trip ran this turn: act() keep
 bool stunned_turn = false; // stunned at this turn's start
 bool struck = false;       // the strike search ran this turn
 bool searched = false;     // and priced every enemy we see: none its own moves revealed
+// The group our stands are about (economy/contest.cc): our claim, else our farm choice, as of the turn's start.
+int contest_claim = -1;
 // The Prism-Willow support code chose this turn: the wrap-up's strike, heal, shield and recall stay out.
 bool support_owned = false;
 // For the turn end's comms::support_intent: Prism waits on a heal (requested) or Willow can give
@@ -356,6 +358,9 @@ std::optional<TributeWin> enemy_tributes_win(const World& world);
 const ChampionBelief* game_ender(const World& world);
 void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e);
 bool holds_hard_stop(const World& world, const ChampionBelief& e);
+bool stop_due(const World& world, const ChampionBelief& e);
+// game_ender, else the unseen winning tribute whose stop we put off.
+const ChampionBelief* ender_to_stop(const World& world);
 void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory);
 
 // economy/comeback.cc: cooked comebacks.
@@ -544,6 +549,19 @@ int walk_to(const World& world, Pathing& pathing, int g, vec2 p);
 int team_walk_to(const World& world, Pathing& pathing, int g, vec2 p);
 bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory);
 float farm_step_value(const World& world);
+
+// economy/contest.cc
+// Our fall at p, in a stand the team wins, costs more than holding wins there: the group at stake at p
+// (our claim within fight_ally_radius, or the group under p, cleared or with work under way), to us and to
+// the enemy. With no group at stake, always.
+bool fall_outweighs(const World& world, vec2 p);
+// The stand at group g's camp tile nearest us, every champion in sight within crew_enemy_radius of it
+// fighting: 0 with no enemy in sight that near, 1 won, 2 lost (or our fall there outweighs it, or no fuel to
+// read it). Once a turn.
+int group_contest(const World& world, Safety& safety, int g);
+// We or an ally in sight claiming g are at work on it (in reach of a live member, or within attack
+// range of a cleared group's tiles), or `claim` is g with an ally claiming it beside us.
+bool team_invested(const World& world, int g, int claim);
 
 // economy/siege.cc
 bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory);

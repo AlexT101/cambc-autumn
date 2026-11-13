@@ -1,0 +1,583 @@
+diff -ruN bots/variants/chy-ref/src/bot_parts.h bots/variants/ia-finish/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 14:14:04.880897624 +0000
++++ bots/variants/ia-finish/src/bot_parts.h	2026-11-13 16:09:21.723637772 +0000
+@@ -24,6 +24,7 @@
+ #include "model/pathing.h"
+ #include "combat/plan.h"
+ #include "model/safety.h"
++#include "model/stop_eta.h"
+ #include "combat/self_abilities.h"
+ #include "model/turn_order.h"
+ #include "model/world.h"
+@@ -422,6 +423,8 @@
+ bool continue_recall(World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home, int recall_farm);
+ void drop_carry_claim(Memory& memory);
+ void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool attacked, const Pathing::GuardState& chase_guard);
++// What a kill of e is worth beyond the hit while it is in sight and could stop our winning bag's channel.
++float window_kill_value(const World& world, const ChampionBelief& e);
+ 
+ // economy/capture.cc
+ int capture_rounds(bool fast);
+diff -ruN bots/variants/chy-ref/src/combat/abilities.cc bots/variants/ia-finish/src/combat/abilities.cc
+--- bots/variants/chy-ref/src/combat/abilities.cc	2026-11-13 14:14:04.880897624 +0000
++++ bots/variants/ia-finish/src/combat/abilities.cc	2026-11-13 15:02:22.144618420 +0000
+@@ -146,7 +146,7 @@
+ }
+ 
+ float kill_stops(const World& world, const ChampionBelief& e) {
+-    if (e.channel != Channel::tribute) return 0;
++    if (e.channel != Channel::tribute) return window_kill_value(world, e);
+     // A tribute that ends the game is worth every gem of it.
+     return params::tribute_value
+            + (enemy_tribute_wins(world, e) ? params::gem_value * static_cast<float>(cambc::constants::winning_gems) : 0.0f);
+diff -ruN bots/variants/chy-ref/src/economy/bank.cc bots/variants/ia-finish/src/economy/bank.cc
+--- bots/variants/chy-ref/src/economy/bank.cc	2026-11-13 14:14:04.882606986 +0000
++++ bots/variants/ia-finish/src/economy/bank.cc	2026-11-13 16:26:14.877583763 +0000
+@@ -911,6 +911,163 @@
+ // Our bag is headed for an altar: one a tribute could score that Prism is not keeping for Focus.
+ bool banks_bag(const World& world, Pathing& pathing) { return bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing); }
+ 
++// The finish window (model/stop_eta.h). A winning channel longer than the kill window (tribute_safe) is judged on
++// its first turns only, and a stun or a lock cancels it whatever its length: it starts only where no enemy could
++// stop it before it completes, while a window can be expected before the enemy's clock runs out.
++bool long_winning(const World& world, int turns) { return turns > params::tribute_window && winning_bag(world); }
++
++// At p, for a channel of `turns` held by `holder`: the fewest turns any enemy leaves it, how many could stop it (a
++// linked pair once: one death takes both), and which of those are in sight.
++struct FinishWindow {
++    int safe = stop_eta::never;
++    int binding = 0;
++    std::uint32_t seen = 0; // bit i: enemies[i], in sight, could stop it
++};
++FinishWindow window_at(const World& world, const ChampionBelief& holder, int altar, vec2 p, bool tile, int turns, bool cheap = false) {
++    FinishWindow w;
++    std::uint32_t counted = 0;
++    for (const auto& e : world.enemies) {
++        const int s = stop_eta::safe_turns(world, holder, e, altar, p, tile, turns, false, params::finish_informed, cheap);
++        w.safe = std::min(w.safe, s);
++        if (s >= turns || e.index >= 32) continue;
++        if (e.alive && e.visible) w.seen |= 1u << e.index;
++        const auto* mate = linked_partner(world, e);
++        if (!(mate && mate->index < 32 && (counted >> mate->index & 1))) ++w.binding;
++        counted |= 1u << e.index;
++    }
++    return w;
++}
++
++// Rounds until the enemy's tributes, at their recent rate, cover what it needs beyond the bags we last saw it carry.
++int enemy_clock(const World& world) {
++    int need = static_cast<int>(cambc::constants::winning_gems) - world.score.enemy;
++    for (const auto& e : world.enemies) need -= e.alive ? std::max(0, e.gems) : 0;
++    if (need <= 0) return 0;
++    const float rate = world.enemy_rate();
++    const float rounds = rate > 0 ? static_cast<float>(need) / rate : static_cast<float>(rounds_left(world));
++    return static_cast<int>(std::min(rounds, static_cast<float>(rounds_left(world))));
++}
++
++// The team's winning bag not yet channelling: its holder (the largest), where its window is judged (its tribute
++// tile, else the nearest altar for any of its tiles) and its channel. Null holder if none, or one the kill window covers.
++struct TeamFinish {
++    const ChampionBelief* holder = nullptr;
++    int altar = -1;
++    vec2 p{-1, -1};
++    bool tile = false;
++    int turns = 0;
++};
++TeamFinish team_finish(const World& world) {
++    TeamFinish f;
++    int most = 0;
++    for (const auto& a : world.allies) {
++        if (!a.alive) continue;
++        const int bag = a.is_self ? static_cast<int>(my_gems()) : a.visible ? a.gems : comms::bag_of(world, a.index);
++        const bool tributing = a.is_self ? my_state().contains(cambc::champion_state::submitting_gems)
++                                         : a.visible && a.channel == Channel::tribute;
++        const vec2 pos = a.is_self ? my_position() : a.pos;
++        if (tributing || bag <= most || world.score.ally + bag < static_cast<int>(cambc::constants::winning_gems) || !in_bounds(pos)) continue;
++        most = bag;
++        f.holder = &a;
++        f.p = pos;
++        f.turns = tribute_turns(bag, a.is_self ? world.me().fast_tribute : a.fast_tribute);
++    }
++    if (!f.holder || f.turns <= params::tribute_window) return {};
++    f.altar = tribute_altar(world, f.p);
++    f.tile = f.altar >= 0;
++    if (!f.tile) {
++        int near = unreachable;
++        const auto& altars = world.map().altars;
++        for (int a = 0; a < static_cast<int>(altars.size()); ++a)
++            if (const int d = dist(f.p, altars[a].pos); d < near) near = d, f.altar = a;
++        if (f.altar < 0) return {};
++        f.p = altars[f.altar].pos;
++    }
++    return f;
++}
++
++float window_kill_value(const World& world, const ChampionBelief& e) {
++    static int round = -1;
++    static std::uint32_t stoppers = 0;
++    if (round != world.round) {
++        round = world.round;
++        stoppers = 0;
++        if (const auto f = team_finish(world); f.holder) stoppers = window_at(world, *f.holder, f.altar, f.p, f.tile, f.turns, true).seen;
++    }
++    // A stopper in sight of our winning bag's altar: its death takes a respawn off what shuts the window, worth a
++    // tribute stopped, as the channel it would stop is.
++    return e.side == team::enemy && e.index >= 0 && e.index < 32 && (stoppers >> e.index & 1) ? params::tribute_value : 0.0f;
++}
++
++// For a long winning bag, the nearest reachable altar where a channel begun on arrival can finish (no enemy that sees
++// it could stop it within the walk and the channel), or -1. Kept for the turn's tile and bag.
++int finish_altar(const World& world, Pathing& pathing, const Memory& memory, int& steps_out) {
++    struct Key {
++        int round = -1;
++        vec2 here{-1, -1};
++        std::uint32_t gems = 0;
++        int avoid = -1, avoid_until = -1;
++        bool operator==(const Key&) const = default;
++    };
++    static Key last;
++    static int kept = -1, kept_steps = unreachable;
++    const vec2 here = my_position();
++    const Key key{world.round, here, my_gems(), memory.avoid_altar, memory.avoid_until};
++    if (key == last) {
++        if (kept >= 0) steps_out = kept_steps;
++        return kept;
++    }
++    last = key;
++    kept = -1, kept_steps = unreachable;
++    const int turns = tribute_turns(world, my_gems());
++    if (!long_winning(world, turns)) return -1;
++    const auto& altars = world.map().altars;
++    for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
++        // An optional search (the nearest altar serves without it): within half a turn's fuel, on maps of many altars.
++        if (!fuel_ok(50000)) break; // half the rules' 100k turn
++        if (world.altars[a].enemy_lock || (a == memory.avoid_altar && world.round < memory.avoid_until)) continue;
++        // The walk is at least the crow's: an altar whose window shuts within that needs no field.
++        const int least = std::max(0, dist(here, altars[a].pos) - static_cast<int>(cambc::constants::submit_gems_range));
++        if (least >= kept_steps || least + turns >= rounds_left(world)) continue;
++        if (window_at(world, world.me(), a, altars[a].pos, false, least + turns, true).safe < least + turns) continue;
++        // A field per altar: the scan stops while the fuel left would not cover one.
++        if (!fuel_ok(full_field_cost_estimate() + 2000)) break;
++        const int steps = altar_steps(world, pathing, here, a);
++        if (steps == unreachable || steps >= kept_steps || steps + turns >= rounds_left(world)) continue;
++        if (window_at(world, world.me(), a, altars[a].pos, false, steps + turns).safe >= steps + turns) kept = a, kept_steps = steps;
++    }
++    debug_block({
++        if (kept >= 0) std::printf("WALTAR %d %u altar %d steps %d\n", world.round, my_handle(), kept, kept_steps);
++    });
++    if (kept >= 0) steps_out = kept_steps;
++    return kept;
++}
++
++// A long winning channel at our tile p of `altar` waits only for a window it can reach: an enemy that sees p could
++// stop it there, while another altar's window is open on arrival and the enemy's clock outlasts the walk and the
++// channel. Waiting where we stand opens none (an enemy in sight is fought as before, a ward keeps watching), so
++// with no such altar, or the round limit near, the kill window decides as before.
++bool window_shut(const World& world, Pathing& pathing, const Memory& memory, int altar, vec2 p, int turns) {
++    if (altar < 0 || !long_winning(world, turns) || rounds_left(world) <= turns + endgame_margin) return false;
++    // The clock first: it rules most waits out at no cost.
++    const int clock = enemy_clock(world);
++    if (clock <= turns) return false;
++    const auto w = window_at(world, world.me(), altar, p, true, turns);
++    if (w.safe >= turns) return false;
++    int steps = unreachable;
++    const int go = finish_altar(world, pathing, memory, steps);
++    const bool shut = go >= 0 && go != altar && clock > steps + turns;
++    debug_block({
++        static int said = -1;
++        if (said != world.round) {
++            said = world.round;
++            std::printf("WIN %d %u turns %d safe %d binding %d go %d steps %d clock %d shut %d\n", world.round, my_handle(), turns, w.safe,
++                        w.binding, go, steps, clock, static_cast<int>(shut));
++        }
++    });
++    return shut;
++}
++
+ // A tribute started or kept now is the bag's last chance to score, or wins the game while fleeing
+ // gives the enemy time to win first: take it at any risk. Not a long winning channel: standing
+ // that long beside an enemy hands it the bag, so it waits for a safe window like any other.
+@@ -940,7 +1097,7 @@
+ 
+ // At an unlocked altar in reach. The caller judged the turn's start tile safe; anywhere else, at an
+ // altar carry_bag gave up waiting at, or at one believed locked (the caller skipped it), is judged again.
+-bool submit_here(const World& world, Safety& safety, Memory& memory) {
++bool submit_here(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     if (stunned_turn) return false; // the engine refuses it, and the thrown error costs ~3.9k fuel
+     auto& me = cambc::self();
+     const vec2 here = my_position();
+@@ -952,6 +1109,7 @@
+         if ((avoided || world.altars[a].enemy_lock || here != world.turn_start)
+             && !tribute_ok(world, safety, memory, tribute_turns(world, my_gems())))
+             return false;
++        if (window_shut(world, pathing, memory, a, here, tribute_turns(world, my_gems()))) return false;
+         place_lock(world); // first: it cancels every tribute at its altar
+         place_ward(world, memory); // first: no ward goes down while channelling
+         throw_if_stale();
+@@ -1240,7 +1398,7 @@
+ [[gnu::flatten]] void bank_gems(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool heal_step) {
+     if (retaining_gems(world, pathing)) return;
+     world.throw_if_stale();
+-    if (submit_here(world, safety, memory)) return;
++    if (submit_here(world, pathing, safety, memory)) return;
+     const vec2 here = my_position();
+     const auto& altars = world.map().altars;
+     // One we gave up waiting at (carry_bag) counts as locked until we could reach another.
+@@ -1263,18 +1421,23 @@
+         if (best < 0 && world.round < memory.avoid_until && (!carries_crystal() || hop_route(world, pathing, memory).hop < 0))
+             memory.avoid_until = world.round;
+     }
++    // A long winning bag aims at the nearest altar it can finish at, under window_shut's conditions.
++    if (int steps = unreachable, a = finish_altar(world, pathing, memory, steps); a >= 0) {
++        const int turns = tribute_turns(world, my_gems());
++        if (rounds_left(world) > turns + endgame_margin && enemy_clock(world) > steps + turns) best = a, best_steps = steps;
++    }
+     // A hit on the aimed altar's lock; it ends the turn of a champion whose attack spends the walk,
+     // with a tribute if that hit broke it within reach.
+     const auto lock_hit_ends_turn = [&] {
+         if (best < 0 || !world.altars[best].enemy_lock || !break_lock(world, best) || world.me().facts().walk_and_attack_independent())
+             return false;
+-        submit_here(world, safety, memory);
++        submit_here(world, pathing, safety, memory);
+         return true;
+     };
+     // A melee champion's hit on the lock it stepped beside, then the tribute if that broke it.
+     const auto hit_and_submit = [&] {
+         if (best >= 0 && world.altars[best].enemy_lock && world.me().facts().walk_and_attack_independent()) break_lock(world, best);
+-        submit_here(world, safety, memory);
++        submit_here(world, pathing, safety, memory);
+     };
+     // A pack we would retreat from stands in the way: around it within the usual detour, else
+     // wait outside it until it leaves or a recall (recall_to_bank) takes the bag home.
+@@ -1320,7 +1483,7 @@
+     const Field& field = best >= 0 ? pathing.to_altar(best) : pathing.to_any_altar();
+     if (lock_hit_ends_turn()) return;
+     if (heal_step && willow_bank_heal_step(world, pathing, safety, field)) {
+-        submit_here(world, safety, memory);
++        submit_here(world, pathing, safety, memory);
+         return;
+     }
+     step_safely(world, pathing, field, safety);
+@@ -1356,6 +1519,7 @@
+     const int a = altar_here(world, here);
+     if (a < 0 || enemy_lock_live(world.map().altars[a].pos) || retaining_gems(world, pathing)) return false;
+     if (tribute_turns(world, my_gems()) > rounds_left(world)) return false;
++    if (window_shut(world, pathing, memory, a, here, tribute_turns(world, my_gems()))) return false;
+     if (want_home(world, pathing, safety, memory)) return false;
+     throw_if_stale();
+     try {
+@@ -1371,7 +1535,9 @@
+     if (retaining_gems(world, pathing)) return false;
+     if (!can_tribute_here(world)) return false;
+     if (finish_heal(world, pathing, safety)) return false; // heal before the winning channel
+-    return tribute_ok(world, safety, memory, tribute_turns(world, my_gems()));
++    const int turns = tribute_turns(world, my_gems());
++    if (window_shut(world, pathing, memory, altar_here(world, my_position()), my_position(), turns)) return false;
++    return tribute_ok(world, safety, memory, turns);
+ }
+ 
+ // Only a small bag, out of every credible enemy's reach, and never the gems that would win.
+@@ -1469,6 +1635,13 @@
+         }
+         if (!me.is_submitting_gems()) return false;
+     }
++    // A long winning channel no enemy could stop before it completes runs on, whatever the kill window reads, while
++    // nothing hits it: stop_eta prices stuns and locks, not damage, and a kill takes the bag.
++    if (const int left = my_channel_time(); left > 0 && memory.damage <= 0 && long_winning(world, tribute_turns(world, my_gems())))
++        if (const int a = tribute_altar(world, my_position()); a >= 0 && window_at(world, world.me(), a, my_position(), true, left).safe >= left) {
++            debug_block({ std::printf("WKEEP %d %u left %d\n", world.round, my_handle(), left); });
++            return true;
++        }
+     if (tribute_ok(world, safety, memory, my_channel_time())) return true;
+     // Damage does not interrupt a tribute: cancelling pays only to flee or to fight back. Sealed in
+     // a ring, neither saves the bag from the camps: only the channel's end can.
+@@ -1585,6 +1758,13 @@
+         const vec2 here = my_position();
+         const auto& altars = world.map().altars;
+         const int at = altar_here(world, here);
++        if (const int turns = tribute_turns(world, my_gems()); window_shut(world, pathing, memory, at, here, turns)) {
++            // Shut only for another altar whose window is open on arrival (bank_gems aims at it).
++            decision = Branch::bank;
++            memory.banking = true;
++            bank_gems(world, pathing, safety, memory);
++            return;
++        }
+         if (at != memory.avoid_altar || world.round >= memory.avoid_until) {
+             if (memory.wait_altar != at) memory.wait_altar = at, memory.wait_since = world.round;
+             // How long they stay is unknown: wait as many rounds as the walk to the nearest other
+diff -ruN bots/variants/chy-ref/src/model/stop_eta.cc bots/variants/ia-finish/src/model/stop_eta.cc
+--- bots/variants/chy-ref/src/model/stop_eta.cc	1970-01-01 00:00:00.000000000 +0000
++++ bots/variants/ia-finish/src/model/stop_eta.cc	2026-11-13 16:16:03.687133919 +0000
+@@ -0,0 +1,211 @@
++#include "stop_eta.h"
++#include <algorithm>
++#include <array>
++#include "enemy_reach.h"
++#include "safety.h"
++#include "turn_window.h"
++#include "world.h"
++
++namespace aph::stop_eta {
++
++namespace {
++
++// An enemy in sight shows its consumables; one out of sight may have bought a lock on its spawn or while dead.
++bool may_carry_lock(const World& world, const ChampionBelief& e) {
++    // On its spawn it can buy one this turn.
++    if (!e.alive || !e.visible || test(world.map().enemy_spawn, e.pos)) return true;
++    std::array<std::uint32_t, 4> counts{};
++    if (cambc::detail::sdk_champion_consumables(static_cast<std::uint32_t>(e.handle), counts.data()) != 0) return true;
++    return counts[cambc::detail::raw_consumable_ids[static_cast<std::size_t>(cambc::consumable_type::altar_lock)]] > 0;
++}
++
++// Each enemy's ward as last seen (one each: a new one replaces it), and its sight. Wards never expire, so one is kept
++// until its tile is in our vision without it.
++struct SeenWard {
++    vec2 at{-1, -1};
++    bitboard sight{cambc::uninitialized};
++};
++std::array<SeenWard, 8> wards;
++int wards_round = -1;
++
++void refresh_wards(const World& world) {
++    if (wards_round == world.round) return;
++    wards_round = world.round;
++    static std::array<cambc::detail::ward_info, 16> raw;
++    std::uint32_t n = 0;
++    if (cambc::detail::sdk_wards(raw.data(), static_cast<std::uint32_t>(raw.size()), &n) != 0) n = 0;
++    const auto own = static_cast<std::uint32_t>(world.map().team_a ? 0 : 1);
++    std::uint32_t listed = 0;
++    for (std::uint32_t k = 0; k < n && k < raw.size(); ++k) {
++        const auto& w = raw[k];
++        if (w.team == own || w.disabled) continue;
++        std::size_t i = 0;
++        while (i < world.enemies.size() && static_cast<std::uint32_t>(world.enemies[i].handle) != w.owner) ++i;
++        if (i >= world.enemies.size() || i >= wards.size()) continue;
++        listed |= 1u << i;
++        const vec2 at{w.x, w.y};
++        if (wards[i].at == at) continue;
++        wards[i].at = at;
++        if (cambc::detail::sdk_ward_vision(at.x, at.y, wards[i].sight.ptr()) != 0) wards[i].at = {-1, -1};
++    }
++    for (std::size_t i = 0; i < wards.size(); ++i)
++        if (!(listed >> i & 1) && in_bounds(wards[i].at) && test(world.visible, wards[i].at)) wards[i].at = {-1, -1};
++}
++
++// e's ward, as last seen, sees a tile within `r` of p: its owner sees a channel there, alive or dead.
++bool ward_watches(const World& world, const ChampionBelief& e, vec2 p, int r) {
++    refresh_wards(world);
++    if (e.index < 0 || e.index >= static_cast<int>(wards.size())) return false;
++    const auto& w = wards[static_cast<std::size_t>(e.index)];
++    return in_bounds(w.at) && any_within(w.sight, p, r);
++}
++
++// Kept for the round: the strike search and the bank ask the same few tiles.
++struct Entry {
++    int round = -1;
++    std::uint32_t key = 0;
++    int value = 0, limit = 0; // value is exact below the limit it was asked with
++};
++std::array<Entry, 64> cache;
++
++} // namespace
++
++int safe_turns(const World& world, const ChampionBelief& holder, const ChampionBelief& e, int altar, vec2 p, bool tile, int limit,
++               bool dead_now, bool informed, bool cheap) {
++    const int R = world.round;
++    if (limit <= 0) return 0;
++    const auto& map = world.map();
++    if (altar < 0 || altar >= static_cast<int>(map.altars.size())) return never;
++    const std::uint32_t key = static_cast<std::uint32_t>(e.index) | static_cast<std::uint32_t>(holder.index) << 3
++                              | static_cast<std::uint32_t>(altar) << 6 | static_cast<std::uint32_t>(p.x) << 11
++                              | static_cast<std::uint32_t>(p.y) << 18 | static_cast<std::uint32_t>(tile) << 25
++                              | static_cast<std::uint32_t>(dead_now) << 26 | static_cast<std::uint32_t>(informed) << 27
++                              | static_cast<std::uint32_t>(holder.side == team::enemy) << 28 | static_cast<std::uint32_t>(cheap) << 29;
++    auto& slot = cache[(key * 2654435761u) >> 26];
++    if (slot.round == R && slot.key == key && (slot.value < slot.limit || limit <= slot.limit)) return std::min(slot.value, limit);
++
++    const auto& f = e.facts();
++    const bool immune = holder.facts().passive == Passive::stun_immune;
++    const int widen = tile ? 0 : static_cast<int>(cambc::constants::submit_gems_range);
++    const vec2 ap = map.altars[altar].pos;
++    // Where its walk starts, and its first turn that can act.
++    enum class From { tile, unseen, spawn } from = From::tile;
++    vec2 origin{-1, -1};
++    int first = R;
++    int lag = 0; // rounds an unseen enemy has walked since its last sighting
++    bool ready_all = false; // respawned: both abilities ready
++    // Informed: only an enemy that sees the tile can answer a channel there: in our sight, possibly in sight of it while
++    // unseen, or through its ward (then even dead, from its respawn).
++    if (informed && !ward_watches(world, e, p, widen)
++        && !(e.alive && !dead_now && (e.visible || (e.tracked && possible_within(e, p, vision_radius + widen)))))
++        return never;
++    if (dead_now || !e.alive) {
++        // Died in our turn now: its respawn turn comes at R + respawn_time at the earliest (before its own turn).
++        const int respawn = dead_now ? R + static_cast<int>(cambc::constants::respawn_time) : e.respawn_earliest;
++        if (respawn < 0) return never;
++        first = respawn + 1; // no walk, attack or cast on the respawn turn
++        from = From::spawn;
++        ready_all = true;
++    } else if (e.visible) {
++        origin = enemy_reach::origin(e);
++        first = next_turn_round(world, e);
++    } else {
++        from = From::unseen;
++        origin = e.pos;
++        lag = e.pos_round < 0 ? 1 << 20 : R - e.pos_round + 1; // seen before its own turn that round: one walk more
++        first = next_turn_round(world, e);
++    }
++    // Steps it needs to stand within `reach` of `target` (a lower bound); never if no walk gets there. Asked up to
++    // `cap` steps: the stop then falls past the limit anyway.
++    const int cap = limit + 1;
++    // The Chebyshev distance from `target` to e's nearest possible tile, if within `most`; else most + 1.
++    struct Near {
++        vec2 target{-1, -1};
++        int most = -1, value = 0;
++    };
++    std::array<Near, 2> nears{};
++    const auto possible_distance = [&](vec2 target, int most) {
++        for (auto& n : nears)
++            if (n.target == target && (n.most >= most || n.value <= n.most)) return std::min(n.value, most + 1);
++        int value = most + 1;
++        if (possible_within(e, target, most)) {
++            int lo = 0, hi = most;
++            while (lo < hi) {
++                const int mid = (lo + hi) / 2;
++                if (possible_within(e, target, mid)) hi = mid;
++                else lo = mid + 1;
++            }
++            value = lo;
++        }
++        auto& slot = nears[nears[0].most < 0 ? 0 : 1];
++        slot = {target, most, value};
++        return value;
++    };
++    const auto steps_to = [&](int reach, vec2 target) -> int {
++        if (from == From::spawn) {
++            int best = never;
++            for (int dx = -reach; dx <= reach; ++dx)
++                for (int dy = -reach; dy <= reach; ++dy) {
++                    const vec2 q{target.x + dx, target.y + dy};
++                    if (!in_bounds(q)) continue;
++                    const int s = map.enemy_spawn_steps(q);
++                    if (s != unreachable) best = std::min(best, s);
++                }
++            return best;
++        }
++        const enemy_reach::Profile who{reach, f.has_dash()};
++        int s = 0;
++        if (in_bounds(origin) && cheap) {
++            s = std::max(0, dist(origin, target) - reach - (from == From::unseen ? lag : 0));
++        } else if (in_bounds(origin)) {
++            const int d = enemy_reach::distance(world, who, origin, target, reach + cap + (from == From::unseen ? std::min(lag, 64) : 0));
++            if (d >= enemy_reach::far) {
++                if (from == From::tile) return never;
++            } else {
++                s = std::max(0, d - reach - (from == From::unseen ? lag : 0));
++            }
++        }
++        if (from == From::unseen && e.tracked) {
++            // The fewest steps from a tile it may be on, as the crow flies: the nearest such tile, found once a target.
++            const int near = possible_distance(target, reach + cap);
++            s = std::max(s, std::max(0, near - reach));
++        }
++        return s;
++    };
++    int stop = never; // the round of its earliest stopping turn
++    const auto turn_round = [&](int steps, bool walk_ok) {
++        // A dasher covers 2 more a dash, one a cooldown (taken as ready now): the fewest walking turns for the steps.
++        if (f.has_dash() && steps > 0) {
++            int t = 0;
++            while (t + 2 * ((t + ability_cooldown - 1) / ability_cooldown) < steps) ++t;
++            steps = std::max(1, t);
++        }
++        // A stop that may follow a walk lands on the turn of the last step; one that excludes walking a turn after.
++        const int turns = steps == 0 ? 1 : walk_ok ? steps : steps + 1;
++        return first + turns - 1;
++    };
++    if (!immune)
++        for (int s = 0; s < 2; ++s) {
++            const int reach = f.stun_reach(s);
++            if (reach < 0) continue;
++            const int steps = steps_to(reach + widen, p);
++            if (steps >= never) continue;
++            int r = turn_round(steps, f.stun_reach_with_walk(s) > reach);
++            if (!ready_all) r = std::max(r, e.ready_round[static_cast<std::size_t>(s)]);
++            stop = std::min(stop, r);
++        }
++    if (dead_now || may_carry_lock(world, e)) {
++        const int steps = steps_to(altar_lock_range, ap);
++        if (steps < never) stop = std::min(stop, turn_round(steps, true));
++    }
++    int value = never;
++    if (stop < never) {
++        // Its turn in round `stop` cancels a channel completing at the holder's turn start that round only if it comes first.
++        const bool before = enemy_earliest_slot(world, e, stop) < world.slot(holder, stop);
++        value = std::max(0, stop - R - (before ? 1 : 0));
++    }
++    slot = {R, key, value, limit};
++    return std::min(value, limit);
++}
++
++} // namespace aph::stop_eta
+diff -ruN bots/variants/chy-ref/src/model/stop_eta.h bots/variants/ia-finish/src/model/stop_eta.h
+--- bots/variants/chy-ref/src/model/stop_eta.h	1970-01-01 00:00:00.000000000 +0000
++++ bots/variants/ia-finish/src/model/stop_eta.h	2026-11-13 16:02:53.606780653 +0000
+@@ -0,0 +1,33 @@
++// Stop ETA: how long a tribute channel at a tile can run before an enemy could stop it. A stun (unit, ground,
++// landing or Marcella's stunning attack) cancels any channel, and a lock placed on the altar cancels every
++// tribute there, whatever the channel's length; the kill window (tribute_safe) does not see either.
++//
++// safe_turns() is the most turn ends a channel at p that starts this turn (or is running, with that many left)
++// can have and still complete, at the holder's turn start in round + turns, before e's earliest turn that could
++// stop it. Its tools: each stun slot (its reach from the rules, after a walk unless it excludes walking, once its
++// cooldown is believed ready) and a lock (any enemy may carry one: placed within altar_lock_range of the altar,
++// after a walk, no cast). Its walk: from its tile in sight (enemy_reach's terrain), from its last tile less the
++// rounds since and from its `possible` tiles while unseen, from its spawn after its respawn turn while dead.
++// Every bound is a lower one: the true stop comes no sooner.
++#pragma once
++#include "../util.h"
++
++namespace aph {
++
++class World;
++struct ChampionBelief;
++
++namespace stop_eta {
++
++inline constexpr int never = 1 << 14;
++
++// `tile`: p is the tribute tile itself; else p is the altar and each reach grows by the tribute range, a bound for
++// every tribute tile of it. `limit`: only whether the answer reaches it matters (it is capped there). `dead_now`:
++// as if e died in our turn now. `informed`: an unseen enemy binds only if it may see p now (or its ward does). `cheap`:
++// walks as the crow flies, a lower bound still (terrain only lengthens them), without the terrain's searches.
++int safe_turns(const World& world, const ChampionBelief& holder, const ChampionBelief& e, int altar, vec2 p, bool tile, int limit,
++               bool dead_now = false, bool informed = false, bool cheap = false);
++
++} // namespace stop_eta
++
++} // namespace aph
+diff -ruN bots/variants/chy-ref/src/params.h bots/variants/ia-finish/src/params.h
+--- bots/variants/chy-ref/src/params.h	2026-11-13 14:14:04.885421013 +0000
++++ bots/variants/ia-finish/src/params.h	2026-11-13 15:07:15.006367887 +0000
+@@ -151,6 +151,9 @@
+ inline constexpr bool finish_heal = true;
+ inline constexpr bool finish_lead = true;
+ inline constexpr bool finish_no_prism = false;
++// The finish window (economy/bank.cc, model/stop_eta.h): an unseen enemy binds a long winning channel's start
++// only while it may be in sight of the tile (it cannot answer a channel it has not seen); else by its lower bound.
++inline constexpr bool finish_informed = true;
+ // Most rounds to wait at a camp for it to return. Also bounds the wait after a recall out to farm.
+ inline constexpr int max_wait = 2;
+ // The weight on gold in farm choice of Tavi on its gold maps (MapEconomy::tavi_map):
+diff -ruN bots/variants/chy-ref/src/unity.cpp bots/variants/ia-finish/src/unity.cpp
+--- bots/variants/chy-ref/src/unity.cpp	2026-11-13 14:14:04.885421013 +0000
++++ bots/variants/ia-finish/src/unity.cpp	2026-11-13 15:01:12.009499130 +0000
+@@ -24,6 +24,7 @@
+ #include "model/pathing.cc"
+ #include "combat/plan.cc"
+ #include "model/enemy_reach.cc"
++#include "model/stop_eta.cc"
+ #include "model/turn_window.cc"
+ #include "model/safety.cc"
+ #include "model/escape.cc"

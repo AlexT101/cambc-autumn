@@ -1,0 +1,173 @@
+diff -ru bots/variants/chy-ref/src/bot_parts.h bots/variants/ia-territory/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 14:14:04.880897624 +0000
++++ bots/variants/ia-territory/src/bot_parts.h	2026-11-13 16:08:28.126547273 +0000
+@@ -298,6 +298,8 @@
+ float shielded_clear(float damage, float rounds, float shield, float ready_in = 0);
+ float home_ground(const StaticMap& map, int g, bool first_turn);
+ float home_side(const StaticMap& map, int g, bool first_turn);
++bool may_contest(const World& world, const ChampionBelief& e, int g, int rounds, bool recalls);
++float contest_absent(const World& world, int g, int rounds, bool recalls);
+ float spell_output(const ChampionBelief& c);
+ float basic_output(const ChampionBelief& c);
+ float spell_clear_rounds(const StaticMap& map, int g, const CampBelief& belief, int range, float spells, float basic);
+diff -ru bots/variants/chy-ref/src/economy/camps.cc bots/variants/ia-territory/src/economy/camps.cc
+--- bots/variants/chy-ref/src/economy/camps.cc	2026-11-13 14:14:04.882606986 +0000
++++ bots/variants/ia-territory/src/economy/camps.cc	2026-11-13 16:49:11.310823452 +0000
+@@ -687,6 +687,67 @@
+     return weight;
+ }
+ 
++// King steps an enemy covers in `turns` turns: one a turn, a dasher's dash range more once a cooldown.
++int enemy_cover(const ChampionBelief& e, int turns) {
++    if (turns <= 0) return 0;
++    return turns + (e.facts().has_dash() ? dash_range * ((turns + ability_cooldown - 1) / ability_cooldown) : 0);
++}
++// The farthest member tile from a group's centre. Static, so kept per group.
++int group_radius(const StaticMap& map, int g) {
++    static std::array<std::int16_t, 256> cache = [] {
++        std::array<std::int16_t, 256> a;
++        a.fill(-1);
++        return a;
++    }();
++    if (static_cast<std::size_t>(g) < cache.size() && cache[g] >= 0) return cache[g];
++    const auto& G = map.groups[g];
++    int r = 0;
++    for (const auto& m : G.members) r = std::max(r, dist(m.pos, G.centre));
++    if (static_cast<std::size_t>(g) < cache.size()) cache[g] = static_cast<std::int16_t>(r);
++    return r;
++}
++
++// Whether enemy e may come within its act range of a camp tile of group g within `rounds` rounds
++// from now, by lower bounds on its travel: dead, from its spawn after its earliest respawn (whose turn
++// allows no walk); alive, from where it is (seen), may be (tracked: the box holding `possible`) or was
++// last seen, or (`recalls`) from its spawn once a recall, under way or started now, lands. Chebyshev
++// distances (a walk is never shorter); teleport crystals and Vendetta's kill reset are not counted.
++bool may_contest(const World& world, const ChampionBelief& e, int g, int rounds, bool recalls) {
++    const auto& map = world.map();
++    const auto& G = map.groups[g];
++    const int reach = enemy_reach::act_range(e.facts()) + group_radius(map, g);
++    // Its turn this round may still come after ours.
++    const int turns = rounds + 1;
++    const auto spawn_need = [&] {
++        const auto& b = map.enemy_spawn_box;
++        const vec2 c = G.centre;
++        return std::max({b.x0 - c.x, c.x - b.x1, b.y0 - c.y, c.y - b.y1, 0}) - reach;
++    };
++    if (!e.alive) {
++        if (e.respawn_earliest < 0) return true;
++        const int walking = world.round + rounds - e.respawn_earliest;
++        return walking >= 0 && enemy_cover(e, walking) >= spawn_need();
++    }
++    if (recalls) {
++        const int lands = e.channel == Channel::recall && e.channel_end_round >= 0 ? std::max(0, e.channel_end_round - world.round) : e.recall_turns();
++        if (turns - lands >= 0 && enemy_cover(e, turns - lands) >= spawn_need()) return true;
++    }
++    if (e.visible) return enemy_cover(e, turns) >= dist(enemy_reach::origin(e), G.centre) - reach;
++    if (e.tracked) return e.possible_box.meets(G.centre, enemy_cover(e, turns) + reach);
++    if (e.pos.x < 0 || e.pos_round < 0) return true;
++    return enemy_cover(e, world.round - e.pos_round + turns) >= dist(e.pos, G.centre) - reach;
++}
++
++// Of the enemy bodies, the share that cannot contest group g within `rounds` rounds (may_contest).
++float contest_absent(const World& world, int g, int rounds, bool recalls) {
++    int n = 0, absent = 0;
++    for (const auto& e : world.enemies) {
++        ++n;
++        if (!may_contest(world, e, g, rounds, recalls)) ++absent;
++    }
++    return n > 0 ? static_cast<float>(absent) / static_cast<float>(n) : 1.0f;
++}
++
+ // Damage spells a turn on camps, spread over their cooldown.
+ float spell_output(const ChampionBelief& c) {
+     float damage = 0;
+diff -ru bots/variants/chy-ref/src/economy/farm.cc bots/variants/ia-territory/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 14:14:04.882606986 +0000
++++ bots/variants/ia-territory/src/economy/farm.cc	2026-11-13 16:49:11.311360549 +0000
+@@ -1663,6 +1663,28 @@
+     // Claims, our last choice and groups whose crew we hold are never pruned before facts.
+     std::array<int, 3> pre_kept{-1, -1, -1};
+     PreUpper p{};
++    // Live territory: a group on their side (home_ground below 1) is weighted towards 1 by the share of the
++    // enemy bodies that cannot contest it before we would finish it (contest_absent): a dead one walking back
++    // from its spawn after its earliest respawn, a live one far from it and from a recall's landing. Read only while an enemy is dead,
++    // when such windows open. The prunes before facts take it at the shortest finish, a capture's rounds (its most).
++    bool territory = false;
++    if constexpr (!opening)
++        for (const auto& e : world.enemies) territory |= !e.alive;
++    static std::array<float, 260> territory_bound;
++    const auto territory_weight = [](float home, float absent) __attribute__((always_inline)) { return home + (1.0f - home) * absent; };
++    if (territory && n_groups <= 256) {
++        const auto& known = home_weights();
++        std::copy(known.begin(), known.end(), territory_bound.begin());
++        for (int g = 0; g < n_groups; ++g)
++            if (known[static_cast<std::size_t>(g)] < 1 && !groups[g].has_monolith)
++                territory_bound[static_cast<std::size_t>(g)] = territory_weight(known[static_cast<std::size_t>(g)], contest_absent(world, g, capture, true));
++    }
++    // A group's territory factor over its home weight at the shortest finish (the prunes' bound).
++    const auto territory_most = [&](int g, float home) __attribute__((always_inline)) {
++        if (!territory || !(home > 0) || home >= 1 || groups[g].has_monolith) return 1.0f;
++        if (g < 256 && n_groups <= 256) return territory_bound[static_cast<std::size_t>(g)] / home;
++        return territory_weight(home, contest_absent(world, g, capture, true)) / home;
++    };
+     if (pre_pruned || pre_banked) {
+         if (static_cast<int>(pre_upper.size()) < n_groups + 3) {
+             for (auto* v : {&pre_upper, &pre_alt, &pre_test, &pre_test_alt, &pre_value, &pre_old, &pre_old_alt}) v->resize(n_groups + 3);
+@@ -1673,7 +1695,7 @@
+         // Shaved for fastest_clear's sum taken member by member.
+         p.health = pre_health = world.clear_health.data(), p.clear_scale = 0.9999f / strength, p.reflects = reflect > 0;
+         p.crew_most = 1.0f / team_scale(), p.other_part = unclaimed_partner_output > 0 ? partner_part : 1.0f;
+-        p.weight = known_weights(n_groups);
++        p.weight = territory && n_groups <= 256 ? territory_bound.data() : known_weights(n_groups);
+         p.out = pre_upper.data(), p.alt = pre_alt.data(), p.test = pre_test.data(), p.test_alt = pre_test_alt.data();
+         p.old = pre_old.data(), p.old_alt = pre_old_alt.data();
+         if (pre_valued) p.value = pre_value.data();
+@@ -1742,7 +1764,7 @@
+         if (banks_bag) trip = std::max(0.0f, trip - bank_now);
+         const float gems = static_cast<float>(std::min(worth_gems[g], short_by));
+         const float worth = std::max(0.0f, gems + std::max(0.0f, per_gold) * worth_gold[g] + std::max(0.0f, tribute_gold) * gems);
+-        const float weight = g < 256 ? home_weights()[static_cast<std::size_t>(g)] : 1.0f;
++        const float weight = g >= 256 || (territory && n_groups > 256) ? 1.0f : (territory ? territory_bound : home_weights())[static_cast<std::size_t>(g)];
+         // The join's Focus is no share: at most its rate over the trip and the hold (rate is linear in worth).
+         // Off Prism, the premium is a part of the share, as the gems are (the claimed path's `fed`).
+         const float bonus = gems * keep_bonus(G), carry = keeper ? bonus * exposure_most * weight : 0.0f;
+@@ -1813,7 +1835,7 @@
+                     auto& kf = group_facts[g];
+                     float worth;
+                     if (kf.context == context && !kf.sticky && kf.gold_context == gold_context) {
+-                        worth = kf.gems + kf.gold + kf.gems * keep_most;
++                        worth = (kf.gems + kf.gold + kf.gems * keep_most) * territory_most(g, kf.home);
+                     } else {
+                         const float gems = static_cast<float>(std::min(worth_gems[g], short_by));
+                         worth = gems + per_gold * worth_gold[g] + bound_tribute * gems;
+@@ -1880,6 +1902,8 @@
+         const float bonus = keep_bonus(group);
+         // Ren's for the rated prunes; its plain ones keep the fastest.
+         const float exposed = exposure(g) * (pull.on && home_side(map, g, opening) < 0.5f ? pull.deny_scale : 1.0f);
++        // The prunes before the trip is known take the territory factor at its most.
++        const float exposed_most = exposed * territory_most(g, known.home);
+         const float quickest = rated && reflect > 0 ? reflected_clear(world, g, strength, reflect) : known.fastest;
+         const int walk = known.walk;
+         // From the altar after the tribute, the cycle may go out by way of spawn.
+@@ -1900,7 +1924,7 @@
+             const auto beaten_near = [&](bool by_rate) __attribute__((always_inline)) {
+                 const int near = dist(here, group.centre);
+                 if (in_pocket || !prunable(g) || may_help(group, belief, near) || (hop_any && map.group_hop(g) >= 0)) return false;
+-                const float worth = (known.gems + known.gold + known.gems * bonus) * exposed;
++                const float worth = (known.gems + known.gold + known.gems * bonus) * exposed_most;
+                 // Banking by way of spawn, the loop prices the trip on to an altar healed, which can
+                 // undercut `bank`: that way takes no floor for it.
+                 const int respawn = respawn_in(belief);
+@@ -2021,7 +2045,11 @@
+         // A capture's gold that completes an emblem shortens the trip home (HomeTrip::rounds) though worth
+         // counts it too: floored, so a chain never costs less than nothing and every filter below agrees.
+         const float trip = std::max(0.0f, (by_spawn ? via : pulled_walk(steps) + static_cast<float>(wait)) - bank_now + bank);
+-        const float gems = known.gems * exposed, gold = known.gold * exposed, fastest = known.fastest, carried = gems * bonus;
++        // The territory factor at our finish: arrival, the fastest clear and the capture.
++        float territory_factor = 1;
++        if (territory && known.home > 0 && known.home < 1 && !group.has_monolith)
++            territory_factor = territory_weight(known.home, contest_absent(world, g, there + static_cast<int>(std::ceil(known.fastest)) + capture, true)) / known.home;
++        const float gems = known.gems * exposed * territory_factor, gold = known.gold * exposed * territory_factor, fastest = known.fastest, carried = gems * bonus;
+         // Skip the costly clearing estimate for groups that cannot beat the best even with no
+         // clearing. A crew's share can.
+         if (!claimed && barred() && prunable(g)

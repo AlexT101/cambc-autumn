@@ -616,6 +616,7 @@ bool on_cleared_group(const World& world) {
 inline constexpr std::uint64_t goal_least = 4000, farm_least = 6000;
 void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     comeback::cooked(world); // every turn: the cook's hysteresis reads each round's scores
+    contest_claim = memory.claim >= 0 ? memory.claim : memory.farm_group;
     // Last turn's, for continue_recall: kept only while that recall is, else farm sets it again.
     const int recall_farm = std::exchange(memory.recall_farm, -1);
     if (!world.me().alive || !banks_bag(world, pathing)) memory.banking = false;
@@ -661,7 +662,7 @@ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     fixc_bush_threatened = false;
     if (!world.me().can_act(world.round)) return;
     fixc_bush_threatened = fixc_bush_threat(world, safety);
-    if (const auto* ender = game_ender(world); ender && holds_hard_stop(world, *ender)) {
+    if (const auto* ender = ender_to_stop(world); ender && holds_hard_stop(world, *ender) && stop_due(world, *ender)) {
         stop_game_ender(world, pathing, memory, *ender);
         return;
     }
@@ -1002,6 +1003,19 @@ void play_turn(World& world, Pathing& pathing, Memory& memory) {
     memory.health = world.me().alive ? my_health() : 0;
     if (world.me().alive) note_income_end(world);
     upkeep.camp_turns += camp_hits() != camp_hits_before;
+    debug_block({
+        if (world.me().alive && world.me().facts().passive == Passive::gem_focus && my_gems() > 0) {
+            int bags = 0;
+            for (const auto& a : world.allies)
+                if (!a.is_self && a.alive) bags += a.visible ? a.gems : comms::bag_of(world, a.index);
+            const auto* ender = game_ender(world);
+            std::printf("PB %d %u g%u k%d w%d c%d short%d bags%d rate%.2f brl%d walk%d ender%d/%d/%d ally%d\n", world.round, my_handle(), my_gems(),
+                        static_cast<int>(keeps_gems(world, pathing)), static_cast<int>(winning_bag(world)), static_cast<int>(closing(world, pathing)),
+                        gems_short(world), bags, world.ally_rate(), bag_rounds_left(world), pathing.to_any_altar().at(my_position()),
+                        ender ? static_cast<int>(ender->handle) : -1, ender ? ender->gems : 0, ender ? static_cast<int>(ender->channel == Channel::tribute) : 0,
+                        ender ? static_cast<int>(ally_stops(world, *ender)) : -1);
+        }
+    });
     debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), static_cast<char>(decision), memory.farm_group, memory.claim); });
 }
 

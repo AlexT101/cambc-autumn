@@ -559,12 +559,19 @@ bool stand_lost_at(const World& world, Safety& safety, HoldAt& hold) {
         }
     const auto roster = safety.stand_roster(p, reach, pursued ? params::pursuit_steps : 0, unseen);
     if (roster.key == Safety::no_fight) return false;
-    // Prism leaves a stand it falls in even where the team wins it: its death hands over the bag the team's gems ride in.
-    // So does any carrier of a bag worth a life or more (params::gem_value a gem against params::life_value).
+    // Prism's fall hands over the bag the team's gems ride in, Cassi's or Issac's both bodies, a carrier's a bag
+    // worth a life or more (params::gem_value a gem against params::life_value): in a stand the team wins they
+    // leave only when that fall costs more than the group holding wins (fall_outweighs). Our fall settles the
+    // fight first, as it settles most stands; only a fall worth taking plays it on to whether the team wins.
     const bool falls = partner(world) != nullptr || world.me().facts().passive == Passive::gem_focus
                        || params::gem_value * static_cast<float>(bag_at_stake(world)) >= params::life_value || lethal();
-    const auto t = safety.stand_trade(roster, falls);
-    return t.lost || (falls && t.self_falls);
+    const auto t = safety.stand_trade(roster, falls, true);
+    if (t.lost) return true;
+    if (!falls || !t.self_falls || fall_outweighs(world, p)) return falls && t.self_falls;
+    if (t.lost_known) return t.lost;
+    // Short of fuel for the play-out, the settled answer: we fall, so we leave.
+    if (!fuel_ok(safety.fight_cost_estimate() + end_reserve)) return true;
+    return safety.stand_trade(roster, falls, false).lost;
 }
 
 } // namespace
@@ -1262,6 +1269,36 @@ bool holds_hard_stop(const World& world, const ChampionBelief& e) {
     if (e.channel != Channel::tribute) return false;
     if (e.facts().passive != Passive::stun_immune && world.me().ready_stun_reach(world.round + 1) >= 0) return true;
     return tribute_altar(world, e.pos) >= 0 && carried_locks() > 0;
+}
+
+// A tribute's stop goes in at its channel's end, not its start: a stun or lock cancels it whenever it lands, but an
+// early one frees the channeller to act and lets it restart a channel it must sit through again, while the stopper
+// waits beside its guards. Due once the rounds to the channel's last stop are within our steps to a stop and one
+// ability cooldown, in which each enemy stunner can cost us at most one turn and a stun of ours spent meanwhile is back.
+bool stop_due(const World& world, const ChampionBelief& e) {
+    if (e.channel != Channel::tribute) return true;
+    const int steps = intercept_steps(world, e, my_position());
+    return steps == unreachable || last_round_before_channel_ends(world, e) - world.round <= steps + ability_cooldown;
+}
+
+namespace {
+// The winning tribute whose stop we put off (stop_due), kept for the turns it is out of our sight: a channel cannot move.
+int deferred_ender = -1;
+} // namespace
+
+const ChampionBelief* ender_to_stop(const World& world) {
+    if (const auto* e = game_ender(world)) {
+        deferred_ender = e->index;
+        return e;
+    }
+    if (deferred_ender < 0 || deferred_ender >= static_cast<int>(world.enemies.size())) return nullptr;
+    const auto& e = world.enemies[static_cast<std::size_t>(deferred_ender)];
+    // Seen and no longer an ender, or its channel over by our belief: forgotten.
+    if (e.visible || !e.alive || e.channel != Channel::tribute || e.channel_end_round < world.round) {
+        deferred_ender = -1;
+        return nullptr;
+    }
+    return &e;
 }
 
 // Into reach of the enemy whose bag ends the game, whatever the risk: a stun or a lock if it is

@@ -1,0 +1,9 @@
+A/B mx-iapetus-B-dev: CAND variants/ia-contest (dir) vs REF variants/chy-ref (dir)
+  dev: running, log replays/ab/mx-iapetus-B-dev/dev.log
+CAND 50.6% of 10200 (5161-5039), 95% CI 49.6-51.6
+  dev  50.6% of 10200 (5161-5039), 95% CI 49.6-51.6
+Failed matches: 0
+Out-of-fuel turns: CAND 979 in 629 games, REF 836 in 573 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 0m34s
+Results: replays/ab/mx-iapetus-B-dev/summary.md

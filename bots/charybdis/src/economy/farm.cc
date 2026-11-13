@@ -2420,6 +2420,28 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
                                       chosen.tank, chosen.trips, chosen.output, shared_value); });
         }
     }
+    // A contested group the team is at work on and wins the stand at stays our choice: switching away
+    // hands the enemy there what we put into it, and the stand it would take from us (economy/contest.cc).
+    if constexpr (!opening) {
+        const int c = farm_group;
+        const auto commits = [&] {
+            // Not over a bag's way to an altar, nor over a capture that wins the game.
+            if (c < 0 || c >= n_groups || best == c || banks_bag || (best >= 0 && groups[best].gems >= short_by)) return false;
+            const auto& G = groups[c];
+            const auto& b = world.camps[c];
+            if ((G.has_monolith && map.monolith_only) || G.gems + G.gold == 0 || b.state == CampState::respawning
+                || (b.state == CampState::cleared && (ally_holding(c) || b.holder == team::enemy || left_for_prism(world, pathing, c)))
+                || (b.state != CampState::cleared && kited_of(c) && kite_owns(world, c)) || siege_declines(world, c))
+                return false;
+            return team_invested(world, c, contest_claim) && group_contest(world, safety, c) == 1;
+        };
+        if (commits()) {
+            const int s = steps_data[c];
+            best = c, best_steps = s >= 0 && s != unreachable ? s : dist(here, groups[c].centre);
+            memory.claim = c, memory.crew = prev_claim == c && prev_crew, spell = false, chosen = Priced{'X'};
+            debug_block({ std::printf("CONTEST KEEP %d %u g%d\n", round, my_handle(), c); });
+        }
+    }
     // Help does not pull a member off a Monolith operation.
     if (help_group >= 0 && !(farm_monolith(world, best) && memory.claim == best))
         best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, spell = false, chosen = Priced{'H'};

@@ -3621,18 +3621,19 @@ Safety::StandRoster Safety::stand_roster(vec2 p, const StandReach& reach, int ap
     return r;
 }
 
-Trade Safety::stand_trade(const StandRoster& r, bool falls) {
+Trade Safety::stand_trade(const StandRoster& r, bool falls, bool settle) {
     if (r.key == no_fight) return {};
+    settle = settle && falls;
     const auto key = r.key;
     const auto walking = r.walking;
-    if (!walking && r.camp <= 0) return fight_of(key, falls, 0, falls);
+    if (!walking && r.camp <= 0) return fight_of(key, falls, 0, settle);
     // A fight on with walkers is fight_of's with them late, and memoised with it: the stands of the
     // tiles around ours share their fights.
     if ((key >> 16) != 0 && r.camp <= 0 && (walking & ~threat_mask_) == 0) {
         std::uint32_t late = 0;
         for (auto left = walking; left; left &= left - 1)
             if (const int i = std::countr_zero(left); i < 16) late |= static_cast<std::uint32_t>(r.walks[static_cast<std::size_t>(i)]) << 2 * i;
-        return fight_of(key, falls, late, falls);
+        return fight_of(key, falls, late, settle);
     }
     const std::uint32_t enemies = (key >> 16 & threat_mask_) | walking;
     Side us, them;
@@ -3646,7 +3647,7 @@ Trade Safety::stand_trade(const StandRoster& r, bool falls) {
     us.camp = r.camp / world_.me().taken;
     us.camp_raw = r.camp / world_.me().camp_taken;
     // With nobody in reach yet, we strike first: they must still win.
-    return trade(us, them, (key >> 16) != 0, falls, falls);
+    return trade(us, them, (key >> 16) != 0, falls, settle);
 }
 
 int Safety::turns_to_kill_idle(vec2 p, int horizon) { return turns_to_harm_idle(world_.me(), p, horizon, 0, true); }
