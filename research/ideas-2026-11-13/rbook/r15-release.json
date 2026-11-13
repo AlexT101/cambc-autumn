@@ -1,0 +1,638 @@
+{
+  "version": 137,
+  "accepted_at": "2026-11-13T22:51:35Z",
+  "work": "/home/ubuntu/tmp-offload/rbook/loss-v132-r9-mite-r15",
+  "workspace": "/home/ubuntu/tmp-offload/handoff/sched/build/rbook-loss-v132-r9-mite-r15-1794610139",
+  "masked": false,
+  "source_files": 64,
+  "source_byte_identity": true,
+  "artifact_digest": "cee2b4da4c7f3e8966ca73ab3f9fffcef185609ed447638e0f6c7ea3e4049860",
+  "entries": 34,
+  "fish_proven": 7,
+  "mite_provisional": 27,
+  "qualification": "pending",
+  "pin_groups": {
+    "fish": "01a1d67e-e307-7f33-9412-90716c3b4ad9",
+    "mite": "01a1d706-59a1-78b3-9db5-8109569b1865"
+  },
+  "local_gates": {
+    "exact": "34/34",
+    "forced": "7/7",
+    "fallback_games": 24,
+    "handovers": 133,
+    "invalid_reads": 0,
+    "bundle_bytes": 1116680,
+    "wide_identity": "51/52; declared forced Fish00swirl/b",
+    "fresh_identity": "130/300",
+    "fresh_mean_fuel_percent": 0.3,
+    "identical_game_fuel_percent": 0.07
+  },
+  "expected_checks": [
+    {
+      "step": "loss-v132-r9-mite-r15-fish-r9",
+      "opponent": "fish",
+      "map": "02cuts",
+      "side": "b",
+      "pin": "ref",
+      "refset": "r9",
+      "require_win": true,
+      "reason": "removed forced entry: restore known host win"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "00great_wall",
+      "side": "b",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "00lanes",
+      "side": "a",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "00lanes",
+      "side": "b",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "00road_of_riches",
+      "side": "b",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "01the_farm",
+      "side": "a",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "01yellow_brick_road",
+      "side": "a",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "02fields",
+      "side": "a",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "02geodes",
+      "side": "a",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "02geodes",
+      "side": "b",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "02the_pack",
+      "side": "a",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "02the_pack",
+      "side": "b",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "02the_pond",
+      "side": "b",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "02treasure_box",
+      "side": "b",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "03contours",
+      "side": "a",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "03contours",
+      "side": "b",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "04barbell",
+      "side": "b",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "04bullseye",
+      "side": "b",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "04dunes",
+      "side": "b",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "04gap",
+      "side": "a",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "04keyhole",
+      "side": "a",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "04orchard",
+      "side": "a",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "05border",
+      "side": "a",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "05hoard",
+      "side": "a",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "05ring",
+      "side": "b",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "adgato_gemcombat2",
+      "side": "a",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "adgato_gemcombat2",
+      "side": "b",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    },
+    {
+      "step": "loss-v132-r9-mite-r15-mite-r15",
+      "opponent": "mite",
+      "map": "adgato_gemcombat3",
+      "side": "b",
+      "pin": "ref",
+      "refset": "r15",
+      "require_win": true,
+      "reason": "book entry needs target-pin validation"
+    }
+  ],
+  "freeze": {
+    "at": "2026-11-13T22:32:54Z",
+    "boundary": "70% plus all7Fishcollateral",
+    "known_mite": 250,
+    "unknown_fish_collateral": [],
+    "actual_pin": "01a1d706-59a1-78b3-9db5-8109569b1865",
+    "candidates": [
+      {
+        "key": "00galaxy-a-v133-c49b4fda9f83",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d6a4-b8c9-7d8e-969d-0460e7509eae/2-00galaxy.zip",
+        "side": "a",
+        "map": "00galaxy",
+        "version": 133,
+        "rounds": 917,
+        "opp": "fish"
+      },
+      {
+        "key": "00pilgrimage-a-v133-4f9f51740ebc",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d6a4-b8c9-7d8e-969d-0460e7509eae/5-00pilgrimage.zip",
+        "side": "a",
+        "map": "00pilgrimage",
+        "version": 133,
+        "rounds": 1158,
+        "opp": "fish"
+      },
+      {
+        "key": "00split-b-v133-d83b6036bd18",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d6a4-ba57-7df2-adfc-4b1fd098d99e/2-00split.zip",
+        "side": "b",
+        "map": "00split",
+        "version": 133,
+        "rounds": 583,
+        "opp": "fish"
+      },
+      {
+        "key": "02fields-b-v133-940b6da4e028",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d6a4-bb9e-7b8a-9ae3-bbebb285e4ea/1-02fields.zip",
+        "side": "b",
+        "map": "02fields",
+        "version": 133,
+        "rounds": 587,
+        "opp": "fish"
+      },
+      {
+        "key": "04braided_river-a-v133-2388685a8cd1",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d6a4-bb03-725f-b090-1f785c2d9cb6/5-04braided_river.zip",
+        "side": "a",
+        "map": "04braided_river",
+        "version": 133,
+        "rounds": 685,
+        "opp": "fish"
+      },
+      {
+        "key": "04wilds-a-v133-a013632fb8df",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d6a4-bc46-7a8d-b513-10b749be72b4/4-04wilds.zip",
+        "side": "a",
+        "map": "04wilds",
+        "version": 133,
+        "rounds": 692,
+        "opp": "fish"
+      },
+      {
+        "key": "00swirl-b-v136-671b881ee123",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d6fd-3afe-7133-a9f3-142b6db08454/1-00swirl.zip",
+        "side": "b",
+        "map": "00swirl",
+        "version": 136,
+        "rounds": null,
+        "opp": "fish"
+      },
+      {
+        "key": "00great_wall-b-v131-16ca71f059c6",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d634-d990-7922-b5cb-7e7a923428de/3-00great_wall.zip",
+        "side": "b",
+        "map": "00great_wall",
+        "version": 131,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "00lanes-a-v126-a7b4a28f5cf9",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d5a3-eadf-7a35-b681-d91f301e0dee/4-00lanes.zip",
+        "side": "a",
+        "map": "00lanes",
+        "version": 126,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "00lanes-b-v126-e8af734318e1",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d5a3-ef0f-7eaa-8748-7a4547ee8626/2-00lanes.zip",
+        "side": "b",
+        "map": "00lanes",
+        "version": 126,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "00road_of_riches-b-v131-3d171faf264a",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d634-da37-7151-bbad-c00b1fbb5deb/1-00road_of_riches.zip",
+        "side": "b",
+        "map": "00road_of_riches",
+        "version": 131,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "01the_farm-a-v126-28886876d127",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d5a3-fea9-74d5-8beb-cf05385bd99d/5-01the_farm.zip",
+        "side": "a",
+        "map": "01the_farm",
+        "version": 126,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "01yellow_brick_road-a-v126-5b2ab53fd8a4",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d5a4-029f-75ed-9e0b-77d60306cd15/2-01yellow_brick_road.zip",
+        "side": "a",
+        "map": "01yellow_brick_road",
+        "version": 126,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "02fields-a-v126-b2af31189aef",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d5a4-06b3-7645-abb4-57c5aa37446a/3-02fields.zip",
+        "side": "a",
+        "map": "02fields",
+        "version": 126,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "02geodes-a-v126-94b17bed6573",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d5a4-06b3-7645-abb4-57c5aa37446a/4-02geodes.zip",
+        "side": "a",
+        "map": "02geodes",
+        "version": 126,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "02geodes-b-v126-953f76250fe8",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d5a4-0aaa-7075-910b-3746f5aef64d/3-02geodes.zip",
+        "side": "b",
+        "map": "02geodes",
+        "version": 126,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "02the_pack-a-v126-480680dae276",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d5a4-0e1b-72d0-b1be-d4feec5c3f4b/1-02the_pack.zip",
+        "side": "a",
+        "map": "02the_pack",
+        "version": 126,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "02the_pack-b-v126-072880ddc2a1",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d5a4-129a-70c7-bacf-ae56fab408ea/1-02the_pack.zip",
+        "side": "b",
+        "map": "02the_pack",
+        "version": 126,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "02the_pond-b-v126-eaa97c2b0b66",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d5a4-0e1b-72d0-b1be-d4feec5c3f4b/2-02the_pond.zip",
+        "side": "b",
+        "map": "02the_pond",
+        "version": 126,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "02treasure_box-b-v136-4343015adf95",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d6ff-8beb-7afe-ab15-5e6710d6e3e1/3-02treasure_box.zip",
+        "side": "b",
+        "map": "02treasure_box",
+        "version": 136,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "03contours-a-v126-b1f416316981",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d5a4-0e1b-72d0-b1be-d4feec5c3f4b/5-03contours.zip",
+        "side": "a",
+        "map": "03contours",
+        "version": 126,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "03contours-b-v126-4d70b3fed6e5",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d5a4-129a-70c7-bacf-ae56fab408ea/3-03contours.zip",
+        "side": "b",
+        "map": "03contours",
+        "version": 126,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "04barbell-b-v126-4f58d2baa034",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d5a4-1e26-74c5-aa90-88dc1d753be0/1-04barbell.zip",
+        "side": "b",
+        "map": "04barbell",
+        "version": 126,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "04bullseye-b-v126-08b30e421d76",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d5a4-1e26-74c5-aa90-88dc1d753be0/5-04bullseye.zip",
+        "side": "b",
+        "map": "04bullseye",
+        "version": 126,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "04dunes-b-v126-a80f79541a19",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d5a4-34c6-75a5-885d-c665bba01865/2-04dunes.zip",
+        "side": "b",
+        "map": "04dunes",
+        "version": 126,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "04gap-a-v126-c05c8add03e9",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d5a4-34c6-75a5-885d-c665bba01865/4-04gap.zip",
+        "side": "a",
+        "map": "04gap",
+        "version": 126,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "04keyhole-a-v126-07bea3851a6f",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d5a4-4259-794a-9396-dd777312cbd1/3-04keyhole.zip",
+        "side": "a",
+        "map": "04keyhole",
+        "version": 126,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "04orchard-a-v126-b736af48f3ba",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d5a4-4259-794a-9396-dd777312cbd1/5-04orchard.zip",
+        "side": "a",
+        "map": "04orchard",
+        "version": 126,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "05border-a-v126-93eb8f87ecc5",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d5a4-94fd-7520-a940-4a190269f43b/2-05border.zip",
+        "side": "a",
+        "map": "05border",
+        "version": 126,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "05hoard-a-v126-bc0278004e75",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d5a4-a2af-711f-954b-a3f65a18c881/5-05hoard.zip",
+        "side": "a",
+        "map": "05hoard",
+        "version": 126,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "05ring-b-v136-5dd4e79fe2f4",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d6ff-8cba-7086-8e39-7b75b77490e2/1-05ring.zip",
+        "side": "b",
+        "map": "05ring",
+        "version": 136,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "adgato_gemcombat2-a-v126-1fb8f80cf0b3",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d5a4-d93b-7156-8978-819f2662cc7f/5-adgato_gemcombat2.zip",
+        "side": "a",
+        "map": "adgato_gemcombat2",
+        "version": 126,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "adgato_gemcombat2-b-v126-04a84f1156b9",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d5b2-e4e4-769e-a51e-4ec431f7bd80/3-adgato_gemcombat2.zip",
+        "side": "b",
+        "map": "adgato_gemcombat2",
+        "version": 126,
+        "rounds": null,
+        "opp": "mite"
+      },
+      {
+        "key": "adgato_gemcombat3-b-v126-f45dbee57103",
+        "replay": "/home/ubuntu/cambc-autumn/replays/ladder-scrims/01a1d5bf-c756-735e-bca2-b26b49163a83/1-adgato_gemcombat3.zip",
+        "side": "b",
+        "map": "adgato_gemcombat3",
+        "version": 126,
+        "rounds": null,
+        "opp": "mite"
+      }
+    ],
+    "deferred": []
+  },
+  "full_baseline": {
+    "mite_wins": 228,
+    "mite_cells": 340,
+    "fish_wins": 159,
+    "fish_cells": 340
+  },
+  "cleanup_policy": "One subset-only corrective successor through23:30UTC if required; actual current-pin winning continuations on existing tuples allowed. Retain02cuts/bFishr9recovery. No new coverage/mining. No automatic final selection switch.",
+  "live_at": "2026-11-13T22:56:39Z",
+  "rest": 137,
+  "scheduler_pid": 1633197
+}

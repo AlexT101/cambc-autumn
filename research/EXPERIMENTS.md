@@ -19226,3 +19226,21 @@ A read-only audit fixed five bugs before the run.
 | wb-escort-free | off | on | off | 47.0 (46.4-47.7) |
 
 The all-in escort carries the whole loss of about 2.7 points, and holding the carrier to the altar changes nothing. The Tribute emblem from 900 is level.
+
+### 2026-11-13 — 531 book foreign qualification and refreshed Mite r15
+
+v136 qualified4/6foreign targets and1/3collateral cells:5/9total, all provenance
+and ZIP CRCs clean. Fish00swirl/b won;05bento/a lost. Mite02treasure_box/b,
+05harmonica/b,05ring/b won;02cuts/b lost and regressed Fishr9's natural win.
+The02cuts/bMite entry is removed, with explicit Fish recovery required.
+[Qualification evidence](ideas-2026-11-13/rbook/r14-foreign-qualification.json).
+
+After same-host detector proof of Mite r14 drift, a34-entry candidate retains
+7provenFishr9 lines and27old-pin Mite continuations on confirmed132/r15losses.
+The full132/r15baseline is228/340wins; frozen partial selection used250known cells
+and all7Fish collateral cells. All34combined exact and7forced-validity checks
+passed; fallback24games/133handovers/invalid0. Wide100M51/52identity has only the
+declared Fish00swirl/b forced draft; fresh normal fuel130/300identity,mean+0.3%,
+identical-game fuel+0.07%. Uploaded as13722:51:35,1.117MB,64sourcefiles identical.
+27Mite target qualifications and02cuts/bFish recovery remain pending.
+[Release evidence](ideas-2026-11-13/rbook/r15-release.json).

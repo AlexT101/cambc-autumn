@@ -569,3 +569,40 @@ entries remain unverified until local gates and actual target/collateral wins. A
 four failed135Mite lines are excluded. No generic sweep, extra agent, or main-bot edit.
 Release after gates is authorized through the existing helper boundary; upload
 cutoff23:00UTC leaves cleanup margin before the23:59 deadline.
+
+## 2026-11-13 22:55 UTC: v136 qualification and first r15 candidate uploaded
+
+v136 foreign qualification completed: targets4/6, collateral1/3, all9 provenance
+and ZIP CRC checks clean. Fish00swirl/b won; Fish05bento/a failed. Mite won
+02treasure_box/b,05harmonica/b,05ring/b and lost02cuts/b. Forced Mite02cuts/b
+regressed the fixed Fishr9 natural win; this cell is excluded and explicit Fish
+recovery remains mandatory. Mite00swirl/b collateral failed under now-stale r14.
+Evidence: `r14-foreign-qualification.json`.
+
+The coordinator proved r14 drift, then captured actual132/r15 pin
+`01a1d706-59a1-78b3-9db5-8109569b1865`. Full baseline228/340W,112L; Fishr9
+remains159/340W. Local r15 selection froze at250 known Mite cells with all7Fish
+collateral known, per partial-release authorization. Final baseline did not expand
+the frozen34-entry candidate:7provenFish and27provisionalMite from25r13+2r14
+recordings, with original provenance retained. Fixed Fish failures excluded.
+
+All34 exact,7forced0bad,24fallback games/133handovers/0invalid reads,1.117MB.
+Wide100M51/52 identity: only intentional forced Fish00swirl/b differs; fresh normal
+fuel130/300identity,mean+0.3%,identical-game fuel+0.07%. Uploaded once as137
+22:51:35, before23:00 internal cutoff;64sourcefiles byte-identical and unmasked.
+Release cycle1530457/unit`rbook-host132-mite-r15-release` owns activation/restart
+and28checks:27Miter15targets +02cuts/bFishr9recovery. Activation/REST pending at
+this note. Work`/home/ubuntu/tmp-offload/rbook/loss-v132-r9-mite-r15`; receipt
+`r15-release.json`. Runner2787885 remains; helper will record new scheduler PID.
+
+Only ONE removal-only successor is authorized through23:30UTC if qualification
+fails. Keep only existing tested tuples; actual r15 winning continuations on those
+tuples may replace old recordings. Preserve original pins and repeat the one
+02cuts/bFishr9 recovery after combined-book changes. Existing nonempty-check driver
+unchanged; no zero-check feature, new mining, entries or campaigns. Offline audit/
+preparation script`/home/ubuntu/tmp-offload/rbook/prepare-r15-correction.py` checks
+all28provenance+CRC and exact subset before creating a successor. No automatic
+book-free final activation. Platform deadline23:59; parent owns final selection.
+
+22:56:39:137 live=selected and REST confirmed; helper restarted scheduler1633197
+independently, STOP removed. Fish recovery planned22:56:40;27Mite checks follow.
