@@ -7,6 +7,19 @@ from refresh_build import ls
 from refresh_queue import write
 
 
+def source_rows(work, pins):
+    rows = {r['match'][-12:]:r for r in ls.read_jsonl(ls.DATA/'games.jsonl')}
+    extra = work/'foreign-metadata.json'
+    if extra.exists():
+        for key,row in json.loads(extra.read_text()).items():
+            if row.get('target_refset') != pins.get(row.get('opp')):
+                raise RuntimeError(f'Foreign candidate targets another pin: {key}')
+            if row.get('qualification') != 'local_exact_live_pending':
+                raise RuntimeError(f'Foreign candidate lacks local qualification: {key}')
+            rows[key.rsplit('-',1)[1]] = row
+    return rows
+
+
 def coverage(entries, forced, baseline, sources, opponents):
     checks = {}
     for entry in entries:
@@ -43,7 +56,7 @@ def plan(work):
     baseline = {(r['opp_name'].split()[-1].lower(),r['map'],r['side']):r for r in ls.games(version)
                 if r.get('purpose') == 'set' and r.get('pin') == 'ref'
                 and pins.get(r['opp_name'].split()[-1].lower()) == r.get('refset')}
-    sources = {r['match'][-12:]:r for r in ls.read_jsonl(ls.DATA/'games.jsonl')}
+    sources = source_rows(work,pins)
     checks = coverage(entries,forced,baseline,sources,pins)
     steps,expected = [],[]
     for opp,pin in pins.items():

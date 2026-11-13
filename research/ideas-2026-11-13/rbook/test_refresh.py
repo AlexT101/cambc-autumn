@@ -15,6 +15,15 @@ import loss_live_plan
 
 
 class RefreshGates(unittest.TestCase):
+    def test_foreign_candidates_must_match_planned_pin(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(loss_live_plan.ls,'read_jsonl',return_value=[]):
+            work=Path(tmp)
+            meta={'map-a-v901-source':dict(opp='fish',target_refset='r8',qualification='local_exact_live_pending')}
+            (work/'foreign-metadata.json').write_text(json.dumps(meta))
+            self.assertIn('source',loss_live_plan.source_rows(work,{'fish':'r8'}))
+            with self.assertRaisesRegex(RuntimeError,'another pin'):
+                loss_live_plan.source_rows(work,{'fish':'r9'})
+
     def test_live_plan_preserves_other_opponent_wins_on_forced_or_shared_drafts(self):
         entry=dict(key='map-a-v125-source',map='map',side='a',opp='fish')
         sources={'source':dict(our_picks=[1],opp_picks=[2])}

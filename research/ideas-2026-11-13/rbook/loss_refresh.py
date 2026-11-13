@@ -64,15 +64,17 @@ def build(work, version, pins):
         raise RuntimeError('Build already started; reconcile artifacts instead of overwriting')
     baseline = {(r['opp_name'].split()[-1].lower(),r['map'],r['side']):r
                 for r in baseline_rows(version,pins)}
+    extra = work/'foreign-extra.tsv'
     selection = types.SimpleNamespace(versions='117,118,119,125,126', host_version=version,
-                                      host_losses_only=True, extra=None)
+                                      host_losses_only=True, extra=extra if extra.exists() else None)
     chosen = []
     for opp, pin in pins.items():
         chosen += rbuild.select(selection,ls.TEAMS[opp][1],pin,opp)
     if not chosen:
         raise RuntimeError('No target-pin wins on host losses yet')
     # select() names an exact recording; a per-cell deduplicated view can hide that match.
-    rows = {r['match'][-12:]:r for r in ls.read_jsonl(ls.DATA/'games.jsonl') if r.get('purpose') == 'set'}
+    from loss_live_plan import source_rows
+    rows = source_rows(work,pins)
     forced = []
     for cell in chosen:
         source = rows[cell['key'].rsplit('-',1)[1]]
@@ -90,6 +92,8 @@ def build(work, version, pins):
     run(['./copybot','variants/rbook-refresh-r11',f'variants/{name}'],work/'copy.log')
     args = ['--versions',selection.versions,'--host-version',str(version),'--host-losses-only',
             '--force-keys',work/'forced-candidates.txt','--jobs','8']
+    if selection.extra:
+        args += ['--extra',selection.extra]
     for opp,pin in pins.items():
         args += ['--opp',f'{ls.TEAMS[opp][1]}:{pin}']
     run([sys.executable,HERE/'rbuild.py','--host',f'variants/{name}','--work',work,

@@ -58,6 +58,11 @@ required. Masked v119 remains useful source data but differs in production fuel 
   (15 reused, 85 freshly recorded with four workers), bad.json empty. These are recording checks, not yet
   combined-book verification. Prime log/state: prime-fish.log / prime-fish-state.json. The build waiter resumed.
   Its service definition is now ~/.config/systemd/user/rbook-loss-v128.service (not enabled at boot).
+- 15:35 UTC: six cached w4 foreign wins cover additional Fish host losses: 00interlock b, 01gold_rush a,
+  02the_pack a, 03honeycomb b, 04sunburst a, 05nest a. foreign-extra.tsv / foreign-metadata.json in loss-v128
+  feed them as provisional local-exact candidates (target pin r8, live validation pending). Their ent/raw files
+  are copied; current-host fingerprints will be recorded anew. Fish candidate coverage is 106, not 106 live
+  qualified wins. All six enter target-pin checks and cross-opponent collateral checks before any publication.
 - Fish teammate was notified of live/book ownership and the host policy. Their six local macro jobs
   remain under their control. No agent was launched by this coordinator.
 
