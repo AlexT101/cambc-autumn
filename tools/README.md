@@ -860,3 +860,9 @@ and the release digest. An original r8 source remains r8 evidence even when its
 provisional target is r9. `loss_cycle.py --resume-local` only resumes a reconciled
 held cycle with ready local artifacts and no release state; it never retries an
 upload attempt.
+
+Pinned-only validation policy may include `recovery_cells` with `opponent`, `map`
+and `side`. These are mandatory wins on matching host-baseline win cells after
+removing a regressive entry. Planning refuses duplicates, unknown/loss baselines,
+or any remaining book entry on the recovery cell. The artifact validator recomputes
+these requirements, so removing a recovery check from the plan fails validation.

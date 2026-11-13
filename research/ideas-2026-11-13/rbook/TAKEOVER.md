@@ -451,3 +451,37 @@ retain validMite sources and known132loss/collateral guards, remove failed colla
 causes. No generic119-cell sweep and no additional upload before source qualification.
 Generic131source/Miteprobe remain afterhold-control. Final tournament API deadline
 is23:59UTC13Nov; no automatic book-free final activation or stripping is scheduled.
+
+## 2026-11-13 21:04 UTC: v133 audit failed; corrected 30-entry release started
+
+All 37 requested rows passed exact task/version/source-pin/position checks and ZIP
+CRC. Fish won 6/31; Mite collateral won 3/6. All six Fish wins followed divergence
+from the old r8 recording (indices 0,0,8,13,21,29). Three forced Fish entries regressed
+natural 132 Mite wins: 00galaxy/b, 00rows/b, 04two_kingdoms/a. Exact proof is in
+starter work's `live-qualification-audit.json` and `collateral-failures.json`.
+
+Corrected work `loss-v132-r9-qualified-v133` has six proven r9 winning recordings
+from v133 plus 24 proven r13 Mite lines. No foreign extras; all 25 failed Fish
+provisionals disappear, including the three regressors. Four Mite lines became
+eligible after the full Fish baseline: 00contest/b,05border/a,05space_station/a,b.
+Local builder3823693 completed:30/30 exact,52/52 wide identity,24 fallback games,
+131 handovers,0 invalid reads,4 forced checks0 bad,1,075,454-byte bundle. Fresh
+normal-fuel benchmark:130/300 identical,+0.07% fuel on identical games; not zero cost.
+
+Recovery policy requires wins on the three removed-entry Mite cells, each a proven
+132 baseline win with no book entry remaining. It is frozen in the ordinary artifact
+digest and uses normal task/source-pin provenance. No repeated six-Fish/24-Mite tests.
+57 offline tests passed. Release4036458 (`rbook-host132-qualified-v133-release`) owns
+the helper transaction; expected REST133, idle curNone. New version pending.
+
+Bounded foreign screen used one100-row Fish ranked page and one group-detail read:
+23 nonself wins, three eligible host-loss/known-collateral cells, all forced. Public
+metadata has no snapshot/submission identity, so none is r9-proved. No entries or
+live games added. 00galaxy/b remains excluded for collateral risk. Corrected release
+has priority over any future provisional foreign qualification.
+
+Unknown Mite cache:23 proven r13 winning recordings on90 unknown132 cells, across
+14 existing parked tasks/70 cells. Parent instead prepared23 exact eligibility cells
+as five groups/25 games, NOT queued until corrected recovery. All original18 tasks
+stay held; parent owns insertion. Worker has not changed the queue. These source
+wins become book candidates only if the new132 outcomes prove losses.

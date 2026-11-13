@@ -56,6 +56,21 @@ def coverage(entries, forced, baseline, sources, opponents):
     return checks
 
 
+def required_checks(entries, forced, baseline, sources, opponents, policy=None):
+    checks=coverage(entries,forced,baseline,sources,opponents)
+    seen=set()
+    for recovery in (policy or {}).get('recovery_cells',[]):
+        key=(recovery['opponent'],recovery['map'],recovery['side'])
+        if (key in seen or key[0] not in opponents or key[2] not in ('a','b')
+                or baseline.get(key,{}).get('result') != 'win'):
+            raise RuntimeError(f'Recovery check lacks unique matching host win: {key}')
+        if any((e['map'],e['side'])==key[1:] for e in entries):
+            raise RuntimeError(f'Recovery cell still has a book entry: {key}')
+        seen.add(key)
+        checks[key]=dict(require_win=True,reason='removed forced entry: restore known host win')
+    return checks
+
+
 def plan(work):
     state = json.loads((work/'build-state.json').read_text())
     if state['phase'] != 'ready_for_live_checks':
@@ -76,7 +91,7 @@ def plan(work):
                 if r.get('purpose') == 'set' and r.get('pin') == 'ref'
                 and pins.get(r['opp_name'].split()[-1].lower()) == r.get('refset')}
     sources = source_rows(work,pins)
-    checks = coverage(entries,forced,baseline,sources,pins)
+    checks = required_checks(entries,forced,baseline,sources,pins,state.get('validation_policy'))
     steps,expected = [],[]
     for opp,pin in pins.items():
         cells = sorted([list(k[1:]) for k in checks if k[0] == opp])

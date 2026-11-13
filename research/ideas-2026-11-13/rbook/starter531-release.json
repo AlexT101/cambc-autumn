@@ -80,7 +80,115 @@
     "current_version": 132,
     "qualification": "pending; REST policy independent of qualification"
   },
-  "qualification": "37 essential pinned checks pending; no claim of r9 success yet",
+  "qualification": {
+    "passed": false,
+    "requested": 37,
+    "counts": {
+      "fish_loss": 25,
+      "fish_win": 6,
+      "mite_loss": 3,
+      "mite_win": 3
+    },
+    "provenance": "all task/live/source-group/position/refset proofs clean",
+    "zip_crc": "all37passed",
+    "winning_fish": [
+      {
+        "map": "00pilgrimage",
+        "side": "a",
+        "match": "01a1d6a4-b8d3-77fd-9524-4f9f51740ebc",
+        "result": "win",
+        "diff": 8
+      },
+      {
+        "map": "00galaxy",
+        "side": "a",
+        "match": "01a1d6a4-b8d3-7e8b-b057-c49b4fda9f83",
+        "result": "win",
+        "diff": 13
+      },
+      {
+        "map": "00split",
+        "side": "b",
+        "match": "01a1d6a4-ba59-722f-b712-d83b6036bd18",
+        "result": "win",
+        "diff": 29
+      },
+      {
+        "map": "04braided_river",
+        "side": "a",
+        "match": "01a1d6a4-bb04-7c8a-a8de-2388685a8cd1",
+        "result": "win",
+        "diff": 0
+      },
+      {
+        "map": "02fields",
+        "side": "b",
+        "match": "01a1d6a4-bba0-7874-93dd-940b6da4e028",
+        "result": "win",
+        "diff": 0
+      },
+      {
+        "map": "04wilds",
+        "side": "a",
+        "match": "01a1d6a4-bc49-748c-af96-a013632fb8df",
+        "result": "win",
+        "diff": 21
+      }
+    ],
+    "collateral_failures": [
+      {
+        "map": "00rows",
+        "side": "b",
+        "exclude_key": "00rows-b-v126-157bff18e6d2",
+        "failed_match": "01a1d6a7-1893-7400-8029-ab3d1a585e66",
+        "group": "01a1d6a7-1890-7728-83a3-fe93fcb9dc1a",
+        "source_group": "01a1d598-e831-779c-b788-7710ca8d3f9a",
+        "baseline_match": "01a1d658-573e-7727-92a6-329b4795642f",
+        "baseline_version": 132,
+        "baseline_result": "win",
+        "book_result": "loss",
+        "cause": "sole forced Fish entry on natural Mite win cell; proven target pin and full ZIP CRC"
+      },
+      {
+        "map": "04two_kingdoms",
+        "side": "a",
+        "exclude_key": "04two_kingdoms-a-v126-1bd441bf810e",
+        "failed_match": "01a1d6a7-1893-7b82-adf4-541e7a774de0",
+        "group": "01a1d6a7-1890-7728-83a3-fe93fcb9dc1a",
+        "source_group": "01a1d598-e831-779c-b788-7710ca8d3f9a",
+        "baseline_match": "01a1d661-51a3-7830-8d8e-fe8b178eb7e8",
+        "baseline_version": 132,
+        "baseline_result": "win",
+        "book_result": "loss",
+        "cause": "sole forced Fish entry on natural Mite win cell; proven target pin and full ZIP CRC"
+      },
+      {
+        "map": "00galaxy",
+        "side": "b",
+        "exclude_key": "00galaxy-b-v126-660547f514fc",
+        "failed_match": "01a1d6a7-1893-7f2a-92f0-68b7dfd4c527",
+        "group": "01a1d6a7-1890-7728-83a3-fe93fcb9dc1a",
+        "source_group": "01a1d598-e831-779c-b788-7710ca8d3f9a",
+        "baseline_match": "01a1d658-54ba-7131-b7ed-2ef5c1f02a5b",
+        "baseline_version": 132,
+        "baseline_result": "win",
+        "book_result": "loss",
+        "cause": "sole forced Fish entry on natural Mite win cell; proven target pin and full ZIP CRC"
+      }
+    ]
+  },
   "strategy": "Coordinator-proposed reuse of31r8 Fish winning lines until divergence, then531 handover; originalr8 provenance retained, r9 target unverified",
-  "next_increment": "Reuse winning v133qualification replays only; no119-cell sourcecampaign"
+  "next_increment": "Reuse winning v133qualification replays only; no119-cell sourcecampaign",
+  "correction": {
+    "entries": 30,
+    "fish": 6,
+    "mite": 24,
+    "removed_failed_fish_entries": 25,
+    "recovery_cells": [
+      "00galaxy/b",
+      "00rows/b",
+      "04two_kingdoms/a"
+    ],
+    "work": "/home/ubuntu/tmp-offload/rbook/loss-v132-r9-qualified-v133"
+  }
 }

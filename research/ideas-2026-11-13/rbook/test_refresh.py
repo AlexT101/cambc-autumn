@@ -63,6 +63,19 @@ class RefreshGates(unittest.TestCase):
             self.assertEqual(source['refset'],'r8')
             self.assertFalse(json.loads((work/'build-state.json').read_text())['current_opponent_checks'])
 
+    def test_recovery_checks_require_restored_host_win_and_removed_entry(self):
+        baseline={('mite','map','a'):dict(result='win',our_picks=[],opp_picks=[])}
+        policy=dict(pinned_only=True,recovery_cells=[dict(opponent='mite',map='map',side='a')])
+        checks=loss_live_plan.required_checks([],set(),baseline,{},['mite'],policy)
+        self.assertTrue(checks['mite','map','a']['require_win'])
+        entry=dict(key='map-a-v126-src',opp='fish',map='map',side='a')
+        baseline['fish','map','a']=dict(result='loss',our_picks=[],opp_picks=[])
+        with self.assertRaisesRegex(RuntimeError,'still has a book entry'):
+            loss_live_plan.required_checks([entry],set(),baseline,{'src':dict(our_picks=[],opp_picks=[])},['fish','mite'],policy)
+        baseline['mite','map','a']['result']='loss'
+        with self.assertRaisesRegex(RuntimeError,'matching host win'):
+            loss_live_plan.required_checks([],set(),baseline,{},['mite'],policy)
+
     def test_variant_name_defaults_and_rejects_paths(self):
         self.assertEqual(loss_refresh.variant_name(128),'rbook-loss-v128')
         self.assertEqual(loss_refresh.variant_name(128,'rbook-loss-v128-r13-increment2'),

@@ -19143,3 +19143,11 @@ new-opponent baseline for the531 book;529's earlier Fishr8 results are not a
 same-pin comparison. The older531/r8/Miter13 ablation remains parked.
 Evidence: [results and audit](ideas-2026-11-13/chy531-live/fish-r9-results.json),
 [audit script](ideas-2026-11-13/chy531-live/audit_fish_r9.py).
+
+v133 qualification completed: Fish 6/31, Mite collateral 3/6; all 37 source-pin
+proofs and ZIP CRCs passed. All six Fish wins came after replay divergence. Forced
+Fish lines on 00galaxy/b, 00rows/b and 04two_kingdoms/a regressed natural Mite wins.
+The corrected book keeps the six proven r9 wins and 24 proven r13 lines, dropping
+all 25 failed Fish provisionals. Local gates passed:30/30 exact,52/52 wide identity,
+24 fallback games/131 handovers/zero invalid reads,4 forced checks passed,1.08 MB.
+Its release is pending, followed by three mandatory regression-recovery checks.

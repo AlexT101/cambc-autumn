@@ -66,7 +66,7 @@ def artifacts(work):
                 and r.get('pin') == 'ref'
                 and pins.get(r['opp_name'].split()[-1].lower()) == r.get('refset')}
     sources = plan.source_rows(work, pins)
-    needed = plan.coverage(entries, forced, baseline, sources, pins)
+    needed = plan.required_checks(entries, forced, baseline, sources, pins, build.get('validation_policy'))
     steps, expected = read(work/'live-steps.json'), read(work/'live-expectations.json')
     ensure(steps and expected, 'Missing live checks')
     specs = {}
