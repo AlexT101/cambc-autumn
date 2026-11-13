@@ -63,11 +63,18 @@ def ready(version, pins, steps, minimum_source_fraction=1.0):
     return True
 
 
-def build(work, version, pins, resume=False):
+def variant_name(version, bot_name=None):
+    name = f'rbook-loss-v{version}' if bot_name is None else bot_name
+    if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]*', name):
+        raise ValueError('--bot-name must be a single variant directory name')
+    return name
+
+
+def build(work, version, pins, resume=False, bot_name=None):
     submitted = next((h for h in sched.load()['history'] if h['version'] == version), None)
     if not submitted or submitted.get('label') != 'chy-525f' or submitted.get('masked') is not False:
         raise RuntimeError('This builder requires the matching unmasked chy-525f baseline')
-    name = f'rbook-loss-v{version}'
+    name = variant_name(version, bot_name)
     host = ROOT/'bots/variants'/name
     if not resume and (host.exists() or (work/'build-started.json').exists()):
         raise RuntimeError('Build already started; reconcile artifacts instead of overwriting')
@@ -170,13 +177,15 @@ def main():
     ap=argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--work',type=Path,required=True)
     ap.add_argument('--host-version',type=int,required=True)
+    ap.add_argument('--bot-name',help='distinct directory name under bots/variants (default rbook-loss-vHOST_VERSION)')
     ap.add_argument('--mite-pin',required=True)
     ap.add_argument('--fish-pin',default='r8')
     ap.add_argument('--after-step',action='append',required=True)
     ap.add_argument('--resume',action='store_true',help='resume reconciled local artifacts using their frozen selection')
     ap.add_argument('--minimum-source-fraction',type=float,default=1.0,
                     help='allow a partial source sweep; the host baseline must still be complete')
-    a=ap.parse_args();a.work.mkdir(parents=True,exist_ok=True)
+    a=ap.parse_args();variant_name(a.host_version,a.bot_name)
+    a.work.mkdir(parents=True,exist_ok=True)
     pins=dict(fish=a.fish_pin,mite=a.mite_pin)
     with (a.work/'build.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
@@ -190,7 +199,7 @@ def main():
                 time.sleep(30)
             if (a.work/'STOP').exists():
                 return
-            build(a.work,a.host_version,pins,resume=a.resume)
+            build(a.work,a.host_version,pins,resume=a.resume,bot_name=a.bot_name)
         except Exception as error:
             write(a.work/'build-state.json',dict(phase='held',at=ls.now(),error=repr(error)))
             raise

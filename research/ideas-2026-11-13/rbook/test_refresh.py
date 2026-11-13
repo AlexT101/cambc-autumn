@@ -15,6 +15,64 @@ import loss_live_plan
 
 
 class RefreshGates(unittest.TestCase):
+    def test_live_step_prefix_preserves_first_book_and_distinguishes_increment(self):
+        first=dict(host_version=128,bot='/repo/bots/variants/rbook-loss-v128')
+        increment=dict(first,bot='/repo/bots/variants/rbook-loss-v128-r13-increment2')
+        self.assertEqual(loss_live_plan.step_prefix(first),'loss-v128')
+        self.assertEqual(loss_live_plan.step_prefix(dict(host_version=128)),'loss-v128')
+        self.assertEqual(loss_live_plan.step_prefix(increment),'loss-v128-r13-increment2')
+
+    def test_increment_live_plan_namespaces_pinned_and_current_expectations(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            work=Path(tmp)
+            state=dict(phase='ready_for_live_checks',host_version=128,pins=dict(mite='r13'),
+                       bot='/repo/bots/variants/rbook-loss-v128-r13-increment2')
+            entry=dict(key='map-a-v901-src',opp='mite',map='map',side='a')
+            (work/'build-state.json').write_text(json.dumps(state))
+            (work/'book_cells.json').write_text(json.dumps([entry]))
+            (work/'force.txt').write_text('')
+            baseline=dict(opp_name='Mite',map='map',side='a',purpose='set',pin='ref',refset='r13',
+                          result='loss',opp_id='mite-id',our_picks=[],opp_picks=[])
+            with mock.patch.object(loss_live_plan.ls,'games',return_value=[baseline]), \
+                 mock.patch.object(loss_live_plan,'source_rows',return_value={'src':dict(result='win')}):
+                loss_live_plan.plan(work)
+            steps=json.loads((work/'live-steps.json').read_text())
+            expected=json.loads((work/'live-expectations.json').read_text())
+            ids={s[1] for s in steps}
+            self.assertEqual(ids,{'loss-v128-r13-increment2-mite-r13','loss-v128-r13-increment2-mite-current'})
+            self.assertEqual({e['step'] for e in expected},ids)
+            self.assertEqual({e['pin'] for e in expected},{'ref','none'})
+
+    def test_variant_name_defaults_and_rejects_paths(self):
+        self.assertEqual(loss_refresh.variant_name(128),'rbook-loss-v128')
+        self.assertEqual(loss_refresh.variant_name(128,'rbook-loss-v128-r13-increment2'),
+                         'rbook-loss-v128-r13-increment2')
+        for name in ('', '.', '..', '../first', '/absolute', 'variants/new', 'new name'):
+            with self.subTest(name=name),self.assertRaises(ValueError):
+                loss_refresh.variant_name(128,name)
+
+    def test_named_increment_resume_cannot_reuse_first_variant(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);work=root/'work';work.mkdir()
+            name='rbook-loss-v128-r13-increment2'
+            host=root/'bots/variants'/name;host.mkdir(parents=True)
+            frozen=dict(host_version=128,pins=dict(mite='r13'),forced_keys=[],candidates=[])
+            (work/'selection.json').write_text(json.dumps(frozen))
+            (work/'build-started.json').write_text(json.dumps(dict(bot=str(host))))
+            with mock.patch.object(loss_refresh,'ROOT',root), \
+                 mock.patch.object(loss_refresh.sched,'load',return_value={'history':[dict(version=128,label='chy-525f',masked=False)]}), \
+                 mock.patch.object(loss_refresh,'baseline_rows',return_value=[]), \
+                 mock.patch.object(loss_refresh.rbuild,'select') as select, \
+                 mock.patch.object(loss_refresh,'run',side_effect=RuntimeError('sizing reached')) as run:
+                with self.assertRaisesRegex(RuntimeError,'sizing reached'):
+                    loss_refresh.build(work,128,dict(mite='r13'),resume=True,bot_name=name)
+                select.assert_not_called()
+                self.assertEqual(run.call_count,1)
+                self.assertIn('variants/'+name,run.call_args.args[0])
+                with self.assertRaisesRegex(RuntimeError,'artifacts do not match'):
+                    loss_refresh.build(work,128,dict(mite='r13'),resume=True)
+                self.assertEqual(json.loads((work/'selection.json').read_text()),frozen)
+
     def test_foreign_candidates_must_match_planned_pin(self):
         with tempfile.TemporaryDirectory() as tmp, mock.patch.object(loss_live_plan.ls,'read_jsonl',return_value=[]):
             work=Path(tmp)

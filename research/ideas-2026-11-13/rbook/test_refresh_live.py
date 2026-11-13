@@ -9,7 +9,7 @@ import refresh_live as r
 
 
 class Promotion(unittest.TestCase):
-    def exercise(self, divergence):
+    def exercise(self, divergence, result='win'):
         with tempfile.TemporaryDirectory() as tmp:
             w=Path(tmp)
             def save(name,value):
@@ -33,7 +33,7 @@ class Promotion(unittest.TestCase):
                         created[tid]={'group':group};finished.add(group)
                     book.append(dict(key=mp,opp=opp,map=mp,side=side))
                     rows.append(dict(group=group,opp_name='Mite' if opp=='mite' else 'Intercontinental Fish',
-                                     map=mp,side=side,pin='none',refset=None,version=128,result='win',match=mp))
+                                     map=mp,side=side,pin='none',refset=None,version=128,result=result,match=mp))
             save('live-steps.json',steps);save('book_cells.json',book)
             def state():
                 return dict(batches=dict(rest=int((w/'REST').read_text()),cur=None),
@@ -46,12 +46,12 @@ class Promotion(unittest.TestCase):
                     mock.patch.object(r.ls,'read_jsonl',return_value=rows), \
                     mock.patch.object(r.ls,'suspect_groups',return_value=set()), \
                     mock.patch.object(r.oppwatch,'cell_divergence',return_value=divergence):
-                if divergence==-1:
+                if result=='win' and divergence is not None:
                     r.run(w)
                     self.assertEqual((w/'REST').read_text(),'128\n')
                     self.assertEqual(json.loads((w/'live-check-state.json').read_text())['phase'],'published')
                 else:
-                    with self.assertRaisesRegex(RuntimeError,'Current opponent differs'):
+                    with self.assertRaisesRegex(RuntimeError,'Live check lost or lacks replay evidence'):
                         r.run(w)
                     self.assertEqual((w/'REST').read_text(),'126\n')
                     live.assert_not_called()
@@ -60,8 +60,14 @@ class Promotion(unittest.TestCase):
     def test_exact_current_wins_promote_existing_version(self):
         self.exercise(-1)
 
-    def test_divergence_never_changes_rest(self):
+    def test_wins_after_divergence_promote_existing_version(self):
         self.exercise(0)
+
+    def test_loss_never_changes_rest(self):
+        self.exercise(0,result='loss')
+
+    def test_missing_replay_evidence_never_changes_rest(self):
+        self.exercise(None)
 
 
 if __name__=='__main__':

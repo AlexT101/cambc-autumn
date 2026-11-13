@@ -7,6 +7,13 @@ from refresh_build import ls
 from refresh_queue import write
 
 
+def step_prefix(state):
+    version = state['host_version']
+    default = f'rbook-loss-v{version}'
+    name = Path(state.get('bot',default)).name
+    return f'loss-v{version}' if name == default else name.removeprefix('rbook-')
+
+
 def source_rows(work, pins):
     rows = {r['match'][-12:]:r for r in ls.read_jsonl(ls.DATA/'games.jsonl')}
     extra = work/'foreign-metadata.json'
@@ -54,6 +61,7 @@ def plan(work):
     if state['phase'] != 'ready_for_live_checks':
         raise RuntimeError('Local verification must finish before planning live checks')
     version,pins = state['host_version'],state['pins']
+    prefix = step_prefix(state)
     entries = json.loads((work/'book_cells.json').read_text())
     forced = set((work/'force.txt').read_text().splitlines())
     baseline = {(r['opp_name'].split()[-1].lower(),r['map'],r['side']):r for r in ls.games(version)
@@ -66,7 +74,7 @@ def plan(work):
         cells = sorted([list(k[1:]) for k in checks if k[0] == opp])
         if not cells:
             continue
-        sid = f'loss-v{version}-{opp}-{pin}'
+        sid = f'{prefix}-{opp}-{pin}'
         path = work/f'live-{opp}-pinned.json';write(path,cells)
         steps.append([str(path),sid,opp,pin,version,'ref'])
         expected += [dict(step=sid,opponent=opp,map=m,side=s,pin='ref',refset=pin,
@@ -78,7 +86,7 @@ def plan(work):
         cells = sorted({(c['map'],c['side']) for c in candidates[:20 if opp=='mite' else 10]})
         if not cells:
             continue
-        sid = f'loss-v{version}-{opp}-current'
+        sid = f'{prefix}-{opp}-current'
         path = work/f'live-{opp}-current.json';write(path,cells)
         steps.append([str(path),sid,opp,pin,version,'none'])
         expected += [dict(step=sid,opponent=opp,map=m,side=s,pin='none',refset=None,

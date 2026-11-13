@@ -140,7 +140,7 @@ def guards(work, rest, idle=True):
 def prepare(work, rest):
     ensure(not (work/STATE).exists(), 'Already prepared; use reconcile, never overwrite upload intent')
     a = artifacts(work)
-    st = guards(work, rest)
+    st = guards(work, rest, idle=False)  # Local preparation must not wait on the active live campaign.
     ids = set(a['specs'])
     queued = read(sched.H/'after-queue.json')
     ensure(not ids.intersection(s['id'] for s in queued)
@@ -183,7 +183,8 @@ def reconcile(work, state):
 def upload(work,state):
     ensure(state['phase']=='prepared', 'Upload already attempted; reconcile instead')
     a = unchanged(work,state)
-    st = guards(work,state['expected_rest'])
+    # The helper builds locally first, then checks the usable-quota boundary before and after stopping the scheduler.
+    st = guards(work,state['expected_rest'],idle=False)
     ensure([h['version'] for h in st['history']] == state['history_before'], 'History changed since prepare')
     ensure(not any(s['id'] in a['specs'] for s in read(sched.H/'after-queue.json')), 'Steps already queued')
     ensure(sched.MASK_UPLOADS is False, 'Upload masking enabled')

@@ -18,16 +18,31 @@ python3 $W/upload_rest.py build "$DIR" "$NOTE" || exit 1
 WS=$(python3 -c "import json;c=json.load(open('$W/prepared.json'));assert not c['masked'];print(c['workspace'])") || { echo "build is masked"; exit 1; }
 (cd $WS && rm -f $W/multi-bundle.zip && cambc bundle ocean --output $W/multi-bundle.zip > /dev/null 2>&1)
 B=$(stat -c %s $W/multi-bundle.zip); echo "bundle bytes $B"; [ "$B" -lt 5000000 ] || { echo "bundle too big"; exit 1; }
-phase() { python3 -c "import json;c=json.load(open('$S/state.json'))['batches']['cur'];print('rest' if c is None else c['phase'])"; }
+ready_to_upload() {
+python3 - "$S" "$BOOK_REST" <<'EOF'
+import json, sys
+from pathlib import Path
+sys.path.insert(0, 'tools')
+import ladder_scrims as ls
+from live_batches import RESERVE
+c = json.loads((Path(sys.argv[1])/'state.json').read_text())['batches']['cur']
+ready = c is None or c['phase'] == 'rest'
+if ready and c is not None and sys.argv[2] == '--rest':
+    # Live tests consume available quota before a book upload takes the scheduler.
+    q = ls.quota()['quota']
+    ready = q['used'] >= max(0, q['limit'] - RESERVE)
+print('yes' if ready else 'no')
+EOF
+}
 start_sched() { rm -f $S/STOP; setsid nohup /home/ubuntu/venv/bin/python tools/live_sched.py >> $S/sched.out 2>&1 < /dev/null & sleep 5; }
 for try in $(seq 40); do
-  until [ "$(phase)" = rest ]; do sleep 10; done
+  until [ "$(ready_to_upload)" = yes ]; do sleep 10; done
   PID=$(cat $S/sched.lock); touch $S/STOP
   while kill -0 $PID 2>/dev/null; do sleep 2; done
-  [ "$(phase)" = rest ] && break
+  [ "$(ready_to_upload)" = yes ] && break
   echo "$(date -u +%T) a batch started before the stop; retrying"; start_sched; sleep 60
 done
-[ "$(phase)" = rest ] || { echo "never between batches"; start_sched; exit 1; }
+[ "$(ready_to_upload)" = yes ] || { echo "no idle upload boundary"; start_sched; exit 1; }
 echo "$(date -u +%T) scheduler stopped between batches"
 python3 $W/upload_rest.py submit "${SUBMIT_ARGS[@]}"; rc=$?
 if [ $rc -eq 0 ]; then

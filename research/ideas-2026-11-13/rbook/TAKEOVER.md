@@ -213,3 +213,31 @@ enter the host comparison. Port the book after selecting the host.
 Five offline refresh tests and five existing live-batch tests pass. Failure injection confirms no stage DONE
 on builder failure and refusal of existing host-swap destinations. Python/shell syntax and whitespace checks
 pass. Corrected reporting was checked on actual downloaded v126 replays.
+
+## Increment 2 release ownership and reserved quota (2026-11-13, after 17:31 UTC)
+
+The delegated book worker owns the 171-entry increment release end to end; parent owns the
+book-free v129/Charybdis 529 full 680-game campaign. Do not alter its cur/task_ids/pins/priority.
+Increment work: /home/ubuntu/tmp-offload/rbook/loss-v128-r13-increment2; variant of the same name.
+Local gates and read-only release preflight passed; all 13 late Mite wins are exact, and the
+shared 02guardians b Mite source also reproduces exactly. Coverage ledger records nine Fish
+exclusions and the deliberate 01elk_arena a Fish REST126 tradeoff. All 69 first-book hashes
+remain protected. Latest uploaded book becomes REST immediately while live checks continue.
+
+User reserved 50 of the 100 rolling scrim groups for teammate bursts. Restart confirmed:
+runner PID458161 with --reserve50; scheduler PID458183; live_batches.RESERVE=50. Ordinary
+529/book tasks are priority99 and cannot consume the reserve; only explicitly urgent
+priority>=100 tasks may bypass it. Already-used quota100 must drain before ordinary work
+can resume. The book helper waits for a resting campaign and used>=limit-RESERVE, checks
+again after the coordinated scheduler stop, and queues book checks after the active529
+campaign. Never upload while that campaign has usable quota. Helper boundary tests cover
+reserve0/50/100, below/at threshold and active activation/creation phases without API calls.
+
+### Superseding correction: no fixed idle reserve
+
+User corrected the reserve interpretation: use ALL quota unless the teammate actually
+requests a burst, then coordinate priority/yield. Restart confirmed with reserve0:
+runner PID494561, scheduler PID494583, live_batches.RESERVE=0. Fish currently requests
+NO burst and will ask after its 530 fuel pass. The helper reads limit-RESERVE dynamically;
+it therefore requires full quota exhaustion before interrupting an active campaign now.
+The earlier fixed50 policy and PID458161/458183 note above are superseded.

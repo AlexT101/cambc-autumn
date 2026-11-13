@@ -1,8 +1,11 @@
 """Offline publication/provenance tests: no API, scheduler mutation or uploads."""
 import copy
+import io
 import json
 from pathlib import Path
+import sys
 import tempfile
+import types
 import unittest
 from unittest import mock
 
@@ -10,6 +13,54 @@ import loss_live as live
 
 
 class LossLiveTests(unittest.TestCase):
+    def test_prepare_is_local_and_preserves_an_active_campaign(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            (root/'after-queue.json').write_text('[]')
+            state=dict(batches=dict(rest=130,cur=dict(version=129,phase='batch',task_ids=['protected'])),history=[])
+            before=copy.deepcopy(state)
+            a=dict(specs={'inc-check':{}},bot='/bot',digest='frozen',pin_groups={'mite':'pin'})
+            with mock.patch.object(live,'artifacts',return_value=a),mock.patch.object(live.sched,'H',root), \
+                 mock.patch.object(live.ls,'DATA',root),mock.patch.object(live.sched,'load',return_value=state), \
+                 mock.patch.object(live.sched,'queue_lines',return_value=[]), \
+                 mock.patch.object(live.ls,'state',return_value=([],{},{},set(),{})), \
+                 mock.patch.object(live.ls,'quota') as quota, \
+                 mock.patch.object(live.ls,'live_version') as platform, \
+                 mock.patch.object(live.subprocess,'run') as helper:
+                self.assertEqual(live.prepare(root,130)['phase'],'prepared')
+                self.assertEqual(state,before)
+                quota.assert_not_called();platform.assert_not_called();helper.assert_not_called()
+
+    def test_helper_boundary_yields_all_usable_quota_to_active_campaign(self):
+        script=live.HELPER.read_text()
+        code=script.split('ready_to_upload() {',1)[1].split("<<'EOF'\n",1)[1].split('\nEOF',1)[0]
+        cases=[(None,0,50,'--rest','yes',False),
+               ('rest',49,50,'--rest','no',True),
+               ('rest',50,50,'--rest','yes',True),
+               ('rest',100,50,'--rest','yes',True),
+               ('rest',99,0,'--rest','no',True),
+               ('rest',100,0,'--rest','yes',True),
+               ('rest',0,100,'--rest','yes',True),
+               ('activate_batch',100,50,'--rest','no',False),
+               ('batch',100,50,'--rest','no',False),
+               ('activate_rest',100,50,'--rest','no',False),
+               ('rest',0,50,'','yes',False)]
+        for phase,used,reserve,mode,wanted,queried in cases:
+            with self.subTest(phase=phase,used=used,reserve=reserve,mode=mode), tempfile.TemporaryDirectory() as tmp:
+                cur=None if phase is None else dict(version=129,phase=phase,task_ids=['protected'])
+                path=Path(tmp)/'state.json';payload=json.dumps(dict(batches=dict(cur=cur)))
+                path.write_text(payload)
+                quota=mock.Mock(return_value={'quota':dict(used=used,limit=100)})
+                modules={'ladder_scrims':types.SimpleNamespace(quota=quota),
+                         'live_batches':types.SimpleNamespace(RESERVE=reserve)}
+                output=io.StringIO()
+                with mock.patch.dict(sys.modules,modules),mock.patch.object(sys,'argv',['boundary',tmp,mode]), \
+                     mock.patch.object(sys,'stdout',output),mock.patch.object(sys,'path',sys.path.copy()):
+                    exec(compile(code,'live_test.sh boundary','exec'),{})
+                self.assertEqual(output.getvalue().strip(),wanted)
+                self.assertEqual(quota.called,queried)
+                self.assertEqual(path.read_text(),payload)
+
     def test_guards_allow_waiting_candidate_but_not_activation_or_creation(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)
