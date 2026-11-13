@@ -156,6 +156,7 @@ def main():
     ap.add_argument('--mode', choices=['play', 'record', 'puppet'], default='play')
     ap.add_argument('--fp')
     ap.add_argument('--keys')
+    ap.add_argument('--truncate', type=int, help='tests: every entry ends at this round (a puppet that leaves its game there)')
     ap.add_argument('--cells')
     ap.add_argument('--cap', type=int)
     ap.add_argument('--force', help="play mode: keys (comma list or file) whose picks the draft forces: entries whose picks the "
@@ -218,7 +219,7 @@ def main():
         stats.append(sum(lens))
         print('cell', *cell_of(r), r['key'], sum(lens), file=sys.stderr)
         rows.append(dict(map=int(r['map_id'], 16), side=0 if side == 'a' else 1, w=r['width'], h=r['height'], counts=r['counts'], layout=int(r['layout'], 16), force=r['key'] in force_keys,
-                         ours=me['picks'], opp=other['picks'], last=len(me['bodies'][0]['turns']), offs=offs, lens=lens, fps=fpo, key=r['key']))
+                         ours=me['picks'], opp=other['picks'], last=min(len(me['bodies'][0]['turns']), a.truncate or 1 << 30), offs=offs, lens=lens, fps=fpo, key=r['key']))
     rows.sort(key=lambda r: (r['side'], r['w'], r['h'], r['map']))  # book.cc finds a map's size by binary search
     b64 = base64.b64encode(bytes(blob)).decode()
     mode = {'play': 0, 'record': 1, 'puppet': 2}[a.mode]
