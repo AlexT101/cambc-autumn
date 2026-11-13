@@ -10,6 +10,8 @@ The cells kept are printed to stderr as "cell MAP SIDE KEY BYTES".
 The coder must match src/book/book.cc exactly: an LZMA-style binary range coder over adaptive bit models."""
 import argparse, base64, json, re, sys
 
+import seeds
+
 KINDS = 17  # 0 = end of turn, 1..16 = action kinds (book.cc's A_*)
 MOVE, ATTACK, CAST, PRIORITY, RECALL, SUBMIT, BUY, SELL, BUY_CONS, WARD, CANCEL, LOCK, TELEPORT, BLOCKED, RESIGN, USE_CONS = range(1, 17)
 POSITIONAL = {MOVE, ATTACK, CAST, SUBMIT, WARD, LOCK, TELEPORT, BLOCKED, USE_CONS}
@@ -163,11 +165,13 @@ def plain_priorities(bodies):
     return out
 
 
-def enc_body(turns, plain=False):
+def enc_body(turns, plain=False, seed=None, body=0):
+    """seed: --prio seeded (0 for a game of an unmasked bot): priorities with the live mask taken off (seeds.word),
+    each coded as its change from the last."""
     e, m = Enc(), Model()
     cx = cy = -1000
     prev_pr = 0
-    for roll, acts in turns:
+    for rnd, (roll, acts) in enumerate(turns, 1):
         e.bit(m.roll, 0, roll)
         prev = 0
         for a in acts:
@@ -191,6 +195,17 @@ def enc_body(turns, plain=False):
                 if (v & 0xFFFF) == 0xE000 and d < 256:
                     e.bit(m.pr_same, 0, 0)
                     e.tree(m.pr, 0, 8, d)
+                else:
+                    e.bit(m.pr_same, 0, 1)
+                    for k in range(4):
+                        e.tree(m.prfull, k * 256, 8, (v >> (8 * k)) & 0xFF)
+                prev_pr = v
+            elif kind == PRIORITY and seed is not None:
+                v = (p & 0xFFFFFFFF) ^ (seeds.word(seed, rnd, body) if seed else 0)
+                if (v >> 16) == (prev_pr >> 16):
+                    e.bit(m.pr_same, 0, 0)
+                    e.tree(m.pr, 0, 8, ((v ^ prev_pr) >> 8) & 0xFF)
+                    e.tree(m.pr, 256, 8, (v ^ prev_pr) & 0xFF)
                 else:
                     e.bit(m.pr_same, 0, 1)
                     for k in range(4):
@@ -240,8 +255,9 @@ def main():
     ap.add_argument('--mode', choices=['play', 'record', 'puppet'], default='play')
     ap.add_argument('--fp')
     ap.add_argument('--keys')
-    ap.add_argument('--prio', choices=['recorded', 'plain'], default='recorded', help='plain: small order-keeping priorities '
-                    'in place of the recorded ones (plain_priorities); the replay then differs from the live game in them only')
+    ap.add_argument('--prio', choices=['recorded', 'plain', 'seeded'], default='recorded', help='plain: small order-keeping priorities '
+                    'in place of the recorded ones (plain_priorities); the replay then differs from the live game in them only. '
+                    'seeded: the recorded ones, exactly, stored without the live mask (seeds.py; the host needs the seeded decode)')
     ap.add_argument('--truncate', type=int, help='tests: every entry ends at this round (a puppet that leaves its game there)')
     ap.add_argument('--cells')
     ap.add_argument('--cap', type=int)
@@ -292,8 +308,13 @@ def main():
         offs, lens, fpo = [], [], []
         plain = a.prio == 'plain'
         streams = plain_priorities(me['bodies']) if plain else [b['turns'] for b in me['bodies']]
+        seed = None
+        if a.prio == 'seeded':
+            # Our masked live versions (v106-v120); any other game (an unmasked bot's, another team's, a puppet's) is stored as it was.
+            ver = re.match(r'^(.+)-([ab])-v(\d+)-', r['key'])
+            seed = seeds.seed(ver.group(1), ver.group(2), me['picks']) if a.team == 'ours' and ver and 106 <= int(ver.group(3)) <= 120 else 0
         for k, b in enumerate(me['bodies']):
-            s = enc_body(streams[k], plain)
+            s = enc_body(streams[k], plain, seed, k)
             offs.append(len(blob)); lens.append(len(s)); blob += s
             if a.mode == 'play':
                 nib = fps[r['key']][k]
@@ -307,7 +328,7 @@ def main():
         stats.append(sum(lens))
         print('cell', *cell_of(r), r['key'], sum(lens), file=sys.stderr)
         rows.append(dict(map=int(r['map_id'], 16), side=0 if side == 'a' else 1, w=r['width'], h=r['height'], counts=r['counts'], layout=int(r['layout'], 16), force=r['key'] in force_keys,
-                         ours=me['picks'], opp=other['picks'], last=min(len(me['bodies'][0]['turns']), a.truncate or 1 << 30), offs=offs, lens=lens, fps=fpo, key=r['key']))
+                         seed=seed or 0, ours=me['picks'], opp=other['picks'], last=min(len(me['bodies'][0]['turns']), a.truncate or 1 << 30), offs=offs, lens=lens, fps=fpo, key=r['key']))
     rows.sort(key=lambda r: (r['side'], r['w'], r['h'], r['map']))  # book.cc finds a map's size by binary search
     b64 = base64.b64encode(bytes(blob)).decode()
     mode = {'play': 0, 'record': 1, 'puppet': 2}[a.mode]
@@ -317,15 +338,16 @@ def main():
         f.write(f'inline constexpr int mode = {mode}; // 0 play, 1 record, 2 puppet\n')
         f.write(f'inline constexpr bool force_draft = {"true" if force_keys or a.mode != 'play' else "false"}; // the draft plays the entries\' picks\n')
         f.write(f'inline constexpr bool plain_prio = {"true" if a.prio == "plain" else "false"}; // priorities coded as build_book.py --prio plain\n')
+        f.write(f'inline constexpr bool prio_seeded = {"true" if a.prio == "seeded" else "false"}; // priorities coded as build_book.py --prio seeded\n')
         f.write(f'inline constexpr int entry_count = {len(rows)};\n')
-        f.write('struct Entry { std::uint64_t map; std::uint8_t side, w, h, n_ours, n_opp; std::int8_t ours[5], opp[5]; std::uint8_t bodies; std::uint16_t last; std::uint32_t off[6], len[6], fp[6]; std::uint16_t counts[4]; std::uint64_t layout; bool force; };\n')
+        f.write('struct Entry { std::uint64_t map; std::uint8_t side, w, h, n_ours, n_opp; std::int8_t ours[5], opp[5]; std::uint8_t bodies; std::uint16_t last; std::uint32_t off[6], len[6], fp[6]; std::uint16_t counts[4]; std::uint64_t layout; bool force; std::uint64_t seed; };\n')
         f.write(f'inline constexpr Entry entries[{max(1, len(rows))}] = {{\n')
         for r in rows:
             pad = lambda l, n: (list(l) + [-1] * n)[:n]
             pad6 = lambda l, v: (list(l) + [v] * 6)[:6]
             f.write(f'  {{0x{r["map"]:016x}ull, {r["side"]}, {r["w"]}, {r["h"]}, {len(r["ours"])}, {len(r["opp"])}, '
                     f'{{{",".join(map(str, pad(r["ours"], 5)))}}}, {{{",".join(map(str, pad(r["opp"], 5)))}}}, {len(r["offs"])}, {r["last"]}, '
-                    f'{{{",".join(map(str, pad6(r["offs"], 0)))}}}, {{{",".join(map(str, pad6(r["lens"], 0)))}}}, {{{",".join(f"{x}u" for x in pad6(r["fps"], 0xFFFFFFFF))}}}, {{{",".join(map(str, r["counts"]))}}}, 0x{r["layout"]:016x}ull, {"true" if r["force"] else "false"}}}, // {r["key"]}\n')
+                    f'{{{",".join(map(str, pad6(r["offs"], 0)))}}}, {{{",".join(map(str, pad6(r["lens"], 0)))}}}, {{{",".join(f"{x}u" for x in pad6(r["fps"], 0xFFFFFFFF))}}}, {{{",".join(map(str, r["counts"]))}}}, 0x{r["layout"]:016x}ull, {"true" if r["force"] else "false"}, 0x{r["seed"]:016x}ull}}, // {r["key"]}\n')
         if not rows:
             f.write('  {}\n')
         f.write('};\n')

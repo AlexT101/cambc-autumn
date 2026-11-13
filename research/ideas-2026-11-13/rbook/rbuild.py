@@ -288,7 +288,9 @@ def main():
                     "(book_cells.json): for another build of the same book, such as a masked upload copy")
     ap.add_argument('--cells', help="the strength dial: only these cells (build_book.py's --cells)")
     ap.add_argument('--cap', type=int, help="the strength dial: at most N entries, smallest first (build_book.py's --cap)")
-    ap.add_argument('--prio', choices=['recorded', 'plain'], default='recorded', help="build_book.py's --prio")
+    ap.add_argument('--keys', help='only these entries: a file of game keys, one a line (pick_entries.py writes it; --cells cannot '
+                    'keep one opponent\'s entry on a cell and drop the other\'s)')
+    ap.add_argument('--prio', choices=['recorded', 'plain', 'seeded'], default='recorded', help="build_book.py's --prio")
     ap.add_argument('--force-versions', help="versions of ours whose draft is not the host's: their entries' picks are forced "
                     "(the draft plays them while the opponent's picks match); 117-119 draft as 525 does")
     a = ap.parse_args()
@@ -323,6 +325,9 @@ def main():
         chosen += ch
         cs += c
     final = [c for c in cs if c['key'] in fps]
+    if a.keys:
+        keep = {l.split()[0] for l in open(a.keys) if l.strip() and not l.startswith('#')}
+        final = [c for c in final if c['key'] in keep]
     ents = write_entries(final, work, 'book.jsonl')
     (work / 'fp_book.json').write_text(json.dumps({c['key']: fps[c['key']] for c in final}))
     (work / 'book_cells.json').write_text(json.dumps([{k: c[k] for k in ('key', 'map', 'side', 'version', 'rounds', 'opp')} for c in final], indent=0))
@@ -333,8 +338,8 @@ def main():
         (work / 'force.txt').write_text(''.join(k + '\n' for k in forced))
         dial += ['--force', str(work / 'force.txt')]
         log(f'force: {len(forced)} entries play their own picks (versions {sorted(fv)})')
-    if a.prio == 'plain':
-        dial += ['--prio', 'plain']
+    if a.prio != 'recorded':
+        dial += ['--prio', a.prio]
     r = subprocess.run([sys.executable, str(HERE / 'build_book.py'), str(ents), str(host / 'src/book/book_data.h'), '--team', 'ours', '--mode', 'play',
                         '--fp', str(work / 'fp_book.json')] + dial, capture_output=True, text=True)
     sys.stderr.write(r.stderr)
