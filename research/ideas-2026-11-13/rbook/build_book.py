@@ -90,7 +90,80 @@ def enc_int(e, m, kind, field, v):
             e.tree(m.fbig, ((kind * 2 + field) * 4 + k) * 256, 8, (z >> (8 * k)) & 0xFF)
 
 
-def enc_body(turns):
+def s32(v):
+    v &= 0xFFFFFFFF
+    return v - (1 << 32) if v >> 31 else v
+
+
+def plain_priorities(bodies):
+    """The team's turns with every set priority replaced by a small plain one that keeps the team's order in every
+    round (--prio plain). A priority set in round r orders the team from round r + 1, by value with ties by id, so
+    only the order of the latest values matters. New values are (k << 16 | 0xC000 | sub): the low 16 bits' top two
+    are never set in the bot's own payloads, which marks a body as still on the book; k is the body's place (0, 1, ..
+    for positive values and -1, -2, .. for negative ones, as a champion that has not set one yet holds 0), sub 0x2000.
+    A body that sets none in a round keeps its value, and the others are placed around it (sub when k has no room)."""
+    n, rounds = len(bodies), max(len(b['turns']) for b in bodies)
+    out = [[[roll, [list(x) for x in acts]] for roll, acts in b['turns']] for b in bodies]
+    orig, new = [0] * n, [None] * n  # the latest values; new as a key k * 16384 + sub, None while never set (0)
+    for r in range(rounds):
+        setters = {}
+        for b in range(n):
+            if r < len(out[b]):
+                ps = [x for x in out[b][r][1] if x[0] == PRIORITY]
+                if ps:
+                    setters[b] = ps
+                    orig[b] = s32(ps[-1][3])
+        if not setters:
+            continue
+        groups = {}
+        for b in range(n):
+            groups.setdefault(orig[b], []).append(b)
+        groups.setdefault(0, [])  # a champion yet to set one, or a value of 0
+        order = sorted(groups)
+        anchor = {}
+        for v in order:
+            fixed = {new[b] for b in groups[v] if b not in setters}
+            if v == 0:
+                fixed.add(None)
+            assert len(fixed) <= 1, 'kept values that were equal and are not'
+            if fixed:
+                anchor[v] = fixed.pop()
+        key = dict(anchor)
+        i = 0
+        while i < len(order):
+            if order[i] in anchor:
+                i += 1
+                continue
+            j = i
+            while j < len(order) and order[j] not in anchor:
+                j += 1
+            m = j - i
+            lo = anchor[order[i - 1]] if i > 0 else 'none'
+            hi = anchor[order[j]] if j < len(order) else 'none'
+            for t in range(m):
+                if lo == 'none':
+                    k = (-8192 - 16384 * (m - 1 - t)) if hi is None else hi - 16384 * (m - t)
+                elif hi == 'none':
+                    k = (8192 + 16384 * t) if lo is None else lo + 16384 * (t + 1)
+                else:
+                    a, z = (-1 if lo is None else lo), (0 if hi is None else hi)
+                    k = a + (z - a) * (t + 1) // (m + 1)
+                    assert a < k < z and (t == 0 or k > key[order[i + t - 1]]), 'no room between kept priorities'
+                key[order[i + t]] = k
+            i = j
+        for b, ps in setters.items():
+            k = key[orig[b]]
+            new[b] = k
+            v = 0 if k is None else s32((k >> 14) << 16 | 0xC000 | (k & 16383))
+            assert k is None or -32768 <= k >> 14 <= 32767
+            for x in ps:
+                x[3] = v
+        ranks = lambda vals: [sum(w > v for w in vals) * 8 + sum(w == v for w in vals) for v in vals]
+        assert ranks(orig) == ranks([0 if k is None else k * 2 + 1 for k in new]), 'order not kept'
+    return out
+
+
+def enc_body(turns, plain=False):
     e, m = Enc(), Model()
     cx = cy = -1000
     prev_pr = 0
@@ -112,7 +185,18 @@ def enc_body(turns):
                     e.tree(m.absxy, 256, 8, y + 1)
                 if kind == MOVE:
                     cx, cy = x, y
-            if kind == PRIORITY:
+            if kind == PRIORITY and plain:
+                v = p & 0xFFFFFFFF
+                d = zig((s32(v) >> 16) - (s32(prev_pr) >> 16))
+                if (v & 0xFFFF) == 0xE000 and d < 256:
+                    e.bit(m.pr_same, 0, 0)
+                    e.tree(m.pr, 0, 8, d)
+                else:
+                    e.bit(m.pr_same, 0, 1)
+                    for k in range(4):
+                        e.tree(m.prfull, k * 256, 8, (v >> (8 * k)) & 0xFF)
+                prev_pr = v
+            elif kind == PRIORITY:
                 v = p & 0xFFFFFFFF
                 if (v >> 16) == (prev_pr >> 16):
                     e.bit(m.pr_same, 0, 0)
@@ -156,6 +240,8 @@ def main():
     ap.add_argument('--mode', choices=['play', 'record', 'puppet'], default='play')
     ap.add_argument('--fp')
     ap.add_argument('--keys')
+    ap.add_argument('--prio', choices=['recorded', 'plain'], default='recorded', help='plain: small order-keeping priorities '
+                    'in place of the recorded ones (plain_priorities); the replay then differs from the live game in them only')
     ap.add_argument('--truncate', type=int, help='tests: every entry ends at this round (a puppet that leaves its game there)')
     ap.add_argument('--cells')
     ap.add_argument('--cap', type=int)
@@ -194,7 +280,7 @@ def main():
         kept.append(r)
     chosen = kept
     if a.cap is not None:
-        size = {r['key']: sum(len(enc_body(b['turns'])) for b in r[a.team]['bodies']) for r in chosen}
+        size = {r['key']: sum(len(enc_body(b['turns'])) for b in r[a.team]['bodies']) for r in chosen}  # recorded priorities
         chosen = sorted(sorted(chosen, key=lambda r: (size[r['key']], r['key']))[:a.cap], key=lambda r: r['key'])
     for r in chosen:
         me = r[a.team]
@@ -204,8 +290,10 @@ def main():
             print('no fingerprints for', r['key'], file=sys.stderr)
             continue
         offs, lens, fpo = [], [], []
+        plain = a.prio == 'plain'
+        streams = plain_priorities(me['bodies']) if plain else [b['turns'] for b in me['bodies']]
         for k, b in enumerate(me['bodies']):
-            s = enc_body(b['turns'])
+            s = enc_body(streams[k], plain)
             offs.append(len(blob)); lens.append(len(s)); blob += s
             if a.mode == 'play':
                 nib = fps[r['key']][k]
@@ -228,6 +316,7 @@ def main():
         f.write('namespace book_data {\n')
         f.write(f'inline constexpr int mode = {mode}; // 0 play, 1 record, 2 puppet\n')
         f.write(f'inline constexpr bool force_draft = {"true" if force_keys or a.mode != 'play' else "false"}; // the draft plays the entries\' picks\n')
+        f.write(f'inline constexpr bool plain_prio = {"true" if a.prio == "plain" else "false"}; // priorities coded as build_book.py --prio plain\n')
         f.write(f'inline constexpr int entry_count = {len(rows)};\n')
         f.write('struct Entry { std::uint64_t map; std::uint8_t side, w, h, n_ours, n_opp; std::int8_t ours[5], opp[5]; std::uint8_t bodies; std::uint16_t last; std::uint32_t off[6], len[6], fp[6]; std::uint16_t counts[4]; std::uint64_t layout; bool force; };\n')
         f.write(f'inline constexpr Entry entries[{max(1, len(rows))}] = {{\n')

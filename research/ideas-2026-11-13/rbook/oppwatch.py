@@ -29,7 +29,7 @@ def rhash(g):
     return _h[p]
 
 
-def book_divergence(g, recorded):
+def book_divergence(g, recorded, plain=False):
     """First differing round index of a live book game against its recorded game, -1 if none, None if unreadable."""
     p = g.get('replay')
     if not p or not (ROOT / p).exists() or not recorded.exists():
@@ -39,7 +39,8 @@ def book_divergence(g, recorded):
         if not n:
             return None
         t.write(z.read(n[0])); t.flush()
-        r = subprocess.run(['node', str(Path(__file__).parent / 'cmp.mjs'), str(recorded), t.name], capture_output=True, text=True)
+        cmp = ['cmp2.mjs', g['side']] if plain else ['cmp.mjs']  # a plain-priority book differs in our priority values only
+        r = subprocess.run(['node', str(Path(__file__).parent / cmp[0]), str(recorded), t.name] + cmp[1:], capture_output=True, text=True)
     try:
         v = json.loads(r.stdout.strip().splitlines()[-1])
     except Exception:
@@ -56,6 +57,7 @@ def main():
     ap.add_argument('--book-version', type=int)
     ap.add_argument('--book', help='rbuild work dir of the book the version plays')
     ap.add_argument('--book-cells', help="a file naming the version's entry keys (its book_data.h or verify manifest)")
+    ap.add_argument('--book-plain', action='store_true', help='the book plays plain priorities (build_book.py --prio plain)')
     a = ap.parse_args()
     book = {}
     if a.book_version and a.book:
@@ -91,7 +93,7 @@ def main():
         for g in gs:
             cell = (g['version'], g['map'], g['side'])
             if book and g['version'] == a.book_version and (g['map'], g['side']) in book:
-                d = book_divergence(g, book[(g['map'], g['side'])])
+                d = book_divergence(g, book[(g['map'], g['side'])], a.book_plain)
                 if d is not None:
                     if d < 0: book_same += 1
                     else: book_diff += 1

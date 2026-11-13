@@ -258,7 +258,9 @@ def verify_one(cs, a, work, host, tag):
         out = runs / f"{c['key']}.repl26a"
         if not out.exists():
             return c['key'], 'no replay'
-        r = subprocess.run(['node', str(HERE / 'cmp.mjs'), str(work / 'raw' / f"{c['key']}.repl26a"), str(out)], capture_output=True, text=True)
+        # A plain-priority book's games differ from the live ones in our own priority values, and in nothing else.
+        cmp = ['cmp2.mjs', c['side']] if getattr(a, 'prio', None) == 'plain' else ['cmp.mjs']
+        r = subprocess.run(['node', str(HERE / cmp[0]), str(work / 'raw' / f"{c['key']}.repl26a"), str(out)] + cmp[1:], capture_output=True, text=True)
         try:
             v = json.loads(r.stdout.strip().splitlines()[-1])
         except Exception:
@@ -286,6 +288,7 @@ def main():
                     "(book_cells.json): for another build of the same book, such as a masked upload copy")
     ap.add_argument('--cells', help="the strength dial: only these cells (build_book.py's --cells)")
     ap.add_argument('--cap', type=int, help="the strength dial: at most N entries, smallest first (build_book.py's --cap)")
+    ap.add_argument('--prio', choices=['recorded', 'plain'], default='recorded', help="build_book.py's --prio")
     ap.add_argument('--force-versions', help="versions of ours whose draft is not the host's: their entries' picks are forced "
                     "(the draft plays them while the opponent's picks match); 117-119 draft as 525 does")
     a = ap.parse_args()
@@ -330,6 +333,8 @@ def main():
         (work / 'force.txt').write_text(''.join(k + '\n' for k in forced))
         dial += ['--force', str(work / 'force.txt')]
         log(f'force: {len(forced)} entries play their own picks (versions {sorted(fv)})')
+    if a.prio == 'plain':
+        dial += ['--prio', 'plain']
     r = subprocess.run([sys.executable, str(HERE / 'build_book.py'), str(ents), str(host / 'src/book/book_data.h'), '--team', 'ours', '--mode', 'play',
                         '--fp', str(work / 'fp_book.json')] + dial, capture_output=True, text=True)
     sys.stderr.write(r.stderr)
