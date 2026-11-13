@@ -17,6 +17,7 @@ import ladder_scrims as ls  # noqa: E402
 import live_batches as lb  # noqa: E402
 import test_ladder_scrims_run as base  # noqa: E402
 from test_ladder_scrims_run import FakeApi, task  # noqa: E402
+REAL_SPECS = lb.specs
 
 
 class SwitchApi(FakeApi):
@@ -222,6 +223,33 @@ class SchedPhases(unittest.TestCase):
                 self.b.phase_batch({},self.B,self.cur,117,117)
             self.assertEqual(self.cur['phase'],expected)
         self.assertEqual(self.activated,[("submissions","activate","118")])
+
+    def test_explicit_full_map_part_plans_once_for_selected_opponents(self):
+        maps=[dict(name=f'm{i}',id=f'id{i}') for i in range(10)]
+        cur=dict(self.cur,version=132,rsets={'fish':'r8','mite':'r13'},parts=[['full','all',99]])
+        with mock.patch.object(lb,'specs',REAL_SPECS),mock.patch.object(ls,'load_set',return_value={'all':maps}):
+            new,pending,*_=self.b.gate_tasks(cur)
+            self.assertEqual(len(new),8)
+            self.assertFalse(pending)
+            cells={(t['opp_id'],g['map'],g['side']) for t in new for g in t['games']}
+            self.assertEqual(len(cells),40)
+            self.assertTrue(all(not g.get('filler') for t in new for g in t['games']))
+            for t in new: ls.append_jsonl(ls.DATA/'tasks.jsonl',t)
+            self.create(new[0],132)
+            again,pending,*_=self.b.gate_tasks(cur)
+            self.assertFalse(again)
+            self.assertEqual(len(pending),7)
+
+    def test_campaign_report_uses_explicit_baseline_not_legacy_control(self):
+        c=dict(self.cur,version=132,baseline_version=129)
+        self.B['done']=[c]
+        row=dict(opp_id=ls.TEAMS['fish'][0],map='m',side='a',purpose='set',pin='ref',refset='r8')
+        games=lambda v:[dict(row,result='loss' if v==129 else 'win')]
+        self.s.wake=lambda rec:None
+        with mock.patch.object(ls,'games',side_effect=games):
+            self.b.report_done({'reported':[]},self.B)
+        self.assertEqual(c['result']['fish']['net'],1)
+        self.assertEqual(ls.read_jsonl(self.s.H/'gates.jsonl')[0]['rest'],129)
 
     def test_completed_campaign_restores_even_with_imminent_refill(self):
         t=ctask(0);ls.append_jsonl(ls.DATA/'tasks.jsonl',t);self.create(t,117)

@@ -304,6 +304,9 @@ py tools/version_record.py 50                        # our version 50's record p
   During a live batch the runner checks activation every `--pace` seconds. If queued work remains and quota will
   return within three minutes, the scheduler keeps the candidate active to avoid two unnecessary activations;
   longer quota gaps and fully submitted campaigns restore the latest book.
+  A scheduler campaign can supply `parts` as `[set, part, priority]` triples to cover a custom map set
+  continuously, and `baseline_version` to compare with a completed candidate instead of the legacy control.
+  `set-full170.json` covers all 170 ladder maps in five-map chunks, interleaving both opponents and both sides.
   - **Outcome-only baselines:** `data/OUTCOME-ONLY-VERSIONS.json` optionally lists versions whose pinned `set`
     games need only outcomes and drafts from group detail. These rows explicitly say `collection: outcome_only`
     and have no replay/summary metrics. Use only for book-free host-loss selection; other versions and all

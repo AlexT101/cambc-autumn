@@ -485,12 +485,13 @@ class Batches:
                for t in tasks) or not self.drained() or not self.collected(rest):
             return
         for c in todo:
-            c['final'] = paired(self.ls, c['version'], rest, c['rsets'], c.get('task_ids'))
+            reference = c.get('baseline_version', rest)
+            c['final'] = paired(self.ls, c['version'], reference, c['rsets'], c.get('task_ids'))
             rec = {'event_id': f"batch-final-v{c['version']}", 'version': c['version'], 'label': c['label'],
-                   'rest': rest, 'paired_vs_rest': c['final'], 'note': 'control complete', 'at': self.s.now()}
+                   'rest': reference, 'paired_vs_rest': c['final'], 'note': 'control complete', 'at': self.s.now()}
             self.ls.append_jsonl(self.s.H / 'gates.jsonl', rec)
             self.s.wake(rec)
-            self.s.log(f"batches: final v{c['version']} ({c['label']}) vs v{rest}: {json.dumps(c['final'])}")
+            self.s.log(f"batches: final v{c['version']} ({c['label']}) vs v{reference}: {json.dumps(c['final'])}")
 
     def plan_rest(self, B, rest, rsets):
         tasks = {t['id'] for t in self.ls.read_jsonl(self.ls.DATA / 'tasks.jsonl')}
@@ -507,7 +508,7 @@ class Batches:
             mine = set(cur['task_ids'])
             return [], [t for t in tasks if t['id'] in mine and t['id'] not in created and t['id'] not in dropped], \
                 tasks, created, dropped
-        allspec = specs(self.ls, cur['version'], cur['rsets'], self.s.now()) if cur['version'] else None
+        allspec = specs(self.ls, cur['version'], cur['rsets'], self.s.now(), cur.get('parts')) if cur['version'] else None
         unplanned = [t for t in allspec if t['id'] not in ids] if allspec else None
         planned_pending = [t for t in tasks if t['version'] == cur['version'] and t.get('campaign') == 'batches'
                            and t['id'] not in created and t['id'] not in dropped] if cur['version'] else []
@@ -528,13 +529,13 @@ class Batches:
         if last and not last.get('reported') and not cur.get('control') and self.collected(cur['version']):
             # Log only: with a switch per quota refill, a wake per batch would flood the coordinator (the gate wakes).
             last['reported'] = self.s.now()
-            res = paired(ls, cur['version'], self.control(B), cur['rsets'], cur.get('task_ids'))
+            res = paired(ls, cur['version'], cur.get('baseline_version', self.control(B)), cur['rsets'], cur.get('task_ids'))
             self.s.log(f"batches: batch {len(cur['batches'])} of v{cur['version']} collected; paired {json.dumps(res)}")
         # Groups in flight don't matter (bound at creation); the rest version's own groups still need it selected.
         if rest_pending:
             self.note(B, 'rest', f"batches: {cur['label']} waits: v{rest} has {len(rest_pending)} groups to create")
             return
-        todo = (len(specs(ls, 0, cur['rsets'], None)) if cur['version'] is None
+        todo = (len(specs(ls, 0, cur['rsets'], None, cur.get('parts'))) if cur['version'] is None
                 else len(unplanned) + len(planned_pending))
         if cur['version'] and todo == 0:
             self.finish(st, B, cur)   # every group is created; its result follows once collected (report_done)
@@ -630,10 +631,11 @@ class Batches:
         for c in B['done']:
             if 'result' in c or not self.collected(c['version']):
                 continue
-            c['result'] = paired(self.ls, c['version'], self.control(B), c['rsets'], c.get('task_ids'))
+            reference = c.get('baseline_version', self.control(B))
+            c['result'] = paired(self.ls, c['version'], reference, c['rsets'], c.get('task_ids'))
             c['phase'] = 'done'
             rec = {'event_id': f"batch-gate-v{c['version']}-{c.get('after_step', 'gate')}", 'version': c['version'],
-                   'label': c['label'], 'rest': self.control(B), 'rsets': c['rsets'], 'batches': c['batches'],
+                   'label': c['label'], 'rest': reference, 'rsets': c['rsets'], 'batches': c['batches'],
                    'paired_vs_rest': c['result'], 'observed': observed(self.ls, c), 'minutes_live': minutes(B, time.time()), 'at': self.s.now()}
             self.ls.append_jsonl(self.s.H / 'gates.jsonl', rec)
             self.s.wake(rec)
