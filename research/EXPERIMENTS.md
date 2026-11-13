@@ -10,6 +10,23 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## (charybdis = 525, 2026-11-13) Camp-death gem denial: a doomed hoarder dying to a camp instead of to Fish fits 0-3 of 78 live hoard kills; abandoned before building
+
+Note and scripts: [ideas-2026-11-13/camp-death-gem-denial/README.md](ideas-2026-11-13/camp-death-gem-denial/README.md).
+- **Idea.** A camp kill destroys the victim's bag and pays no kill gold, and camps attack before champion turns. A
+  doomed hoarding Prism could end its turn where a camp lands the last blow before Fish's killer acts.
+- **Data.** In 244 live Fish r8 games, Fish champions killed 78 of our carriers of 100+ gems (24,172 gems).
+  - At the camp phase before the kill, the victim's health is often low: median 259, and 200 or less in 40%.
+  - Only 19 victims stood in a live monster's range, and in only 2 could its Strength cover the victim's health.
+- **Feasible kills.** With a one-step move, only awake monsters, and the victim strictly nearest: 0. Letting the
+  Prism wake the camp (costing its walk): 2, for 883 gems. The loosest bound (two steps, any wake state, no nearest
+  test): 5.
+- **Why.** The live camps near hoard fights are wolves (Strength 20) and elks (60); the groups fought over are cleared.
+- **The wider form**, denying kill gold on any certain death, fits 14 of 1,320 deaths (1.1%) realistically and 184
+  at the loosest bound.
+- Under 0.5 points even if every event flipped a game, so it was not built or gated.
+- Don't retry: positional suicide-to-camp, for gems or for kill gold.
+
 ## (charybdis = 524, 2026-11-12) The out-scaled Prism against Fish r8: bag focus + the any-risk channel beat 524 by 1.1-1.3 head-to-head and gain against Mite and Flp4, level against the Fish r8 body; c2 shipped as charybdis 525
 
 Note, patches and scripts: [ideas-2026-11-12/r8-scale/README.md](ideas-2026-11-12/r8-scale/README.md) (branch
