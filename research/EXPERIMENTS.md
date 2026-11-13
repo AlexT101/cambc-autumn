@@ -45,6 +45,12 @@ Notes, briefs, patches and scripts: [mx-rhea](mx-rhea/NOTES.md), [mx-crius](mx-c
   at 100k (unused seeds 61490400-61490458), OOF 357,693 / 343,175 (+4%): not merged. IAPETUS's other lines
   (finish window, live territory, relay/altar watch, death audit, Prism threat model v4, stop execution) were level;
   the threat-model fixes cut Prism deaths 20% but read 52.4 (a more cautious Prism).
+- **Cautious Prism against a Prism-less opponent (scylla), 100k:** does caution pay against a non-mirror field?
+  `variants/cautious-531` = 531 + IAPETUS's full G v4 threat model (lurker tracking, escape straddle for ranged
+  pursuers, `pick_second`; against 529 it cut Prism deaths 20% but read 52.4 vs v1's 53.3). Same 40,120 games
+  (unused seeds 61490500-61490558), own drafts: cautious-531 **65.3 (64.8-65.8)**, OOF 509,058; chy-531 **67.5
+  (67.0-67.9)**, OOF 376,727. Caution loses 2.2 against scylla too, but with +35% out-of-fuel turns, so the fuel
+  cost and the behaviour are not separated at 100k.
 - **Lost to 530 at 100k:** THEIA `dnw-min` (scylla's tribute denial ported onto 529, keeping only `deny_late`, the
   stop timed for the channel's last turns, and `deny_alarm`, a seen enemy tribute posted to allies): 52.1 pooled held
   out at 2x and 51.4 (50.4-52.4) of 10,200 at 100k, both against 529; against 530 at 100k **49.0 (48.5-49.5) of
