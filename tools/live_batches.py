@@ -340,21 +340,30 @@ class Batches:
 
     def start_cells(self, st, B, step):
         """cells: play `version` on the cells `lost_by` lost against `opp` on `refset`, once all of lost_by's games
-        there are in, in five-map groups (a short group filled from lost_by's other cells there)."""
+        there are in, in five-map groups (a short group filled from lost_by's other cells there).
+        Explicit cells need only the source plan; pin=none checks the current opponent without changing test pins."""
         ls, src, opp, rs, v = self.ls, step['lost_by'], step['opp'], step['refset'], step['version']
+        pin = step.get('pin', 'ref')
+        if pin not in ('ref', 'none'):
+            raise ValueError(f'Invalid cells-step pin: {pin}')
+        if pin == 'none' and not step.get('cells'):
+            raise ValueError('Current-opponent checks require explicit cells')
         oid, name = ls.TEAMS[opp]
         tasks, created, finished, dropped, _ = ls.state()
         mine = [t for t in tasks if t['version'] == src and t['opp_id'] == oid and t.get('refset') == rs
                 and t.get('purpose') == 'set' and t['id'] not in dropped]
-        if not mine or any(t['id'] not in created or created[t['id']]['group'] not in finished for t in mine):
-            self.note(B, 'after', f"batches: after-queue {step['id']} waits for v{src}'s {opp} {rs} games")
-            return None
-        rows = [r for r in ls.games(src) if r['opp_id'] == oid and r.get('refset') == rs and r['purpose'] == 'set']
-        pool = sorted({(r['map'], r['map_id'], r['side']) for r in rows})
-        lost = sorted({(r['map'], r['map_id'], r['side']) for r in rows if r['result'] == 'loss'})
-        if step.get('cells'):   # an explicit [map, side] list, of the cells lost_by played there (a short test)
+        if step.get('cells') and mine:
+            # An explicit [map, side] list (a short test) needs only lost_by's planned cells, not its results.
+            pool = sorted({(g['map'], g['map_id'], g['side']) for t in mine for g in t['games']})
             want = {tuple(c) for c in step['cells']}
             lost = [c for c in pool if (c[0], c[2]) in want]
+        else:
+            if not mine or any(t['id'] not in created or created[t['id']]['group'] not in finished for t in mine):
+                self.note(B, 'after', f"batches: after-queue {step['id']} waits for v{src}'s {opp} {rs} games")
+                return None
+            rows = [r for r in ls.games(src) if r['opp_id'] == oid and r.get('refset') == rs and r['purpose'] == 'set']
+            pool = sorted({(r['map'], r['map_id'], r['side']) for r in rows})
+            lost = sorted({(r['map'], r['map_id'], r['side']) for r in rows if r['result'] == 'loss'})
         groups = []
         for cell in lost:
             g = next((g for g in groups if len(g) < 5 and cell[0] not in {x[0] for x in g}), None)
@@ -370,7 +379,8 @@ class Batches:
                     g.append(cell + ('filler',))
         now = self.s.now()
         new = [{'id': f"v{v}-{step['id']}-{rs}-{opp}-{i:02d}", 'version': v, 'set': 'cells', 'part': step['id'],
-                'purpose': 'set', 'opp_id': oid, 'opp_name': name, 'pin': 'ref', 'refset': rs,
+                'purpose': 'set', 'opp_id': oid, 'opp_name': name, 'pin': pin,
+                'refset': rs if pin == 'ref' else None,
                 'games': [{'map': c[0], 'map_id': c[1], 'side': c[2], **({'filler': True} if len(c) > 3 else {})}
                           for c in g], 'priority': 99, 'order': i, 'planned': now, 'campaign': 'batches'}
                for i, g in enumerate(groups, 1)]
@@ -382,7 +392,8 @@ class Batches:
         cur = B['cur'] = {'cand': None, 'label': f"v{v} {step['id']}", 'version': v, 'rsets': {opp: rs},
                           'phase': 'rest', 'batches': [], 'picked_at': now, 'after_step': step['id'],
                           'task_ids': [t['id'] for t in new]}
-        self.s.log(f"batches: after-queue {step['id']}: v{v} on the {len(lost)} {opp} {rs} cells v{src} lost "
+        target = rs if pin == 'ref' else 'current (unpinned)'
+        self.s.log(f"batches: after-queue {step['id']}: v{v} on {len(lost)} {opp} {target} cells from v{src} "
                    f"({len(new)} groups of {len(pool)} cells)")
         self.s.wake({'event_id': f"after-{step['id']}", 'bot': cur['label'], 'cells': len(lost), 'groups': len(new),
                      'at': now})

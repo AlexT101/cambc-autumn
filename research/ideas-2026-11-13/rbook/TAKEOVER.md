@@ -35,6 +35,14 @@ ownership, book-free host tests, suspect groups and the publication hold. Preser
 All old x2 sweep comparisons finished: forced Fish 26 exact; ordinary Fish 182 unique exact; Mite 202 unique
 exact (waiter reports 204 including duplicates/fillers). Foreign Mite candidates still await live validation.
 
+13:59 update: all replays collected; 259 clean Mite candidate cells are being recorded and checked. Foreign
+02harvest a is now an own-sweep win, but 04yin_yang a and 05space_station b still have no clean r11 own win.
+A bounded foreign validation upload is running (`mite-refresh-r11/live-upload.log`): one five-game group
+against r11 and one against current Mite, including fillers. The qualification bot must not become REST.
+Explicit scheduler cells steps now accept pin=none; source cells still come from refset r11, but the actual
+task uses no source pin and records refset=null. Seven scheduler tests pass. The old live runner was cleanly
+reloaded after all downloads completed to load the current create/activation coordination code.
+
 Systemd user service: `rbook-refresh-r11.service`. Artifacts/state:
 `/home/ubuntu/tmp-offload/rbook/refresh-r11/` (queue-state.json, build-state.json); journal via journalctl.
 A STOP file there yields before new phases/publication. The one refresh has a six-hour service cap.

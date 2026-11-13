@@ -121,6 +121,30 @@ class SchedPhases(unittest.TestCase):
         ls.append_jsonl(ls.DATA / "events.jsonl", {"ev": "created", "task": t["id"], "group": "g-" + t["id"],
                                                    "at": ls.now(), "live": version, "selected": version})
 
+    def test_explicit_cells_can_check_current_without_changing_source_pin(self):
+        oid, name = ls.TEAMS['mite']
+        cells = [dict(map=f'map{i}', map_id=f'id{i}', side='a') for i in range(5)]
+        source = dict(id='source', version=119, opp_id=oid, opp_name=name,
+                      refset='r11', purpose='set', games=cells)
+        ls.append_jsonl(ls.DATA/'tasks.jsonl', source)
+        step = dict(id='book-current', lost_by=119, version=127, opp='mite', refset='r11',
+                    pin='none', cells=[[c['map'], c['side']] for c in cells])
+        self.B['after_done'] = []
+        self.s.wake = lambda *a: None
+        self.b.start_cells({}, self.B, step)
+        planned = ls.read_jsonl(ls.DATA/'tasks.jsonl')
+        self.assertEqual(planned[0], source)
+        self.assertEqual(len(planned), 2)
+        self.assertEqual(planned[1]['pin'], 'none')
+        self.assertIsNone(planned[1]['refset'])
+        self.assertEqual(planned[1]['games'], cells)
+        self.assertEqual(self.B['cur']['task_ids'], [planned[1]['id']])
+
+    def test_current_cells_step_rejects_implicit_full_sweep(self):
+        with self.assertRaisesRegex(ValueError, 'explicit cells'):
+            self.b.start_cells({}, self.B, dict(id='bad', lost_by=119, version=127,
+                                               opp='mite', refset='r11', pin='none'))
+
     def test_cycle(self):
         # v118's own groups in flight (created, not played) don't hold the candidate back.
         for i in range(3):

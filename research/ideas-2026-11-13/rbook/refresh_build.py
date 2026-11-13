@@ -54,6 +54,7 @@ def build(work, refset, publish):
                        if r.get('refset') == refset and r['group'] in suspect})
     write(work/'excluded-groups.json', excluded)
     write(work/'build-started.json', {'at': ls.now(), 'host': str(host)})
+    write(work/'build-state.json', {'phase':'building', 'at':ls.now(), 'bot':str(host)})
     run(['./copybot', 'variants/rbook-x2', f'variants/{name}'], work/'copy.log')
     for directory in ('raw', 'ent'):
         (work/directory).symlink_to((OLD/directory).resolve(), target_is_directory=True)
