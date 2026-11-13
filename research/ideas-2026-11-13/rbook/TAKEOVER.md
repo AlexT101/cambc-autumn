@@ -19,7 +19,35 @@ the existing runner/waiters. No new agent was launched.
 rbuild.py now fails on bad exact verification or missing bundles; stage.sh propagates pipeline failures and
 does not write DONE on failure; hostswap.sh refuses existing destinations. No main bot source changed.
 
-## Active refresh
+## Current policy and queue (14:51 UTC)
+
+This section supersedes the older active-refresh notes below. User requires entries only for confirmed
+losses of the matching book-free host, separately by map, side, opponent and pin. Unknown cells and host
+wins do not qualify. A book divergence followed by a host win is success; exact current replay is not
+required. Masked v119 remains useful source data but differs in production fuel from the unmasked host.
+
+- REST remains v126. Matching unmasked chy-525f uploaded as v128 and began its Fish r8 / Mite r12 sweep
+  at 14:48 UTC. Mite r12 captured by group `01a1d561-a30d-7954-b85b-81ee8a4a348f`.
+- After that sweep, `loss-book-r12-mite-rest` runs existing v126 only on v128's Mite r12 losses.
+  No new upload. Winning games, including handover wins, provide current-pin source recordings.
+- Fish's latest current check was created 14:32 UTC and found no change on five cells; this is not proof
+  of no upload. Refresh Fish too if its behavior changes. The v128 sweep already includes Fish.
+- `loss_refresh.py` waits for complete clean baseline/source coverage, builds from target-pin wins,
+  applies `--host-losses-only`, and identifies forced drafts per recording. It runs the local stage and
+  forced-draft check, then holds for target-pin live checks including forced-draft collateral cells.
+  Work: `/home/ubuntu/tmp-offload/rbook/loss-v128`. It never uploads or changes pins.
+- The legacy r11 410-entry book passed the corrected local stage at 14:37 (4,834,462 bytes;
+  410 exact, fallback invalid 0). HOLD-LIVE-CHECK prevents its superseded selection being uploaded.
+- Foreign v127: requested r11 cells 3/3 exact wins; requested current cells 0/3 wins, all diverged.
+  The old scheduler summary incorrectly reused pinned games; raw current game rows are correct.
+  New task-scoped reports exclude fillers and cannot borrow another check's results.
+- Runner PID1320730 writes canonical data/run.log again. Big-arm capture remains paused until its
+  15:01 UTC resume timer; reassess only if downloads become the bottleneck.
+- Fish teammate was notified of live/book ownership and the host policy. Their six local macro jobs
+  remain under their control. No agent was launched by this coordinator.
+
+## Earlier active refresh (historical, superseded above)
+
 
 14:21 update: the first build reproduced all 410 entries exactly (208 Fish + 202 Mite), bundle 4,834,404
 bytes, but the fallback gate correctly held it for one invalid claim read in 03contours b. Diagnostic:

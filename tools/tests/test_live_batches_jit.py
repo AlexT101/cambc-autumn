@@ -139,11 +139,41 @@ class SchedPhases(unittest.TestCase):
         self.assertIsNone(planned[1]['refset'])
         self.assertEqual(planned[1]['games'], cells)
         self.assertEqual(self.B['cur']['task_ids'], [planned[1]['id']])
+        self.assertEqual(self.B['cur']['rsets'], {'mite': None})
+
+    def test_current_report_does_not_reuse_older_pinned_wins(self):
+        common = dict(version=127, opp_id=ls.TEAMS['mite'][0], purpose='set', map='map', side='a')
+        rows = [dict(common, task='old', match='old', group='old', pin='ref', refset='r11', result='win'),
+                dict(common, task='now', match='now', group='now', pin='none', refset=None, result='loss'),
+                dict(common, task='now', match='filler', group='now', pin='none', refset=None,
+                     map='filler', filler=True, result='win')]
+        for row in rows + [rows[1]]:
+            ls.append_jsonl(ls.DATA/'games.jsonl', row)
+        campaign = dict(version=127, rsets={'mite':'r11'}, task_ids=['now'])
+        self.assertEqual(lb.observed(ls, campaign), {'mite:current':dict(cells=1,wins=0,losses=1)})
+        # Legacy saved state carried r11 even for the current check; it still cannot borrow old wins.
+        self.assertEqual(lb.paired(ls,127,118,campaign['rsets'],['now'])['mite']['cells'], 0)
 
     def test_current_cells_step_rejects_implicit_full_sweep(self):
         with self.assertRaisesRegex(ValueError, 'explicit cells'):
             self.b.start_cells({}, self.B, dict(id='bad', lost_by=119, version=127,
                                                opp='mite', refset='r11', pin='none'))
+
+    def test_repin_can_limit_new_host_sweep_to_book_opponents(self):
+        old={'fish':'r8','mite':'r11','cats':'r8'}
+        (self.s.H/'refsets.json').write_text(json.dumps(old))
+        (self.s.H/'HOST').write_text('/tmp/frozen-host\n')
+        self.s.refsets=lambda: old
+        self.s.upload_name=lambda d,given=None: given
+        self.s.build=lambda c: (c,None)
+        self.s.wake=lambda *args: None
+        self.B['after_done']=[]
+        step=dict(id='loss-book-r12',kind='repin_replay',choose='HOST',refsets={'mite':'r12'},
+                  opponents=['fish','mite'],upload_name='Charybdis 525 + fuel 01-02')
+        cur=self.b.start_after({},self.B,step)
+        self.assertEqual(cur['rsets'],{'fish':'r8','mite':'r12'})
+        self.assertEqual(cur['cand']['note'],'Charybdis 525 + fuel 01-02')
+        self.assertEqual(json.loads((self.s.H/'refsets.json').read_text())['cats'],'r8')
 
     def test_cycle(self):
         # v118's own groups in flight (created, not played) don't hold the candidate back.

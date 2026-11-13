@@ -106,13 +106,50 @@ def specs(ls, version, rsets, now, part_list=None):
     return out
 
 
-def paired(ls, cand, rest, rsets):
+def campaign_games(ls, version, task_ids=None):
+    if task_ids is None:
+        return ls.games(version)
+    wanted, bad, seen, rows = set(task_ids), ls.suspect_groups(), set(), []
+    # Filter before deduplication: another check can reuse this version and these cells.
+    for row in ls.read_jsonl(ls.DATA / 'games.jsonl'):
+        key = (row.get('task'), row.get('match'))
+        if (row.get('version') != version or row.get('task') not in wanted or row.get('group') in bad
+                or row.get('filler') or row.get('result') not in ('win', 'loss') or key in seen):
+            continue
+        seen.add(key)
+        rows.append(row)
+    return rows
+
+
+def observed(ls, campaign):
+    out = {}
+    for row in campaign_games(ls, campaign['version'], campaign.get('task_ids')):
+        if row.get('purpose') != 'set' or row.get('filler'):
+            continue
+        opp = next((k for k, v in ls.TEAMS.items() if v[0] == row['opp_id']), row['opp_id'])
+        if opp not in campaign['rsets']:
+            continue
+        if not campaign.get('task_ids') and row.get('refset') != campaign['rsets'][opp]:
+            continue
+        key = f"{opp}:{row.get('refset') or 'current'}"
+        r = out.setdefault(key, dict(cells=0, wins=0, losses=0))
+        r['cells'] += 1
+        r['wins'] += row['result'] == 'win'
+        r['losses'] += row['result'] == 'loss'
+    return out
+
+
+def paired(ls, cand, rest, rsets, task_ids=None):
     """Candidate against the rest version on the cells both played, per opponent (same refset, map, side)."""
     out = {}
     for opp, rs in rsets.items():
         oid = ls.TEAMS[opp][0]
-        side = lambda v: {(r['map'], r['side']): r['result'] == 'win' for r in ls.games(v)
-                          if r['opp_id'] == oid and r.get('refset') == rs and r.get('purpose') == 'set'}
+        if rs is None:
+            continue  # Unpinned observations do not establish a shared opponent version.
+        side = lambda v: {(r['map'], r['side']): r['result'] == 'win'
+                          for r in campaign_games(ls, v, task_ids if v == cand else None)
+                          if r['opp_id'] == oid and r.get('refset') == rs and r.get('purpose') == 'set'
+                          and r.get('pin') == 'ref' and not r.get('filler')}
         a, b = side(cand), side(rest)
         both = a.keys() & b.keys()
         wa, wb = sum(a[k] for k in both), sum(b[k] for k in both)
@@ -316,14 +353,14 @@ class Batches:
             label = d.name
             c = dict(kind='queue', label=label, dir=str(d), base=f"live-main506 (= v{B['rest']})",
                      line=f"after-queue {step['id']}: {d}", prio=0,
-                     note=self.s.upload_name(d))
+                     note=self.s.upload_name(d, step.get('upload_name')))
             cand, err = self.s.build(c)
             if err:
                 self.s.log(f"batches: after-queue {step['id']}: {label} failed to build: {err[:200]}")
                 self.s.wake({'event_id': f"after-{step['id']}-build-failed", 'error': err[:300], 'at': self.s.now()})
                 choice.rename(choice.with_suffix('.failed'))
                 return None
-            rsets = dict(new)
+            rsets = {opp: new[opp] for opp in step.get('opponents', new)}
         if old != new:
             (self.s.H / f"refsets.json.bak-{step['id']}").write_text(json.dumps(old, indent=2) + '\n')
             tmp = f.with_suffix('.tmp')
@@ -389,7 +426,7 @@ class Batches:
             if t['id'] not in ids:
                 ls.append_jsonl(ls.DATA / 'tasks.jsonl', t)
         B['after_done'].append(step['id'])
-        cur = B['cur'] = {'cand': None, 'label': f"v{v} {step['id']}", 'version': v, 'rsets': {opp: rs},
+        cur = B['cur'] = {'cand': None, 'label': f"v{v} {step['id']}", 'version': v, 'rsets': {opp: rs if pin == 'ref' else None},
                           'phase': 'rest', 'batches': [], 'picked_at': now, 'after_step': step['id'],
                           'task_ids': [t['id'] for t in new]}
         target = rs if pin == 'ref' else 'current (unpinned)'
@@ -445,7 +482,7 @@ class Batches:
                for t in tasks) or not self.drained() or not self.collected(rest):
             return
         for c in todo:
-            c['final'] = paired(self.ls, c['version'], rest, c['rsets'])
+            c['final'] = paired(self.ls, c['version'], rest, c['rsets'], c.get('task_ids'))
             rec = {'event_id': f"batch-final-v{c['version']}", 'version': c['version'], 'label': c['label'],
                    'rest': rest, 'paired_vs_rest': c['final'], 'note': 'control complete', 'at': self.s.now()}
             self.ls.append_jsonl(self.s.H / 'gates.jsonl', rec)
@@ -488,7 +525,7 @@ class Batches:
         if last and not last.get('reported') and not cur.get('control') and self.collected(cur['version']):
             # Log only: with a switch per quota refill, a wake per batch would flood the coordinator (the gate wakes).
             last['reported'] = self.s.now()
-            res = paired(ls, cur['version'], self.control(B), cur['rsets'])
+            res = paired(ls, cur['version'], self.control(B), cur['rsets'], cur.get('task_ids'))
             self.s.log(f"batches: batch {len(cur['batches'])} of v{cur['version']} collected; paired {json.dumps(res)}")
         # Groups in flight don't matter (bound at creation); the rest version's own groups still need it selected.
         if rest_pending:
@@ -578,16 +615,16 @@ class Batches:
         for c in B['done']:
             if 'result' in c or not self.collected(c['version']):
                 continue
-            c['result'] = paired(self.ls, c['version'], self.control(B), c['rsets'])
+            c['result'] = paired(self.ls, c['version'], self.control(B), c['rsets'], c.get('task_ids'))
             c['phase'] = 'done'
             rec = {'event_id': f"batch-gate-v{c['version']}-{c.get('after_step', 'gate')}", 'version': c['version'],
                    'label': c['label'], 'rest': self.control(B), 'rsets': c['rsets'], 'batches': c['batches'],
-                   'paired_vs_rest': c['result'], 'minutes_live': minutes(B, time.time()), 'at': self.s.now()}
+                   'paired_vs_rest': c['result'], 'observed': observed(self.ls, c), 'minutes_live': minutes(B, time.time()), 'at': self.s.now()}
             self.ls.append_jsonl(self.s.H / 'gates.jsonl', rec)
             self.s.wake(rec)
             if c['version'] not in st['reported']:
                 st['reported'].append(c['version'])
-            self.s.log(f"batches: gate v{c['version']} ({c['label']}) collected: {json.dumps(c['result'])}")
+            self.s.log(f"batches: gate v{c['version']} ({c['label']}) collected: {json.dumps(c['result'])}; observed {json.dumps(rec['observed'])}")
             self.s.save(st)
 
     # ------------------------------------------------------------ hourly opponent observations (rest version only)
@@ -682,12 +719,13 @@ def report():
               f"{len(c['batches'])} batches")
         if not c.get('version'):
             continue
+        print(f"  observed: {json.dumps(observed(ls, c))}")
         # Against the control version, then against each earlier candidate on the same pins.
         refs = [(ctl, f"v{ctl}")] + [(o['version'], o['label']) for o in cands[:i]
                                      if o.get('version') and o['rsets'] == c['rsets']]
         for ref, name in refs:
             print(f"  against {name}:")
-            for opp, r in paired(ls, c['version'], ref, c['rsets']).items():
+            for opp, r in paired(ls, c['version'], ref, c['rsets'], c.get('task_ids')).items():
                 print(f"    {opp:<5} {r['refset']:<4} cand {r['cand_wins']}/{r['cells']}  ref "
                       f"{r['rest_wins']}/{r['cells']}  net {r['net']:+d}  flips {r['flips_for']}-{r['flips_against']} "
                       f"z {r['z']:+.2f}")

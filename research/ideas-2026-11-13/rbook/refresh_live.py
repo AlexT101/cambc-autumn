@@ -20,8 +20,19 @@ import ladder_scrims as ls
 import live_sched as sched
 
 
+def validate_live_results(results):
+    if not results or any(r['result'] != 'win' or r['diff'] is None for r in results):
+        raise RuntimeError('Live check lost or lacks replay evidence; preserve REST and inspect live-check-results.json')
+    return dict(wins=len(results), exact_wins=sum(r['diff'] == -1 for r in results),
+                wins_after_divergence=sum(r['diff'] != -1 for r in results))
+
+
 def run(work):
     state_file = work/'live-check-state.json'
+    if (work/'HOLD-LIVE-CHECK').exists():
+        write(state_file, {'phase':'held_policy','at':ls.now(),
+                          'reason':(work/'HOLD-LIVE-CHECK').read_text().strip()})
+        return
     if state_file.exists():
         raise RuntimeError('Live check already started; reconcile its state instead of retrying')
     write(state_file, {'phase':'waiting_for_local_checks', 'at':ls.now()})
@@ -101,20 +112,19 @@ def run(work):
     with cf.ThreadPoolExecutor(8) as pool:
         results=list(pool.map(check,selected.items()))
     write(work/'live-check-results.json',results)
-    if any(r['result']!='win' or r['diff']!=-1 for r in results):
-        raise RuntimeError('Current opponent differs or check lost; preserve REST and inspect live-check-results.json')
+    outcome = validate_live_results(results)
     st=sched.load()
     if st['batches']['rest']!=126 or st['batches']['cur'] is not None or sched.queue_lines():
         raise RuntimeError('Ownership changed before promotion')
     if any((sched.H/f).exists() for f in ('STOP','PAUSE','HOLD')) or (work/'STOP').exists():
         raise RuntimeError('Control marker before promotion')
-    write(state_file, {'phase':'promotion_requested','at':ls.now(),'version':version,'exact_wins':len(results)})
+    write(state_file, {'phase':'promotion_requested','at':ls.now(),'version':version,**outcome})
     (sched.H/'REST').write_text(f'{version}\n')
     deadline=time.monotonic()+900
     while time.monotonic()<deadline:
         live,selected_version,_=sched.submissions()
         if live==selected_version==version and sched.load()['batches']['rest']==version:
-            write(state_file, {'phase':'published','at':ls.now(),'version':version,'exact_wins':len(results)})
+            write(state_file, {'phase':'published','at':ls.now(),'version':version,**outcome})
             return
         time.sleep(30)
     raise RuntimeError('Promotion request needs reconciliation; do not resubmit')

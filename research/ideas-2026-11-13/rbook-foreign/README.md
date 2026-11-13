@@ -1,5 +1,13 @@
 # Other teams' wins against Fish r8 in the replay book (2026-11-13)
 
+## Mite live result, 14:28 UTC
+
+The three requested v127 cells won and replayed exactly against r11, then all three diverged and lost
+against current Mite (group `01a1d548-2bed-70e8-a7b9-a0c099eb8d96`, created 14:20:39 UTC).
+Do not admit these recordings for the current pin. This is three requested cells per check; fillers are
+excluded. The original scheduler summary accidentally reused pinned results; raw game records correctly
+show the three current losses. A win after divergence would qualify; exact current replay is not required.
+
 ## Mite refresh, 11:25 UTC
 
 `mine_mite.py` reads big-arm's capture database without platform requests and fetches a bounded set of

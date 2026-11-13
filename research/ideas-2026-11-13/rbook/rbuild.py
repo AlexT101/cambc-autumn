@@ -58,6 +58,10 @@ def select(a, opp, refset, tag):
     versions = {int(v) for v in a.versions.split(',')}
     cells = collections.defaultdict(list)
     host_won = set()
+    host_lost = set()
+    losses_only = getattr(a, 'host_losses_only', False)
+    if losses_only and not a.host_version:
+        raise ValueError('--host-losses-only requires a matching book-free --host-version')
     suspect = ls.suspect_groups()
     for line in open(GAMES):
         g = json.loads(line)
@@ -68,6 +72,8 @@ def select(a, opp, refset, tag):
         cell = (g['map'], g['side'])
         if a.host_version and g['version'] == a.host_version and g['result'] == 'win':
             host_won.add(cell)
+        if a.host_version and g['version'] == a.host_version and g['result'] == 'loss':
+            host_lost.add(cell)
         if g['version'] in versions and g['result'] == 'win' and g.get('replay') and (ROOT / g['replay']).exists():
             cells[cell].append(g)
     repro = None
@@ -102,6 +108,9 @@ def select(a, opp, refset, tag):
                     v = re.match(r'^.+-[ab]-v(\d+)-', key)
                     chosen.append(dict(key=key, replay=rep, side=side, map=mp, version=int(v.group(1)) if v else None, rounds=None, opp=tag))
     left = host_won if repro is None else host_won & repro
+    if losses_only:
+        # select() already fixes opponent and pin: Fish outcomes must not suppress Mite entries.
+        chosen = [c for c in chosen if (c['map'], c['side']) in host_lost - host_won]
     log(f'select {tag} {refset}: {len(chosen)} cells ({len(left)} of its {len(host_won)} live wins left to the host)')
     return chosen
 
@@ -293,6 +302,7 @@ def main():
     ap.add_argument('--refset', default='r8')
     ap.add_argument('--versions', default='117,118,119')
     ap.add_argument('--host-version', type=int)
+    ap.add_argument('--host-losses-only', action='store_true', help='keep only confirmed losses of the matching book-free host, separately for each opponent/refset; unknown cells are excluded')
     ap.add_argument('--extra')
     ap.add_argument('--host-repro', help="hostcheck.py's outputs (comma-separated, lines MAP SIDE OPP): of --host-version's live "
                     "wins, only the cells the host build replays exactly are left to it; the others get entries")
@@ -308,6 +318,7 @@ def main():
     ap.add_argument('--prio', choices=['recorded', 'plain', 'seeded'], default='recorded', help="build_book.py's --prio")
     ap.add_argument('--force-versions', help="versions of ours whose draft is not the host's: their entries' picks are forced "
                     "(the draft plays them while the opponent's picks match); 117-119 draft as 525 does")
+    ap.add_argument('--force-keys', type=Path, help='force only these recording keys, for versions with mixed natural and forced drafts')
     a = ap.parse_args()
     work = Path(a.work).expanduser()
     work.mkdir(parents=True, exist_ok=True)
@@ -347,9 +358,10 @@ def main():
     (work / 'fp_book.json').write_text(json.dumps({c['key']: fps[c['key']] for c in final}))
     (work / 'book_cells.json').write_text(json.dumps([{k: c[k] for k in ('key', 'map', 'side', 'version', 'rounds', 'opp')} for c in final], indent=0))
     dial = (['--cells', a.cells] if a.cells else []) + (['--cap', str(a.cap)] if a.cap is not None else [])
-    if a.force_versions:
-        fv = {int(v) for v in a.force_versions.split(',')}
-        forced = [c['key'] for c in final if c.get('version') in fv]
+    if a.force_versions or a.force_keys:
+        fv = {int(v) for v in a.force_versions.split(',')} if a.force_versions else set()
+        fk = set(a.force_keys.read_text().splitlines()) if a.force_keys else set()
+        forced = [c['key'] for c in final if c.get('version') in fv or c['key'] in fk]
         (work / 'force.txt').write_text(''.join(k + '\n' for k in forced))
         dial += ['--force', str(work / 'force.txt')]
         log(f'force: {len(forced)} entries play their own picks (versions {sorted(fv)})')

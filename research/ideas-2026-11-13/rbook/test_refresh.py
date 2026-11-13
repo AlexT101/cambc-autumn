@@ -9,9 +9,56 @@ from unittest import mock
 import oppwatch
 import rbuild
 import refresh_build
+import refresh_live
+import loss_refresh
 
 
 class RefreshGates(unittest.TestCase):
+    def test_loss_refresh_requires_complete_clean_host_coverage(self):
+        pins=dict(fish='r8',mite='r12')
+        tasks=[dict(id=opp,version=128,purpose='set',opp_name=name,refset=pins[opp],
+                    games=[dict(map='map',side='a')])
+               for opp,name in [('fish','Intercontinental Fish'),('mite','Mite')]]
+        tasks.append(dict(id='source',version=126,purpose='set',part='wins',opp_name='Mite',refset='r12'))
+        created={t['id']:dict(group=t['id']) for t in tasks}
+        rows=[dict(version=128,opp_name=t['opp_name'],map='map',side='a',result='loss') for t in tasks[:2]]
+        with mock.patch.object(loss_refresh.sched,'load',return_value={'batches':{'after_done':['wins']}}), \
+             mock.patch.object(loss_refresh.ls,'state',return_value=(tasks,created,set(created),set(),{})), \
+             mock.patch.object(loss_refresh.ls,'suspect_groups',return_value=set()), \
+             mock.patch.object(loss_refresh,'baseline_rows',return_value=rows):
+            self.assertTrue(loss_refresh.ready(128,pins,['wins']))
+            with mock.patch.object(loss_refresh,'baseline_rows',return_value=rows[:1]):
+                with self.assertRaisesRegex(RuntimeError,'missing cells'):
+                    loss_refresh.ready(128,pins,['wins'])
+            with mock.patch.object(loss_refresh.ls,'suspect_groups',return_value={'source'}):
+                with self.assertRaisesRegex(RuntimeError,'suspect'):
+                    loss_refresh.ready(128,pins,['wins'])
+
+    def test_live_win_after_divergence_counts_but_loss_does_not(self):
+        outcome = refresh_live.validate_live_results([dict(result='win',diff=-1),dict(result='win',diff=700)])
+        self.assertEqual(outcome, dict(wins=2,exact_wins=1,wins_after_divergence=1))
+        with self.assertRaisesRegex(RuntimeError,'lost'):
+            refresh_live.validate_live_results([dict(result='loss',diff=700)])
+        with self.assertRaisesRegex(RuntimeError,'evidence'):
+            refresh_live.validate_live_results([dict(result='win',diff=None)])
+
+    def test_loss_policy_separates_opponent_pin_and_unknown_cells(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            work=Path(tmp); replay=work/'replay.zip';replay.touch()
+            common=dict(status='finished',map='shared',side='a',rounds=10,replay=str(replay),group='clean')
+            rows=[dict(common,version=117,opp_name=opp,refset=pin,result='win',match=opp)
+                  for opp,pin in [('Mite','r12'),('Intercontinental Fish','r8')]]
+            rows += [dict(common,version=128,opp_name='Mite',refset='r12',result='loss',match='base-mite'),
+                     dict(common,version=128,opp_name='Intercontinental Fish',refset='r8',result='win',match='base-fish'),
+                     dict(common,version=117,opp_name='Mite',refset='r12',result='win',match='unknown',map='unknown'),
+                     dict(common,version=117,opp_name='Mite',refset='r13',result='win',match='newpin')]
+            games=work/'games.jsonl';games.write_text(''.join(json.dumps(row)+'\n' for row in rows))
+            args=types.SimpleNamespace(versions='117',host_version=128,host_losses_only=True,extra=None)
+            with mock.patch.object(rbuild,'GAMES',games), mock.patch.object(rbuild.ls,'suspect_groups',return_value=set()):
+                self.assertEqual(len(rbuild.select(args,'Mite','r12','mite')),1)
+                self.assertEqual(rbuild.select(args,'Intercontinental Fish','r8','fish'),[])
+                self.assertEqual(rbuild.select(args,'Mite','r13','mite'),[])
+
     def test_stage_rejects_successful_command_with_different_replays(self):
         text = 'plain: 24 games, 5 bodies handed over, invalid 0\n== 100M\nidentical replays: 51/52\n'
         with self.assertRaisesRegex(RuntimeError, '52 replays'):
