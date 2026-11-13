@@ -1,0 +1,15 @@
+diff -ru bots/variants/chy-ref/src/economy/bank.cc bots/variants/pb9-race07/src/economy/bank.cc
+--- bots/variants/chy-ref/src/economy/bank.cc	2026-11-13 01:55:39.400484737 +0000
++++ bots/variants/pb9-race07/src/economy/bank.cc	2026-11-13 07:18:40.787050572 +0000
+@@ -855,7 +855,10 @@
+             short_by -= a.visible ? a.gems : comms::bag_of(world, a.index);
+     if (short_by <= 0) return 0;
+     const float rate = world.ally_rate();
+-    return rate > 0 ? static_cast<int>(static_cast<float>(short_by) / rate) : rounds_left(world);
++    // Probe pb9-race: the race's rounds scaled by race_scale, so carriers close sooner (< 1) or later (> 1).
++    constexpr float race_scale = 0.7f;
++    return rate > 0 ? static_cast<int>(std::min(static_cast<float>(rounds_left(world)), race_scale * static_cast<float>(short_by) / rate))
++                    : rounds_left(world);
+ }
+ int race_left(const World& world) {
+     static BagKey last;

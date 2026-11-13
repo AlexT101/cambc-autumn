@@ -1,0 +1,4 @@
+warning,loser deaths/game,winner deaths/game,loser cost/game,winner cost/game,excess [95% CI],examples
+seen 6+,3.91,1.11,317,75.5,242 [168 .. 324],9af6ba6844bffaa0 r985 #4 (891); 1a53508aef8b96ee r942 #2 (884)
+seen <6,2.66,0.78,214,53.9,160 [109 .. 208],b29a405bf7050285 r613 #2 (758); 9d6fc57971ae72fb r1001 #6 (673)
+unseen,2.09,0.69,197,58.9,138 [95.0 .. 184],4e007ea7c5c7aa71 r1318 #4 (1157); 07392d3aa07e8439 r479 #8 (736)

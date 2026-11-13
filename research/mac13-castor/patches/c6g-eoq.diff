@@ -1,0 +1,90 @@
+diff -ruN bots/variants/c11-noscr/src/economy/shop.cc bots/variants/c6g-eoq/src/economy/shop.cc
+--- bots/variants/c11-noscr/src/economy/shop.cc	2026-11-13 08:12:37.140700924 +0000
++++ bots/variants/c6g-eoq/src/economy/shop.cc	2026-11-13 08:37:47.253087092 +0000
+@@ -728,9 +728,9 @@
+ }
+ 
+ // Our times home: turns starting on our spawn after one alive that started off it (a recall, a walk home or a respawn),
+-// over our turns alive, with a prior of one visit every visit_prior rounds (chy-ref's Prism against an idle
+-// enemy on the study maps: 5.6 recalls by round 600, 2026-11-13).
+-constexpr float visit_prior = 107;
++// over our turns alive, with a prior of one visit every visit_prior rounds (chy-ref's bodies, all types, against
++// an idle enemy on the study maps: 6.6 completed recalls and respawns each by round 600, 2026-11-13).
++constexpr float visit_prior = 90;
+ struct HomeVisits {
+     int visits = 0;
+     bool home = true; // our last turn alive started on spawn (the first does)
+@@ -738,10 +738,10 @@
+ HomeVisits home_visits;
+ float visit_rounds() { return (static_cast<float>(upkeep.turns) + visit_prior) / static_cast<float>(home_visits.visits + 1); }
+ 
+-// The stop's value as home_trip prices it for an empty bag: the heal, and the next emblem once our
+-// gold completes it; nothing once the end is close. Prism: a purchase skipped at this stop is not lost but made at our next time home, on average `visit_rounds`
+-// later (home_visits), and it saves gain / T a round over the T rounds our farming has left: the stop's purchase
+-// is worth what buying then would forgo, gain x min(1, visit_rounds / T).
++// The stop's value as home_trip prices it for an empty bag: the heal, and the next emblem once our gold completes
++// it; nothing once the end is close. A purchase skipped at this stop is not lost but made at our next time home,
++// on average `visit_rounds` later (home_visits), and it saves gain / T a round over the T rounds our farming has
++// left: the stop's purchase is worth what buying then would forgo, gain x min(1, visit_rounds / T).
+ FarmRecall farm_recall(const World& world, Pathing& pathing, int channel) {
+     FarmRecall r{channel, my_health() < my_max_health() ? 1 : 0, 0.0f};
+     if (closing(world, pathing)) return r;
+@@ -749,8 +749,7 @@
+     if (shops_at_home(world))
+         if (const auto& p = prices(world); my_gold() >= p.next.cost && std::isfinite(p.gain)) {
+             float due = 1;
+-            if (world.me().facts().passive == Passive::gem_focus)
+-                if (const float horizon = gems_share(world) * rounds_per_gem; horizon > 0) due = std::min(1.0f, visit_rounds() / horizon);
++            if (const float horizon = gems_share(world) * rounds_per_gem; horizon > 0) due = std::min(1.0f, visit_rounds() / horizon);
+             r.value += p.gain * due;
+         }
+     return r;
+@@ -817,13 +816,9 @@
+     if (gold < shard_price || (!prism && gold < emblem_price && !begun_emblem(world, my_items()))) return false;
+     const vec2 here = my_position();
+     if (test(world.map().ally_spawn, here) || safety.threatened(here)) return false;
+-    // The trip costs the recall and the walk back out; arriving by recall, the heal takes the turn.
+-    if (prism) {
+-        if (winning_bag(world) || closing(world, pathing)) return false;
+-        const int back = pathing.to_ally_spawn().at(here);
+-        if (back == unreachable) return false;
+-        const int hurt = my_health() < my_max_health() ? 1 : 0;
+-        const int there = std::min(back, recall_turns(world) + hurt);
++    // The trip costs the recall (`there`, there by walking if quicker) and the walk back out; arriving by recall,
++    // the heal takes the turn.
++    const auto due = [&](int there, int back, float heal) {
+         // The trip's rounds beyond the way to the next work anyway: back out to farm's group, not here.
+         float trip = static_cast<float>(there + back);
+         if (const int g = memory.farm_group; g >= 0 && g < static_cast<int>(world.camps.size()))
+@@ -831,8 +826,8 @@
+                 if (const int walk = centre->at(here), out = pathing.centre_to_spawn(g); walk != unreachable && out != unreachable)
+                     trip = std::min(trip, static_cast<float>(std::max(0, there + out - walk)));
+         // The heal pays its part of the trip; the purchase, the rest.
+-        const float cost = std::max(0.0f, trip - heal_rounds_now(world));
+-        if (cost <= 0) return !awake_here(world, here);
++        const float cost = std::max(0.0f, trip - heal);
++        if (cost <= 0) return true;
+         // When to go, with gold still arriving: the purchase saves `gain` rounds over the horizon T our farming has
+         // left, s = gain / G a gold spent, so gold held unspent forgoes h = s / T rounds a gold-round, and a trip of
+         // `cost` rounds at our gold income D is best made at the economic order quantity sqrt(2 cost D / h):
+@@ -841,12 +836,17 @@
+         const auto quote = affordable_prefix(world);
+         const float spent = static_cast<float>(quote.count * shard_price);
+         const float horizon = gems_share(world) * rounds_per_gem, to_come = gold_income(world) * horizon;
+-        if (!std::isfinite(quote.gain) || !(quote.gain > cost) || !(quote.gain * spent >= 2.0f * cost * to_come || spent >= to_come)) return false;
++        return std::isfinite(quote.gain) && quote.gain > cost && (quote.gain * spent >= 2.0f * cost * to_come || spent >= to_come);
++    };
++    const int back = pathing.to_ally_spawn().at(here);
++    if (prism) {
++        if (winning_bag(world) || closing(world, pathing) || back == unreachable) return false;
++        const int hurt = my_health() < my_max_health() ? 1 : 0;
++        if (!due(std::min(back, recall_turns(world) + hurt), back, heal_rounds_now(world))) return false;
+     } else {
+         const auto stop = home_trip(world, pathing, recall_turns(world), winning_bag(world));
+         if (stop.short_gold > 0) return false;
+-        const int back = pathing.to_ally_spawn().at(here);
+-        if (back != unreachable && stop.heal + params::shop_gain_scale * affordable_prefix(world).gain < static_cast<float>(std::min(back, stop.channel + stop.hurt) + back)) return false;
++        if (back != unreachable && !due(std::min(back, stop.channel + stop.hurt), back, stop.heal)) return false;
+     }
+     return !awake_here(world, here);
+ }

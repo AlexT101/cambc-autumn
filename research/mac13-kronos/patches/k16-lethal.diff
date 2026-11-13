@@ -1,0 +1,198 @@
+diff -ruN bots/variants/chy-ref/src/bot.cc bots/variants/k16-lethal/src/bot.cc
+--- bots/variants/chy-ref/src/bot.cc	2026-11-13 01:55:42.268220790 +0000
++++ bots/variants/k16-lethal/src/bot.cc	2026-11-13 08:01:50.473118099 +0000
+@@ -363,6 +363,17 @@
+     return planned.attacked;
+ }
+ 
++// Our Prism can stun from here an enemy its burst kills (prism_war.h), the only one that could hit us
++// here before our next turn: the cast forbids the walk, so we stand, as retreat's sure kill does.
++bool stun_kill_here(const World& world, Safety& safety) {
++    const vec2 here = my_position();
++    const int reach = prism_stun_reach(world, here);
++    if (reach < 0 || !my_can_cast()) return false;
++    for (const auto& e : world.enemies)
++        if (prism_stun_kills(world, e, here, reach) && only_threat(safety, here, e.index)) return true;
++    return false;
++}
++
+ // yield_capture steps only off a cleared group's tile: most turns need none of its tests.
+ bool on_cleared_group(const World& world) {
+     const vec2 here = my_position();
+@@ -472,6 +483,12 @@
+             guard_steps(world, pathing, safety);
+             if (keep_bid(world, pathing, safety).attacked) see_stuns(world, safety), safety.refresh();
+             pathing.set_guard(nullptr);
++        } else if (stun_kill_here(world, safety)) {
++            // So does our Prism's stun on one its burst kills (prism_war.h): the search from here, before the walk.
++            guard_steps(world, pathing, safety);
++            strike_after(world, pathing, safety);
++            if (!my_can_attack() || !my_can_cast()) see_stuns(world, safety), safety.refresh();
++            pathing.set_guard(nullptr);
+         }
+         retreat(world, pathing, safety, memory);
+         return;
+diff -ruN bots/variants/chy-ref/src/bot_parts.h bots/variants/k16-lethal/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 01:55:42.268263971 +0000
++++ bots/variants/k16-lethal/src/bot_parts.h	2026-11-13 05:02:58.866904098 +0000
+@@ -4,6 +4,7 @@
+ // definition is in the file named above its declaration. The per-turn flags below are reset in play_turn.
+ #pragma once
+ #include "bot.h"
++#include "combat/prism_war.h"
+ #include "model/follow.h"
+ #include <algorithm>
+ #include <array>
+diff -ruN bots/variants/chy-ref/src/combat/fight.cc bots/variants/k16-lethal/src/combat/fight.cc
+--- bots/variants/chy-ref/src/combat/fight.cc	2026-11-13 01:55:42.268486924 +0000
++++ bots/variants/k16-lethal/src/combat/fight.cc	2026-11-13 08:01:50.472934347 +0000
+@@ -742,6 +742,17 @@
+     return std::max(0, dist(here, *t.altar) - submit - range) < t.turns ? steps : unreachable;
+ }
+ 
++// Our Prism's two-turn burst (prism_war.h) covers e, or for Cassi or Issac the other body while it is a
++// route to the kill (partner_bound): either death is both. An enemy Prism is prism_dominant_over's: its
++// own burst may cover ours.
++bool burst_kills(const World& world, const ChampionBelief& e) {
++    const auto& me = world.me();
++    if (!is_prism(me) || is_prism(e)) return false;
++    if (prism_covers(me, e)) return true;
++    const auto* p = linked_partner(world, e);
++    return p && partner_bound(world, e) < no_partner_bound && prism_covers(me, *p);
++}
++
+ // prey's tests before the fight: e is worth chasing from `here` if that fight is won. `held`: the
+ // gems of a cleared group it stands on.
+ bool preyable(const World& world, Safety& safety, const ChampionBelief& e, vec2 here, int range, int& held) {
+@@ -752,11 +763,13 @@
+     // Out of reach on its own ground only when hurt or carrying a bag we can stop: fights at
+     // central altars straddle the line, and a beaten enemy otherwise escapes a step across it,
+     // but a bag has to stop at an altar to score, and a kill takes it. An enemy holding a
+-    // cleared group is taking its gems: killing it is how a capture is contested.
++    // cleared group is taking its gems: killing it is how a capture is contested. A Prism our Prism
++    // dominates (prism_war.h) dies to our burst before it can cross back: hunted on its ground too.
++    // One our Prism's burst kills counts as hurt: it dies before its two steps back.
+     const int g = world.map().group_at(e.pos);
+     held = g >= 0 && world.camps[g].state == CampState::cleared ? world.map().groups[g].gems : 0;
+     if (!(comeback::cooked(world) && pair_gems(world, e) >= params::comeback::bar_bag) && dist(here, e.pos) > range && !own_ground(world, e.pos) && e.health >= params::hurt_health_fraction * e.max_health && held == 0
+-        && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable))
++        && !burst_kills(world, e) && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable) && !prism_dominant_over(world, e))
+         return false;
+     // Every tile in reach of it would make us retreat at once.
+     return !pack_covers(world, safety, e.pos, range);
+diff -ruN bots/variants/chy-ref/src/combat/prism_war.h bots/variants/k16-lethal/src/combat/prism_war.h
+--- bots/variants/chy-ref/src/combat/prism_war.h	1970-01-01 00:00:00.000000000 +0000
++++ bots/variants/k16-lethal/src/combat/prism_war.h	2026-11-13 08:01:50.472568432 +0000
+@@ -0,0 +1,90 @@
++// The Prism war's duel model: how two Prisms' two-turn bursts compare (rules: prism, abilities.stun,
++// combat.modifiers), both slots taken as ready. The stun (1.5 x Focus) removes the victim's next
++// turn and the ground spell (1.0 x Focus) follows on the caster's next. When only one side's burst
++// covers the other's health, that side wins the exchange whoever starts: even with the victim's turn
++// in between (team order flips each round), the victim's own burst does not kill it.
++#pragma once
++#include "../model/world.h"
++
++namespace aph {
++
++inline bool is_prism(const ChampionBelief& c) { return c.facts().passive == Passive::gem_focus; }
++
++// The two-turn burst of a's damage spells as it lands on v: a's Focus (a Prism's carries its bag's
++// +1.5 a gem), its damage modifiers (Skirmish, Collectors: `scale`) and v's Durability (`taken`).
++// An enemy's Focus is its last reading, less a bag believed tributed or lost (drop_bag): the world
++// keeps no belief of gems gained out of sight, so none is added.
++inline float prism_burst(const ChampionBelief& a, const ChampionBelief& v) {
++    float multiplier = 0;
++    for (const auto& s : a.facts().abilities)
++        if (s.kind == AbilityKind::damage) multiplier += s.multiplier;
++    return multiplier * a.focus * a.damage_scale() * v.taken;
++}
++
++// a's burst takes all of v's health and shield.
++inline bool prism_covers(const ChampionBelief& a, const ChampionBelief& v) { return prism_burst(a, v) >= v.health + v.shield; }
++
++// The living enemy Prism, or null: a team cannot repeat a pick, so there is at most one.
++inline const ChampionBelief* enemy_prism(const World& world) {
++    for (const auto& e : world.enemies)
++        if (e.alive && is_prism(e)) return &e;
++    return nullptr;
++}
++
++// We, a Prism, win the exchange with the enemy Prism e whoever starts: our burst covers its health
++// and its burst does not cover ours.
++inline bool prism_dominant_over(const World& world, const ChampionBelief& e) {
++    const auto& me = world.me();
++    return is_prism(me) && is_prism(e) && me.alive && e.alive && prism_covers(me, e) && !prism_covers(e, me);
++}
++
++// The reverse: its burst covers ours and ours does not cover its.
++inline bool prism_outmatched_by(const World& world, const ChampionBelief& e) {
++    const auto& me = world.me();
++    return is_prism(me) && is_prism(e) && me.alive && e.alive && prism_covers(e, me) && !prism_covers(me, e);
++}
++
++// Our stun's reach from here, or -1: we are a Prism yet to walk, the stun is ready and the ground
++// spell is by our next turn, so a stun's burst is whole.
++inline int prism_stun_reach(const World& world, vec2 here) {
++    const auto& me = world.me();
++    if (!is_prism(me) || here != world.turn_start) return -1;
++    for (int s = 0; s < 2; ++s)
++        if (me.facts().abilities[s].kind == AbilityKind::damage && !me.ability_ready(s, world.round + 1)) return -1;
++    return me.ready_stun_reach(world.round);
++}
++
++// Our stun from here (within `reach`) on e starts a burst that covers its health: the stun takes its
++// next turn, so it cannot leave before the ground spell follows on ours. Marcella keeps her turn, and
++// on its own spawn the lost turn's end heals it to full.
++inline bool prism_stun_kills(const World& world, const ChampionBelief& e, vec2 here, int reach) {
++    return e.alive && e.visible && e.facts().passive != Passive::stun_immune && dist(here, e.pos) <= reach
++           && !test(world.map().enemy_spawn, e.pos) && prism_covers(world.me(), e);
++}
++
++// Where an enemy Prism that outmatches ours may strike: while it was seen within capture_time rounds
++// (a capture's hold), the tiles within its spells' reach from its sighting (the ground spell's 5:
++// range 4 and its 3x3; a spell excludes walking) and a step a round since.
++struct PrismThreat {
++    vec2 at{-1, -1};
++    int radius = -1;
++    bool on() const { return radius >= 0; }
++    // A camp tile of G lies within the radius.
++    bool reaches(const CampGroup& G) const {
++        if (!on()) return false;
++        for (const auto& m : G.members)
++            if (dist(at, m.pos) <= radius) return true;
++        return false;
++    }
++};
++inline PrismThreat prism_threat(const World& world) {
++    PrismThreat t;
++    const auto* e = enemy_prism(world);
++    if (!e || !in_bounds(e->pos) || (e->pos_source != Source::seen && e->pos_source != Source::comms)) return t;
++    const int age = world.round - e->pos_round;
++    if (age < 0 || age > cambc::constants::capture_time || !prism_outmatched_by(world, *e)) return t;
++    t.at = e->pos, t.radius = e->facts().cast_reach() + age;
++    return t;
++}
++
++} // namespace aph
+diff -ruN bots/variants/chy-ref/src/model/world.cc bots/variants/k16-lethal/src/model/world.cc
+--- bots/variants/chy-ref/src/model/world.cc	2026-11-13 01:55:42.271710257 +0000
++++ bots/variants/k16-lethal/src/model/world.cc	2026-11-13 05:02:58.869690915 +0000
+@@ -1,4 +1,5 @@
+ #include "world.h"
++#include "../combat/prism_war.h"
+ #include "../emblems.h"
+ #include "turn_order.h"
+ #include <algorithm>
+@@ -2394,7 +2395,11 @@
+ }
+ 
+ [[gnu::flatten]] void World::track(ChampionBelief& b) {
+-    if (round - b.fixed.round > params::track_horizon) {
++    // Our Prism keeps a Prism it dominates for a capture's hold (what a farm commits to), so a chase is
++    // not dropped the moment it steps out of sight. Only our Prism's instance reads this world.
++    const int horizon = prism_dominant_over(*this, b) ? std::max(params::track_horizon, static_cast<int>(cambc::constants::capture_time))
++                                                      : params::track_horizon;
++    if (round - b.fixed.round > horizon) {
+         b.tracked = false;
+         return;
+     }

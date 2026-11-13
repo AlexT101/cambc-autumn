@@ -1,0 +1,272 @@
+diff -ruN bots/variants/chy-ref/src/bot_parts.h bots/variants/k13-shun/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 01:55:42.268263971 +0000
++++ bots/variants/k13-shun/src/bot_parts.h	2026-11-13 05:05:04.656708380 +0000
+@@ -4,6 +4,7 @@
+ // definition is in the file named above its declaration. The per-turn flags below are reset in play_turn.
+ #pragma once
+ #include "bot.h"
++#include "combat/prism_war.h"
+ #include "model/follow.h"
+ #include <algorithm>
+ #include <array>
+diff -ruN bots/variants/chy-ref/src/combat/prism_war.h bots/variants/k13-shun/src/combat/prism_war.h
+--- bots/variants/chy-ref/src/combat/prism_war.h	1970-01-01 00:00:00.000000000 +0000
++++ bots/variants/k13-shun/src/combat/prism_war.h	2026-11-13 06:36:05.359591041 +0000
+@@ -0,0 +1,90 @@
++// The Prism war's duel model: how two Prisms' two-turn bursts compare (rules: prism, abilities.stun,
++// combat.modifiers), both slots taken as ready. The stun (1.5 x Focus) removes the victim's next
++// turn and the ground spell (1.0 x Focus) follows on the caster's next. When only one side's burst
++// covers the other's health, that side wins the exchange whoever starts: even with the victim's turn
++// in between (team order flips each round), the victim's own burst does not kill it.
++#pragma once
++#include "../model/world.h"
++
++namespace aph {
++
++inline bool is_prism(const ChampionBelief& c) { return c.facts().passive == Passive::gem_focus; }
++
++// The two-turn burst of a's damage spells as it lands on v: a's Focus (a Prism's carries its bag's
++// +1.5 a gem), its damage modifiers (Skirmish, Collectors: `scale`) and v's Durability (`taken`).
++// An enemy's Focus is its last reading, less a bag believed tributed or lost (drop_bag): the world
++// keeps no belief of gems gained out of sight, so none is added.
++inline float prism_burst(const ChampionBelief& a, const ChampionBelief& v) {
++    float multiplier = 0;
++    for (const auto& s : a.facts().abilities)
++        if (s.kind == AbilityKind::damage) multiplier += s.multiplier;
++    return multiplier * a.focus * a.damage_scale() * v.taken;
++}
++
++// a's burst takes all of v's health and shield.
++inline bool prism_covers(const ChampionBelief& a, const ChampionBelief& v) { return prism_burst(a, v) >= v.health + v.shield; }
++
++// The living enemy Prism, or null: a team cannot repeat a pick, so there is at most one.
++inline const ChampionBelief* enemy_prism(const World& world) {
++    for (const auto& e : world.enemies)
++        if (e.alive && is_prism(e)) return &e;
++    return nullptr;
++}
++
++// We, a Prism, win the exchange with the enemy Prism e whoever starts: our burst covers its health
++// and its burst does not cover ours.
++inline bool prism_dominant_over(const World& world, const ChampionBelief& e) {
++    const auto& me = world.me();
++    return is_prism(me) && is_prism(e) && me.alive && e.alive && prism_covers(me, e) && !prism_covers(e, me);
++}
++
++// The reverse: its burst covers ours and ours does not cover its.
++inline bool prism_outmatched_by(const World& world, const ChampionBelief& e) {
++    const auto& me = world.me();
++    return is_prism(me) && is_prism(e) && me.alive && e.alive && prism_covers(e, me) && !prism_covers(me, e);
++}
++
++// Where an enemy Prism that can kill us may strike: while it was seen within capture_time rounds
++// (a capture's hold), the tiles within its spells' reach from its sighting (the ground spell's 5:
++// range 4 and its 3x3; a spell excludes walking) and a step a round since.
++struct PrismThreat {
++    vec2 at{-1, -1};
++    int radius = -1;
++    // For the traces: the Prism, the body at stake, the burst on it and its health and shield.
++    const ChampionBelief* by = nullptr;
++    const ChampionBelief* body = nullptr;
++    float burst = 0, stake = 0;
++    bool on() const { return radius >= 0; }
++    // A camp tile of G lies within the radius.
++    bool reaches(const CampGroup& G) const {
++        if (!on()) return false;
++        for (const auto& m : G.members)
++            if (dist(at, m.pos) <= radius) return true;
++        return false;
++    }
++};
++// On when the enemy Prism can kill us: our Prism outmatched by it (prism_outmatched_by: a level duel
++// is no reason to leave the farm); anyone else when its burst covers our health and shield (its stun
++// takes the turn we would flee in; a step out of the stun's 4 stays in the ground spell's 5). Either
++// of Cassi and Issac dying kills both, so for them the weaker body is at stake: when ours is not
++// covered, the partner's last reading (none: ours alone) is tested, each body with its own Durability.
++inline PrismThreat prism_threat(const World& world) {
++    PrismThreat t;
++    const auto* e = enemy_prism(world);
++    if (!e || !in_bounds(e->pos) || (e->pos_source != Source::seen && e->pos_source != Source::comms)) return t;
++    const int age = world.round - e->pos_round;
++    const auto& me = world.me();
++    if (age < 0 || age > cambc::constants::capture_time || !me.alive) return t;
++    const ChampionBelief* body = &me;
++    if (is_prism(me)) {
++        if (!prism_outmatched_by(world, *e)) return t;
++    } else {
++        if (const auto* p = linked_partner(world, me); p && p->alive && p->stats_round >= 0 && !prism_covers(*e, me)) body = p;
++        if (!prism_covers(*e, *body)) return t;
++    }
++    t.at = e->pos, t.radius = e->facts().cast_reach() + age;
++    t.by = e, t.body = body, t.burst = prism_burst(*e, *body), t.stake = body->health + body->shield;
++    return t;
++}
++
++} // namespace aph
+diff -ruN bots/variants/chy-ref/src/economy/farm.cc bots/variants/k13-shun/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 01:55:42.269710230 +0000
++++ bots/variants/k13-shun/src/economy/farm.cc	2026-11-13 06:35:58.125714767 +0000
+@@ -7,9 +7,28 @@
+ namespace {
+ 
+ constexpr float stickiness = 1.2f;
++// An avoided group's worth (prism_threat): only a ranking device, far below any two groups' rates'
++// ratio, so every group not avoided goes first and the avoided keep their order among themselves.
++constexpr float prism_avoid_scale = 1e-6f;
+ // pack_zone's cost with a bag at stake: p50 0.7k, p99 3.3k, at most ~10k (wa maps, real budget).
+ constexpr std::uint64_t pack_zone_cost_bound = 3500;
+ 
++// Debug builds only (empty in release), once a farm turn: a FARMT line, and a SHUN line while prism_threat is
++// on (its last field: the body at stake, the partner's for Cassi and Issac when it is the weaker).
++void trace_shun(const World& world, const PrismThreat& threat) {
++    debug_block({
++        static int traced = -1;
++        if (traced != world.round) {
++            traced = world.round;
++            const auto id = static_cast<std::uint32_t>(world.me().handle);
++            std::printf("FARMT %d %u %d\n", world.round, id, static_cast<int>(world.me().type));
++            if (threat.on())
++                std::printf("SHUN %d %u %u %.0f %.0f %u\n", world.round, id, static_cast<std::uint32_t>(threat.by->handle), threat.burst,
++                            threat.stake, static_cast<std::uint32_t>(threat.body->handle));
++        }
++    });
++}
++
+ // Pathing::attack_tiles once prepared, null if preparing could take the fuel below `floor()`.
+ // Member tiles are static once prepared, so the union is kept while the same members live.
+ struct KeptAttackTiles {
+@@ -211,7 +230,7 @@
+ // Our farm choice or claim, cleared this turn and short of holders, goes to the nearest of the
+ // allies in sight claiming it (ties to the lower index), so the others move on rather than split
+ // the share. Before anything else farm does, since a ranged hit in passing would cost the step.
+-bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
++bool pick_up(const World& world, Pathing& pathing, Memory& memory, const PrismThreat& threat) {
+     if (!my_can_move() || memory.banking) return false;
+     const auto& map = world.map();
+     const vec2 here = my_position();
+@@ -220,7 +239,8 @@
+         const auto& G = map.groups[g];
+         const auto& c = world.camps[g];
+         if (c.state != CampState::cleared || c.state_round != world.round || G.has_monolith || G.gems + G.gold == 0
+-            || test(G.tiles(), here) || sole_capture_holder(world, G) || enemy_on(world, G.tiles()) || left_for_prism(world, pathing, g))
++            || test(G.tiles(), here) || sole_capture_holder(world, G) || enemy_on(world, G.tiles()) || left_for_prism(world, pathing, g)
++            || threat.reaches(G))
+             continue;
+         // A holder already there yields to us if our hold pays more (value_holder).
+         const bool outvalues = outvalues_holders(world, G);
+@@ -651,7 +671,10 @@
+ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     world.throw_if_stale();
+     auto& memo = farm_memo();
+-    if (!banking && !repricing && pick_up(world, pathing, memory)) return true;
++    // Once a farm call: nothing before its uses below changes the world.
++    const PrismThreat threat = prism_threat(world);
++    if constexpr (!repricing) trace_shun(world, threat);
++    if (!banking && !repricing && pick_up(world, pathing, memory, threat)) return true;
+     const auto& map = world.map();
+     const auto& groups = map.groups;
+     // Before our own facts below: a turn handed to farm_banking reads them there.
+@@ -761,11 +784,22 @@
+     // With three picks, Tavi takes the harmless gold-only groups on maps of pure-gold groups. Cassi
+     // farms with the pack: Intercontinental Fish's deals 80% of its camp damage in crews of 3+.
+     const bool gold_farmer = farms_gold(world, world.me());
++    // An enemy Prism seen lately that can kill us (`threat`): we take a group in its reach only
++    // when no other is left, every worth below scaled by this. Unless every group lies in its reach,
++    // such a group is not hit in passing either (our last choice included) until the loop has picked
++    // it as the only one left (avoided_pick), and last turn's choice does not lead the loop's order.
++    const auto avoid_scale = [&](int g) __attribute__((always_inline)) { return threat.reaches(groups[g]) ? prism_avoid_scale : 1.0f; };
++    bool threat_everywhere = threat.on();
++    for (int g = 0; threat_everywhere && g < static_cast<int>(groups.size()); ++g)
++        if (!groups[g].has_monolith && groups[g].gems + groups[g].gold > 0 && !threat.reaches(groups[g])) threat_everywhere = false;
++    const bool avoiding = threat.on() && !threat_everywhere;
++    int avoided_pick = -1;
+     // A ranged hit in passing costs the walk: only for our choice, or gems no ally will clear. A
+     // group that hits back and that we will not finish is only woken by it: hit one only while an
+     // ally clears it or, melee, once every striker is awake anyway. Allies merely walking past
+     // its reach clear nothing.
+     const auto passing = [&](int g) __attribute__((always_inline)) {
++        if (avoiding && g != avoided_pick && threat.reaches(groups[g])) return false;
+         if (g == memory.farm_group) return true;
+         // The clear's price last: the other tests are cheap reads.
+         if (taken(g)) return false;
+@@ -1319,11 +1353,11 @@
+     // First readings of each group (clears, fields) can cost several times the estimate: stop with
+     // enough left for the walk after it, and read last turn's choice first so that a cut-short loop
+     // still weighs it. Without one, the nearest group worth farming as the crow flies.
+-    int first = memory.farm_group >= 0 && memory.farm_group < n_groups ? memory.farm_group : -1;
++    int first = memory.farm_group >= 0 && memory.farm_group < n_groups && !(avoiding && threat.reaches(groups[memory.farm_group])) ? memory.farm_group : -1;
+     if (first < 0) {
+         int nearest = unreachable;
+         for (int g = 0; g < n_groups; ++g) {
+-            if (groups[g].has_monolith || groups[g].gems + groups[g].gold == 0) continue;
++            if (groups[g].has_monolith || groups[g].gems + groups[g].gold == 0 || (avoiding && threat.reaches(groups[g]))) continue;
+             const int steps = dist(here, groups[g].centre);
+             if (steps < nearest) first = g, nearest = steps;
+         }
+@@ -1852,7 +1886,7 @@
+             known.version = belief.version, known.fastest_strength = strength, known.fastest = fastest_clear(world, g, strength);
+         const float bonus = keep_bonus(group);
+         // Ren's for the rated prunes; its plain ones keep the fastest.
+-        const float exposed = exposure(g) * (pull.on && home_side(map, g, opening) < 0.5f ? pull.deny_scale : 1.0f);
++        const float exposed = exposure(g) * (pull.on && home_side(map, g, opening) < 0.5f ? pull.deny_scale : 1.0f) * avoid_scale(g);
+         const float quickest = rated && reflect > 0 ? reflected_clear(world, g, strength, reflect) : known.fastest;
+         const int walk = known.walk;
+         // From the altar after the tribute, the cycle may go out by way of spawn.
+@@ -1950,7 +1984,7 @@
+                 if (walk != unreachable && inner != unreachable) {
+                     steps = walk + cambc::constants::tp_crystal_time + inner
+                             + (pathing.centre_to_altar(g) == unreachable ? recall_turns(world) : 0);
+-                    if (crystal == 1) toll = prices(world).per_gold * static_cast<float>(cambc::consumable_type::tp_crystal.cost());
++                    if (crystal == 1) toll = prices(world).per_gold * static_cast<float>(cambc::consumable_type::tp_crystal.cost()) * avoid_scale(g);
+                 }
+             }
+             steps = steps == unreachable || out == unreachable ? unreachable : steps + out;
+@@ -1989,7 +2023,7 @@
+         const int there = std::max(reach, respawn);
+         // A Monolith is a crew's, never a help call's.
+         if (!banks_bag && group.strength > 0 && !group.has_monolith && belief.state == CampState::alive && steps <= params::help_radius
+-            && (steps < help_steps || (steps == help_steps && earlier(g, help_group))) && struggling(g))
++            && (steps < help_steps || (steps == help_steps && earlier(g, help_group))) && !threat.reaches(group) && struggling(g))
+             help_group = g, help_steps = steps;
+         // A capture's gold that completes an emblem shortens the trip home (HomeTrip::rounds) though worth
+         // counts it too: floored, so a chain never costs less than nothing and every filter below agrees.
+@@ -2265,7 +2299,7 @@
+             const int walk = pathing.to_group(g).at(here);
+             if (walk == unreachable) return;
+             int hold = 0;
+-            const float worth = takeover_worth(gain, timer, walk, work_rate, hold);
++            const float worth = takeover_worth(gain, timer, walk, work_rate, hold) * avoid_scale(g);
+             if (!(worth > 0)) return;
+             const float value = rate(world, worth, static_cast<float>(walk + hold));
+             if (value > best_value) best = g, best_steps = walk, best_value = value, best_spell = false, best_priced = Priced{'T'};
+@@ -2287,7 +2321,7 @@
+             if (!held && (g != memory.claim || world.camps[g].holder == team::enemy || (memo.carry_group != g && !claimed_by_ally(g)))) return;
+             const int gems = std::min(G.gems + (prospector ? prospected(G.cluster_gems, 1) : 0), short_by);
+             const int gold = G.gold + (prospector ? prospected(G.cluster_gold, 1) : 0);
+-            const float worth = static_cast<float>(gems) * (1.0f + keep_bonus(G)) + per_gold * static_cast<float>(gold);
++            const float worth = (static_cast<float>(gems) * (1.0f + keep_bonus(G)) + per_gold * static_cast<float>(gold)) * avoid_scale(g);
+             // The fewest rounds it can take (a payout comes after our arrival): no better than the best, and not
+             // the best already, it is not picked (a worth's rate falls with its rounds).
+             if (best != g && worth >= 0 && !(rate(world, worth, static_cast<float>(least + (held ? 1 : capture_rounds(world)))) > best_value)) return;
+@@ -2358,7 +2392,7 @@
+             const float clear = health / output, ours = clear + static_cast<float>(capture_rounds(false));
+             const int gems = std::min(G.gems + (prospector ? prospected(G.cluster_gems, 1) : 0), short_by);
+             const int gold = G.gold + (prospector ? prospected(G.cluster_gold, 1) : 0);
+-            const float worth = static_cast<float>(gems) * (1.0f + keep_bonus(G)) + per_gold * static_cast<float>(gold);
++            const float worth = (static_cast<float>(gems) * (1.0f + keep_bonus(G)) + per_gold * static_cast<float>(gold)) * avoid_scale(g);
+             // Its rounds grow with the walk, at least the crow's: no better than the best then, it is not picked.
+             const auto rounds_at = [&](int walk) { return static_cast<float>(walk) < ours ? ours : static_cast<float>(walk + capture_rounds(world)); };
+             if (worth >= 0 && !(rate(world, worth, rounds_at(steps_to(G, here))) > best_value)) continue;
+@@ -2435,6 +2469,12 @@
+         return true;
+     }
+     memory.farm_group = best;
++    // Avoided, but the only group left: hit it from here, as the early hit would have.
++    if (avoiding && threat.reaches(groups[best])) {
++        avoided_pick = best;
++        if constexpr (!repricing)
++            if (!banks_bag && !taking_over && attack_in_range()) return true;
++    }
+     if (farm_monolith(world, best) && memory.claim == best) {
+         if (memory.mono_group != best) {
+             memory.mono_group = best, memory.mono_staged = -1, memory.mono_since = round, memory.mono_taken = 0;

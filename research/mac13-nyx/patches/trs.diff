@@ -1,0 +1,569 @@
+diff -ru bots/variants/chy-ref/src/bot.cc bots/variants/trs/src/bot.cc
+--- bots/variants/chy-ref/src/bot.cc	2026-11-13 01:55:42.824714967 +0000
++++ bots/variants/trs/src/bot.cc	2026-11-13 02:28:07.475582823 +0000
+@@ -755,6 +755,7 @@
+     comms::claim(memory.claim);
+     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);
+     comms::chasing(world.round, world.me().alive && decision == Branch::chase);
++    comms::retreating(world.round, world.me().alive && decision == Branch::retreat);
+     if (!world.is_stale()) publish_turn_order(world, comms::priority_payload(world));
+     memory.live_claim = live_claim;
+     memory.round = world.round;
+diff -ru bots/variants/chy-ref/src/combat/fight.cc bots/variants/trs/src/combat/fight.cc
+--- bots/variants/chy-ref/src/combat/fight.cc	2026-11-13 01:55:42.824977480 +0000
++++ bots/variants/trs/src/combat/fight.cc	2026-11-13 02:41:36.616215140 +0000
+@@ -221,7 +221,9 @@
+ // The escape plan (model/escape.h) ranks ahead of all but HomeWalk: this turn's hit (Safety's) and the
+ // plan's after it, so a step away round the pursuers, or one hit now to be clear after, wins over a
+ // step clear now that the pursuers catch later; a step whose damage now would kill us goes last.
+-void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
++// `use_plan` off (a goal other than our spawn, TRS): no escape plan or HomeWalk, whose goal is the spawn;
++// the steps rank by this turn's damage, then steps to `home`.
++void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Field& home, bool use_plan = true) {
+     if (!my_can_move()) return;
+     const vec2 here = my_position();
+     // Of equally safe steps, one off a group Prism holds alone: at its payout we would split it.
+@@ -235,7 +237,7 @@
+         return;
+     }
+     // A walk the dash was put off for is the plan's to choose.
+-    const bool walk_dash = walk_dash_deferred(world) && my_can_cast();
++    const bool walk_dash = use_plan && walk_dash_deferred(world) && my_can_cast();
+     const auto& avoid = safety.avoid();
+     if (!walk_dash && !test(avoid, here)) {
+         if (beside_held) {
+@@ -294,12 +296,15 @@
+             clear |= !reached;
+         }
+     };
+-    auto& plan = escape::plan(world, pathing, safety);
++    static escape::Plan none; // never built: inactive
++    auto& plan = use_plan ? escape::plan(world, pathing, safety) : none;
+     add(false);
+     if (!clear) {
+         // Worth it only if the spawn leaves us healthier than the clear step away would.
+-        HomeWalk w(world, pathing, safety, home);
+-        for (int i = 0; i < n; ++i) options[i].home = w.walk_from(options[i].p, w.now());
++        if (use_plan) {
++            HomeWalk w(world, pathing, safety, home);
++            for (int i = 0; i < n; ++i) options[i].home = w.walk_from(options[i].p, w.now());
++        }
+         add(true);
+     } else if (plan.active()) {
+         // A clear step away may be the plan's way round.
+@@ -743,8 +748,9 @@
+ }
+ 
+ // prey's tests before the fight: e is worth chasing from `here` if that fight is won. `held`: the
+-// gems of a cleared group it stands on.
+-bool preyable(const World& world, Safety& safety, const ChampionBelief& e, vec2 here, int range, int& held) {
++// gems of a cleared group it stands on. `received`: it pursues a teammate (received_prey), which is
++// reason enough to fight it off our ground.
++bool preyable(const World& world, Safety& safety, const ChampionBelief& e, vec2 here, int range, int& held, bool received = false) {
+     if (dist(here, e.pos) > vision_radius || test(world.map().near_enemy_spawn, e.pos)) return false;
+     // A teleport under way cannot fight back, but leaves unless we reach it before it lands.
+     if (e.teleport_pending() && std::max(0, dist(here, e.pos) - range) > last_round_before_channel_ends(world, e) - world.round)
+@@ -755,7 +761,7 @@
+     // cleared group is taking its gems: killing it is how a capture is contested.
+     const int g = world.map().group_at(e.pos);
+     held = g >= 0 && world.camps[g].state == CampState::cleared ? world.map().groups[g].gems : 0;
+-    if (!(comeback::cooked(world) && pair_gems(world, e) >= params::comeback::bar_bag) && dist(here, e.pos) > range && !own_ground(world, e.pos) && e.health >= params::hurt_health_fraction * e.max_health && held == 0
++    if (!received && !(comeback::cooked(world) && pair_gems(world, e) >= params::comeback::bar_bag) && dist(here, e.pos) > range && !own_ground(world, e.pos) && e.health >= params::hurt_health_fraction * e.max_health && held == 0
+         && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable))
+         return false;
+     // Every tile in reach of it would make us retreat at once.
+@@ -853,6 +859,75 @@
+     });
+ }
+ 
++// Receiving a retreat (TRS). Our allies near a hurt teammate rarely respond, and fights are decided by who
++// has more damage dealers early.
++
++// A visible teammate in trouble within our sight, off our spawn: posting a retreat, or hurt since our previous
++// read of it out of every awake camp's reach (as it would pick us there), with a visible enemy off its spawn
++// whose strike before our next turn reaches it. The enemy nearest such a teammate, with the teammate's index in
++// `mate`; null if none.
++const ChampionBelief* received_pursuer(const World& world, Safety& safety, int& mate) {
++    const vec2 here = my_position();
++    const ChampionBelief* out = nullptr;
++    int best = unreachable;
++    const auto camp_hit = [&](vec2 p) {
++        for (const auto& m : safety.awake_members())
++            if (dist(m.pos, p) <= std::max(m.reach, m.tie_reach)) return true;
++        return false;
++    };
++    for (const auto& a : world.allies) {
++        if (a.is_self || !a.alive || !a.visible || dist(here, a.pos) > vision_radius || test(world.map().ally_spawn, a.pos)) continue;
++        if (!comms::ally_retreating(world, a) && (a.hurt_round != world.round || camp_hit(a.pos))) continue;
++        for (const auto& e : world.enemies) {
++            if (!e.alive || !e.visible || test(world.map().near_enemy_spawn, e.pos)) continue;
++            if (const int d = dist(a.pos, e.pos); d <= safety.strike_of(e).reach && d < best) out = &e, best = d, mate = a.index;
++        }
++    }
++    return out;
++}
++
++// The pursuer of a teammate in trouble (received_pursuer) that prey takes, the fight at it won with the
++// teammate and us counted (Cassi or Issac: without our fall either), whatever ground it stands on; else
++// null. Kept for the turn's beliefs.
++const ChampionBelief* received_prey(const World& world, Safety& safety) {
++    static struct {
++        int round = -1;
++        std::uint32_t me = 0, generation = 0;
++        const ChampionBelief* target = nullptr;
++    } known;
++    const auto me = static_cast<std::uint32_t>(world.me().handle);
++    if (known.round == world.round && known.me == me && known.generation == Safety::generation()) return known.target;
++    known = {world.round, me, Safety::generation(), nullptr};
++    if (!enemy_seen(world) || (world.me().facts().heals() && !willow_early(world))) return nullptr;
++    int mate = -1;
++    const auto* e = received_pursuer(world, safety, mate);
++    if (!e) return nullptr;
++    const vec2 here = my_position();
++    int held = 0;
++    if (!preyable(world, safety, *e, here, world.me().facts().attack_range(), held, true)) return nullptr;
++    // We join a turn late at most (chase_trade's delay): from farther the fight is the teammate's alone for longer.
++    const int gap = dist(here, e->pos);
++    if (gap - attack_reach_in_turn(world.me(), world.round) > 1) return nullptr;
++    if (!fuel_ok(safety.fight_cost_estimate() + search_cost_estimate(2 * vision_radius) + end_reserve)) return nullptr;
++    // The fight at its tile, with the teammate and the pursuer in it whatever their distance, and the enemies
++    // who walk in, as prey prices its own.
++    auto key = safety.fight_key(e->pos);
++    if (key == Safety::no_fight) key = safety.fight_allies(e->pos);
++    key |= 1u << mate | 1u << (16 + e->index);
++    const std::uint32_t delayed = strike(world.me(), world.round).hits(gap) ? 0u : 1u << world.me().index;
++    std::array<int, 2> cooldowns;
++    for (int s = 0; s < 2; ++s) cooldowns[s] = std::max(0, my_cooldown(s));
++    const bool linked = partner(world) != nullptr;
++    const auto t = safety.chase_trade(key, delayed, cooldowns, my_can_cast(), linked, safety.late(e->pos, key));
++    if (t.lost || (linked && t.self_falls)) return nullptr;
++    debug_block({
++        std::printf("RECV %d %u %u mate %u kill %d/%d\n", world.round, me, static_cast<std::uint32_t>(e->handle),
++                    static_cast<std::uint32_t>(world.allies[static_cast<std::size_t>(mate)].handle), t.turns_to_kill_them, t.turns_to_kill_us);
++    });
++    known.target = e;
++    return e;
++}
++
+ // Where the strike search's walk heads when it strikes nothing: the nearest visible enemy we
+ // chased or struck on our previous turn that prey could still take, else {-1, -1}. The search
+ // walks first, and chase gets no walk after one.
+@@ -865,10 +940,11 @@
+     // The strike search runs after these verdicts: a build must leave it a full search's fuel. Under prey's
+     // flat gate, turns that built here ran out ~8x as often as prey's (chase-verdict.md "Fuel gate").
+     const auto need = escape::chase_cost_estimate() + search_reserve;
+-    // A teammate's pressed fight when we have none of our own.
++    // A teammate's pressed fight when we have none of our own, else a teammate's pursuer (TRS).
+     if (!engaged_before) {
+         if (const auto* t = team_pressed(world); t && preyable(world, safety, *t, here, range, held) && !escapes(world, pathing, *t, need))
+             aim = t->pos, trace_verdict(world, pathing, *t, 'T');
++        else if (const auto* r = received_prey(world, safety)) aim = r->pos;
+         return aim;
+     }
+     // Nearest first, so a verdict is asked only up to the first that holds.
+@@ -887,6 +963,7 @@
+             trace_verdict(world, pathing, *order[i].second, 'A');
+             return order[i].second->pos;
+         }
++    if (const auto* r = received_prey(world, safety)) aim = r->pos;
+     return aim;
+ }
+ 
+@@ -930,6 +1007,8 @@
+         int held = 0;
+         if (preyable(world, safety, *p, here, range, held) && !escapes(world, pathing, *p)) return p;
+     }
++    // So is a teammate's flight, where the fight with it is won: the pursuer is not running home.
++    if (const auto* p = received_prey(world, safety)) return p;
+     std::optional<float> strength; // read once a candidate needs it
+     // Cassi or Issac falling takes the other body and both bags: a won fight that costs us is lost.
+     const bool linked = partner(world) != nullptr;
+@@ -1391,13 +1470,12 @@
+ // not farther from home first (retreat_step's), then by damage bound and steps home. A walk-excluding
+ // cast would keep us on the lethal tile. Quotes are legal-looking only: a hidden unit can still refuse
+ // the move.
+-std::optional<vec2> quote_escape_walk(const World& world, Pathing& pathing, Safety& safety,
++std::optional<vec2> quote_escape_walk(const World& world, Pathing& pathing, Safety& safety, const Field& home,
+                                       const std::array<vec2, 8>& rejected, int count, bool& survived) {
+     survived = false;
+     const vec2 here = my_position();
+     const auto& blocked = pathing.blocked();
+     const auto* guard = pathing.guard();
+-    const auto& home = pathing.to_ally_spawn();
+     std::optional<vec2> best;
+     int best_home = unreachable;
+     std::array<vec2, 8> touched;
+@@ -1468,7 +1546,7 @@
+ // survivable steps the same holds; one not farther from home is retreat_step's to rank (it weighs no
+ // other reached step): `kept` is set, nothing is walked, and the caller's casts at enemies take
+ // lethal_step_value for the walk.
+-bool escape_walk(World& world, Pathing& pathing, Safety& safety, bool& kept, bool* looked = nullptr) {
++bool escape_walk(World& world, Pathing& pathing, Safety& safety, const Field& home, bool& kept, bool* looked = nullptr) {
+     kept = false;
+     const auto& f = world.me().facts();
+     if (!(f.abilities[0].excludes_walking && f.abilities[0].hits_enemies()) && !(f.abilities[1].excludes_walking && f.abilities[1].hits_enemies()))
+@@ -1484,7 +1562,7 @@
+         world.throw_if_stale();
+         if (!my_can_move() || !safety.lethal(my_position())) return false;
+         bool survived = false;
+-        const auto quote = quote_escape_walk(world, pathing, safety, rejected, count, survived);
++        const auto quote = quote_escape_walk(world, pathing, safety, home, rejected, count, survived);
+         if (!quote) return false;
+         if (consider_cast) {
+             consider_cast = false;
+@@ -1497,7 +1575,7 @@
+                 continue;
+             }
+         }
+-        if (const auto& home = pathing.to_ally_spawn(); survived && home.at(*quote) != unreachable && home.at(*quote) <= home.at(my_position())) {
++        if (survived && home.at(*quote) != unreachable && home.at(*quote) <= home.at(my_position())) {
+             debug_block({
+                 std::printf("PZFIX4 %d %u %d,%d %d,%d\n", world.round, my_handle(), my_position().x, my_position().y, quote->x, quote->y);
+                 kept_walk = {world.round, my_position()};
+@@ -1522,14 +1600,14 @@
+ // Ruin's landing, Ren's stun): when the escape dash lands untouched, only a cast that kills goes
+ // before it; otherwise escape_walk's rule, then any cast, and the escape follows if the cast is
+ // left. True if the turn is done (dead or tributing).
+-bool dash_retreat_casts(World& world, Pathing& pathing, Safety& safety, Memory& memory, vec2 dead) {
++bool dash_retreat_casts(World& world, Pathing& pathing, Safety& safety, Memory& memory, vec2 dead, const Field& home, bool use_plan) {
+     see_kills(world, pathing, safety);
+     if (!cambc::self().is_alive()) return true;
+     if (can_tribute_safely(world, pathing, safety, memory)) {
+         bank_gems(world, pathing, safety, memory, false);
+         return true;
+     }
+-    const auto quote = quote_escape_dash(world, pathing, safety, pathing.to_ally_spawn(), dead);
++    const auto quote = quote_escape_dash(world, pathing, safety, home, dead, use_plan);
+     // A cast tried and failed may have revealed a hidden blocker, and a dash moved us: either way
+     // vision is read again and the quote, which vouches only for its first landing, is dropped.
+     bool reusable = true, casted = false, kept = false;
+@@ -1545,10 +1623,10 @@
+     if (!casted) {
+         bool looked = false;
+         // Walked (the quote is from the old tile), cast, or read vision again.
+-        if (escape_walk(world, pathing, safety, kept, &looked)) casted = !my_can_cast(), reusable = false;
++        if (escape_walk(world, pathing, safety, home, kept, &looked)) casted = !my_can_cast(), reusable = false;
+         if (looked) reusable = false;
+     }
+-    if (!casted && !walk_dash_deferred(world)) {
++    if (!casted && !(use_plan && walk_dash_deferred(world))) {
+         bool attempted = false;
+         casted = cast_at_enemies(world, kept ? lethal_step_value : escape_step_value, false, &attempted);
+         if (attempted && !casted) {
+@@ -1566,16 +1644,162 @@
+         if (reusable) {
+             const bool escaped = cast_escape_dash(world, pathing, quote);
+             if (quote.count > 0) see_again(world, pathing, safety);
+-            if (!escaped && quote.count > 0 && dash_away(world, pathing, safety, pathing.to_ally_spawn(), dead))
++            if (!escaped && quote.count > 0 && dash_away(world, pathing, safety, home, dead, use_plan))
+                 see_again(world, pathing, safety);
+-        } else if (!(walk_dash_deferred(world) && my_can_move()) // a dash put off for the walk waits for it (retreat)
+-                   && dash_away(world, pathing, safety, pathing.to_ally_spawn(), dead)) {
++        } else if (!(use_plan && walk_dash_deferred(world) && my_can_move()) // a dash put off for the walk waits for it (retreat)
++                   && dash_away(world, pathing, safety, home, dead, use_plan)) {
+             see_again(world, pathing, safety);
+         }
+     }
+     return false;
+ }
+ 
++// Retreat into support (TRS). A pursued retreat walks to our spawn, often far, while chasers with dashes and
++// range catch it; a teammate nearer by walk turns the chase into a fight the pursuers may lose.
++
++// The ally we last retreated towards: kept as the goal while it stays valid, so the retreat does not dither
++// between it and the spawn as the walk lengths change.
++struct SupportGoal {
++    int round = -1;
++    std::uint32_t me = 0;
++    std::uint32_t ally = 0;
++};
++SupportGoal support_goal;
++
++// Walking steps over our static walls to the free tiles beside `a`, capped at a pursuit's length. One field
++// per ally tile and turn.
++const Field& ally_field(const World& world, Pathing& pathing, const ChampionBelief& a) {
++    struct Made {
++        Field field;
++        int round = -1;
++        std::uint32_t me = 0;
++        vec2 at{-1, -1};
++    };
++    static std::array<Made, 3> made;
++    static std::size_t next = 0;
++    static bitboard visited{cambc::uninitialized};
++    const auto me = static_cast<std::uint32_t>(world.me().handle);
++    for (auto& m : made)
++        if (m.round == world.round && m.me == me && m.at == a.pos) return m.field;
++    auto& m = made[next];
++    next = (next + 1) % made.size();
++    m.field.goals.clear();
++    m.field.goals.draw_chebyshev(a.pos, 1.0f);
++    m.field.goals.set(a.pos, false);
++    m.field.goals &= world.map().standable;
++    m.field.steps.compute_with_expansion_count(pathing.static_walls(), m.field.goals, visited, static_cast<std::uint16_t>(2 * vision_radius));
++    m.round = world.round, m.me = me, m.at = a.pos;
++    return m.field;
++}
++
++// The least damage bound of the steps retreat_step would rank first towards `field`'s goals: those
++// nearer them, or with us on them, the goal tiles. Here counts then too, though retreat_step steps
++// sideways rather than stays: it bounds what the goal tiles offer.
++float least_step_damage(const World& world, Pathing& pathing, Safety& safety, const Field& field) {
++    const vec2 here = my_position();
++    const int at = field.at(here);
++    constexpr float none = std::numeric_limits<float>::infinity();
++    if (at == unreachable) return none;
++    const float taken = world.me().taken;
++    float best = at == 0 ? safety.damage_bound(here, false, taken) : none;
++    const auto& blocked = pathing.blocked();
++    for (const auto d : directions) {
++        const vec2 p = here + d;
++        if (!in_bounds(p) || test(blocked, p)) continue;
++        if (const int s = field.at(p); s == unreachable || s >= std::max(at, 1)) continue;
++        best = std::min(best, safety.damage_bound(p, false, taken));
++    }
++    return best;
++}
++
++// The retreat's goal field if an ally gives us support: a visible, living teammate, not our linked partner,
++// not held by a channel, not itself retreating or under the recall line, off our spawn (the spawn is the
++// goal then anyway), with the fight our pursuers get there won with it counted (our pursuers, i.e. the
++// visible enemies that could hit us here, against us, the allies near us, it and the allies near it: we
++// neither lose nor fall), and the steps towards it no more dangerous than the steps home by the damage
++// bound. A new ally must also add to the fight here and be nearer by walk than our spawn. Null: home.
++const Field* support_retreat_goal(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
++    const auto me = static_cast<std::uint32_t>(world.me().handle);
++    const auto drop = [&] {
++        if (support_goal.me == me) support_goal.round = -1;
++        return nullptr;
++    };
++    // Willow's retreats are the support code's; camps that sent us home are fled by the heal only.
++    if (world.me().facts().heals() || memory.camp_fled >= 0 || !enemy_seen(world)) return drop();
++    const vec2 here = my_position();
++    if (!in_bounds(here) || test(world.map().ally_spawn, here)) return drop();
++    // Only a pursuit: with no visible enemy that could hit us here, the walk home heals.
++    const auto key = safety.fight_key(here);
++    if (key == Safety::no_fight) return drop();
++    bool pursued = false;
++    for (auto left = key >> 16; left; left &= left - 1) pursued |= world.enemies[static_cast<std::size_t>(std::countr_zero(left))].visible;
++    if (!pursued) return drop();
++    const bool kept_valid = support_goal.me == me && support_goal.round >= world.round - 2;
++    const auto* linked = partner(world);
++    // The candidates: the kept ally first, then the nearest.
++    std::array<const ChampionBelief*, 8> order;
++    int n = 0;
++    const ChampionBelief* kept_ally = nullptr;
++    for (const auto& a : world.allies) {
++        if (a.is_self || !a.alive || !a.visible || &a == linked || n == static_cast<int>(order.size())) continue;
++        if (held_by_channel(a) || test(world.map().ally_spawn, a.pos) || comms::ally_retreating(world, a)
++            || a.health < params::recall_health_fraction * a.max_health)
++            continue;
++        if (kept_valid && support_goal.ally == static_cast<std::uint32_t>(a.handle)) {
++            kept_ally = &a;
++            continue;
++        }
++        int i = n++;
++        for (; i > 0 && dist(here, order[i - 1]->pos) > dist(here, a.pos); --i) order[i] = order[i - 1];
++        order[i] = &a;
++    }
++    if (kept_ally) {
++        for (int i = n++; i > 0; --i) order[i] = order[i - 1];
++        order[0] = kept_ally;
++    }
++    // The nearest visible pursuer: a supporter that cannot strike it on its next turn joins a turn late.
++    const ChampionBelief* pursuer = nullptr;
++    for (auto left = key >> 16; left; left &= left - 1)
++        if (const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))]; e.visible && (!pursuer || dist(here, e.pos) < dist(here, pursuer->pos)))
++            pursuer = &e;
++    std::array<int, 2> cooldowns;
++    for (int s = 0; s < 2; ++s) cooldowns[s] = std::max(0, my_cooldown(s));
++    const auto late = safety.late(here, key);
++    const Field& home = pathing.to_ally_spawn();
++    const int home_steps = home.at(here);
++    float home_damage = -1; // worked out on first need
++    // A few candidates: each costs a field, two step bounds (~1k a tile, 9 tiles) and a fight.
++    constexpr int most = 3;
++    for (int i = 0; i < std::min(n, most); ++i) {
++        const auto& a = *order[i];
++        const bool kept = &a == kept_ally;
++        const std::uint32_t bit = 1u << a.index;
++        if (!kept && (key & bit)) continue;
++        if (!fuel_ok(safety.fight_cost_estimate() + search_cost_estimate(2 * vision_radius) + 18000 + search_reserve)) break;
++        const Field& f = ally_field(world, pathing, a);
++        // Beyond the escape plan's turns the pursuers catch us on the way; a kept ally may be as far as home, a new one nearer.
++        const int steps = f.at(here);
++        if (steps == unreachable || steps > escape::horizon || (kept ? steps > home_steps : steps >= home_steps)) continue;
++        if (home_damage < 0) home_damage = least_step_damage(world, pathing, safety, home);
++        if (least_step_damage(world, pathing, safety, f) > home_damage) continue;
++        const std::uint32_t joined = (safety.fight_allies(a.pos) | bit) & ~key & 0xFFFFu;
++        std::uint32_t delayed = 0;
++        for (auto left = joined; left; left &= left - 1) {
++            const auto& j = world.allies[static_cast<std::size_t>(std::countr_zero(left))];
++            if (!j.is_self && !strike(j, next_turn_round(world, j)).hits(dist(j.pos, pursuer->pos))) delayed |= 1u << j.index;
++        }
++        const auto t = safety.chase_trade(key | joined, delayed, cooldowns, my_can_cast(), true, late);
++        if (t.lost || t.self_falls) continue;
++        support_goal = {world.round, me, static_cast<std::uint32_t>(a.handle)};
++        debug_block({
++            std::printf("TRS %d %u goal-ally %u %s steps %d home %d kill %d/%d\n", world.round, me, static_cast<std::uint32_t>(a.handle),
++                        kept ? "kept" : "new", steps, home_steps, t.turns_to_kill_them, t.turns_to_kill_us);
++        });
++        return &f;
++    }
++    return drop();
++}
++
+ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     world.throw_if_stale();
+     auto& me = cambc::self();
+@@ -1589,6 +1813,10 @@
+     const int range = world.me().facts().attack_range();
+     const vec2 here = my_position();
+     vec2 dead{-1, -1};
++    // The goal of every move below: our spawn, or an ally's support (TRS), which no escape plan prices.
++    const Field* support = support_retreat_goal(world, pathing, safety, memory);
++    const Field& goal = support ? *support : pathing.to_ally_spawn();
++    const bool use_plan = support == nullptr;
+     // A sure kill first. A ranged attack spends the walk, so only where standing is no worse:
+     // nothing else reaches us here, or the dash still lands out of every reach.
+     if (const auto* kill = my_can_attack() ? sure_kill(world, here, range) : nullptr;
+@@ -1611,11 +1839,11 @@
+     const bool keep_dash = contested && my_health() < params::recall_health_fraction * my_max_health()
+                            && my_can_cast() && my_cooldown(escape_slot) == 0;
+     if (keep_dash) {
+-        if (dash_retreat_casts(world, pathing, safety, memory, dead)) return;
++        if (dash_retreat_casts(world, pathing, safety, memory, dead, goal, use_plan)) return;
+     } else {
+         // After the walk, a cast that allows walking may still follow (Cassi's stun).
+         bool kept = false;
+-        if (!escape_walk(world, pathing, safety, kept) || my_can_cast()) cast_at_enemies(world, kept ? lethal_step_value : escape_step_value);
++        if (!escape_walk(world, pathing, safety, goal, kept) || my_can_cast()) cast_at_enemies(world, kept ? lethal_step_value : escape_step_value);
+         if (!me.is_alive()) return;
+         if (!my_can_attack() || !my_can_cast()) see_kills(world, pathing, safety);
+         // A tribute survives damage; a recall does not.
+@@ -1623,15 +1851,15 @@
+             bank_gems(world, pathing, safety, memory, false);
+             return;
+         }
+-        dash_away(world, pathing, safety, pathing.to_ally_spawn(), dead);
++        dash_away(world, pathing, safety, goal, dead, use_plan);
+     }
+     // The escape dash shares the one cast: the reset only after it, from a melee attack or a ranged walk.
+-    const bool walk_dash = walk_dash_deferred(world) && my_can_cast();
++    const bool walk_dash = use_plan && walk_dash_deferred(world) && my_can_cast();
+     if (!walk_dash && reset_and_attack_enemy(world)) see_kills(world, pathing, safety);
+     else see_stuns(world, safety); // Heart of Ruin's landing
+-    if (bool deferred = false; !flee_camps(world, pathing, safety, pathing.to_ally_spawn(), deferred)) {
++    if (bool deferred = false; !flee_camps(world, pathing, safety, goal, deferred)) {
+         const vec2 from = my_position();
+-        retreat_step(world, pathing, safety, pathing.to_ally_spawn());
++        retreat_step(world, pathing, safety, goal, use_plan);
+         if (deferred) {
+             debug_block({ std::printf("LSTEP %d %u %d,%d %d,%d\n", world.round, my_handle(), from.x, from.y, my_position().x, my_position().y); });
+         }
+@@ -1644,9 +1872,9 @@
+         }
+     });
+     // The dash put off for the walk, from its tile (from here if the walk was refused: put off once a turn).
+-    if (walk_dash && my_can_cast() && dash_away(world, pathing, safety, pathing.to_ally_spawn(), dead)) see_again(world, pathing, safety);
++    if (walk_dash && my_can_cast() && dash_away(world, pathing, safety, goal, dead, use_plan)) see_again(world, pathing, safety);
+     // A walk to a hole line's edge can bring a dash out of the camps' reach in reach.
+-    if (my_can_cast() && safety.camp_damage(my_position()) > 0 && dash_away(world, pathing, safety, pathing.to_ally_spawn(), dead, false))
++    if (my_can_cast() && safety.camp_damage(my_position()) > 0 && dash_away(world, pathing, safety, goal, dead, false))
+         see_again(world, pathing, safety);
+     // A ranged walk spent the attack; one that failed did not.
+     if (attack_enemy(world) && melee) reset_and_attack_enemy(world, true);
+diff -ru bots/variants/chy-ref/src/combat/self_abilities.cc bots/variants/trs/src/combat/self_abilities.cc
+--- bots/variants/chy-ref/src/combat/self_abilities.cc	2026-11-13 01:55:42.824977480 +0000
++++ bots/variants/trs/src/combat/self_abilities.cc	2026-11-13 02:28:27.142011074 +0000
+@@ -658,14 +658,14 @@
+     return dash_to_first(dash, pathing, escape_landings(world, pathing, safety, here, threats_near(world, here, dead), home, dead, plan));
+ }
+ 
+-EscapeDashQuote quote_escape_dash(const World& world, Pathing& pathing, Safety& safety, const Field& home, vec2 dead) {
++EscapeDashQuote quote_escape_dash(const World& world, Pathing& pathing, Safety& safety, const Field& home, vec2 dead, bool plan) {
+     EscapeDashQuote quote;
+     if (!world.me().facts().has_dash()) return quote;
+     const int dash = ready(world, AbilityKind::dash);
+     if (dash < 0) return quote;
+     const vec2 here = my_position();
+     const auto& threats = threats_near(world, here, dead);
+-    const auto landings = escape_landings(world, pathing, safety, here, threats, home, dead, true);
++    const auto landings = escape_landings(world, pathing, safety, here, threats, home, dead, plan);
+     if (landings.count == 0) return quote;
+     static_assert(Landings::tries == std::tuple_size_v<decltype(quote.tiles)>);
+     quote.slot = dash;
+diff -ru bots/variants/chy-ref/src/combat/self_abilities.h bots/variants/trs/src/combat/self_abilities.h
+--- bots/variants/chy-ref/src/combat/self_abilities.h	2026-11-13 01:55:42.824977480 +0000
++++ bots/variants/trs/src/combat/self_abilities.h	2026-11-13 02:28:27.141938413 +0000
+@@ -64,7 +64,7 @@
+     std::array<vec2, 3> tiles{};
+     bool clears = false;
+ };
+-EscapeDashQuote quote_escape_dash(const World& world, Pathing& pathing, Safety& safety, const Field& home, vec2 dead);
++EscapeDashQuote quote_escape_dash(const World& world, Pathing& pathing, Safety& safety, const Field& home, vec2 dead, bool plan = true);
+ // The quote's first landing only, if we are still where it was made and its slot is ready.
+ bool cast_escape_dash(const World& world, Pathing& pathing, const EscapeDashQuote& quote);
+ // A ready dash could land out of every visible enemy's reach and every awake camp's that would pick
+diff -ru bots/variants/chy-ref/src/model/comms.cc bots/variants/trs/src/model/comms.cc
+--- bots/variants/chy-ref/src/model/comms.cc	2026-11-13 01:55:42.826717744 +0000
++++ bots/variants/trs/src/model/comms.cc	2026-11-13 02:40:40.553083796 +0000
+@@ -125,7 +125,11 @@
+ bool support_intent_value = false;
+ int chasing_round = -1;
+ bool chasing_value = false;
+-// Above the claim (0-7) and support mailbox (8-10): the chase bit, then its posting round mod 4.
++int retreating_round = -1;
++bool retreating_value = false;
++// Above the claim (0-7) and support mailbox (8-10): the chase bit, then its posting round mod 4. With the
++// chase bit clear, those 2 bits nonzero are a retreat posted in round mod 3 (their value less 1): bits 14-15
++// are the live builds' (tools/livemask), and a turn chases or retreats, never both.
+ constexpr int chase_shift = 11;
+ static_assert(support_mailbox::payload_shift + 3 <= chase_shift && chase_shift + 3 <= priority_payload_bits);
+ 
+@@ -308,6 +312,8 @@
+ 
+ void chasing(int round, bool v) { chasing_round = round, chasing_value = v; }
+ 
++void retreating(int round, bool v) { retreating_round = round, retreating_value = v; }
++
+ // Posted this round (it acted before us) or last (it acts after us); older is stale.
+ bool ally_chasing(const World& world, const ChampionBelief& a) {
+     if (a.is_self || !a.alive) return false;
+@@ -316,6 +322,14 @@
+     return ((world.round - static_cast<int>(p >> (chase_shift + 1) & 3)) & 3) <= 1;
+ }
+ 
++bool ally_retreating(const World& world, const ChampionBelief& a) {
++    if (a.is_self || !a.alive) return false;
++    const auto p = payload_of(world, a);
++    const int stamp = p < 0 ? 0 : static_cast<int>(p >> (chase_shift + 1) & 3);
++    if (stamp == 0 || (p >> chase_shift & 1)) return false;
++    return (world.round - (stamp - 1)) % 3 <= 1;
++}
++
+ std::uint32_t priority_payload(const World& world) {
+     auto payload = static_cast<std::uint32_t>(detail::posts.mine + 1);
+     const auto pair = support_pair(world);
+@@ -324,6 +338,8 @@
+                                                                                      pair[0]->alive && pair[1]->alive));
+     if (chasing_round == world.round && chasing_value)
+         payload |= 1u << chase_shift | static_cast<std::uint32_t>(world.round & 3) << (chase_shift + 1);
++    else if (retreating_round == world.round && retreating_value)
++        payload |= static_cast<std::uint32_t>(world.round % 3 + 1) << (chase_shift + 1);
+     return payload;
+ }
+ 
+diff -ru bots/variants/chy-ref/src/model/comms.h bots/variants/trs/src/model/comms.h
+--- bots/variants/chy-ref/src/model/comms.h	2026-11-13 01:55:42.827324212 +0000
++++ bots/variants/trs/src/model/comms.h	2026-11-13 02:28:07.475343290 +0000
+@@ -45,6 +45,9 @@
+ // this round or last.
+ void chasing(int round, bool chasing);
+ bool ally_chasing(const World& world, const ChampionBelief& a);
++// The same for a retreat (TRS): whether we retreat this turn, and whether an ally in sight posted it this round or last.
++void retreating(int round, bool retreating);
++bool ally_retreating(const World& world, const ChampionBelief& a);
+ // Our priority payload: the claim, support intents and chase bit posted this turn.
+ std::uint32_t priority_payload(const World& world);
+ // The group an ally (by index) claims, -1 for none or while it is dead.

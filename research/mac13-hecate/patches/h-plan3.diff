@@ -1,0 +1,12 @@
+diff -ruN -x .cambc bots/variants/chy-ref/src/params.h bots/variants/h-plan3/src/params.h
+--- bots/variants/chy-ref/src/params.h	2026-11-13 01:55:41.695702488 +0000
++++ bots/variants/h-plan3/src/params.h	2026-11-13 02:27:37.115655556 +0000
+@@ -308,7 +308,7 @@
+ // A step waits (farm chooses) while a visible enemy champion is this near its group's centre.
+ inline constexpr int enemy_near = 8;
+ // 0: the planned group is farm's choice outright. Above 0: it is farm's standing choice, its worth times this.
+-inline constexpr float weight = 1.5f;
++inline constexpr float weight = 3.0f;
+ // Plan steps farm follows (at most open_plan::max_steps).
+ inline constexpr int steps = 6;
+ } // namespace open_plan

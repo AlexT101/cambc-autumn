@@ -1,0 +1,32 @@
+diff -ru bots/variants/chy-ref/src/economy/farm.cc bots/variants/pair-home/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 01:55:41.153695176 +0000
++++ bots/variants/pair-home/src/economy/farm.cc	2026-11-13 02:35:10.020689947 +0000
+@@ -302,6 +302,7 @@
+     int bag, short_by;
+     bool banking;
+     std::uint8_t emblems;
++    bool paired; // probe pair-home: the kept weights hold only while this does
+     bool operator==(const FarmContext&) const = default;
+ };
+ struct FarmClearing {
+@@ -966,7 +967,9 @@
+     const auto emblems = static_cast<std::uint8_t>(world.me().fast_tribute | prospector << 1);
+     auto& last_context = memo.last_context;
+     auto& context = memo.context;
+-    if (const FarmContext now{bag, short_by, banks_bag, emblems}; context == 0 || !(now == last_context))
++    const auto* pair_mate = linked_partner(world, world.me());
++    const bool paired = pair_mate && pair_mate->alive;
++    if (const FarmContext now{bag, short_by, banks_bag, emblems, paired}; context == 0 || !(now == last_context))
+         last_context = now, ++context;
+     // Marcella is paid gold for each gem she tributes, with our gold bonus (probe-marcella-gold).
+     const float per_gem = world.me().facts().tribute_gold_per_gem();
+@@ -1828,6 +1831,9 @@
+             // From the draft's spawn steps; without a plan, two spawn floods once a game.
+             if (known.home < 0) known.home = home_ground(map, g, opening);
+             float weight = known.home;
++            // probe pair-home: Cassi and Issac with the partner alive weigh the enemy side three times as strongly
++            // (still at most home_ground's, which the prunes' bounds read).
++            if (paired) weight *= known.home * known.home;
+             // Staying with last turn's choice keeps near ties from turning us back and forth.
+             if (g == farm_group) weight *= stickiness;
+             // The plan's group is weighted on its own: farm's last choice keeps its stickiness, so the two do not trade places.

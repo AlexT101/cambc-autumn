@@ -1,0 +1,134 @@
+diff -ru bots/variants/chy-ref/src/bot.cc bots/variants/join-dbg/src/bot.cc
+--- bots/variants/chy-ref/src/bot.cc	2026-11-13 01:55:41.151673029 +0000
++++ bots/variants/join-dbg/src/bot.cc	2026-11-13 04:28:07.095337202 +0000
+@@ -351,6 +351,7 @@
+     if (memory.claim >= 0 && (memory.siege || memory.claim == memory.mono_group) && memory.camp_fled < 0 && !intent.to_altar)
+         intent.own_fire = memory.claim;
+     intent.aim = chase_aim(world, pathing, safety);
++    debug_block({ if (world.round <= 900) std::printf("JA %d %u %d %d\n", world.round, my_handle(), intent.aim.x, intent.aim.y); });
+     struck = searched = true;
+     const auto planned = plan_strikes(world, pathing, safety, intent);
+     note_search(planned.searched);
+@@ -422,6 +423,7 @@
+     fixc_bush_threatened = false;
+     if (!world.me().can_act(world.round)) return;
+     fixc_bush_threatened = fixc_bush_threat(world, safety);
++    debug_block({ join_diag(world, pathing, safety); });
+     if (const auto* ender = game_ender(world); ender && holds_hard_stop(world, *ender)) {
+         stop_game_ender(world, pathing, memory, *ender);
+         return;
+@@ -434,6 +436,7 @@
+     const bool mend = missing > 0 && missing > (camps_reach_spawn(world) ? safety.camp_damage(my_position()) + 0.01f : 0.0f);
+     bool leave = !mend && (home ? *home : want_home(world, pathing, safety, memory));
+     if (leave && fixc_commit(world, pathing)) leave = false;
++    debug_block({ if (enemy_seen(world) && world.round <= 900) std::printf("JL %d %u %d %d\n", world.round, my_handle(), mend ? 1 : 0, leave ? 1 : 0); });
+     // Willow at work heals first, and the work goes on without the strike search.
+     const bool willow_free = willow && !mend && !leave;
+     const bool working = willow_free && support_work(world, pathing, safety, memory);
+diff -ru bots/variants/chy-ref/src/bot_parts.h bots/variants/join-dbg/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 01:55:41.151723080 +0000
++++ bots/variants/join-dbg/src/bot_parts.h	2026-11-13 04:28:07.095227061 +0000
+@@ -340,6 +340,7 @@
+ bool drawn_home_at(const World& world, Pathing& pathing, Safety& safety, vec2 p, float damage);
+ const ChampionBelief* prey(const World& world, Pathing& pathing, Safety& safety);
+ vec2 chase_aim(const World& world, Pathing& pathing, Safety& safety);
++void join_diag(const World& world, Pathing& pathing, Safety& safety);
+ // A successful chase keeps its guard; a failed one restores the work guard.
+ bool chase_with_guard(const World& world, Pathing& pathing, Safety& safety, const Pathing::GuardState& guard);
+ const ChampionBelief* stoppable_winning_tribute(const World& world);
+diff -ru bots/variants/chy-ref/src/combat/fight.cc bots/variants/join-dbg/src/combat/fight.cc
+--- bots/variants/chy-ref/src/combat/fight.cc	2026-11-13 01:55:41.151951223 +0000
++++ bots/variants/join-dbg/src/combat/fight.cc	2026-11-13 04:28:07.095058498 +0000
+@@ -1062,11 +1062,92 @@
+     return nullptr;
+ }
+ 
++
++// Debug only: for each visible enemy within vision_radius, why prey would not take it from here.
++// JN round handle hp% own linked heals engaged_before pressed team_pressed | handle:dist:code[:allies:enemies:ttku:ttkt]
++// codes: V vision/spawn, T teleport, G healthy off our ground, Z pack zone, N no fight, L lost, F linked falls, E escapes, W won
++void join_diag(const World& world, Pathing& pathing, Safety& safety) {
++    const auto& self = world.me();
++    if (!self.alive || world.round > 900) return;
++    const vec2 here = my_position();
++    bool any = false;
++    for (const auto& e : world.enemies)
++        if (e.alive && e.visible && dist(here, e.pos) <= vision_radius) any = true;
++    if (!any) return;
++    const int range = self.facts().attack_range();
++    const bool linked = partner(world) != nullptr;
++    const auto* pr = pressed(world);
++    const auto* tp = team_pressed(world);
++    std::printf("JN %d %u %d %d %d %d %d %d %d |", world.round, my_handle(), static_cast<int>(100 * my_health() / my_max_health()),
++                own_ground(world, here) ? 1 : 0, linked ? 1 : 0, self.facts().heals() ? 1 : 0, engaged_before ? 1 : 0,
++                pr ? static_cast<int>(pr->handle) : -1, tp ? static_cast<int>(tp->handle) : -1);
++    const auto live = my_record();
++    const auto state = cambc::champion_state::from_bits_retain(live.state);
++    const bool can_move = state.contains(cambc::champion_state::can_move);
++    const bool can_cast = state.contains(cambc::champion_state::can_cast);
++    const bool cancelable = state.contains(cambc::champion_state::recalling) || state.contains(cambc::champion_state::submitting_gems);
++    const bool channel = cancelable || state.contains(cambc::champion_state::teleporting);
++    std::array<int, 2> cooldowns;
++    unsigned ready = 0;
++    bool helps = false;
++    for (int s = 0; s < 2; ++s) {
++        std::int32_t remaining{};
++        ok(cambc::detail::sdk_champion_cooldown(my_handle(), static_cast<std::uint32_t>(s), &remaining));
++        cooldowns[s] = std::max(0, static_cast<int>(remaining));
++        if (!can_cast || cooldowns[s] > 0) continue;
++        ready |= 1u << s;
++        const auto& a = self.facts().abilities[s];
++        helps |= (a.kind == AbilityKind::heal || a.kind == AbilityKind::shield) && a.multiplier > 0 && live.focus > 0;
++    }
++    const Strike ours = strike_with(self, ready);
++    for (const auto& e : world.enemies) {
++        if (!e.alive || !e.visible || dist(here, e.pos) > vision_radius) continue;
++        std::printf(" %u:%d:", static_cast<std::uint32_t>(e.handle), dist(here, e.pos));
++        if (test(world.map().near_enemy_spawn, e.pos)) { std::printf("V"); continue; }
++        if (e.teleport_pending() && std::max(0, dist(here, e.pos) - range) > last_round_before_channel_ends(world, e) - world.round) { std::printf("T"); continue; }
++        const int g = world.map().group_at(e.pos);
++        const int held = g >= 0 && world.camps[g].state == CampState::cleared ? world.map().groups[g].gems : 0;
++        if (!(comeback::cooked(world) && pair_gems(world, e) >= params::comeback::bar_bag) && dist(here, e.pos) > range && !own_ground(world, e.pos) && e.health >= params::hurt_health_fraction * e.max_health && held == 0
++            && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable)) { std::printf("G"); continue; }
++        if (pack_covers(world, safety, e.pos, range)) { std::printf("Z"); continue; }
++        const auto key = safety.fight_key(e.pos);
++        if (key == Safety::no_fight) { std::printf("N"); continue; }
++        std::uint32_t delayed = 0;
++        for (auto left = key & 0xFFFFu; left; left &= left - 1) {
++            const int j = std::countr_zero(left);
++            const auto& a = world.allies[static_cast<std::size_t>(j)];
++            if (a.is_self) {
++                if (const int d = dist(here, e.pos); !channel && can_move && !helps && !ours.hits(d)) delayed |= 1u << j;
++                continue;
++            }
++            if (!a.alive || !a.visible) continue;
++            const int next = next_turn_round(world, a);
++            if (strike(a, next).hits(dist(a.pos, e.pos))) continue;
++            bool support = false;
++            for (int s = 0; s < 2; ++s) {
++                const auto& ability = a.facts().abilities[s];
++                support |= a.ability_ready(s, next) && a.focus > 0 && ability.multiplier > 0
++                    && (ability.kind == AbilityKind::heal || ability.kind == AbilityKind::shield);
++            }
++            if (!support) delayed |= 1u << j;
++        }
++        const auto late = safety.late(e.pos, key);
++        const Trade t = safety.chase_trade(key, delayed, cooldowns, can_cast || cancelable, linked, late);
++        char c = 'W';
++        if (t.lost) c = 'L';
++        else if (linked && t.self_falls) c = 'F';
++        else if (escapes(world, pathing, e)) c = 'E';
++        std::printf("%c:%d:%d:%d:%d", c, t.allies, t.enemies, t.turns_to_kill_us, t.turns_to_kill_them);
++    }
++    std::printf("\n");
++}
++
+ bool chase(const World& world, Pathing& pathing, Safety& safety) {
+     // After the strike search, chase only walks: the search priced and passed on its dash and casts,
+     // and strike_after makes the hits from where the walk ends.
+     if (searched && !my_can_move()) return false;
+     const auto* target = prey(world, pathing, safety);
++    debug_block({ std::printf("JP %d %u %d\n", world.round, my_handle(), target ? static_cast<int>(target->handle) : -1); });
+     if (!target) return false;
+     trace_verdict(world, pathing, *target, 'P');
+     note_engaged(static_cast<std::uint32_t>(target->handle));

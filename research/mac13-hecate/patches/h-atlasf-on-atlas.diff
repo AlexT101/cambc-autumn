@@ -1,0 +1,77 @@
+diff -ruN -x .cambc bots/variants/h-atlas/src/combat/fight.cc bots/variants/h-atlasf/src/combat/fight.cc
+--- bots/variants/h-atlas/src/combat/fight.cc	2026-11-13 02:40:48.834385262 +0000
++++ bots/variants/h-atlasf/src/combat/fight.cc	2026-11-13 07:21:42.267049795 +0000
+@@ -711,17 +711,18 @@
+     float best_value = -1;
+     int best_dist = 0;
+     for (const auto& e : world.enemies) {
+-        if (!e.alive || !e.visible || e.teleport_pending() || test(world.map().near_enemy_spawn, e.pos) || dist(here, e.pos) > vision_radius) continue;
++        if (!e.alive || !e.visible || e.teleport_pending() || dist(here, e.pos) > vision_radius || test(world.map().near_enemy_spawn, e.pos)) continue;
+         const int window = disarm_window(world, e);
+         if (window < params::press::min_window) continue;
+         const float value = params::life_value / params::gem_value + static_cast<float>(pair_gems(world, e));
+         if (value < best_value || (value == best_value && dist(here, e.pos) >= best_dist)) continue;
+         float own = 0;
+-        const float dealt = pack_damage(world, e, next_turn_round(world, e) + window, own);
++        const int armed = next_turn_round(world, e) + window;
++        const float dealt = pack_damage(world, e, armed, own);
+         if (own <= 0) continue;
+         // A self-shield ready in the window (Heart of Ruin, Varg) adds its amount.
+         const int shield = e.facts().slot_of(AbilityKind::shield);
+-        const float hp = effective_hp(e) + (shield >= 0 && e.ability_ready(shield, next_turn_round(world, e) + window - 1) ? self_shield_amount(e) / e.taken : 0.0f);
++        const float hp = effective_hp(e) + (shield >= 0 && e.ability_ready(shield, armed - 1) ? self_shield_amount(e) / e.taken : 0.0f);
+         bool sim = false;
+         if (dealt < hp || falls) {
+             if (!fuel_ok(safety.fight_cost_estimate() + end_reserve)) continue;
+diff -ruN -x .cambc bots/variants/h-atlas/src/model/safety.cc bots/variants/h-atlasf/src/model/safety.cc
+--- bots/variants/h-atlas/src/model/safety.cc	2026-11-13 02:40:03.834026150 +0000
++++ bots/variants/h-atlasf/src/model/safety.cc	2026-11-13 07:10:05.574446295 +0000
+@@ -2613,6 +2613,7 @@
+     threatened_known_ = false;
+     recall_line_known = false;
+     fight_count_ = 0;
++    chase_count_ = 0;
+     unknown_falls_ = 0;
+     unknown_lost_ = 0;
+     gone_.fill(0);
+@@ -3471,6 +3472,10 @@
+         f.next_cast = next_cast(f);
+     }
+     if (!changed) return fight_of(key, falls, late, falls);
++    for (int i = 0; i < std::min(chase_count_, max_chases); ++i)
++        if (const auto& c = chases_[i]; c.key == key && c.delayed == delayed && c.late == late && c.cooldowns == self_cooldowns && c.can_cast == can_cast
++                                        && c.falls == falls && c.observations == world_.observations && c.stun_reads == world_.stun_reads)
++            return c.trade;
+     build();
+     const auto enemies = (key >> 16 | late_mask(late)) & threat_mask_;
+     fill(them, world_, world_.enemies, enemies, made_);
+@@ -3482,6 +3487,7 @@
+     const auto t = trade(us, them, true, falls, falls);
+     if (const auto after = fuel(); after < before) costliest_fight_ = std::max(costliest_fight_, before - after);
+     world_.throw_if_stale();
++    chases_[chase_count_++ % max_chases] = {key, delayed, late, world_.observations, world_.stun_reads, self_cooldowns, can_cast, falls, t};
+     return t;
+ }
+ 
+diff -ruN -x .cambc bots/variants/h-atlas/src/model/safety.h bots/variants/h-atlasf/src/model/safety.h
+--- bots/variants/h-atlas/src/model/safety.h	2026-11-13 02:23:51.161468091 +0000
++++ bots/variants/h-atlasf/src/model/safety.h	2026-11-13 07:10:05.573872067 +0000
+@@ -645,6 +645,18 @@
+         std::array<FightMemo, max_fights> fights_;
+     };
+     std::uint64_t costliest_fight_ = 0;
++    // chase_trade's own plays (delayed or cooldowns edited), by every input they read, cleared with fights_.
++    struct ChaseMemo {
++        std::uint32_t key, delayed, late, observations, stun_reads;
++        std::array<int, 2> cooldowns;
++        bool can_cast, falls;
++        Trade trade;
++    };
++    static constexpr int max_chases = 8;
++    int chase_count_ = 0;
++    union {
++        std::array<ChaseMemo, max_chases> chases_;
++    };
+     // Bit i: query_cost_estimate() counts enemies[i]'s Reach until built (reached_), as found
+     // once refreshed: reached_ only gains bits meanwhile, and gone() keeps its answers.
+     std::uint16_t reachable_ = 0;

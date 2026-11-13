@@ -1,0 +1,204 @@
+diff -ru bots/variants/chy-ref/src/economy/farm.cc bots/variants/k1-snap/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 01:55:42.269710230 +0000
++++ bots/variants/k1-snap/src/economy/farm.cc	2026-11-13 02:30:43.339418755 +0000
+@@ -208,6 +208,76 @@
+     return steps != unreachable ? steps : steps_to(world.map().groups[g], p);
+ }
+ 
++// The claim race: a solo group's claim belongs to the teammate that reaches it first. Each side
++// runs the same test on the same tiles, so a claim one takes is a claim the other gives up, with
++// no comms. Solo: no striker to share (a strong group is a crew's), no Monolith, kite or siege.
++bool solo_job(const World& world, int g) {
++    const auto& map = world.map();
++    const auto& G = map.groups[g];
++    if (G.has_monolith || G.gems + G.gold == 0 || (map.shared_gems && big_group(G)) || g == siege_group()) return false;
++    return G.strength <= 0 || world.camps[g].state == CampState::cleared;
++}
++
++// A champion in the race, at its known tile: ours, an ally's in sight, or one it told or we saw
++// within `slack` steps.
++struct Racer {
++    vec2 at{-1, -1};
++    int range = 0, slack = 0, index = -1;
++    bool prism = false, busy = false; // busy: channelling, so its tile is no walk
++};
++
++bool self_racer(const World& world, Racer& r) {
++    r.at = my_position();
++    if (r.at.x < 0) return false;
++    const auto& f = world.me().facts();
++    r.range = f.attack_range(), r.slack = 0, r.index = world.me().index;
++    r.prism = f.passive == Passive::gem_focus, r.busy = channelling();
++    return true;
++}
++
++bool ally_racer(const World& world, const ChampionBelief& a, Racer& r) {
++    if (a.is_self || !a.alive || !recent_tile(world, a, r.at, r.slack)) return false;
++    r.range = a.facts().attack_range(), r.index = a.index;
++    r.prism = a.facts().passive == Passive::gem_focus, r.busy = a.channel != Channel::none;
++    return true;
++}
++
++// Rounds until r can work g: its walk into attack range, onto the tiles once cleared. The walking
++// field is the same for every ally (team_walk_to), but read only where made: never one built for this.
++int race_arrival(const World& world, Pathing& pathing, int g, const Racer& r) {
++    const auto& G = world.map().groups[g];
++    int steps = pathing.group_walking_ready(g) ? pathing.to_group_walking(g).at(r.at) : unreachable;
++    if (steps == unreachable) steps = steps_to(G, r.at);
++    return world.camps[g].state == CampState::cleared ? steps : std::max(0, steps - r.range);
++}
++
++// r works g already: in attack range (+1, a round of turn order) of a live member, or on its tiles.
++bool race_begun(const World& world, int g, const Racer& r) {
++    const auto& G = world.map().groups[g];
++    const auto& c = world.camps[g];
++    if (test(G.tiles(), r.at)) return true;
++    const int reach = (c.state == CampState::cleared ? 0 : r.range) + 1 + r.slack;
++    for (std::size_t i = 0; i < G.members.size(); ++i)
++        if ((c.state != CampState::alive || c.health[i] > 0) && dist(r.at, G.members[i].pos) <= reach) return true;
++    return false;
++}
++
++// Whether solo group g's claim passes from `from` to `to`: `to` is sooner by more than the turn
++// order's round and the tiles' slack, or, both claiming it (`both`), neither is and `to` has the
++// lower index. Never from a Prism's gem group (the funnel), from a step of `from`'s opening plan,
++// from one it has begun, or while either channels.
++bool claim_passes(const World& world, Pathing& pathing, int g, const Racer& to, const Racer& from, bool both) {
++    const auto& G = world.map().groups[g];
++    if (to.busy || from.busy || (from.prism && G.gems > 0) || race_begun(world, g, from)) return false;
++    if (params::open_plan::on && world.round <= params::open_plan::horizon)
++        for (int k = 0; k < params::open_plan::steps; ++k)
++            if (world.map().opening_group(from.index, k) == g) return false;
++    const int d_to = race_arrival(world, pathing, g, to), d_from = race_arrival(world, pathing, g, from);
++    const int margin = 1 + to.slack + from.slack;
++    if (d_to + margin < d_from) return true;
++    return both && !(d_from + margin < d_to) && to.index < from.index;
++}
++
+ // Our farm choice or claim, cleared this turn and short of holders, goes to the nearest of the
+ // allies in sight claiming it (ties to the lower index), so the others move on rather than split
+ // the share. Before anything else farm does, since a ranged hit in passing would cost the step.
+@@ -753,9 +823,52 @@
+     const auto claimed_by_ally = [&](int g) __attribute__((always_inline)) {
+         return g < 256 && (ally_claims[g >> 6] >> (g & 63) & 1);
+     };
+-    // An ally's claim makes us its crew rather than its rival, unless we claimed it first.
++    // The claim race (claim_passes) on solo groups: `stolen`, allies' claims each of whose claimers
++    // we beat, are weighed as our own; `yielded`, our own claim an ally beats, as its. The first
++    // turn keeps the draft's assignment; banking, our walk goes by an altar first.
++    std::array<std::uint64_t, 4> stolen{};
++    int yielded = -1;
++    if constexpr (!opening) {
++        Racer me;
++        if ((ally_claims[0] | ally_claims[1] | ally_claims[2] | ally_claims[3]) != 0 && self_racer(world, me)) {
++            const int n = static_cast<int>(groups.size());
++            const int ours = memory.claim >= 0 && memory.claim < std::min(n, 256) && !memory.crew ? memory.claim : -1;
++            if (ours >= 0 && claimed_by_ally(ours) && solo_job(world, ours))
++                for (const auto& a : world.allies) {
++                    Racer them;
++                    if (!a.is_self && comms::claim_of(world, a.index) == ours && ally_racer(world, a, them)
++                        && claim_passes(world, pathing, ours, them, me, true)) {
++                        yielded = ours;
++                        break;
++                    }
++                }
++            if (!banks_bag && !repricing)
++                for (int w = 0; w < 4; ++w)
++                    for (auto bits = ally_claims[static_cast<std::size_t>(w)]; bits; bits &= bits - 1) {
++                        const int g = w * 64 + std::countr_zero(bits);
++                        if (g == ours || g >= n || !solo_job(world, g)) continue;
++                        bool beats = true;
++                        for (const auto& a : world.allies) {
++                            if (a.is_self || comms::claim_of(world, a.index) != g) continue;
++                            Racer them;
++                            if (!ally_racer(world, a, them) || !claim_passes(world, pathing, g, me, them, memory.claim == g)) {
++                                beats = false;
++                                break;
++                            }
++                        }
++                        if (beats) stolen[static_cast<std::size_t>(w)] |= std::uint64_t{1} << (g & 63);
++                    }
++        }
++        debug_block({
++            static int traced = -1;
++            if (yielded >= 0 && traced != world.round) traced = world.round, std::printf("ASN %d %u yield %d\n", world.round, my_handle(), yielded);
++        });
++    }
++    const auto stole = [&](int g) __attribute__((always_inline)) { return g < 256 && (stolen[g >> 6] >> (g & 63) & 1); };
++    // An ally's claim makes us its crew rather than its rival, unless we claimed it first (and it
++    // does not take it from us in the race) or we take it from the ally.
+     const auto taken = [&](int g) __attribute__((always_inline)) {
+-        return claimed_by_ally(g) && (memory.claim != g || memory.crew);
++        return claimed_by_ally(g) && !stole(g) && (memory.claim != g || memory.crew || g == yielded);
+     };
+     const bool melee = world.me().facts().walk_and_attack_independent();
+     // With three picks, Tavi takes the harmless gold-only groups on maps of pure-gold groups. Cassi
+@@ -808,7 +921,7 @@
+             // Strength is the members' sum, so none of them strikes.
+             if (h == g || H.has_monolith || H.strength > 0 || H.gems + H.gold <= 0 || known.state != CampState::alive) continue;
+             // An ally's claim wins even over our own.
+-            if (claimed_by_ally(h) || sole_capture_holder(world, H) || allies_on(world, H.tiles()) >= holders(H)) continue;
++            if ((claimed_by_ally(h) && !stole(h)) || sole_capture_holder(world, H) || allies_on(world, H.tiles()) >= holders(H)) continue;
+             bool partial = false, alive = false, fresh = true, in_range = true;
+             for (int i = 0; i < static_cast<int>(H.members.size()); ++i) {
+                 const auto& m = H.members[i];
+@@ -832,12 +945,18 @@
+             if (preferred >= 0 && attack_camp_target(world, resources.found[preferred])) {
+                 hit = memory.farm_group = memory.claim = resources.found[preferred].group;
+                 memory.crew = false;
++                debug_block({
++                    if (stole(hit)) std::printf("ASN %d %u steal %d\n", world.round, my_handle(), hit);
++                });
+             }
+         }
+         if (hit < 0) hit = attack_camp_targets(world, targets);
+         if (hit >= 0 && hit != memory.claim) {
+             memory.crew = taken(hit);
+             memory.claim = hit;
++            debug_block({
++                if (stole(hit) && !memory.crew) std::printf("ASN %d %u steal %d\n", world.round, my_handle(), hit);
++            });
+         }
+         // Our hit cleared the group: a melee walk onto its tile starts the capture a round sooner.
+         if (hit >= 0 && melee && step_onto_cleared(world, pathing, hit)) {
+@@ -931,7 +1050,7 @@
+             if (ready_previous) {
+                 note_shortcut("farm-kept-target");
+                 memory.farm_group = memory.claim = previous;
+-                memory.crew = false;
++                memory.crew = previous == yielded;
+                 return walk(*pathing.approach(previous, walk_range(world, previous)), previous);
+             }
+             // The static walls' way leads into the camps that close it; pricing now knows (live_steps).
+@@ -1002,7 +1121,7 @@
+         if (banks_bag) return false;
+         if (world.is_stale()) return true;
+         need_zone();
+-        memory.crew = memory.claim == memory.farm_group && memory.crew;
++        memory.crew = (memory.claim == memory.farm_group && memory.crew) || memory.farm_group == yielded;
+         memory.claim = memory.farm_group;
+         // A spawn stand of the group heals what its fire takes (home_stands): held and fired from, or
+         // walked to, before the walk on, which would leave it. Not a Monolith, staged below.
+@@ -1383,10 +1502,11 @@
+     const std::uint64_t decode_bound = opening ? attack_tiles_cost_bound(map) : 0;
+     // Nothing in the loop changes memory, the round or the warm-up.
+     const int round = world.round, farm_group = memory.farm_group;
+-    const bool crew_of_choice = memory.claim == farm_group && memory.crew;
++    const bool crew_of_choice = (memory.claim == farm_group && memory.crew) || farm_group == yielded;
+     // taken() as a mask.
+     auto claimed_bits = ally_claims;
+-    if (memory.claim >= 0 && memory.claim < 256 && !memory.crew)
++    for (std::size_t w = 0; w < claimed_bits.size(); ++w) claimed_bits[w] &= ~stolen[w];
++    if (memory.claim >= 0 && memory.claim < 256 && !memory.crew && memory.claim != yielded)
+         claimed_bits[memory.claim >> 6] &= ~(std::uint64_t{1} << (memory.claim & 63));
+     // Draft spawn distances use walking walls; dashers keep the live field's graph unless the plan
+     // says the two agree.
+@@ -2423,6 +2543,8 @@
+             std::printf("CREW PICK %d %u g%d %c trips %d tank %d expected %d output %.0f damage %.0f hp %.0f/%.0f\n", round, my_handle(), memory.claim,
+                         chosen.mode, chosen.trips, chosen.tank, chosen.expected, chosen.output, chosen.damage, my_health(), max_health);
+         }
++        if (memory.claim >= 0 && !memory.crew && (memory.claim != prev_claim || prev_crew) && stole(memory.claim))
++            std::printf("ASN %d %u steal %d\n", round, my_handle(), memory.claim);
+     });
+     if constexpr (!repricing) memo.carry_group = best >= 0 && (chosen.mode == 'G' || chosen.mode == 'L' || chosen.mode == 'Q') ? best : -1, memo.carry_round = round;
+     if (best < 0) {

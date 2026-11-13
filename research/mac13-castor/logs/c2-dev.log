@@ -1,0 +1,10 @@
+A/B mac13-castor-c2-dev: CAND variants/c2-medic (dir) vs REF variants/chy-ref (dir)
+  dev: running, log replays/ab/mac13-castor-c2-dev/dev.log
+CAND 50.8% of 10240 (5200-5040), 95% CI 49.8-51.7
+  dev  50.8% of 10240 (5200-5040), 95% CI 49.8-51.7
+SPRT H0 0.48 vs H1 0.52 (alpha 0.05, beta 0.05, stops on H0 only, from 2000 games): LLR 21.83 in [-2.94, 2.94] from 5120 map pairs (10240 of 10240 finished games): H1 accepted, ran to completion; H1 bound crossed at 2156 games
+Failed matches: 0
+Out-of-fuel turns: CAND 633 in 430 games, REF 599 in 377 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 2m49s
+Results: replays/ab/mac13-castor-c2-dev/summary.md

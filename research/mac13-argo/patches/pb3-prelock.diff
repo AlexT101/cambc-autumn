@@ -1,0 +1,133 @@
+diff -ru bots/variants/chy-ref/src/bot.cc bots/variants/pb3-prelock/src/bot.cc
+--- bots/variants/chy-ref/src/bot.cc	2026-11-13 01:55:39.398989147 +0000
++++ bots/variants/pb3-prelock/src/bot.cc	2026-11-13 05:30:19.257571835 +0000
+@@ -326,6 +326,8 @@
+ // True if shards changed our stats.
+ bool shop(const World& world, const Memory& memory, bool consumables, bool shards) {
+     if (consumables) buy_crystal(memory);
++    // Probe pb3-prelock: the lock before shards, so a body with 10 gold leaves spawn with one.
++    if (consumables && carried_locks() == 0 && my_gold() >= cambc::consumable_type::altar_lock.cost()) buy_lock();
+     const bool bought = shards && buy_shards(world);
+     if (consumables) buy_lock();
+     return bought;
+@@ -550,6 +552,7 @@
+         return;
+     }
+     if (willow_follow(world, pathing, safety)) return;
++    if (prelock_walk(world, pathing, safety, memory)) return;
+     farm(world, pathing, safety, memory);
+     if (on_cleared_group(world)) yield_capture(world, pathing, safety, memory, true);
+ }
+@@ -673,6 +676,7 @@
+     end_ward = room(ward_least, [&] { return alive && !stunned_turn && world.round >= warded_round + static_cast<int>(cambc::constants::ward_cooldown); })
+                && place_ward(world, memory);
+     if (room(ward_least, [&] { return alive && !stunned_turn && carried_locks() > 0; })) place_lock(world);
++    if (room(ward_least, [&] { return alive && !stunned_turn && carried_locks() > 0; })) prelock_place(world);
+     if (!support_owned && room(habit_least, [&] { return alive && !stunned_turn && my_gems() > 0; }))
+         mite_tribute_habit(world, pathing, safety, memory);
+     // The posts come before the recall: an ally reads our claim and bag, and next turn our health.
+diff -ru bots/variants/chy-ref/src/bot_parts.h bots/variants/pb3-prelock/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 01:55:39.399032918 +0000
++++ bots/variants/pb3-prelock/src/bot_parts.h	2026-11-13 05:30:19.257434533 +0000
+@@ -373,6 +373,8 @@
+ extern bool recall_feint;
+ bool channel_held();
+ void place_lock(const World& world);
++bool prelock_place(const World& world);
++bool prelock_walk(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
+ int tribute_turns(int gems, bool fast);
+ int tribute_turns(const World& world, int gems);
+ int recall_turns(const World& world);
+diff -ru bots/variants/chy-ref/src/economy/bank.cc bots/variants/pb3-prelock/src/economy/bank.cc
+--- bots/variants/chy-ref/src/economy/bank.cc	2026-11-13 01:55:39.400484737 +0000
++++ bots/variants/pb3-prelock/src/economy/bank.cc	2026-11-13 05:43:06.548423230 +0000
+@@ -114,6 +114,89 @@
+         }
+ }
+ 
++// Probe pb3-prelock: the altar nearest the enemy spawn (by its walk to a tile beside it) that our team
++// has not locked as far as we know and where no ally tributes (a lock cancels every tribute at its
++// altar), or -1.
++int prelock_altar(const World& world) {
++    const auto& map = world.map();
++    int best = -1, best_key = 0;
++    for (int a = 0; a < static_cast<int>(map.altars.size()); ++a) {
++        if (world.altars[a].ally_lock) continue;
++        if (a < static_cast<int>(own_lock_round.size()) && own_lock_round[a] >= 0 && own_lock_round[a] >= world.altars[a].seen_round) continue;
++        const vec2 p = map.altars[a].pos;
++        if (std::any_of(world.allies.begin(), world.allies.end(), [&](const auto& ally) {
++                return !ally.is_self && ally.alive && ally.channel == Channel::tribute && dist(ally.pos, p) <= cambc::constants::submit_gems_range;
++            }))
++            continue;
++        int theirs = unreachable;
++        for (int dx = -1; dx <= 1; ++dx)
++            for (int dy = -1; dy <= 1; ++dy)
++                if (const vec2 t{p.x + dx, p.y + dy}; (dx || dy) && in_bounds(t)) theirs = std::min(theirs, map.enemy_spawn_steps(t));
++        const int key = theirs != unreachable ? theirs : 100000 + dist(p, map.enemy_spawn_centre);
++        if (best < 0 || key < best_key) best = a, best_key = key;
++    }
++    return best;
++}
++
++// Places our carried lock on prelock_altar() when it is in range. True if placed.
++bool prelock_place(const World& world) {
++    auto& me = cambc::self();
++    if (stunned_turn || !world.me().alive || carried_locks() == 0 || channelling()) return false;
++    const int a = prelock_altar(world);
++    if (a < 0) return false;
++    const auto& map = world.map();
++    const vec2 p = map.altars[a].pos;
++    if (dist(my_position(), p) > altar_lock_range) return false;
++    const auto note_own_lock = [&] {
++        if (own_lock_round.size() < map.altars.size()) own_lock_round.resize(map.altars.size(), -1);
++        own_lock_round[a] = world.round;
++    };
++    throw_if_stale();
++    try {
++        if (self_acted(), me.consumables()[cambc::consumable_type::altar_lock].use(p)) {
++            note_own_lock();
++            return true;
++        }
++    } catch (const cambc::error& e) {
++        if (e.code() == cambc::error_code::invalid_action_altar_lock_already_locked) note_own_lock();
++    }
++    return false;
++}
++
++// Farming with a lock: a walk to prelock_altar() when it lies within 4 steps of detour on the walk to
++// our farm group. True if we walked.
++bool prelock_walk(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
++    if (carried_locks() == 0) return false;
++    // place_lock first: a lock that cancels an enemy tribute beats an early one.
++    place_lock(world);
++    if (carried_locks() == 0 || prelock_place(world)) return false;
++    const int g = memory.farm_group;
++    if (g < 0 || g >= static_cast<int>(world.camps.size()) || !my_can_move()) return false;
++    const int a = prelock_altar(world);
++    if (a < 0) return false;
++    const auto& map = world.map();
++    const vec2 here = my_position(), p = map.altars[a].pos;
++    if (dist(here, p) <= altar_lock_range) return false;
++    // Read before to_altar: a second field may evict the first from the cache.
++    int direct = unreachable, on = unreachable; // to the group from here, and from the altar's tribute tiles
++    {
++        const Field& to_group = pathing.to_group(g);
++        direct = to_group.at(here);
++        for (int dx = -1; dx <= 1; ++dx)
++            for (int dy = -1; dy <= 1; ++dy)
++                if (const vec2 t{p.x + dx, p.y + dy}; (dx || dy) && in_bounds(t) && test(map.open_for_us, t)) on = std::min(on, to_group.at(t));
++    }
++    if (direct == unreachable || on == unreachable) return false;
++    const Field& to_altar = pathing.to_altar(a);
++    const int there = to_altar.at(here);
++    if (there == unreachable || there + on - direct > 4) return false;
++    step_safely(world, pathing, to_altar, safety);
++    // No step: the turn stays farm's.
++    if (my_position() == here) return false;
++    prelock_place(world);
++    return true;
++}
++
+ bool break_lock(const World& world, int altar) {
+     auto& me = cambc::self();
+     const vec2 p = world.map().altars[altar].pos;

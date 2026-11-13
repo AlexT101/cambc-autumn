@@ -1,0 +1,12 @@
+diff -ru bots/variants/chy-ref/src/economy/shop.cc bots/variants/pb10-shop-none/src/economy/shop.cc
+--- bots/variants/chy-ref/src/economy/shop.cc	2026-11-13 01:55:39.400671530 +0000
++++ bots/variants/pb10-shop-none/src/economy/shop.cc	2026-11-13 07:52:26.286675868 +0000
+@@ -775,6 +775,8 @@
+ // what it buys and the heal save outweigh the trip: there by recall unless walking is quicker, and
+ // back out.
+ [[gnu::flatten]] bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
++    // Probe pb10-shop-none: no shopping trips.
++    if (true) return false;
+     if (banks_bag(world, pathing) || memory.damage > 0 || !shops_at_home(world)) return false;
+     const auto gold = my_gold();
+     const bool prism = world.me().facts().passive == Passive::gem_focus;

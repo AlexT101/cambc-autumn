@@ -1,0 +1,100 @@
+diff -ruN -x .cambc bots/variants/chy-ref/src/economy/farm.cc bots/variants/pz1/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 01:55:40.486686179 +0000
++++ bots/variants/pz1/src/economy/farm.cc	2026-11-13 07:55:30.048401015 +0000
+@@ -613,6 +613,29 @@
+     return m;
+ }
+ 
++// Our Prism is dominant (it denies): every living enemy Prism seen and at most half its Focus
++// (prism_dominant; with none alive, vacuous), and the two hardest living enemies' strikes before our
++// next turn (threat_strike's upper bounds) leave it standing at the health it has now.
++bool prism_denies(const World& world, Safety& safety) {
++    const auto& me = world.me();
++    if (me.facts().passive != Passive::gem_focus) return false;
++    bool prism = false;
++    float first = 0, second = 0;
++    for (const auto& e : world.enemies) {
++        if (!e.alive) continue;
++        if (e.facts().passive == Passive::gem_focus) {
++            if (e.stats_round < 0) return false;
++            prism = true;
++        }
++        const auto& s = safety.strike_of(e);
++        float most = 0;
++        for (int d = 0; d <= s.reach && d <= Strike::max_reach; ++d) most = std::max(most, s.damage[static_cast<std::size_t>(d)]);
++        if (most > first) second = first, first = most;
++        else second = std::max(second, most);
++    }
++    return (!prism || prism_dominant(world, me)) && first + second < my_health();
++}
++
+ // The first turn has its own instance: its extra prunes would make every later call dearer. So
+ // do later turns' banking calls, out of line, past pick_up.
+ // `repricing`: only the pick, during our recall's channel, which may then go on to its
+@@ -987,7 +1010,20 @@
+     const auto keep_bonus = [&](const CampGroup& G) __attribute__((always_inline)) {
+         return keep_most > 0 && G.gems > 0 && G.gems < short_by && !G.has_monolith ? carried_bonus(world, world.me(), G.gems, keeper_price) : 0.0f;
+     };
+-    const float bound_tribute = tribute_gold + keep_most;
++    // A dominant Prism (prism_denies) prices each gem of a group at 1 + q, q = 1 - home_side: the share
++    // the enemy would otherwise take, by the walks from the two spawns. q is at most 1 (`deny_most`),
++    // which the prunes and bounds add to the gems' price as they do keep_most. Not on a capture that
++    // wins, nor on the turn the fight's search took (its walk below weighs no group).
++    const bool denies = !opening && !(struck && memory.farm_group >= 0) && prism_denies(world, safety);
++    const float deny_most = denies ? 1.0f : 0.0f;
++    debug_block({
++        static int told = -1;
++        if (denies && told != world.round) told = world.round, std::printf("DENY %d %u\n", world.round, my_handle());
++    });
++    const auto deny = [&](int g) __attribute__((always_inline)) {
++        return denies && groups[g].gems < short_by ? 1.0f - home_side(map, g, opening) : 0.0f;
++    };
++    const float bound_tribute = tribute_gold + keep_most + deny_most;
+     const float spells = world.me().facts().ranged ? spell_output(world.me()) : 0.0f, basic = std::max(1.0f, basic_output(world.me()));
+     auto& last_clearing = memo.last_clearing;
+     auto& clearing = memo.clearing;
+@@ -1546,7 +1582,7 @@
+     const bool can_bound = !opening && order && !in_pocket;
+     const bool hops = can_bound && hop_any;
+     const int offset = dist(here, groups[first].centre);
+-    const float most_tribute = std::max(0.0f, tribute_gold) + keep_most, most_per_gold = std::max(0.0f, per_gold);
++    const float most_tribute = std::max(0.0f, tribute_gold) + keep_most + deny_most, most_per_gold = std::max(0.0f, per_gold);
+     const FarmMemo::Most* most = nullptr;
+     float tested_value = 0; // the threshold the stop was searched for
+     const auto threshold = [&]() __attribute__((always_inline)) { return banks_bag ? std::max(best_value, from_altar_value) : bar_lt(); };
+@@ -1715,7 +1751,7 @@
+         if (recall_out) trip = std::min(trip, via_recall.rounds(dist(spawn_centre, G.centre), 0));
+         if (banks_bag) trip = std::max(0.0f, trip - bank_now);
+         const float gems = static_cast<float>(std::min(worth_gems[g], short_by));
+-        const float worth = std::max(0.0f, gems + std::max(0.0f, per_gold) * worth_gold[g] + std::max(0.0f, tribute_gold) * gems);
++        const float worth = std::max(0.0f, gems + std::max(0.0f, per_gold) * worth_gold[g] + (std::max(0.0f, tribute_gold) + deny_most) * gems);
+         const float weight = g < 256 ? home_weights()[static_cast<std::size_t>(g)] : 1.0f;
+         // The join's Focus is no share: at most its rate over the trip and the hold (rate is linear in worth).
+         const float carry = gems * keep_bonus(G) * exposure_most * weight;
+@@ -1786,7 +1822,7 @@
+                     auto& kf = group_facts[g];
+                     float worth;
+                     if (kf.context == context && !kf.sticky && kf.gold_context == gold_context) {
+-                        worth = kf.gems + kf.gold + kf.gems * keep_most;
++                        worth = kf.gems + kf.gold + kf.gems * (keep_most + deny_most);
+                     } else {
+                         const float gems = static_cast<float>(std::min(worth_gems[g], short_by));
+                         worth = gems + per_gold * worth_gold[g] + bound_tribute * gems;
+@@ -1873,7 +1909,7 @@
+             const auto beaten_near = [&](bool by_rate) __attribute__((always_inline)) {
+                 const int near = dist(here, group.centre);
+                 if (in_pocket || !prunable(g) || may_help(group, belief, near) || (hop_any && map.group_hop(g) >= 0)) return false;
+-                const float worth = (known.gems + known.gold + known.gems * bonus) * exposed;
++                const float worth = (known.gems * (1.0f + deny(g)) + known.gold + known.gems * bonus) * exposed;
+                 // Banking by way of spawn, the loop prices the trip on to an altar healed, which can
+                 // undercut `bank`: that way takes no floor for it.
+                 const int respawn = respawn_in(belief);
+@@ -1994,7 +2030,7 @@
+         // A capture's gold that completes an emblem shortens the trip home (HomeTrip::rounds) though worth
+         // counts it too: floored, so a chain never costs less than nothing and every filter below agrees.
+         const float trip = std::max(0.0f, (by_spawn ? via : pulled_walk(steps) + static_cast<float>(wait)) - bank_now + bank);
+-        const float gems = known.gems * exposed, gold = known.gold * exposed, fastest = known.fastest, carried = gems * bonus;
++        const float gems = known.gems * exposed * (1.0f + deny(g)), gold = known.gold * exposed, fastest = known.fastest, carried = known.gems * exposed * bonus;
+         // Skip the costly clearing estimate for groups that cannot beat the best even with no
+         // clearing. A crew's share can.
+         if (!claimed && barred() && prunable(g)

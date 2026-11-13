@@ -1,0 +1,137 @@
+diff -ru vlx/src/bot.cc a3-siege/src/bot.cc
+--- vlx/src/bot.cc	2026-11-13 04:24:45.753138906 +0000
++++ a3-siege/src/bot.cc	2026-11-13 05:41:01.009110483 +0000
+@@ -888,7 +888,8 @@
+         note_shortcut("goal-short");
+         return;
+     }
+-    if ((world.map().shared_gems && kite(world, pathing, memory)) || siege(world, pathing, safety, memory)) {
++    // ablation: no siege (kite kept)
++    if ((world.map().shared_gems && kite(world, pathing, memory)) || (false && siege(world, pathing, safety, memory))) {
+         decision = Branch::siege;
+         return;
+     }
+diff -ru vlx/src/economy/shop.cc a3-shoptrip/src/economy/shop.cc
+--- vlx/src/economy/shop.cc	2026-11-13 01:55:42.826717744 +0000
++++ a3-shoptrip/src/economy/shop.cc	2026-11-13 05:41:01.009261455 +0000
+@@ -775,6 +775,7 @@
+ // what it buys and the heal save outweigh the trip: there by recall unless walking is quicker, and
+ // back out.
+ [[gnu::flatten]] bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
++    if (true) return false; // ablation: no shopping trips (decide's walk home, the recall kept to shop, support_work's)
+     if (banks_bag(world, pathing) || memory.damage > 0 || !shops_at_home(world)) return false;
+     const auto gold = my_gold();
+     const bool prism = world.me().facts().passive == Passive::gem_focus;
+diff -ru vlx/src/economy/shop.cc a3-crystal/src/economy/shop.cc
+--- vlx/src/economy/shop.cc	2026-11-13 01:55:42.826717744 +0000
++++ a3-crystal/src/economy/shop.cc	2026-11-13 05:41:01.011018818 +0000
+@@ -77,11 +77,11 @@
+ void buy_lock() { buy_consumable(cambc::consumable_type::altar_lock); }
+ 
+ bool carries_crystal() { return cambc::self().consumables()[cambc::consumable_type::tp_crystal].count() > 0; }
+-bool can_buy_crystal() { return my_gold() >= cambc::consumable_type::tp_crystal.cost(); }
++bool can_buy_crystal() { return false && my_gold() >= cambc::consumable_type::tp_crystal.cost(); } // ablation: no crystals to buy
+ 
+ // Once a hop to an altar only a crystal reaches (StaticMap::hops) would have beaten walking to bank.
+ void buy_crystal(const Memory& memory) {
+-    if (memory.wants_crystal) buy_consumable(cambc::consumable_type::tp_crystal);
++    if (false && memory.wants_crystal) buy_consumable(cambc::consumable_type::tp_crystal); // ablation: no crystal buying
+ }
+ 
+ // Tavi shops anywhere: no trip home for it.
+diff -ru vlx/src/bot.cc a3-support/src/bot.cc
+--- vlx/src/bot.cc	2026-11-13 04:24:45.753138906 +0000
++++ a3-support/src/bot.cc	2026-11-13 05:41:01.012851582 +0000
+@@ -769,8 +769,9 @@
+         stop_game_ender(world, pathing, memory, *ender);
+         return;
+     }
+-    const bool willow = support_healer(world.me());
+-    const bool prism = support_protected(world, world.me());
++    // ablation: no Willow-Prism support branch (local_support, the independent heal step, willow_follow)
++    const bool willow = false && support_healer(world.me());
++    const bool prism = false && support_protected(world, world.me());
+     // Healing needs a turn end on spawn; a recall arrives at turn start. Under an awake camp, only
+     // while we miss more than it takes a round: else we would mend forever while it stays awake.
+     const float missing = on_spawn ? my_max_health() - my_health() : 0.0f;
+@@ -892,7 +893,7 @@
+         decision = Branch::siege;
+         return;
+     }
+-    if (willow_follow(world, pathing, safety)) return;
++    if (false && willow_follow(world, pathing, safety)) return; // ablation
+     farm(world, pathing, safety, memory);
+     if (on_cleared_group(world)) yield_capture(world, pathing, safety, memory, true);
+ }
+diff -ru vlx/src/bot.cc a3-fixcommit/src/bot.cc
+--- vlx/src/bot.cc	2026-11-13 04:24:45.753138906 +0000
++++ a3-fixcommit/src/bot.cc	2026-11-13 05:41:01.012956844 +0000
+@@ -776,7 +776,7 @@
+     const float missing = on_spawn ? my_max_health() - my_health() : 0.0f;
+     const bool mend = missing > 0 && missing > (camps_reach_spawn(world) ? safety.camp_damage(my_position()) + 0.01f : 0.0f);
+     bool leave = !mend && (home ? *home : want_home(world, pathing, safety, memory));
+-    if (leave && fixc_commit(world, pathing)) leave = false;
++    if (false && leave && fixc_commit(world, pathing)) leave = false; // ablation: no fixc_commit
+     // Willow at work heals first, and the work goes on without the strike search.
+     const bool willow_free = willow && !mend && !leave;
+     const bool working = willow_free && support_work(world, pathing, safety, memory);
+diff -ru vlx/src/bot.cc a3-follow/src/bot.cc
+--- vlx/src/bot.cc	2026-11-13 04:24:45.753138906 +0000
++++ a3-follow/src/bot.cc	2026-11-13 05:41:01.013044005 +0000
+@@ -811,7 +811,7 @@
+     }
+     if (leave) {
+         // Our kill bid outranks the retreat, but for tiles the step guard would leave at once.
+-        if (follow::binding(world) && strike_possible(world)) {
++        if (false && follow::binding(world) && strike_possible(world)) { // ablation: no keep_bid strike on leaving
+             guard_steps(world, pathing, safety);
+             if (keep_bid(world, pathing, safety).attacked) see_stuns(world, safety), safety.refresh();
+             pathing.set_guard(nullptr);
+diff -ru vlx/src/params.h a3-openplan/src/params.h
+--- vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ a3-openplan/src/params.h	2026-11-13 05:41:01.013115726 +0000
+@@ -301,7 +301,7 @@
+ // against gems in the plan's value, between ocean's own early per_gold (median 0.34) and the live win model's (0.26 at
+ // r100). iterations: the local search's most, past its seeds (a Python model gained 97% of 1000's by 300).
+ namespace open_plan {
+-inline constexpr bool on = true;
++inline constexpr bool on = false; // ablation: no opening plan
+ inline constexpr int horizon = 100;
+ inline constexpr int iterations = 300;
+ inline constexpr float per_gold = 0.3f;
+diff -ru vlx/src/economy/comeback.cc a3-comeback/src/economy/comeback.cc
+--- vlx/src/economy/comeback.cc	2026-11-13 01:55:42.826134076 +0000
++++ a3-comeback/src/economy/comeback.cc	2026-11-13 05:41:01.013170577 +0000
+@@ -32,7 +32,7 @@
+ 
+ bool cooked(const World& world) {
+     refresh(world);
+-    return cook.on;
++    return false && cook.on; // ablation: never cooked
+ }
+ 
+ // The play-out stops at our first fall, so a lost fight's own kill turn is mostly unknown: the bar is how
+diff -ru vlx/src/params.h a3-midgold/src/params.h
+--- vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ a3-midgold/src/params.h	2026-11-13 05:41:01.013273188 +0000
+@@ -293,7 +293,7 @@
+ // Mid-game gold (research/ideas-2026-11-08/gold-price.md): per_gold x (1 + (mid_gold - 1) h), h a hump on the higher
+ // tributed score, 0 -> 1 over [0, mid_gold_rise], 1 to mid_gold_hold, 1 -> 0 by mid_gold_end. Win models of ladder and
+ // our own games put gold at ~1.5x per_gold's median there; x1.25 is the A/B's best.
+-inline constexpr float mid_gold = 1.25f;
++inline constexpr float mid_gold = 1.0f; // ablation: no mid-game gold hump
+ inline constexpr int mid_gold_rise = 100, mid_gold_hold = 500, mid_gold_end = 700;
+ 
+ // The draft's opening plan (draft/open_plan.h, research/draftfarm-2026-11-08): solved for the team we expect in the
+diff -ru vlx/src/params.h a3-finishheal/src/params.h
+--- vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ a3-finishheal/src/params.h	2026-11-13 05:41:01.013332849 +0000
+@@ -148,7 +148,7 @@
+ // `finish_lead`, only while the enemy's clock (its gems short over its recent tribute rate) runs past
+ // our trip home and on to an altar; `finish_no_prism`, only while the enemy drafted no Prism (a hoard
+ // it carries puts its clock out of sight).
+-inline constexpr bool finish_heal = true;
++inline constexpr bool finish_heal = false; // ablation
+ inline constexpr bool finish_lead = true;
+ inline constexpr bool finish_no_prism = false;
+ // Most rounds to wait at a camp for it to return. Also bounds the wait after a recall out to farm.

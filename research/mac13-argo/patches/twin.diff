@@ -1,0 +1,548 @@
+diff -ru bots/variants/chy-ref/src/bot.cc bots/variants/twin/src/bot.cc
+--- bots/variants/chy-ref/src/bot.cc	2026-11-13 01:55:39.398989147 +0000
++++ bots/variants/twin/src/bot.cc	2026-11-13 03:23:02.849341405 +0000
+@@ -432,6 +432,14 @@
+     // while we miss more than it takes a round: else we would mend forever while it stays awake.
+     const float missing = on_spawn ? my_max_health() - my_health() : 0.0f;
+     const bool mend = missing > 0 && missing > (camps_reach_spawn(world) ? safety.camp_damage(my_position()) + 0.01f : 0.0f);
++    // Home for the twin mate's trip there: we walk out together.
++    if (!mend && on_spawn && twin_waits_home(world)) {
++        decision = Branch::mend;
++        heal_ally(world, safety);
++        if (attack_enemy(world)) reset_and_attack_enemy(world, true);
++        cast_at_enemies(world);
++        return;
++    }
+     bool leave = !mend && (home ? *home : want_home(world, pathing, safety, memory));
+     if (leave && fixc_commit(world, pathing)) leave = false;
+     // Willow at work heals first, and the work goes on without the strike search.
+@@ -550,6 +558,7 @@
+         return;
+     }
+     if (willow_follow(world, pathing, safety)) return;
++    if (twin_tether(world, pathing, safety, memory)) return;
+     farm(world, pathing, safety, memory);
+     if (on_cleared_group(world)) yield_capture(world, pathing, safety, memory, true);
+ }
+@@ -611,6 +620,7 @@
+ inline constexpr std::uint64_t posts_cost = 600, recall_cost = 200, stuns_cost = 200;
+ // act() found the fuel short of its last steps (turn_end_tight): the turn's end checks its own.
+ bool end_tight = false;
++bool twin_unclaimed = false; // act(): the turn's claim goes unposted
+ 
+ // The turn's walk, hits and casts, and the free actions that end it.
+ void act(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+@@ -637,6 +647,11 @@
+     } else if (world.me().alive && memory.claim >= 0 && memory.claim < static_cast<int>(world.map().groups.size())
+              && world.camps[memory.claim].state == CampState::cleared && left_for_prism(world, pathing, memory.claim))
+         memory.claim = -1;
++    // Cassi or Issac banking posts no claim: one left standing would lead the follower to a group we are
++    // not at. Memory keeps it (the siege, crew and pick hysteresis read it). Not on a capture recall, which
++    // holds its group to the payout.
++    twin_unclaimed = twin.mate && ((memory.banking && decision != Branch::capture_recall && decision != Branch::hold)
++                                   || decision == Branch::wait_altar || decision == Branch::tribute_kept);
+     // A turn without siege() (a fight, a heal) keeps the siege while our claim stays on it; a chase
+     // or a bag takes us away from it.
+     if (!sieged && (memory.claim != claim || decision == Branch::chase || banks_bag(world, pathing))) {
+@@ -704,7 +719,7 @@
+     sieged = false;
+     search.chose = false;
+     struck = searched = false;
+-    support_owned = support_requested = support_offered = support_retreat = end_ward = end_tight = false;
++    support_owned = support_requested = support_offered = support_retreat = end_ward = end_tight = twin_unclaimed = false;
+     comms::support_intent(world.round, false);
+     siege_group() = -1;
+     turn_acts = {};
+@@ -714,6 +729,7 @@
+     note_carriers(world);
+     if (world.me().alive) note_upkeep(world, safety, memory.damage), note_income_start(world);
+     stunned_turn = record && my_stunned(cambc::champion_state::from_bits_retain(record->state));
++    twin_read(world);
+     // A failed act still posts the claim, the bag and the health that next turn's damage reads; a
+     // stale turn abandons the rest. Caught here rather than in main's run(), a StaleTurn costs one
+     // personality call and no second unwind (~1k).
+@@ -752,9 +768,10 @@
+     if (world.me().alive && world.me().facts().heals()
+         && ((!support_owned && camp_hits() != camp_hits_before) || my_cooldown(world.me().facts().slot_of(AbilityKind::heal)) >= ability_cooldown))
+         memory.formation_start = -1, memory.formation_turns = 0;
+-    comms::claim(memory.claim);
++    comms::claim(twin_unclaimed ? -1 : memory.claim);
+     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);
+     comms::chasing(world.round, world.me().alive && decision == Branch::chase);
++    comms::twin_home(twin_posts_home(world));
+     if (!world.is_stale()) publish_turn_order(world, comms::priority_payload(world));
+     memory.live_claim = live_claim;
+     memory.round = world.round;
+diff -ru bots/variants/chy-ref/src/bot.h bots/variants/twin/src/bot.h
+--- bots/variants/chy-ref/src/bot.h	2026-11-13 01:55:39.399032918 +0000
++++ bots/variants/twin/src/bot.h	2026-11-13 03:22:36.661051654 +0000
+@@ -43,6 +43,10 @@
+     // work it and the damage taken since.
+     int mono_group = -1, mono_staged = -1, mono_since = -1;
+     float mono_output = 0, mono_taken = 0;
++    // Cassi following Issac (economy/twin.cc): the group and round from which we hold fire on it until he
++    // stands in its reach, -1 for none.
++    // twin_wait_since stays -1 until we are within a step of the staging ring; twin_wait_round: our last such turn.
++    int twin_wait_group = -1, twin_wait_since = -1, twin_wait_round = -1;
+     vec2 ward{-1, -1};    // our latest ward
+     vec2 bushes_watched{-1, -1}; // a tile whose bushes in ward reach are all in our cluster or our ward's
+ };
+diff -ru bots/variants/chy-ref/src/bot_parts.h bots/variants/twin/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 01:55:39.399032918 +0000
++++ bots/variants/twin/src/bot_parts.h	2026-11-13 03:18:40.077931920 +0000
+@@ -389,6 +389,37 @@
+ int gems_short(const World& world, int horizon = static_cast<int>(cambc::constants::max_rounds));
+ const ChampionBelief* partner(const World& world);
+ int bag_at_stake(const World& world);
++
++// economy/twin.cc: Cassi and Issac as one unit, since a death of either kills both. Issac, the melee
++// body that camps hit first as the nearest champion, leads by type (both instances must agree without
++// seeing each other): he picks the farm group priced as the pair. Cassi takes his claim and stands behind
++// him, holding fire until he draws the camps; with no claim to take she keeps within her stun's reach of
++// him. Either body's own trip home takes the other home. Set by twin_read at each turn's start.
++struct Twin {
++    const ChampionBelief* mate = nullptr; // the other body while both live, else null
++    bool leads = false;                   // the mate follows our claim
++    bool mate_home = false;               // the mate posted its own trip home for danger: we follow it
++    bool mate_away = false;               // or for any reason (comms::mate_home): it is not with us
++    bool own_home = false;                // want_home held this turn for a reason of our own
++    int mate_claim = -1;
++    bool induced = false;                 // a want_home this turn held only for the mate's trip home
++    int hold_group = -1;                  // the follower holds fire on this group this turn
++    bool counted = false;                 // the leader's farm counts the mate's output (twin_mate_output)
++};
++Twin twin;
++void twin_read(const World& world);
++bool twin_excluded(const ChampionBelief& a);
++float twin_mate_output(const World& world, const Memory& memory);
++float twin_mate_late(const World& world, int g, vec2 here);
++int twin_follow_claim(const World& world);
++void twin_wait(const World& world, Memory& memory);
++const bitboard* twin_stance(const World& world, int g, const bitboard& tiles, bool& stage);
++bool twin_leaves_pick_up(const World& world, const ChampionBelief& a, int g);
++bool twin_follow_home(const World& world, Pathing& pathing);
++bool twin_waits_home(const World& world);
++bool twin_tether(World& world, Pathing& pathing, Safety& safety, Memory& memory);
++void twin_close_in(const World& world, Pathing& pathing, Safety& safety);
++int twin_posts_home(const World& world);
+ AltarWalk& altar_walk();
+ void flood_altar_walk(const World& world, Pathing& pathing, AltarWalk& w);
+ const AltarAccess& altar_access(const World& world, Pathing& pathing);
+diff -ru bots/variants/chy-ref/src/combat/fight.cc bots/variants/twin/src/combat/fight.cc
+--- bots/variants/chy-ref/src/combat/fight.cc	2026-11-13 01:55:39.399251641 +0000
++++ bots/variants/twin/src/combat/fight.cc	2026-11-13 03:18:40.078128323 +0000
+@@ -594,7 +594,7 @@
+ // reach us to its payout keeps us through all but the camps (hold_outlasts). The work guard keeps
+ // the economy's steps off the tiles beside us that the zone or the recall line would send us back
+ // from (combat/guard.cc).
+-bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
++bool own_want_home(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
+     world.throw_if_stale();
+     const vec2 here = my_position();
+     if (test(world.map().ally_spawn, here)) return false;
+@@ -614,6 +614,12 @@
+     return finish_heal(world, pathing, safety) || stand_lost_at(world, safety, hold);
+ }
+ 
++// Our own reasons, else the twin mate's trip home for danger: a death of either is both.
++bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
++    if (own_want_home(world, pathing, safety, memory)) return twin.own_home = true;
++    return twin_follow_home(world, pathing);
++}
++
+ // The last round we act before e's channel completes, at its turn start in channel_end_round.
+ int last_round_before_channel_ends(const World& world, const ChampionBelief& e) {
+     const int end = e.channel_end_round;
+diff -ru bots/variants/chy-ref/src/economy/crew.cc bots/variants/twin/src/economy/crew.cc
+--- bots/variants/chy-ref/src/economy/crew.cc	2026-11-13 01:55:39.400671530 +0000
++++ bots/variants/twin/src/economy/crew.cc	2026-11-13 02:59:11.095977682 +0000
+@@ -104,7 +104,8 @@
+     x.has_avail = true;
+     x.avail = 0, x.harmless_claim = x.on_cleared = false;
+     const auto& a = *x.a;
+-    if (a.is_self || !a.alive || farms_gold(world, a)) return;
++    // The twin mate's output is already the leader's own.
++    if (a.is_self || !a.alive || farms_gold(world, a) || twin_excluded(a)) return;
+     const auto& map = world.map();
+     if (world.round == world.first_round && x.claim < 0) {
+         x.avail = 1;
+@@ -162,8 +163,8 @@
+         if (out.n == static_cast<int>(out.at.size())) break;
+         auto& x = out.at[static_cast<std::size_t>(out.n)];
+         x.a = &a;
+-        x.claim = comms::claim_of(world, a.index);
+-        x.seen = !a.is_self && a.alive && (a.visible || a.pos_round >= world.round - params::crew_seen_rounds);
++        x.claim = twin_excluded(a) ? -1 : comms::claim_of(world, a.index);
++        x.seen = !a.is_self && a.alive && !twin_excluded(a) && (a.visible || a.pos_round >= world.round - params::crew_seen_rounds);
+         x.has_output = x.has_avail = x.has_pool = false;
+         if (a.is_self) out.self_slot = out.n;
+         else if (a.alive && x.claim >= 0) out.claiming[static_cast<std::size_t>(out.n_claiming++)] = static_cast<std::uint8_t>(out.n);
+diff -ru bots/variants/chy-ref/src/economy/farm.cc bots/variants/twin/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 01:55:39.400671530 +0000
++++ bots/variants/twin/src/economy/farm.cc	2026-11-13 03:22:52.353899320 +0000
+@@ -230,10 +230,11 @@
+         bool ours = true;
+         const bool shy = holders(G) == 1 && hold_shy(world, world.me());
+         for (const auto& a : world.allies) {
+-            if (a.is_self || !a.alive || !a.visible || comms::claim_of(world, a.index) != g) continue;
++            // Leading, the capture is ours: the follower leaves it to us (twin_leaves_pick_up).
++            if (a.is_self || !a.alive || !a.visible || comms::claim_of(world, a.index) != g || (twin.leads && &a == twin.mate)) continue;
+             const int d = steps_to(G, a.pos);
+-            // Cassi and Issac leave it to any other claimer in pick-up reach.
+-            if (shy && !hold_shy(world, a) && d <= params::pick_up_radius) ours = false;
++            // Cassi and Issac leave it to any other claimer in pick-up reach; Cassi following, to Issac too.
++            if (((shy && !hold_shy(world, a)) || twin_leaves_pick_up(world, a, g)) && d <= params::pick_up_radius) ours = false;
+             ours &= d > steps || (d == steps && a.index > world.me().index) || outvalues
+                     || (holders(G) == 1 && (multiplies(world.me(), G) || (!shy && hold_shy(world, a)))
+                         && holder_value(world, world.me(), G, holder_gold_price) > holder_value(world, a, G, holder_gold_price) + 1e-3f);
+@@ -651,6 +652,7 @@
+ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     world.throw_if_stale();
+     auto& memo = farm_memo();
++    if (!repricing) twin_wait(world, memory);
+     if (!banking && !repricing && pick_up(world, pathing, memory)) return true;
+     const auto& map = world.map();
+     const auto& groups = map.groups;
+@@ -667,7 +669,10 @@
+     const int planned_now = !banking && !repricing && !banks_bag_of(banking, banking_now, opening) && params::open_plan::weight > 0
+                                 ? open_plan_choice(world, memory) : -1;
+     const int range = world.me().facts().attack_range();
+-    const float strength = camp_output(world.me()), soften = camp_hit_factor(), reflect = world.me().retaliation();
++    // Leading Cassi, Issac prices every clear at the pair's output, all of the camps' fire on him (twin).
++    const float mate_output = twin_mate_output(world, memory);
++    twin.counted = mate_output > 0;
++    const float strength = camp_output(world.me()) + mate_output, soften = camp_hit_factor(), reflect = world.me().retaliation();
+     const float max_health = my_max_health();
+     const float line = recall_line(world, safety);
+     const float spare_health = (my_health() - line * max_health) / params::camp_risk;
+@@ -685,7 +690,7 @@
+         } else if (crew_in_reach(world, g, my_position(), farm_monolith(world, g) ? groups[g].reach + 2 : range)) {
+             bool joined = false;
+             for (const auto& a : world.allies)
+-                joined |= !a.is_self && a.alive
++                joined |= !a.is_self && a.alive && !twin_excluded(a)
+                           && (comms::claim_of(world, a.index) == g || (a.visible && crew_in_reach(world, g, a.pos, a.facts().attack_range())));
+             if (memory.crew_reached < 0 || joined) memory.crew_reached = world.round;
+             else if (world.round - memory.crew_reached >= params::crew_wait_rounds) {
+@@ -722,9 +727,11 @@
+                 if (c.health[i] > 0 && G.members[i].strength > 0 && dist(p, G.members[i].pos) <= G.reach + 2) return true;
+             return false;
+         };
+-        float staged = strength;
++        // Our own output: the twin mate counts only where it stands.
++        float staged = strength - mate_output;
++        if (twin.counted && twin.mate->visible && near(twin.mate->pos)) staged += mate_output;
+         for (const auto& a : world.allies)
+-            if (!a.is_self && a.alive && a.visible && comms::claim_of(world, a.index) == g && near(a.pos)) staged += camp_output(a);
++            if (!a.is_self && a.alive && a.visible && !twin_excluded(a) && comms::claim_of(world, a.index) == g && near(a.pos)) staged += camp_output(a);
+         if (staged >= params::mono_gather_share * output) return true;
+         return memory.mono_group == g && memory.mono_staged >= 0 && world.round - memory.mono_staged >= params::mono_max_wait;
+     };
+@@ -749,7 +756,7 @@
+     };
+     std::array<std::uint64_t, 4> ally_claims{}; // bit g: comms carries groups below 255
+     for (const auto& a : world.allies)
+-        if (const int c = comms::claim_of(world, a.index); !a.is_self && c >= 0 && c < 256) ally_claims[c >> 6] |= std::uint64_t{1} << (c & 63);
++        if (const int c = comms::claim_of(world, a.index); !a.is_self && !twin_excluded(a) && c >= 0 && c < 256) ally_claims[c >> 6] |= std::uint64_t{1} << (c & 63);
+     const auto claimed_by_ally = [&](int g) __attribute__((always_inline)) {
+         return g < 256 && (ally_claims[g >> 6] >> (g & 63) & 1);
+     };
+@@ -766,6 +773,7 @@
+     // ally clears it or, melee, once every striker is awake anyway. Allies merely walking past
+     // its reach clear nothing.
+     const auto passing = [&](int g) __attribute__((always_inline)) {
++        if (g == twin.hold_group) return false;
+         if (g == memory.farm_group) return true;
+         // The clear's price last: the other tests are cheap reads.
+         if (taken(g)) return false;
+@@ -1067,7 +1075,7 @@
+     const auto struggling = [&](int g) __attribute__((always_inline)) {
+         if (!claimed_by_ally(g)) return false;
+         for (const auto& a : world.allies) {
+-            if (a.is_self || !a.alive || !a.visible || comms::claim_of(world, a.index) != g || !test(groups[g].threat(), a.pos))
++            if (a.is_self || !a.alive || !a.visible || twin_excluded(a) || comms::claim_of(world, a.index) != g || !test(groups[g].threat(), a.pos))
+                 continue;
+             float rounds = 0;
+             const float damage = a.camp_taken * min_camp_damage(world, g, camp_output(a), &rounds, a.retaliation(), a.facts().attack_range(), home_survivable(a));
+@@ -1165,7 +1173,7 @@
+         };
+         if (!allies) {
+             for (const auto& a : world.allies)
+-                if (!a.is_self && a.alive && comms::claim_of(world, a.index) == g) add(a, camp_output(a));
++                if (!a.is_self && a.alive && !twin_excluded(a) && comms::claim_of(world, a.index) == g) add(a, camp_output(a));
+             return total;
+         }
+         for (int k = 0; k < allies->n_claiming; ++k)
+@@ -1175,7 +1183,7 @@
+     // For the prunes' bounds: an ally in reach with no claim of its own may share a clear.
+     float unclaimed_partner_output = 0;
+     for (const auto& a : world.allies)
+-        if (!a.is_self && a.alive && a.visible && dist(here, a.pos) <= params::partner_radius && comms::claim_of(world, a.index) < 0)
++        if (!a.is_self && a.alive && a.visible && !twin_excluded(a) && dist(here, a.pos) <= params::partner_radius && comms::claim_of(world, a.index) < 0)
+             unclaimed_partner_output = std::max(unclaimed_partner_output, camp_output(a));
+     const auto centre_field = [&](int g) __attribute__((always_inline)) {
+         auto& known = group_facts[g];
+@@ -1220,7 +1228,7 @@
+         if (!rival) {
+             rival = false;
+             for (const auto& a : world.allies)
+-                if (const int c = comms::claim_of(world, a.index); !a.is_self && c >= 0 && c < static_cast<int>(groups.size()) && strong(c)) rival = true;
++                if (const int c = comms::claim_of(world, a.index); !a.is_self && !twin_excluded(a) && c >= 0 && c < static_cast<int>(groups.size()) && strong(c)) rival = true;
+         }
+         return *rival;
+     };
+@@ -1993,7 +2001,10 @@
+             help_group = g, help_steps = steps;
+         // A capture's gold that completes an emblem shortens the trip home (HomeTrip::rounds) though worth
+         // counts it too: floored, so a chain never costs less than nothing and every filter below agrees.
+-        const float trip = std::max(0.0f, (by_spawn ? via : pulled_walk(steps) + static_cast<float>(wait)) - bank_now + bank);
++        // The pair's work starts once both are there: the mate's later arrival lengthens it (never shortens:
++        // the prunes' bounds still hold).
++        const float trip = std::max(0.0f, (by_spawn ? via : pulled_walk(steps) + static_cast<float>(wait)) - bank_now + bank)
++                           + (twin.counted ? twin_mate_late(world, g, here) : 0.0f);
+         const float gems = known.gems * exposed, gold = known.gold * exposed, fastest = known.fastest, carried = gems * bonus;
+         // Skip the costly clearing estimate for groups that cannot beat the best even with no
+         // clearing. A crew's share can.
+@@ -2376,6 +2387,14 @@
+     if (banks_bag && attack_in_range()) return true;
+     if (world.is_stale()) return true;
+     if (best < 0 && risky >= 0) best = risky, best_steps = risky_steps, best_value = risky_value, best_priced = Priced{'r'};
++    // Following Issac, Cassi works his claim (twin): her own pick stands only without one.
++    const int follow = banks_bag ? -1 : twin_follow_claim(world);
++    if (follow >= 0) {
++        const int s = steps_data[follow];
++        best = follow, best_spell = false, best_priced = Priced{'2'};
++        best_steps = s >= 0 && s != unreachable ? s : dist(here, groups[follow].centre);
++        shared = help_group = -1;
++    }
+     const int prev_claim = memory.claim;
+     const bool prev_crew = memory.crew;
+     memory.claim = best;
+@@ -2383,6 +2402,7 @@
+     bool spell = best >= 0 && best_spell;
+     Priced chosen = best_priced;
+     if (chosen.mode == 'Q') memory.crew = true; // the claim an ally's leave_for_prism reads; the clear's crew if we come in time
++    if (follow >= 0) memory.crew = true;
+     if (shared >= 0 && (best < 0 || shared_value > best_value)) {
+         best = shared, best_steps = shared_steps, memory.claim = shared, memory.crew = true, spell = false, chosen = shared_priced;
+         if (prev_claim != shared || !prev_crew) {
+@@ -2395,7 +2415,7 @@
+         best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, spell = false, chosen = Priced{'H'};
+     if constexpr (!banking && !repricing && params::open_plan::weight <= 0) {
+         // A help call (an ally struggling at its group) keeps its pull.
+-        if (const int planned = banks_bag || help_group >= 0 ? -1 : open_plan_choice(world, memory); planned >= 0 && planned != best) {
++        if (const int planned = banks_bag || help_group >= 0 || follow >= 0 ? -1 : open_plan_choice(world, memory); planned >= 0 && planned != best) {
+             const int s = steps_data[planned];
+             best = planned, best_steps = s >= 0 && s != unreachable ? s : dist(here, groups[planned].centre);
+             memory.claim = planned, memory.crew = claimed_by_ally(planned), spell = false, chosen = Priced{'P'};
+@@ -2449,7 +2469,7 @@
+         memory.mono_group = -1, memory.mono_staged = -1;
+     }
+     // As the loop priced it; recall_to_farm keeps the turn-end recall while it stays sooner.
+-    if (recall_out && steps_data[best] != unreachable && chosen.mode != 'T' && chosen.mode != 'G' && chosen.mode != 'L' && chosen.mode != 'Q'
++    if (recall_out && follow < 0 && steps_data[best] != unreachable && chosen.mode != 'T' && chosen.mode != 'G' && chosen.mode != 'L' && chosen.mode != 'Q'
+         && via_recall.sooner(spawn_steps(best), respawn_in(world.camps[best]), best_steps) < static_cast<float>(unreachable)
+         && (!to_altar || routed[best])) {
+         memory.recall_farm = best;
+@@ -2489,7 +2509,8 @@
+             return true;
+         }();
+     };
+-    if (heal_before_waking()) return true;
++    // Behind the leader, the camps' first hits are his.
++    if (follow < 0 && heal_before_waking()) return true;
+     // A sleeping Monolith: wait just out of its reach for the crew (mono_engage).
+     if (memory.mono_group == best && world.camps[best].state == CampState::alive) {
+         if (!mono_engage(best, memory.mono_output)) {
+@@ -2535,6 +2556,12 @@
+         outside ^= *zone;
+         return outside;
+     };
++    // The leader's capture is his to hold (twin_leaves_pick_up): we stand guard beside him.
++    if (follow >= 0 && world.camps[best].state == CampState::cleared && twin.mate->visible
++        && steps_to(groups[best], twin.mate->pos) <= params::pick_up_radius) {
++        twin_close_in(world, pathing, safety);
++        return true;
++    }
+     if (world.camps[best].state == CampState::cleared) {
+         // Taking over, to a tile the ally yields to us on (prism_takeover).
+         if (search) {
+@@ -2556,6 +2583,18 @@
+         walk_on(best);
+         return true;
+     }
++    if (follow >= 0) {
++        bool stage = false;
++        if (const auto* stand = twin_stance(world, best, *tiles, stage)) {
++            // Out of the camps' reach until the leader draws their fire.
++            if (stage) {
++                // No way to the ring: we stand rather than walk on into the strikers' reach.
++                if (!test(*stand, here) && search) pathing.step_towards(off_zone(*stand), zone, cap, groups[best].centre);
++                return true;
++            }
++            tiles = stand;
++        }
++    }
+     // Stands on our spawn where a camp phase leaves us above the safe line cost no health: the turn end
+     // heals (home_stands), so they are walked to first. In range off them, a step onto one beside us
+     // is worth taking before the attack (a ranged attack: rules turn.ranged) while the camps fire on
+@@ -2634,7 +2673,7 @@
+     if (walked) {
+         // A hit on a champion is worth its damage; on a camp, the gems it brings closer.
+         see_revealed(world, pathing, safety);
+-        if (heal_before_waking()) return true;
++        if (follow < 0 && heal_before_waking()) return true;
+         if (!strike_enemy(world)) attack_camp(world, passing);
+         cast_at_camp(world, best); // only casts that allow walking remain
+         reset_and_attack_camp(world, best);
+Only in bots/variants/twin/src/economy: twin.cc
+diff -ru bots/variants/chy-ref/src/model/comms.cc bots/variants/twin/src/model/comms.cc
+--- bots/variants/chy-ref/src/model/comms.cc	2026-11-13 01:55:39.401671544 +0000
++++ bots/variants/twin/src/model/comms.cc	2026-11-13 03:18:40.077791438 +0000
+@@ -21,6 +21,8 @@
+ //   ally      0 = none, else 1 + cell * 4 team + 4 ally index + round mod 4 (params::comms_ally): a
+ //             c x c square (c odd: 1, 3 or 5, the narrowest that fits) centred on the record's tile;
+ //             left out when it does not fit
++//   home      Cassi and Issac only: two bits per body, its own trip home (twin_home), rewritten every
++//             turn; the ally record above leaves it room unless only without it would that fit
+ //   then free bits
+ // Each ally's priority payload (turn_order.h) also carries its claim + 1 in its low 8 bits, and
+ // support_mailbox.h's intents above them.
+@@ -48,6 +50,8 @@
+     std::uint64_t bag_bits = 0, camp_bits = 0;
+     bool ally_on = false;
+     BitField ally;
++    bool home_on = false;
++    std::array<BitField, 8> home{}; // by ally index: the two linked bodies' only
+     std::uint64_t ally_bits = 0;
+     int cell = 1, cells_y = 1;
+     int period(int g) const { return camp_offset[g + 1] - camp_offset[g]; }
+@@ -80,16 +84,25 @@
+     const int camp_width = static_cast<int>(std::bit_width(static_cast<std::uint64_t>(L.camp_offset.back())));
+     L.camp_on = shift + camp_width <= 64;
+     if (L.camp_on) L.camp = field(camp_width);
++    std::array<int, 2> linked{-1, -1};
++    for (const auto& a : world.allies)
++        if (a.facts().passive == Passive::linked_pair && a.index < L.team) linked[linked[0] < 0 ? 0 : 1] = a.index;
++    const int home_width = linked[1] >= 0 ? 4 : 0;
+     if (params::comms_ally && L.camp_on)
+-        for (const int c : {1, 3, 5}) {
+-            const auto cells = static_cast<std::uint64_t>((map.width + c - 1) / c) * static_cast<std::uint64_t>((map.height + c - 1) / c);
+-            const int width = width_of(cells * 4 * static_cast<std::uint64_t>(L.team) + 1);
+-            if (shift + width > 64) continue;
+-            L.cell = c, L.cells_y = (map.height + c - 1) / c;
+-            L.ally = field(width);
+-            L.ally_on = true;
+-            break;
+-        }
++        for (int room = home_width; room >= 0 && !L.ally_on; room = room > 0 ? 0 : -1)
++            for (const int c : {1, 3, 5}) {
++                const auto cells = static_cast<std::uint64_t>((map.width + c - 1) / c) * static_cast<std::uint64_t>((map.height + c - 1) / c);
++                const int width = width_of(cells * 4 * static_cast<std::uint64_t>(L.team) + 1);
++                if (shift + width + room > 64) continue;
++                L.cell = c, L.cells_y = (map.height + c - 1) / c;
++                L.ally = field(width);
++                L.ally_on = true;
++                break;
++            }
++    if (home_width > 0 && shift + home_width <= 64) {
++        for (const int i : linked) L.home[static_cast<std::size_t>(i)] = field(2);
++        L.home_on = true;
++    }
+     L.ally_bits = L.ally.mask;
+     L.bag_bits = L.bag.mask;
+     L.camp_bits = L.camp.mask;
+@@ -121,13 +134,16 @@
+ std::array<Told, 8> told_allies;
+ 
+ support_mailbox::State support;
++int home_value = trip_none;
+ int support_intent_round = -1;
+ bool support_intent_value = false;
+ int chasing_round = -1;
+ bool chasing_value = false;
+-// Above the claim (0-7) and support mailbox (8-10): the chase bit, then its posting round mod 4.
++// Above the claim (0-7) and support mailbox (8-10): the chase bit, then its posting round mod 4; then
++// Cassi's or Issac's trip home, for a mate that sees it where the shared bytes have no room.
+ constexpr int chase_shift = 11;
+-static_assert(support_mailbox::payload_shift + 3 <= chase_shift && chase_shift + 3 <= priority_payload_bits);
++constexpr int home_shift = chase_shift + 3;
++static_assert(support_mailbox::payload_shift + 3 <= chase_shift && home_shift + 2 <= priority_payload_bits);
+ 
+ static_assert(support_mailbox::protected_mate == 0 && support_mailbox::healer == 1); // support_pair's order
+ 
+@@ -191,6 +207,8 @@
+         if (a.is_self || a.index >= L.team) continue;
+         const auto p = payload_of(world, a);
+         detail::posts.claims[a.index] = p >= 0 ? static_cast<int>(p & 0xff) - 1 : static_cast<int>(L.claim[static_cast<std::size_t>(a.index)].get(bits)) - 1;
++        if (a.facts().passive == Passive::linked_pair)
++            detail::posts.home[a.index] = static_cast<int>(L.home_on ? L.home[static_cast<std::size_t>(a.index)].get(bits) : p >= 0 ? p >> home_shift & 3 : 0);
+     }
+     if (const auto v = L.ally.get(bits); L.ally_on && (state.fresh & L.ally_bits) && v != 0) {
+         const auto code = v - 1, kinds = 4 * static_cast<std::uint64_t>(L.team);
+@@ -249,6 +267,12 @@
+         if (field.get(bits) != claim) field.set(bits, claim), dirty = true;
+     }
+ 
++    if (L.home_on && me < L.team && L.home[static_cast<std::size_t>(me)].mask) {
++        const auto& field = L.home[static_cast<std::size_t>(me)];
++        const auto v = static_cast<std::uint64_t>(world.me().alive ? home_value : trip_none);
++        if (field.get(bits) != v) field.set(bits, v), dirty = true;
++    }
++
+     // One poster a round, by index among the allies that are not healers, while a healer lives.
+     if (L.ally_on && world.me().alive && !world.me().facts().heals()) {
+         int rank = -1, posters = 0;
+@@ -304,6 +328,8 @@
+     return support.valid(support_mailbox::healer, world.round);
+ }
+ 
++void twin_home(int trip) { home_value = trip; }
++
+ void support_intent(int round, bool positive) { support_intent_round = round, support_intent_value = positive; }
+ 
+ void chasing(int round, bool v) { chasing_round = round, chasing_value = v; }
+@@ -324,6 +350,7 @@
+                                                                                      pair[0]->alive && pair[1]->alive));
+     if (chasing_round == world.round && chasing_value)
+         payload |= 1u << chase_shift | static_cast<std::uint32_t>(world.round & 3) << (chase_shift + 1);
++    if (world.me().facts().passive == Passive::linked_pair) payload |= static_cast<std::uint32_t>(home_value & 3) << home_shift;
+     return payload;
+ }
+ 
+diff -ru bots/variants/chy-ref/src/model/comms.h bots/variants/twin/src/model/comms.h
+--- bots/variants/chy-ref/src/model/comms.h	2026-11-13 01:55:39.401790845 +0000
++++ bots/variants/twin/src/model/comms.h	2026-11-13 03:18:40.077565915 +0000
+@@ -11,6 +11,7 @@
+ // The latest bags and claims: teammates' as they posted them, by ally index, and ours.
+ struct Posts {
+     std::array<int, 8> bags{};
++    std::array<int, 8> home{}; // Cassi's and Issac's own trips home (twin_home's kinds), by ally index
+     std::array<int, 8> claims{-1, -1, -1, -1, -1, -1, -1, -1};
+     int my_bag = 0, mine = -1;
+ };
+@@ -45,6 +46,13 @@
+ // this round or last.
+ void chasing(int round, bool chasing);
+ bool ally_chasing(const World& world, const ChampionBelief& a);
++// Cassi or Issac: our own trip home this turn (economy/twin.cc), posted at the turn's end: 0 none, 1 an
++// errand (shopping, a recall on to a farm group or timed to a payout), 2 danger (want_home). The other
++// body's as last read: from the shared bytes where the layout fits it, else from its priority payload
++// while we see it, else none.
++inline constexpr int trip_none = 0, trip_errand = 1, trip_danger = 2;
++void twin_home(int trip);
++inline int mate_home(const ChampionBelief& mate) { return mate.alive && mate.index < 8 ? detail::posts.home[mate.index] : trip_none; }
+ // Our priority payload: the claim, support intents and chase bit posted this turn.
+ std::uint32_t priority_payload(const World& world);
+ // The group an ally (by index) claims, -1 for none or while it is dead.
+diff -ru bots/variants/chy-ref/src/unity.cpp bots/variants/twin/src/unity.cpp
+--- bots/variants/chy-ref/src/unity.cpp	2026-11-13 01:55:39.402671557 +0000
++++ bots/variants/twin/src/unity.cpp	2026-11-13 02:54:26.761807953 +0000
+@@ -13,6 +13,7 @@
+ #include "economy/capture.cc"
+ #include "economy/crew.cc"
+ #include "economy/farm.cc"
++#include "economy/twin.cc"
+ #include "economy/siege.cc"
+ #include "combat/support.cc"
+ #include "economy/altar_guard.cc"

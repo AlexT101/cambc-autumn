@@ -1,0 +1,32 @@
+diff --git a/bots/variants/chy-ref/src/economy/bank.cc b/bots/variants/sel-ps0/src/economy/bank.cc
+index 2aa0453ac..eb039d59f 100644
+--- a/bots/variants/chy-ref/src/economy/bank.cc
++++ b/bots/variants/sel-ps0/src/economy/bank.cc
+@@ -1379,7 +1379,7 @@ bool can_tribute_safely(const World& world, Pathing& pathing, Safety& safety, co
+ // walk a small bag home.
+ bool may_chain(const World& world, Safety& safety) {
+     if (bag_at_stake(world) >= params::chain_bag_limit || winning_bag(world)) return false;
+-    return !safety.may_reach_within(my_position(), params::pursuit_steps);
++    return !safety.may_reach_within(my_position(), params::chain_reach_steps);
+ }
+ 
+ // A bag bound for an altar rides the recall home when that reaches an altar sooner than walking;
+diff --git a/bots/variants/chy-ref/src/params.h b/bots/variants/sel-ps0/src/params.h
+index d8ae6e752..7674a0ca8 100644
+--- a/bots/variants/chy-ref/src/params.h
++++ b/bots/variants/sel-ps0/src/params.h
+@@ -136,8 +136,12 @@ inline constexpr int brake_bag = 19;
+ // In our own half, give way to packs at this ratio: an enemy pack there has come to fight.
+ inline constexpr float home_retreat_ratio = 2.1740904f;
+ // Leave before contact when the visible enemies within this many steps of their reach would win
+-// even if we struck first (stand_lost_at). At most 3: Safety::late packs it in 2 bits.
+-inline constexpr int pursuit_steps = 2;
++// even if we struck first (stand_lost_at). At most 3: Safety::late packs it in 2 bits. At 0 no
++// walker joins a stand: only enemies already in reach fight it.
++inline constexpr int pursuit_steps = 0;
++// Turns of enemy walk a small bag may chain within (bank may_chain): pursuit_steps' old value, kept
++// apart, as at 0 a bag would chain whenever no enemy could hit it already.
++inline constexpr int chain_reach_steps = 2;
+ // Below this share of max health a sieger out of the besieged group's reach goes home to heal,
+ // and a caster stops staging at spell range.
+ inline constexpr float heal_trip_fraction = 0.5362846f;

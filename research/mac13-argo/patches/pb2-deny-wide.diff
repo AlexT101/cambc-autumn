@@ -1,0 +1,46 @@
+diff -ru bots/variants/chy-ref/src/combat/fight.cc bots/variants/pb2-deny-wide/src/combat/fight.cc
+--- bots/variants/chy-ref/src/combat/fight.cc	2026-11-13 01:55:39.399251641 +0000
++++ bots/variants/pb2-deny-wide/src/combat/fight.cc	2026-11-13 04:36:42.132332611 +0000
+@@ -1205,16 +1205,19 @@
+     // No pair carries more than every living enemy's bag together.
+     int carried = 0;
+     for (const auto& e : world.enemies) carried += e.alive ? e.gems : 0;
+-    if (carried < need) return nullptr;
++    // Probe pb2-deny-wide: a tribute of a third of what the enemy still needs counts too.
++    if (3 * carried < need) return nullptr;
+     std::optional<vec2> here; // and when our bag's win lands if it wins, once one qualifies
+     std::optional<Moment> win;
+     const ChampionBelief* best = nullptr;
+     int best_steps = unreachable;
++    bool best_wide = false;
+     for (const auto& e : world.enemies) {
+         if (!e.alive || !e.visible) continue;
+         const bool tributing = e.channel == Channel::tribute;
++        const bool wins = tributing && enemy_tribute_wins(world, e);
+         // A tribute scores only the tributing body's bag; one by its spawn can still be stunned or locked.
+-        if (tributing ? !enemy_tribute_wins(world, e) : (pair_gems(world, e) < need || test(world.map().near_enemy_spawn, e.pos))) continue;
++        if (tributing ? !(wins || 3 * e.gems >= need) : (pair_gems(world, e) < need || test(world.map().near_enemy_spawn, e.pos))) continue;
+         if (!here) {
+             here = my_position();
+             if (winning_bag(world)) win = win_lands(world);
+@@ -1222,14 +1225,18 @@
+         // Our winning bag wins unless their tribute lands first: under way, or at the end of a walk.
+         if (win) {
+             if (tributing) {
+-                if (!(enemy_tributes_win(world)->lands < *win)) continue;
++                // A tribute that does not win cannot beat our winning bag.
++                if (!wins || !(enemy_tributes_win(world)->lands < *win)) continue;
+             } else {
+                 const auto t = carrier_tribute(world, e, carrier_walk(world, e));
+                 if (!t.altar || !(turn_start(world, e, world.round + t.turns) < *win)) continue;
+                 debug_block({ std::printf("ENDER-WALK %d %u\n", world.round, static_cast<unsigned>(world.me().handle)); });
+             }
+         }
+-        if (const int steps = intercept_steps(world, e, *here); steps < best_steps) best = &e, best_steps = steps;
++        // A real ender goes before any wide one.
++        const bool wide = tributing && !wins;
++        if (const int steps = intercept_steps(world, e, *here); steps < unreachable && (!best || (best_wide && !wide) || (best_wide == wide && steps < best_steps)))
++            best = &e, best_steps = steps, best_wide = wide;
+     }
+     return best;
+ }

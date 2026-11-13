@@ -1,0 +1,9 @@
+A/B mac13-castor-c14-x2: CAND variants/c14-end (dir) vs REF variants/chy-ref (dir)
+  x2: running, log replays/ab/mac13-castor-c14-x2/x2.log
+CAND 55.7% of 10240 (5701-4539), 95% CI 54.7-56.6
+  x2  55.7% of 10240 (5701-4539), 95% CI 54.7-56.6
+Failed matches: 0
+Out-of-fuel turns: CAND 745 in 508 games, REF 627 in 404 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 4m47s
+Results: replays/ab/mac13-castor-c14-x2/summary.md

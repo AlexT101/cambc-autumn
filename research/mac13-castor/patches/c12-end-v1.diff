@@ -1,0 +1,215 @@
+diff -ruN bots/variants/c11-int/src/bot.cc bots/variants/c12-end/src/bot.cc
+--- bots/variants/c11-int/src/bot.cc	2026-11-13 07:41:32.616908561 +0000
++++ bots/variants/c12-end/src/bot.cc	2026-11-13 07:48:01.309731035 +0000
+@@ -727,6 +727,7 @@
+     engaged = 0;
+     const int camp_hits_before = camp_hits();
+     note_carriers(world);
++    note_channels(world);
+     if (world.me().alive) note_upkeep(world, safety, memory.damage), note_income_start(world);
+     stunned_turn = record && my_stunned(cambc::champion_state::from_bits_retain(record->state));
+     // A failed act still posts the claim, the bag and the health that next turn's damage reads; a
+diff -ruN bots/variants/c11-int/src/bot_parts.h bots/variants/c12-end/src/bot_parts.h
+--- bots/variants/c11-int/src/bot_parts.h	2026-11-13 07:41:32.617165485 +0000
++++ bots/variants/c12-end/src/bot_parts.h	2026-11-13 07:48:01.309553482 +0000
+@@ -399,6 +399,8 @@
+ bool below_bank_floor(const World& world, Pathing& pathing, int bag);
+ int bank_floor_most(const World& world);
+ void note_carriers(const World& world);
++void note_channels(const World& world);
++float channel_hazard();
+ int bankable_bag(const World& world, Pathing& pathing);
+ bool altars_sealed(const World& world, Pathing& pathing);
+ bool seals(const World& world, const AltarAccess& access, int g);
+@@ -436,6 +438,8 @@
+ const ChampionBelief* value_holder(const World& world, const CampGroup& G);
+ bool keeps_bag(const World& world, const ChampionBelief& a, int gems);
+ float prism_premium(const World& world, const ChampionBelief& a, int gems);
++float prism_growth(const World& world, const ChampionBelief& a, int gems);
++bool banks_installment(const World& world, const ChampionBelief& a, int gems);
+ bool outvalues_holders(const World& world, const CampGroup& G);
+ bool takes_over(const World& world);
+ bool may_take_over(const World& world, const CampGroup& G);
+diff -ruN bots/variants/c11-int/src/economy/bank.cc bots/variants/c12-end/src/economy/bank.cc
+--- bots/variants/c11-int/src/economy/bank.cc	2026-11-13 01:55:39.942275536 +0000
++++ bots/variants/c12-end/src/economy/bank.cc	2026-11-13 07:48:01.309351860 +0000
+@@ -739,6 +739,38 @@
+     return (1 + carriers.deaths) / (1 / params::carrier_hazard + carriers.rounds);
+ }
+ 
++// Our tribute channels started to complete (submit_here's, not Mite's turn-end habit, which the next turn
++// cancels at will): turn ends channelled and restarts, a channel that ended with its bag still carried.
++struct ChannelRecord {
++    int bag = 0, round = -1;
++    bool on = false, deliberate = false;
++    float restarts = 0, turns = 0;
++} own_channels;
++
++void note_tribute_start(const World& world, bool deliberate) {
++    auto& c = own_channels;
++    c.on = true, c.deliberate = deliberate, c.bag = static_cast<int>(my_gems()), c.round = world.round;
++}
++
++void note_channels(const World& world) {
++    auto& c = own_channels;
++    if (!c.on || world.round == c.round) return;
++    const bool alive = world.me().alive;
++    const bool channelling_now = alive && my_state().contains(cambc::champion_state::submitting_gems);
++    if (c.deliberate) {
++        // A completed channel ticked every turn end since the last note; a cancelled one ended within the turn.
++        if (channelling_now || !alive || my_gems() < static_cast<std::uint32_t>(c.bag)) c.turns += static_cast<float>(world.round - c.round);
++        else c.restarts += 1;
++    }
++    c.on = channelling_now, c.round = world.round;
++}
++
++// The posterior mean of a tribute channel's restart hazard a turn: a Gamma prior worth one restart at
++// params::channel_hazard, updated with our own channels' restarts and turns.
++float channel_hazard() {
++    return (1 + own_channels.restarts) / (1 / params::channel_hazard + own_channels.turns);
++}
++
+ // The smallest bag worth a bank trip, the economic order quantity sqrt(2 K D / h): a trip of T rounds
+ // forgoes K = T D gems at our income D a round, and a gem carried costs h = hazard x swing a round.
+ // T is the way there (a walk, or a recall and the walk from spawn), the tribute's one fixed turn (the
+@@ -901,9 +933,11 @@
+     return bag_rounds_left(world) <= walk + tribute_turns(world, my_gems()) + endgame_margin;
+ }
+ 
+-// Prism keeps the gems it carries or gains for their Focus, until its bag wins or the game closes.
++// Prism keeps the gems it carries or gains for their Focus, until its bag wins, the game closes or banking it
++// now costs less than its share of the final channel (banks_installment).
+ bool keeps_gems(const World& world, Pathing& pathing) {
+-    return world.me().facts().passive == Passive::gem_focus && !winning_bag(world) && !closing(world, pathing);
++    return world.me().facts().passive == Passive::gem_focus && !winning_bag(world) && !closing(world, pathing)
++           && !banks_installment(world, world.me(), 0);
+ }
+ 
+ bool retaining_gems(const World& world, Pathing& pathing) { return my_gems() > 0 && keeps_gems(world, pathing); }
+@@ -958,6 +992,7 @@
+         try {
+             self_acted(), me.submit_gems(altars[a].pos);
+             count_tribute_cut(world);
++            note_tribute_start(world, true);
+             return true;
+         } catch (const cambc::error&) {
+         }
+@@ -1361,6 +1396,7 @@
+     try {
+         self_acted(), cambc::self().submit_gems(world.map().altars[a].pos);
+         count_tribute_cut(world);
++        note_tribute_start(world, false);
+         return true;
+     } catch (const cambc::error&) {
+     }
+diff -ruN bots/variants/c11-int/src/economy/capture.cc bots/variants/c12-end/src/economy/capture.cc
+--- bots/variants/c11-int/src/economy/capture.cc	2026-11-13 05:32:32.481129691 +0000
++++ bots/variants/c12-end/src/economy/capture.cc	2026-11-13 07:47:33.800516013 +0000
+@@ -163,7 +163,8 @@
+     const int bag = team_bag(world, a);
+     return a.facts().passive == Passive::gem_focus && (!(a.is_self || a.visible) || a.health >= params::hurt_health_fraction * a.max_health)
+            && world.score.ally + bag + gems < static_cast<int>(cambc::constants::winning_gems)
+-           && rounds_left(world) > tribute_turns(bag + gems, a.fast_tribute) + map.width + map.height + endgame_margin;
++           && rounds_left(world) > tribute_turns(bag + gems, a.fast_tribute) + map.width + map.height + endgame_margin
++           && !banks_installment(world, a, gems);
+ }
+ 
+ // The team's farm as every ally reads it (score, bags, stats in sight or last seen), once a round:
+@@ -172,7 +173,7 @@
+ // gem_income_rate's prior on each body), and `to_win`, the rounds until that pace has collected the
+ // win, when a kept bag stops being kept (winning_bag).
+ struct TeamFarm {
+-    float per_output = 0, to_win = 0;
++    float per_output = 0, to_win = 0, per_round = 0;
+ };
+ const TeamFarm& team_farm(const World& world) {
+     static TeamFarm kept;
+@@ -187,6 +188,7 @@
+     const float per_round = (static_cast<float>(collected) + n * income_prior_gems)
+                             / (static_cast<float>(std::max(0, world.round)) + prior_rounds_per_gem * income_prior_gems);
+     kept.per_output = per_round / std::max(1.0f, output);
++    kept.per_round = per_round;
+     kept.to_win = static_cast<float>(std::max(0, static_cast<int>(cambc::constants::winning_gems) - collected)) / per_round;
+     return kept;
+ }
+@@ -199,6 +201,14 @@
+ // nothing. Read from what every ally reads alike, so all agree.
+ float prism_premium(const World& world, const ChampionBelief& a, int gems) {
+     if (gems <= 0 || !keeps_bag(world, a, gems)) return 0.0f;
++    const float growth = prism_growth(world, a, gems);
++    const int room = static_cast<int>(cambc::constants::winning_gems) - world.score.ally - team_bag(world, a) - gems;
++    return std::max(0.0f, std::min(growth, static_cast<float>(room) / static_cast<float>(gems)));
++}
++
++// prism_premium's exp(k rho H) - 1 for Prism ally a with `gems` more in its bag, before the win's cap and
++// whether it keeps the bag.
++float prism_growth(const World& world, const ChampionBelief& a, int gems) {
+     // The gem-independent part, kept per ally while its inputs hold; the bag's tribute is read per call, so the
+     // result never depends on which `gems` was asked first and only falls with them.
+     struct Kept {
+@@ -223,9 +233,48 @@
+     }
+     if (const int last = k.margin - tribute_turns(bag + gems, a.fast_tribute); last != k.last)
+         k.last = last, k.growth = std::expm1(k.rate * std::max(0.0f, std::min(k.to_win, static_cast<float>(last))));
+-    const float growth = k.growth;
+-    const int room = static_cast<int>(cambc::constants::winning_gems) - world.score.ally - bag - gems;
+-    return std::max(0.0f, std::min(growth, static_cast<float>(room) / static_cast<float>(gems)));
++    return k.growth;
++}
++
++// Installment banking: Prism ally a banks its bag B (with `gems` more) now when that costs less than keeping
++// it. The bag is tributed in the end, each gem adding 1/10 turn (x0.67 with a Tribute emblem) to a final channel
++// the win waits on, a round of which is worth the team's whole collection R (team_farm). Under a restart
++// hazard lambda (channel_hazard) a b-turn channel takes C(b) = (e^(lambda b) - 1) / lambda turns, and C is
++// convex, so the bag's share of the final channel is at least C of its own b: R C(b). Banking now costs the
++// trip to the nearest altar and back and the tribute's channel (whole turns), each round at the Prism's own
++// rate r (rho x its output) worth 1 + p a gem (p its premium), and p on each banked gem its Focus no longer
++// compounds (to the win's room). Read from what every ally reads alike, but for lambda, each one's own.
++bool banks_installment(const World& world, const ChampionBelief& a, int gems) {
++    const int bag = team_bag(world, a) + gems;
++    if (bag <= 0) return false;
++    struct Kept {
++        int round = -1;
++        std::uint32_t observations = ~0u, mine = ~0u;
++        int bag = -1;
++        vec2 pos{-1, -1};
++        bool banks = false;
++    };
++    static std::array<Kept, 16> kept;
++    auto& k = kept[static_cast<std::size_t>(a.index) & 15];
++    if (k.round == world.round && k.observations == world.observations && k.mine == my_gems() && k.bag == bag && k.pos == a.pos)
++        return k.banks;
++    k = {world.round, world.observations, my_gems(), bag, a.pos, false};
++    const auto& tf = team_farm(world);
++    const float lambda = channel_hazard();
++    const auto turns = [&](float b) { return std::expm1(lambda * b) / lambda; };
++    // The final channel's share: continuous, a turn per 10 gems less a Tribute emblem's third.
++    const float share = static_cast<float>(bag) / gems_per_tribute_turn * (a.fast_tribute ? 1.0f - tribute_emblem_cut / 100.0f : 1.0f);
++    const float end = tf.per_round * turns(share);
++    int near = unreachable;
++    for (const auto& alt : world.map().altars)
++        near = std::min(near, std::max(0, dist(a.pos, alt.pos) - static_cast<int>(cambc::constants::submit_gems_range)));
++    if (near == unreachable) return false;
++    const float p = prism_growth(world, a, gems);
++    const float own = camp_output(a) * tf.per_output;
++    const int room = std::max(0, static_cast<int>(cambc::constants::winning_gems) - world.score.ally - bag);
++    const float now = own * (1.0f + p) * (static_cast<float>(2 * near) + turns(static_cast<float>(tribute_turns(bag, a.fast_tribute))))
++                      + std::min(static_cast<float>(bag) * p, static_cast<float>(room));
++    return k.banks = end > now;
+ }
+ 
+ // What a's lone hold of G pays the team, in gems at `price` a gold: its share with a Prospector
+diff -ruN bots/variants/c11-int/src/params.h bots/variants/c12-end/src/params.h
+--- bots/variants/c11-int/src/params.h	2026-11-13 01:55:39.944678868 +0000
++++ bots/variants/c12-end/src/params.h	2026-11-13 07:48:01.309627363 +0000
+@@ -119,6 +119,10 @@
+ // alive with 25+ gems, measured on 10,240 macro3-base games.
+ inline constexpr float carrier_hazard = 0.86e-3f;
+ inline constexpr float bag_swing = 2.0f;
++// A tribute channel's restart hazard a turn (economy/bank.cc channel_hazard, a posterior from this prior worth
++// one restart): Prism tribute starts of 100+ gems 16+ tiles from the nearest enemy completed 38-50% of their
++// mean 70-turn channels in 1,000 c7-vs-charybdis replays, -ln(0.44) / 70.
++inline constexpr float channel_hazard = 0.0117f;
+ 
+ // Cassi's or Issac's hold is worth this share of another ally's in the holder choice
+ // (economy/capture.cc hold_shy): the pair hands captures to the rest of the team.

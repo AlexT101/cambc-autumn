@@ -1,0 +1,55 @@
+diff -ruN -x .cambc -x compile_commands.json bots/variants/chy-ref/src/combat/fight.cc bots/variants/h-prey/src/combat/fight.cc
+--- bots/variants/chy-ref/src/combat/fight.cc	2026-11-13 01:55:41.692217550 +0000
++++ bots/variants/h-prey/src/combat/fight.cc	2026-11-13 03:54:54.739728373 +0000
+@@ -742,6 +742,36 @@
+     return std::max(0, dist(here, *t.altar) - submit - range) < t.turns ? steps : unreachable;
+ }
+ 
++// e cannot both fight us and keep its work: a visible tribute or kept recall (damage or a stun ends
++// the recall, a stun the tribute), or a monster that would hit it in the next camp phase: a striking
++// member of an awake group, read alive this round, with e within its range, no other visible
++// champion nearer it and none of ours as near (a tie may go to ours: rules camps.attack).
++bool busy(const World& world, const ChampionBelief& e) {
++    if (!e.visible) return false;
++    if (e.channel == Channel::tribute || recall_kept(e)) return true;
++    const auto& map = world.map();
++    for (const int g : map.groups_near(e.pos, map.max_camp_reach)) {
++        const auto& group = map.groups[g];
++        const auto& c = world.camps[g];
++        if (group.strength <= 0 || c.state != CampState::alive || c.awake != Awake::awake) continue;
++        for (std::size_t i = 0; i < group.members.size(); ++i) {
++            const auto& m = group.members[i];
++            const int d = dist(m.pos, e.pos);
++            if (m.strength <= 0 || !(c.health[i] > 0) || c.health_round[i] != world.round || d > m.reach || (i < 64 && (c.asleep >> i & 1)))
++                continue;
++            bool nearest = true;
++            for (const auto& a : world.allies) {
++                const vec2 at = a.is_self ? my_position() : a.pos;
++                if (a.alive && in_bounds(at) && dist(m.pos, at) <= d) nearest = false;
++            }
++            for (const auto& o : world.enemies)
++                if (&o != &e && o.alive && o.visible && dist(m.pos, o.pos) < d) nearest = false;
++            if (nearest) return true;
++        }
++    }
++    return false;
++}
++
+ // prey's tests before the fight: e is worth chasing from `here` if that fight is won. `held`: the
+ // gems of a cleared group it stands on.
+ bool preyable(const World& world, Safety& safety, const ChampionBelief& e, vec2 here, int range, int& held) {
+@@ -752,11 +782,12 @@
+     // Out of reach on its own ground only when hurt or carrying a bag we can stop: fights at
+     // central altars straddle the line, and a beaten enemy otherwise escapes a step across it,
+     // but a bag has to stop at an altar to score, and a kill takes it. An enemy holding a
+-    // cleared group is taking its gems: killing it is how a capture is contested.
++    // cleared group is taking its gems: killing it is how a capture is contested. One busy with a
++    // monster or a channel fights us at a loss or gives its work up.
+     const int g = world.map().group_at(e.pos);
+     held = g >= 0 && world.camps[g].state == CampState::cleared ? world.map().groups[g].gems : 0;
+     if (!(comeback::cooked(world) && pair_gems(world, e) >= params::comeback::bar_bag) && dist(here, e.pos) > range && !own_ground(world, e.pos) && e.health >= params::hurt_health_fraction * e.max_health && held == 0
+-        && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable))
++        && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable) && !busy(world, e))
+         return false;
+     // Every tile in reach of it would make us retreat at once.
+     return !pack_covers(world, safety, e.pos, range);

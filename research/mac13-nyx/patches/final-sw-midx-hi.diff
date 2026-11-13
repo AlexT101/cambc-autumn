@@ -1,0 +1,728 @@
+diff -ruN bots/variants/chy-ref/src/bot.cc bots/variants/sw-midx-hi/src/bot.cc
+--- bots/variants/chy-ref/src/bot.cc	2026-11-13 01:55:42.824714967 +0000
++++ bots/variants/sw-midx-hi/src/bot.cc	2026-11-13 04:24:45.753138906 +0000
+@@ -62,90 +62,6 @@
+     if (test(map.bushes, here)) drop(candidates, map.bush_cluster(here).tiles);
+ }
+ 
+-// Attackers in a bush stay unseen from outside it, and a ward inside sees across its cluster.
+-// Our one ward never expires, so replace it only by a cluster with more tiles in ability range of
+-// here and of our work (claimed group or waited-at altar), where we will be again.
+-bool ward_bushes(const World& world, Memory& memory) {
+-    const auto& map = world.map();
+-    const vec2 here = my_position();
+-    // Cluster growth stops this far above empty: what follows (turn order, comms) has its own checks.
+-    const auto floor = end_reserve / 2;
+-    // Off the map: killed this turn (Ren's retaliation), after world.me() was read alive.
+-    if (here.x < 0 || here == memory.bushes_watched) return false;
+-    if (!bushes_in_ward_range(map, here)) return false;
+-    // Our ward's cluster too, which a planned ward may have put down unseen.
+-    const bool ward_in_bush = in_bounds(memory.ward) && test(map.bushes, memory.ward);
+-    if (!map.find_bush_clusters(here, ward_range(), floor) || (ward_in_bush && !map.find_bush_clusters(memory.ward, 0, floor))) {
+-        note_shortcut("ward-no-bushes-clusters");
+-        return false;
+-    }
+-    // Scratch boards: allocating one costs more than the host operations on it.
+-    static bitboard candidates{cambc::uninitialized}, inner{cambc::uninitialized}, scratch{cambc::uninitialized},
+-        best{cambc::uninitialized};
+-    bush_ward_candidates(map, here, candidates);
+-    // As a candidate it could only tie with itself.
+-    const BushCluster* warded = ward_in_bush ? &map.bush_cluster(memory.ward) : nullptr;
+-    if (warded) drop(candidates, warded->tiles);
+-    if (candidates.is_empty()) {
+-        memory.bushes_watched = here;
+-        return false;
+-    }
+-    drop(candidates, map.enemy_spawn);
+-    cambc::vision::ward_tiles_into(team::ally, scratch);
+-    drop(candidates, scratch);
+-    const vec2 work = memory.claim >= 0        ? map.groups[memory.claim].centre
+-                      : memory.wait_altar >= 0 ? map.altars[memory.wait_altar].pos
+-                                               : vec2{-1, -1};
+-    // An ability reaches farther than any basic attack.
+-    const auto score = [&](const bitboard& tiles) __attribute__((always_inline)) {
+-        const int n = static_cast<int>(count_within(tiles, here, ability_range));
+-        return in_bounds(work) ? n + static_cast<int>(count_within(tiles, work, ability_range)) : n;
+-    };
+-    inner.clear();
+-    inner.draw_chebyshev(here, 1.0f);
+-    bool found = false;
+-    int best_score = warded ? score(warded->tiles) : 0;
+-    while (!candidates.is_empty()) {
+-        const auto& c = map.bush_cluster(first_tile(candidates));
+-        if (const int s = score(c.tiles); s > best_score) {
+-            best.clear();
+-            best |= c.tiles;
+-            best &= candidates; // the cluster's tiles we may ward
+-            scratch.clear();
+-            scratch |= best;
+-            drop(scratch, inner); // those not beside us, if any
+-            if (!scratch.is_empty()) best.swap(scratch);
+-            found = true, best_score = s;
+-        }
+-        drop(candidates, c.tiles);
+-    }
+-    if (!found) return false;
+-    // A teammate's ward unseen in the bush blocks its tile, and allies pick the same tile first.
+-    for (auto p : Tiles<3>{best})
+-        if (try_ward(p, memory)) return true;
+-    return false;
+-}
+-
+-// The draft's ward tile for our work (claimed group, else waited-at altar): placed once in range,
+-// then kept while that work lasts. Null without one.
+-std::optional<bool> ward_planned(const World& world, Memory& memory) {
+-    const auto& map = world.map();
+-    const int site = memory.claim >= 0        ? memory.claim
+-                     : memory.wait_altar >= 0 ? static_cast<int>(map.groups.size()) + memory.wait_altar
+-                                              : -1;
+-    if (site < 0) return std::nullopt;
+-    const vec2 p = map.drafted_ward(site);
+-    if (p.x < 0) return std::nullopt;
+-    if (memory.ward == p) return false;
+-    const vec2 here = my_position();
+-    if (here.x < 0 || dist(here, p) > ward_range()) return std::nullopt;
+-    // A visible allied ward on the tile is an error (wards.placement).
+-    static bitboard allied{cambc::uninitialized};
+-    cambc::vision::ward_tiles_into(team::ally, allied);
+-    if (test(allied, p) || !try_ward(p, memory)) return std::nullopt;
+-    return true;
+-}
+-
+ // The reveal ward (Idea C), after a fight last turn or health lost since our last turn (a hidden attacker, or
+ // camps): a ward into the unseen bush cluster within ward range that most likely holds an enemy that could strike
+ // us, or we it. It sees the cluster from placement, so this turn's strikes see what it reveals. True once a tile is
+@@ -255,15 +171,442 @@
+     return n > 0;
+ }
+ 
+-// `bushes`: a bush ward if no planned one goes down.
+-bool place_ward(const World& world, Memory& memory, bool bushes) {
++// The ward policy. A ward tile's value is the sight it adds over our own of tiles an enemy can stand
++// on, as the draft's best_ward weighs it: three times within ability reach, once within ward reach
++// (placement 2 plus ward sight 6), around where we will be (our work site's stand tiles) and here.
++// A bush tile is seen only from inside its cluster (vision.occlusion), so a ward in a cluster beside
++// our work scores all of it. Our current ward is valued alike, and replaced only by a clear margin:
++// it keeps watching our work while we walk home and back, and moves once our work does.
++// Each tile is weighed by what seeing it tells us about enemies: 1 for any tile an enemy can stand on
++// (one untracked, or arriving later), plus, for each tracked unseen enemy, its chance of standing
++// there now (1/|possible|) times enemy_info_mass. Seeing where an enemy may be either reveals it or
++// prunes it from Safety; a tile no enemy can be on now tells us only about later arrivals.
++inline constexpr float ward_replace_margin = 1.25f;
++inline constexpr int ward_reach = 2 + 6;
++// An enemy's whole mass: the tiles of its widest strike square, over which Safety prices an unseen
++// enemy (safety.h), so knowing it there for certain is worth watching that square of empty tiles.
++// It is also a ward's own sight square (radius 6), so a ward that pins one enemy doubles a full one.
++inline constexpr float enemy_info_mass = static_cast<float>((2 * Strike::max_reach + 1) * (2 * Strike::max_reach + 1));
++// Fuel to score one candidate (a shadowcast and its chunks), its chunks again for each enemy mass,
++// and a site's boards (a cast a stand tile).
++inline constexpr std::uint64_t ward_candidate_cost = 1500, ward_mass_cost = 300, ward_site_cost = 6000;
++
++// What a ward (radius 6) or a champion (8) on p sees: from a bush, its own cluster too. p's cluster
++// must be found.
++void ward_sight_from(const StaticMap& map, vec2 p, int r, bitboard& out) {
++    static bitboard opaque{cambc::uninitialized};
++    if (!test(map.bushes, p)) return map.walls_and_bushes.shadow_cast_into(p, static_cast<std::uint16_t>(r), out);
++    xor_into(map.walls_and_bushes, map.bush_cluster(p).tiles, opaque);
++    opaque.shadow_cast_into(p, static_cast<std::uint16_t>(r), out);
++}
++
++// Where we will be, as a draft ward site (altar a at groups + a): our claimed group, else an altar we
++// wait at (farm_group stays set while we do), else our farm group; -1 for none.
++int ward_site(const StaticMap& map, const Memory& memory) {
++    const int groups = static_cast<int>(map.groups.size());
++    if (memory.claim >= 0 && memory.claim < groups) return memory.claim;
++    if (memory.wait_altar >= 0 && memory.wait_altar < static_cast<int>(map.altars.size())) return groups + memory.wait_altar;
++    if (memory.farm_group >= 0 && memory.farm_group < groups) return memory.farm_group;
++    return -1;
++}
++
++// Squares of radius r around the site's stand tiles (a group's camp tiles, else the altar's tribute tiles), added to out.
++void draw_stand_squares(const StaticMap& map, int site, int r, bitboard& out) {
++    const int groups = static_cast<int>(map.groups.size());
++    if (site < groups)
++        for (const auto& m : map.groups[site].members) draw_square(out, m.pos, static_cast<float>(r));
++    else
++        draw_square(out, map.altars[site - groups].pos, static_cast<float>(r + 1));
++}
++
++// The site's share of every ward's value: tiles an enemy can stand on within ability reach (near) and
++// ward reach (far) of its stand tiles (a group's camp tiles, else the altar's tribute tiles) that a
++// champion on one of them may not see. A group's camp tiles count in both: reading a camp's state
++// needs one in view (camps.state), and between visits we are away. False if a stand tile's bush
++// cluster is not found above `floor`.
++bool ward_site_boards(const StaticMap& map, int site, std::uint64_t floor, bitboard& near, bitboard& far) {
++    static bitboard own{cambc::uninitialized}, one{cambc::uninitialized};
++    const int groups = static_cast<int>(map.groups.size());
++    bool first = true, found = true;
++    const auto add = [&](vec2 p) {
++        if (!found) return;
++        if (test(map.bushes, p) && !map.find_bush_clusters(p, 0, floor)) {
++            found = false;
++            return;
++        }
++        ward_sight_from(map, p, vision_radius, first ? own : one);
++        if (!first) own &= one;
++        first = false;
++    };
++    const auto draw = [&](bitboard& out, int r) {
++        clear_board(out);
++        draw_stand_squares(map, site, r, out);
++        out &= map.open_for_them;
++        drop(out, own);
++        if (site < groups)
++            for (const auto& m : map.groups[site].members) set_tile(out, m.pos);
++    };
++    if (site < groups)
++        for (const auto& m : map.groups[site].members) add(m.pos);
++    else {
++        const vec2 a = map.altars[site - groups].pos;
++        for (int dy = -1; dy <= 1; ++dy)
++            for (int dx = -1; dx <= 1; ++dx)
++                if (const vec2 q{a.x + dx, a.y + dy}; in_bounds(q) && test(map.open_for_us, q)) add(q);
++        if (first) add(a);
++    }
++    if (!found) return false;
++    draw(near, ability_range);
++    draw(far, ward_reach);
++    return true;
++}
++
++// 3 a tile of `near` and 1 of the rest of `far` (near within far) that `sight`, cast r from w, holds.
++int band_count(const bitboard& sight, vec2 w, int r, const bitboard& near, const bitboard& far) {
++    const auto& layout = cambc::detail::layout();
++    const int stride = static_cast<int>(layout.chunk_stride);
++    const std::uint64_t *const seen = sight.ptr(), *const near_w = near.ptr(), *const far_w = far.ptr();
++    // Whole chunks, unmasked: the cast overwrites the board, so it holds nothing beyond r of w.
++    const int x0 = std::max(0, w.x - r) >> 3, x1 = std::min(layout.width - 1, w.x + r) >> 3;
++    const int y0 = std::max(0, w.y - r) >> 3, y1 = std::min(layout.height - 1, w.y + r) >> 3;
++    const auto chunk = [&](int at) {
++        const std::uint64_t s = seen[at];
++        return 2 * __builtin_popcountll(s & near_w[at]) + __builtin_popcountll(s & far_w[at]);
++    };
++    int value = 0;
++    // A row of up to 17 tiles (r 8) spans at most 3 chunks, read at fixed offsets: as a loop it cost ~2x (best_ward).
++    if (x1 - x0 <= 2)
++        for (int cy = y0, at = y0 * stride + x0; cy <= y1; ++cy, at += stride) {
++            value += chunk(at);
++            if (x1 > x0) value += chunk(at + 1);
++            if (x1 > x0 + 1) value += chunk(at + 2);
++        }
++    else
++        for (int cy = y0; cy <= y1; ++cy)
++            for (int at = cy * stride + x0, end = cy * stride + x1; at <= end; ++at) value += chunk(at);
++    return value;
++}
++
++// The tracked unseen enemies with possible tiles in the bands: near(i) and far(i) are those tiles,
++// weight[i] the mass each carries (enemy_info_mass / |possible|). Enemies of one lineage share their
++// possible tiles, so they share an entry, their weights summed. any_near and any_far are the union,
++// `total` the summed weights: total x band_count over the union bounds the mass any sight holds.
++struct EnemyMass {
++    int n = 0;
++    float total = 0;
++    std::array<float, 16> weight;
++    std::array<const GrowBox*, 16> box;
++    std::array<std::uint32_t, 16> lineage;
++    // Two boards an entry, then the union's two.
++    static std::vector<bitboard>& boards() {
++        static std::vector<bitboard> b;
++        return b;
++    }
++    const bitboard& near(int i) const { return boards()[static_cast<std::size_t>(2 * i)]; }
++    const bitboard& far(int i) const { return boards()[static_cast<std::size_t>(2 * i + 1)]; }
++    const bitboard& any_near() const { return boards()[boards().size() - 2]; }
++    const bitboard& any_far() const { return boards()[boards().size() - 1]; }
++};
++
++void enemy_mass(const World& world, const bitboard& near, const bitboard& far, EnemyMass& out) {
++    auto& boards = EnemyMass::boards();
++    const std::size_t entries = std::min<std::size_t>(world.enemies.size(), out.weight.size());
++    while (boards.size() < 2 * entries + 2) boards.emplace_back(cambc::uninitialized);
++    out.n = 0;
++    out.total = 0;
++    for (const auto& e : world.enemies) {
++        if (!e.alive || e.visible || !e.tracked) continue;
++        int same = -1;
++        for (int i = 0; i < out.n && e.lineage; ++i)
++            if (out.lineage[static_cast<std::size_t>(i)] == e.lineage) same = i;
++        if (same < 0 && out.n == static_cast<int>(entries)) continue;
++        bool empty = false;
++        if (same < 0) {
++            auto& f = boards[static_cast<std::size_t>(2 * out.n + 1)];
++            and_into(e.possible, far, f);
++            empty = board_empty(f);
++        }
++        if (empty) continue;
++        const float w = enemy_info_mass / static_cast<float>(board_count(e.possible));
++        out.total += w;
++        if (same >= 0) {
++            out.weight[static_cast<std::size_t>(same)] += w;
++            continue;
++        }
++        and_into(e.possible, near, boards[static_cast<std::size_t>(2 * out.n)]);
++        out.weight[static_cast<std::size_t>(out.n)] = w;
++        out.box[static_cast<std::size_t>(out.n)] = &e.possible_box;
++        out.lineage[static_cast<std::size_t>(out.n)] = e.lineage;
++        ++out.n;
++    }
++    if (out.n < 2) return;
++    auto& un = boards[boards.size() - 2];
++    auto& uf = boards[boards.size() - 1];
++    copy_into(boards[0], un);
++    copy_into(boards[1], uf);
++    for (int i = 1; i < out.n; ++i) {
++        un |= boards[static_cast<std::size_t>(2 * i)];
++        uf |= boards[static_cast<std::size_t>(2 * i + 1)];
++    }
++}
++
++// The information `sight`, cast r from w, holds: band_count of the tiles, plus each enemy's mass on
++// them. If a bound on it is at most `skip`, the bound instead (a candidate that cannot pass).
++float info_value(const bitboard& sight, vec2 w, int r, const bitboard& near, const bitboard& far, const EnemyMass& mass,
++                 float skip = -1) {
++    float value = static_cast<float>(band_count(sight, w, r, near, far));
++    if (mass.n >= 2 && skip >= 0)
++        if (const float bound = value + mass.total * static_cast<float>(band_count(sight, w, r, mass.any_near(), mass.any_far())); bound <= skip)
++            return bound;
++    for (int i = 0; i < mass.n; ++i)
++        if (mass.box[static_cast<std::size_t>(i)]->meets(w, r))
++            value += mass.weight[static_cast<std::size_t>(i)] * static_cast<float>(band_count(sight, w, r, mass.near(i), mass.far(i)));
++    return value;
++}
++
++// info_value of what a ward on w sees. w's cluster must be found.
++float ward_value(const StaticMap& map, vec2 w, const bitboard& near, const bitboard& far, const EnemyMass& mass, float skip = -1) {
++    static bitboard sight{cambc::uninitialized};
++    const int r = static_cast<int>(cambc::constants::ward_vision_radius);
++    ward_sight_from(map, w, r, sight);
++    return info_value(sight, w, r, near, far, mass, skip);
++}
++
++// When our ward is ready: the best tile within placement range, if it beats our current ward's value
++// by the margin. `start`: the turn's start, where the strike search follows and bush clusters grow
++// at most reveal_grow_fuel (the turn end grows the rest).
++bool place_ward(const World& world, Memory& memory, bool start) {
+     world.throw_if_stale();
+     // A stun refuses every ward, and the thrown error costs ~3.9k fuel.
+     if (stunned_turn || !world.me().alive || channelling() || cambc::self().ward_cooldown() > 0) return false;
+-    const auto planned = ward_planned(world, memory);
+-    const bool placed = planned ? *planned : bushes && ward_bushes(world, memory);
+-    if (placed) warded_round = world.round;
+-    return placed;
++    const auto& map = world.map();
++    // Off the map: killed this turn (Ren's retaliation), after world.me() was read alive.
++    const vec2 here = my_position();
++    if (here.x < 0) return false;
++    int site = ward_site(map, memory);
++    static bitboard near{cambc::uninitialized}, far{cambc::uninitialized}, own{cambc::uninitialized},
++        tiles{cambc::uninitialized}, allied{cambc::uninitialized};
++    cambc::vision::ward_tiles_into(team::ally, allied);
++    const int allied_near = static_cast<int>(count_within(allied, here, ward_range()));
++    // The map is static: a look from the same tile, for the same site, ward and allied wards in
++    // placement range, that placed nothing would again, unless an enemy's mass may lie in a sight
++    // it weighs (a candidate's, within ward_reach of here, or our ward's).
++    static struct {
++        vec2 here{-1, -1}, ward{-1, -1};
++        int site = -2, allied = -1;
++    } looked;
++    bool massed = false;
++    for (const auto& e : world.enemies)
++        massed |= e.alive && !e.visible && e.tracked
++                  && (e.possible_box.meets(here, ward_reach)
++                      || (in_bounds(memory.ward) && e.possible_box.meets(memory.ward, static_cast<int>(cambc::constants::ward_vision_radius))));
++    if (!massed && looked.here == here && looked.ward == memory.ward && looked.site == site && looked.allied == allied_near) return false;
++    const int asked_site = site;
++    const std::uint64_t least = start ? reveal_fuel_floor : end_reserve;
++    const std::uint64_t floor = start ? std::max(least, fuel() - std::min<std::uint64_t>(fuel(), reveal_grow_fuel)) : end_reserve / 2;
++    if (!fuel_ok(least + ward_site_cost + ward_candidate_cost)) {
++        note_shortcut("ward-fuel");
++        return false;
++    }
++    if ((bushes_in_ward_range(map, here) && !map.find_bush_clusters(here, ward_range(), floor))
++        || (in_bounds(memory.ward) && test(map.bushes, memory.ward) && !map.find_bush_clusters(memory.ward, 0, floor))) {
++        note_shortcut("ward-no-bushes-clusters");
++        return false;
++    }
++    // Growth may have spent down to its floor.
++    if (!fuel_ok(least + ward_site_cost + ward_candidate_cost)) {
++        note_shortcut("ward-fuel");
++        return false;
++    }
++    static bitboard site_near{cambc::uninitialized}, site_far{cambc::uninitialized};
++    static int boards_site = -1;
++    if (site >= 0 && site != boards_site) {
++        boards_site = -1; // the boards are rewritten whether or not they finish
++        // A stand tile's cluster still growing: here alone this time.
++        if (ward_site_boards(map, site, floor, site_near, site_far)) boards_site = site;
++        else note_shortcut("ward-no-site-clusters"), site = -1;
++        if (!fuel_ok(least + 2 * ward_candidate_cost)) {
++            note_shortcut("ward-fuel");
++            return false;
++        }
++    }
++    ward_sight_from(map, here, vision_radius, own);
++    for (auto* b : {&near, &far}) {
++        clear_board(*b);
++        draw_square(*b, here, static_cast<float>(b == &near ? ability_range : ward_reach));
++        *b &= map.open_for_them;
++        drop(*b, own);
++        if (site >= 0) *b |= b == &near ? site_near : site_far;
++    }
++    EnemyMass mass;
++    if (massed) enemy_mass(world, near, far, mass);
++    const float old = in_bounds(memory.ward) ? ward_value(map, memory.ward, near, far, mass) : 0.0f;
++    const auto remember = [&] {
++        if (!massed) looked = {here, memory.ward, asked_site, allied_near};
++    };
++    // Every candidate sees within 8 of here at most: when that bound fails the margin, none passes.
++    const auto within_reach = [&](const bitboard& n, const bitboard& f) {
++        return static_cast<float>(2 * count_within(n, here, ward_reach) + count_within(f, here, ward_reach));
++    };
++    float bound = within_reach(near, far);
++    for (int i = 0; i < mass.n; ++i) bound += mass.weight[static_cast<std::size_t>(i)] * within_reach(mass.near(i), mass.far(i));
++    const std::uint64_t candidate_cost = ward_candidate_cost + static_cast<std::uint64_t>(mass.n) * ward_mass_cost;
++    if (bound <= ward_replace_margin * old) {
++        if (site == asked_site) remember();
++        return false;
++    }
++    // Never a wall, hole, altar, their spawn or a visible allied ward, ours included (wards.placement).
++    tiles.clear();
++    tiles.draw_chebyshev(here, cambc::constants::ward_placement_radius);
++    tiles &= map.open_for_us;
++    drop(tiles, allied);
++    const vec2 drafted = site >= 0 ? map.drafted_ward(site) : vec2{-1, -1};
++    Unwritten<std::pair<float, vec2>, 25> scratch;
++    auto& order = scratch.a;
++    int n = 0;
++    bool cut = false;
++    for (auto p : Tiles<25>{tiles}) {
++        if (!fuel_ok(least + candidate_cost)) {
++            cut = true;
++            note_shortcut("ward-fuel");
++            break;
++        }
++        const float v = ward_value(map, p, near, far, mass, ward_replace_margin * old);
++        if (v <= ward_replace_margin * old) continue;
++        // Ties go to the draft's tile.
++        int i = n++;
++        for (; i > 0 && (order[static_cast<std::size_t>(i - 1)].first < v || (order[static_cast<std::size_t>(i - 1)].first == v && p == drafted)); --i)
++            order[static_cast<std::size_t>(i)] = order[static_cast<std::size_t>(i - 1)];
++        order[static_cast<std::size_t>(i)] = {v, p};
++    }
++    if (!cut && n == 0 && site == asked_site) remember();
++    // A unit unseen on the tile (a teammate's ward in a bush) refuses it without an error.
++    for (int i = 0; i < n; ++i)
++        if (const vec2 p = order[static_cast<std::size_t>(i)].second; try_ward(p, memory)) {
++            warded_round = world.round;
++            debug_block({ std::printf("WARD %d %u %d %d %.1f %.1f %d\n", world.round, my_handle(), p.x, p.y, order[static_cast<std::size_t>(i)].first, old, mass.n); });
++            return true;
++        }
++    return false;
++}
++// The stand tie-break: of the tiles a step away in `stands`, which the caller's work takes as equal
++// to here, the one whose own sight (a champion's, radius 8) holds the most by the ward value's
++// weights and bands, if it beats here's and is no less safe by Safety's bound and the camps. Our
++// ward sees the same wherever we stand, so its sight counts for none. `group`, cleared: a hold, every
++// candidate on its camp tiles (any of them keeps it, capture.condition). Else a wait, every candidate
++// off camp tiles or, while `group` respawns after next round's start, on its own (occupation before
++// then does not delay it, capture.respawn). So no step starts or leaves a capture or holds a respawn
++// back. No step with an enemy in sight: there the fight places us.
++inline constexpr std::uint64_t stand_cost = 4000, stand_candidate_cost = 1500;
++[[gnu::noinline]] bool step_for_sight(World& world, Pathing& pathing, Safety& safety, const Memory& memory, const bitboard& stands,
++                                      int group) {
++    world.throw_if_stale();
++    if (stunned_turn || !world.me().alive || channelling() || !my_can_move() || enemy_seen(world)) return false;
++    // An excludes-walking cast forbids the walk (rules abilities.exclusive): a refused move throws (~3.9k).
++    for (int s = 0; s < 2; ++s)
++        if (turn_acts.casts[s] && world.me().facts().abilities[s].excludes_walking) return false;
++    const auto& map = world.map();
++    const vec2 here = my_position();
++    bool hold = false, own = false;
++    if (group >= 0) {
++        const auto& c = world.camps[group];
++        if (c.state == CampState::cleared) hold = true;
++        else if (c.state == CampState::respawning) own = c.respawn_round > world.round + 1;
++        else return false;
++    }
++    const int on = here.x < 0 ? -1 : map.group_at(here);
++    if (here.x < 0 || (hold ? on != group : on >= 0 && (on != group || !own))) return false;
++    const bool in_bush = test(map.bushes, here);
++    std::array<vec2, 8> candidates;
++    int n = 0;
++    for (const auto d : directions) {
++        const vec2 t = here + d;
++        if (!in_bounds(t) || !test(stands, t)) continue;
++        // standable leaves out every camp tile; open_for_us has a dead camp's.
++        const int g = map.group_at(t);
++        if (hold ? g != group || !test(map.open_for_us, t)
++                 : g >= 0 ? g != group || !own || !test(map.open_for_us, t) : !test(map.standable, t))
++            continue;
++        if (test(pathing.blocked(), t)) continue;
++        // Out of our bush we are in sight from outside it again (vision.occlusion): no sight is worth that.
++        if (in_bush && !test(map.bushes, t)) continue;
++        candidates[static_cast<std::size_t>(n++)] = t;
++    }
++    if (n == 0) return false;
++    const std::uint64_t need = end_reserve + stand_cost + static_cast<std::uint64_t>(n) * stand_candidate_cost;
++    if (!fuel_ok(need)) {
++        note_shortcut("stand-fuel");
++        return false;
++    }
++    const std::uint64_t floor = std::max(need, fuel() - std::min<std::uint64_t>(fuel(), reveal_grow_fuel));
++    if ((any_within(map.bushes, here, 1) && !map.find_bush_clusters(here, 1, floor))
++        || (in_bounds(memory.ward) && test(map.bushes, memory.ward) && !map.find_bush_clusters(memory.ward, 0, floor))) {
++        note_shortcut("stand-no-bushes-clusters");
++        return false;
++    }
++    if (!fuel_ok(need)) {
++        note_shortcut("stand-fuel");
++        return false;
++    }
++    static bitboard near{cambc::uninitialized}, far{cambc::uninitialized}, sight{cambc::uninitialized};
++    const int site = ward_site(map, memory);
++    const int groups = static_cast<int>(map.groups.size());
++    for (auto* b : {&near, &far}) {
++        const int r = b == &near ? ability_range : ward_reach;
++        clear_board(*b);
++        draw_square(*b, here, static_cast<float>(r));
++        if (site >= 0) draw_stand_squares(map, site, r, *b);
++        *b &= map.open_for_them;
++        if (site >= 0 && site < groups)
++            for (const auto& m : map.groups[site].members) set_tile(*b, m.pos);
++    }
++    if (in_bounds(memory.ward)) {
++        ward_sight_from(map, memory.ward, static_cast<int>(cambc::constants::ward_vision_radius), sight);
++        drop(near, sight);
++        drop(far, sight);
++    }
++    EnemyMass mass;
++    enemy_mass(world, near, far, mass);
++    ward_sight_from(map, here, vision_radius, sight);
++    const float stay = info_value(sight, here, vision_radius, near, far, mass);
++    std::array<std::pair<float, vec2>, 8> order;
++    int m = 0;
++    for (int k = 0; k < n; ++k) {
++        const vec2 t = candidates[static_cast<std::size_t>(k)];
++        ward_sight_from(map, t, vision_radius, sight);
++        const float v = info_value(sight, t, vision_radius, near, far, mass, stay);
++        if (v <= stay) continue;
++        int i = m++;
++        for (; i > 0 && order[static_cast<std::size_t>(i - 1)].first < v; --i) order[static_cast<std::size_t>(i)] = order[static_cast<std::size_t>(i - 1)];
++        order[static_cast<std::size_t>(i)] = {v, t};
++    }
++    if (m == 0) return false;
++    const auto risk = safety.bound(here);
++    const float camps_here = safety.camp_damage(here);
++    for (int i = 0; i < m; ++i) {
++        if (!fuel_ok(end_reserve + stand_candidate_cost)) {
++            note_shortcut("stand-fuel");
++            return false;
++        }
++        const vec2 t = order[static_cast<std::size_t>(i)].second;
++        const auto r = safety.bound(t);
++        if (r.damage > risk.damage || r.doubled > risk.doubled || (r.hits && !risk.hits) || (r.stuns && !risk.stuns)
++            || (r.threat && !risk.threat) || safety.camp_damage(t) > camps_here)
++            continue;
++        bool refused = true;
++        if (!pathing.try_move(t, &refused)) {
++            // A hidden unit was on it, an enemy perhaps: what we see changed, so no more steps for sight.
++            if (!refused) {
++                see_revealed(world, pathing, safety);
++                return false;
++            }
++            continue;
++        }
++        debug_block({ std::printf("VSTAND %d %u %d %d %.1f\n", world.round, my_handle(), t.x, t.y, order[static_cast<std::size_t>(i)].first - stay); });
++        see_revealed(world, pathing, safety);
++        return true;
++    }
++    return false;
+ }
+ 
+ // What we see changed mid-turn. Safety's beliefs are fixed for its life, so it starts again.
+@@ -327,7 +670,7 @@
+ bool shop(const World& world, const Memory& memory, bool consumables, bool shards) {
+     if (consumables) buy_crystal(memory);
+     const bool bought = shards && buy_shards(world);
+-    if (consumables) buy_lock();
++    // No altar locks (buy_lock skipped; place_lock then never has one).
+     return bought;
+ }
+ 
+@@ -402,13 +745,13 @@
+         return;
+     }
+     // A channel refuses a ward, so this is its first chance; its sight counts this turn
+-    // (probe-ward-sight). Only a planned one: a bush ward needs its clusters grown (a giant one costs
+-    // ~90k), which the turn end does within its fuel.
+-    if (place_ward(world, memory, false)) {
++    // (probe-ward-sight). The reveal ward first: it answers a hidden attacker now, and either takes
++    // the cooldown.
++    if (reveal_ward(world, memory)) {
+         see_again(world, pathing, safety);
+         home.reset();
+     }
+-    if (reveal_ward(world, memory)) {
++    if (place_ward(world, memory, true)) {
+         see_again(world, pathing, safety);
+         home.reset();
+     }
+@@ -493,7 +836,7 @@
+     // The guard was placed around the tile we started on: the goal steps from where the search left us.
+     if (my_position() != world.turn_start && (my_can_move() || my_can_cast())) guard_steps(world, pathing, safety);
+     if (holding) {
+-        hold_capture(world, memory, attacked);
++        hold_capture(world, pathing, safety, memory, attacked);
+         return;
+     }
+     // The work's steps keep off the tiles want_home would send us back from (guard_work). A chase
+diff -ruN bots/variants/chy-ref/src/bot_parts.h bots/variants/sw-midx-hi/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 01:55:42.824717717 +0000
++++ bots/variants/sw-midx-hi/src/bot_parts.h	2026-11-13 03:44:52.871912134 +0000
+@@ -465,7 +465,7 @@
+ bool ally_claims(const World& world, int g);
+ const bitboard& free_tiles(const bitboard& tiles);
+ bool contest_capture(const World& world, Pathing& pathing, Memory& memory);
+-void hold_capture(const World& world, Memory& memory, bool attacked);
++void hold_capture(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool attacked);
+ 
+ // economy/crew.cc
+ bool farms_gold(const World& world, const ChampionBelief& a);
+@@ -571,10 +571,11 @@
+ 
+ // bot.cc
+ void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, const Trade& t, int target = -1);
+-bool place_ward(const World& world, Memory& memory, bool bushes = true);
++bool place_ward(const World& world, Memory& memory, bool start = false);
+ void see_again(World& world, Pathing& pathing, Safety& safety);
+ void see_stuns(World& world, Safety& safety);
+ bool see_revealed(World& world, Pathing& pathing, Safety& safety);
++bool step_for_sight(World& world, Pathing& pathing, Safety& safety, const Memory& memory, const bitboard& stands, int group);
+ 
+ } // namespace
+ 
+diff -ruN bots/variants/chy-ref/src/economy/bank.cc bots/variants/sw-midx-hi/src/economy/bank.cc
+--- bots/variants/chy-ref/src/economy/bank.cc	2026-11-13 01:55:42.826134076 +0000
++++ bots/variants/sw-midx-hi/src/economy/bank.cc	2026-11-13 03:45:47.570824408 +0000
+@@ -1596,6 +1596,19 @@
+             }
+             if (other_steps == unreachable || world.round - memory.wait_since < other_steps) {
+                 decision = Branch::wait_altar;
++                // Any tile a tribute at this altar starts from serves alike: the one that sees most.
++                // Not one altar_here would read as another's, which would restart the wait.
++                static bitboard tribute_tiles{cambc::uninitialized}, other{cambc::uninitialized};
++                const int range = static_cast<int>(cambc::constants::submit_gems_range);
++                clear_board(tribute_tiles);
++                draw_square(tribute_tiles, altars[at].pos, static_cast<float>(range));
++                for (int a = 0; a < at; ++a) {
++                    if (world.altars[a].enemy_lock || dist(altars[a].pos, altars[at].pos) > 2 * range) continue;
++                    clear_board(other);
++                    draw_square(other, altars[a].pos, static_cast<float>(range));
++                    drop(tribute_tiles, other);
++                }
++                step_for_sight(world, pathing, safety, memory, tribute_tiles, -1);
+                 return;
+             }
+             memory.avoid_altar = at;
+diff -ruN bots/variants/chy-ref/src/economy/capture.cc bots/variants/sw-midx-hi/src/economy/capture.cc
+--- bots/variants/chy-ref/src/economy/capture.cc	2026-11-13 01:55:42.826134076 +0000
++++ bots/variants/sw-midx-hi/src/economy/capture.cc	2026-11-13 04:09:30.113062212 +0000
+@@ -1061,13 +1061,8 @@
+     return true;
+ }
+ 
+-// On a capture we hold or contest: the hold needs no turn, so hit another group in reach that
+-// cannot hit back or already does.
+-void hold_capture(const World& world, Memory& memory, bool attacked) {
+-    const int held = world.map().group_at(my_position());
+-    memory.claim = held;
+-    memory.crew = false;
+-    if (attacked) return;
++// hold_capture's hits.
++void hold_hits(const World& world, int held) {
+     const auto& groups = world.map().groups;
+     const auto free_hit = [&](int g) {
+         const auto& c = world.camps[g];
+@@ -1078,8 +1073,9 @@
+         reset_and_attack_camp(world, hit);
+         return;
+     }
+-    // No basic reaches one, but a cast may: the hold keeps us on this tile, so an excludes-walking
+-    // cast forgoes no walk, and a ready slot not cast now loses the round (rules abilities.cooldown).
++    // No basic reaches one, but a cast may: the hold keeps us on its group, so an excludes-walking
++    // cast forgoes only a step for sight (step_for_sight), and a ready slot not cast now loses the
++    // round (rules abilities.cooldown).
+     const vec2 here = my_position();
+     // camp_cast's own group-independent test, once rather than per group.
+     if (!my_can_cast() || engagement_near(world, here, world.me().facts().cast_reach())) return;
+@@ -1102,6 +1098,17 @@
+         if (cast_at_camp(world, near[k].second)) return;
+ }
+ 
++// On a capture we hold or contest: the hold needs no turn, so hit another group in reach that
++// cannot hit back or already does, then stand on the group's tile that sees most (step_for_sight).
++void hold_capture(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool attacked) {
++    const int held = world.map().group_at(my_position());
++    memory.claim = held;
++    memory.crew = false;
++    if (attacked) return;
++    hold_hits(world, held);
++    if (held >= 0) step_for_sight(world, pathing, safety, memory, world.map().groups[held].tiles(), held);
++}
++
+ } // namespace
+ 
+ } // namespace aph
+diff -ruN bots/variants/chy-ref/src/economy/farm.cc bots/variants/sw-midx-hi/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 01:55:42.826717744 +0000
++++ bots/variants/sw-midx-hi/src/economy/farm.cc	2026-11-13 04:17:27.375290229 +0000
+@@ -2598,9 +2598,10 @@
+     };
+     const bool boxes_in = !due(on_group) && boxed_by_us();
+     const bool holds_back = due(on_group) || boxes_in;
+-    // In range and sight with the attack unspent: our pick may have been refused in passing.
++    // In range and sight with the attack unspent: our pick may have been refused in passing. A
++    // respawning group has nothing to hit, so its refusal says nothing about the tile: we wait here.
+     std::optional<bitboard> refused;
+-    if (in_range && (melee || !burning) && (melee || !holds_back) && my_can_attack() && attack_camp(world, [&](int g) { return g == best; }) < 0) {
++    if (in_range && world.camps[best].state != CampState::respawning && (melee || !burning) && (melee || !holds_back) && my_can_attack() && attack_camp(world, [&](int g) { return g == best; }) < 0) {
+         refused.emplace(*tiles);
+         refused->set(here, false);
+     }
+@@ -2615,7 +2616,10 @@
+     if (test(goals, here)) { // attacked from here; stay
+         cast_at_camp(world, best);
+         reset_and_attack_camp(world, best);
+-        if (melee) step_onto_cleared(world, pathing, best);
++        const bool stepped = melee && step_onto_cleared(world, pathing, best);
++        // Waiting out a respawn, any of the goals serves alike: the one that sees most (step_for_sight).
++        if (!stepped && world.camps[best].state == CampState::respawning && (on_group < 0 || on_group == best))
++            step_for_sight(world, pathing, safety, memory, off_zone(goals), best);
+         return true;
+     }
+     // Each search under its own fuel check. Off a burning tile, never towards the group.
+diff -ruN bots/variants/chy-ref/src/main.cc bots/variants/sw-midx-hi/src/main.cc
+--- bots/variants/chy-ref/src/main.cc	2026-11-13 01:55:42.826717744 +0000
++++ bots/variants/sw-midx-hi/src/main.cc	2026-11-13 03:09:45.026957251 +0000
+@@ -205,7 +205,7 @@
+         if (world.round == world.first_round) map.warm_enemy_steps(floor);
+         // Only a turn-end ward reads it, and until it is made that tests a square around us instead.
+         if (!map.near_bushes_ready() && room()) (void)map.near_bushes();
+-        // ward_bushes' clusters, here and a walk on, which its own floor rarely leaves fuel for in the
++        // place_ward's clusters, here and a walk on, which its own floor rarely leaves fuel for in the
+         // first rounds.
+         if (const auto here = aph::my_position(); !warmed_up && me.alive && here.x >= 0 && room()
+             && map.find_bush_clusters(here, aph::ward_range() + 1, floor) && aph::in_bounds(memory.ward)
+diff -ruN bots/variants/chy-ref/src/params.h bots/variants/sw-midx-hi/src/params.h
+--- bots/variants/chy-ref/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-midx-hi/src/params.h	2026-11-13 04:55:15.097001286 +0000
+@@ -201,7 +201,7 @@
+ // tuned apart and below mid_exposure (farm.cc exposure_most bounds exposure() for the exact bounds).
+ inline constexpr float own_ground_share = 0.6832753f;
+ inline constexpr float mid_low_share = 0.25452974f;
+-inline constexpr float mid_exposure = 1.3611484f;
++inline constexpr float mid_exposure = 1.701436f;
+ inline constexpr float mid_edge = 0.055977345f;
+ inline constexpr float max_exposure = 1.2148346f;
+ 

@@ -1,0 +1,21 @@
+diff -ru bots/variants/chy-ref/src/params.h bots/variants/pb-ground-free/src/params.h
+--- bots/variants/chy-ref/src/params.h	2026-11-13 01:55:39.402671557 +0000
++++ bots/variants/pb-ground-free/src/params.h	2026-11-13 02:14:18.203453869 +0000
+@@ -75,7 +75,7 @@
+ // Camp damage counted against the health we can spare when choosing a camp (below 1: bolder).
+ inline constexpr float camp_risk = 0.45716766f;
+ // Enemy-ground discount: a group's weight is min(1, 2 d_enemy / (d_ally + d_enemy)) to this power.
+-inline constexpr float home_power = 1.8913636f;
++inline constexpr float home_power = 0.0f;
+ // An ally this near with no claim of its own can partner on a group too costly for us alone.
+ inline constexpr int partner_radius = 13;
+ // Crews on strong groups (economy/crew.cc): allies in sight this near a group's centre, free or on
+@@ -201,7 +201,7 @@
+ // tuned apart and below mid_exposure (farm.cc exposure_most bounds exposure() for the exact bounds).
+ inline constexpr float own_ground_share = 0.6832753f;
+ inline constexpr float mid_low_share = 0.25452974f;
+-inline constexpr float mid_exposure = 1.3611484f;
++inline constexpr float mid_exposure = 1.0f;
+ inline constexpr float mid_edge = 0.055977345f;
+ inline constexpr float max_exposure = 1.2148346f;
+ 

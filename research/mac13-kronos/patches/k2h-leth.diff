@@ -1,0 +1,219 @@
+diff -ru bots/variants/chy-ref/src/bot.cc bots/variants/k2h-leth/src/bot.cc
+--- bots/variants/chy-ref/src/bot.cc	2026-11-13 01:55:42.268220790 +0000
++++ bots/variants/k2h-leth/src/bot.cc	2026-11-13 03:00:58.684587858 +0000
+@@ -712,6 +712,7 @@
+     engaged = 0;
+     const int camp_hits_before = camp_hits();
+     note_carriers(world);
++    note_lethality(world);
+     if (world.me().alive) note_upkeep(world, safety, memory.damage), note_income_start(world);
+     stunned_turn = record && my_stunned(cambc::champion_state::from_bits_retain(record->state));
+     // A failed act still posts the claim, the bag and the health that next turn's damage reads; a
+diff -ru bots/variants/chy-ref/src/bot_parts.h bots/variants/k2h-leth/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 01:55:42.268263971 +0000
++++ bots/variants/k2h-leth/src/bot_parts.h	2026-11-13 03:59:02.391994615 +0000
+@@ -298,6 +298,13 @@
+ float shielded_clear(float damage, float rounds, float shield, float ready_in = 0);
+ float home_ground(const StaticMap& map, int g, bool first_turn);
+ float home_side(const StaticMap& map, int g, bool first_turn);
++// How lethal standing on enemy ground is this turn, L in [0, 1], set once a turn by note_lethality
++// (1 until then): the share of the farm's home discount that applies.
++float ground_lethality();
++void note_lethality(const World& world);
++// A home weight w (at most 1) at lethality L, given waive = 1 - L: 1 - L (1 - w), written so that
++// L = 1 gives w exactly and L = 0 gives 1, and never above 1 (the prunes' bounds take it so).
++inline float lethal_weight(float w, float waive) { return w + (1.0f - w) * waive; }
+ float spell_output(const ChampionBelief& c);
+ float basic_output(const ChampionBelief& c);
+ float spell_clear_rounds(const StaticMap& map, int g, const CampBelief& belief, int range, float spells, float basic);
+diff -ru bots/variants/chy-ref/src/economy/camps.cc bots/variants/k2h-leth/src/economy/camps.cc
+--- bots/variants/chy-ref/src/economy/camps.cc	2026-11-13 01:55:42.269710230 +0000
++++ bots/variants/k2h-leth/src/economy/camps.cc	2026-11-13 03:14:17.936995383 +0000
+@@ -687,6 +687,31 @@
+     return weight;
+ }
+ 
++namespace {
++float lethality_now = 1.0f;
++}
++float ground_lethality() { return lethality_now; }
++
++// The cost of enemy ground is the chance of dying there, so its discount follows the largest burst
++// any living enemy could put on us in one exchange (two basic attacks and every damaging ability at
++// its Focus, as it deals damage to champions, at our damage taken) over our max health. Unseen
++// enemies keep their last-read stats; never seen, their base ones.
++// Dead, it keeps the last.
++void note_lethality(const World& world) {
++    if (const float health = world.me().alive ? my_max_health() : 0.0f; health > 0) {
++        float burst = 0;
++        for (const auto& e : world.enemies) {
++            if (!e.alive) continue;
++            float b = 2.0f * e.strength;
++            for (const auto& a : e.facts().abilities)
++                if (a.kind == AbilityKind::damage || a.lands()) b += a.multiplier * e.focus;
++            burst = std::max(burst, b * e.scale);
++        }
++        lethality_now = std::min(1.0f, burst * world.me().taken / health);
++    }
++    if (world.round % 50 == 0) debug_block({ std::printf("LETH %d %u %.3f\n", world.round, my_handle(), lethality_now); });
++}
++
+ // Damage spells a turn on camps, spread over their cooldown.
+ float spell_output(const ChampionBelief& c) {
+     float damage = 0;
+diff -ru bots/variants/chy-ref/src/economy/farm.cc bots/variants/k2h-leth/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 01:55:42.269710230 +0000
++++ bots/variants/k2h-leth/src/economy/farm.cc	2026-11-13 03:59:02.303997611 +0000
+@@ -289,6 +289,7 @@
+     float home = -1;
+     int to_altar = -1;
+     std::uint32_t context = 0, gold_context = 0, version = ~0u;
++    float lethality = -1; // ground_lethality when `weight` was read: it changes the weight alone
+     bool sticky = false, planned = false;
+     std::uint8_t emblems = 0; // `emblems` when `tribute` and `gold_in` were read
+     int walk = 0, chained_tribute = 0, tribute = 0;
+@@ -400,6 +401,7 @@
+     const float* health = nullptr; // World::clear_health
+     float clear_scale = 0, other_part = 1;
+     const float* weight = nullptr; // by group, home_ground's weight once read, 1 before (its most)
++    float waive = 0; // 1 less the turn's ground_lethality: the weights are read at lethal_weight(weight, waive)
+     // Banking: the walk home is at least min(the altar's distance, bank_floor), the recall's arrival
+     // less what the stop is worth; 0 where no recall arrives in time.
+     float bank_floor = 0;
+@@ -494,7 +496,7 @@
+     } t;
+     const std::int32_t *worth_gems, *worth_gold;
+     v128_t hx, hy, short_by, help, one, slack, horizon, cap, exposure, most_exposure, most_scale, channel, value, out_base, inf;
+-    v128_t crew_most, bank_now, zero, recall, clear, bank_floor, reflects, other_part, per_gold, tribute_gold;
++    v128_t crew_most, bank_now, zero, recall, clear, bank_floor, reflects, other_part, per_gold, tribute_gold, waive;
+ 
+     [[gnu::always_inline]] PreLanes(const PreUpper& p, const PreColumns& c)
+         : p{p.health, p.weight, p.out, p.alt, p.test, p.test_alt, p.value, p.old, p.old_alt, p.banking, p.recall_out, p.other_part},
+@@ -512,6 +514,7 @@
+         recall = wasm_i32x4_splat(p.recall), clear = wasm_f32x4_splat(p.clear_scale), bank_floor = wasm_f32x4_splat(p.bank_floor);
+         reflects = wasm_i32x4_splat(p.reflects ? -1 : 0), other_part = wasm_f32x4_splat(p.other_part);
+         per_gold = wasm_f32x4_splat(std::max(0.0f, p.per_gold)), tribute_gold = wasm_f32x4_splat(std::max(0.0f, p.tribute_gold));
++        waive = wasm_f32x4_splat(p.waive);
+     }
+ 
+     [[gnu::always_inline]] void block(int g) const {
+@@ -534,8 +537,11 @@
+         const v128_t striker = wasm_v128_load(&t.striker[g]);
+         const v128_t fastest = wasm_f32x4_mul(wasm_v128_load(&p.health[g]), clear);
+         const v128_t most = wasm_v128_bitselect(crew_most, one, striker);
++        // lethal_weight's, operation for operation.
++        const v128_t home = wasm_v128_load(&p.weight[g]);
++        const v128_t weight = wasm_f32x4_add(home, wasm_f32x4_mul(wasm_f32x4_sub(one, home), waive));
+         if (p.banking) {
+-            const v128_t w = wasm_f32x4_mul(wasm_f32x4_mul(worth, most_exposure), wasm_v128_load(&p.weight[g]));
++            const v128_t w = wasm_f32x4_mul(wasm_f32x4_mul(worth, most_exposure), weight);
+             const v128_t altar_near = wasm_v128_load(&t.altar_near[g]);
+             const v128_t bank = wasm_f32x4_pmin(wasm_f32x4_convert_i32x4(altar_near), bank_floor);
+             const v128_t walk = wasm_f32x4_convert_i32x4(near);
+@@ -582,7 +588,7 @@
+         const v128_t bound = wasm_v128_bitselect(inf, rated_most, unbounded);
+         wasm_v128_store(&p.out[g], bound);
+         // The bound is linear in the worth. inf x a weight of 0 is NaN, which prunes nothing.
+-        if (p.value) wasm_v128_store(&p.value[g], wasm_f32x4_mul(wasm_f32x4_mul(bound, most_scale), wasm_v128_load(&p.weight[g])));
++        if (p.value) wasm_v128_store(&p.value[g], wasm_f32x4_mul(wasm_f32x4_mul(bound, most_scale), weight));
+     }
+ };
+ 
+@@ -964,6 +970,8 @@
+     GroupFacts* const group_facts = n_groups > static_cast<int>(few_facts.size()) ? many_facts.data() : few_facts.data();
+     const bool prospector = world.me().prospector;
+     const auto emblems = static_cast<std::uint8_t>(world.me().fast_tribute | prospector << 1);
++    // The turn's lethality, read once: the weights below and the prunes' bounds all take this one.
++    const float lethality = ground_lethality(), waive = 1.0f - lethality;
+     auto& last_context = memo.last_context;
+     auto& context = memo.context;
+     if (const FarmContext now{bag, short_by, banks_bag, emblems}; context == 0 || !(now == last_context))
+@@ -1647,7 +1655,7 @@
+         // Shaved for fastest_clear's sum taken member by member.
+         p.health = pre_health = world.clear_health.data(), p.clear_scale = 0.9999f / strength, p.reflects = reflect > 0;
+         p.crew_most = 1.0f / team_scale(), p.other_part = unclaimed_partner_output > 0 ? partner_part : 1.0f;
+-        p.weight = known_weights(n_groups);
++        p.weight = known_weights(n_groups), p.waive = waive;
+         p.out = pre_upper.data(), p.alt = pre_alt.data(), p.test = pre_test.data(), p.test_alt = pre_test_alt.data();
+         p.old = pre_old.data(), p.old_alt = pre_old_alt.data();
+         if (pre_valued) p.value = pre_value.data();
+@@ -1716,7 +1724,7 @@
+         if (banks_bag) trip = std::max(0.0f, trip - bank_now);
+         const float gems = static_cast<float>(std::min(worth_gems[g], short_by));
+         const float worth = std::max(0.0f, gems + std::max(0.0f, per_gold) * worth_gold[g] + std::max(0.0f, tribute_gold) * gems);
+-        const float weight = g < 256 ? home_weights()[static_cast<std::size_t>(g)] : 1.0f;
++        const float weight = g < 256 ? lethal_weight(home_weights()[static_cast<std::size_t>(g)], waive) : 1.0f;
+         // The join's Focus is no share: at most its rate over the trip and the hold (rate is linear in worth).
+         const float carry = gems * keep_bonus(G) * exposure_most * weight;
+         return (claim_bound(worth * exposure_most * weight, health, health / strength, trip) + (carry > 0 ? rate(world, carry, trip + cap_rounds) : 0.0f))
+@@ -1736,6 +1744,22 @@
+     // By group, whether the loop priced it by way of spawn (read for the best only).
+     static std::vector<std::uint8_t> routed;
+     if (static_cast<int>(routed.size()) != n_groups) routed.assign(n_groups, 0);
++    // A group's weighted gems at the turn's lethality (its gold's then follows), its home weight read.
++    const auto reweigh = [&](GroupFacts& known, const CampGroup& group, int g) {
++        const float home = lethal_weight(known.home, waive);
++        float weight = home;
++        // Staying with last turn's choice keeps near ties from turning us back and forth.
++        if (g == farm_group) weight *= stickiness;
++        // The plan's group is weighted on its own: farm's last choice keeps its stickiness, so the two do not trade places.
++        if (g == planned_now) weight *= params::open_plan::weight;
++        // A Monolith's long clear gives the enemy time to steal it: its side counts twice.
++        if (group.has_monolith) weight *= home;
++        known.weight = weight;
++        // A Prospector emblem's extra as if alone on the capture, as the reward is valued.
++        known.gems = weight * static_cast<float>(std::min(group.gems + (prospector ? prospected(group.cluster_gems, 1) : 0), short_by));
++        known.lethality = lethality;
++        known.gold_context = 0;
++    };
+     int k = 0;
+     for (; k < evaluated && room(); ++k) {
+         int g = order ? (*order)[k] : (first + k) % n_groups;
+@@ -1784,6 +1808,14 @@
+             if (tight && !banks_bag && !wins && !claimed && barred() && g != farm_group && prunable(g) && (!hop_any || map.group_hop(g) < 0)) {
+                 if (const int near = dist(here, group.centre); !may_help(group, belief, near)) {
+                     auto& kf = group_facts[g];
++                    // Facts kept but for the lethality: weighed again, as facts would, the prune stays as tight.
++                    if (kf.context == context && !kf.sticky && kf.lethality != lethality) {
++                        reweigh(kf, group, g);
++                        const int gold = group.gold + (prospector ? prospected(group.cluster_gold, 1) : 0);
++                        const int gems = group.gems + (prospector ? prospected(group.cluster_gems, 1) : 0);
++                        kf.gold = kf.weight * (per_gold * static_cast<float>(gold) + tribute_gold * static_cast<float>(std::min(gems, short_by)));
++                        kf.gold_context = gold_context;
++                    }
+                     float worth;
+                     if (kf.context == context && !kf.sticky && kf.gold_context == gold_context) {
+                         worth = kf.gems + kf.gold + kf.gems * keep_most;
+@@ -1808,7 +1840,8 @@
+                 continue;
+         }
+         auto& known = group_facts[g];
+-        if (known.context != context || known.sticky != (g == farm_group) || known.planned != (g == planned_now)) {
++        const bool refresh = known.context != context || known.sticky != (g == farm_group) || known.planned != (g == planned_now);
++        if (refresh) {
+             if (known.tribute == 0 || known.emblems != emblems) {
+                 known.emblems = emblems;
+                 known.tribute = tribute_turns(world, group.gems);
+@@ -1827,21 +1860,11 @@
+             known.walked_cycle = banks ? static_cast<float>(known.walk) + static_cast<float>(known.tribute) : 0.0f;
+             // From the draft's spawn steps; without a plan, two spawn floods once a game.
+             if (known.home < 0) known.home = home_ground(map, g, opening);
+-            float weight = known.home;
+-            // Staying with last turn's choice keeps near ties from turning us back and forth.
+-            if (g == farm_group) weight *= stickiness;
+-            // The plan's group is weighted on its own: farm's last choice keeps its stickiness, so the two do not trade places.
+-            if (g == planned_now) weight *= params::open_plan::weight;
+-            // A Monolith's long clear gives the enemy time to steal it: its side counts twice.
+-            if (group.has_monolith) weight *= known.home;
+-            known.weight = weight;
+-            // A Prospector emblem's extra as if alone on the capture, as the reward is valued.
+-            known.gems = weight * static_cast<float>(std::min(group.gems + (prospector ? prospected(group.cluster_gems, 1) : 0), short_by));
+             known.context = context;
+             known.sticky = g == farm_group;
+             known.planned = g == planned_now;
+-            known.gold_context = 0;
+         }
++        if (refresh || known.lethality != lethality) reweigh(known, group, g);
+         if (known.gold_context != gold_context) {
+             const int gold = group.gold + (prospector ? prospected(group.cluster_gold, 1) : 0);
+             const int gems = group.gems + (prospector ? prospected(group.cluster_gems, 1) : 0);

@@ -1,0 +1,320 @@
+diff --git a/bots/variants/chy-ref/src/bot.h b/bots/variants/sel-hunt/src/bot.h
+index ac8d87c9f..eeb3e9225 100644
+--- a/bots/variants/chy-ref/src/bot.h
++++ b/bots/variants/sel-hunt/src/bot.h
+@@ -43,6 +43,10 @@ struct Memory {
+     // work it and the damage taken since.
+     int mono_group = -1, mono_staged = -1, mono_since = -1;
+     float mono_output = 0, mono_taken = 0;
++    // Prism's hunt (economy/hunt.cc): the enemy index hunted on our turn of hunt_round, since hunt_start, and
++    // the round we last stood waiting for our way in; hunt_bar: the farm's best rate as last weighed.
++    int hunt_enemy = -1, hunt_round = -1, hunt_start = -1, hunt_waited = -1, hunt_clean = -1; // hunt_clean: our latest verdict that it escapes
++    float hunt_bar = 0;
+     vec2 ward{-1, -1};    // our latest ward
+     vec2 bushes_watched{-1, -1}; // a tile whose bushes in ward reach are all in our cluster or our ward's
+ };
+diff --git a/bots/variants/chy-ref/src/bot_parts.h b/bots/variants/sel-hunt/src/bot_parts.h
+index 8bec411ae..fd8638bf1 100644
+--- a/bots/variants/chy-ref/src/bot_parts.h
++++ b/bots/variants/sel-hunt/src/bot_parts.h
+@@ -545,6 +545,24 @@ int team_walk_to(const World& world, Pathing& pathing, int g, vec2 p);
+ bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ float farm_step_value(const World& world);
+ 
++// economy/hunt.cc
++// The enemy Prism our Prism dominates (twice its Focus, the duel won in openings), visible off its spawn
++// or tracked; null if none. `steps`: our walk to the duel's distance (basic reach), as the crow flies
++// (unseen, plus its turns since the fix); `turns`: our turns there to kill it.
++struct HuntTarget {
++    const ChampionBelief* target = nullptr;
++    int steps = 0, turns = 0;
++};
++HuntTarget hunt_target(const World& world);
++// Whether visible e walks home clear of our hits (the chase verdict), or the fuel is short of the verdict;
++// unseen, whether it did at its last sighting (`clean_round`: our latest clean verdict, set here).
++bool hunt_escapes(const World& world, Pathing& pathing, const ChampionBelief& e, int& clean_round);
++// Our next turn's standing strike range on a unit.
++int hunt_reach(const World& world);
++// The hunt's step: none if we could not move or found no way. `waited`: we stood out of its reach last turn.
++enum class HuntStep { none, moved, stood };
++HuntStep hunt_step(const World& world, Pathing& pathing, Safety& safety, const ChampionBelief& e, bool waited);
++
+ // economy/siege.cc
+ bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ const bitboard* home_reach_avoid(const World& world, const Memory& memory);
+diff --git a/bots/variants/chy-ref/src/economy/farm.cc b/bots/variants/sel-hunt/src/economy/farm.cc
+index 14d0908ac..6489f6f84 100644
+--- a/bots/variants/chy-ref/src/economy/farm.cc
++++ b/bots/variants/sel-hunt/src/economy/farm.cc
+@@ -646,6 +646,52 @@ void drop_carry_claim(Memory& memory) {
+     memo.carry_group = -1;
+ }
+ 
++// Prism keeping its gems hunts the enemy Prism it dominates (hunt_target) when the kill's rate beats the
++// farm's best as last weighed (Memory::hunt_bar): the hunt goes ahead of camp hits in passing, which would
++// spend the walk. The kill is its bag (capped as a capture's, Focus bonus included), a life and the kill
++// gold, at the measured params::hunt_kill_share. The hunt is a chase: next turn's strike search and prey
++// see the target engaged, and turn_order.cc seats us as a chaser.
++HuntStep farm_hunt(const World& world, Pathing& pathing, Safety& safety, Memory& memory, int short_by) {
++    if (!my_can_move() || my_health() < params::hurt_health_fraction * my_max_health()) return HuntStep::none;
++    const auto h = hunt_target(world);
++    if (!h.target) return HuntStep::none;
++    const auto& e = *h.target;
++    const auto& map = world.map();
++    const int gems = std::min(e.gems, std::max(0, short_by));
++    // The bag the kill makes must still reach an altar by the round limit.
++    if (rounds_left(world) <= tribute_turns(static_cast<int>(my_gems()) + gems, world.me().fast_tribute) + map.width + map.height + endgame_margin)
++        return HuntStep::none;
++    const bool going = memory.hunt_enemy == e.index && memory.hunt_round >= world.round - 2;
++    const int start = going ? memory.hunt_start : world.round;
++    const float per_gold = prices(world).per_gold * gold_paid(world) * relative_efficiency(world)[world.me().index & 63];
++    const float bonus = carried_bonus(world, world.me(), gems, prices(world).per_gold);
++    const float worth = params::hunt_kill_share * (static_cast<float>(gems) * (1.0f + bonus) + params::life_value / params::gem_value
++                                                   + per_gold * static_cast<float>(cambc::constants::kill_gold));
++    // The rounds hunted so far count too: the crow's steps leave out the wait for a way in.
++    const float value = rate(world, worth, static_cast<float>(world.round - start + h.steps + h.turns));
++    const bool hunts = value > memory.hunt_bar;
++    debug_block({
++        std::printf("HUNT-PRICE %d %u e%u steps %d turns %d since %d worth %.1f value %.3f bar %.3f %s\n", world.round, my_handle(),
++                    static_cast<std::uint32_t>(e.handle), h.steps, h.turns, world.round - start, worth, value, memory.hunt_bar, hunts ? "hunt" : "farm");
++    });
++    // The verdict's plan last: it costs ~10k.
++    if (!hunts || hunt_escapes(world, pathing, e, memory.hunt_clean)) return HuntStep::none;
++    const auto step = hunt_step(world, pathing, safety, e, memory.hunt_waited == world.round - 1);
++    if (step == HuntStep::none) return step;
++    debug_block({
++        std::printf("HUNT %d %u e%u at %d,%d d %d vis %d bag %u/%d hp %.0f/%.0f %c\n", world.round, my_handle(), static_cast<std::uint32_t>(e.handle),
++                    e.pos.x, e.pos.y, dist(my_position(), e.pos), e.visible ? 1 : 0, my_gems(), e.gems, my_health(), my_max_health(),
++                    step == HuntStep::stood ? 's' : 'm');
++    });
++    decision = Branch::chase;
++    note_engaged(static_cast<std::uint32_t>(e.handle));
++    memory.hunt_enemy = e.index, memory.hunt_round = world.round, memory.hunt_start = start;
++    if (step == HuntStep::stood) memory.hunt_waited = world.round;
++    drop_carry_claim(memory);
++    memory.claim = -1, memory.crew = false;
++    return step;
++}
++
+ template <bool opening, bool banking = false, bool repricing = false> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ [[gnu::noinline]] bool farm_banking(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+@@ -855,6 +901,15 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+     const int carried = memo.carry_group;
+     const bool taking_over = keeps && carried >= 0 && memo.carry_round == world.round - 1 && carried == memory.farm_group && world.camps[carried].state == CampState::cleared
+                              && !test(groups[carried].tiles(), my_position());
++    if constexpr (!opening && !banking && !repricing)
++        if (keeps && !banks_bag && !memory.banking)
++            if (const auto hunt = farm_hunt(world, pathing, safety, memory, short_by); hunt != HuntStep::none) {
++                // Waiting out of its basic reach, a basic hit on a harmless camp in passing: a cast would spend
++                // the kill's, and a striker's group would wake.
++                if (hunt == HuntStep::stood && my_can_attack() && dist(my_position(), world.enemies[memory.hunt_enemy].pos) > range)
++                    attack_camp(world, [&](int g) { return groups[g].strength <= 0 && passing(g); });
++                return true;
++            }
+     if (!repricing && !banks_bag && !taking_over && attack_in_range()) return true;
+     if (world.is_stale()) return true;
+ 
+@@ -2372,6 +2427,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+                 best = g, best_steps = walk, best_value = value, best_spell = false, best_priced = Priced{'Q'};
+         }
+     }
++    if (!banks_bag && !repricing) memory.hunt_bar = std::max(best_value, shared_value);
+     if (banks_bag && (best < 0 || best_value <= from_altar_value)) return false;
+     if (banks_bag && attack_in_range()) return true;
+     if (world.is_stale()) return true;
+diff --git a/bots/variants/sel-hunt/src/economy/hunt.cc b/bots/variants/sel-hunt/src/economy/hunt.cc
+new file mode 100644
+index 000000000..8122b6a1c
+--- /dev/null
++++ b/bots/variants/sel-hunt/src/economy/hunt.cc
+@@ -0,0 +1,163 @@
++// The dominant Prism's hunt of the weak enemy Prism: farm's 'h' pick, priced against the farm by the
++// same rate. A kill hands us the victim's bag (rules combat.kill) and Focus with it.
++#include "../bot_parts.h"
++
++namespace aph {
++
++namespace {
++
++// c's ready slots as a strike's mask, at `round`.
++unsigned ready_slots(const ChampionBelief& c, int round) {
++    unsigned out = 0;
++    for (int s = 0; s < 2; ++s)
++        if (c.ability_ready(s, round)) out |= 1u << s;
++    return out;
++}
++
++// Whether a slot in `ready` stuns.
++bool stuns_with(const ChampionBelief& c, unsigned ready) {
++    for (int s = 0; s < 2; ++s)
++        if ((ready >> s & 1u) && c.facts().abilities[s].stuns) return true;
++    return false;
++}
++
++// c's turns standing at distance d to deal `hp`: each turn its best strike (one cast, rules turn.cast,
++// with its basic hit), the slot cast then spent. No slot comes back within a cooldown, so past `cap`
++// (at most ability_cooldown) the count reads cap + 1.
++int duel_turns(const ChampionBelief& c, unsigned ready, int d, float hp, int cap) {
++    float dealt = 0;
++    for (int t = 1; t <= cap; ++t) {
++        const float now = strike_with(c, ready).at(d);
++        dealt += now;
++        if (dealt >= hp) return t;
++        // The slot cast: the one whose loss costs this turn's strike most.
++        unsigned left = ready;
++        float least = now;
++        for (int s = 0; s < 2; ++s)
++            if (ready >> s & 1u)
++                if (const float v = strike_with(c, ready & ~(1u << s)).at(d); v < least) least = v, left = ready & ~(1u << s);
++        ready = left;
++    }
++    return cap + 1;
++}
++
++int hunt_reach(const World& world) {
++    const auto& self = world.me();
++    const auto& f = self.facts();
++    // Our next turn's: a unit or ground cast's range (the ground splash aside: it lands on the target's tile
++    // as a unit cast would), else the basic attack's.
++    int r = f.basic_reach();
++    for (int s = 0; s < 2; ++s)
++        if (const auto& a = f.abilities[s]; (a.kind == AbilityKind::damage || a.kind == AbilityKind::stun) && self.ability_ready(s, world.round + 1))
++            r = std::max(r, a.range());
++    return r;
++}
++
++HuntTarget hunt_target(const World& world) {
++    HuntTarget out;
++    const auto& self = world.me();
++    if (!self.alive || self.facts().passive != Passive::gem_focus) return out;
++    const ChampionBelief* target = nullptr;
++    float most = 0;
++    for (const auto& e : world.enemies) {
++        if (!e.alive || e.facts().passive != Passive::gem_focus || e.stats_round < 0) continue;
++        most = std::max(most, e.focus);
++        target = &e; // a team drafts each champion once (rules draft.rules)
++    }
++    // prism_dominant's bar: at twice its Focus our hits already win most duels (71% of Prism-on-Prism kills).
++    if (!target || !(most > 0) || !(self.focus >= 2 * most)) return out;
++    const auto& e = *target;
++    const auto& spawn = world.map().near_enemy_spawn;
++    if (e.visible) {
++        if (test(spawn, e.pos)) return out; // it heals there, and we cannot enter
++    } else {
++        // Located only while tracked (params::track_horizon): an older fix could be anywhere.
++        if (!e.tracked || e.possible.is_empty()) return out;
++        static bitboard off{cambc::uninitialized};
++        copy_into(e.possible, off);
++        drop(off, spawn);
++        if (off.is_empty()) return out;
++    }
++    // The duel in openings, standing in basic reach: we must kill it in fewer turns than it needs for us
++    // even if it strikes first. Its stun then takes our first turn; ours, if ready, takes one of its. So it
++    // has max(2, ours) turns before our last, or ours + 1 without our stun.
++    const int cap = ability_cooldown;
++    const unsigned mine_ready = ready_slots(self, world.round + 1);
++    const int ours = duel_turns(self, mine_ready, self.facts().attack_range(), effective_hp(e), cap);
++    if (ours > cap) return out;
++    const float mine = (my_health() + self.shield) / self.taken;
++    const int theirs = duel_turns(e, ready_slots(e, next_turn_round(world, e)), e.facts().attack_range(), mine, cap);
++    if (theirs <= (stuns_with(self, mine_ready) ? std::max(2, ours) : ours + 1)) return out;
++    out.target = &e;
++    out.turns = ours;
++    // To the duel's distance, as `turns` is counted.
++    out.steps = std::max(0, dist(my_position(), e.pos) - self.facts().attack_range());
++    // Unseen, it may have walked a step a turn since the fix, any way.
++    if (!e.visible) out.steps += e.turns_since_fixed;
++    return out;
++}
++
++bool hunt_escapes(const World& world, Pathing& pathing, const ChampionBelief& e, int& clean_round) {
++    // Tracked: walking to where it may be finds it again, as lost_prey does, unless it was getting away
++    // when last seen.
++    if (!e.visible) return clean_round >= e.pos_round;
++    // The verdict's plan must leave the step's search its fuel (chase_aim's gate); without it, no hunt.
++    const auto need = escape::chase_cost_estimate() + search_reserve;
++    if (!fuel_ok(need)) return true;
++    const bool clean = escapes(world, pathing, e, need);
++    debug_block({
++        std::printf("HUNT-CAND %d %u e%u d %d clean %d focus %.0f/%.0f bag %u/%d\n", world.round, my_handle(), static_cast<std::uint32_t>(e.handle),
++                    dist(my_position(), e.pos), clean ? 1 : 0, world.me().focus, e.focus, my_gems(), e.gems);
++    });
++    if (clean) clean_round = world.round;
++    return clean;
++}
++
++HuntStep hunt_step(const World& world, Pathing& pathing, Safety& safety, const ChampionBelief& e, bool waited) {
++    if (!my_can_move()) return HuntStep::none;
++    const vec2 here = my_position();
++    const int reach = hunt_reach(world);
++    const auto& map = world.map();
++    const bitboard* zone = pack_zone(world, safety);
++    // Near it, the step that lets us cast first: a ranged Prism casts only from where its turn starts
++    // (rules abilities.exclusive), so whoever ends a turn in the other's reach while the other acts
++    // before its next turn takes the first stun. Tiles it cannot stun before our next turn first, so we
++    // wait just out of its reach for the turn order to let us in; but only one turn: if our rank keeps us
++    // first every round, no such turn comes, and the duel won with its stun first (hunt_target) says go.
++    if (e.visible && dist(here, e.pos) <= reach + 2) {
++        const auto& blocked = pathing.blocked();
++        const int basic = world.me().facts().attack_range();
++        // Lexicographic: stunnable, distance down to basic reach (nearer gains no hit), a step.
++        const auto key = [&](vec2 p) {
++            return (!waited && safety.blow(e, p).stuns ? 1 << 16 : 0) + 2 * std::max(basic, dist(p, e.pos)) + (p == here ? 0 : 1);
++        };
++        std::array<std::pair<int, vec2>, 9> order;
++        int n = 0;
++        order[n++] = {key(here), here};
++        for (const auto d : directions) {
++            const vec2 p = here + d;
++            if (!in_bounds(p) || !test(map.open_for_us, p) || test(blocked, p) || (zone && test(*zone, p))) continue;
++            order[n++] = {key(p), p};
++        }
++        std::sort(order.begin(), order.begin() + n, [](const auto& a, const auto& b) { return a.first < b.first; });
++        // The step guard may refuse a tile: the next best then.
++        for (int i = 0; i < n; ++i) {
++            if (order[i].second == here) return HuntStep::stood;
++            if (pathing.try_move(order[i].second)) return HuntStep::moved;
++        }
++        return HuntStep::none;
++    }
++    static bitboard goals{cambc::uninitialized};
++    clear_board(goals);
++    if (e.visible) draw_square(goals, e.pos, static_cast<float>(reach));
++    else goals |= e.possible;
++    and_into(goals, map.open_for_us, goals);
++    drop(goals, map.near_enemy_spawn);
++    if (zone) drop(goals, *zone);
++    if (goals.is_empty()) return HuntStep::none;
++    return pathing.step_towards(goals, zone, 2 * vision_radius, e.pos) ? HuntStep::moved : HuntStep::none;
++}
++
++} // namespace
++
++} // namespace aph
+diff --git a/bots/variants/chy-ref/src/params.h b/bots/variants/sel-hunt/src/params.h
+index d8ae6e752..e4a049a70 100644
+--- a/bots/variants/chy-ref/src/params.h
++++ b/bots/variants/sel-hunt/src/params.h
+@@ -211,6 +211,9 @@ inline constexpr float life_value = 276.60016f;
+ inline constexpr float gem_value = 17.52141f;
+ inline constexpr float tribute_value = 83.167366f;
+ inline constexpr float recall_value = 66.34215f;
++// A dominant Prism's chance to kill the weak enemy Prism once within 6 tiles of it (economy/hunt.cc):
++// 65% of 705 such dominance episodes in 455 two-Prism mirror games (research/mac13-selene/scripts/dominance.py).
++inline constexpr float hunt_kill_share = 0.65f;
+ // turn_order.cc's copies, fixed: its rank codes need them modulo 15 (static_assert there).
+ inline constexpr float turn_life_value = 300;
+ inline constexpr float turn_gem_value = 15;
+diff --git a/bots/variants/chy-ref/src/unity.cpp b/bots/variants/sel-hunt/src/unity.cpp
+index e876fd4a2..b9103e9ef 100644
+--- a/bots/variants/chy-ref/src/unity.cpp
++++ b/bots/variants/sel-hunt/src/unity.cpp
+@@ -12,6 +12,7 @@
+ #include "economy/bank.cc"
+ #include "economy/capture.cc"
+ #include "economy/crew.cc"
++#include "economy/hunt.cc"
+ #include "economy/farm.cc"
+ #include "economy/siege.cc"
+ #include "combat/support.cc"

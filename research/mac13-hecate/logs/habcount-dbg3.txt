@@ -1,0 +1,8 @@
+games 1024
+guard_turns     total     92  per game   0.090  games with any 45
+guard_tiles     total    200  per game   0.195  games with any 45
+retreats        total     14  per game   0.014  games with any 8
+ranked_last     total    729  per game   0.712  games with any 118
+lethal_visible  total   2110  per game   2.061  games with any 190
+lethal_unseen   total    669  per game   0.653  games with any 70
+HABL (visible, stun, atlas): {'v0 s0 a0': 371, 'v0 s0 a1': 271, 'v0 s1 a0': 7, 'v0 s1 a1': 20, 'v1 s1 a0': 92, 'v1 s1 a1': 2018}

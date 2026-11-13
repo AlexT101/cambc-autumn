@@ -1,0 +1,39 @@
+Solo mac13-castor-c6-solo2: CAND variants/c6-v2 vs REF variants/c7-pgem, each against idle
+  study cand: running, log replays/solo/mac13-castor-c6-solo2/study-cand.log
+  study ref: running, log replays/solo/mac13-castor-c6-solo2/study-ref.log
+  extracting replays
+CAND `bots/variants/c6-v2`, REF `bots/variants/c7-pgem`, each against bots/idle.
+Started 20261113-064655; 1024 paired games; one side; fuel 200000; release builds; wall 19.4 min.
+
+Mean CAND - REF per map, bootstrap 95% CI over maps; the round to 1000 as a % change (negative is faster), a game that never reaches it counting as round 2001.
+
+| Metric | total (1024 maps) | CAND mean | REF mean |
+|---|---|---|---|
+| round to 1000 (log ratio) | +0.3% [-0.0%, +0.7%] | 668.4 | 666.0 |
+| tributed @150 | +0.3 [-0.2, +0.8] | 35.9 | 35.6 |
+| tributed @300 | +1.7 [-0.6, +3.9] | 153.1 | 151.5 |
+| tributed @600 | -6.1 [-15.1, +2.1] | 682.8 | 688.9 |
+| collected @150 | -0.9 [-1.5, -0.3] | 194.7 | 195.5 |
+| collected @300 | -2.7 [-4.6, -0.9] | 462.6 | 465.3 |
+| collected @600 | -1.7 [-5.4, +1.9] | 892.6 | 894.3 |
+| gold earned @300 | -9.1 [-18.1, -1.1] | 1852.6 | 1861.7 |
+| gold earned @600 | -10.0 [-26.3, +5.2] | 3881.6 | 3891.7 |
+
+Maps where CAND reaches 1000 faster / slower / identical: 284 / 317 / 423
+Games never reaching 1000: CAND 11, REF 10
+Out-of-fuel turns: CAND 37, REF 32
+Games with champion damage or bot errors: 71
+- {'suite': 'study', 'map': 'gen-classic-14120201018', 'side': 'A', 'role': 'cand', 'champion_damage': 236.2}
+- {'suite': 'study', 'map': 'gen-classic-14120201018', 'side': 'A', 'role': 'ref', 'champion_damage': 236.2}
+- {'suite': 'study', 'map': 'gen-classic-14120301026', 'side': 'A', 'role': 'cand', 'champion_damage': 2100}
+- {'suite': 'study', 'map': 'gen-classic-14120301026', 'side': 'A', 'role': 'ref', 'champion_damage': 2100}
+- {'suite': 'study', 'map': 'gen-ladder-14120000002', 'side': 'A', 'role': 'cand', 'champion_damage': 129.8}
+- {'suite': 'study', 'map': 'gen-ladder-14120000002', 'side': 'A', 'role': 'ref', 'champion_damage': 129.8}
+- {'suite': 'study', 'map': 'gen-ladder-14120000049', 'side': 'B', 'role': 'ref', 'champion_damage': 3100}
+- {'suite': 'study', 'map': 'gen-ladder-14120000111', 'side': 'A', 'role': 'cand', 'champion_damage': 5172.0}
+- {'suite': 'study', 'map': 'gen-ladder-14120000111', 'side': 'A', 'role': 'ref', 'champion_damage': 5800}
+- {'suite': 'study', 'map': 'gen-ladder-14120200011', 'side': 'A', 'role': 'cand', 'champion_damage': 3100}
+- ... 61 more in summary.json
+Failed matches: 0
+
+Results: replays/solo/mac13-castor-c6-solo2/summary.json

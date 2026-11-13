@@ -1,0 +1,65 @@
+diff -ru bots/variants/chy-ref/src/economy/capture.cc bots/variants/pb13-heal-hi/src/economy/capture.cc
+--- bots/variants/chy-ref/src/economy/capture.cc	2026-11-13 01:55:39.400671530 +0000
++++ bots/variants/pb13-heal-hi/src/economy/capture.cc	2026-11-13 09:06:13.504338543 +0000
+@@ -964,7 +964,7 @@
+         for (const auto& m : G.members) seen &= test(world.visible, m.pos);
+         unsigned gold_in = 0;
+         if (seen) gold_in = static_cast<unsigned>(static_cast<float>(gold_share(world, G)) * gold_paid(world));
+-        const float value = affordable_prefix(world, gold_in).gain + heal_rounds_now(world);
++        const float value = affordable_prefix(world, gold_in).gain * params::via_gain_scale + heal_rounds_now(world) * 1.5f;
+         const int hurt = my_health() < my_max_health() ? 1 : 0;
+         return std::isfinite(value) && value > static_cast<float>(std::max(0, channel - (payout - world.round)) + hurt + back);
+     }
+diff -ru bots/variants/chy-ref/src/economy/shop.cc bots/variants/pb13-heal-hi/src/economy/shop.cc
+--- bots/variants/chy-ref/src/economy/shop.cc	2026-11-13 01:55:39.400671530 +0000
++++ bots/variants/pb13-heal-hi/src/economy/shop.cc	2026-11-13 09:06:13.504186451 +0000
+@@ -716,12 +716,12 @@
+     }
+     HomeTrip t{channel, out, hurt, bag_rounds_left(world) - tribute_turns(world, my_gems())};
+     if (wins || closing(world, pathing)) return t;
+-    t.heal = heal_rounds_now(world);
++    t.heal = heal_rounds_now(world) * 1.5f;
+     if (!shops_at_home(world)) return t;
+     const auto& p = prices(world);
+     const std::uint32_t gold = my_gold();
+     t.short_gold = gold >= p.next.cost ? 0 : p.next.cost - gold;
+-    t.emblem = p.gain;
++    t.emblem = p.gain * params::via_gain_scale;
+     return t;
+ }
+ 
+@@ -730,9 +730,9 @@
+ FarmRecall farm_recall(const World& world, Pathing& pathing, int channel) {
+     FarmRecall r{channel, my_health() < my_max_health() ? 1 : 0, 0.0f};
+     if (closing(world, pathing)) return r;
+-    r.value = heal_rounds_now(world);
++    r.value = heal_rounds_now(world) * 1.5f;
+     if (shops_at_home(world))
+-        if (const auto& p = prices(world); my_gold() >= p.next.cost && std::isfinite(p.gain)) r.value += p.gain;
++        if (const auto& p = prices(world); my_gold() >= p.next.cost && std::isfinite(p.gain)) r.value += p.gain * params::via_gain_scale;
+     return r;
+ }
+ 
+@@ -793,7 +793,7 @@
+         const auto stop = home_trip(world, pathing, recall_turns(world), winning_bag(world));
+         if (stop.short_gold > 0) return false;
+         const int back = pathing.to_ally_spawn().at(here);
+-        if (back != unreachable && stop.heal + params::shop_gain_scale * affordable_prefix(world).gain < static_cast<float>(std::min(back, stop.channel + stop.hurt) + back)) return false;
++        if (back != unreachable && (stop.heal > 0 ? heal_rounds_now(world) : 0.0f) + params::shop_gain_scale * affordable_prefix(world).gain < static_cast<float>(std::min(back, stop.channel + stop.hurt) + back)) return false;
+     }
+     bool awake = false;
+     world.each_stirring([&](int g) { awake = awake || awake_over(world, g, here); });
+diff -ru bots/variants/chy-ref/src/params.h bots/variants/pb13-heal-hi/src/params.h
+--- bots/variants/chy-ref/src/params.h	2026-11-13 01:55:39.402671557 +0000
++++ bots/variants/pb13-heal-hi/src/params.h	2026-11-13 08:53:30.038222524 +0000
+@@ -240,6 +240,10 @@
+ inline constexpr float fight_camp_prior = 490.12277f;
+ // wants_shop: a shopping trip goes when shop_gain_scale x the purchase's saving (plus the heal) beats the trip.
+ inline constexpr float shop_gain_scale = 0.75106156f;
++// The purchase term of trips home by way of spawn (home_trip's emblem, farm_recall, the Prism capture
++// ride): it prices the purchase over all our remaining farm though the trip only buys it sooner. A
++// deeper cut loses: these trips also carry the heal.
++inline constexpr float via_gain_scale = 0.5f;
+ // safety_params::hit_given_reach and recall_risk (model/safety.h), tunable here.
+ inline constexpr float hit_given_reach = 0.2338928f;
+ inline constexpr float recall_risk = 0.20703878f;

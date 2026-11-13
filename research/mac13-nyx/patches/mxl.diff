@@ -1,0 +1,80 @@
+diff -ruN bots/variants/sw-midx-hi/src/economy/farm.cc bots/variants/mxl/src/economy/farm.cc
+--- bots/variants/sw-midx-hi/src/economy/farm.cc	2026-11-13 04:17:27.375290229 +0000
++++ bots/variants/mxl/src/economy/farm.cc	2026-11-13 07:32:38.116733689 +0000
+@@ -369,8 +369,8 @@
+     return near;
+ }
+ 
+-// The most exposure() gives: max_exposure, tuned apart, may lie below mid_exposure.
+-inline constexpr float exposure_most = std::max({1.0f, params::mid_exposure, params::max_exposure});
++// The most exposure() gives in any round: max_exposure, tuned apart, may lie below either mid exposure.
++inline constexpr float exposure_most = std::max({1.0f, params::mid_exposure_early, params::mid_exposure_late, params::max_exposure});
+ 
+ // Upper bounds on farm_turn's pre-facts prunes (its rated_below test), from the map and a few of the
+ // turn's facts. Each float operation of the bounded chain is monotone, and the 2e-4 slack covers sums
+@@ -1291,9 +1291,10 @@
+         return std::min(static_cast<float>(std::max(near, respawn)), via_bound(dist(spawn_centre, group.centre), respawn));
+     };
+     int help_group = -1, help_steps = unreachable;
+-    // Middle-band pricing: a group in the middle band is worth mid_exposure of itself. The prunes
+-    // below that take the weight as at most 1 scale by params::max_exposure, the bounds by exposure_most.
+-    const auto exposure_of = [&](int g) {
++    // Middle-band pricing: a group in the middle band is worth the round's mid exposure of itself. The
++    // prunes below that take the weight as at most 1 scale by params::max_exposure, the bounds by exposure_most.
++    const float mid_exposure = world.round < params::mid_exposure_switch ? params::mid_exposure_early : params::mid_exposure_late;
++    const auto band_of = [&](int g) {
+         const float s = home_side(map, g, opening);
+         // Smoothstep over [bound - mid_edge, bound + mid_edge] at each bound, so near-identical groups weigh alike.
+         const auto ease = [](float x) {
+@@ -1301,20 +1302,20 @@
+             return x * x * (3.0f - 2.0f * x);
+         };
+         constexpr float e = params::mid_edge;
+-        const float in = std::min(ease((s - params::mid_low_share + e) / (2 * e)), ease((params::own_ground_share + e - s) / (2 * e)));
+-        return 1.0f + (params::mid_exposure - 1.0f) * in;
++        return std::min(ease((s - params::mid_low_share + e) / (2 * e)), ease((params::own_ground_share + e - s) / (2 * e)));
+     };
+-    // home_side keeps a group's side once read (the first 256), so its exposure is fixed with it.
+-    static std::array<float, 256> exposure_kept = [] {
++    // home_side keeps a group's side once read (the first 256), so its band weight is fixed with it;
++    // the round's premium applies outside the cache.
++    static std::array<float, 256> band_kept = [] {
+         std::array<float, 256> a;
+         a.fill(-1);
+         return a;
+     }();
+     const auto exposure = [&](int g) __attribute__((always_inline)) {
+-        if (static_cast<std::size_t>(g) >= exposure_kept.size()) return exposure_of(g);
+-        float& e = exposure_kept[static_cast<std::size_t>(g)];
+-        if (e < 0) e = exposure_of(g);
+-        return e;
++        if (static_cast<std::size_t>(g) >= band_kept.size()) return 1.0f + (mid_exposure - 1.0f) * band_of(g);
++        float& in = band_kept[static_cast<std::size_t>(g)];
++        if (in < 0) in = band_of(g);
++        return 1.0f + (mid_exposure - 1.0f) * in;
+     };
+     // First readings of each group (clears, fields) can cost several times the estimate: stop with
+     // enough left for the walk after it, and read last turn's choice first so that a cut-short loop
+diff -ruN bots/variants/sw-midx-hi/src/params.h bots/variants/mxl/src/params.h
+--- bots/variants/sw-midx-hi/src/params.h	2026-11-13 04:55:15.097001286 +0000
++++ bots/variants/mxl/src/params.h	2026-11-13 07:32:38.116192672 +0000
+@@ -196,12 +196,15 @@
+ 
+ // Middle-band pricing (economy/farm.cc): a group whose share of the walks from the two spawns,
+ // d_enemy / (d_ally + d_enemy), lies between mid_low_share and own_ground_share is worth up to
+-// mid_exposure of itself, easing in over mid_edge either side of each bound (half weight on the
+-// bound itself). The pre-facts prunes that take a group's weight as at most 1 scale by max_exposure,
+-// tuned apart and below mid_exposure (farm.cc exposure_most bounds exposure() for the exact bounds).
++// a mid exposure of itself, easing in over mid_edge either side of each bound (half weight on the
++// bound itself): mid_exposure_early before round mid_exposure_switch, mid_exposure_late from it on.
++// The pre-facts prunes that take a group's weight as at most 1 scale by max_exposure, tuned apart and
++// below either (farm.cc exposure_most bounds exposure() for the exact bounds).
+ inline constexpr float own_ground_share = 0.6832753f;
+ inline constexpr float mid_low_share = 0.25452974f;
+-inline constexpr float mid_exposure = 1.701436f;
++inline constexpr float mid_exposure_early = 1.3611484f;
++inline constexpr float mid_exposure_late = 1.701436f;
++inline constexpr int mid_exposure_switch = 300;
+ inline constexpr float mid_edge = 0.055977345f;
+ inline constexpr float max_exposure = 1.2148346f;
+ 

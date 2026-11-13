@@ -1,0 +1,9 @@
+A/B mac13-argo-pb8-banksafe: CAND variants/pb8-banksafe (dir) vs REF variants/chy-ref (dir)
+  probe2: running, log replays/ab/mac13-argo-pb8-banksafe/probe2.log
+CAND 49.7% of 5120 (2544-2576), 95% CI 48.3-51.1
+  probe2  49.7% of 5120 (2544-2576), 95% CI 48.3-51.1
+Failed matches: 0
+Out-of-fuel turns: CAND 319 in 205 games, REF 310 in 196 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 12m30s
+Results: replays/ab/mac13-argo-pb8-banksafe/summary.md

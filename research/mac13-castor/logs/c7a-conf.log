@@ -1,0 +1,9 @@
+A/B mac13-castor-c7a-conf: CAND variants/c7a-pgem (dir) vs REF variants/chy-ref (dir)
+  conf: running, log replays/ab/mac13-castor-c7a-conf/conf.log
+CAND 52.7% of 10240 (5399-4841), 95% CI 51.8-53.7
+  conf  52.7% of 10240 (5399-4841), 95% CI 51.8-53.7
+Failed matches: 0
+Out-of-fuel turns: CAND 824 in 469 games, REF 685 in 380 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 4m37s
+Results: replays/ab/mac13-castor-c7a-conf/summary.md

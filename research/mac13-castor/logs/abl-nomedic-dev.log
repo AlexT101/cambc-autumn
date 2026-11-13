@@ -1,0 +1,9 @@
+A/B mac13-castor-abl-nomedic-dev: CAND variants/c6-v4 (dir) vs REF variants/chy-ref (dir)
+  dev: running, log replays/ab/mac13-castor-abl-nomedic-dev/dev.log
+CAND 54.3% of 10240 (5559-4681), 95% CI 53.3-55.3
+  dev  54.3% of 10240 (5559-4681), 95% CI 53.3-55.3
+Failed matches: 0
+Out-of-fuel turns: CAND 637 in 472 games, REF 574 in 410 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 3m27s
+Results: replays/ab/mac13-castor-abl-nomedic-dev/summary.md

@@ -1,0 +1,61 @@
+diff -ru bots/variants/chy-ref/src/bot.cc bots/variants/pb2-hunt/src/bot.cc
+--- bots/variants/chy-ref/src/bot.cc	2026-11-13 01:55:39.398989147 +0000
++++ bots/variants/pb2-hunt/src/bot.cc	2026-11-13 04:36:26.266631585 +0000
+@@ -371,6 +371,45 @@
+     return g >= 0 && world.camps[g].state == CampState::cleared;
+ }
+ 
++// Probe pb2-hunt: as Prism with at least 1.25x the Focus of every living enemy Prism we have seen (prism_dominant's
++// reading), healthy, short of a winning bag and out of channels, a step towards an enemy Prism in sight or seen in
++// the last hunt_recent rounds, to within our attack range of its tile: the strike search and chase fight it there.
++// In range of one in sight we stand. False with nothing done if none qualifies, the trail is cold (we reached the
++// sighting with it out of sight: that sighting is not followed again) or no step is taken.
++bool hunt_prism(const World& world, Pathing& pathing, Memory& memory) {
++    constexpr int hunt_recent = 10;
++    static int reached = -1; // the sighting round of the last trail we reached cold
++    const auto& self = world.me();
++    if (self.facts().passive != Passive::gem_focus || channelling() || winning_bag(world) || !my_can_move()
++        || my_health() < params::hurt_health_fraction * my_max_health())
++        return false;
++    float enemy = 0;
++    const ChampionBelief* prey = nullptr;
++    for (const auto& e : world.enemies) {
++        if (!e.alive || e.facts().passive != Passive::gem_focus || e.stats_round < 0) continue;
++        enemy = std::max(enemy, e.focus);
++        // On its spawn it cannot be reached and heals every turn.
++        if (in_bounds(e.pos) && !test(world.map().enemy_spawn, e.pos)
++            && (e.visible || (e.pos_source == Source::seen && world.round - e.pos_round <= hunt_recent && e.pos_round > reached))
++            && (!prey || e.pos_round > prey->pos_round))
++            prey = &e;
++    }
++    if (!prey || !(enemy > 0) || !(self.focus >= 1.25f * enemy)) return false;
++    static bitboard goals{cambc::uninitialized};
++    clear_board(goals);
++    goals.draw_chebyshev(prey->pos, static_cast<float>(self.facts().attack_range()));
++    goals &= world.map().open_for_us;
++    if (test(goals, my_position())) {
++        if (!prey->visible) return reached = prey->pos_round, false;
++    } else if (!pathing.step_towards(goals)) {
++        return false;
++    }
++    decision = Branch::chase;
++    drop_carry_claim(memory);
++    memory.claim = -1;
++    return true;
++}
++
+ // The least fuel decide's goal steps (a bag, a shopping trip, a chase, a contest, a siege, the farm) and the siege and
+ // farm finish on: with less at their start the turn ran out 98% and 99.7% of the time (5,120 games at the real budget,
+ // research/ideas-2026-11-12/fightfuel).
+@@ -549,6 +588,11 @@
+         decision = Branch::siege;
+         return;
+     }
++    if (hunt_prism(world, pathing, memory)) return;
++    if (!fuel_ok(farm_least)) {
++        note_shortcut("goal-short");
++        return;
++    }
+     if (willow_follow(world, pathing, safety)) return;
+     farm(world, pathing, safety, memory);
+     if (on_cleared_group(world)) yield_capture(world, pathing, safety, memory, true);

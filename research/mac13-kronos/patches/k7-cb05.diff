@@ -1,0 +1,19 @@
+diff -ru bots/variants/chy-ref/src/economy/capture.cc bots/variants/k7-cb05/src/economy/capture.cc
+--- bots/variants/chy-ref/src/economy/capture.cc	2026-11-13 01:55:42.269710230 +0000
++++ bots/variants/k7-cb05/src/economy/capture.cc	2026-11-13 04:48:14.774844990 +0000
+@@ -159,11 +159,13 @@
+ }
+ 
+ // Gems one gem in a's kept bag is worth beyond itself, at `price` gems a gold: Prism's prism_focus_per_gem
+-// Focus a gem is what prism_focus_per_gem / growth Focus shards would buy, at shard_price gold each.
++// Focus a gem is what prism_focus_per_gem / growth Focus shards would buy, at shard_price gold each,
++// times kept_gem_weight.
++constexpr float kept_gem_weight = 0.5f;
+ float carried_bonus(const World& world, const ChampionBelief& a, int gems, float price) {
+     if (!keeps_bag(world, a, gems)) return 0.0f;
+     const float shards = cambc::constants::passive_abilities::prism_focus_per_gem / a.facts().focus.growth;
+-    return std::max(0.0f, price) * shards * static_cast<float>(shard_price);
++    return kept_gem_weight * std::max(0.0f, price) * shards * static_cast<float>(shard_price);
+ }
+ 
+ // What a's lone hold of G pays the team, in gems at `price` a gold: its share with a Prospector

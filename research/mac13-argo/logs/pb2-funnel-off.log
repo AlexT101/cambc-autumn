@@ -1,0 +1,9 @@
+A/B mac13-argo-pb2-funnel-off: CAND variants/pb2-funnel-off (dir) vs REF variants/chy-ref (dir)
+  probe: running, log replays/ab/mac13-argo-pb2-funnel-off/probe.log
+CAND 43.3% of 5120 (2219-2901), 95% CI 42.0-44.7
+  probe  43.3% of 5120 (2219-2901), 95% CI 42.0-44.7
+Failed matches: 0
+Out-of-fuel turns: CAND 209 in 171 games, REF 272 in 205 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 0m52s
+Results: replays/ab/mac13-argo-pb2-funnel-off/summary.md

@@ -1,0 +1,74 @@
+diff -ru bots/variants/chy-ref/src/combat/fight.cc bots/variants/join-g/src/combat/fight.cc
+--- bots/variants/chy-ref/src/combat/fight.cc	2026-11-13 01:55:41.151951223 +0000
++++ bots/variants/join-g/src/combat/fight.cc	2026-11-13 04:51:03.853842974 +0000
+@@ -742,6 +742,15 @@
+     return std::max(0, dist(here, *t.altar) - submit - range) < t.turns ? steps : unreachable;
+ }
+ 
++// A visible teammate already trades blows with e: one of them stands in the other's attack range.
++bool in_contact(const World& world, const ChampionBelief& e) {
++    for (const auto& a : world.allies)
++        if (!a.is_self && a.alive && a.visible
++            && dist(a.pos, e.pos) <= std::max(a.facts().attack_range(), e.facts().attack_range()))
++            return true;
++    return false;
++}
++
+ // prey's tests before the fight: e is worth chasing from `here` if that fight is won. `held`: the
+ // gems of a cleared group it stands on.
+ bool preyable(const World& world, Safety& safety, const ChampionBelief& e, vec2 here, int range, int& held) {
+@@ -755,9 +764,8 @@
+     // cleared group is taking its gems: killing it is how a capture is contested.
+     const int g = world.map().group_at(e.pos);
+     held = g >= 0 && world.camps[g].state == CampState::cleared ? world.map().groups[g].gems : 0;
+-    if (!(comeback::cooked(world) && pair_gems(world, e) >= params::comeback::bar_bag) && dist(here, e.pos) > range && !own_ground(world, e.pos) && e.health >= params::hurt_health_fraction * e.max_health && held == 0
+-        && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable))
+-        return false;
++    // A healthy enemy on its own ground is left to the trade and escapes(): one that walks home clear of our hits is not
++    // chased, and the fight with the pack around it (pack_joiners) decides the rest.
+     // Every tile in reach of it would make us retreat at once.
+     return !pack_covers(world, safety, e.pos, range);
+ }
+@@ -908,6 +916,32 @@
+     return out;
+ }
+ 
++// A tribute channel turn's gems (tribute rule): smaller bags never bank (bankable_bag_now), so
++// they do not take their carrier off to an altar.
++constexpr int free_bag_gems = 10;
++
++// The pack around a target at p: the visible teammates within chasing_ally_radius of it, beyond the
++// fight's own roster (`key`), that are free to join. Each of them weighs the same fight with us in
++// it, so a won one is joined by all of them, each arriving after its walk (walk_allies_in). Not
++// Willow (she holds no fight), nor a teammate in a channel, holding a capture, banking a bag, or under
++// the recall line, which keep their own work. Only while we stand that near ourselves.
++std::uint32_t pack_joiners(const World& world, vec2 here, vec2 p, std::uint32_t key) {
++    constexpr int r = safety_params::chasing_ally_radius;
++    if (dist(here, p) > r) return 0;
++    std::uint32_t out = 0;
++    const auto& map = world.map();
++    for (std::size_t i = 0; i < world.allies.size() && i < 16; ++i) {
++        const auto& a = world.allies[i];
++        if (a.is_self || !a.alive || !a.visible || (key >> i & 1) || dist(a.pos, p) > r) continue;
++        if ((a.facts().heals() && world.round >= params::willow_fight_until) || held_by_channel(a)) continue;
++        if (a.health < params::recall_health_fraction * a.max_health) continue;
++        if (a.facts().passive != Passive::gem_focus && a.gems >= free_bag_gems) continue;
++        if (const int g = map.group_at(a.pos); g >= 0 && world.camps[g].state == CampState::cleared) continue;
++        out |= 1u << i;
++    }
++    return out;
++}
++
+ // The visible enemy whose kill pays most a turn to reach and kill it, among those whose local
+ // fight we win even when they strike first; never one on or next to its spawn, where it heals.
+ // An enemy we were fighting that slipped out of sight counts at its last tile (lost_prey).
+@@ -1000,7 +1034,8 @@
+             break;
+         }
+         const auto& target = *order[i].second;
+-        const auto key = safety.fight_key(target.pos);
++        auto key = safety.fight_key(target.pos);
++        if (key != Safety::no_fight) key |= pack_joiners(world, here, target.pos, key);
+         std::uint32_t delayed = 0;
+         if (key != Safety::no_fight)
+             for (auto left = key & 0xFFFFu; left; left &= left - 1) {

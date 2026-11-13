@@ -1,0 +1,153 @@
+diff -ru bots/variants/chy-ref/src/bot.cc bots/variants/pb2-avoid/src/bot.cc
+--- bots/variants/chy-ref/src/bot.cc	2026-11-13 01:55:39.398989147 +0000
++++ bots/variants/pb2-avoid/src/bot.cc	2026-11-13 04:39:49.215135421 +0000
+@@ -499,6 +499,7 @@
+     // The work's steps keep off the tiles want_home would send us back from (guard_work). A chase
+     // keeps the step guard: its fight weighs who walks in.
+     const auto strike_guard = pathing.held_guard();
++    const bitboard* work_avoid = nullptr; // probe pb2-avoid: farm's guard adds the enemy Prism zone to it
+     if (my_can_move() || my_can_cast()) {
+         // Off Monolith-only maps the steps keep out of an awake home Monolith's reach (home_reach_avoid):
+         // home sieging keeps it awake, and its fire killed bodies walking out (spawncamp.md round 2).
+@@ -511,6 +512,7 @@
+             if (avoid) copy_into(*avoid, both), both |= *held, avoid = &both;
+             else avoid = held;
+         }
++        work_avoid = avoid;
+         guard_work(world, pathing, safety, memory.damage, avoid);
+     }
+     // A goal step that cannot finish is not started: it would run the turn out, which loses its posts and
+@@ -545,6 +547,15 @@
+         note_shortcut("goal-short");
+         return;
+     }
++    // Probe pb2-avoid: the farm's steps (siege and kite included) keep out of an enemy Prism's reach, out of a fight
++    // (attacked: this turn's strikes).
++    if (my_can_move() || my_can_cast())
++        if (const bitboard* zone = attacked ? nullptr : prism_avoid_zone(world)) {
++            static bitboard all{cambc::uninitialized};
++            const bitboard* avoid = zone;
++            if (work_avoid) copy_into(*work_avoid, all), all |= *zone, avoid = &all;
++            reavoid_work(world, pathing, safety, memory.damage, avoid);
++        }
+     if ((world.map().shared_gems && kite(world, pathing, memory)) || siege(world, pathing, safety, memory)) {
+         decision = Branch::siege;
+         return;
+diff -ru bots/variants/chy-ref/src/bot_parts.h bots/variants/pb2-avoid/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 01:55:39.399032918 +0000
++++ bots/variants/pb2-avoid/src/bot_parts.h	2026-11-13 04:39:49.213778883 +0000
+@@ -323,6 +323,7 @@
+ bool pack_covers(const World& world, Safety& safety, vec2 p, int r);
+ void guard_steps(const World& world, Pathing& pathing, Safety& safety);
+ void guard_work(const World& world, Pathing& pathing, Safety& safety, float damage, const bitboard* avoid);
++void reavoid_work(const World& world, Pathing& pathing, Safety& safety, float damage, const bitboard* avoid);
+ void reguard_willow(const World& world, Pathing& pathing, Safety& safety);
+ const bitboard* prism_hold_seen(const World& world, bool on_too);
+ void strike_guard_known(const Pathing& pathing, vec2 here);
+@@ -447,6 +448,8 @@
+ bool left_for_prism(const World& world, Pathing& pathing, int g, bool cleared_now = false);
+ bool yields_to_prism(const World& world, Pathing& pathing);
+ const bitboard* prism_hold_tiles(const World& world, bool on_too = false);
++const bitboard* prism_avoid_zone(const World& world);
++bool prism_avoids_group(const World& world, int g);
+ // The turn's Safety, which sole_capture_holder's threat test reads; null between turns.
+ void use_hold_safety(Safety* safety);
+ bool holding_capture_now(const World& world, Pathing& pathing, vec2 here);
+diff -ru bots/variants/chy-ref/src/combat/guard.cc bots/variants/pb2-avoid/src/combat/guard.cc
+--- bots/variants/chy-ref/src/combat/guard.cc	2026-11-13 01:55:39.399251641 +0000
++++ bots/variants/pb2-avoid/src/combat/guard.cc	2026-11-13 04:39:49.215011489 +0000
+@@ -874,6 +874,15 @@
+     pathing.defer_guard(work_guard, safety, my_position(), radius, work_cover);
+ }
+ 
++// Probe pb2-avoid: the work guard with `avoid` in its place. Still deferred, it keeps the strike search's step
++// guard it read (a guard_work call again would place that guard anew).
++void reavoid_work(const World& world, Pathing& pathing, Safety& safety, float damage, const bitboard* avoid) {
++    if (pathing.held_guard().fn != work_guard) return guard_work(world, pathing, safety, damage, avoid);
++    if (avoid && test(*avoid, my_position())) avoid = nullptr;
++    work_guard_inputs.avoid = avoid;
++    pathing.defer_guard(work_guard, safety, my_position(), work_guard_inputs.radius, work_cover);
++}
++
+ // Willow's guard again from where she stands (see_again), keeping guard_work's sole Prism hold.
+ void reguard_willow(const World& world, Pathing& pathing, Safety& safety) {
+     if (const auto held = pathing.held_guard(); held.fn == willow_held_guard || held.guard == &willow_held_out)
+diff -ru bots/variants/chy-ref/src/economy/capture.cc bots/variants/pb2-avoid/src/economy/capture.cc
+--- bots/variants/chy-ref/src/economy/capture.cc	2026-11-13 01:55:39.400671530 +0000
++++ bots/variants/pb2-avoid/src/economy/capture.cc	2026-11-13 04:36:26.260561954 +0000
+@@ -409,6 +409,45 @@
+     return focus >= 2 * enemy;
+ }
+ 
++// Probe pb2-avoid: as Prism out of a fight (no enemy struck or chased this turn or last), the tiles within an enemy
++// Prism's ready stun reach (else its attack range) + 2, for each one in sight or seen in the last avoid_recent
++// rounds with at least 0.8x our Focus. From inside, only the tiles nearer it than ours: we may stay or back off.
++// Null if none. Kept for the round, observations and our tile.
++const bitboard* prism_avoid_zone(const World& world) {
++    constexpr int avoid_recent = 10;
++    const auto& self = world.me();
++    if (!self.alive || self.facts().passive != Passive::gem_focus || engaged || engaged_before) return nullptr;
++    static int round = -1;
++    static std::uint32_t seen = 0;
++    static vec2 at{-1, -1};
++    static bool any = false;
++    static bitboard out{cambc::uninitialized};
++    const vec2 here = my_position();
++    if (round == world.round && seen == world.observations && at == here) return any ? &out : nullptr;
++    round = world.round, seen = world.observations, at = here, any = false;
++    for (const auto& e : world.enemies) {
++        if (!e.alive || e.facts().passive != Passive::gem_focus || e.stats_round < 0 || !in_bounds(e.pos)) continue;
++        if (!e.visible && !(e.pos_source == Source::seen && world.round - e.pos_round <= avoid_recent)) continue;
++        if (!(e.focus >= 0.8f * self.focus)) continue;
++        int reach = e.ready_stun_reach(world.round + 1, true);
++        if (reach < 0) reach = e.facts().attack_range();
++        const int r = std::min(reach + 2, dist(here, e.pos) - 1);
++        if (r < 0) continue;
++        if (!any) clear_board(out), any = true;
++        out.draw_chebyshev(e.pos, static_cast<float>(r));
++    }
++    return any ? &out : nullptr;
++}
++
++// Probe pb2-avoid: a camp tile of group g lies in prism_avoid_zone.
++bool prism_avoids_group(const World& world, int g) {
++    const bitboard* zone = prism_avoid_zone(world);
++    if (!zone || g < 0) return false;
++    static bitboard both{cambc::uninitialized};
++    and_into(*zone, world.map().groups[g].tiles(), both);
++    return !board_empty(both);
++}
++
+ // Rounds until Prism ally a, at `at`, can stand on cleared group g's tiles: free, its walk; busy with
+ // another group h (standing on its hold, else its claim), first what is left of that: a counting hold's
+ // payout (after its walk there), else its walk to h and a whole hold; then the walk on from h. A live or
+diff -ru bots/variants/chy-ref/src/economy/farm.cc bots/variants/pb2-avoid/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 01:55:39.400671530 +0000
++++ bots/variants/pb2-avoid/src/economy/farm.cc	2026-11-13 04:26:10.190932289 +0000
+@@ -1768,7 +1768,7 @@
+         if ((group.has_monolith && map.monolith_only) || group.gems + group.gold == 0
+             || (belief.state == CampState::cleared && (ally_holding(g) || belief.holder == team::enemy))
+             || (belief.state != CampState::cleared && kited(g) && kite_owns(world, g)) || siege_declines(world, g)
+-            || (belief.state == CampState::cleared && left_for_prism(world, pathing, g)))
++            || (belief.state == CampState::cleared && left_for_prism(world, pathing, g)) || prism_avoids_group(world, g))
+             continue;
+         // A Monolith with an enemy in sight near it is not taken up: our crew would clear it for
+         // them. Unless the enemy already stands in its reach, taking the hits.
+@@ -2281,7 +2281,7 @@
+         world.each_cleared([&](int g) {
+             const auto& G = groups[g];
+             const int least = steps_to(G, here); // no walk to its tiles is shorter
+-            if (G.gems <= 0 || least > reach) return;
++            if (G.gems <= 0 || least > reach || prism_avoids_group(world, g)) return;
+             const bool held = allies_on(world, G.tiles()) > 0;
+             // Left empty: our carry pick, or our claim that an ally's claim keeps out of the loop.
+             if (!held && (g != memory.claim || world.camps[g].holder == team::enemy || (memo.carry_group != g && !claimed_by_ally(g)))) return;
+@@ -2338,7 +2338,7 @@
+             asked[static_cast<std::size_t>(n_asked++)] = g;
+             const auto& G = groups[g];
+             const auto& c = world.camps[g];
+-            if (c.state != CampState::alive || G.gems <= 0 || G.has_monolith || steps_to(G, here) > reach || enemy_on(world, G.tiles())
++            if (c.state != CampState::alive || G.gems <= 0 || G.has_monolith || steps_to(G, here) > reach || enemy_on(world, G.tiles()) || prism_avoids_group(world, g)
+                 || (kited(g) && kite_owns(world, g)) || siege_declines(world, g)
+                 || world.score.ally + bag + G.gems >= winning
+                 || rounds_left(world) <= tribute_turns(bag + G.gems, world.me().fast_tribute) + map.width + map.height + endgame_margin)

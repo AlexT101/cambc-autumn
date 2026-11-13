@@ -1,0 +1,396 @@
+diff -ruN -x .cambc bots/variants/chy-ref/src/bot.cc bots/variants/rk1-h2/src/bot.cc
+--- bots/variants/chy-ref/src/bot.cc	2026-11-13 01:55:40.484413269 +0000
++++ bots/variants/rk1-h2/src/bot.cc	2026-11-13 07:05:15.577783595 +0000
+@@ -530,7 +530,7 @@
+     // work, a travel dash (a dash the search plays only before a strike). A ranged attack spent the walk.
+     if (my_can_move() && wants_shop(world, pathing, safety, memory)) {
+         decision = Branch::shop;
+-        memory.claim = -1;
++        hold_claim(world, memory);
+         step_safely(world, pathing, pathing.to_ally_spawn(), safety);
+         return;
+     }
+@@ -752,7 +752,11 @@
+     if (world.me().alive && world.me().facts().heals()
+         && ((!support_owned && camp_hits() != camp_hits_before) || my_cooldown(world.me().facts().slot_of(AbilityKind::heal)) >= ability_cooldown))
+         memory.formation_start = -1, memory.formation_turns = 0;
+-    comms::claim(memory.claim);
++    // Held until we die, take another job, or farm moves on.
++    if (!world.me().alive || memory.claim >= 0 || memory.farm_group != memory.held_claim
++        || (memory.held_claim >= 0 && world.camps[memory.held_claim].state == CampState::cleared))
++        memory.held_claim = -1;
++    comms::claim(memory.claim >= 0 ? memory.claim : memory.held_claim, memory.claim < 0);
+     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);
+     comms::chasing(world.round, world.me().alive && decision == Branch::chase);
+     if (!world.is_stale()) publish_turn_order(world, comms::priority_payload(world));
+@@ -761,7 +765,7 @@
+     memory.health = world.me().alive ? my_health() : 0;
+     if (world.me().alive) note_income_end(world);
+     upkeep.camp_turns += camp_hits() != camp_hits_before;
+-    debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), static_cast<char>(decision), memory.farm_group, memory.claim); });
++    debug_block({ std::printf("D %d %u %c %d %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), static_cast<char>(decision), memory.farm_group, memory.claim, memory.held_claim); });
+ }
+ 
+ } // namespace aph
+diff -ruN -x .cambc bots/variants/chy-ref/src/bot.h bots/variants/rk1-h2/src/bot.h
+--- bots/variants/chy-ref/src/bot.h	2026-11-13 01:55:40.484465529 +0000
++++ bots/variants/rk1-h2/src/bot.h	2026-11-13 06:48:17.038714313 +0000
+@@ -15,6 +15,7 @@
+     int open_step = 0;    // our next step of the draft's opening plan (farm open_plan_choice)
+     int recall_farm = -1; // farm_group, while a recall reaches it sooner by way of spawn (recall_to_farm)
+     int claim = -1;       // the group we told allies we work towards, or -1
++    int held_claim = -1;  // our farm claim kept posted through a retreat or a shopping trip (hold_claim)
+     int live_claim = -1;  // our claim observed alive at the start of our previous turn
+     bool crew = false;    // joining an ally's claim rather than our own
+     float camp_fled = -1; // our health when camp fire last sent us home: we keep going until healed above it or home
+diff -ruN -x .cambc bots/variants/chy-ref/src/bot_parts.h bots/variants/rk1-h2/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 01:55:40.484465529 +0000
++++ bots/variants/rk1-h2/src/bot_parts.h	2026-11-13 06:48:17.038898715 +0000
+@@ -421,6 +421,14 @@
+ void farm_reprice(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ bool continue_recall(World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home, int recall_farm);
+ void drop_carry_claim(Memory& memory);
++// A retreat or a shopping trip off our farm job withdraws the claim but keeps posting it: we mean to
++// return, so a teammate reads the job as owned rather than free. Not a capture hold we walk off.
++inline void hold_claim(const World& world, Memory& memory) {
++    if (const int g = memory.claim; g >= 0 && g == memory.farm_group && g < static_cast<int>(world.camps.size())
++                                    && world.camps[g].state != CampState::cleared)
++        memory.held_claim = g;
++    memory.claim = -1;
++}
+ void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool attacked, const Pathing::GuardState& chase_guard);
+ 
+ // economy/capture.cc
+@@ -499,6 +507,7 @@
+     int n = 0;
+     float line = 0, my_hp = 0, my_max = 0;
+     vec2 here{};
++    const World* world = nullptr;
+     // The living allies other than us that claim a group, in ally order: each group's claimers
+     // without a pass over every ally.
+     std::array<std::uint8_t, 16> claiming{};
+diff -ruN -x .cambc bots/variants/chy-ref/src/combat/fight.cc bots/variants/rk1-h2/src/combat/fight.cc
+--- bots/variants/chy-ref/src/combat/fight.cc	2026-11-13 01:55:40.484680022 +0000
++++ bots/variants/rk1-h2/src/combat/fight.cc	2026-11-13 06:48:17.039086178 +0000
+@@ -1581,7 +1581,7 @@
+     auto& me = cambc::self();
+     decision = Branch::retreat;
+     const int mono = mono_trapped(world, pathing, safety, memory, my_health());
+-    memory.claim = -1;
++    hold_claim(world, memory);
+     if (!memory.siege && (mono >= 0 ? mono == 1 : camp_trapped(world, pathing, safety, my_position(), my_health(), false)))
+         memory.camp_fled = my_health();
+     memory.banking = banks_bag(world, pathing);
+diff -ruN -x .cambc bots/variants/chy-ref/src/economy/crew.cc bots/variants/rk1-h2/src/economy/crew.cc
+--- bots/variants/chy-ref/src/economy/crew.cc	2026-11-13 01:55:40.485923429 +0000
++++ bots/variants/rk1-h2/src/economy/crew.cc	2026-11-13 07:05:15.577865536 +0000
+@@ -155,6 +155,7 @@
+     // One read of our own record: each accessor reads the engine again.
+     const auto& me = my_record();
+     out.here = {me.x, me.y};
++    out.world = &world;
+     out.my_hp = me.health, out.my_max = me.max_health;
+     out.line = line, out.n = 0, out.n_claiming = 0, out.self_slot = -1;
+     out.n_joinable = -1, out.avail_group = -1;
+@@ -166,7 +167,7 @@
+         x.seen = !a.is_self && a.alive && (a.visible || a.pos_round >= world.round - params::crew_seen_rounds);
+         x.has_output = x.has_avail = x.has_pool = false;
+         if (a.is_self) out.self_slot = out.n;
+-        else if (a.alive && x.claim >= 0) out.claiming[static_cast<std::size_t>(out.n_claiming++)] = static_cast<std::uint8_t>(out.n);
++        else if (a.alive && x.claim >= 0 && !comms::claim_held(world, a)) out.claiming[static_cast<std::size_t>(out.n_claiming++)] = static_cast<std::uint8_t>(out.n);
+         ++out.n;
+     }
+ }
+@@ -174,8 +175,19 @@
+ std::uint32_t crew_claimer_bits(const CrewAllies& allies, int g) {
+     std::uint32_t bits = 0;
+     for (int k = 0; k < allies.n_claiming; ++k)
+-        if (const int i = allies.claiming[static_cast<std::size_t>(k)]; allies.at[static_cast<std::size_t>(i)].seen && allies.at[static_cast<std::size_t>(i)].claim == g)
+-            bits |= 1u << i;
++        if (const int i = allies.claiming[static_cast<std::size_t>(k)]; allies.at[static_cast<std::size_t>(i)].claim == g) {
++            const auto& x = allies.at[static_cast<std::size_t>(i)];
++            bool counts = x.seen;
++            // Out of sight, the tile it posts (comms_slots) says whether it is at the group.
++            if (vec2 at{-1, -1}; !counts && params::comms_slots) {
++                if (int told = -1; comms::told_ally(x.a->index, at, told)) {
++                    const vec2 centre = allies.world->map().groups[g].centre;
++                    counts = std::max(0, dist(at, centre) - x.a->facts().attack_range())
++                             <= std::max(0, dist(allies.here, centre) - allies.world->me().facts().attack_range()) + 2;
++                }
++            }
++            if (counts) bits |= 1u << i;
++        }
+     return bits;
+ }
+ 
+diff -ruN -x .cambc bots/variants/chy-ref/src/economy/farm.cc bots/variants/rk1-h2/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 01:55:40.486686179 +0000
++++ bots/variants/rk1-h2/src/economy/farm.cc	2026-11-13 07:05:15.581847331 +0000
+@@ -643,6 +643,7 @@
+ void drop_carry_claim(Memory& memory) {
+     auto& memo = farm_memo();
+     if (memo.carry_group >= 0 && memory.claim == memo.carry_group) memory.claim = -1;
++    if (memo.carry_group >= 0 && memory.held_claim == memo.carry_group) memory.held_claim = -1;
+     memo.carry_group = -1;
+ }
+ 
+@@ -686,7 +687,7 @@
+             bool joined = false;
+             for (const auto& a : world.allies)
+                 joined |= !a.is_self && a.alive
+-                          && (comms::claim_of(world, a.index) == g || (a.visible && crew_in_reach(world, g, a.pos, a.facts().attack_range())));
++                          && (comms::working_claim_of(world, a.index) == g || (a.visible && crew_in_reach(world, g, a.pos, a.facts().attack_range())));
+             if (memory.crew_reached < 0 || joined) memory.crew_reached = world.round;
+             else if (world.round - memory.crew_reached >= params::crew_wait_rounds) {
+                 if (g < static_cast<int>(memory.crew_ban.size())) memory.crew_ban[g] = world.round + params::crew_ban_rounds;
+@@ -1165,7 +1166,7 @@
+         };
+         if (!allies) {
+             for (const auto& a : world.allies)
+-                if (!a.is_self && a.alive && comms::claim_of(world, a.index) == g) add(a, camp_output(a));
++                if (!a.is_self && a.alive && comms::working_claim_of(world, a.index) == g) add(a, camp_output(a));
+             return total;
+         }
+         for (int k = 0; k < allies->n_claiming; ++k)
+diff -ruN -x .cambc bots/variants/chy-ref/src/main.cc bots/variants/rk1-h2/src/main.cc
+--- bots/variants/chy-ref/src/main.cc	2026-11-13 01:55:40.486686179 +0000
++++ bots/variants/rk1-h2/src/main.cc	2026-11-13 06:45:50.095846620 +0000
+@@ -329,7 +329,7 @@
+         const auto now = aph::my_position();
+         const bool moved = world->me().alive && now.x >= 0 && now != world->sight_pos();
+         const bool refresh = moved && aph::fuel_ok(refresh_floor);
+-        run("comms send", [&] { aph::comms::send(*world, moved, refresh); });
++        run("comms send", [&] { aph::comms::send(*world, now, moved, refresh); });
+         run("debug", [&] { world->debug_output(); });
+         if (!aph::fuel_ok(late_floor)) return;
+         if (!world->is_stale())
+diff -ruN -x .cambc bots/variants/chy-ref/src/model/comms.cc bots/variants/rk1-h2/src/model/comms.cc
+--- bots/variants/chy-ref/src/model/comms.cc	2026-11-13 01:55:40.486686179 +0000
++++ bots/variants/rk1-h2/src/model/comms.cc	2026-11-13 07:05:15.577673653 +0000
+@@ -50,6 +50,9 @@
+     BitField ally;
+     std::uint64_t ally_bits = 0;
+     int cell = 1, cells_y = 1;
++    // comms_slots: a slot value below pos_base is a claim + 1, from it on a cell. pos_on: the cells fit.
++    bool pos_on = false;
++    int pos_base = 1 << 30, max_x = 0, max_y = 0;
+     int period(int g) const { return camp_offset[g + 1] - camp_offset[g]; }
+ };
+ 
+@@ -75,12 +78,24 @@
+     const int bag_width = width_of(128 * static_cast<std::uint64_t>(L.team));
+     const int claim_width = std::min(width_of(static_cast<std::uint64_t>(groups) + 1), (64 - bag_width) / L.team);
+     L.claim_cap = (1 << claim_width) - 1;
+-    for (int i = 0; i < L.team; ++i) L.claim[static_cast<std::size_t>(i)] = field(claim_width);
+-    L.bag = field(bag_width);
+     const int camp_width = static_cast<int>(std::bit_width(static_cast<std::uint64_t>(L.camp_offset.back())));
++    // The camp record stays wherever it fitted before; the slots share what is left.
++    const bool camp_fits = L.team * claim_width + bag_width + camp_width <= 64;
++    const int slot_width = params::comms_slots ? std::min(16, (64 - bag_width - (camp_fits ? camp_width : 0)) / L.team) : claim_width;
++    for (int i = 0; i < L.team; ++i) L.claim[static_cast<std::size_t>(i)] = field(slot_width);
++    L.bag = field(bag_width);
+     L.camp_on = shift + camp_width <= 64;
+     if (L.camp_on) L.camp = field(camp_width);
+-    if (params::comms_ally && L.camp_on)
++    if (params::comms_slots) {
++        const int base = std::min(groups, L.claim_cap) + 1;
++        const auto room = (std::uint64_t{1} << slot_width) - static_cast<std::uint64_t>(base);
++        for (int c = 1; c <= std::max(map.width, map.height) && !L.pos_on; ++c) {
++            const auto nx = static_cast<std::uint64_t>((map.width + c - 1) / c), ny = static_cast<std::uint64_t>((map.height + c - 1) / c);
++            if (nx * ny <= room) L.cell = c, L.cells_y = static_cast<int>(ny), L.pos_base = base, L.pos_on = true;
++        }
++        L.max_x = map.width - 1, L.max_y = map.height - 1;
++    }
++    if (params::comms_ally && L.camp_on && !params::comms_slots)
+         for (const int c : {1, 3, 5}) {
+             const auto cells = static_cast<std::uint64_t>((map.width + c - 1) / c) * static_cast<std::uint64_t>((map.height + c - 1) / c);
+             const int width = width_of(cells * 4 * static_cast<std::uint64_t>(L.team) + 1);
+@@ -94,6 +109,7 @@
+     L.bag_bits = L.bag.mask;
+     L.camp_bits = L.camp.mask;
+     L.ready = true;
++    debug_block({ std::printf("CL %d %d %d %d %d\n", world.round, L.camp_on ? 1 : 0, L.pos_on ? 1 : 0, L.team, L.cell); });
+ }
+ 
+ const Layout& layout(const World& world) {
+@@ -120,6 +136,13 @@
+ };
+ std::array<Told, 8> told_allies;
+ 
++// comms_slots, our own slot: the claim as last posted, the turns it still stays up, and its round.
++struct Slot {
++    std::uint64_t claim = 0;
++    int hold = 0, round = -(1 << 20);
++};
++Slot slot;
++
+ support_mailbox::State support;
+ int support_intent_round = -1;
+ bool support_intent_value = false;
+@@ -127,7 +150,8 @@
+ bool chasing_value = false;
+ // Above the claim (0-7) and support mailbox (8-10): the chase bit, then its posting round mod 4.
+ constexpr int chase_shift = 11;
+-static_assert(support_mailbox::payload_shift + 3 <= chase_shift && chase_shift + 3 <= priority_payload_bits);
++constexpr int held_shift = chase_shift + 3;
++static_assert(support_mailbox::payload_shift + 3 <= chase_shift && held_shift < priority_payload_bits);
+ 
+ static_assert(support_mailbox::protected_mate == 0 && support_mailbox::healer == 1); // support_pair's order
+ 
+@@ -190,7 +214,9 @@
+     for (const auto& a : world.allies) {
+         if (a.is_self || a.index >= L.team) continue;
+         const auto p = payload_of(world, a);
+-        detail::posts.claims[a.index] = p >= 0 ? static_cast<int>(p & 0xff) - 1 : static_cast<int>(L.claim[static_cast<std::size_t>(a.index)].get(bits)) - 1;
++        // A slot holding a tile leaves the claim as last read.
++        if (const int v = static_cast<int>(L.claim[static_cast<std::size_t>(a.index)].get(bits)); p >= 0) detail::posts.claims[a.index] = static_cast<int>(p & 0xff) - 1;
++        else if (v < L.pos_base) detail::posts.claims[a.index] = v - 1;
+     }
+     if (const auto v = L.ally.get(bits); L.ally_on && (state.fresh & L.ally_bits) && v != 0) {
+         const auto code = v - 1, kinds = 4 * static_cast<std::uint64_t>(L.team);
+@@ -202,6 +228,7 @@
+     }
+     if (const auto record = L.camp.get(bits); (state.fresh & L.camp_bits) && record != 0) {
+         const auto [g, respawn] = decode_capture(L, record);
++        debug_block({ std::printf("CN %d %d %d\n", round, g, respawn); });
+         world.note_capture(g, respawn);
+     }
+     state.last = bits;
+@@ -210,7 +237,7 @@
+ 
+ // No teammate acts during our turn: the bits are still those receive() read, if it read them this
+ // round. Older bits would overwrite what teammates wrote since, as would a turn finishing late.
+-void send(World& world, bool moved, bool refresh) {
++void send(World& world, vec2 now, bool moved, bool refresh) {
+     if (state.now_round != world.round || (finish_late() && world.resumed())) return;
+     const auto& L = layout(world);
+     auto bits = state.now;
+@@ -235,6 +262,7 @@
+             if (c.state_round + groups[g].respawn < c.respawn_round) return false;
+             L.camp.set(bits, static_cast<std::uint64_t>(1 + L.camp_offset[static_cast<std::size_t>(g)] + c.respawn_round % L.period(g)));
+             c.told_respawn = c.respawn_round;
++            debug_block({ std::printf("CP %d %d %d\n", round, g, c.respawn_round); });
+             dirty = true;
+             return true;
+         });
+@@ -246,7 +274,15 @@
+     if (me < L.team) {
+         const auto& field = L.claim[static_cast<std::size_t>(me)];
+         const auto claim = static_cast<std::uint64_t>(world.me().alive && mine >= 0 && mine < L.claim_cap ? mine + 1 : 0);
+-        if (field.get(bits) != claim) field.set(bits, claim), dirty = true;
++        auto value = claim;
++        if (L.pos_on) {
++            if (claim != slot.claim) slot.claim = claim, slot.hold = 1, slot.round = round;
++            else if (slot.hold > 0) --slot.hold, slot.round = round;
++            else if (round - slot.round >= params::slot_refresh) slot.hold = 1, slot.round = round;
++            else if (!world.me().alive || now.x < 0) slot.round = round;
++            else value = static_cast<std::uint64_t>(L.pos_base + now.x / L.cell * L.cells_y + now.y / L.cell);
++        }
++        if (field.get(bits) != value) field.set(bits, value), dirty = true;
+     }
+ 
+     // One poster a round, by index among the allies that are not healers, while a healer lives.
+@@ -288,13 +324,30 @@
+ void bag(int gems) { detail::posts.my_bag = gems; }
+ 
+ bool told_ally(int ally, vec2& at, int& round) {
++    if (const auto& L = layout_; L.pos_on) {
++        if (ally < 0 || ally >= L.team) return false;
++        const int cell = static_cast<int>(L.claim[static_cast<std::size_t>(ally)].get(state.now)) - L.pos_base, h = L.cell / 2;
++        if (cell < 0) return false;
++        at = {std::min(cell / L.cells_y * L.cell + h, L.max_x), std::min(cell % L.cells_y * L.cell + h, L.max_y)};
++        round = state.now_round;
++        return true;
++    }
+     if (ally < 0 || ally >= 8 || told_allies[static_cast<std::size_t>(ally)].round < 0) return false;
+     at = told_allies[static_cast<std::size_t>(ally)].at;
+     round = told_allies[static_cast<std::size_t>(ally)].round;
+     return true;
+ }
+ 
+-void claim(int group) { detail::posts.mine = group < max_group ? group : -1; }
++void claim(int group, bool held) {
++    detail::posts.mine = group < max_group ? group : -1;
++    detail::posts.mine_held = held && detail::posts.mine >= 0;
++}
++
++bool claim_held(const World& world, const ChampionBelief& a) {
++    if (a.is_self) return detail::posts.mine_held;
++    const auto p = payload_of(world, a);
++    return p >= 0 && (p >> held_shift & 1);
++}
+ 
+ bool support_request(const World& world) {
+     return support.valid(support_mailbox::protected_mate, world.round);
+@@ -324,6 +377,7 @@
+                                                                                      pair[0]->alive && pair[1]->alive));
+     if (chasing_round == world.round && chasing_value)
+         payload |= 1u << chase_shift | static_cast<std::uint32_t>(world.round & 3) << (chase_shift + 1);
++    if (detail::posts.mine_held) payload |= 1u << held_shift;
+     return payload;
+ }
+ 
+diff -ruN -x .cambc bots/variants/chy-ref/src/model/comms.h bots/variants/rk1-h2/src/model/comms.h
+--- bots/variants/chy-ref/src/model/comms.h	2026-11-13 01:55:40.487209436 +0000
++++ bots/variants/rk1-h2/src/model/comms.h	2026-11-13 07:05:15.574099514 +0000
+@@ -13,16 +13,18 @@
+     std::array<int, 8> bags{};
+     std::array<int, 8> claims{-1, -1, -1, -1, -1, -1, -1, -1};
+     int my_bag = 0, mine = -1;
++    bool mine_held = false;
+ };
+ inline Posts posts;
+ } // namespace detail
+ 
+ // An ally's (by index) own position as it last posted it (params::comms_ally), to within 2; false if never.
++// With params::comms_slots: the centre of the cell in its slot now, posted at its latest turn.
+ bool told_ally(int ally, vec2& at, int& round);
+ // What teammates posted since our previous turn, merged into the world.
+ void receive(World& world);
+ // At the turn's end. With `refresh`, re-read vision first.
+-void send(World& world, bool moved, bool refresh);
++void send(World& world, vec2 now, bool moved, bool refresh);
+ // The gems we carry, posted when it changes.
+ void bag(int gems);
+ // The gems an ally (by index) carries as it last posted, rounded up to a multiple of 4 and capped
+@@ -32,8 +34,11 @@
+     if (a.is_self) return detail::posts.my_bag;
+     return a.alive ? detail::posts.bags[ally] : 0;
+ }
+-// The group we work towards (-1 for none), posted every turn.
+-void claim(int group);
++// The group we work towards (-1 for none), posted every turn; `held` while we are away from it
++// (Memory::held_claim), told in our priority payload.
++void claim(int group, bool held = false);
++// Whether an ally in sight posted its claim as held this round or last.
++bool claim_held(const World& world, const ChampionBelief& a);
+ // The other support endpoint's intent (the protected mate's request, the healer's offer), posted in
+ // its priority within the last two rounds and read while we saw it. Both endpoints must be alive;
+ // the caller still checks the other's position.
+@@ -53,5 +58,9 @@
+     if (a.is_self) return detail::posts.mine;
+     return a.alive ? detail::posts.claims[ally] : -1;
+ }
++// The claim of an ally at work on it: an ally in sight holding its claim away from it counts for none.
++inline int working_claim_of(const World& world, int ally) {
++    return claim_held(world, world.allies[ally]) ? -1 : claim_of(world, ally);
++}
+ 
+ } // namespace aph::comms
+diff -ruN -x .cambc bots/variants/chy-ref/src/params.h bots/variants/rk1-h2/src/params.h
+--- bots/variants/chy-ref/src/params.h	2026-11-13 01:55:40.488686206 +0000
++++ bots/variants/rk1-h2/src/params.h	2026-11-13 06:45:50.096054443 +0000
+@@ -48,6 +48,13 @@
+ // Each ally but the healers posts its own position in turn, in the shared bytes' free bits, for
+ // Willow's follow (support.cc); off on maps where it does not fit (comms.cc).
+ inline constexpr bool comms_ally = true;
++// Slot comms: each ally's claim field is one slot, as wide as the shared bytes allow after the bag and camp
++// records. It holds the claim when that changes (for two turns, so teammates on both sides of the turn
++// order read it) and every slot_refresh rounds, and the ally's own tile otherwise (a c x c cell, c the
++// smallest that fits). It replaces comms_ally's record. With it, a claimer out of sight still counts in
++// its group's crew while the tile in its slot is no farther from the group than we are, by 2.
++inline constexpr bool comms_slots = true;
++inline constexpr int slot_refresh = 8;
+ // tools/draftlab/parity.py's copies only: print the model draft's features and team in draft round 0
+ // (debug builds), to compare with features.mjs and model.mjs.
+ constexpr bool draft_parity = false;

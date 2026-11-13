@@ -1,0 +1,270 @@
+diff -ru bots/variants/chy-ref/src/bot.cc bots/variants/latestop/src/bot.cc
+--- bots/variants/chy-ref/src/bot.cc	2026-11-13 01:55:39.398989147 +0000
++++ bots/variants/latestop/src/bot.cc	2026-11-13 04:35:42.276942913 +0000
+@@ -423,7 +423,7 @@
+     if (!world.me().can_act(world.round)) return;
+     fixc_bush_threatened = fixc_bush_threat(world, safety);
+     if (const auto* ender = game_ender(world); ender && holds_hard_stop(world, *ender)) {
+-        stop_game_ender(world, pathing, memory, *ender);
++        stop_game_ender(world, pathing, safety, memory, *ender);
+         return;
+     }
+     const bool willow = support_healer(world.me());
+@@ -657,14 +657,16 @@
+     const bool alive = world.me().alive;
+     const auto strikes = [&] { return alive && (my_can_attack() || my_can_cast()); };
+     if (room(reveal_least, strikes) && alive && see_revealed(world, pathing, safety)) search.chose = false;
+-    if (!support_owned && room(strike_least, strikes) && strike_after(world, pathing, safety).searched) note_search(true);
++    // Staged for a late stop, nothing at the turn end may walk us off the stage or spend the stun, nor lock the altar.
++    const bool wrap = !support_owned && !stop_staged;
++    if (wrap && room(strike_least, strikes) && strike_after(world, pathing, safety).searched) note_search(true);
+     pathing.set_guard(nullptr);
+     if constexpr (debug_fights)
+         if (world.me().alive && !test(world.map().ally_spawn, start) && fuel_ok(end_reserve + 15000))
+             if (const auto t = safety.fight(start); t.enemies > 0) log_fight("FF", world, safety, start, t);
+     // Nothing else takes the cast now. The search values a heal at what could hit the ally before
+     // the slot is back, so a plan may leave one worth casting.
+-    if (!support_owned && room(cast_least, [&] { return alive && world.me().facts().heals() && my_can_cast(); }))
++    if (wrap && room(cast_least, [&] { return alive && world.me().facts().heals() && my_can_cast(); }))
+         heal_ally(world, safety); // allies in reach after walking
+     if (!support_owned && !search_priced_end()
+         && room(cast_least, [&] { return alive && world.me().facts().slot_of(AbilityKind::shield) >= 0 && my_can_cast(); }))
+@@ -672,11 +674,11 @@
+     // where we end the turn
+     end_ward = room(ward_least, [&] { return alive && !stunned_turn && world.round >= warded_round + static_cast<int>(cambc::constants::ward_cooldown); })
+                && place_ward(world, memory);
+-    if (room(ward_least, [&] { return alive && !stunned_turn && carried_locks() > 0; })) place_lock(world);
+-    if (!support_owned && room(habit_least, [&] { return alive && !stunned_turn && my_gems() > 0; }))
++    if (!stop_staged && room(ward_least, [&] { return alive && !stunned_turn && carried_locks() > 0; })) place_lock(world);
++    if (wrap && room(habit_least, [&] { return alive && !stunned_turn && my_gems() > 0; }))
+         mite_tribute_habit(world, pathing, safety, memory);
+     // The posts come before the recall: an ally reads our claim and bag, and next turn our health.
+-    if (!support_owned && (!tight || fuel_ok(posts_cost + recall_cost) || (cut = cut || (alive && !stunned_turn), false))) start_recall(world);
++    if (wrap && (!tight || fuel_ok(posts_cost + recall_cost) || (cut = cut || (alive && !stunned_turn), false))) start_recall(world);
+     count_use(world, could_attack);
+     if (cut) note_shortcut("turn-end-short");
+ }
+@@ -704,7 +706,7 @@
+     sieged = false;
+     search.chose = false;
+     struck = searched = false;
+-    support_owned = support_requested = support_offered = support_retreat = end_ward = end_tight = false;
++    support_owned = support_requested = support_offered = support_retreat = end_ward = end_tight = stop_staged = false;
+     comms::support_intent(world.round, false);
+     siege_group() = -1;
+     turn_acts = {};
+diff -ru bots/variants/chy-ref/src/bot_parts.h bots/variants/latestop/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 01:55:39.399032918 +0000
++++ bots/variants/latestop/src/bot_parts.h	2026-11-13 04:17:37.267242708 +0000
+@@ -57,12 +57,15 @@
+     siege = 'G',          // siege or kite of a big group
+     contest = 'X',
+     stop_ender = 'E',     // stopping a game-ending bag
++    stop_staged = 'L',    // staged for a late stop of a game-ending tribute (combat/fight.cc stage_stop)
+     willow_support = 'h', // Willow's heal or formation
+     prism_recovery = 'r', // Prism's recovery beside Willow
+ };
+ Branch decision = Branch::none;
+ bool sieged = false;       // siege() or its heal trip ran this turn: act() keeps the siege
+ bool stunned_turn = false; // stunned at this turn's start
++// stage_stop holds our stun for a game-ending tribute this turn: the turn end casts, locks and recalls nothing.
++bool stop_staged = false;
+ bool struck = false;       // the strike search ran this turn
+ bool searched = false;     // and priced every enemy we see: none its own moves revealed
+ // The Prism-Willow support code chose this turn: the wrap-up's strike, heal, shield and recall stay out.
+@@ -354,7 +357,7 @@
+ };
+ std::optional<TributeWin> enemy_tributes_win(const World& world);
+ const ChampionBelief* game_ender(const World& world);
+-void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e);
++void stop_game_ender(const World& world, Pathing& pathing, Safety& safety, Memory& memory, const ChampionBelief& e);
+ bool holds_hard_stop(const World& world, const ChampionBelief& e);
+ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ 
+diff -ru bots/variants/chy-ref/src/combat/fight.cc bots/variants/latestop/src/combat/fight.cc
+--- bots/variants/chy-ref/src/combat/fight.cc	2026-11-13 01:55:39.399251641 +0000
++++ bots/variants/latestop/src/combat/fight.cc	2026-11-13 05:12:22.972376328 +0000
+@@ -1243,15 +1243,127 @@
+     return tribute_altar(world, e.pos) >= 0 && carried_locks() > 0;
+ }
+ 
++// A late stop (research/mac13-argo): a stun cancelling a channel of b turns with k left costs the enemy
++// b - k turns, and the stunner standing by the channel is often killed for it, so a stun at the start
++// buys a few turns and one at the end nearly the whole channel. The channel completes at its owner's
++// turn start in channel_end_round (turn_start): our last stop is our latest turn before that moment.
++// We stop one turn of ours earlier: a stun that fails (a hidden blocker), a body stepping into our way,
++// or a turn order we misread (priorities change from the next round) each costs at most that one turn.
++// Of the bodies holding a stun for it, the lowest index stops so; the others hold to their own last
++// turn, which only a stop that failed leaves to them, and stop then.
++
++// Our latest round whose turn comes before `lands`, or -1.
++int stop_deadline(const World& world, const ChampionBelief& e, Moment lands) {
++    for (int r = e.channel_end_round; r >= world.round; --r)
++        if (world.me().can_act(r) && turn_start(world, world.me(), r) < lands) return r;
++    return -1;
++}
++
++// A visible ally of lower index that sees e, out of channels, holding a ready stun that reaches e
++// (after a walk, if it allows one) on a turn before `lands`.
++bool earlier_stunner(const World& world, const ChampionBelief& e, Moment lands, const bitboard& sight) {
++    for (const auto& a : world.allies) {
++        if (a.is_self || !a.alive || !a.visible || a.index > world.me().index || held_by_channel(a) || stun_pending(a.handle)) continue;
++        if (!test(sight, a.pos)) continue;
++        const int r = a.acted ? world.round + 1 : world.round;
++        if (a.can_act(r) && turn_start(world, a, r) < lands && dist(a.pos, e.pos) <= a.ready_stun_reach(r, true)) return true;
++    }
++    return false;
++}
++
++enum class Stage { none, held, walk };
++// stage_stop's, for the walk it hands back: who sees e, and our stun's reach on the planned turn.
++static bitboard stage_sight{cambc::uninitialized};
++static int stage_reach = -1;
++
++// Holding a stun for e's game-ending channel, wait in its reach and our sight of e until the planned
++// turn: held, or walk (in as the old stop walks, holding the stop). Not when we cannot read the
++// channel's end, the channel's landing is not the win's, or waiting could cost the stop: a stun on us
++// before our next turn takes that turn, and a blow that could kill us takes the body. Then the stop
++// is now, as before.
++Stage stage_stop(const World& world, Pathing& pathing, Safety& safety, const ChampionBelief& e) {
++    const auto no = [&](int why) {
++        debug_block({ std::printf("LATEWHY %d %u %d\n", world.round, my_handle(), why); });
++        return Stage::none;
++    };
++    if (e.channel != Channel::tribute || !e.visible || e.facts().passive == Passive::stun_immune || test(world.map().bushes, e.pos)) return no(1);
++    if (e.channel_end_round <= world.round || e.stun_pending) return no(2);
++    const Moment lands = turn_start(world, e, e.channel_end_round);
++    if (const auto win = enemy_tributes_win(world); !win || win->lands != lands) return no(3);
++    // Who sees e: we must keep reading the channel, and a wall between is a stop that fails.
++    auto& sight = stage_sight;
++    world.map().viewers_into(e.pos, vision_radius, sight);
++    const int deadline = stop_deadline(world, e, lands);
++    const int plan = earlier_stunner(world, e, lands, sight) ? deadline : deadline - 1;
++    if (deadline < 0 || plan <= world.round) return no(4);
++    const int reach = stage_reach = world.me().ready_stun_reach(plan);
++    if (reach < 0) return no(5);
++    const vec2 here = my_position();
++    // The channeller strikes only by cancelling (rules channelling), and a restart runs the whole channel again.
++    const auto risky = [&](vec2 p) {
++        const auto b = safety.bound(p, world.me().taken, e.index);
++        return b.stuns || b.doubled >= world.me().health;
++    };
++    const auto staged = [&](bool placed) {
++        decision = Branch::stop_staged;
++        stop_staged = true;
++        debug_block({ std::printf("LATESTAGE %d %u left %d plan %d deadline %d placed %d\n", world.round, my_handle(),
++                                  e.channel_end_round - world.round, plan, deadline, placed ? 1 : 0); });
++    };
++    if (dist(here, e.pos) > reach || !test(sight, here)) {
++        // An excluding stun cannot follow a walk, so we must stand placed when the planned turn starts.
++        // Steps as the crow flies are a floor on the walk's turns; the turn kept beyond them is for a body
++        // in the way or a stun on us where we arrive, and re-planning each turn hands a longer walk back to
++        // the old stop.
++        const int steps = std::max(1, dist(here, e.pos) - reach);
++        if (steps >= plan - world.round || !my_can_move() || risky(here)) return no(6);
++        staged(false);
++        return Stage::walk;
++    }
++    // Re-planned every turn, so only what could reach us before our next turn counts: a risky tile is
++    // left for a step onto one that keeps the stop and is not, else the stop is now.
++    std::optional<vec2> step;
++    if (risky(here)) {
++        if (!my_can_move()) return no(7);
++        const auto& blocked = pathing.blocked();
++        for (const auto d : directions) {
++            const vec2 p = here + d;
++            if (in_bounds(p) && test(world.map().open_for_us, p) && !test(blocked, p) && dist(p, e.pos) <= reach && test(sight, p) && !risky(p)) {
++                step = p;
++                break;
++            }
++        }
++        if (!step) return no(7);
++    }
++    staged(true);
++    // Moved, or refused by a hidden blocker (which spends nothing): staged either way, re-planned next turn.
++    if (step) pathing.try_move(*step);
++    // Damage does not interrupt a tribute, but a kill takes the bag: our basic attack is no stop. After
++    // the step, which a ranged attack would spend.
++    attack_enemy(world);
++    return Stage::held;
++}
++
+ // Into reach of the enemy whose bag ends the game, whatever the risk: a stun or a lock if it is
+ // tributing, else attacks, followed until it stops at an altar.
+-void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e) {
++void stop_game_ender(const World& world, Pathing& pathing, Safety& safety, Memory& memory, const ChampionBelief& e) {
+     auto& me = cambc::self();
+-    decision = Branch::stop_ender;
++    const Stage stage = stage_stop(world, pathing, safety, e);
+     memory.claim = -1;
++    if (stage == Stage::held) return;
++    // Walking in to stage: the stop's walk, holding its stun and lock for the planned turn.
++    const bool hold = stage == Stage::walk;
++    debug_block({
++        if (e.channel == Channel::tribute && !hold) std::printf("LATESTOP %d %u left %d\n", world.round, my_handle(), e.channel_end_round - world.round);
++    });
++    if (!hold) decision = Branch::stop_ender;
+     pathing.set_guard(nullptr);
+     const bool tributing = e.channel == Channel::tribute;
+     const auto act = [&](bool hit) {
++        if (hold) {
++            if (hit) attack_enemy(world);
++            return;
++        }
+         place_lock(world);
+         if (!hit) return;
+         // Marcella's stunning reset cancels the channel. It goes before any cast, which would take its one cast.
+@@ -1261,7 +1373,9 @@
+     };
+     const int range = world.me().facts().attack_range();
+     static bitboard goals{cambc::uninitialized};
+-    const int stun = tributing && e.facts().passive != Passive::stun_immune ? world.me().ready_stun_reach(world.round + 1) : -1;
++    const int stun = hold ? stage_reach
++                     : tributing && e.facts().passive != Passive::stun_immune ? world.me().ready_stun_reach(world.round + 1)
++                                                                              : -1;
+     const int altar = tributing ? tribute_altar(world, e.pos) : -1;
+     const auto aim = [&](bool hard) {
+         goals.clear();
+@@ -1270,8 +1384,10 @@
+         // Damage cancels no tribute: holding a lock or a stun, attack range is no goal.
+         if (hard) reach = stun;
+         if (reach >= 0) goals.draw_chebyshev(e.pos, static_cast<float>(reach));
+-        if (altar >= 0 && carried_locks() > 0) goals |= world.map().altars[altar].lock_tiles();
++        if (altar >= 0 && carried_locks() > 0 && !hold) goals |= world.map().altars[altar].lock_tiles();
+         goals &= world.map().open_for_us;
++        // Staging stands where we see e (stage_stop).
++        if (hold) goals &= stage_sight;
+     };
+     // Holding a hard stop for a tribute, the walk to its tiles comes first, for a ranged attack spends the walk
+     // (03homonoliths-a stood at attack range, two steps short of the lock tiles, hitting a 2,000-health channeller).
+diff -ru bots/variants/chy-ref/src/model/safety.cc bots/variants/latestop/src/model/safety.cc
+--- bots/variants/chy-ref/src/model/safety.cc	2026-11-13 01:55:39.401790845 +0000
++++ bots/variants/latestop/src/model/safety.cc	2026-11-13 05:12:13.469226605 +0000
+@@ -3063,12 +3063,13 @@
+     return total;
+ }
+ 
+-Safety::Bound Safety::bound(vec2 p, float blow_scale) {
++Safety::Bound Safety::bound(vec2 p, float blow_scale, int skip) {
+     Bound out;
+     out.damage = out.doubled = camp_damage(p, true, true);
+     float safe = 1;
+     const bool immune = world_.me().facts().passive == Passive::stun_immune;
+     each_threat(p, [&](const ChampionBelief& e, const Blow& raw) {
++        if (e.index == skip) return;
+         const Blow b = felt(raw, immune);
+         out.damage += b.damage * blow_scale;
+         out.doubled += b.damage * (struck(e).repeats ? 2.0f : 1.0f) * blow_scale;
+diff -ru bots/variants/chy-ref/src/model/safety.h bots/variants/latestop/src/model/safety.h
+--- bots/variants/chy-ref/src/model/safety.h	2026-11-13 01:55:39.401790845 +0000
++++ bots/variants/latestop/src/model/safety.h	2026-11-13 05:12:13.468835440 +0000
+@@ -345,7 +345,8 @@
+         float damage = 0, doubled = 0;
+         bool hits = false, stuns = false, threat = false;
+     };
+-    Bound bound(vec2 p, float blow_scale = 1);
++    // `skip`: an enemy index left out.
++    Bound bound(vec2 p, float blow_scale = 1, int skip = -1);
+     // bound(p, blow_scale).damage > 0 || .hits (with blow_scale 1, also .doubled > 0 || .hits || .stuns),
+     // stopping at the first blow that settles it: every term bound sums is at least 0.
+     bool touched(vec2 p, float blow_scale = 1);

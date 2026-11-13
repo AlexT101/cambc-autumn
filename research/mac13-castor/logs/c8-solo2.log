@@ -1,0 +1,2 @@
+Solo mac13-castor-c8-solo2: CAND variants/c8-route-v2 vs REF variants/c7a-pgem, each against idle
+  study cand: running, log replays/solo/mac13-castor-c8-solo2/study-cand.log

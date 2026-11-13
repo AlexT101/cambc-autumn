@@ -1,0 +1,205 @@
+diff -ruN -x .cambc -x compile_commands.json bots/variants/dz1/src/bot.cc bots/variants/dzab-noprice/src/bot.cc
+--- bots/variants/dz1/src/bot.cc	2026-11-13 03:33:05.246182448 +0000
++++ bots/variants/dzab-noprice/src/bot.cc	2026-11-13 04:33:10.764492104 +0000
+@@ -636,7 +636,7 @@
+     switch (decision) {
+     case Branch::farm: case Branch::bank: case Branch::wait_altar: case Branch::shop: case Branch::siege: case Branch::contest:
+     case Branch::none:
+-        if (world.me().alive && !channelling() && fuel_ok(params::refine_fuel / 2)) kill_zone::step_out(world, pathing, safety);
++        if (kill_zone::reads(world) && world.me().alive && !channelling() && fuel_ok(params::refine_fuel / 2)) kill_zone::step_out(world, pathing, safety);
+         break;
+     default: break;
+     }
+diff -ruN -x .cambc -x compile_commands.json bots/variants/dz1/src/combat/fight.cc bots/variants/dzab-noprice/src/combat/fight.cc
+--- bots/variants/dz1/src/combat/fight.cc	2026-11-13 03:36:57.917032029 +0000
++++ bots/variants/dzab-noprice/src/combat/fight.cc	2026-11-13 04:33:10.771336265 +0000
+@@ -270,7 +270,7 @@
+     std::array<ComingCast, 8> coming;
+     const int casts = fuel_ok(params::refine_fuel) ? coming_casts(world, coming) : 0;
+     // A one-sided killer's zone near: steps in it rank after those out (kill_zone).
+-    const auto& kz = kill_zone::model(world, safety);
++    const auto& kz = kill_zone::reads(world) ? kill_zone::model(world, safety) : kill_zone::none();
+     const bool zones = kz.n && kz.near(here, 1);
+     const bool far = !safety.avoid_within(here, vision_radius);
+     if (far && !casts && !zones) {
+@@ -1665,7 +1665,7 @@
+ // us: one stopper waits at its edge, the soonest to act (stop_need, ties to the lower index), and
+ // any other once its own walk in must start for its act to land in time; the rest of the team plays on.
+ bool stops_first(const World& world, Safety& safety, const ChampionBelief& e) {
+-    if (e.channel != Channel::tribute || kill_zone::radius_of(world, safety, e.index) < 0) return true;
++    if (!kill_zone::reads(world) || e.channel != Channel::tribute || kill_zone::radius_of(world, safety, e.index) < 0 || !params::kz_ender) return true;
+     const int need = stop_turns(world, world.me(), my_position(), e, world.round + 1, carried_locks() > 0);
+     if (need == unreachable) return true;
+     if (last_round_before_channel_ends(world, e) - world.round + 1 <= need) return true;
+@@ -1723,7 +1723,7 @@
+     // waits a tile past the zone's edge, where its threat is the stop (a channel is cancelled once a threat
+     // it would answer stands near). An ally that can stop it sooner (ally_stops) leaves us waiting there.
+     const auto edge_hold = [&]() {
+-        const int zr = kill_zone::radius_of(world, safety, e.index);
++        const int zr = params::kz_ender && kill_zone::reads(world) ? kill_zone::radius_of(world, safety, e.index) : -1;
+         if (zr < 0 || !me.can_move()) return false;
+         const vec2 here = me.position();
+         const auto& altars = world.map().altars;
+@@ -2098,7 +2098,7 @@
+             // In a one-sided killer's zone the walk out is the escape: a walk-excluding cast only if it
+             // kills or stuns that killer (a stun takes its next turn), the sole one.
+             int killer = -1;
+-            if (!kept && my_can_move() && fuel_ok(params::refine_fuel) && kill_zone::killer_at(world, safety, my_position(), killer)) {
++            if (!kept && my_can_move() && kill_zone::reads(world) && fuel_ok(params::refine_fuel) && kill_zone::killer_at(world, safety, my_position(), killer)) {
+                 bool attempted = false;
+                 debug_block({ kill_zone::note('x'); });
+                 if (killer < 0 || !cast_at_enemies_for_escape(world, killer, 0, attempted)) cast_at_enemies(world, lethal_step_value);
+diff -ruN -x .cambc -x compile_commands.json bots/variants/dz1/src/combat/guard.cc bots/variants/dzab-noprice/src/combat/guard.cc
+--- bots/variants/dz1/src/combat/guard.cc	2026-11-13 03:36:38.621824017 +0000
++++ bots/variants/dzab-noprice/src/combat/guard.cc	2026-11-13 04:33:10.777798921 +0000
+@@ -761,7 +761,7 @@
+             [](const World& w, Safety& s, vec2 here, int) {
+                 static const bitboard none;
+                 const bitboard* guard = s.credible_enemy_may_hit_within(here, 1) ? &stations(w, s, here).guard : &none;
+-                return kill_zone::with_zones(w, s, here, 1, guard, 3);
++                return kill_zone::reads(w) ? kill_zone::with_zones(w, s, here, 1, guard, 3) : guard;
+             },
+             safety, my_position(), 1);
+         return;
+@@ -851,8 +851,8 @@
+     for (unsigned left = kept; left; left &= left - 1) edit(), set_tile(out, here + directions[std::countr_zero(left)]);
+     if (in.avoid) edit(), out |= *in.avoid;
+     // Nor in a one-sided killer's zone, unless the step leads out of it (kill_zone::keep_off).
+-    if (!copied) return kill_zone::with_zones(world, safety, here, radius, strikes, 0);
+-    return kill_zone::with_zones(world, safety, here, radius, kept || !out.is_empty() ? &out : nullptr, 0);
++    const bitboard* guard = copied ? (kept || !out.is_empty() ? &out : nullptr) : strikes;
++    return kill_zone::reads(world) ? kill_zone::with_zones(world, safety, here, radius, guard, 0) : guard;
+ }
+ 
+ // work_guard's cover: step_guard's, and the tiles keep_out sets.
+@@ -860,13 +860,13 @@
+     const auto& in = work_guard_inputs;
+     const bitboard* strikes = in.strikes_known ? in.strikes : step_guard_cover(world, safety, here, radius);
+     const unsigned kept = keep_out(world, *in.pathing, safety, here, in.damage);
+-    if (!kept && !in.avoid) return kill_zone::with_zones(world, safety, here, radius, strikes, 1);
++    if (!kept && !in.avoid) return kill_zone::reads(world) ? kill_zone::with_zones(world, safety, here, radius, strikes, 1) : strikes;
+     static bitboard cover{cambc::uninitialized};
+     if (strikes) copy_into(*strikes, cover);
+     else clear_board(cover);
+     for (unsigned left = kept; left; left &= left - 1) set_tile(cover, here + directions[std::countr_zero(left)]);
+     if (in.avoid) cover |= *in.avoid;
+-    return kill_zone::with_zones(world, safety, here, radius, &cover, 1);
++    return kill_zone::reads(world) ? kill_zone::with_zones(world, safety, here, radius, &cover, 1) : &cover;
+ }
+ 
+ // A chase that worked out the step guard from where we still stand: the work guard reads it.
+@@ -882,7 +882,7 @@
+ const bitboard* willow_held_guard(const World& w, Safety& s, vec2 here, int) {
+     copy_into(*willow_held, willow_held_out);
+     if (s.credible_enemy_may_hit_within(here, 1)) willow_held_out |= stations(w, s, here).guard;
+-    return kill_zone::with_zones(w, s, here, 1, &willow_held_out, 2);
++    return kill_zone::reads(w) ? kill_zone::with_zones(w, s, here, 1, &willow_held_out, 2) : &willow_held_out;
+ }
+ 
+ void guard_work(const World& world, Pathing& pathing, Safety& safety, float damage, const bitboard* avoid) {
+diff -ruN -x .cambc -x compile_commands.json bots/variants/dz1/src/combat/plan.cc bots/variants/dzab-noprice/src/combat/plan.cc
+--- bots/variants/dz1/src/combat/plan.cc	2026-11-13 03:12:35.069635392 +0000
++++ bots/variants/dzab-noprice/src/combat/plan.cc	2026-11-13 04:33:10.778002604 +0000
+@@ -2166,7 +2166,7 @@
+             }
+     // A turn ended in a one-sided killer's zone (kill_zone) is priced as our death, unless the plan
+     // kills or stuns that killer (its `removed` bit): our kill's worth to them, bag and all.
+-    const auto& kz = kill_zone::model(world, safety);
++    const auto& kz = kill_zone::reads(world) ? kill_zone::model(world, safety) : kill_zone::none();
+     const float death = kz.n ? kill_distance(my_health_and_shield(world), my_max_health(), params::gem_value * static_cast<float>(my_gems())) : 0.0f;
+     int zone_priced = 0;
+     float best_total = -1e30f;
+diff -ruN -x .cambc -x compile_commands.json bots/variants/dz1/src/economy/bank.cc bots/variants/dzab-noprice/src/economy/bank.cc
+--- bots/variants/dz1/src/economy/bank.cc	2026-11-13 03:37:06.107173260 +0000
++++ bots/variants/dzab-noprice/src/economy/bank.cc	2026-11-13 04:33:10.782362222 +0000
+@@ -921,7 +921,7 @@
+ 
+ // Our tile lies in a one-sided killer's zone.
+ bool zone_refuses(const World& world, Safety& safety) {
+-    if (!fuel_ok(params::refine_fuel / 2) || !kill_zone::at(world, safety, my_position())) return false;
++    if (!kill_zone::reads(world) || !fuel_ok(params::refine_fuel / 2) || !kill_zone::at(world, safety, my_position()) || !params::kz_price) return false;
+     debug_block({ kill_zone::note('t'); });
+     return true;
+ }
+@@ -1255,7 +1255,7 @@
+     // One we gave up waiting at (carry_bag) counts as locked until we could reach another, and so
+     // does one whose tribute tiles all lie in a one-sided killer's zone (kill_zone) while another is reachable.
+     std::uint32_t zoned = 0;
+-    if (fuel_ok(params::refine_fuel) && kill_zone::model(world, safety).n)
++    if (kill_zone::reads(world) && fuel_ok(params::refine_fuel) && kill_zone::model(world, safety).n && params::kz_price)
+         for (int a = 0; a < static_cast<int>(altars.size()) && a < 32; ++a)
+             if (kill_zone::altar_zoned(world, safety, a)) zoned |= 1u << a;
+     const auto avoided = [&](int a) {
+@@ -1624,7 +1624,7 @@
+             }
+             // An altar a one-sided killer's zone covers is no place to wait (kill_zone).
+             // Only for one out of every zone, else the bag would bounce between them (waiting goes on out of the zone).
+-            bool zoned = other_steps != unreachable && fuel_ok(params::refine_fuel) && kill_zone::altar_zoned(world, safety, at);
++            bool zoned = other_steps != unreachable && kill_zone::reads(world) && fuel_ok(params::refine_fuel) && kill_zone::altar_zoned(world, safety, at) && params::kz_price;
+             if (zoned) {
+                 bool clear = false;
+                 for (int a = 0; a < static_cast<int>(altars.size()) && !clear; ++a)
+diff -ruN -x .cambc -x compile_commands.json bots/variants/dz1/src/economy/farm.cc bots/variants/dzab-noprice/src/economy/farm.cc
+--- bots/variants/dz1/src/economy/farm.cc	2026-11-13 03:37:06.106909777 +0000
++++ bots/variants/dzab-noprice/src/economy/farm.cc	2026-11-13 04:33:10.782660556 +0000
+@@ -669,8 +669,8 @@
+     const int range = world.me().facts().attack_range();
+     // A group whose work tiles lie in one-sided killers' zones is worth that much less, nothing while
+     // wholly zoned (kill_zone::farm_factor): a factor in [0, 1] beside exposure(), so every bound holds.
+-    const auto& kz = kill_zone::model(world, safety);
+-    const bool zoning = kill_zone::zoning(world, kz);
++    const auto& kz = kill_zone::reads(world) ? kill_zone::model(world, safety) : kill_zone::none();
++    const bool zoning = params::kz_price && kill_zone::zoning(world, kz);
+     const auto zone_factor = [&](int g) __attribute__((always_inline)) { return zoning ? kill_zone::farm_factor(world, kz, g, range) : 1.0f; };
+     const float strength = camp_output(world.me()), soften = camp_hit_factor(), reflect = world.me().retaliation();
+     const float max_health = my_max_health();
+diff -ruN -x .cambc -x compile_commands.json bots/variants/dz1/src/model/kill_zone.cc bots/variants/dzab-noprice/src/model/kill_zone.cc
+--- bots/variants/dz1/src/model/kill_zone.cc	2026-11-13 03:36:32.340933011 +0000
++++ bots/variants/dzab-noprice/src/model/kill_zone.cc	2026-11-13 04:32:51.745582103 +0000
+@@ -99,6 +99,16 @@
+     return bits;
+ }
+ 
++bool reads(const World& world) {
++    if constexpr (params::kz_prism && params::kz_allies) return true;
++    else return world.me().facts().passive == Passive::gem_focus ? params::kz_prism : params::kz_allies;
++}
++
++const Model& none() {
++    static const Model empty;
++    return empty;
++}
++
+ bool Model::near(vec2 p, int r) const {
+     for (int i = 0; i < n; ++i)
+         if (dist(p, killers[static_cast<std::size_t>(i)].at) <= killers[static_cast<std::size_t>(i)].radius + r) return true;
+diff -ruN -x .cambc -x compile_commands.json bots/variants/dz1/src/model/kill_zone.h bots/variants/dzab-noprice/src/model/kill_zone.h
+--- bots/variants/dz1/src/model/kill_zone.h	2026-11-13 03:36:32.341039973 +0000
++++ bots/variants/dzab-noprice/src/model/kill_zone.h	2026-11-13 04:32:51.745480441 +0000
+@@ -52,6 +52,11 @@
+ // This turn's zones for us, rebuilt when the beliefs, our health or our readiness change.
+ const Model& model(const World& world, Safety& safety);
+ 
++// Whether this champion reads the zones at all (params::kz_prism, kz_allies); every use site checks it.
++bool reads(const World& world);
++// No zones, for a champion that does not read them.
++const Model& none();
++
+ // Bits (by killer slot) of the zones holding p.
+ inline std::uint32_t at(const World& world, Safety& safety, vec2 p, bool acting = false) {
+     const auto& m = model(world, safety);
+diff -ruN -x .cambc -x compile_commands.json bots/variants/dz1/src/params.h bots/variants/dzab-noprice/src/params.h
+--- bots/variants/dz1/src/params.h	2026-11-13 02:31:18.686088221 +0000
++++ bots/variants/dzab-noprice/src/params.h	2026-11-13 04:33:22.327687638 +0000
+@@ -325,4 +325,11 @@
+ inline constexpr int steps = 6;
+ } // namespace open_plan
+ 
++// The kill zone's parts (model/kill_zone.h), for ablation: which of our champions read the zones (off: it
++// plays as without them), and two of the parts that read them.
++inline constexpr bool kz_prism = true;  // our Prism
++inline constexpr bool kz_allies = true; // every other champion
++inline constexpr bool kz_price = false;  // farm choice's factor on worth, and the bank's tribute and altar choices
++inline constexpr bool kz_ender = true;  // the game-ender's stoppers wait at the zone's edge
++
+ } // namespace aph::params

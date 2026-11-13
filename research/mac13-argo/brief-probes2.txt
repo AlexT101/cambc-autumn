@@ -1,0 +1,64 @@
+Build a second batch of 10 deliberately large one-behaviour PROBES of the charybdis bot. They are for finding levers,
+not for shipping, so a crude but correct change is fine. Each probe should move one behaviour a long way in one
+direction.
+
+CONTEXT
+- Worktree: /home/ubuntu/wt/mac13-argo (branch mac13-argo-20261113). Commit nothing. Don't touch anything outside
+  bots/variants/pb2-* and research/mac13-argo/patches/pb2-*.diff.
+- Reference: bots/variants/chy-ref (frozen charybdis 525). Never edit it.
+- Rules: cambc-rules.yaml. API: docs/api/cpp.md and sdk/cpp/cambc.h. Read AGENTS.md first.
+- For each probe:
+  - Make a copy with `cd /home/ubuntu/wt/mac13-argo && ./copybot variants/chy-ref variants/pb2-NAME` (it leaves out
+    .cambc/).
+  - Edit only that copy's src/.
+  - Write `diff -ru bots/variants/chy-ref/src bots/variants/pb2-NAME/src > research/mac13-argo/patches/pb2-NAME.diff`.
+- Leave draft/, picks, emblems and shop alone.
+
+THE PROBES
+
+Prism engagement. Measured in mirror games: when one Prism has 1.25-2x the other's Focus and they are within 6 tiles,
+the stronger kills the weaker within 60 rounds 12.7% of the time and dies 4.8% of the time. At 0.8-1.25x it is 7%
+each way.
+1. pb2-hunt: while our Prism's Focus is >= 1.25x every living enemy Prism we have seen (same Focus reading as
+   prism_dominant in economy/capture.cc, but threshold 1.25), and the enemy Prism was seen within the last ~10
+   rounds, our Prism walks towards its last seen tile instead of farming, and engages it through the usual fight
+   code. Don't do this while we are channelling, holding a winning bag, or hurt under hurt_health_fraction.
+2. pb2-avoid: our Prism treats every visible or recently seen enemy Prism with Focus >= 0.8x ours as off limits
+   within (its ready stun reach + 2) for farm walks and targets. Keep out of that zone unless we are already
+   fighting. Use a Safety/threat avoidance hook if one exists, otherwise exclude groups and tiles in that zone from
+   farm choice.
+
+Prism funnel (the carry macro, economy/capture.cc: leave_for_prism, prism_dominant, carry_reach):
+3. pb2-funnel-max: prism_dominant always returns false, so allies keep feeding even a dominant Prism, and
+   carry_reach() is doubled.
+4. pb2-funnel-off: leave_for_prism always returns Leave::no, and the Prism never takes over an ally's hold.
+
+Game-ender denial (bot.cc: game_ender -> holds_hard_stop -> stop_game_ender in combat/fight.cc):
+5. pb2-deny-off: never walk to stop a game ender. Act only when the stop is possible from where we already stand
+   this turn. Otherwise play on normally, as if there were no ender.
+6. pb2-deny-wide: enemy tributes that would not win count as enders too, once their bag is >= 1/3 of what the enemy
+   still needs to reach 1000. Same stop path.
+
+Cooked comebacks (economy/comeback.cc, params::comeback):
+7. pb2-comeback-off: cooked() always returns false.
+8. pb2-comeback-wide: cooked once the enemy leads by >= 50 with >= 200 tributed (off below a 25 lead).
+
+Prism hold under threat (economy/capture.cc: prism_hold_threatened):
+9. pb2-hold-bold: prism_hold_threatened always false.
+10. pb2-hold-shy: prism_hold_threatened true whenever any enemy champion is visible.
+
+VERIFY
+- Build every probe.
+- Spawn ONE read-only auditor subagent (tell it explicitly NOT to edit anything). Have it check that each diff
+  implements its stated behaviour and does nothing else, with no crash or fuel hazard. Fix what it finds.
+- Smoke each probe:
+  `source ~/venv/bin/activate && cd /home/ubuntu/wt/mac13-argo && CAMBC_BIN=/home/ubuntu/cambc-autumn/tools/fastengine/runner/fastrunner FASTRUNNER_MODE=native PATH=$HOME/.cargo/bin:$PATH py tools/ab.py variants/pb2-NAME variants/chy-ref --no-test-draft --fuel 200000 --name mac13-argo-smoke-pb2-NAME --keep-replays 0`
+  - That is 256 ladder games.
+  - Requirements: no failed games, no DRAFT-UNFINISHED or PLAN-CHECK.
+  - Run at most 3 smokes at once.
+- Delete the smoke batch dirs afterwards.
+
+STOP CONDITION: all 10 probes built, audited and smoked, and the patches written. Report back:
+- each probe's name and smoke win rate;
+- a one-line description of what each change does;
+- anything you could not implement as specified, and what you did instead.

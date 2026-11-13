@@ -1,0 +1,10 @@
+note: --suites not given, so only the 256 ladder games: a quick check, not a judgement (pass --suites maps/suites/... for 20k+ games, or use tools/fgate.py)
+A/B mac13-hecate-smoke-h-pack: CAND variants/h-pack (dir) vs REF variants/chy-ref (dir)
+  ladder: running, log replays/ab/mac13-hecate-smoke-h-pack/ladder.log
+CAND 49.2% of 256 (126-130), 95% CI 43.2-55.3
+  ladder  49.2% of 256 (126-130), 95% CI 43.2-55.3
+Failed matches: 0
+Out-of-fuel turns: CAND 36 in 22 games, REF 15 in 8 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 3m42s
+Results: replays/ab/mac13-hecate-smoke-h-pack/summary.md

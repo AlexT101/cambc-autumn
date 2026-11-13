@@ -1,0 +1,82 @@
+diff -ru bots/variants/chy-ref/src/economy/farm.cc bots/variants/k4-join/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 01:55:42.269710230 +0000
++++ bots/variants/k4-join/src/economy/farm.cc	2026-11-13 03:40:01.668502268 +0000
+@@ -1692,6 +1692,13 @@
+         for (const int h : pre_kept)
+             if ((h & ~3) == lo) unpruned(h);
+     };
++    // A join's part of a group's reward (not a Monolith's): ours of an even split with the living allies
++    // claiming it, as the payout splits by holders.
++    const auto join_part = [&](int g) {
++        int n = 1;
++        for (const auto& a : world.allies) n += !a.is_self && a.alive && comms::claim_of(world, a.index) == g;
++        return 1.0f / static_cast<float>(n);
++    };
+     // An upper bound on the claimed branch's `most` before the group's facts: its part S r / health of
+     // the worth (as PreUpper's, weighted) over the trip and r rounds, r at most health / S, from
+     // as close as PreUpper's trip. No bound for the win, a striker that may be helped (the help
+@@ -1719,8 +1726,10 @@
+         const float weight = g < 256 ? home_weights()[static_cast<std::size_t>(g)] : 1.0f;
+         // The join's Focus is no share: at most its rate over the trip and the hold (rate is linear in worth).
+         const float carry = gems * keep_bonus(G) * exposure_most * weight;
+-        return (claim_bound(worth * exposure_most * weight, health, health / strength, trip) + (carry > 0 ? rate(world, carry, trip + cap_rounds) : 0.0f))
+-               * 1.0002f;
++        // A join's part over the trip and the hold, no clear (G.has_monolith: the damage part).
++        const float part_most = G.has_monolith ? claim_bound(worth * exposure_most * weight, health, health / strength, trip)
++                                               : rate(world, worth * exposure_most * weight * join_part(g), trip + cap_rounds);
++        return (part_most + (carry > 0 ? rate(world, carry, trip + cap_rounds) : 0.0f)) * 1.0002f;
+     };
+     static const bool any_mono = [&] {
+         for (int g = 0; g < n_groups; ++g)
+@@ -2040,7 +2049,10 @@
+             float others_claiming = 0;
+             // The Focus on the weighted gems, held for the capture's rounds; in the bounds, its rate
+             // over the trip and the hold alone.
+-            float carry = carried, hold = carry > 0 ? cap_rounds : 0.0f;
++            // Joining a group but a Monolith: our even share of the reward, held the whole capture like a solo choice.
++            const bool joined = !group.has_monolith;
++            const float join_share = wins ? 1.0f : joined ? join_part(g) : 0.0f;
++            float carry = carried, hold = carry > 0 || joined ? cap_rounds : 0.0f;
+             const float carry_most = carry > 0 ? rate(world, carry, trip + hold) : 0.0f;
+             const auto beaten_claimed = [&](float most) __attribute__((always_inline)) {
+                 most = (most + carry_most) * (op && memory.claim == g ? crew_hold(g) : 1.0f) * 1.0001f;
+@@ -2050,7 +2062,9 @@
+                 const auto& allies = crew_allies_now();
+                 for (int k = 0; k < allies.n_claiming; ++k)
+                     if (const auto& a = allies.at[allies.claiming[static_cast<std::size_t>(k)]]; a.claim == g && (!op || a.seen)) others_claiming += crew_output(a);
+-                if (beaten_claimed(wins ? rate(world, plain, trip) : claim_bound(plain, health, health / (strength + others_claiming), trip))) continue;
++                if (beaten_claimed(joined ? rate(world, plain * join_share, trip + hold)
++                                   : wins ? rate(world, plain, trip) : claim_bound(plain, health, health / (strength + others_claiming), trip)))
++                    continue;
+             }
+             const int waiting = fresh ? std::max(0, belief.respawn_round - round) : 0;
+             const int working = std::max(0, reach - waiting);
+@@ -2059,7 +2073,7 @@
+             if (health <= 0 || health_left <= 0) continue;
+             // The bound above again with r at most health_left / (S + others): the claimers' work before
+             // we arrive leaves our part less to clear. Checked before the plan, which only shrinks r.
+-            if (bounded && op && !wins && health_left < health
++            if (bounded && op && !wins && !joined && health_left < health
+                 && beaten_claimed(claim_bound(plain, health, health_left / (strength + others_claiming), trip)))
+                 continue;
+             // A strong group's crew as its proposer counts it, available allies included: joining
+@@ -2068,7 +2082,7 @@
+             const CrewPlan plan = op ? plan_crew(world, crew_allies_now(), g, strength, expect, crew_cap(g)) : CrewPlan{};
+             const float others = op ? plan.output - strength : crew.output;
+             // A capture that wins the game is the team's, not a share: what counts is how soon.
+-            const float rounds = health_left / (strength + others), part = wins ? 1.0f : strength * rounds / health;
++            const float rounds = health_left / (strength + others), part = wins || joined ? join_share : strength * rounds / health;
+             const float damage = op ? crew_share(plan, reach) : 0.0f;
+             const int trips = op ? extra_trips(damage, budget, usable_health) : 0;
+             // Kited, we take the hits alone: our share of them must fit the health we spare. Unless we
+@@ -2085,8 +2099,8 @@
+                 return hits;
+             };
+             // The Focus is ours only if the clear leaves us fit to keep the bag (keeps_bag's health).
+-            if (carry > 0 && my_health() - (kite_hit ? kite_hits() : damage) < params::hurt_health_fraction * max_health) carry = 0, hold = 0;
+-            // No capture rounds but a keeping Prism's: the claimer holds it, and the crew moves on once it is cleared.
++            if (carry > 0 && my_health() - (kite_hit ? kite_hits() : damage) < params::hurt_health_fraction * max_health) carry = 0, hold = joined ? hold : 0.0f;
++            // A Monolith's crew holds no capture rounds but a keeping Prism's: the claimer holds it, and the crew moves on once it is cleared.
+             // A crew we are in holds us against small pulls: one member leaving shrinks it for the rest.
+             const float value = rate(world, plain * part + carry, trip + rounds + hold + trips_home(static_cast<float>(trips)))
+                                 * (op && memory.claim == g ? crew_hold(g) : 1.0f);

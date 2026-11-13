@@ -1,0 +1,436 @@
+diff -ruN -x .cambc bots/variants/h-atlas/src/bot.cc bots/variants/h-dt/src/bot.cc
+--- bots/variants/h-atlas/src/bot.cc	2026-11-13 02:23:51.156681739 +0000
++++ bots/variants/h-dt/src/bot.cc	2026-11-13 07:51:47.596953671 +0000
+@@ -766,6 +766,13 @@
+     if (world.me().alive) note_income_end(world);
+     upkeep.camp_turns += camp_hits() != camp_hits_before;
+     debug_block({ print_press(world); });
++    debug_block({
++        auto& c = debug_counts;
++        if (c.second_turn || c.stunner_choice || c.stun_lethal || c.slot_guess)
++            std::printf("HDTC %d %u %d %d %d %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), c.calls, c.second_turn, c.stunner_choice,
++                        c.stun_lethal, c.slot_guess);
++        c = {};
++    });
+     debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), static_cast<char>(decision), memory.farm_group, memory.claim); });
+ }
+ 
+diff -ruN -x .cambc bots/variants/h-atlas/src/model/safety.cc bots/variants/h-dt/src/model/safety.cc
+--- bots/variants/h-atlas/src/model/safety.cc	2026-11-13 02:40:03.834026150 +0000
++++ bots/variants/h-dt/src/model/safety.cc	2026-11-13 08:00:38.043643469 +0000
+@@ -3,6 +3,7 @@
+ #include <bit>
+ #include <cmath>
+ #include <cstring>
++#include <functional>
+ #include <limits>
+ #include <memory>
+ #include <vector>
+@@ -2137,7 +2138,7 @@
+         if (w.walked) walked = std::max(walked, w.damage);
+         else single = std::max(single, w.damage);
+     }
+-    ws.from_here = {std::max({0.0f, walked, single < 0 ? 0.0f : single + (twice ? s : 0.0f)}), true, ws.stuns};
++    ws.from_here = {std::max({0.0f, walked, single < 0 ? 0.0f : single + (twice ? s : 0.0f)}), true, ws.stuns, single > 0};
+     // Largest damage first: a query stops at the first way that reaches it.
+     for (int i = 1; i < ws.count; ++i)
+         for (int j = i; j > 0 && ws.way[static_cast<std::size_t>(j)].damage > ws.way[static_cast<std::size_t>(j - 1)].damage; --j) {
+@@ -2238,6 +2239,7 @@
+             if (single >= w.damage && (!twice_ || basic) && (!ws.stuns || out.stuns)) break;
+         }
+         if (out.hits) out.damage = std::max({0.0f, walked, single < 0 ? 0.0f : single + (twice_ && basic ? strength_ : 0.0f)});
++        out.first = single > 0;
+     }
+     memo = {p, out, stamp_};
+     return out;
+@@ -3675,17 +3677,49 @@
+     // strikes are mostly read anyway.
+     if (!built_ && live_enemies() && !seen_ && (known_ & unseen_) != unseen_ && camp_damage(p, true, true) < health && unseen_beyond(p))
+         return false;
+-    // Short of fuel, the follow-up of a stun is left out, as are the reads it needs.
+-    const bool stun = fuel_ok(params::refine_fuel) && stunner_near(p);
+-    if (!stun && !built_ && (damage_ceiling(p, false, taken) < health || damage_bound(p, false, taken) < health)) return false;
+-    const float first = worst_damage(p, taken);
+-    if (first >= health || !stun) return first >= health;
++    // Short of fuel, the follow-up of a stun and second turns are left out, as are the reads they need.
++    const bool refine = fuel_ok(params::refine_fuel);
++    const bool stun = refine && stunner_near(p);
++    // Second turns before ours (second_turn), by enemy index.
++    std::array<float, 16> second{};
++    float seconds = 0;
++    for (auto left = refine ? seen_enemies() : 0u; left; left &= left - 1) {
++        const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
++        if (e.index < 0 || e.index >= 16 || !in_square(p, acts_from(e), Strike::max_reach) || e.teleport_pending() || gone(e)) continue;
++        auto& x = struck(e);
++        if (x.strike.reach < 0 || turns_before_ours(world_, e, x.turns) < 2) continue;
++        const Blow b = blow(e, p);
++        if (!b.hits) continue;
++        seconds += second[static_cast<std::size_t>(e.index)] = second_turn(e, p, b, taken);
++    }
++    // Next round's slots before ours, as the worst assignment at p rather than the guessed one.
++    const float guessed = refine ? guessed_turns(p, taken) : 0.0f;
++    if (!stun && !built_ && (damage_ceiling(p, false, taken) + seconds + guessed < health || damage_bound(p, false, taken) + seconds + guessed < health))
++        return false;
++    const float worst = worst_damage(p, taken);
++    const float first = worst + seconds;
++    debug_block({
++        ++debug_counts.calls;
++        if (worst < health && first >= health) ++debug_counts.second_turn;
++        else if (first < health && first + guessed >= health) ++debug_counts.slot_guess;
++    });
++    // The stun window keeps the guessed order: its follow-up turns are timed by it.
++    if (first + guessed >= health) return true;
++    if (!stun) return false;
+     float cost = 0;
+-    const float follow = stun_follow_up(p, taken, cost);
++    // stun_follow_up counts the stunner's turn after its stun itself: its second_turn is that turn,
++    // in `cost` with what its stun turn gives up.
++    const float follow = stun_follow_up(p, taken, cost, second.data(), test(world_.map().ally_spawn, p));
+     if (follow <= 0) return false;
+     // The lost turn still ends: on our spawn it heals us to full first (rules abilities.stun).
+     const bool dies = test(world_.map().ally_spawn, p) ? follow >= health : first - cost + follow >= health;
+     debug_block({
++        // Against the earlier model: no second turns, the cheapest stunner.
++        const bool before = debug_old_follow_ > 0
++                            && (test(world_.map().ally_spawn, p) ? debug_old_follow_ >= health : worst - debug_old_cost_ + debug_old_follow_ >= health);
++        if (dies != before) ++(seconds > 0 ? debug_counts.stun_lethal : debug_counts.stunner_choice);
++    });
++    debug_block({
+         static int last_round = -1;
+         static vec2 last{-1, -1};
+         if (dies && (last_round != world_.round || last != p)) {
+@@ -3730,13 +3764,106 @@
+ 
+ } // namespace
+ 
+-float Safety::stun_follow_up(vec2 p, float blow_scale, float& cost) {
+-    // The stunner: of the visible blows at p that stun, the one giving up least for its stun turn.
+-    const ChampionBelief* stunner = nullptr;
+-    unsigned stun_slot = 0;
++float Safety::two_turn_sum(const ChampionBelief& e, int d) {
++    auto& sums = two_sum_[static_cast<std::size_t>(e.index)];
++    if (!(two_known_ >> e.index & 1)) {
++        two_known_ |= static_cast<std::uint16_t>(1u << e.index);
++        // Its first turn's best cast at each distance; the second, from a step nearer (two after a
++        // dash, none after a walk-excluding cast), has what that cast left: one cast a turn, and a
++        // slot cast is cooling next round (rules turn.cast, abilities.cooldown).
++        const int first = next_turn_round(world_, e);
++        const unsigned now = ready_slots(e, first), later = ready_slots(e, first + 1);
++        const auto& f = e.facts();
++        // Over each first-turn cast (or none): a greedy first turn can leave a better second.
++        std::array<unsigned, 3> casts{0u, 0u, 0u};
++        int n = 1;
++        for (unsigned slot = 1; slot <= 2; slot <<= 1)
++            if (now & slot) casts[static_cast<std::size_t>(n++)] = slot;
++        for (int k = 0; k <= Strike::max_reach; ++k) {
++            float best = 0;
++            for (int j = 0; j < n; ++j) {
++                const unsigned used = casts[static_cast<std::size_t>(j)];
++                const float one = strike_with(e, used).at(k);
++                if (!(one > 0)) continue;
++                // How far its first turn may bring it: a ranged basic attack spends the walk (rules
++                // turn.ranged); a melee champion may walk and dash.
++                int moved = f.ranged ? 0 : 1;
++                if (used) {
++                    const auto& a = f.abilities[static_cast<std::size_t>(std::countr_zero(used))];
++                    moved = a.kind == AbilityKind::dash ? dash_range + (f.ranged ? 0 : 1) : a.excludes_walking ? 0 : 1;
++                }
++                best = std::max(best, one + strike_with(e, later & ~used).at(std::max(0, k - moved)));
++            }
++            sums[static_cast<std::size_t>(k)] = best;
++        }
++    }
++    return sums[static_cast<std::size_t>(std::clamp(d, 0, Strike::max_reach))];
++}
++
++float Safety::second_turn(const ChampionBelief& e, vec2 p, const Blow& b, float blow_scale) {
++    auto& x = struck(e);
++    // A teleport's channel turns are not its own: threat_strike times it from the landing.
++    if (e.teleport_pending() || turns_before_ours(world_, e, x.turns) < 2 || !b.first) return 0;
++    // The sum is by distance alone, so only where Reach finds the first turn hitting by the map
++    // (walls, sight): else the walked way Reach counted is its turns' best.
++    return std::max(0.0f, two_turn_sum(e, dist(p, acts_from(e))) - b.damage) * blow_scale;
++}
++
++float Safety::guessed_turns(vec2 p, float blow_scale) {
++    int room = 0;
++    const std::uint16_t guessed = enemy_turn_guess(world_, room);
++    if (!guessed || room <= 0) return 0;
++    // By distance alone: a visible enemy's damage at p over `turns` turns from its next.
++    const auto over = [&](const ChampionBelief& e, int turns, int d) {
++        if (turns <= 0) return 0.0f;
++        if (turns >= 2) return std::max(two_turn_sum(e, d), strike(e, next_turn_round(world_, e)).at(d));
++        return strike(e, next_turn_round(world_, e)).at(d);
++    };
++    std::array<float, 16> delta{};
++    int n = 0, unseen_chosen = 0;
++    float chosen_sum = 0;
++    for (std::uint32_t left = guessed; left; left &= left - 1) {
++        const int i = std::countr_zero(left);
++        if (i >= static_cast<int>(world_.enemies.size())) break;
++        const auto& e = world_.enemies[static_cast<std::size_t>(i)];
++        const bool chosen = enemy_turn_before_ours_next(world_, e);
++        if (!e.visible || !e.alive) {
++            unseen_chosen += chosen;
++            continue;
++        }
++        if (e.teleport_pending() || gone(e) || !in_square(p, acts_from(e), Strike::max_reach) || struck(e).strike.reach < 0) continue;
++        // Only where the map lets its first turn hit p (Reach): `first` counted no more for the others.
++        const Blow b = blow(e, p);
++        if (!b.hits || !b.first) continue;
++        // This round's turn if yet to act, and the slot's turn next round; a stun takes the first.
++        const int now = (e.acted ? 0 : 1) - (turn_lost(e) ? 1 : 0);
++        const int d = dist(p, acts_from(e));
++        const float v = over(e, now + 1, d) - over(e, now, d);
++        if (!(v > 0)) continue;
++        delta[static_cast<std::size_t>(n++)] = v;
++        if (chosen) chosen_sum += v;
++    }
++    // The slots go to whichever of them hurt most at p (rules rounds.team_order: priorities are theirs).
++    const int k = std::min(n, room - unseen_chosen);
++    if (k <= 0) return 0;
++    std::sort(delta.begin(), delta.begin() + n, std::greater<float>());
++    float worst = 0;
++    for (int j = 0; j < k; ++j) worst += delta[static_cast<std::size_t>(j)];
++    return std::max(0.0f, worst - chosen_sum) * blow_scale;
++}
++
++float Safety::stun_follow_up(vec2 p, float blow_scale, float& cost, const float* own, bool on_spawn) {
++    // The stunners: the visible blows at p that stun, each with what it gives up for its stun turn.
++    struct Stunner {
++        const ChampionBelief* e;
++        unsigned slot;
++        float cost;
++    };
++    std::array<Stunner, 16> stunners;
++    int count = 0;
+     cost = 0;
+     for (const auto& t : threats()) {
+-        if (!t.visible) continue;
++        if (!t.visible || count == static_cast<int>(stunners.size())) continue;
+         const auto& e = *t.belief;
+         const Blow b = t.at(p);
+         if (!b.stuns) continue;
+@@ -3749,11 +3876,16 @@
+         // Over two turns before ours, the stun may follow a walk.
+         const int d = dist(p, acts_from(e)) - (turns >= 2 ? 1 : 0);
+         const float given = std::max(0.0f, b.damage - strike_with(e, slot).at(std::max(0, d))) * blow_scale;
+-        if (!stunner || given < cost) stunner = &e, stun_slot = slot, cost = given;
++        stunners[static_cast<std::size_t>(count++)] = {&e, slot, given};
+     }
+-    if (!stunner) return 0;
++    if (count == 0) return 0;
++    // Each enemy's turn in the window as one of the others (`other`, by enemy index) and, for a
++    // stunner, as the stunner (`as_stunner`, by stunner): the enemies choose who stuns, so the
++    // window is the worst over the stunners, not the one giving up least (a damage-free stun would
++    // leave out a second stunner's turns).
++    std::array<float, 16> other{}, as_stunner{};
+     // The camp phase after next: members stunned now act in it.
+-    float total = camp_damage(p, true, false);
++    float base = camp_damage(p, true, false);
+     for (auto left = live_enemies(); left; left &= left - 1) {
+         const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+         if (e.visible ? !in_square(p, acts_from(e), Strike::max_reach) : !e.possible_box.meets(p, Strike::max_reach)) continue;
+@@ -3764,38 +3896,64 @@
+         // lost one, in the rounds from its next (`first`, before a stun took it): with fewer than
+         // two before our next turn, the second falls in the window, and worst_damage counted the
+         // first wherever it fell. The stunner's second turn counts though both come before ours:
+-        // threat_strike widens to its better turn, never the sum.
++        // lethal() leaves out its second_turn, which this turn replaces.
+         // One losing its turn now with a turn before our next (it takes next round's first slot,
+         // as the stunner may) counts as any other from that turn: threat_strike counted it, and the
+         // turn after falls in the window. With none before ours (`lost`), threat_strike gave it no
+         // strike: its first real turn, `first` + 1, is the window's.
+         const int turns = turns_before_ours(world_, e, x.turns);
+         const bool lost = turn_lost(e) && turns == 0;
+-        if (turns + (lost ? 1 : 0) >= 2 && &e != stunner) continue;
++        int k = -1;
++        for (int i = 0; i < count; ++i)
++            if (stunners[static_cast<std::size_t>(i)].e == &e) k = i;
++        if (turns + (lost ? 1 : 0) >= 2 && k < 0) continue;
+         const int first = next_turn_round(world_, e) - (lost ? 1 : 0);
+         if (first + 1 > world_.round + 2) continue; // a teleport's channel
+         // A slot cast on its first turn is still cooling (rules abilities.cooldown).
+         const unsigned later = ready_slots(e, first + 1);
+         if (e.visible) {
+             const int d = dist(p, acts_from(e));
++            if (k >= 0) {
++                const unsigned slot = stunners[static_cast<std::size_t>(k)].slot;
++                const bool walked = !e.facts().abilities[std::countr_zero(slot)].excludes_walking;
++                as_stunner[static_cast<std::size_t>(k)] = strike_with(e, later & ~slot).at(walked ? std::max(0, d - 1) : d) * blow_scale;
++            }
++            if (turns + (lost ? 1 : 0) >= 2) continue;
+             unsigned used = 0;
+             bool walked = !lost;
+-            if (&e == stunner) {
+-                used = stun_slot;
+-                walked = !e.facts().abilities[std::countr_zero(stun_slot)].excludes_walking;
+-            } else if (!lost && blow(e, p).hits) {
++            if (!lost && blow(e, p).hits) {
+                 used = best_cast(e, ready_slots(e, first), d);
+                 if (used == 1u || used == 2u) walked = !e.facts().abilities[std::countr_zero(used)].excludes_walking;
+             }
+-            total += strike_with(e, later & ~used).at(walked ? std::max(0, d - 1) : d) * blow_scale;
++            const float v = strike_with(e, later & ~used).at(walked ? std::max(0, d - 1) : d) * blow_scale;
++            base += v;
++            if (k >= 0) other[static_cast<std::size_t>(stunners[static_cast<std::size_t>(k)].e->index & 15)] = v;
+         } else {
+             if (x.strike.reach < 0) continue;
+             if (x.asked != p) x.asked = p, x.near = possible_within(e, p, x.strike.reach);
+             if (!x.near) continue;
+-            total += strike_with(e, later & ~best_cast(e, ready_slots(e, first), 0)).at(0) * blow_scale;
++            base += strike_with(e, later & ~best_cast(e, ready_slots(e, first), 0)).at(0) * blow_scale;
+         }
+     }
+-    return total;
++    int best = -1, cheapest = 0;
++    float best_value = 0, best_follow = 0;
++    for (int i = 0; i < count; ++i) {
++        const auto& c = stunners[static_cast<std::size_t>(i)];
++        const auto at = static_cast<std::size_t>(c.e->index >= 0 && c.e->index < 16 ? c.e->index : 0);
++        const float mine = c.e->index >= 0 && c.e->index < 16 ? other[at] : 0.0f;
++        const float follow = base - mine + as_stunner[static_cast<std::size_t>(i)];
++        const float spent = c.cost + (own && c.e->index >= 0 && c.e->index < 16 ? own[at] : 0.0f);
++        const float value = on_spawn ? follow : follow - spent;
++        if (best < 0 || value > best_value) best = i, best_value = value, best_follow = follow, cost = spent;
++        if (c.cost < stunners[static_cast<std::size_t>(cheapest)].cost) cheapest = i;
++    }
++    debug_block({
++        // The earlier model's choice, without `own`: lethal() counts the verdicts it changes.
++        const auto& c = stunners[static_cast<std::size_t>(cheapest)];
++        const float mine = c.e->index >= 0 && c.e->index < 16 ? other[static_cast<std::size_t>(c.e->index)] : 0.0f;
++        debug_old_follow_ = base - mine + as_stunner[static_cast<std::size_t>(cheapest)], debug_old_cost_ = c.cost;
++    });
++    return best_follow;
+ }
+ 
+ } // namespace aph
+diff -ruN -x .cambc bots/variants/h-atlas/src/model/safety.h bots/variants/h-dt/src/model/safety.h
+--- bots/variants/h-atlas/src/model/safety.h	2026-11-13 02:23:51.161468091 +0000
++++ bots/variants/h-dt/src/model/safety.h	2026-11-13 08:00:24.054849104 +0000
+@@ -47,6 +47,7 @@
+     float damage = 0;
+     bool hits = false; // damage or a stun
+     bool stuns = false;
++    bool first = false; // Reach over two turns: the first turn alone hits, by the map's geometry
+ };
+ 
+ // The most an enemy can do on its next turn to a tile at each Chebyshev distance from where it
+@@ -310,6 +311,15 @@
+     std::array<float, 4> dealt{}; // debug_fights only: see simulate()
+ };
+ 
++// Debug: lethal() verdicts this turn that the two-turn sum or the worst-case stunner decided.
++// second_turn: lethal by the sum before any stun follow-up; stunner_choice: the stun window's
++// verdict changed by the worst-case stunner alone; stun_lethal: changed with second turns in it;
++// slot_guess: lethal only under the worst assignment of next round's slots before ours.
++struct LethalDebugCounts {
++    int second_turn = 0, stunner_choice = 0, stun_lethal = 0, slot_guess = 0, calls = 0;
++};
++inline LethalDebugCounts debug_counts;
++
+ class Safety {
+ public:
+     explicit Safety(const World& world);
+@@ -532,9 +542,22 @@
+     // A visible enemy with a stun within Strike::max_reach of p's square, and we can be stunned.
+     bool stunner_near(vec2 p);
+     // With a visible blow at p that stuns, the damage in the round our lost turn adds: each enemy's
+-    // turn after its turns before ours and the camp phase after next. `cost`: what worst_damage(p)
+-    // counts beyond the stunner's stun turn. 0 without a stun at p.
+-    float stun_follow_up(vec2 p, float blow_scale, float& cost);
++    // turn after its turns before ours and the camp phase after next. `cost`: what lethal()'s
++    // `first` counts beyond the stunner's stun turn. 0 without a stun at p.
++    // `own`, by enemy index: what lethal() counted beyond blow() for a stunner, which its turn in the
++    // window replaces; it goes in `cost`. The stunner is the one making the window worst.
++    // On our spawn (`on_spawn`) the lost turn heals us first: the stunner is the one with the most
++    // follow-up alone, and `cost` is moot.
++    float stun_follow_up(vec2 p, float blow_scale, float& cost, const float* own = nullptr, bool on_spawn = false);
++    // A visible enemy with two turns before our next one casts on each the slot the other left
++    // ready, but Reach and threat_strike count only its better turn (or one plus a basic attack):
++    // what the second turn's remaining slots add at p beyond blow `b`, scaled. 0 with fewer turns.
++    float second_turn(const ChampionBelief& e, vec2 p, const Blow& b, float blow_scale);
++    // Its first and second turn by distance alone (second_turn's sum), kept per turn.
++    float two_turn_sum(const ChampionBelief& e, int d);
++    // With more enemies able to take next round's slots before ours than slots (enemy_turn_guess),
++    // what the worst assignment at p adds over the guessed one, scaled; visible enemies only.
++    float guessed_turns(vec2 p, float blow_scale);
+     // Its strike's reach; for one whose stun leaves it no turn before our next, its first turn's,
+     // as it still fights from then on.
+     int fight_reach(const ChampionBelief& e);
+@@ -583,6 +606,10 @@
+     bool built_ = false;
+     bool refresh_ = false;
+     float own_health_ = -1; // lethal()'s health and shield, read on first need since the last refresh
++    // second_turn()'s two-turn sum by enemy index and distance, worked out on first need this turn.
++    std::uint16_t two_known_ = 0;
++    float debug_old_follow_ = 0, debug_old_cost_ = 0; // debug: stun_follow_up's window under the cheapest stunner
++    std::array<std::array<float, Strike::max_reach + 1>, 16> two_sum_;
+     std::array<std::int8_t, 16> gone_{}; // by enemy index: 0 unknown, 1 alive, 2 dead
+     bool listed_ = false;
+     std::uint32_t seen_ = 0, unseen_ = 0;
+diff -ruN -x .cambc bots/variants/h-atlas/src/model/turn_window.cc bots/variants/h-dt/src/model/turn_window.cc
+--- bots/variants/h-atlas/src/model/turn_window.cc	2026-11-13 01:55:41.694702474 +0000
++++ bots/variants/h-dt/src/model/turn_window.cc	2026-11-13 07:51:07.738406374 +0000
+@@ -24,6 +24,9 @@
+     // Next-round sets of enemies with a turn before ours, per projected slot of ours.
+     std::uint32_t second_known = 0;
+     std::array<std::uint16_t, slot_cap> second{};
++    // Of those, the enemies picked by guess (any could take a slot) and how many slots they shared.
++    std::array<std::uint16_t, slot_cap> guessed{};
++    std::array<std::int8_t, slot_cap> guess_room{};
+ };
+ 
+ Windows windows;
+@@ -136,10 +139,11 @@
+     return dist(from, e.pos);
+ }
+ 
+-[[gnu::noinline]] std::uint16_t pick_second(const World& world, const Windows& w, int ours) {
++[[gnu::noinline]] std::uint16_t pick_second(const World& world, Windows& w, int ours) {
+     const SlotLayout l = layout_of(world, false, world.round + 1);
+     int room = ranks_before(l, static_cast<int>(world.enemies.size()), ours);
+     std::uint16_t chosen = 0;
++    w.guessed[static_cast<std::size_t>(ours)] = 0, w.guess_room[static_cast<std::size_t>(ours)] = 0;
+     if (room <= 0) return chosen;
+     struct Maybe {
+         int i, d;
+@@ -194,6 +198,8 @@
+         return out;
+     };
+     const std::uint16_t out = pick(true);
++    for (int j = 0; j < k; ++j) w.guessed[static_cast<std::size_t>(ours)] |= static_cast<std::uint16_t>(1u << maybe[static_cast<std::size_t>(j)].i);
++    w.guess_room[static_cast<std::size_t>(ours)] = static_cast<std::int8_t>(room);
+     debug_block({
+         if (const auto old = pick(false); old != out)
+             std::printf("PZFIX1 %d %u %d %d %d %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), ours, room, k, old, out);
+@@ -203,6 +209,17 @@
+ 
+ } // namespace
+ 
++std::uint16_t enemy_turn_guess(const World& world, int& room) {
++    room = 0;
++    const int ours = world.slot(world.me(), world.round + 1);
++    if (ours < 0 || ours >= slot_cap || world.enemies.empty()) return 0;
++    // Makes the pick for our slot if not made yet.
++    (void)enemy_turn_before_ours_next(world, world.enemies.front());
++    const auto& w = current(world);
++    room = w.guess_room[static_cast<std::size_t>(ours)];
++    return w.guessed[static_cast<std::size_t>(ours)];
++}
++
+ int slot_of_rank(const World& world, bool ally, int rank, int r) {
+     return layout_of(world, ally, r).of(rank);
+ }
+diff -ruN -x .cambc bots/variants/h-atlas/src/model/turn_window.h bots/variants/h-dt/src/model/turn_window.h
+--- bots/variants/h-atlas/src/model/turn_window.h	2026-11-13 01:55:41.694702474 +0000
++++ bots/variants/h-dt/src/model/turn_window.h	2026-11-13 07:51:07.738509955 +0000
+@@ -40,4 +40,8 @@
+ // the nearest and strongest.
+ bool enemy_turn_before_ours_next(const World& world, const ChampionBelief& e);
+ 
++// Next round: the enemies (bit by index) that enemy_turn_before_ours_next picked by guess, from more
++// that could each take one of `room` slots before ours (any assignment is open to them); 0 if none.
++std::uint16_t enemy_turn_guess(const World& world, int& room);
++
+ } // namespace aph

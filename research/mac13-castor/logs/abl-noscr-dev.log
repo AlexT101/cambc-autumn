@@ -1,0 +1,9 @@
+A/B mac13-castor-abl-noscr-dev: CAND variants/c11-noscr (dir) vs REF variants/chy-ref (dir)
+  dev: running, log replays/ab/mac13-castor-abl-noscr-dev/dev.log
+CAND 55.1% of 10240 (5640-4600), 95% CI 54.1-56.0
+  dev  55.1% of 10240 (5640-4600), 95% CI 54.1-56.0
+Failed matches: 0
+Out-of-fuel turns: CAND 686 in 489 games, REF 601 in 401 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 9m04s
+Results: replays/ab/mac13-castor-abl-noscr-dev/summary.md

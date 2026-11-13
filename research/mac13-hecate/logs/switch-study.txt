@@ -1,0 +1,520 @@
+switches 257840 abandoning 114563 streaks 406350 abandoned 198529 ab_turns 804830 of turns 2894529 share 0.278 ABA30 39364 resp-throughout turns 310166
+cause                                          switches    %ab  ab_turns      % resp-thr
+c enemy: branch R near enemy (kept group)             0    0.0    166577   20.7    65758
+z done                                           143277  125.1     18019    2.2     8098
+a belief: believed alive, was respawning          15831   13.8     60171    7.5    52901
+c enemy: holds/took it                            14210   12.4     53824    6.7     6375
+e situation: branch h (kept group)                    0    0.0     54885    6.8    23178
+b ally: holds/took it                              9304    8.1     45234    5.6     8722
+c enemy: branch C near enemy (kept group)             0    0.0     47420    5.9    19286
+f new appeared: respawn within max_wait            6566    5.7     37000    4.6    12335
+f new appeared: was pruned by bound                6829    6.0     35951    4.5    10429
+f new appeared: respawn within max_wait (seen now)     5278    4.6     28941    3.6    11083
+e situation: branch B (kept group)                    0    0.0     33389    4.1    15534
+e situation: health (trips home)                   4215    3.7     19597    2.4     3597
+f new appeared: was pruned by bound (seen now)     3891    3.4     18787    2.3     6392
+b ally: claimed, pruned                            9337    8.2     13132    1.6     3437
+d flicker                                          3122    2.7     17587    2.2     5277
+f other: help call                                 3411    3.0     15464    1.9     4741
+f value shift                                      3861    3.4     13311    1.7     4132
+e situation: branch K (kept group)                    0    0.0     15244    1.9     8568
+g game end                                            0    0.0     14472    1.8     5623
+f new appeared: not reached last turn              5434    4.7      8224    1.0     2717
+a belief: believed alive, was cleared              3156    2.8      9013    1.1      816
+f new appeared: not reached last turn (seen now)     3435    3.0      5601    0.7     1669
+a belief: respawn later than believed              2024    1.8      6332    0.8     5668
+e situation: branch R (kept group)                    0    0.0      8013    1.0     3711
+e situation: branch - (kept group)                    0    0.0      7368    0.9     3183
+e situation: bag/banking                           1845    1.6      4569    0.6     1065
+c enemy: branch X near enemy (kept group)             0    0.0      5505    0.7      930
+f other: pick Q                                     695    0.6      4240    0.5     1385
+e situation: too late                               924    0.8      3951    0.5      620
+e situation: branch E (kept group)                    0    0.0      4855    0.6     1056
+b ally: yield/handoff                              1743    1.5      2300    0.3     1014
+e situation: branch P (kept group)                    0    0.0      3601    0.4     1397
+a belief: respawn wait grew                        1135    1.0      2412    0.3     2409
+e situation: branch G (kept group)                    0    0.0      2861    0.4      860
+e situation: branch k (kept group)                    0    0.0      2194    0.3     1063
+f other: unreachable                                981    0.9      1195    0.1      319
+f other: pick-up                                    320    0.3      1662    0.2      550
+e situation: branch U                               594    0.5      1249    0.2      443
+f other: pick L                                     429    0.4      1405    0.2      505
+e situation: branch B                              1234    1.1       432    0.1      240
+b ally: ally claimed it                            1239    1.1       361    0.0       70
+f other: pick G                                     568    0.5      1007    0.1      365
+f other: melee step                                 212    0.2      1357    0.2      616
+f other: pick T                                     295    0.3      1174    0.1      348
+f new appeared: was filtered (seen now)             422    0.4       909    0.1      322
+e situation: branch K                               853    0.7       370    0.0      139
+c enemy: near, crew dropped                         552    0.5       661    0.1      192
+e situation: branch T (kept group)                    0    0.0       689    0.1      259
+e situation: branch C (kept group)                    0    0.0       567    0.1      184
+e situation: branch r (kept group)                    0    0.0       449    0.1      144
+f other: cleared by nobody seen                     186    0.2       206    0.0        0
+f new appeared: was filtered                         71    0.1       203    0.0       67
+e situation: branch Q (kept group)                    0    0.0       215    0.0       97
+e situation: branch h                               148    0.1        46    0.0       22
+e situation: branch S (kept group)                    0    0.0       161    0.0       73
+f other: partial                                     17    0.0       143    0.0      116
+c enemy: branch R near enemy                         49    0.0        35    0.0       18
+f other: filtered                                    19    0.0        64    0.0        0
+f other: old pruned by bound                         39    0.0        38    0.0        3
+e situation: branch H (kept group)                    0    0.0        68    0.0       20
+c enemy: mono contested                              46    0.0        14    0.0        0
+f other: no old value                                10    0.0        47    0.0        0
+e situation: branch R                                12    0.0        19    0.0       11
+c enemy: branch C near enemy                         13    0.0        11    0.0        8
+e situation: branch X (kept group)                    0    0.0         9    0.0        4
+g trace ends                                          0    0.0         8    0.0        0
+c enemy: branch A near enemy (kept group)             0    0.0         5    0.0        0
+e situation: branch G                                 2    0.0         2    0.0        2
+a belief: respawned unseen                            3    0.0         0    0.0        0
+e situation: branch W (kept group)                    0    0.0         3    0.0        0
+e situation: branch X                                 2    0.0         1    0.0        0
+e situation: branch P                                 1    0.0         0    0.0        0
+g gap                                                 0    0.0         1    0.0        0
+
+by letter: share of abandoning switches, share of abandoned turns
+   a   19.3%    9.7%
+   b   18.9%    7.6%
+   c   13.0%   34.1%
+   d    2.7%    2.2%
+   e    8.6%   20.5%
+   f   37.5%   22.0%
+   g    0.0%    1.8%
+   z    0.0%    2.2%
+
+details (abandoned turns)
+   a belief: believed alive, was respawning                last capture by enemy              91.8%
+   a belief: believed alive, was respawning                no enemy seen at start             82.5%
+   a belief: believed alive, was respawning                enemy side                         75.8%
+   a belief: believed alive, was respawning                start dist >=20                    71.0%
+   a belief: believed alive, was respawning                belief age >=300                   48.3%
+   a belief: believed alive, was respawning                belief age <300                    29.4%
+   a belief: believed alive, was respawning                start dist <20                     25.9%
+   a belief: believed alive, was respawning                belief age <100                    17.8%
+   a belief: believed alive, was respawning                enemy seen at start                17.5%
+   a belief: believed alive, was respawning                own side                           16.2%
+   a belief: believed alive, was respawning                last capture by ally                8.2%
+   a belief: believed alive, was respawning                mid                                 7.9%
+   a belief: believed alive, was respawning                belief age <40                      4.6%
+   a belief: believed alive, was respawning                start dist <10                      3.0%
+   b ally: holds/took it                                   no enemy seen at start             84.6%
+   b ally: holds/took it                                   own side                           68.5%
+   b ally: holds/took it                                   mid                                19.0%
+   b ally: holds/took it                                   enemy seen at start                15.4%
+   b ally: holds/took it                                   enemy side                         12.6%
+   c enemy: branch C near enemy (kept group)               enemy within 8 of group            69.4%
+   c enemy: branch C near enemy (kept group)               we were >8 from group              56.1%
+   c enemy: branch C near enemy (kept group)               enemy seen at start                53.7%
+   c enemy: branch C near enemy (kept group)               no enemy seen at start             46.3%
+   c enemy: branch C near enemy (kept group)               we were within 8 of group          43.9%
+   c enemy: branch C near enemy (kept group)               enemy side                         43.1%
+   c enemy: branch C near enemy (kept group)               enemy captured it within 40        41.8%
+   c enemy: branch C near enemy (kept group)               nobody captured it within 40       40.7%
+   c enemy: branch C near enemy (kept group)               enemy not near group               30.6%
+   c enemy: branch C near enemy (kept group)               own side                           29.9%
+   c enemy: branch C near enemy (kept group)               mid                                27.0%
+   c enemy: branch C near enemy (kept group)               ally captured it within 40         17.5%
+   c enemy: branch R near enemy (kept group)               enemy within 8 of group            81.4%
+   c enemy: branch R near enemy (kept group)               enemy captured it within 40        63.1%
+   c enemy: branch R near enemy (kept group)               enemy seen at start                61.4%
+   c enemy: branch R near enemy (kept group)               we were within 8 of group          53.5%
+   c enemy: branch R near enemy (kept group)               enemy side                         51.4%
+   c enemy: branch R near enemy (kept group)               we were >8 from group              46.5%
+   c enemy: branch R near enemy (kept group)               no enemy seen at start             38.6%
+   c enemy: branch R near enemy (kept group)               nobody captured it within 40       26.9%
+   c enemy: branch R near enemy (kept group)               mid                                24.9%
+   c enemy: branch R near enemy (kept group)               own side                           23.7%
+   c enemy: branch R near enemy (kept group)               enemy not near group               18.6%
+   c enemy: branch R near enemy (kept group)               ally captured it within 40         10.0%
+   c enemy: holds/took it                                  no enemy seen at start             73.8%
+   c enemy: holds/took it                                  enemy side                         45.0%
+   c enemy: holds/took it                                  mid                                32.6%
+   c enemy: holds/took it                                  enemy seen at start                26.2%
+   c enemy: holds/took it                                  own side                           22.4%
+   e situation: branch B (kept group)                      no enemy seen at start             87.9%
+   e situation: branch B (kept group)                      own side                           49.8%
+   e situation: branch B (kept group)                      enemy side                         33.3%
+   e situation: branch B (kept group)                      mid                                16.9%
+   e situation: branch B (kept group)                      enemy seen at start                12.1%
+   e situation: branch h (kept group)                      no enemy seen at start             70.5%
+   e situation: branch h (kept group)                      own side                           49.3%
+   e situation: branch h (kept group)                      enemy side                         31.3%
+   e situation: branch h (kept group)                      enemy seen at start                29.5%
+   e situation: branch h (kept group)                      mid                                19.4%
+   f new appeared: respawn within max_wait                 no enemy seen at start             85.3%
+   f new appeared: respawn within max_wait                 own side                           58.8%
+   f new appeared: respawn within max_wait                 enemy side                         30.6%
+   f new appeared: respawn within max_wait                 enemy seen at start                14.7%
+   f new appeared: respawn within max_wait                 mid                                10.6%
+   f new appeared: respawn within max_wait (seen now)      no enemy seen at start             83.1%
+   f new appeared: respawn within max_wait (seen now)      own side                           54.4%
+   f new appeared: respawn within max_wait (seen now)      enemy side                         32.6%
+   f new appeared: respawn within max_wait (seen now)      enemy seen at start                16.9%
+   f new appeared: respawn within max_wait (seen now)      mid                                13.0%
+   f new appeared: was pruned by bound                     no enemy seen at start             84.7%
+   f new appeared: was pruned by bound                     own side                           52.9%
+   f new appeared: was pruned by bound                     enemy side                         31.4%
+   f new appeared: was pruned by bound                     mid                                15.7%
+   f new appeared: was pruned by bound                     enemy seen at start                15.3%
+
+streak features at start: streaks, turns, abandoned share of turns, share of all abandoned turns
+   belief A age <100 enemy                          33269    169015   47.1%    9.9%
+   belief A age <100 mid                            26765    154161   32.9%    6.3%
+   belief A age <100 own                           104168    811984   13.1%   13.2%
+   belief A age >=100 enemy                         34562    167651   79.5%   16.6%
+   belief A age >=100 mid                            9892     64607   54.3%    4.4%
+   belief A age >=100 own                           25155    211189   34.2%    9.0%
+   belief A truth A                                175743   1346537   21.8%   36.5%
+   belief A truth C                                 23412     72093   70.7%    6.3%
+   belief A truth R                                 34656    159977   82.9%   16.5%
+   belief C age <100 enemy                           4121     11282   61.9%    0.9%
+   belief C age <100 mid                             3179      8696   56.8%    0.6%
+   belief C age <100 own                             9236     26536   31.2%    1.0%
+   belief C age >=100 enemy                           132       370   87.0%    0.0%
+   belief C age >=100 mid                              61       204   76.5%    0.0%
+   belief C age >=100 own                              95       355   75.5%    0.0%
+   belief C truth A                                   175       944   63.0%    0.1%
+   belief C truth C                                 15417     42317   40.6%    2.1%
+   belief C truth R                                  1232      4182   75.6%    0.4%
+   belief R age <100 enemy                          20568    129298   43.4%    7.0%
+   belief R age <100 mid                            21565    152813   33.0%    6.3%
+   belief R age <100 own                            84369    741071   14.2%   13.0%
+   belief R age >=100 enemy                          8747     55494   61.9%    4.3%
+   belief R age >=100 mid                            5252     45547   49.7%    2.8%
+   belief R age >=100 own                           15214    144256   26.7%    4.8%
+   belief R truth A                                 24880    107135   26.2%    3.5%
+   belief R truth C                                  7580     16830   58.3%    1.2%
+   belief R truth R                                123255   1144514   23.5%   33.4%
+   dist <10                                        206918   1120931   14.5%   20.2%
+   dist <20                                        118472    935615   28.2%   32.8%
+   dist >=20                                        80869    837892   45.1%   47.0%
+   enemy-A x other                                  44318    265921   58.7%   19.4%
+   enemy-A x seen enemy nearer                      23513     70745   80.5%    7.1%
+   no enemy seen                                   252464   2258022   24.5%   68.7%
+   seen enemy nearer group than us                  75216    268285   61.1%   20.4%
+   seen enemy, we nearer                            78579    368131   23.8%   10.9%
+   stale-enemy-A truth A                             5112     29740   59.8%    2.2%
+   stale-enemy-A truth A never seen                  7909     44828   66.8%    3.7%
+   stale-enemy-A truth C                             1529      6082   92.0%    0.7%
+   stale-enemy-A truth C never seen                  2102      8470   96.6%    1.0%
+   stale-enemy-A truth R                             5655     25021   89.2%    2.8%
+   stale-enemy-A truth R never seen                 12255     53510   92.5%    6.2%
+
+streaks of 11+ turns: turns 1907117, abandoned 323446
+   c enemy: branch R near enemy (kept group)                 15.5%
+   c enemy: holds/took it                                     9.9%
+   b ally: holds/took it                                      8.7%
+   a belief: believed alive, was respawning                   8.0%
+   f new appeared: respawn within max_wait                    5.8%
+   e situation: branch B (kept group)                         5.7%
+   c enemy: branch C near enemy (kept group)                  5.3%
+   f new appeared: was pruned by bound                        5.2%
+   f new appeared: respawn within max_wait (seen now)         4.3%
+   d flicker                                                  3.0%
+   z done                                                     2.9%
+   g game end                                                 2.8%
+   f new appeared: was pruned by bound (seen now)             2.7%
+   e situation: health (trips home)                           2.6%
+   f other: help call                                         2.3%
+   f value shift                                              1.6%
+   belief A age <100 enemy                           83583   31.9%    8.2%
+   belief A age <100 mid                             86462   22.9%    6.1%
+   belief A age <100 own                            548047    6.0%   10.1%
+   belief A age >=100 enemy                          79008   64.6%   15.8%
+   belief A age >=100 mid                            41199   39.3%    5.0%
+   belief A age >=100 own                           155901   20.0%    9.6%
+   belief A truth A                                 904562   12.6%   35.4%
+   belief A truth C                                  16255   73.2%    3.7%
+   belief A truth R                                  73383   69.7%   15.8%
+   belief C age <100 enemy                            1655   57.2%    0.3%
+   belief C age <100 mid                              1491   51.6%    0.2%
+   belief C age <100 own                              3019   33.8%    0.3%
+   belief C age >=100 enemy                             70  100.0%    0.0%
+   belief C age >=100 mid                               54   44.4%    0.0%
+   belief C age >=100 own                              141   61.7%    0.0%
+   belief C truth A                                    502   51.2%    0.1%
+   belief C truth C                                   4522   40.4%    0.6%
+   belief C truth R                                   1406   59.2%    0.3%
+   belief R age <100 enemy                           77643   31.6%    7.6%
+   belief R age <100 mid                            100771   26.0%    8.1%
+   belief R age <100 own                            544496    7.8%   13.1%
+   belief R age >=100 enemy                          34757   48.8%    5.2%
+   belief R age >=100 mid                            34015   41.7%    4.4%
+   belief R age >=100 own                           114805   16.4%    5.8%
+   belief R truth A                                  46553   11.9%    1.7%
+   belief R truth C                                   1759   59.1%    0.3%
+   belief R truth R                                 858175   15.9%   42.2%
+   dist <10                                         561926    2.8%    4.9%
+   dist <20                                         674080   10.7%   22.4%
+   dist >=20                                        671111   35.1%   72.7%
+   enemy-A x other                                  147563   46.5%   21.2%
+   enemy-A x seen enemy nearer                       15028   60.4%    2.8%
+   no enemy seen                                   1647916   16.7%   85.2%
+   seen enemy nearer group than us                   88243   37.4%   10.2%
+   seen enemy, we nearer                            170958    8.7%    4.6%
+   stale-enemy-A truth A                             16855   44.5%    2.3%
+   stale-enemy-A truth A never seen                  25108   49.0%    3.8%
+   stale-enemy-A truth C                              1939   90.6%    0.5%
+   stale-enemy-A truth C never seen                   2880   95.9%    0.9%
+   stale-enemy-A truth R                             10590   79.6%    2.6%
+   stale-enemy-A truth R never seen                  21636   84.5%    5.7%
+
+ABA30 by first switch cause
+   z done 22268
+   a belief: believed alive, was respawning 2917
+   b ally: claimed, pruned 1655
+   f new appeared: was pruned by bound 1180
+   f new appeared: was pruned by bound (seen now) 896
+   e situation: health (trips home) 830
+   f other: help call 818
+   c enemy: holds/took it 805
+   f new appeared: respawn within max_wait (seen now) 787
+   f value shift 765
+   f new appeared: not reached last turn 742
+   f new appeared: respawn within max_wait 677
+   d flicker 630
+   a belief: believed alive, was cleared 618
+   f new appeared: not reached last turn (seen now) 604
+   b ally: holds/took it 481
+   a belief: respawn later than believed 362
+   a belief: respawn wait grew 302
+   b ally: ally claimed it 265
+   e situation: bag/banking 231
+   f other: pick Q 210
+   e situation: branch B 182
+   e situation: too late 154
+   c enemy: near, crew dropped 139
+   f other: pick G 138
+   e situation: branch K 131
+   f new appeared: was filtered (seen now) 113
+   f other: pick L 102
+   f other: pick-up 60
+   f other: pick T 58
+   f other: melee step 55
+   f other: cleared by nobody seen 48
+   f other: unreachable 42
+   f new appeared: was filtered 26
+   e situation: branch h 24
+   c enemy: branch R near enemy 13
+   f other: old pruned by bound 13
+   c enemy: mono contested 12
+   e situation: branch R 5
+   f other: filtered 4
+   c enemy: branch C near enemy 2
+
+pick x cause
+   S|f new appeared 15460
+   J|f new appeared 14690
+   S|b ally 11851
+   S|a belief 10298
+   J|a belief 9150
+   S|c enemy 8564
+   J|b ally 5441
+   S|e situation 4783
+   J|c enemy 4607
+   H|f other 3425
+   J|e situation 3416
+   J|f value shift 2470
+   .|b ally 1739
+   J|d flicker 1648
+   K|b ally 1106
+   S|f other 1023
+   C|b ally 1005
+   K|f new appeared 984
+   S|d flicker 920
+   C|a belief 888
+   K|a belief 813
+   S|f value shift 811
+   K|c enemy 795
+   C|f new appeared 792
+   Q|f other 696
+   .|e situation 598
+   C|c enemy 569
+   G|f other 568
+   C|e situation 524
+   H|a belief 517
+
+value terms (d = flicker, v = value shift)
+   d|dir ? 6
+   d|dir both 246
+   d|dir neither 31
+   d|dir new rose 2618
+   d|dir old fell 221
+   d|margin <1.05 1325
+   d|margin <1.1 719
+   d|margin <1.2 1078
+   d|new clear rounds 55
+   d|new crew output 31
+   d|new mode C>J 124
+   d|new mode C>K 1
+   d|new mode C>S 12
+   d|new mode J>C 11
+   d|new mode J>K 11
+   d|new mode J>S 86
+   d|new mode K>C 27
+   d|new mode K>J 145
+   d|new mode K>S 8
+   d|new mode S>C 285
+   d|new mode S>J 409
+   d|new none 32
+   d|new part 371
+   d|new state A 2235
+   d|new state C 33
+   d|new state R 854
+   d|new trip 870
+   d|new trips home 520
+   d|new weight 70
+   d|new worth 54
+   d|old None 6
+   d|old clear rounds 14
+   d|old crew output 40
+   d|old mode C>K 13
+   d|old mode C>S 4
+   d|old mode J>C 10
+   d|old mode J>K 37
+   d|old mode J>S 26
+   d|old mode J>r 5
+   d|old mode K>C 4
+   d|old mode S>C 12
+   d|old mode S>K 1
+   d|old mode S>r 3
+   d|old none 84
+   d|old part 169
+   d|old trip 1853
+   d|old trips home 13
+   d|old weight 697
+   d|old worth 131
+   d|pick C old C 55
+   d|pick C old J 45
+   d|pick C old K 75
+   d|pick C old S 291
+   d|pick J old C 101
+   d|pick J old J 200
+   d|pick J old K 227
+   d|pick J old S 1120
+   d|pick K old C 3
+   d|pick K old J 19
+   d|pick K old K 35
+   d|pick K old S 31
+   d|pick S old C 21
+   d|pick S old J 123
+   d|pick S old K 85
+   d|pick S old S 683
+   d|pick S old r 8
+   n|dir ? 31924
+   n|dir neither 1
+   n|dir new rose 1
+   n|margin <1.05 2957
+   n|margin <1.1 2237
+   n|margin <1.2 3597
+   n|margin <1.5 6582
+   n|margin >=1.5 16553
+   n|new None 31924
+   n|new crew output 1
+   n|new part 1
+   n|new state A 11885
+   n|new state C 1844
+   n|new state R 18197
+   n|old None 6357
+   n|old clear rounds 119
+   n|old crew output 157
+   n|old mode C>K 73
+   n|old mode C>S 16
+   n|old mode J>C 48
+   n|old mode J>K 222
+   n|old mode J>S 275
+   n|old mode J>r 2
+   n|old mode K>C 26
+   n|old mode K>S 1
+   n|old mode S>C 139
+   n|old mode S>K 7
+   n|old mode S>r 6
+   n|old none 807
+   n|old part 1535
+   n|old trip 16109
+   n|old trips home 131
+   n|old weight 4907
+   n|old worth 989
+   n|pick C old C 121
+   n|pick C old J 130
+   n|pick C old K 94
+   n|pick C old S 447
+   n|pick J old C 767
+   n|pick J old J 1734
+   n|pick J old K 1576
+   n|pick J old S 10613
+   n|pick K old C 40
+   n|pick K old J 137
+   n|pick K old K 518
+   n|pick K old S 289
+   n|pick S old C 737
+   n|pick S old J 2379
+   n|pick S old K 1148
+   n|pick S old S 11184
+   n|pick S old r 12
+   v|dir ? 17
+   v|dir both 614
+   v|dir neither 53
+   v|dir new rose 2816
+   v|dir old fell 361
+   v|margin <1.5 1686
+   v|margin >=1.5 2175
+   v|new clear rounds 59
+   v|new crew output 73
+   v|new mode C>J 188
+   v|new mode C>K 1
+   v|new mode C>S 12
+   v|new mode J>C 20
+   v|new mode J>K 16
+   v|new mode J>S 193
+   v|new mode K>C 15
+   v|new mode K>J 190
+   v|new mode K>S 12
+   v|new mode S>C 333
+   v|new mode S>J 594
+   v|new mode r>J 21
+   v|new mode r>S 7
+   v|new none 59
+   v|new part 425
+   v|new state A 2744
+   v|new state C 43
+   v|new state R 1074
+   v|new trip 350
+   v|new trips home 1116
+   v|new weight 137
+   v|new worth 40
+   v|old None 17
+   v|old clear rounds 38
+   v|old crew output 144
+   v|old mode C>K 33
+   v|old mode C>S 4
+   v|old mode J>C 13
+   v|old mode J>K 69
+   v|old mode J>S 58
+   v|old mode K>C 9
+   v|old mode S>C 19
+   v|old mode S>K 5
+   v|old none 121
+   v|old part 327
+   v|old trip 1659
+   v|old trips home 29
+   v|old weight 1144
+   v|old worth 172
+   v|pick C old C 44
+   v|pick C old J 66
+   v|pick C old K 99
+   v|pick C old S 299
+   v|pick J old C 121
+   v|pick J old J 302
+   v|pick J old K 399
+   v|pick J old S 1648
+   v|pick K old C 3
+   v|pick K old J 27
+   v|pick K old K 24
+   v|pick K old S 18
+   v|pick S old C 16
+   v|pick S old J 319
+   v|pick S old K 44
+   v|pick S old S 432

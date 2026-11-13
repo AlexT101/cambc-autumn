@@ -1,0 +1,38 @@
+diff -ru bots/variants/chy-ref/src/economy/bank.cc bots/variants/pb6-keep/src/economy/bank.cc
+--- bots/variants/chy-ref/src/economy/bank.cc	2026-11-13 01:55:39.400484737 +0000
++++ bots/variants/pb6-keep/src/economy/bank.cc	2026-11-13 06:15:57.717799906 +0000
+@@ -901,9 +901,32 @@
+     return bag_rounds_left(world) <= walk + tribute_turns(world, my_gems()) + endgame_margin;
+ }
+ 
+-// Prism keeps the gems it carries or gains for their Focus, until its bag wins or the game closes.
++// Probe pb6-keep: closing_now against the round limit alone, the team's race left out.
++bool round_closing(const World& world, Pathing& pathing) {
++    struct Key {
++        std::uint32_t round, observations, gems, gold;
++        vec2 here;
++        bool operator==(const Key&) const = default;
++    };
++    static Key last{~0u};
++    static bool kept = false;
++    const Key key{static_cast<std::uint32_t>(world.round), world.observations, my_gems(), my_gold(), my_position()};
++    if (key == last) return kept;
++    const auto& field = pathing.to_any_altar();
++    int walk = field.at(my_position());
++    if (walk == unreachable) {
++        const int out = field.at(recall_landing(world));
++        walk = out == unreachable ? 0 : recall_turns(world) + out;
++    }
++    kept = rounds_left(world) <= walk + tribute_turns(world, my_gems()) + endgame_margin;
++    last = key;
++    return kept;
++}
++
++// Prism keeps the gems it carries or gains for their Focus, until its own bag wins or the round limit
++// closes (probe pb6-keep: a rich team's race no longer makes it bank a bag that does not win).
+ bool keeps_gems(const World& world, Pathing& pathing) {
+-    return world.me().facts().passive == Passive::gem_focus && !winning_bag(world) && !closing(world, pathing);
++    return world.me().facts().passive == Passive::gem_focus && !winning_bag(world) && !round_closing(world, pathing);
+ }
+ 
+ bool retaining_gems(const World& world, Pathing& pathing) { return my_gems() > 0 && keeps_gems(world, pathing); }

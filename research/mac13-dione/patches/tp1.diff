@@ -1,0 +1,259 @@
+diff -ruN bots/variants/chy-ref/src/bot.h bots/variants/tp1/src/bot.h
+--- bots/variants/chy-ref/src/bot.h	2026-11-13 01:55:40.484465529 +0000
++++ bots/variants/tp1/src/bot.h	2026-11-13 03:10:51.590328769 +0000
+@@ -43,6 +43,10 @@
+     // work it and the damage taken since.
+     int mono_group = -1, mono_staged = -1, mono_since = -1;
+     float mono_output = 0, mono_taken = 0;
++    // A farm choice dropped because the guarded walk to it grew (farm's guarded trips): skipped
++    // before guard_drop_until while an enemy seen then stays in sight (bits by enemy index; 0: none seen).
++    int guard_drop = -1, guard_drop_until = -1;
++    std::uint32_t guard_drop_seen = 0;
+     vec2 ward{-1, -1};    // our latest ward
+     vec2 bushes_watched{-1, -1}; // a tile whose bushes in ward reach are all in our cluster or our ward's
+ };
+diff -ruN bots/variants/chy-ref/src/economy/farm.cc bots/variants/tp1/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 01:55:40.486686179 +0000
++++ bots/variants/tp1/src/economy/farm.cc	2026-11-13 03:32:54.445736573 +0000
+@@ -646,6 +646,138 @@
+     memo.carry_group = -1;
+ }
+ 
++// Trips priced as the guarded walk takes them. The work guard keeps every step off tiles where the
++// fight of the visible enemies hitting the tile is lost (step_guard), and a carried bag's walk keeps
++// out of the pack zone, so a static route through their reach detours or stalls at its edge. As the
++// guard prices a tile, each visible threat whose fight (with the allies beside us) is lost blocks its
++// reach (as enemy_area() draws it), and each pair that loses together where neither does alone blocks
++// where both reach; the zone too. One flood from here goes round them; where it cannot reach a group,
++// a second flood from what it reached gives the steps the way spends inside them, standing for the
++// rounds it is held up. Both only add to the static steps, so every lower bound farm prunes on holds.
++struct GuardedTrips {
++    int round = -1;
++    vec2 here{-1, -1};
++    std::uint32_t generation = 0;
++    bool zoned = false;
++    bool on = false;
++    std::uint32_t seen = 0; // the visible enemies blocking, by index
++    bitboard blocked{cambc::uninitialized};
++    std::optional<Field> around, inside;
++};
++GuardedTrips guarded_trips;
++
++// The rounds after a choice is dropped (Memory::guard_drop) that it stays dropped.
++inline constexpr int guard_drop_rounds = 3;
++
++std::uint32_t visible_enemies(const World& world) {
++    std::uint32_t bits = 0;
++    for (const auto& e : world.enemies)
++        if (e.alive && e.visible && e.index < 32) bits |= 1u << e.index;
++    return bits;
++}
++
++// This turn's guarded trips from `here`, null where they are the static ones (no such fight or zone),
++// we stand inside what they avoid (the fight's to settle), or the fuel above `reserve` is short.
++const GuardedTrips* guarded_for(const World& world, Pathing& pathing, Safety& safety, vec2 here, const bitboard* zone, std::uint64_t reserve) {
++    auto& gt = guarded_trips;
++    if (gt.round == world.round && gt.here == here && gt.generation == Safety::generation() && gt.zoned == (zone != nullptr))
++        return gt.on ? &gt : nullptr;
++    gt.round = world.round, gt.here = here, gt.generation = Safety::generation(), gt.zoned = zone != nullptr, gt.on = false;
++    gt.seen = 0;
++    const std::uint64_t floods = 2 * full_field_cost_estimate() + reserve;
++    // The threats' build first: it can cost several thousand.
++    if (!fuel_ok(safety.build_cost_estimate() + floods)) {
++        note_shortcut("guarded-trips-fuel");
++        return nullptr;
++    }
++    constexpr int most = 6;
++    std::array<const Threat*, most> foes{};
++    int n = 0;
++    if (enemy_seen(world) && safety.any_threat())
++        for (const auto& t : safety.threats())
++            if (t.visible && n < most) foes[static_cast<std::size_t>(n++)] = &t;
++    if (n == 0 && !zone) return nullptr;
++    auto& blocked = gt.blocked;
++    clear_board(blocked);
++    if (n > 0) {
++        // As step_guard: a fall counts where it costs more than the fight (a partner, Prism, a bag).
++        const bool linked = partner(world) != nullptr || world.me().facts().passive == Passive::gem_focus
++                            || params::gem_value * static_cast<float>(bag_at_stake(world)) >= params::life_value;
++        const std::uint32_t allies = safety.fight_allies(here);
++        bool short_fuel = false;
++        const auto loses = [&](std::uint32_t enemies) {
++            const std::uint32_t key = enemies | allies;
++            if (!safety.known_fight_of(key) && !fuel_ok(safety.fight_cost_estimate() + 1000 + floods)) return short_fuel = true, false;
++            const auto t = safety.fight_of(key);
++            return t.lost || (t.self_falls && linked);
++        };
++        const auto bit = [&](int i) { return 1u << (16 + foes[static_cast<std::size_t>(i)]->enemy); };
++        static std::array<bitboard, most> reach;
++        const auto draw = [&](int i) {
++            const auto& t = *foes[static_cast<std::size_t>(i)];
++            const auto& e = *t.belief;
++            auto& b = reach[static_cast<std::size_t>(i)];
++            clear_board(b);
++            // As enemy_area() draws a visible threat.
++            if (e.teleport_pending() && in_bounds(e.tp_dest)) draw_square(b, e.tp_dest, static_cast<float>(t.strike.reach));
++            else if (const int r = safety.reach_of(e).reach(); r >= 0) draw_square(b, t.pos, static_cast<float>(r));
++        };
++        for (int i = 0; i < n; ++i) draw(i);
++        unsigned alone = 0;
++        for (int i = 0; i < n && !short_fuel; ++i)
++            if (loses(bit(i))) alone |= 1u << i, blocked |= reach[static_cast<std::size_t>(i)], gt.seen |= 1u << foes[static_cast<std::size_t>(i)]->enemy;
++        static bitboard both{cambc::uninitialized};
++        for (int i = 0; i < n && !short_fuel; ++i)
++            for (int j = i + 1; j < n && !short_fuel; ++j) {
++                if ((alone >> i & 1) || (alone >> j & 1)) continue;
++                and_into(reach[static_cast<std::size_t>(i)], reach[static_cast<std::size_t>(j)], both);
++                if (board_empty(both) || !loses(bit(i) | bit(j))) continue;
++                blocked |= both;
++                gt.seen |= 1u << foes[static_cast<std::size_t>(i)]->enemy | 1u << foes[static_cast<std::size_t>(j)]->enemy;
++            }
++        if (short_fuel) {
++            note_shortcut("guarded-trips-fuel");
++            return nullptr;
++        }
++    }
++    if (zone) blocked |= *zone;
++    if (board_empty(blocked) || test(blocked, here)) return nullptr;
++    static bitboard walls{cambc::uninitialized}, root{cambc::uninitialized}, reached{cambc::uninitialized}, unused{cambc::uninitialized};
++    or_into(pathing.static_walls(), blocked, walls);
++    clear_board(root);
++    set_tile(root, here);
++    // Refilled in place: a new distance field allocates and clears its buffer. Not counted in the
++    // fields' cost estimates, which turns without threats read.
++    const auto refill = [](std::optional<Field>& slot, const bitboard& w, const bitboard& goals, bitboard& visited) {
++        if (!slot) slot.emplace();
++        not_into(w, slot->goals);
++        slot->goals &= goals;
++        (void)slot->steps.compute_with_expansion_count(w, slot->goals, visited);
++    };
++    refill(gt.around, walls, root, reached);
++    refill(gt.inside, pathing.static_walls(), reached, unused);
++    world.throw_if_stale();
++    gt.on = true;
++    return &gt;
++}
++
++// The walk's steps to the group from the guarded trips: round what they avoid to its centre, or to a
++// tile beside it (an enemy at the camp may leave its edge free), else the static steps and those
++// spent inside what they avoid. Never fewer than `steps`, the static ones.
++int around_steps(const GuardedTrips& gt, vec2 centre) {
++    int a = gt.around->at(centre);
++    if (a == unreachable)
++        for (const auto d : directions)
++            if (const vec2 q = centre + d; in_bounds(q))
++                if (const int b = gt.around->at(q); b != unreachable) a = std::min(a, b + 1);
++    return a;
++}
++int guarded_steps(const GuardedTrips& gt, vec2 centre, int steps) {
++    if (const int a = around_steps(gt, centre); a != unreachable) return std::max(steps, a);
++    const int in = gt.inside->at(centre);
++    return in == unreachable ? steps : steps + in;
++}
++
+ template <bool opening, bool banking = false, bool repricing = false> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ [[gnu::noinline]] bool farm_banking(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+@@ -1736,6 +1868,29 @@
+     // By group, whether the loop priced it by way of spawn (read for the best only).
+     static std::vector<std::uint8_t> routed;
+     if (static_cast<int>(routed.size()) != n_groups) routed.assign(n_groups, 0);
++    // The guarded trips (guarded_for), read at the first group the loop prices by its walk: every
++    // group so priced reads the same ones.
++    const GuardedTrips* guarded = nullptr;
++    bool guarded_read = false;
++    const auto guarded_now = [&]() -> const GuardedTrips* {
++        if (!guarded_read) {
++            guarded_read = true;
++            // Neither a fight nor a zone without an enemy in sight or a bag at stake.
++            if (zoned || enemy_seen(world)) {
++                need_zone(); // as drawn for the walks after the loop
++                guarded = guarded_for(world, pathing, safety, here, zone, loop_reserve());
++            }
++        }
++        return guarded;
++    };
++    // Our last choice's walk grew by the guard this turn (its drop then holds, Memory::guard_drop).
++    bool last_grown = false;
++    [[maybe_unused]] int n_grown = 0, n_banned = 0; // debug counts
++    int n_dropped = 0; // groups the ban skipped
++    const std::uint32_t seen_now = memory.guard_drop >= 0 ? visible_enemies(world) : 0;
++    const auto dropped = [&](int g) __attribute__((always_inline)) {
++        return g == memory.guard_drop && g != farm_group && round <= memory.guard_drop_until && (memory.guard_drop_seen & seen_now) != 0;
++    };
+     int k = 0;
+     for (; k < evaluated && room(); ++k) {
+         int g = order ? (*order)[k] : (first + k) % n_groups;
+@@ -1745,6 +1900,11 @@
+             while (k < evaluated && !is_claimed(g = (*order)[k]) && !held(g) && !(hops && map.may_hop(g)) && (!banks_bag || altar_below(g))) ++k;
+             if (k == evaluated) break;
+         }
++        if (memory.guard_drop >= 0 && dropped(g)) {
++            ++n_dropped;
++            debug_block({ ++n_banned; });
++            continue;
++        }
+         if ((pre_pruned && barred()) || (pre_banked && best >= 0)) pre_bounds(g);
+         if (pre_pruned && barred() && (pre_upper[g] < bar_lt() || (pre_valued && best >= 0 && pre_value[g] < best_value))) continue;
+         if (pre_claims && is_claimed(g) && (best >= 0 || shared >= 0) && g != farm_group && g != memory.claim && g != memory.mono_group) {
+@@ -1963,6 +2123,13 @@
+             const int live = pathing.live_steps(g, belief.state != CampState::cleared ? range : 0);
+             if (live == unreachable) continue;
+             steps = std::max(steps, live);
++            if (const auto* gt = guarded_now()) {
++                if (const int s = guarded_steps(*gt, group.centre, steps_known); s > steps) {
++                    steps = s;
++                    last_grown = last_grown || g == farm_group;
++                    debug_block({ ++n_grown; });
++                }
++            }
+         }
+         // A group still respawning when we would arrive costs the wait there.
+         const int respawn = respawn_in(belief);
+@@ -2425,6 +2592,8 @@
+         }
+     });
+     if constexpr (!repricing) memo.carry_group = best >= 0 && (chosen.mode == 'G' || chosen.mode == 'L' || chosen.mode == 'Q') ? best : -1, memo.carry_round = round;
++    // Nothing left but the group the ban skipped: it is weighed again from next turn.
++    if (best < 0 && n_dropped > 0) memory.guard_drop = -1;
+     if (best < 0) {
+         if constexpr (repricing) return true;
+         // Cut short before weighing even last turn's choice: walk on towards it, as its crew if we were.
+@@ -2435,6 +2604,17 @@
+         return true;
+     }
+     memory.farm_group = best;
++    // Turned away by the guard, we keep away while that enemy is in sight: else its next step off the
++    // way brings the old choice back, and the walk turns round again.
++    // Not while repricing a recall's choice: the walk priced is from a tile we are leaving. Only against
++    // an enemy in sight, whose leaving lifts it.
++    const bool drop_now = !repricing && farm_group >= 0 && farm_group != best && last_grown && guarded && guarded->seen != 0;
++    if (drop_now) {
++        memory.guard_drop = farm_group, memory.guard_drop_until = round + guard_drop_rounds;
++        memory.guard_drop_seen = guarded->seen;
++    } else if (memory.guard_drop == best) {
++        memory.guard_drop = -1;
++    }
+     if (farm_monolith(world, best) && memory.claim == best) {
+         if (memory.mono_group != best) {
+             memory.mono_group = best, memory.mono_staged = -1, memory.mono_since = round, memory.mono_taken = 0;
+@@ -2458,6 +2638,19 @@
+     }
+     if constexpr (repricing) return true;
+     if (map.any_group_hop() && beyond_walk(world, pathing, best) && (in_pocket || cross(best))) return true;
++    // The walk goes the way its trip was priced, round the guarded reach (and the zone, which the
++    // board holds): a route through it would have its next step guarded and turn back. Not where
++    // the priced way could not get round: that walk goes as far as the guard lets it.
++    const bool round_it = guarded && (chosen.mode == 'S' || chosen.mode == 'K' || chosen.mode == 'C' || chosen.mode == 'J' || chosen.mode == 'r' || chosen.mode == 'H')
++                          && around_steps(*guarded, groups[best].centre) != unreachable;
++    if (round_it) zone = &guarded->blocked;
++    // Read by the tp1 replay study: turns priced on guarded trips, and what they did to the pick.
++    debug_block({
++        if (guarded || n_banned)
++            std::printf("TP %d %u prev %d best %d %c grown %d last %d drop %d banned %d round %d steps %d static %d\n", round, my_handle(), farm_group, best,
++                        chosen.mode, n_grown, static_cast<int>(last_grown), static_cast<int>(drop_now), n_banned, static_cast<int>(round_it), best_steps,
++                        steps_data[best]);
++    });
+     const auto heal_before_waking = [&]() {
+         if (!(memory.crew || chosen.expected > 0) || world.camps[best].state != CampState::alive
+             || world.camps[best].awake != Awake::asleep || groups[best].has_monolith) return false;

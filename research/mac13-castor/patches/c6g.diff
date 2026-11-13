@@ -1,0 +1,41 @@
+diff -ruN bots/variants/c11-noscr/src/economy/shop.cc bots/variants/c6g/src/economy/shop.cc
+--- bots/variants/c11-noscr/src/economy/shop.cc	2026-11-13 08:12:37.140700924 +0000
++++ bots/variants/c6g/src/economy/shop.cc	2026-11-13 08:37:22.135304772 +0000
+@@ -728,9 +728,9 @@
+ }
+ 
+ // Our times home: turns starting on our spawn after one alive that started off it (a recall, a walk home or a respawn),
+-// over our turns alive, with a prior of one visit every visit_prior rounds (chy-ref's Prism against an idle
+-// enemy on the study maps: 5.6 recalls by round 600, 2026-11-13).
+-constexpr float visit_prior = 107;
++// over our turns alive, with a prior of one visit every visit_prior rounds (chy-ref's bodies, all types, against
++// an idle enemy on the study maps: 6.6 completed recalls and respawns each by round 600, 2026-11-13).
++constexpr float visit_prior = 90;
+ struct HomeVisits {
+     int visits = 0;
+     bool home = true; // our last turn alive started on spawn (the first does)
+@@ -738,10 +738,10 @@
+ HomeVisits home_visits;
+ float visit_rounds() { return (static_cast<float>(upkeep.turns) + visit_prior) / static_cast<float>(home_visits.visits + 1); }
+ 
+-// The stop's value as home_trip prices it for an empty bag: the heal, and the next emblem once our
+-// gold completes it; nothing once the end is close. Prism: a purchase skipped at this stop is not lost but made at our next time home, on average `visit_rounds`
+-// later (home_visits), and it saves gain / T a round over the T rounds our farming has left: the stop's purchase
+-// is worth what buying then would forgo, gain x min(1, visit_rounds / T).
++// The stop's value as home_trip prices it for an empty bag: the heal, and the next emblem once our gold completes
++// it; nothing once the end is close. A purchase skipped at this stop is not lost but made at our next time home,
++// on average `visit_rounds` later (home_visits), and it saves gain / T a round over the T rounds our farming has
++// left: the stop's purchase is worth what buying then would forgo, gain x min(1, visit_rounds / T).
+ FarmRecall farm_recall(const World& world, Pathing& pathing, int channel) {
+     FarmRecall r{channel, my_health() < my_max_health() ? 1 : 0, 0.0f};
+     if (closing(world, pathing)) return r;
+@@ -749,8 +749,7 @@
+     if (shops_at_home(world))
+         if (const auto& p = prices(world); my_gold() >= p.next.cost && std::isfinite(p.gain)) {
+             float due = 1;
+-            if (world.me().facts().passive == Passive::gem_focus)
+-                if (const float horizon = gems_share(world) * rounds_per_gem; horizon > 0) due = std::min(1.0f, visit_rounds() / horizon);
++            if (const float horizon = gems_share(world) * rounds_per_gem; horizon > 0) due = std::min(1.0f, visit_rounds() / horizon);
+             r.value += p.gain * due;
+         }
+     return r;

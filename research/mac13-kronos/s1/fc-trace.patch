@@ -1,0 +1,205 @@
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 01:55:42.269710230 +0000
++++ bots/variants/s1-trace/src/economy/farm.cc	2026-11-13 02:51:05.825141841 +0000
+@@ -646,6 +646,39 @@
+     memo.carry_group = -1;
+ }
+ 
++// s1 trace (debug only): the chosen value's numerator and rounds, and the top evaluated groups.
++struct FcParts {
++    float worth = -1, rounds = -1, trip = -1, clear = -1, cap = -1, home = -1, wx = -1, part = -1, carry = -1, bk = 0, wait = 0;
++    bool via = false;
++};
++struct FcTrace {
++    FcParts best, shared;
++    int top_g[3] = {-1, -1, -1};
++    float top_v[3] = {0, 0, 0};
++    float part = 1, clear = 0; // the kited branch's partner terms
++    void seen(int g, float v) {
++        for (int i = 0; i < 3; ++i)
++            if (top_g[i] == g) {
++                if (v <= top_v[i]) return;
++                for (int j = i; j < 2; ++j) top_g[j] = top_g[j + 1], top_v[j] = top_v[j + 1];
++                top_g[2] = -1, top_v[2] = 0;
++                break;
++            }
++        for (int i = 0; i < 3; ++i)
++            if (top_g[i] < 0 || v > top_v[i]) {
++                for (int j = 2; j > i; --j) top_g[j] = top_g[j - 1], top_v[j] = top_v[j - 1];
++                top_g[i] = g, top_v[i] = v;
++                return;
++            }
++    }
++};
++FcTrace fc;
++// s1 trace: the last choice printed, shared by every farm_turn instantiation.
++struct FcLast {
++    int g = -2, round = -10, state = -1;
++    char mode = 0;
++};
++FcLast fc_last;
+ template <bool opening, bool banking = false, bool repricing = false> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ [[gnu::noinline]] bool farm_banking(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+@@ -1062,6 +1095,7 @@
+         float output = 0, damage = 0; // damage: ours, after our emblems
+     };
+     Priced best_priced, shared_priced;
++    debug_block({ fc = FcTrace{}; });
+     // An ally in sight clearing its claimed damaging group gets help only if finishing it alone
+     // would take it below the recall line: one champion per camp otherwise.
+     const auto struggling = [&](int g) __attribute__((always_inline)) {
+@@ -2092,10 +2126,16 @@
+                                 * (op && memory.claim == g ? crew_hold(g) : 1.0f);
+             // Only a better share counts, and the final pick takes none a group of our own beats.
+             if (g == memory.mono_group) mono_seen = value;
++            debug_block({ fc.seen(g, value); });
+             if ((value < shared_value || (value == shared_value && !earlier(g, shared))) || (best >= 0 && value <= best_value) || too_late(rounds))
+                 continue;
+             if (kite_hit && kite_hits() > spare_health) continue;
+             shared = g, shared_value = value, shared_steps = steps;
++            debug_block({
++                const float h = trips_home(static_cast<float>(trips));
++                fc.shared = {plain * part + carry, trip + rounds + hold + h, trip, rounds, hold, h, known.weight * exposed, part, carry, bank - bank_now,
++                             static_cast<float>(wait), by_spawn};
++            });
+             if (may_floor()) floor_value = value;
+             shared_priced = {'J', trips, plan.tank ? plan.tank->index : -1, plan.n_expected, strength + others, damage};
+             continue;
+@@ -2133,18 +2173,25 @@
+             if (cast) damage = 0, rounds = kite;
+             if (too_late(rounds)) continue;
+             float value = rate(world, worth, trip + rounds + capture);
++            debug_block({ fc.part = 1, fc.clear = rounds; });
+             if (damage > spare_health && unclaimed_partner_output > 0 && alive) {
+                 float joint_rounds = 0;
+                 const float part = strength / (strength + unclaimed_partner_output);
+-                if (soften * min_camp_damage(world, g, strength + unclaimed_partner_output, &joint_rounds) * part <= spare_health)
++                if (soften * min_camp_damage(world, g, strength + unclaimed_partner_output, &joint_rounds) * part <= spare_health) {
+                     damage = 0, value = rate(world, worth * part, trip + joint_rounds + capture);
++                    debug_block({ fc.part = part, fc.clear = joint_rounds; });
++                }
+             }
+             if (damage > spare_health && !ally_engaged(world, g)) {
+                 if (value > risky_value || (value == risky_value && earlier(g, risky))) risky = g, risky_value = value, risky_steps = steps;
+                 continue;
+             }
+-            if (value > best_value || (value == best_value && earlier(g, best)))
++            debug_block({ fc.seen(g, value); });
++            if (value > best_value || (value == best_value && earlier(g, best))) {
+                 best = g, best_value = value, best_steps = steps, best_spell = cast, best_priced = {cast ? 'K' : 'S', 0, -1, 0, strength, damage};
++                debug_block({ fc.best = {worth * fc.part, trip + fc.clear + cap_rounds, trip, fc.clear, cap_rounds, 0, known.weight * exposed, fc.part, carried,
++                                         bank - bank_now, static_cast<float>(wait), by_spawn}; });
++            }
+             if (banks_bag && walk_out != unreachable) {
+                 const float via_altar = belief.state == CampState::respawning ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk_out) - bank_now) : 0.0f;
+                 from_altar_value = std::max(from_altar_value, rate(world, worth, static_cast<float>(walk_out) + cycle_bank + via_altar + rounds + capture));
+@@ -2241,8 +2288,15 @@
+         }
+         if (g == memory.mono_group) mono_seen = value;
+         if (late) continue;
+-        if (value > best_value || (value == best_value && earlier(g, best)))
++        debug_block({ fc.seen(g, value); });
++        if (value > best_value || (value == best_value && earlier(g, best))) {
+             best = g, best_value = value, best_steps = steps, best_spell = spell, best_priced = priced;
++            debug_block({
++                const float h = trips_home(static_cast<float>(trips));
++                fc.best = {share, trip + clear_rounds + cap_rounds + h, trip, clear_rounds, cap_rounds, h, known.weight * exposed,
++                           worth > 0 ? share / worth : 1.0f, carried, bank - bank_now, static_cast<float>(wait), by_spawn};
++            });
++        }
+         if (banks_bag && walk_out != unreachable) from_altar_value = std::max(from_altar_value, altar_rate(share, clear_rounds, trips));
+     }
+     read_g = -1;
+@@ -2268,7 +2322,11 @@
+             const float worth = takeover_worth(gain, timer, walk, work_rate, hold);
+             if (!(worth > 0)) return;
+             const float value = rate(world, worth, static_cast<float>(walk + hold));
+-            if (value > best_value) best = g, best_steps = walk, best_value = value, best_spell = false, best_priced = Priced{'T'};
++            debug_block({ fc.seen(g, value); });
++            if (value > best_value) {
++                best = g, best_steps = walk, best_value = value, best_spell = false, best_priced = Priced{'T'};
++                debug_block({ fc.best = {worth, static_cast<float>(walk + hold), static_cast<float>(walk), 0, static_cast<float>(hold), 0, 1, 1, 0}; });
++            }
+         });
+     }
+     // Keeping our gems, as Prism: an ally's gem capture we reach before it pays ('G'), all of it ours once the
+@@ -2314,8 +2372,10 @@
+             const int rounds = in_time ? timer : walk + capture_rounds(world);
+             const float value = rate(world, worth, static_cast<float>(rounds));
+             // Our pick already, taken over as the carry for its goal and the carry's stickiness.
++            debug_block({ fc.seen(g, value); });
+             if (value > best_value || (best == g && !in_time)) {
+                 best = g, best_steps = walk, best_value = std::max(value, best_value), best_spell = false, best_priced = Priced{in_time ? 'G' : 'L'};
++                debug_block({ fc.best = {worth, static_cast<float>(rounds), static_cast<float>(walk), 0, static_cast<float>(rounds - walk), 0, 1, 1, 0}; });
+                 copy_into(goal, carry_goal);
+             }
+         });
+@@ -2368,14 +2428,21 @@
+             const int walk = pathing.to_group(g).at(here);
+             if (walk == unreachable || walk > reach) continue;
+             const float value = rate(world, worth, rounds_at(walk));
+-            if (value > best_value && !(static_cast<float>(walk) < clear && !affordable(g)))
++            debug_block({ fc.seen(g, value); });
++            if (value > best_value && !(static_cast<float>(walk) < clear && !affordable(g))) {
+                 best = g, best_steps = walk, best_value = value, best_spell = false, best_priced = Priced{'Q'};
++                debug_block({ fc.best = {worth, rounds_at(walk), static_cast<float>(walk), std::max(0.0f, clear - static_cast<float>(walk)),
++                                         rounds_at(walk) - std::max(clear, static_cast<float>(walk)), 0, 1, 1, 0}; });
++            }
+         }
+     }
+     if (banks_bag && (best < 0 || best_value <= from_altar_value)) return false;
+     if (banks_bag && attack_in_range()) return true;
+     if (world.is_stale()) return true;
+-    if (best < 0 && risky >= 0) best = risky, best_steps = risky_steps, best_value = risky_value, best_priced = Priced{'r'};
++    if (best < 0 && risky >= 0) {
++        best = risky, best_steps = risky_steps, best_value = risky_value, best_priced = Priced{'r'};
++        debug_block({ fc.best = FcParts{}; });
++    }
+     const int prev_claim = memory.claim;
+     const bool prev_crew = memory.crew;
+     memory.claim = best;
+@@ -2435,6 +2502,44 @@
+         return true;
+     }
+     memory.farm_group = best;
++    // s1 trace: a new choice (n), a new mode on it (m), farm resumed after rounds away (r), or the
++    // choice kept once its group went respawning (w).
++    debug_block({
++        int& fc_g = fc_last.g;
++        int& fc_round = fc_last.round;
++        int& fc_state = fc_last.state;
++        char& fc_mode = fc_last.mode;
++        const int st = static_cast<int>(world.camps[best].state);
++        char why = 0;
++        if (best != fc_g) why = 'n';
++        else if (chosen.mode != fc_mode) why = 'm';
++        else if (round > fc_round + 1) why = 'r';
++        else if (st != fc_state && world.camps[best].state == CampState::respawning) why = 'w';
++        const int gap = round - fc_round;
++        fc_g = best, fc_mode = chosen.mode, fc_round = round, fc_state = st;
++        if (why) {
++            const bool joined = chosen.mode == 'J';
++            const FcParts& p = joined ? fc.shared : fc.best;
++            const bool own_value = joined || (chosen.mode != 'H' && chosen.mode != 'P');
++            float v = joined ? shared_value : best_value;
++            if (!own_value) {
++                v = -1;
++                for (int i = 0; i < 3; ++i)
++                    if (fc.top_g[i] == best) v = fc.top_v[i];
++            }
++            int alt[2] = {-1, -1};
++            float alt_v[2] = {0, 0};
++            for (int i = 0, n = 0; i < 3 && n < 2; ++i)
++                if (fc.top_g[i] >= 0 && fc.top_g[i] != best) alt[n] = fc.top_g[i], alt_v[n] = fc.top_v[i], ++n;
++            const vec2 at = my_position();
++            std::printf("FC %d %u %c %c g%d h%u st%d v%.5f w%.3f R%.2f t%.2f c%.2f k%.2f H%.2f x%.3f p%.3f y%.3f pg%.4f"
++                        " bk%.1f wt%.0f vi%d s%d a%d:%u:%.5f b%d:%u:%.5f at%d,%d bag%u hp%.0f/%.0f f%d%d%d cr%d tr%d gap%d\n",
++                        round, my_handle(), why, chosen.mode, best, groups[best].handle, st, v, p.worth, p.rounds, p.trip, p.clear, p.cap, p.home,
++                        p.wx, p.part, p.carry, per_gold, p.bk, p.wait, p.via ? 1 : 0, best_steps, alt[0], alt[0] >= 0 ? groups[alt[0]].handle : 0u, alt_v[0], alt[1],
++                        alt[1] >= 0 ? groups[alt[1]].handle : 0u, alt_v[1], at.x, at.y, my_gems(), my_health(), max_health,
++                        opening ? 1 : 0, banks_bag ? 1 : 0, repricing ? 1 : 0, memory.crew ? 1 : 0, chosen.trips, gap);
++        }
++    });
+     if (farm_monolith(world, best) && memory.claim == best) {
+         if (memory.mono_group != best) {
+             memory.mono_group = best, memory.mono_staged = -1, memory.mono_since = round, memory.mono_taken = 0;

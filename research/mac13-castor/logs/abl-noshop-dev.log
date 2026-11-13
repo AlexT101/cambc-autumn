@@ -1,0 +1,9 @@
+A/B mac13-castor-abl-noshop-dev: CAND variants/c11-noshop (dir) vs REF variants/chy-ref (dir)
+  dev: running, log replays/ab/mac13-castor-abl-noshop-dev/dev.log
+CAND 52.8% of 10240 (5411-4829), 95% CI 51.9-53.8
+  dev  52.8% of 10240 (5411-4829), 95% CI 51.9-53.8
+Failed matches: 0
+Out-of-fuel turns: CAND 1089 in 700 games, REF 631 in 424 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 8m56s
+Results: replays/ab/mac13-castor-abl-noshop-dev/summary.md

@@ -1,0 +1,11 @@
+diff -ru bots/variants/chy-ref/src/economy/farm.cc bots/variants/op-noplan/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 01:55:41.153695176 +0000
++++ bots/variants/op-noplan/src/economy/farm.cc	2026-11-13 02:32:53.354280638 +0000
+@@ -624,6 +624,7 @@
+ // cleared and held, or respawning; cleared and not yet held, farm takes the capture itself.
+ int open_plan_choice(const World& world, Memory& memory) {
+     if constexpr (!params::open_plan::on) return -1;
++    if (true) return -1; // probe op-noplan: the draft still makes the plan; play ignores it
+     if (world.round > params::open_plan::horizon) return -1;
+     const auto& map = world.map();
+     for (;; ++memory.open_step) {

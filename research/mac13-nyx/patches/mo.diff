@@ -1,0 +1,12 @@
+diff -ruN bots/variants/chy-ref/src/params.h bots/variants/mo/src/params.h
+--- bots/variants/chy-ref/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/mo/src/params.h	2026-11-13 07:07:50.840455095 +0000
+@@ -201,7 +201,7 @@
+ // tuned apart and below mid_exposure (farm.cc exposure_most bounds exposure() for the exact bounds).
+ inline constexpr float own_ground_share = 0.6832753f;
+ inline constexpr float mid_low_share = 0.25452974f;
+-inline constexpr float mid_exposure = 1.3611484f;
++inline constexpr float mid_exposure = 1.701436f;
+ inline constexpr float mid_edge = 0.055977345f;
+ inline constexpr float max_exposure = 1.2148346f;
+ 

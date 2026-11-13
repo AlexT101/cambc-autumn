@@ -1,0 +1,291 @@
+diff --git a/bots/variants/chy-ref/src/combat/fight.cc b/bots/variants/sel-window/src/combat/fight.cc
+index 7484707ae..8abdad6d1 100644
+--- a/bots/variants/chy-ref/src/combat/fight.cc
++++ b/bots/variants/sel-window/src/combat/fight.cc
+@@ -536,6 +536,19 @@ bool stand_lost_at(const World& world, Safety& safety, HoldAt& hold) {
+                   && !(own_ground(world, p) && health >= params::hurt_health_fraction * my_max_health() && bag_at_stake(world) < params::brake_bag);
+     }
+     if (reach.hit || pursued) safety.stand_walks(p, params::pursuit_steps, reach);
++    // Healthy, a walker whose walk outlasts what it can close by our next turn still walks when we
++    // look again from p (its walk read on the open board too, as it is once out of sight): we leave
++    // then if it comes on. Hurt, we keep the wider margin.
++    if (pursued && !reach.hit && my_health() >= params::hurt_health_fraction * my_max_health())
++        for (auto left = reach.walking; left; left &= left - 1) {
++            const int i = std::countr_zero(left);
++            const int walk = reach.walks[static_cast<std::size_t>(i)];
++            if (walk <= 1) continue; // every gain is at least 1
++            const auto& e = world.enemies[static_cast<std::size_t>(i)];
++            const int gain = safety.pursuit_gain(e);
++            const vec2 from = e.teleport_pending() && in_bounds(e.tp_dest) ? e.tp_dest : e.pos; // where it acts from
++            if (walk > gain && (!e.visible || dist(p, from) - safety.strike_of(e).reach > gain)) reach.walking &= ~(1u << i);
++        }
+     const auto roster = safety.stand_roster(p, reach, pursued ? params::pursuit_steps : 0, unseen);
+     if (roster.key == Safety::no_fight) return false;
+     // Prism leaves a stand it falls in even where the team wins it: its death hands over the bag the team's gems ride in.
+diff --git a/bots/variants/chy-ref/src/economy/farm.cc b/bots/variants/sel-window/src/economy/farm.cc
+index 14d0908ac..9d73a2498 100644
+--- a/bots/variants/chy-ref/src/economy/farm.cc
++++ b/bots/variants/sel-window/src/economy/farm.cc
+@@ -1,6 +1,7 @@
+ // The farm loop: which group to work next, and the walk and hits towards it.
+ #include "../bot_parts.h"
+ #include <wasm_simd128.h>
++#include "../model/dash_turns.h"
+ 
+ namespace aph {
+ 
+@@ -287,6 +288,7 @@ struct GroupFacts {
+     int to_spawn = -1;
+     int gap = -1, gap_range = -1; // home_gap, for range gap_range
+     float home = -1;
++    float side = 1; // the facts' home factor: `home`, or with enemies dead its bound (threat_weight at the alive share)
+     int to_altar = -1;
+     std::uint32_t context = 0, gold_context = 0, version = ~0u;
+     bool sticky = false, planned = false;
+@@ -302,6 +304,7 @@ struct FarmContext {
+     int bag, short_by;
+     bool banking;
+     std::uint8_t emblems;
++    std::uint32_t dead; // enemy bodies dead (bit i: enemies[i]): the facts' weights bound the threat share
+     bool operator==(const FarmContext&) const = default;
+ };
+ struct FarmClearing {
+@@ -409,8 +412,24 @@ struct PreUpper {
+     // while the facts' context is stale).
+     float* value = nullptr;
+ };
+-// By group (padded to 4 lanes), the home_ground weights read so far, 1 for the rest.
+-const float* known_weights(int n) {
++// The home weight with only a share `threat` of the enemy's bodies able to be at the group during
++// our stay: the static discount scales with it. Rises as the share falls, at most 1.
++inline float threat_weight(float home, float threat) { return 1.0f - threat * (1.0f - home); }
++// By group (padded to 4 lanes), the home_ground weights read so far, 1 for the rest; with enemies dead
++// (`alive_share` below 1), their bounds at that share: the dead are as yet no threat anywhere.
++// The facts raise a group's bound when they first read its weight, as home_ground does home_weights.
++std::array<float, 260>& weight_bounds() {
++    static std::array<float, 260> bound;
++    return bound;
++}
++const float* known_weights(int n, float alive_share) {
++    if (n <= 256 && alive_share < 1.0f) {
++        auto& bound = weight_bounds();
++        const auto& home = home_weights();
++        const auto lanes = static_cast<std::size_t>((n + 3) & ~3);
++        for (std::size_t g = 0; g < lanes; ++g) bound[g] = threat_weight(home[g], alive_share);
++        return bound.data();
++    }
+     if (n <= 256) return home_weights().data();
+     static std::vector<float> ones;
+     if (static_cast<int>(ones.size()) < n + 3) ones.assign(n + 3, 1.0f);
+@@ -964,9 +983,18 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+     GroupFacts* const group_facts = n_groups > static_cast<int>(few_facts.size()) ? many_facts.data() : few_facts.data();
+     const bool prospector = world.me().prospector;
+     const auto emblems = static_cast<std::uint8_t>(world.me().fast_tribute | prospector << 1);
++    // Enemy bodies (Cassi and Issac count two) dead now. While any is, a group's home weight discounts
++    // only the share that can be there during our stay: the facts take the alive share (a bound), the
++    // loop the share by the dead's earliest respawns once the stay is known.
++    std::uint32_t dead = 0;
++    for (std::size_t i = 0; i < world.enemies.size() && i < 32; ++i)
++        if (!world.enemies[i].alive) dead |= 1u << i;
++    const float alive_share = dead ? static_cast<float>(static_cast<int>(world.enemies.size()) - std::popcount(dead))
++                                         / static_cast<float>(world.enemies.size())
++                                   : 1.0f;
+     auto& last_context = memo.last_context;
+     auto& context = memo.context;
+-    if (const FarmContext now{bag, short_by, banks_bag, emblems}; context == 0 || !(now == last_context))
++    if (const FarmContext now{bag, short_by, banks_bag, emblems, dead}; context == 0 || !(now == last_context))
+         last_context = now, ++context;
+     // Marcella is paid gold for each gem she tributes, with our gold bonus (probe-marcella-gold).
+     const float per_gem = world.me().facts().tribute_gold_per_gem();
+@@ -1647,7 +1675,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+         // Shaved for fastest_clear's sum taken member by member.
+         p.health = pre_health = world.clear_health.data(), p.clear_scale = 0.9999f / strength, p.reflects = reflect > 0;
+         p.crew_most = 1.0f / team_scale(), p.other_part = unclaimed_partner_output > 0 ? partner_part : 1.0f;
+-        p.weight = known_weights(n_groups);
++        p.weight = known_weights(n_groups, alive_share);
+         p.out = pre_upper.data(), p.alt = pre_alt.data(), p.test = pre_test.data(), p.test_alt = pre_test_alt.data();
+         p.old = pre_old.data(), p.old_alt = pre_old_alt.data();
+         if (pre_valued) p.value = pre_value.data();
+@@ -1716,7 +1744,8 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+         if (banks_bag) trip = std::max(0.0f, trip - bank_now);
+         const float gems = static_cast<float>(std::min(worth_gems[g], short_by));
+         const float worth = std::max(0.0f, gems + std::max(0.0f, per_gold) * worth_gold[g] + std::max(0.0f, tribute_gold) * gems);
+-        const float weight = g < 256 ? home_weights()[static_cast<std::size_t>(g)] : 1.0f;
++        float weight = g < 256 ? home_weights()[static_cast<std::size_t>(g)] : 1.0f;
++        if (dead) weight = threat_weight(weight, alive_share);
+         // The join's Focus is no share: at most its rate over the trip and the hold (rate is linear in worth).
+         const float carry = gems * keep_bonus(G) * exposure_most * weight;
+         return (claim_bound(worth * exposure_most * weight, health, health / strength, trip) + (carry > 0 ? rate(world, carry, trip + cap_rounds) : 0.0f))
+@@ -1827,13 +1856,15 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+             known.walked_cycle = banks ? static_cast<float>(known.walk) + static_cast<float>(known.tribute) : 0.0f;
+             // From the draft's spawn steps; without a plan, two spawn floods once a game.
+             if (known.home < 0) known.home = home_ground(map, g, opening);
+-            float weight = known.home;
++            known.side = dead ? threat_weight(known.home, alive_share) : known.home;
++            if (dead && g < 256) weight_bounds()[static_cast<std::size_t>(g)] = known.side;
++            float weight = known.side;
+             // Staying with last turn's choice keeps near ties from turning us back and forth.
+             if (g == farm_group) weight *= stickiness;
+             // The plan's group is weighted on its own: farm's last choice keeps its stickiness, so the two do not trade places.
+             if (g == planned_now) weight *= params::open_plan::weight;
+             // A Monolith's long clear gives the enemy time to steal it: its side counts twice.
+-            if (group.has_monolith) weight *= known.home;
++            if (group.has_monolith) weight *= known.side;
+             known.weight = weight;
+             // A Prospector emblem's extra as if alone on the capture, as the reward is valued.
+             known.gems = weight * static_cast<float>(std::min(group.gems + (prospector ? prospected(group.cluster_gems, 1) : 0), short_by));
+@@ -1994,7 +2025,39 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+         // A capture's gold that completes an emblem shortens the trip home (HomeTrip::rounds) though worth
+         // counts it too: floored, so a chain never costs less than nothing and every filter below agrees.
+         const float trip = std::max(0.0f, (by_spawn ? via : pulled_walk(steps) + static_cast<float>(wait)) - bank_now + bank);
+-        const float gems = known.gems * exposed, gold = known.gold * exposed, fastest = known.fastest, carried = gems * bonus;
++        // With enemies dead, the facts' bound weight comes down to the share present during our stay
++        // of `stay` rounds from now: the alive, and the dead whose earliest respawn and travel from their
++        // spawn (dashing when they can, to within their attack range) reach the group before it ends.
++        // Over the facts' weight, squared for a Monolith as its side is.
++        int from_them = -1;
++        const auto window = [&](float stay) {
++            if (from_them < 0) {
++                from_them = opening ? map.enemy_steps_of(g) : map.enemy_steps(g);
++                if (from_them == unreachable) from_them = dist(map.enemy_spawn_centre, group.centre);
++            }
++            int present = static_cast<int>(world.enemies.size()) - std::popcount(dead);
++            for (auto m = dead; m; m &= m - 1) {
++                const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(m))];
++                // Back with its dash ready; its respawn turn moves nothing.
++                const int near = std::max(0, from_them - e.facts().attack_range());
++                const int travel = e.facts().has_dash() ? dash_turns::open(near, 0) : near;
++                if (e.respawn_earliest < 0 || static_cast<float>(std::max(e.respawn_earliest, round) - round + travel) <= stay) ++present;
++            }
++            const float scale = threat_weight(known.home, static_cast<float>(present) / static_cast<float>(world.enemies.size())) / known.side;
++            return group.has_monolith ? scale * scale : scale;
++        };
++        // The stay at its shortest (the fastest clear) until a clear is priced; the cycle from an altar
++        // after banking comes too late for the window, so at the whole team.
++        float stay_scale = 1, altar_scale = 1;
++        if (dead) {
++            stay_scale = window(static_cast<float>(there) + known.fastest + cap_rounds);
++            altar_scale = window(std::numeric_limits<float>::infinity()) / stay_scale;
++        }
++        // A priced clear of `rounds` (heal trips included) on what the stay at the fastest gave.
++        const auto stay_fit = [&](float rounds) __attribute__((always_inline)) {
++            return dead ? std::min(1.0f, window(static_cast<float>(there) + std::max(known.fastest, rounds) + cap_rounds) / stay_scale) : 1.0f;
++        };
++        const float gems = known.gems * exposed * stay_scale, gold = known.gold * exposed * stay_scale, fastest = known.fastest, carried = gems * bonus;
+         // Skip the costly clearing estimate for groups that cannot beat the best even with no
+         // clearing. A crew's share can.
+         if (!claimed && barred() && prunable(g)
+@@ -2089,7 +2152,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+             // No capture rounds but a keeping Prism's: the claimer holds it, and the crew moves on once it is cleared.
+             // A crew we are in holds us against small pulls: one member leaving shrinks it for the rest.
+             const float value = rate(world, plain * part + carry, trip + rounds + hold + trips_home(static_cast<float>(trips)))
+-                                * (op && memory.claim == g ? crew_hold(g) : 1.0f);
++                                * (op && memory.claim == g ? crew_hold(g) : 1.0f) * stay_fit(rounds + trips_home(static_cast<float>(trips)));
+             // Only a better share counts, and the final pick takes none a group of our own beats.
+             if (g == memory.mono_group) mono_seen = value;
+             if ((value < shared_value || (value == shared_value && !earlier(g, shared))) || (best >= 0 && value <= best_value) || too_late(rounds))
+@@ -2132,12 +2195,12 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+             const bool cast = kite >= 0 && (damage > spare_health || kite < rounds + heal(g, damage));
+             if (cast) damage = 0, rounds = kite;
+             if (too_late(rounds)) continue;
+-            float value = rate(world, worth, trip + rounds + capture);
++            float value = rate(world, worth, trip + rounds + capture) * stay_fit(rounds);
+             if (damage > spare_health && unclaimed_partner_output > 0 && alive) {
+                 float joint_rounds = 0;
+                 const float part = strength / (strength + unclaimed_partner_output);
+                 if (soften * min_camp_damage(world, g, strength + unclaimed_partner_output, &joint_rounds) * part <= spare_health)
+-                    damage = 0, value = rate(world, worth * part, trip + joint_rounds + capture);
++                    damage = 0, value = rate(world, worth * part, trip + joint_rounds + capture) * stay_fit(joint_rounds);
+             }
+             if (damage > spare_health && !ally_engaged(world, g)) {
+                 if (value > risky_value || (value == risky_value && earlier(g, risky))) risky = g, risky_value = value, risky_steps = steps;
+@@ -2147,7 +2210,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+                 best = g, best_value = value, best_steps = steps, best_spell = cast, best_priced = {cast ? 'K' : 'S', 0, -1, 0, strength, damage};
+             if (banks_bag && walk_out != unreachable) {
+                 const float via_altar = belief.state == CampState::respawning ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk_out) - bank_now) : 0.0f;
+-                from_altar_value = std::max(from_altar_value, rate(world, worth, static_cast<float>(walk_out) + cycle_bank + via_altar + rounds + capture));
++                from_altar_value = std::max(from_altar_value, rate(world, worth * altar_scale, static_cast<float>(walk_out) + cycle_bank + via_altar + rounds + capture));
+             }
+             continue;
+         }
+@@ -2174,12 +2237,12 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+         // A Monolith is a crew's only: alone, the walk there is often given up for nearer camps on
+         // the way, and a lone chip only softens it for whoever comes next.
+         bool late = too_late(clear_rounds) || (group.has_monolith && belief.state != CampState::cleared);
+-        float value = late ? 0.0f : rate(world, worth, trip + clear_rounds + capture + trips_home(static_cast<float>(trips)));
++        float value = late ? 0.0f : rate(world, worth, trip + clear_rounds + capture + trips_home(static_cast<float>(trips))) * stay_fit(clear_rounds + trips_home(static_cast<float>(trips)));
+         // Banking: the cycle from the altar after the tribute (from_altar_value's candidate).
+         const float via_altar = banks_bag && walk_out != unreachable && belief.state == CampState::respawning
+                                     ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk_out) - bank_now) : 0.0f;
+         const auto altar_rate = [&](float part_worth, float rounds, int home_trips) __attribute__((always_inline)) {
+-            return rate(world, part_worth, static_cast<float>(walk_out) + cycle_bank + via_altar + rounds + capture + trips_home(static_cast<float>(home_trips)));
++            return rate(world, part_worth * altar_scale, static_cast<float>(walk_out) + cycle_bank + via_altar + rounds + capture + trips_home(static_cast<float>(home_trips)));
+         };
+         if (crewable) {
+             // Allies claiming it and, unless an operation on it failed lately, the available ones a
+@@ -2225,7 +2288,8 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+                 // way gives way to joining it rather than split the free allies.
+                 const float hold = memory.claim == g ? crew_hold(g)
+                                    : plan.claimers == 0 && rival_op() ? params::crew_rival_factor : 1.0f;
+-                const float crew_value = rate(world, worth * part, trip + plan.rounds + capture + trips_home(static_cast<float>(my_trips))) * hold;
++                const float crew_value = rate(world, worth * part, trip + plan.rounds + capture + trips_home(static_cast<float>(my_trips))) * hold
++                                         * stay_fit(plan.rounds + trips_home(static_cast<float>(my_trips)));
+                 debug_block({
+                     if (group.has_monolith && round % 25 == 0)
+                         std::printf("MONO VALUE %d %u g%d worth %.0f part %.2f trip %.0f rounds %.0f trips %d home %.0f crew %d+%d output %.0f value %.4f best-so-far %.4f\n",
+diff --git a/bots/variants/chy-ref/src/model/safety.cc b/bots/variants/sel-window/src/model/safety.cc
+index 8550c1e42..09e3de9a6 100644
+--- a/bots/variants/chy-ref/src/model/safety.cc
++++ b/bots/variants/sel-window/src/model/safety.cc
+@@ -3562,6 +3562,37 @@ void Safety::stand_walks(vec2 p, int farthest, StandReach& r) {
+     }
+ }
+ 
++// A walk is the distance to p past its reach R0, which already spends its t0 turns before our next
++// one. By our next turn it closes t0 steps, plus a dash's range if it dashes, and its reach R1 over
++// its t1 turns between our next turn and the one after is counted afresh: the walk shrinks by
++// t0 (+ dash) + R1 - R0. t1 is its next-round turn if after ours and, at worst, one before ours the
++// round after (by its rank there if its team never changes priority, against our latest slot). So
++// with both slots ready and one turn a window: 1 for a melee dasher (its reach holds dash and
++// attack), 2 for Vesper (walk and dash, then walk, reset and attack 4), 3 for Ren (dash, then stun).
++int Safety::pursuit_gain(const ChampionBelief& e) {
++    auto& x = struck(e);
++    const int r0 = x.strike.reach;
++    // A stunned enemy's walk counts its lost turn (approach()): as before.
++    if (r0 < 0) return params::pursuit_steps;
++    const auto& f = e.facts();
++    const int s = f.slot_of(AbilityKind::dash);
++    // Out of sight, possible grows by a dash whenever one may be ready (World::grow): our next look
++    // can find it a dash nearer with the dash still counted. Vendetta's dash comes back on a kill.
++    if (s >= 0 && (!e.visible || f.passive == Passive::reset_on_kill)) return params::pursuit_steps;
++    if (x.turns < 0) x.turns = turns_before_ours(world_, e);
++    const int t0 = x.turns, r = world_.round;
++    const int rank = world_.enemy_priorities_change ? 0 : e.next_rank;
++    const int ours = slot_of_rank(world_, true, static_cast<int>(world_.allies.size()) - 1, r + 2);
++    const int t1 = (enemy_turn_before_ours_next(world_, e) ? 0 : 1) + (slot_of_rank(world_, false, rank, r + 2) < ours ? 1 : 0);
++    const int widen = std::max(1, t1) - 1; // threat_strike's: a walk, then the strike
++    // Its last turn before our turn after next is by round r + 2.
++    const unsigned slots = (e.ability_ready(0, r + 2) ? 1u : 0u) | (e.ability_ready(1, r + 2) ? 2u : 0u);
++    int closes = t0 + widen + strike_with(e, slots).reach;
++    if (s >= 0 && t0 > 0 && e.ability_ready(s, r + 1))
++        closes = std::max(closes, t0 + f.abilities[static_cast<std::size_t>(s)].range() + widen + strike_with(e, slots & ~(1u << s)).reach);
++    return std::max(1, closes - r0);
++}
++
+ Safety::StandRoster Safety::stand_roster(vec2 p, const StandReach& reach, int approach, bool unseen) {
+     StandRoster r;
+     const std::uint32_t hit = reach.hit;
+diff --git a/bots/variants/chy-ref/src/model/safety.h b/bots/variants/sel-window/src/model/safety.h
+index bf2aa4320..50c6e7860 100644
+--- a/bots/variants/chy-ref/src/model/safety.h
++++ b/bots/variants/sel-window/src/model/safety.h
+@@ -486,6 +486,9 @@ public:
+     };
+     StandReach stand_reach(vec2 p, int farthest);
+     void stand_walks(vec2 p, int farthest, StandReach& r);
++    // The most a walker's walk (stand_reach's walks) can shrink by our next turn: one no farther
++    // may strike p in its turns between our next turn and the one after. At least 1.
++    int pursuit_gain(const ChampionBelief& e);
+     StandRoster stand_roster(vec2 p, const StandReach& reach, int approach, bool unseen);
+     // `falls` as for fight(); without walkers or camps it is fight(p). With `falls`, our fall settles
+     // it (Trade::lost_known).

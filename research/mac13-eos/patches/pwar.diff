@@ -1,0 +1,244 @@
+diff -ru bots/variants/chy-ref/src/bot.cc bots/variants/pwar/src/bot.cc
+--- bots/variants/chy-ref/src/bot.cc	2026-11-13 01:55:41.151673029 +0000
++++ bots/variants/pwar/src/bot.cc	2026-11-13 05:40:40.799651380 +0000
+@@ -511,6 +511,14 @@
+             if (avoid) copy_into(*avoid, both), both |= *held, avoid = &both;
+             else avoid = held;
+         }
++        // Nor, for our Prism, in the reach of an enemy Prism that outguns it (combat/prism_war.cc).
++        // guard_work drops an avoid board holding our tile (any way out is ours): that is the home one's rule.
++        if (avoid && test(*avoid, my_position())) avoid = nullptr;
++        if (const bitboard* duel = duel_avoid(world, safety, my_position())) {
++            static bitboard all{cambc::uninitialized};
++            if (avoid) copy_into(*avoid, all), all |= *duel, avoid = &all;
++            else avoid = duel;
++        }
+         guard_work(world, pathing, safety, memory.damage, avoid);
+     }
+     // A goal step that cannot finish is not started: it would run the turn out, which loses its posts and
+@@ -570,6 +578,30 @@
+     }
+ }
+ 
++// Diagnosis (debug only): our Prism with an enemy Prism believed within 10.
++void trace_prism_war(const World& world, Safety& safety) {
++    if (world.is_stale() || !world.me().alive || world.me().facts().passive != Passive::gem_focus) return;
++    const vec2 here = my_position(), start = world.turn_start;
++    if (here.x < 0) return;
++    for (const auto& e : world.enemies) {
++        if (!e.alive || e.facts().passive != Passive::gem_focus || e.pos_round < 0 || e.pos.x < 0) continue;
++        const int d0 = dist(start, e.pos), d1 = dist(here, e.pos);
++        if (std::min(d0, d1) > 10) continue;
++        int allies = 0, enemies = 0;
++        for (const auto& a : world.allies)
++            if (!a.is_self && a.alive && a.visible && dist(here, a.pos) <= 8) ++allies;
++        for (const auto& o : world.enemies)
++            if (o.alive && o.pos.x >= 0 && world.round - o.pos_round <= 2 && dist(here, o.pos) <= 8) ++enemies;
++        const bool leth1 = safety.lethal(here), leth0 = safety.lethal(start);
++        const auto t = safety.fight(here);
++        std::printf("PW %d %u %c %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n", world.round, my_handle(), static_cast<char>(decision),
++                    e.visible ? 1 : 0, world.round - e.pos_round, d0, d1, static_cast<int>(my_record().focus), static_cast<int>(e.focus),
++                    static_cast<int>(my_health()), static_cast<int>(my_max_health()), static_cast<int>(e.health), static_cast<int>(e.max_health),
++                    allies, enemies, leth0 ? 1 : 0, leth1 ? 1 : 0, t.enemies > 0 ? (t.lost ? 1 : 0) : -1, t.self_falls ? 1 : 0, turn_acts.casts[0], turn_acts.casts[1],
++                    turn_acts.walked ? 1 : 0, my_cooldown(0), std::max(0, e.ready_round[0] - world.round), std::max(0, e.ready_round[1] - world.round),
++                    static_cast<int>(my_gems()), e.gems, e.acted ? 1 : 0);
++    }
++}
+ } // namespace
+ 
+ void prepare_next_turn(const World& world, Pathing& pathing, const Memory& memory, std::uint64_t fuel_floor) {
+@@ -705,6 +737,7 @@
+     search.chose = false;
+     struck = searched = false;
+     support_owned = support_requested = support_offered = support_retreat = end_ward = end_tight = false;
++    pw_zone_turn = pw_press_turn = pw_out_turn = false, pw_skips = 0;
+     comms::support_intent(world.round, false);
+     siege_group() = -1;
+     turn_acts = {};
+@@ -761,6 +794,11 @@
+     memory.health = world.me().alive ? my_health() : 0;
+     if (world.me().alive) note_income_end(world);
+     upkeep.camp_turns += camp_hits() != camp_hits_before;
++    debug_block({
++        if (pw_zone_turn || pw_press_turn || pw_out_turn)
++            std::printf("PWX %d %u %c %d %d %d %d\n", world.round, my_handle(), static_cast<char>(decision), pw_zone_turn ? 1 : 0, pw_press_turn ? 1 : 0, pw_out_turn ? 1 : 0, pw_skips);
++    });
++    debug_block({ trace_prism_war(world, safety); });
+     debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), static_cast<char>(decision), memory.farm_group, memory.claim); });
+ }
+ 
+diff -ru bots/variants/chy-ref/src/bot_parts.h bots/variants/pwar/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 01:55:41.151723080 +0000
++++ bots/variants/pwar/src/bot_parts.h	2026-11-13 05:47:10.514228817 +0000
+@@ -569,6 +569,19 @@
+ bool support_work(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
+ bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool leave, bool& mate_eligible);
+ 
++// combat/prism_war.cc
++bool pw_zone_turn = false, pw_press_turn = false, pw_out_turn = false; // debug counters, reset in play_turn
++int pw_skips = 0;
++// A tile the enemy Prism, in sight, can strike next turn while it outguns our Prism (we lose their
++// duel even striking first): never for anyone but our Prism.
++bool duel_zone_at(const World& world, Safety& safety, vec2 p);
++// The tiles beside `here` our Prism's work keeps off by duel_zone_at, or null.
++const bitboard* duel_avoid(const World& world, Safety& safety, vec2 here);
++// e is the enemy Prism, and ours (us or an ally in sight), within its ground spell's reach of it, wins
++// their duel even with e striking first.
++bool prism_presses(const World& world, Safety& safety, const ChampionBelief& e);
++bool pressed_now(const ChampionBelief& e); // debug counter: prism_presses said yes for e this generation
++
+ // bot.cc
+ void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, const Trade& t, int target = -1);
+ bool place_ward(const World& world, Memory& memory, bool bushes = true);
+diff -ru bots/variants/chy-ref/src/combat/fight.cc bots/variants/pwar/src/combat/fight.cc
+--- bots/variants/chy-ref/src/combat/fight.cc	2026-11-13 01:55:41.151951223 +0000
++++ bots/variants/pwar/src/combat/fight.cc	2026-11-13 05:31:03.482903028 +0000
+@@ -755,8 +755,9 @@
+     // cleared group is taking its gems: killing it is how a capture is contested.
+     const int g = world.map().group_at(e.pos);
+     held = g >= 0 && world.camps[g].state == CampState::cleared ? world.map().groups[g].gems : 0;
++    // An enemy Prism our Prism outguns is prey on any ground: its bag goes to the killer.
+     if (!(comeback::cooked(world) && pair_gems(world, e) >= params::comeback::bar_bag) && dist(here, e.pos) > range && !own_ground(world, e.pos) && e.health >= params::hurt_health_fraction * e.max_health && held == 0
+-        && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable))
++        && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable) && !prism_presses(world, safety, e))
+         return false;
+     // Every tile in reach of it would make us retreat at once.
+     return !pack_covers(world, safety, e.pos, range);
+@@ -1069,6 +1070,7 @@
+     const auto* target = prey(world, pathing, safety);
+     if (!target) return false;
+     trace_verdict(world, pathing, *target, 'P');
++    if (pressed_now(*target)) pw_press_turn = true;
+     note_engaged(static_cast<std::uint32_t>(target->handle));
+     decision = Branch::chase;
+     if constexpr (debug_fights) log_fight("FC", world, safety, target->pos, safety.fight(target->pos), static_cast<int>(target->handle));
+Only in bots/variants/pwar/src/combat: prism_war.cc
+diff -ru bots/variants/chy-ref/src/economy/farm.cc bots/variants/pwar/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 01:55:41.153695176 +0000
++++ bots/variants/pwar/src/economy/farm.cc	2026-11-13 05:31:18.901927097 +0000
+@@ -211,7 +211,7 @@
+ // Our farm choice or claim, cleared this turn and short of holders, goes to the nearest of the
+ // allies in sight claiming it (ties to the lower index), so the others move on rather than split
+ // the share. Before anything else farm does, since a ranged hit in passing would cost the step.
+-bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
++bool pick_up(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     if (!my_can_move() || memory.banking) return false;
+     const auto& map = world.map();
+     const vec2 here = my_position();
+@@ -220,7 +220,8 @@
+         const auto& G = map.groups[g];
+         const auto& c = world.camps[g];
+         if (c.state != CampState::cleared || c.state_round != world.round || G.has_monolith || G.gems + G.gold == 0
+-            || test(G.tiles(), here) || sole_capture_holder(world, G) || enemy_on(world, G.tiles()) || left_for_prism(world, pathing, g))
++            || test(G.tiles(), here) || sole_capture_holder(world, G) || enemy_on(world, G.tiles()) || left_for_prism(world, pathing, g)
++            || duel_zone_at(world, safety, G.centre))
+             continue;
+         // A holder already there yields to us if our hold pays more (value_holder).
+         const bool outvalues = outvalues_holders(world, G);
+@@ -651,7 +652,7 @@
+ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     world.throw_if_stale();
+     auto& memo = farm_memo();
+-    if (!banking && !repricing && pick_up(world, pathing, memory)) return true;
++    if (!banking && !repricing && pick_up(world, pathing, safety, memory)) return true;
+     const auto& map = world.map();
+     const auto& groups = map.groups;
+     // Before our own facts below: a turn handed to farm_banking reads them there.
+@@ -1773,6 +1774,8 @@
+         // A Monolith with an enemy in sight near it is not taken up: our crew would clear it for
+         // them. Unless the enemy already stands in its reach, taking the hits.
+         if (group.has_monolith && g != memory.claim && belief.state != CampState::cleared && mono_contested(world, g)) continue;
++        // Our Prism works no group in the reach of an enemy Prism that outguns it (combat/prism_war.cc).
++        if (duel_zone_at(world, safety, group.centre)) continue;
+         const bool claimed = is_claimed(g);
+         // Carrying, compare whole trips: the gems score only after the walk to an altar and the
+         // tribute. Empty-handed, only a capture that wins counts that walk, as no later one shares
+@@ -2339,7 +2342,7 @@
+             const auto& G = groups[g];
+             const auto& c = world.camps[g];
+             if (c.state != CampState::alive || G.gems <= 0 || G.has_monolith || steps_to(G, here) > reach || enemy_on(world, G.tiles())
+-                || (kited(g) && kite_owns(world, g)) || siege_declines(world, g)
++                || (kited(g) && kite_owns(world, g)) || siege_declines(world, g) || duel_zone_at(world, safety, G.centre)
+                 || world.score.ally + bag + G.gems >= winning
+                 || rounds_left(world) <= tribute_turns(bag + G.gems, world.me().fast_tribute) + map.width + map.height + endgame_margin)
+                 continue;
+@@ -2395,7 +2398,8 @@
+         best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, spell = false, chosen = Priced{'H'};
+     if constexpr (!banking && !repricing && params::open_plan::weight <= 0) {
+         // A help call (an ally struggling at its group) keeps its pull.
+-        if (const int planned = banks_bag || help_group >= 0 ? -1 : open_plan_choice(world, memory); planned >= 0 && planned != best) {
++        if (const int planned = banks_bag || help_group >= 0 ? -1 : open_plan_choice(world, memory); planned >= 0 && planned != best
++                                                                                                 && !duel_zone_at(world, safety, groups[planned].centre)) {
+             const int s = steps_data[planned];
+             best = planned, best_steps = s >= 0 && s != unreachable ? s : dist(here, groups[planned].centre);
+             memory.claim = planned, memory.crew = claimed_by_ally(planned), spell = false, chosen = Priced{'P'};
+@@ -2428,7 +2432,7 @@
+     if (best < 0) {
+         if constexpr (repricing) return true;
+         // Cut short before weighing even last turn's choice: walk on towards it, as its crew if we were.
+-        if (k == 0 && memory.farm_group >= 0)
++        if (k == 0 && memory.farm_group >= 0 && !duel_zone_at(world, safety, groups[memory.farm_group].centre))
+             memory.claim = memory.farm_group, memory.crew = crew_of_choice, walk_on(memory.farm_group);
+         else
+             pathing.leave_respawning(zone);
+diff -ru bots/variants/chy-ref/src/model/safety.cc bots/variants/pwar/src/model/safety.cc
+--- bots/variants/chy-ref/src/model/safety.cc	2026-11-13 01:55:41.154695190 +0000
++++ bots/variants/pwar/src/model/safety.cc	2026-11-13 05:52:43.909148202 +0000
+@@ -3447,6 +3447,33 @@
+     return slot.trade;
+ }
+ 
++Trade Safety::duel(const ChampionBelief& a, const ChampionBelief& e, bool they_first) {
++    struct Memo {
++        std::uint32_t generation;
++        int a, e;
++        bool first;
++        Trade trade;
++    };
++    static std::array<Memo, 4> memo{};
++    static int next = 0;
++    for (const auto& m : memo)
++        if (m.generation == generation_ && m.a == a.index && m.e == e.index && m.first == they_first) return m.trade;
++    world_.throw_if_stale();
++    Side us, them;
++    fill(us, world_, world_.allies, 1u << a.index, made_);
++    // Both as at the turn's start, ours too: a slot spent on this turn's work is back within the duel,
++    // and the verdicts steer the next turns' steps, not this turn's casts.
++    fill(them, world_, world_.enemies, 1u << e.index, made_);
++    // Played out without our fall's early ends, which leave who kills whom unknown in a fight they cannot win.
++    const auto [ours, theirs] = simulate(us, them, they_first);
++    Trade t;
++    t.allies = us.count, t.enemies = them.count;
++    t.turns_to_kill_them = ours, t.turns_to_kill_us = theirs;
++    t.lost = t.self_falls = theirs > 0;
++    memo[static_cast<std::size_t>(next++ % 4)] = {generation_, a.index, e.index, they_first, t};
++    return t;
++}
++
+ Trade Safety::chase_trade(std::uint32_t key, std::uint32_t delayed, const std::array<int, 2>& self_cooldowns, bool can_cast, bool falls,
+                           std::uint32_t late) {
+     world_.throw_if_stale();
+diff -ru bots/variants/chy-ref/src/model/safety.h bots/variants/pwar/src/model/safety.h
+--- bots/variants/chy-ref/src/model/safety.h	2026-11-13 01:55:41.154695190 +0000
++++ bots/variants/pwar/src/model/safety.h	2026-11-13 05:13:36.818275726 +0000
+@@ -422,6 +422,9 @@
+     // The fight of a key, joined by the `late` enemies, memoised. `settle`: our fall settles the
+     // caller, so the fight may end there without knowing whether it is lost (Trade::lost_known).
+     Trade fight_of(std::uint32_t key, bool falls = true, std::uint32_t late = 0, bool settle = false);
++    // Our champion `a` alone against enemy `e` alone, at their health and cooldowns now; `they_first` gives e
++    // the first turn. The Prism duel (research/mac13-eos pwar): memoised within a generation.
++    Trade duel(const ChampionBelief& a, const ChampionBelief& e, bool they_first);
+     // fight_of(key, late) if memoised, else null.
+     const Trade* known_fight_of(std::uint32_t key, std::uint32_t late = 0) const { return memo(key, late, true, false); }
+     // fight_of(key, late) when known_fight_of(key, late) is null.
+diff -ru bots/variants/chy-ref/src/unity.cpp bots/variants/pwar/src/unity.cpp
+--- bots/variants/chy-ref/src/unity.cpp	2026-11-13 01:55:41.155695203 +0000
++++ bots/variants/pwar/src/unity.cpp	2026-11-13 05:14:49.623692618 +0000
+@@ -4,6 +4,7 @@
+ // (__cxa_atexit, ~32 fuel, ~80 on the first turn) is work for nothing.
+ #pragma clang attribute push([[clang::no_destroy]], apply_to = variable(is_global))
+ #include "combat/abilities.cc"
++#include "combat/prism_war.cc"
+ #include "economy/shop.cc"
+ #include "economy/camps.cc"
+ #include "economy/home.cc"

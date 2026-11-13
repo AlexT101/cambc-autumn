@@ -1,0 +1,15 @@
+107029 ally-claim switches
+  ally retreat: 31.7%
+  ally re-pick FF: 27.3%
+  several: 25.1%
+  ally to/from none (other branch F): 4.9%
+  ally re-pick PF: 3.6%
+  ally to/from none (other branch h): 2.1%
+  ally re-pick HF: 1.2%
+  ally re-pick QF: 0.9%
+  ally re-pick hF: 0.6%
+  ally re-pick TF: 0.6%
+  unseen (earlier): 0.3%
+  ally re-pick KF: 0.3%
+  ally re-pick kF: 0.2%
+  ally re-pick FP: 0.1%

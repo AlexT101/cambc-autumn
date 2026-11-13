@@ -1,0 +1,10 @@
+note: --suites not given, so only the 256 ladder games: a quick check, not a judgement (pass --suites maps/suites/... for 20k+ games, or use tools/fgate.py)
+A/B mac13-argo-smoke-pb14-twin-lo: CAND variants/pb14-twin-lo (dir) vs REF variants/chy-ref (dir)
+  ladder: running, log replays/ab/mac13-argo-smoke-pb14-twin-lo/ladder.log
+CAND 50.0% of 256 (128-128), 95% CI 43.9-56.1
+  ladder  50.0% of 256 (128-128), 95% CI 43.9-56.1
+Failed matches: 0
+Out-of-fuel turns: CAND 36 in 10 games, REF 15 in 10 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 1m28s
+Results: replays/ab/mac13-argo-smoke-pb14-twin-lo/summary.md

@@ -1,0 +1,9 @@
+A/B mac13-argo-pb13-heal-hi-fin5: CAND variants/pb13-heal-hi (dir) vs REF variants/chy-ref (dir)
+  fin5: running, log replays/ab/mac13-argo-pb13-heal-hi-fin5/fin5.log
+CAND 50.9% of 5120 (2606-2514), 95% CI 49.5-52.3
+  fin5  50.9% of 5120 (2606-2514), 95% CI 49.5-52.3
+Failed matches: 0
+Out-of-fuel turns: CAND 347 in 229 games, REF 411 in 241 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 2m32s
+Results: replays/ab/mac13-argo-pb13-heal-hi-fin5/summary.md

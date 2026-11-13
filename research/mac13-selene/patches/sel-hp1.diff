@@ -1,0 +1,12 @@
+diff -ru bots/variants/chy-ref/src/params.h bots/variants/sel-hp1/src/params.h
+--- bots/variants/chy-ref/src/params.h	2026-11-13 01:55:43.435725959 +0000
++++ bots/variants/sel-hp1/src/params.h	2026-11-13 02:14:04.628453281 +0000
+@@ -75,7 +75,7 @@
+ // Camp damage counted against the health we can spare when choosing a camp (below 1: bolder).
+ inline constexpr float camp_risk = 0.45716766f;
+ // Enemy-ground discount: a group's weight is min(1, 2 d_enemy / (d_ally + d_enemy)) to this power.
+-inline constexpr float home_power = 1.8913636f;
++inline constexpr float home_power = 0.95f;
+ // An ally this near with no claim of its own can partner on a group too costly for us alone.
+ inline constexpr int partner_radius = 13;
+ // Crews on strong groups (economy/crew.cc): allies in sight this near a group's centre, free or on

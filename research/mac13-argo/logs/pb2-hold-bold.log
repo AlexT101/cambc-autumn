@@ -1,0 +1,9 @@
+A/B mac13-argo-pb2-hold-bold: CAND variants/pb2-hold-bold (dir) vs REF variants/chy-ref (dir)
+  probe: running, log replays/ab/mac13-argo-pb2-hold-bold/probe.log
+CAND 49.8% of 5120 (2552-2568), 95% CI 48.5-51.2
+  probe  49.8% of 5120 (2552-2568), 95% CI 48.5-51.2
+Failed matches: 0
+Out-of-fuel turns: CAND 252 in 202 games, REF 225 in 189 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 1m16s
+Results: replays/ab/mac13-argo-pb2-hold-bold/summary.md

@@ -1,0 +1,347 @@
+diff -ruN -x .cambc bots/variants/chy-ref/src/model/comms.cc bots/variants/h-vision/src/model/comms.cc
+--- bots/variants/chy-ref/src/model/comms.cc	2026-11-13 01:55:41.693702461 +0000
++++ bots/variants/h-vision/src/model/comms.cc	2026-11-13 03:13:31.500839204 +0000
+@@ -1,6 +1,8 @@
+ #include "comms.h"
+ #include <algorithm>
+ #include <bit>
++#include <cmath>
++#include <cstdio>
+ #include <utility>
+ #include <vector>
+ #include "support_mailbox.h"
+@@ -20,7 +22,12 @@
+ //             left out (never posted) when it does not fit
+ //   ally      0 = none, else 1 + cell * 4 team + 4 ally index + round mod 4 (params::comms_ally): a
+ //             c x c square (c odd: 1, 3 or 5, the narrowest that fits) centred on the record's tile;
+-//             left out when it does not fit
++//             only with a healer drafted, left out when it does not fit
++//   sight     0 = none, else 1 + ((cell * enemies + enemy index) * 4 + round mod 4) * 4 + health level:
++//             an enemy seen at the poster's turn end, on a c x c square (c = 1, 2 or 3, the finest
++//             that fits), with health in (level / 4, (level + 1) / 4] of its max; left out when it
++//             does not fit (displacing the camp record cost ~5 points)
++//   sight 2   as sight, with its cell, when it fits
+ //   then free bits
+ // Each ally's priority payload (turn_order.h) also carries its claim + 1 in its low 8 bits, and
+ // support_mailbox.h's intents above them.
+@@ -50,13 +57,18 @@
+     BitField ally;
+     std::uint64_t ally_bits = 0;
+     int cell = 1, cells_y = 1;
++    int sights = 0, enemies = 1;
++    std::array<BitField, 2> sight{};
++    int sight_cell = 1, sight_cells_x = 1, sight_cells_y = 1;
+     int period(int g) const { return camp_offset[g + 1] - camp_offset[g]; }
+ };
+ 
+ Layout layout_;
+ 
++constexpr int sight_tags = 4, sight_levels = 4; // posting round mod 4, health in quarters
++
+ // Worst case (6 bodies, 128+ groups): 6 x 8 claim + 10 bag = 58 bits, leaving no room for the camp
+-// record (up to 16 bits at 255 groups). Claims are narrowed only past 6 bodies.
++// record (up to 16 bits at 255 groups) or a sighting. Claims are narrowed only past 6 bodies.
+ [[gnu::noinline]] void lay_out(const World& world) {
+     auto& L = layout_;
+     const auto& map = world.map();
+@@ -72,6 +84,12 @@
+         shift += width;
+         return f;
+     };
++    L.enemies = std::clamp(static_cast<int>(world.enemies.size()), 1, 8);
++    const auto sight_width = [&](int c) {
++        const auto cells = static_cast<std::uint64_t>((map.width + c - 1) / c) * static_cast<std::uint64_t>((map.height + c - 1) / c);
++        return width_of(cells * static_cast<std::uint64_t>(L.enemies * sight_tags * sight_levels) + 1);
++    };
++    constexpr int coarsest = 3;
+     const int bag_width = width_of(128 * static_cast<std::uint64_t>(L.team));
+     const int claim_width = std::min(width_of(static_cast<std::uint64_t>(groups) + 1), (64 - bag_width) / L.team);
+     L.claim_cap = (1 << claim_width) - 1;
+@@ -80,7 +98,10 @@
+     const int camp_width = static_cast<int>(std::bit_width(static_cast<std::uint64_t>(L.camp_offset.back())));
+     L.camp_on = shift + camp_width <= 64;
+     if (L.camp_on) L.camp = field(camp_width);
+-    if (params::comms_ally && L.camp_on)
++    // Posted only while a healer lives (send), so only a team that drafted one keeps room for it.
++    bool healer = false;
++    for (const auto& a : world.allies) healer |= a.facts().heals();
++    if (params::comms_ally && L.camp_on && healer)
+         for (const int c : {1, 3, 5}) {
+             const auto cells = static_cast<std::uint64_t>((map.width + c - 1) / c) * static_cast<std::uint64_t>((map.height + c - 1) / c);
+             const int width = width_of(cells * 4 * static_cast<std::uint64_t>(L.team) + 1);
+@@ -90,10 +111,29 @@
+             L.ally_on = true;
+             break;
+         }
++    // The sightings take only the bits the other records leave.
++    L.sight_cell = 0;
++    for (int c = 1; c <= coarsest && !L.sight_cell; ++c)
++        if (shift + sight_width(c) <= 64) L.sight_cell = c;
++    const int sight_w = L.sight_cell ? sight_width(L.sight_cell) : 0;
++    L.sights = 0;
++    if (L.sight_cell) {
++        L.sight_cells_x = (map.width + L.sight_cell - 1) / L.sight_cell;
++        L.sight_cells_y = (map.height + L.sight_cell - 1) / L.sight_cell;
++        L.sight[0] = field(sight_w), L.sights = 1;
++        if (shift + sight_w <= 64) L.sight[1] = field(sight_w), L.sights = 2;
++    } else {
++        L.sight_cell = 1;
++    }
+     L.ally_bits = L.ally.mask;
+     L.bag_bits = L.bag.mask;
+     L.camp_bits = L.camp.mask;
+     L.ready = true;
++    debug_block({
++        std::printf("SIGHT-LAYOUT team %d enemies %d groups %d map %dx%d claim %d cap %d bag %d sight %d cell %d sights %d camp %d ally %d free %d\n",
++                    L.team, L.enemies, groups, map.width, map.height, claim_width, L.claim_cap, bag_width, sight_w, L.sight_cell,
++                    L.sights, L.camp_on ? camp_width : -camp_width, L.ally_on ? std::popcount(L.ally.mask) : 0, 64 - shift);
++    });
+ }
+ 
+ const Layout& layout(const World& world) {
+@@ -101,6 +141,35 @@
+     return layout_;
+ }
+ 
++// A sight record's parts; cell by sight_cells_y, as the ally record's.
++struct Sight {
++    int enemy = -1, cell = -1, tag = 0, level = 0;
++};
++
++Sight decode_sight(const Layout& L, std::uint64_t v) {
++    Sight x;
++    if (v == 0) return x;
++    auto code = v - 1;
++    x.level = static_cast<int>(code % sight_levels), code /= sight_levels;
++    x.tag = static_cast<int>(code % sight_tags), code /= sight_tags;
++    x.enemy = static_cast<int>(code % static_cast<std::uint64_t>(L.enemies));
++    const auto cell = code / static_cast<std::uint64_t>(L.enemies);
++    x.cell = cell < static_cast<std::uint64_t>(L.sight_cells_x * L.sight_cells_y) ? static_cast<int>(cell) : -1;
++    if (x.cell < 0) x.enemy = -1;
++    return x;
++}
++
++std::uint64_t encode_sight(const Layout& L, int enemy, int cell, int round, int level) {
++    return 1 + ((static_cast<std::uint64_t>(cell) * static_cast<std::uint64_t>(L.enemies) + static_cast<std::uint64_t>(enemy)) * sight_tags
++                + static_cast<std::uint64_t>(round & (sight_tags - 1))) * sight_levels
++           + static_cast<std::uint64_t>(level);
++}
++
++int sight_cell_of(const Layout& L, vec2 p) { return p.x / L.sight_cell * L.sight_cells_y + p.y / L.sight_cell; }
++
++// Rounds since a tag was posted, as of `round`: 0-3.
++int sight_age(int round, int tag) { return (round - tag) & (sight_tags - 1); }
++
+ int bag_body(const Layout& L, std::uint64_t bits) { return static_cast<int>(L.bag.get(bits) % static_cast<std::uint64_t>(L.team)); }
+ int bag_fours(const Layout& L, std::uint64_t bits) { return static_cast<int>(L.bag.get(bits) / static_cast<std::uint64_t>(L.team)); }
+ 
+@@ -163,7 +232,7 @@
+ std::uint64_t changes(const Layout& L, std::uint64_t bits) {
+     const auto x = bits ^ state.last;
+     const auto whole = [x](std::uint64_t mask) { return (x & mask) ? mask : 0; };
+-    return whole(L.bag_bits) | whole(L.camp_bits) | whole(L.ally_bits);
++    return whole(L.bag_bits) | whole(L.camp_bits) | whole(L.ally_bits) | whole(L.sight[0].mask) | whole(L.sight[1].mask);
+ }
+ 
+ // A nonzero capture record's group, and the respawn round it encodes: the first from our previous
+@@ -175,6 +244,83 @@
+     return {g, base + ((code - L.camp_offset[static_cast<std::size_t>(g)] - base % period) % period + period) % period};
+ }
+ 
++// An ally's tile, seen within 2 rounds, as it posted it within 6, else the centre of its claim.
++bool believed_ally(const World& world, const ChampionBelief& a, vec2& at) {
++    if (a.visible || (a.pos_round >= world.round - 2 && in_bounds(a.pos))) return at = a.pos, true;
++    if (int told = -1; told_ally(a.index, at, told) && told >= world.round - 6 && told > a.pos_round) return true;
++    const int g = claim_of(world, a.index);
++    if (g >= 0 && g < static_cast<int>(world.map().groups.size())) return at = world.map().groups[g].centre, true;
++    return false;
++}
++
++// Enemies in sight now, a Prism first, then the nearest a teammate. One the record carries at the
++// same cell, posted this round or last, is left. A record another posted this round stands for
++// teammates still to read it, unless ours is the same enemy seen later.
++bool post_sightings(const World& world, const Layout& L, std::uint64_t& bits, int round) {
++    std::array<vec2, 8> allies;
++    int n_allies = 0;
++    for (const auto& a : world.allies)
++        if (!a.is_self && a.alive && n_allies < 8 && believed_ally(world, a, allies[static_cast<std::size_t>(n_allies)])) ++n_allies;
++    std::array<Sight, 2> slot;
++    for (int i = 0; i < L.sights; ++i) slot[static_cast<std::size_t>(i)] = decode_sight(L, L.sight[static_cast<std::size_t>(i)].get(bits));
++    struct Candidate {
++        int key = 0, enemy = -1, cell = -1;
++    };
++    std::array<Candidate, 8> order;
++    int n = 0;
++    for (const auto& e : world.enemies) {
++        if (!e.alive || !e.visible || e.index >= L.enemies || !in_bounds(e.pos) || n == 8) continue;
++        const int cell = sight_cell_of(L, e.pos);
++        bool carried = false;
++        for (int i = 0; i < L.sights; ++i) {
++            const auto& x = slot[static_cast<std::size_t>(i)];
++            const int age = sight_age(round, x.tag);
++            // Unchanged since our previous turn, an age of 0 is 4 rounds or more.
++            carried |= x.enemy == e.index && x.cell == cell && (age == 1 || (age == 0 && (state.fresh & L.sight[static_cast<std::size_t>(i)].mask)));
++        }
++        if (carried) continue;
++        int d = 1 << 12;
++        for (int k = 0; k < n_allies; ++k) d = std::min(d, dist(e.pos, allies[static_cast<std::size_t>(k)]));
++        const Candidate c{(e.facts().passive == Passive::gem_focus ? 0 : 1 << 13) + d, e.index, cell};
++        int i = n++;
++        for (; i > 0 && order[static_cast<std::size_t>(i - 1)].key > c.key; --i) order[static_cast<std::size_t>(i)] = order[static_cast<std::size_t>(i - 1)];
++        order[static_cast<std::size_t>(i)] = c;
++    }
++    bool dirty = false;
++    unsigned used = 0;
++    for (int k = 0; k < n; ++k) {
++        const auto& c = order[static_cast<std::size_t>(k)];
++        int pick = -1, pick_age = -1;
++        for (int i = 0; i < L.sights; ++i) {
++            if (used >> i & 1) continue;
++            const auto& x = slot[static_cast<std::size_t>(i)];
++            if (x.enemy == c.enemy) {
++                pick = i;
++                break;
++            }
++            // A record unchanged since our previous turn has been read by every teammate; a fresh one
++            // posted last round, after our turn, not yet by those after us this round.
++            const bool fresh = state.fresh & L.sight[static_cast<std::size_t>(i)].mask;
++            const int age = sight_age(round, x.tag);
++            if (fresh && age == 0) continue;
++            const int score = x.enemy < 0 ? 16 : (fresh ? 0 : 8) + age;
++            if (score > pick_age) pick = i, pick_age = score;
++        }
++        if (pick < 0) continue;
++        const auto& e = world.enemies[static_cast<std::size_t>(c.enemy)];
++        const float share = e.max_health > 0 ? e.health / e.max_health : 1.0f;
++        const int level = std::clamp(static_cast<int>(std::ceil(share * sight_levels)) - 1, 0, sight_levels - 1);
++        const auto& f = L.sight[static_cast<std::size_t>(pick)];
++        const auto v = encode_sight(L, c.enemy, c.cell, round, level);
++        used |= 1u << pick;
++        if (f.get(bits) == v) continue;
++        f.set(bits, v);
++        dirty = true;
++        debug_block({ std::printf("SIGHT-POST %d %u e%d cell %d slot %d at %d %d\n", round, my_handle(), c.enemy, c.cell, pick, e.pos.x, e.pos.y); });
++    }
++    return dirty;
++}
++
+ } // namespace
+ 
+ [[gnu::flatten]] void receive(World& world) {
+@@ -204,6 +350,28 @@
+         const auto [g, respawn] = decode_capture(L, record);
+         world.note_capture(g, respawn);
+     }
++    // Not ours: a record we wrote is fresh only once someone else rewrites it.
++    for (int i = 0; i < L.sights; ++i) {
++        const auto& f = L.sight[static_cast<std::size_t>(i)];
++        if (!(state.fresh & f.mask)) continue;
++        const auto x = decode_sight(L, f.get(bits));
++        if (x.enemy < 0) continue;
++        const int c = L.sight_cell, x0 = x.cell / L.sight_cells_y * c, y0 = x.cell % L.sight_cells_y * c;
++        GrowBox box;
++        box.x0 = x0, box.x1 = x0 + c - 1, box.y0 = y0, box.y1 = y0 + c - 1;
++        // Written since our previous turn: the first round from then on with its tag.
++        const int base = std::max(state.last_round, 1);
++        const int seen = base + ((x.tag - base) & (sight_tags - 1));
++        if (seen > round) continue;
++        [[maybe_unused]] const bool applied = world.note_sighting(x.enemy, box, seen, seen == state.last_round,
++                                                                  static_cast<float>(x.level) / sight_levels,
++                                                                  static_cast<float>(x.level + 1) / sight_levels);
++        debug_block({
++            const auto& b = world.enemies[static_cast<std::size_t>(x.enemy)];
++            std::printf("SIGHT-READ %d %u e%d age %d %s at %d %d lv %d\n", round, my_handle(), x.enemy, round - seen, applied ? "applied" : "ignored",
++                        b.pos.x, b.pos.y, x.level);
++        });
++    }
+     state.last = bits;
+     state.last_round = round;
+ }
+@@ -269,6 +437,8 @@
+         }
+     }
+ 
++    if (post_sightings(world, L, bits, round)) dirty = true;
++
+     // Bags change at captures, kills, deaths and tributes. A bag not yet read at our previous turn
+     // may not have reached every teammate: ours waits. Turn order changes every round, so a
+     // teammate can miss a bag overwritten before its next turn: each in turn re-posts its own.
+diff -ruN -x .cambc bots/variants/chy-ref/src/model/world.cc bots/variants/h-vision/src/model/world.cc
+--- bots/variants/chy-ref/src/model/world.cc	2026-11-13 01:55:41.695702488 +0000
++++ bots/variants/h-vision/src/model/world.cc	2026-11-13 02:53:10.403200973 +0000
+@@ -2105,18 +2105,51 @@
+     });
+ }
+ 
+-void World::note_sighting(int enemy_index, vec2 pos, int seen_round, float health) {
+-    if (enemy_index < 0 || enemy_index >= static_cast<int>(enemies.size()) || !in_bounds(pos)) return;
++bool World::note_sighting(int enemy_index, const GrowBox& cell, int seen_round, bool after_ours, float lo, float hi) {
++    if (enemy_index < 0 || enemy_index >= static_cast<int>(enemies.size())) return false;
+     auto& b = enemies[enemy_index];
+-    if (!b.alive || b.visible || seen_round <= b.pos_round) return;
+-    b.health = health * b.max_health;
+-    b.scale = damage_scale(b.facts().passive, b.health, b.max_health) * b.dealt;
+-    b.pos = pos;
++    if (!b.alive || b.visible || seen_round < b.pos_round || (seen_round == b.pos_round && !after_ours)) return false;
++    // A teleport we saw under way pins it until it lands (track): a sighting before then may be of the
++    // channel's start, which says nothing of where it lands.
++    if (b.seen_channel == Channel::teleport && seen_round <= b.channel_end_round) return false;
++    const auto& s = map();
++    const int x0 = std::max(cell.x0, 0), x1 = std::min(cell.x1, s.width - 1);
++    const int y0 = std::max(cell.y0, 0), y1 = std::min(cell.y1, s.height - 1);
++    // The tile nearest the cell's centre stands for it.
++    const int cx2 = x0 + x1, cy2 = y0 + y1;
++    vec2 best{-1, -1};
++    int best_d = 1 << 20, n = 0;
++    for (int x = x0; x <= x1; ++x)
++        for (int y = y0; y <= y1; ++y)
++            if (test(s.open_for_them, {x, y})) {
++                ++n;
++                if (const int d = std::max(std::abs(2 * x - cx2), std::abs(2 * y - cy2)); d < best_d) best_d = d, best = {x, y};
++            }
++    if (n == 0) return false;
++    // Our own reading stays when the share agrees with it, else the share's top.
++    if (const float share = b.max_health > 0 ? b.health / b.max_health : 1.0f; !(share > lo && share <= hi)) {
++        b.health = hi * b.max_health;
++        b.scale = damage_scale(b.facts().passive, b.health, b.max_health) * b.dealt;
++    }
++    b.pos = best;
+     b.pos_round = seen_round;
+     b.pos_source = Source::comms;
+     // The poster's turn in that round is unknown: from the round's start, its turns that round count.
+-    fix(b, pos, {seen_round, -1});
++    const Moment when{seen_round, -1};
++    if (n == 1) {
++        fix(b, best, when);
++    } else {
++        b.fixed_tile = {-1, -1};
++        clear_board(b.possible);
++        b.possible_box.set(best);
++        for (int x = x0; x <= x1; ++x)
++            for (int y = y0; y <= y1; ++y)
++                if (test(s.open_for_them, {x, y})) set_tile(b.possible, {x, y}), b.possible_box.add(vec2{x, y});
++        mark_fixed(b, when);
++        b.lineage = 0;
++    }
+     track(b);
++    return true;
+ }
+ 
+ void World::camp_moved(std::size_t g) {
+diff -ruN -x .cambc bots/variants/chy-ref/src/model/world.h bots/variants/h-vision/src/model/world.h
+--- bots/variants/chy-ref/src/model/world.h	2026-11-13 01:55:41.695702488 +0000
++++ bots/variants/h-vision/src/model/world.h	2026-11-13 02:53:10.402684477 +0000
+@@ -652,9 +652,10 @@
+     // After our actions: note a group we cleared standing on it, so held from this round.
+     void note_turn_end();
+ 
+-    // Merge a teammate's sighting (from comms), with health as a share of max; ignored if not
+-    // fresher than ours.
+-    void note_sighting(int enemy_index, vec2 pos, int round, float health);
++    // Merge a teammate's sighting (from comms): in `round` it stood on a tile of `cell` open to it,
++    // with health in (lo, hi] of its max; `after_ours`: posted after our own turn in that round.
++    // Ignored if not fresher than ours; true if merged.
++    bool note_sighting(int enemy_index, const GrowBox& cell, int round, bool after_ours, float lo, float hi);
+     // The sighting comms::receive merges after the next update, if any: that enemy is fixed then,
+     // so the update does not track it first.
+     struct Sighting {

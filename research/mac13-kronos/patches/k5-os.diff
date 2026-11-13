@@ -1,0 +1,32 @@
+diff -ru bots/variants/chy-ref/src/economy/shop.cc bots/variants/k5-os/src/economy/shop.cc
+--- bots/variants/chy-ref/src/economy/shop.cc	2026-11-13 01:55:42.270710244 +0000
++++ bots/variants/k5-os/src/economy/shop.cc	2026-11-13 04:21:16.846449302 +0000
+@@ -771,14 +771,14 @@
+     income.end_round = world.round, income.gems_at = gems, income.gold_at = gold, income.end_pos = my_position();
+ }
+ 
+-// With no bag to bank and the gold to complete the next emblem (Prism: any shard), home to shop when
++// With no bag to bank and the gold for a shard, home to shop when
+ // what it buys and the heal save outweigh the trip: there by recall unless walking is quicker, and
+ // back out.
+ [[gnu::flatten]] bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
+     if (banks_bag(world, pathing) || memory.damage > 0 || !shops_at_home(world)) return false;
+     const auto gold = my_gold();
+     const bool prism = world.me().facts().passive == Passive::gem_focus;
+-    if (gold < shard_price || (!prism && gold < emblem_price && !begun_emblem(world, my_items()))) return false;
++    if (gold < shard_price) return false;
+     const vec2 here = my_position();
+     if (test(world.map().ally_spawn, here) || safety.threatened(here)) return false;
+     // The trip costs the recall and the walk back out; arriving by recall, the heal takes the turn.
+@@ -790,8 +790,9 @@
+         const float value = params::shop_gain_scale * affordable_prefix(world).gain + heal_rounds_now(world);
+         if (!std::isfinite(value) || !(value > static_cast<float>(std::min(back, recall_turns(world) + hurt) + back))) return false;
+     } else {
+-        const auto stop = home_trip(world, pathing, recall_turns(world), winning_bag(world));
+-        if (stop.short_gold > 0) return false;
++        // From one shard: what the gold buys now (affordable_prefix), not the whole next emblem (home_trip's short_gold).
++        if (winning_bag(world) || closing(world, pathing)) return false;
++        const auto stop = home_trip(world, pathing, recall_turns(world), false);
+         const int back = pathing.to_ally_spawn().at(here);
+         if (back != unreachable && stop.heal + params::shop_gain_scale * affordable_prefix(world).gain < static_cast<float>(std::min(back, stop.channel + stop.hurt) + back)) return false;
+     }

@@ -1,0 +1,12 @@
+diff -ru bots/variants/chy-ref/src/economy/shop.cc bots/variants/pb10-shop-lo-others/src/economy/shop.cc
+--- bots/variants/chy-ref/src/economy/shop.cc	2026-11-13 01:55:39.400671530 +0000
++++ bots/variants/pb10-shop-lo-others/src/economy/shop.cc	2026-11-13 07:52:26.296274873 +0000
+@@ -793,7 +793,7 @@
+         const auto stop = home_trip(world, pathing, recall_turns(world), winning_bag(world));
+         if (stop.short_gold > 0) return false;
+         const int back = pathing.to_ally_spawn().at(here);
+-        if (back != unreachable && stop.heal + params::shop_gain_scale * affordable_prefix(world).gain < static_cast<float>(std::min(back, stop.channel + stop.hurt) + back)) return false;
++        if (back != unreachable && stop.heal + 0.5f * params::shop_gain_scale * affordable_prefix(world).gain < static_cast<float>(std::min(back, stop.channel + stop.hurt) + back)) return false;
+     }
+     bool awake = false;
+     world.each_stirring([&](int g) { awake = awake || awake_over(world, g, here); });

@@ -1,0 +1,30 @@
+168/168 maps
+168 maps, 336 team-drafts measured, 0 without an FT line (out of fuel before it)
+start-up: max 4285
+before the first pick's analysis (start-up + model draft): median 997499, p99 2189785, p99.9 2299687, max 2299687; over 8.5M: 0
+after analyse(): median 3407278, max 7483042
+analysis unfinished after draft round 0: 0 of 336
+model draft not used: 0
+capped (analyse's first-turn cap cut a section): 0
+    2299687 maps/03twisty.map26a a
+    2299687 maps/03twisty.map26a b
+    2258041 maps/05ring.map26a a
+    2258041 maps/05ring.map26a b
+    2189785 maps/03riverbed.map26a a
+    2189785 maps/03riverbed.map26a b
+    2152555 maps/04wilds.map26a a
+    2152555 maps/04wilds.map26a b
+    2135738 maps/04terraces.map26a a
+    2135738 maps/04terraces.map26a b
+whole first turn (as --need measures it): p50 3402043, p99 6702263, p99.9 7482563, max 7483042; headroom under 10000000: 2516958; over it: 0
+    7483042 maps/04gem-caverns.map26a b
+    7482563 maps/04gem-caverns.map26a a
+    7349666 maps/05ant-farm.map26a b
+    7349247 maps/05ant-farm.map26a a
+    6702263 maps/04sanctum.map26a b
+    6674520 maps/04sanctum.map26a a
+    6594933 maps/05quilt.map26a b
+    6571987 maps/05quilt.map26a a
+    6310387 maps/04gem-rush.map26a b
+    6310125 maps/04gem-rush.map26a a
+output: replays/draftlab/firstturn/mac13-castor-c10-ft

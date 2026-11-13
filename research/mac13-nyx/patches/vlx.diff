@@ -1,0 +1,12 @@
+diff -ruN bots/variants/vis2/src/bot.cc bots/variants/vlx/src/bot.cc
+--- bots/variants/vis2/src/bot.cc	2026-11-13 04:17:27.374882513 +0000
++++ bots/variants/vlx/src/bot.cc	2026-11-13 04:24:45.753138906 +0000
+@@ -670,7 +670,7 @@
+ bool shop(const World& world, const Memory& memory, bool consumables, bool shards) {
+     if (consumables) buy_crystal(memory);
+     const bool bought = shards && buy_shards(world);
+-    if (consumables) buy_lock();
++    // No altar locks (buy_lock skipped; place_lock then never has one).
+     return bought;
+ }
+ 

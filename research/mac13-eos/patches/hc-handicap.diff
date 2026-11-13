@@ -1,0 +1,68 @@
+diff -ru bots/variants/chy-ref/src/bot.cc bots/variants/hc-all10/src/bot.cc
+--- bots/variants/chy-ref/src/bot.cc	2026-11-13 01:55:41.151673029 +0000
++++ bots/variants/hc-all10/src/bot.cc	2026-11-13 02:18:12.530988556 +0000
+@@ -570,6 +570,52 @@
+     }
+ }
+ 
++
++// HANDICAP PROBE (diagnostic, never shipped): a quiet turn skipped at random, as if stunned.
++// The variants differ only in these four constants.
++inline constexpr int hc_rate_pct = 10;         // share of eligible turns skipped
++inline constexpr int hc_first_round = 3;      // never below 3
++inline constexpr int hc_last_round = 1 << 30;  // inclusive
++inline constexpr int hc_prism = 0;             // 0 every champion, 1 Prism only, -1 all but Prism
++
++// Integer only, so debug and release draw the same.
++bool hc_draw(int round, std::uint32_t handle) {
++    std::uint64_t z = (static_cast<std::uint64_t>(static_cast<std::uint32_t>(round)) * 0x9E3779B1u) ^ handle;
++    z += 0x9E3779B97F4A7C15ull;
++    z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
++    z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
++    z ^= z >> 31;
++    return (z >> 32) < (std::uint64_t{hc_rate_pct} << 32) / 100;
++}
++
++// Alive, not stunned, in the phase and champion filter, no real channel (the turn-end feint recall
++// does not count), no enemy champion in our own sight.
++bool hc_skip(const World& world) {
++    if (!world.me().alive || stunned_turn || world.round < hc_first_round || world.round > hc_last_round) return false;
++    const bool prism = world.me().facts().passive == Passive::gem_focus;
++    if ((hc_prism > 0 && !prism) || (hc_prism < 0 && prism)) return false;
++    if (channel_held()) return false;
++    for (const auto& e : world.enemies)
++        if (e.alive && e.visible) return false;
++    return hc_draw(world.round, static_cast<std::uint32_t>(world.me().handle));
++}
++
++// The skipped turn: what a stun leaves (it cancels the feint recall, as a stun would) and the state
++// decide/act keep on any turn; no walk, attack, cast, ward, lock, shop, tribute or recall start.
++void hc_skipped_turn(World& world, Memory& memory) {
++    comeback::cooked(world);
++    memory.recall_farm = -1;
++    memory.wait_altar = -1;
++    if (my_state().contains(cambc::champion_state::recalling)) {
++        throw_if_stale();
++        try {
++            self_acted(), cambc::self().cancel_recall();
++        } catch (const cambc::error&) {
++        }
++    }
++    recall_feint = false;
++}
++
+ } // namespace
+ 
+ void prepare_next_turn(const World& world, Pathing& pathing, const Memory& memory, std::uint64_t fuel_floor) {
+@@ -718,7 +764,10 @@
+     // stale turn abandons the rest. Caught here rather than in main's run(), a StaleTurn costs one
+     // personality call and no second unwind (~1k).
+     try {
+-        act(world, pathing, safety, memory);
++        const bool hc_skipped = hc_skip(world);
++        debug_block({ std::printf("HC %d %u %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), !world.me().alive ? 0 : hc_skipped ? 2 : 1); });
++        if (hc_skipped) hc_skipped_turn(world, memory);
++        else act(world, pathing, safety, memory);
+     } catch (const StaleTurn&) {
+         return;
+     } catch (const std::exception& e) {

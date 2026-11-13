@@ -1,0 +1,13 @@
+diff --git a/bots/variants/chy-ref/src/params.h b/bots/variants/sel-ps1/src/params.h
+index d8ae6e752..7b5e90ce6 100644
+--- a/bots/variants/chy-ref/src/params.h
++++ b/bots/variants/sel-ps1/src/params.h
+@@ -137,7 +137,7 @@ inline constexpr int brake_bag = 19;
+ inline constexpr float home_retreat_ratio = 2.1740904f;
+ // Leave before contact when the visible enemies within this many steps of their reach would win
+ // even if we struck first (stand_lost_at). At most 3: Safety::late packs it in 2 bits.
+-inline constexpr int pursuit_steps = 2;
++inline constexpr int pursuit_steps = 1;
+ // Below this share of max health a sieger out of the besieged group's reach goes home to heal,
+ // and a caster stops staging at spell range.
+ inline constexpr float heal_trip_fraction = 0.5362846f;

@@ -1,0 +1,9 @@
+A/B mac13-argo-pb4-chunk150: CAND variants/pb4-chunk150 (dir) vs REF variants/chy-ref (dir)
+  probe2: running, log replays/ab/mac13-argo-pb4-chunk150/probe2.log
+CAND 36.0% of 5120 (1841-3279), 95% CI 34.7-37.3
+  probe2  36.0% of 5120 (1841-3279), 95% CI 34.7-37.3
+Failed matches: 0
+Out-of-fuel turns: CAND 277 in 186 games, REF 333 in 219 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 4m21s
+Results: replays/ab/mac13-argo-pb4-chunk150/summary.md

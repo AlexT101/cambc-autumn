@@ -1,0 +1,29 @@
+2048 games
+Cassi claim changes 161885 flick back<=3 24.8% to/from none 35164
+   branches(prev,now,back): FRF:15554, RFR:12726, FFF:5063, ZRF:646, GRG:601, CRF:579, RXR:454, ZFR:426
+HoR claim changes 47085 flick back<=3 20.8% to/from none 8114
+   branches(prev,now,back): FRF:3473, RFR:3115, FFF:1653, CRF:286, FFP:210, CFR:119, FPF:87, KFF:71
+Issac claim changes 185542 flick back<=3 27.1% to/from none 43066
+   branches(prev,now,back): FRF:20161, RFR:16449, FFF:6588, CRF:795, GRG:678, RXR:486, RGR:433, FFP:393
+Marcella claim changes 26075 flick back<=3 27.6% to/from none 6522
+   branches(prev,now,back): FRF:2915, RFR:2502, FFF:589, CRF:188, ZRF:73, RXR:73, GRG:71, FFP:63
+Prism claim changes 113322 flick back<=3 23.3% to/from none 21249
+   branches(prev,now,back): FRF:9493, RFR:7879, FFF:4480, GRG:509, CRF:415, RGR:382, RXR:356, PRF:192
+Ren claim changes 21871 flick back<=3 24.2% to/from none 4674
+   branches(prev,now,back): FRF:2077, RFR:1764, FFF:598, CRF:134, GRG:101, RGR:64, CFR:57, RXR:46
+Ryth claim changes 44385 flick back<=3 26.0% to/from none 9914
+   branches(prev,now,back): FRF:4204, RFR:3712, FFF:1143, CRF:218, GFG:198, FGF:195, FFP:182, GRG:139
+Stellar claim changes 3603 flick back<=3 16.7% to/from none 485
+   branches(prev,now,back): FRF:201, RFR:164, FFF:124, GRG:25, RGR:14, GFG:10, FGF:10, FFP:6
+Tavi claim changes 18011 flick back<=3 27.4% to/from none 4434
+   branches(prev,now,back): FRF:2071, RFR:1599, FFF:333, FXF:103, CRF:81, RXR:81, XFX:76, GRG:70
+Varg claim changes 18681 flick back<=3 22.0% to/from none 2986
+   branches(prev,now,back): FRF:1222, RFR:1032, FFF:885, FGF:215, GFG:215, FFP:99, CRF:47, FPF:45
+Vendetta claim changes 34561 flick back<=3 16.6% to/from none 4697
+   branches(prev,now,back): FRF:2209, RFR:1770, FFF:931, GRG:90, CRF:82, FFP:78, HFF:59, KFF:49
+Vesper claim changes 92094 flick back<=3 21.1% to/from none 16354
+   branches(prev,now,back): FRF:8186, RFR:5719, FFF:1899, GRG:323, FGF:312, GFG:312, CRF:304, RBR:243
+Willow claim changes 153787 flick back<=3 26.8% to/from none 39329
+   branches(prev,now,back): FRF:7884, hFh:7821, RFR:6345, FhF:6161, hFR:3023, hhF:1566, FFF:1468, RFh:1202
+ALL 920902 226620 24.6%
+[('FRF', 79650), ('RFR', 64776), ('FFF', 25754), ('hFh', 7821), ('FhF', 6161), ('CRF', 3192), ('hFR', 3023), ('GRG', 3013), ('RXR', 2119), ('RGR', 1985), ('FFP', 1588), ('hhF', 1566), ('FRX', 1237), ('RFh', 1202), ('CFR', 1126)]

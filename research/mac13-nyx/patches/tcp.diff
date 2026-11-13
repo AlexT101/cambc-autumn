@@ -1,0 +1,758 @@
+diff -ru bots/variants/chy-ref/src/model/comms.cc bots/variants/tcp/src/model/comms.cc
+--- bots/variants/chy-ref/src/model/comms.cc	2026-11-13 01:55:42.826717744 +0000
++++ bots/variants/tcp/src/model/comms.cc	2026-11-13 02:47:06.272085280 +0000
+@@ -1,6 +1,8 @@
+ #include "comms.h"
+ #include <algorithm>
+ #include <bit>
++#include <cmath>
++#include <cstdio>
+ #include <utility>
+ #include <vector>
+ #include "support_mailbox.h"
+@@ -16,8 +18,13 @@
+ // teammate derives the same layout. Least significant first:
+ //   claims    one field per ally index: its claimed group + 1, 0 for none
+ //   bag       bag in fours, rounded up, * team + carrying ally's index
+-//   camp      0 = none, else 1 + offset[captured group] + its respawn round mod period[group];
+-//             left out (never posted) when it does not fit
++//   events    as many camp-event slots as fit, each one code (0 = empty) from consecutive ranges:
++//               respawn  offset[captured group] + its respawn round mod period[group]
++//               cleared  group * hold_codes + hold: 0 nobody, 1 + held_since mod 8 us, 9 + it them
++//               health   member * camp_health_steps + its health in steps of its max, rounded up
++//                        (0 dead; a full step range below max: never a drop from full)
++//             health then cleared are left out where a slot with them does not fit; no slot at all
++//             where even respawns do not
+ //   ally      0 = none, else 1 + cell * 4 team + 4 ally index + round mod 4 (params::comms_ally): a
+ //             c x c square (c odd: 1, 3 or 5, the narrowest that fits) centred on the record's tile;
+ //             left out when it does not fit
+@@ -25,7 +32,8 @@
+ // Each ally's priority payload (turn_order.h) also carries its claim + 1 in its low 8 bits, and
+ // support_mailbox.h's intents above them.
+ // Each ally rewrites its own claim field every turn. The bag is a standing state in one shared
+-// slot, rewritten only when it changes or as a reminder.
++// slot, rewritten only when it changes or as a reminder. An event slot a teammate wrote since our
++// previous turn stays up; any other is free for our own news.
+ struct BitField {
+     int shift = 0;
+     std::uint64_t mask = 0;
+@@ -37,34 +45,65 @@
+ // A posted respawn round lies within a group's respawn of the post, which a reader reads within a
+ // round; the slack covers a reader that missed this many turns (out of fuel).
+ constexpr int camp_slack = 16;
++// A hold seen at a turn began within capture_time + 1 rounds of it. Posted starts lie within
++// hold_period - 2 of the post, made this round or last for a reader that took last round's turn:
++// its start mod hold_period is then exact. Cleared events are left out where a hold lasts longer.
++constexpr int hold_period = 8;
++constexpr int hold_codes = 1 + 2 * hold_period;
++constexpr int max_members = 64; // members past this are never posted (World::camp_bound_'s bits)
++constexpr int max_slots = 8;
++
++enum Kind { respawn_kind, cleared_kind, health_kind, kinds };
+ 
+ struct Layout {
+     bool ready = false, camp_on = false;
+     int team = 1;
+     int claim_cap = 0; // claims of groups from here on post as none
+     std::array<BitField, 8> claim{}; // by ally index
+-    BitField bag, camp;
+-    std::vector<int> camp_offset; // by group, then the total
+-    std::uint64_t bag_bits = 0, camp_bits = 0;
++    BitField bag;
++    int groups = 0, slots = 0, width = 0;
++    std::array<BitField, max_slots> slot{};
++    bool cleared_on = false, health_on = false;
++    std::vector<int> camp_offset;   // by group, then the total
++    std::vector<int> member_offset; // by group, then the total: its first posted member's index
++    int cleared_base = 0, health_base = 0, codes = 0;
++    std::uint64_t bag_bits = 0, slot_bits = 0;
+     bool ally_on = false;
+     BitField ally;
+     std::uint64_t ally_bits = 0;
+     int cell = 1, cells_y = 1;
+     int period(int g) const { return camp_offset[g + 1] - camp_offset[g]; }
++    int members(int g) const { return member_offset[g + 1] - member_offset[g]; }
+ };
+ 
+ Layout layout_;
+ 
+-// Worst case (6 bodies, 128+ groups): 6 x 8 claim + 10 bag = 58 bits, leaving no room for the camp
+-// record (up to 16 bits at 255 groups). Claims are narrowed only past 6 bodies.
++// What the team was told, as we posted or read it. A member's health and a group's hold belong to
++// one life of the group, stamped with World::camp_returns; a stale stamp means nothing was told.
++struct Told {
++    std::vector<std::uint8_t> health;           // by posted member: steps
++    std::vector<std::uint8_t> hold;             // by group: 0 none, else 1 + hold code
++    std::vector<std::uint16_t> health_life, hold_life; // by group
++};
++Told told_;
++
++// Debug builds: events by kind.
++std::array<int, kinds> posted_count{}, read_count{}, applied_count{};
++
++// Worst case (6 bodies, 128+ groups): 6 x 8 claim + 10 bag = 58 bits, leaving no room for an event
++// slot (up to 16 bits at 255 groups). Claims are narrowed only past 6 bodies.
+ [[gnu::noinline]] void lay_out(const World& world) {
+     auto& L = layout_;
+     const auto& map = world.map();
+     L.team = std::clamp(static_cast<int>(world.allies.size()), 1, 8);
+-    const int groups = std::min(static_cast<int>(map.groups.size()), max_group);
++    const int groups = L.groups = std::min(static_cast<int>(map.groups.size()), max_group);
+     L.camp_offset.assign(static_cast<std::size_t>(groups + 1), 0);
+-    for (int g = 0; g < groups; ++g)
+-        L.camp_offset[static_cast<std::size_t>(g + 1)] = L.camp_offset[static_cast<std::size_t>(g)] + map.groups[static_cast<std::size_t>(g)].respawn + 1 + camp_slack;
++    L.member_offset.assign(static_cast<std::size_t>(groups + 1), 0);
++    for (int g = 0; g < groups; ++g) {
++        const auto& G = map.groups[static_cast<std::size_t>(g)];
++        L.camp_offset[static_cast<std::size_t>(g + 1)] = L.camp_offset[static_cast<std::size_t>(g)] + G.respawn + 1 + camp_slack;
++        L.member_offset[static_cast<std::size_t>(g + 1)] = L.member_offset[static_cast<std::size_t>(g)] + std::min(static_cast<int>(G.members.size()), max_members);
++    }
+     const auto width_of = [](std::uint64_t states) { return static_cast<int>(std::bit_width(states - 1)); };
+     int shift = 0;
+     const auto field = [&](int width) {
+@@ -77,9 +116,30 @@
+     L.claim_cap = (1 << claim_width) - 1;
+     for (int i = 0; i < L.team; ++i) L.claim[static_cast<std::size_t>(i)] = field(claim_width);
+     L.bag = field(bag_width);
+-    const int camp_width = static_cast<int>(std::bit_width(static_cast<std::uint64_t>(L.camp_offset.back())));
+-    L.camp_on = shift + camp_width <= 64;
+-    if (L.camp_on) L.camp = field(camp_width);
++    // The most kinds that leave room for one slot, then as many slots as fit.
++    const auto respawns = static_cast<std::uint64_t>(L.camp_offset.back());
++    const auto cleared = static_cast<std::uint64_t>(groups) * hold_codes;
++    const auto healths = static_cast<std::uint64_t>(L.member_offset.back()) * camp_health_steps;
++    const bool holds_fit = cambc::constants::capture_time + 1 <= hold_period - 2;
++    for (const int k : {2, 1, 0}) {
++        if (groups == 0) break;
++        if (k >= 1 && !holds_fit) continue;
++        const std::uint64_t codes = 1 + respawns + (k >= 1 ? cleared : 0) + (k >= 2 ? healths : 0);
++        const int width = width_of(codes);
++        if (shift + width > 64) continue;
++        L.cleared_on = k >= 1, L.health_on = k >= 2;
++        L.width = width;
++        L.cleared_base = static_cast<int>(1 + respawns);
++        L.health_base = L.cleared_base + static_cast<int>(L.cleared_on ? cleared : 0);
++        L.codes = static_cast<int>(codes);
++        L.slots = std::min(max_slots, (64 - shift) / width);
++        for (int j = 0; j < L.slots; ++j) {
++            L.slot[static_cast<std::size_t>(j)] = field(width);
++            L.slot_bits |= L.slot[static_cast<std::size_t>(j)].mask;
++        }
++        break;
++    }
++    L.camp_on = L.slots > 0;
+     if (params::comms_ally && L.camp_on)
+         for (const int c : {1, 3, 5}) {
+             const auto cells = static_cast<std::uint64_t>((map.width + c - 1) / c) * static_cast<std::uint64_t>((map.height + c - 1) / c);
+@@ -92,8 +152,16 @@
+         }
+     L.ally_bits = L.ally.mask;
+     L.bag_bits = L.bag.mask;
+-    L.camp_bits = L.camp.mask;
++    told_.health.assign(static_cast<std::size_t>(L.member_offset.back()), static_cast<std::uint8_t>(camp_health_steps));
++    told_.hold.assign(static_cast<std::size_t>(groups), 0);
++    told_.health_life.assign(static_cast<std::size_t>(groups), 0);
++    told_.hold_life.assign(static_cast<std::size_t>(groups), 0);
+     L.ready = true;
++    debug_block({
++        std::printf("CAMPCOMMS-LAYOUT %d %u map %dx%d team %d groups %d members %d claim %d bag %d slots %d width %d kinds %d%d%d used %d\n",
++                    world.round, static_cast<std::uint32_t>(world.me().handle), map.width, map.height, L.team, groups,
++                    L.member_offset.back(), claim_width, bag_width, L.slots, L.width, L.slots > 0, L.cleared_on, L.health_on, shift);
++    });
+ }
+ 
+ const Layout& layout(const World& world) {
+@@ -111,14 +179,17 @@
+     int last_round = -1;
+     std::uint64_t fresh = 0; // records written since then
+     int posted_bag = -1;
++    int prev_round = -1;     // last_round before this turn's receive()
++    std::uint32_t own_slots = 0; // event slots our last write filled, bit j
++    int own_round = -1;          // that write's round
+ };
+ State state;
+ 
+-struct Told {
++struct ToldAlly {
+     vec2 at{-1, -1};
+     int round = -1;
+ };
+-std::array<Told, 8> told_allies;
++std::array<ToldAlly, 8> told_allies;
+ 
+ support_mailbox::State support;
+ int support_intent_round = -1;
+@@ -163,18 +234,185 @@
+ std::uint64_t changes(const Layout& L, std::uint64_t bits) {
+     const auto x = bits ^ state.last;
+     const auto whole = [x](std::uint64_t mask) { return (x & mask) ? mask : 0; };
+-    return whole(L.bag_bits) | whole(L.camp_bits) | whole(L.ally_bits);
++    std::uint64_t out = whole(L.bag_bits) | whole(L.ally_bits);
++    for (int j = 0; j < L.slots; ++j) out |= whole(L.slot[static_cast<std::size_t>(j)].mask);
++    return out;
+ }
+ 
+-// A nonzero capture record's group, and the respawn round it encodes: the first from our previous
+-// turn on with that residue.
+-std::pair<int, int> decode_capture(const Layout& L, std::uint64_t record) {
+-    const int code = static_cast<int>(record) - 1;
++// A respawn code's group, and the respawn round it encodes: the first from our previous turn on
++// with that residue.
++std::pair<int, int> decode_capture(const Layout& L, int code) {
+     const int g = static_cast<int>(std::upper_bound(L.camp_offset.begin(), L.camp_offset.end(), code) - L.camp_offset.begin()) - 1;
+     const int period = L.period(g), base = std::max(state.last_round, 0) + 1;
+     return {g, base + ((code - L.camp_offset[static_cast<std::size_t>(g)] - base % period) % period + period) % period};
+ }
+ 
++// A posted member's group and its index in it.
++std::pair<int, int> member_of(const Layout& L, int m) {
++    const int g = static_cast<int>(std::upper_bound(L.member_offset.begin(), L.member_offset.end(), m) - L.member_offset.begin()) - 1;
++    return {g, m - L.member_offset[static_cast<std::size_t>(g)]};
++}
++
++// A live member's health in steps of its max, rounded up: 0 only when dead.
++int steps_of(float health, float max_health) {
++    if (!(health > 0)) return 0;
++    // Float error rounds up at worst, the safe side of a bound.
++    return std::clamp(static_cast<int>(std::ceil(health * camp_health_steps / max_health)), 1, camp_health_steps);
++}
++
++// The group's told healths, cleared for a new life.
++std::uint8_t* told_health(const Layout& L, const World& world, int g) {
++    auto& life = told_.health_life[static_cast<std::size_t>(g)];
++    auto* told = told_.health.data() + L.member_offset[static_cast<std::size_t>(g)];
++    if (life != world.camp_returns[static_cast<std::size_t>(g)]) {
++        life = world.camp_returns[static_cast<std::size_t>(g)];
++        std::fill(told, told + L.members(g), static_cast<std::uint8_t>(camp_health_steps));
++    }
++    return told;
++}
++
++std::uint8_t& told_hold(const World& world, int g) {
++    auto& life = told_.hold_life[static_cast<std::size_t>(g)];
++    auto& told = told_.hold[static_cast<std::size_t>(g)];
++    if (life != world.camp_returns[static_cast<std::size_t>(g)]) life = world.camp_returns[static_cast<std::size_t>(g)], told = 0;
++    return told;
++}
++
++// A cleared group's hold as a code, or -1 when its start cannot be posted.
++int hold_code(const CampBelief& c, int round) {
++    if (!c.holder) return 0;
++    if (c.held_since < 0 || c.held_since > round || c.held_since < round - (hold_period - 2)) return -1;
++    return (*c.holder == team::ally ? 1 : 1 + hold_period) + c.held_since % hold_period;
++}
++
++// One slot's news, posted in its round, which a reader dates to `seen`: no later than that.
++void apply(World& world, const Layout& L, int code, int seen) {
++    const int round = world.round;
++    if (code < L.cleared_base) {
++        const auto [g, respawn] = decode_capture(L, code - 1);
++        ++read_count[respawn_kind];
++        applied_count[respawn_kind] += world.note_capture(g, respawn);
++        return;
++    }
++    // Dated from our previous turn: one we never took tells nothing of when.
++    if (state.last_round < 0) return;
++    if (L.cleared_on && code < L.health_base) {
++        const int g = (code - L.cleared_base) / hold_codes, hold = (code - L.cleared_base) % hold_codes;
++        if (g >= L.groups) return;
++        ++read_count[cleared_kind];
++        std::optional<team> holder;
++        int since = -1;
++        if (hold > 0) {
++            // The hold's start is exact only within hold_period of a post made since last round.
++            if (seen < round - 1) return;
++            holder = hold <= hold_period ? team::ally : team::enemy;
++            since = round - ((round - (hold - 1) % hold_period) % hold_period + hold_period) % hold_period;
++        }
++        applied_count[cleared_kind] += world.note_cleared(g, holder, since, seen);
++        if (world.camps[static_cast<std::size_t>(g)].state == CampState::cleared) told_hold(world, g) = static_cast<std::uint8_t>(1 + hold);
++        return;
++    }
++    if (L.health_on && code < L.codes) {
++        const int m = (code - L.health_base) / camp_health_steps, steps = (code - L.health_base) % camp_health_steps;
++        const auto [g, i] = member_of(L, m);
++        if (g < 0 || g >= L.groups) return;
++        ++read_count[health_kind];
++        const auto& member = world.map().groups[static_cast<std::size_t>(g)].members[static_cast<std::size_t>(i)];
++        const float bound = static_cast<float>(steps) * member.max_health / camp_health_steps;
++        applied_count[health_kind] += world.note_member_health(g, i, bound, seen);
++        // Health only falls within a life: of two posts read together, the lower is the later.
++        if (world.camps[static_cast<std::size_t>(g)].state == CampState::alive) {
++            auto& told = told_health(L, world, g)[i];
++            told = std::min(told, static_cast<std::uint8_t>(steps));
++        }
++    }
++}
++
++// Our news for the free event slots, most useful first: respawns seen, then holds of cleared groups
++// in view, then live members' health drops in view, larger ones and richer groups first.
++int gather_news(World& world, const Layout& L, int room, std::array<std::uint64_t, max_slots>& news,
++                std::array<std::uint32_t, max_slots>& kind_of) {
++    const int round = world.round;
++    const auto& groups = world.map().groups;
++    int n = 0;
++    world.each_respawning([&](int g) {
++        if (g >= L.groups) return true;
++        auto& c = world.camps[g];
++        if (c.respawn_round <= round || c.told_respawn == c.respawn_round) return false;
++        // Seen respawning, not inferred from a hold out of sight.
++        if (c.state_round + groups[g].respawn < c.respawn_round) return false;
++        news[n] = static_cast<std::uint64_t>(1 + L.camp_offset[static_cast<std::size_t>(g)] + c.respawn_round % L.period(g));
++        kind_of[n++] = static_cast<std::uint32_t>(g) << 2 | respawn_kind;
++        return n == room;
++    });
++    if (n == room || !L.cleared_on) return n;
++    const auto& view = world.groups_in_view();
++    for (std::size_t w = 0; w < view.size() && n < room; ++w)
++        for (std::uint64_t bits = view[w]; bits && n < room; bits &= bits - 1) {
++            const int g = static_cast<int>(64 * w) + __builtin_ctzll(bits);
++            if (g >= L.groups) break;
++            const auto& c = world.camps[static_cast<std::size_t>(g)];
++            if (c.state != CampState::cleared || c.state_round != round) continue;
++            // The hold read at our turn's start, unless our own move onto or off its tiles changed it since.
++            const auto& tiles = groups[static_cast<std::size_t>(g)].tiles();
++            const vec2 now = my_position();
++            if ((in_bounds(now) && test(tiles, now)) != test(tiles, world.turn_start)) continue;
++            const int hold = hold_code(c, round);
++            if (hold < 0 || told_hold(world, g) == 1 + hold) continue;
++            news[n] = static_cast<std::uint64_t>(L.cleared_base + g * hold_codes + hold);
++            kind_of[n++] = static_cast<std::uint32_t>(g) << 2 | cleared_kind;
++        }
++    if (n == room || !L.health_on) return n;
++    // The best drops by steps x (1 + gems), kept in a short list.
++    std::array<int, max_slots> score{};
++    const int first = n;
++    for (std::size_t w = 0; w < view.size(); ++w)
++        for (std::uint64_t bits = view[w]; bits; bits &= bits - 1) {
++            const int g = static_cast<int>(64 * w) + __builtin_ctzll(bits);
++            if (g >= L.groups) break;
++            const auto& c = world.camps[static_cast<std::size_t>(g)];
++            const auto& G = groups[static_cast<std::size_t>(g)];
++            if (c.state != CampState::alive || c.state_round != round || G.gems + G.gold <= 0) continue;
++            const auto* told = told_health(L, world, g);
++            for (int i = 0; i < L.members(g); ++i) {
++                if (c.health_round[static_cast<std::size_t>(i)] != round) continue;
++                const int steps = steps_of(c.health[static_cast<std::size_t>(i)], G.members[static_cast<std::size_t>(i)].max_health);
++                if (steps >= told[i]) continue;
++                const int value = (told[i] - steps) * (1 + G.gems);
++                // Insert, dropping the worst once full.
++                int at = n;
++                while (at > first && score[static_cast<std::size_t>(at - 1)] < value) --at;
++                if (at >= room) continue;
++                for (int k = std::min(n, room - 1); k > at; --k)
++                    news[k] = news[k - 1], kind_of[k] = kind_of[k - 1], score[static_cast<std::size_t>(k)] = score[static_cast<std::size_t>(k - 1)];
++                news[at] = static_cast<std::uint64_t>(L.health_base + (L.member_offset[static_cast<std::size_t>(g)] + i) * camp_health_steps + steps);
++                kind_of[at] = static_cast<std::uint32_t>(L.member_offset[static_cast<std::size_t>(g)] + i) << 2 | health_kind;
++                score[static_cast<std::size_t>(at)] = value;
++                n = std::min(n + 1, room);
++            }
++        }
++    return n;
++}
++
++Kind kind_of_code(const Layout& L, std::uint64_t code) {
++    return code < static_cast<std::uint64_t>(L.cleared_base) ? respawn_kind : code < static_cast<std::uint64_t>(L.health_base) ? cleared_kind : health_kind;
++}
++
++// Marks a posted fact told.
++void mark_told(World& world, const Layout& L, std::uint64_t code, std::uint32_t kind) {
++    const int id = static_cast<int>(kind >> 2);
++    ++posted_count[kind & 3];
++    if ((kind & 3) == respawn_kind) {
++        auto& c = world.camps[static_cast<std::size_t>(id)];
++        c.told_respawn = c.respawn_round;
++    } else if ((kind & 3) == cleared_kind) {
++        told_hold(world, id) = static_cast<std::uint8_t>(1 + (static_cast<int>(code) - L.cleared_base) % hold_codes);
++    } else {
++        const auto [g, i] = member_of(L, id);
++        told_health(L, world, g)[i] = static_cast<std::uint8_t>((static_cast<int>(code) - L.health_base) % camp_health_steps);
++    }
++}
++
+ } // namespace
+ 
+ [[gnu::flatten]] void receive(World& world) {
+@@ -200,10 +438,29 @@
+                                                             std::min(cell % L.cells_y * L.cell + h, world.map().height - 1)},
+                                                            round - ((round - kind) & 3)};
+     }
+-    if (const auto record = L.camp.get(bits); (state.fresh & L.camp_bits) && record != 0) {
+-        const auto [g, respawn] = decode_capture(L, record);
+-        world.note_capture(g, respawn);
+-    }
++    // Written since our previous turn, so read after any reading of ours but this turn's: in its
++    // round after us, or this round before us. Events read together share that date, so go in the
++    // order they follow within a life: clears (after any health), then respawns (after the clear).
++    const int seen = std::max(state.last_round, 0);
++    if (state.fresh & L.slot_bits)
++        for (const int first : {L.cleared_base, 0, L.health_base})
++            for (int j = 0; j < L.slots; ++j) {
++                const auto& slot = L.slot[static_cast<std::size_t>(j)];
++                const auto code = static_cast<int>(slot.get(bits));
++                const int end = first == 0 ? L.cleared_base : first == L.cleared_base ? L.health_base : L.codes;
++                if (!(state.fresh & slot.mask) || code == 0 || code < std::max(first, 1) || code >= end) continue;
++                // Two holds of one group read together have no order: in doubt, neither.
++                bool conflict = false;
++                if (first == L.cleared_base)
++                    for (int o = 0; o < L.slots; ++o) {
++                        const auto& other = L.slot[static_cast<std::size_t>(o)];
++                        const auto c2 = static_cast<int>(other.get(bits));
++                        conflict |= o != j && (state.fresh & other.mask) && c2 >= L.cleared_base && c2 < L.health_base && c2 != code
++                                    && (c2 - L.cleared_base) / hold_codes == (code - L.cleared_base) / hold_codes;
++                    }
++                if (!conflict) apply(world, L, code, seen);
++            }
++    state.prev_round = state.last_round;
+     state.last = bits;
+     state.last_round = round;
+ }
+@@ -215,8 +472,13 @@
+     const auto& L = layout(world);
+     auto bits = state.now;
+     const int round = world.round;
+-    // A capture someone posted since our last turn stays up for the rest of the team.
+-    const bool camp_free = L.camp_on && !((state.fresh & L.camp_bits) && L.camp.get(bits) != 0);
++    // An event someone posted since our last turn stays up for the rest of the team.
++    std::array<int, max_slots> free_slots{};
++    int room = 0;
++    for (int j = 0; j < L.slots; ++j) {
++        const auto& slot = L.slot[static_cast<std::size_t>(j)];
++        if (!((state.fresh & slot.mask) && slot.get(bits) != 0)) free_slots[static_cast<std::size_t>(room++)] = j;
++    }
+     bool dirty = false;
+ 
+     // Before anything is marked posted: an observe that runs out of fuel resumes a round late,
+@@ -225,19 +487,40 @@
+     else if (moved) note_shortcut("comms-stale-vision");
+     if (world.resumed()) return;
+ 
+-    if (camp_free) {
+-        const auto& groups = world.map().groups;
+-        world.each_respawning([&](int g) {
+-            if (g >= max_group) return true;
+-            auto& c = world.camps[g];
+-            if (c.respawn_round <= round || c.told_respawn == c.respawn_round) return false;
+-            // Seen respawning, not inferred from a hold out of sight.
+-            if (c.state_round + groups[g].respawn < c.respawn_round) return false;
+-            L.camp.set(bits, static_cast<std::uint64_t>(1 + L.camp_offset[static_cast<std::size_t>(g)] + c.respawn_round % L.period(g)));
+-            c.told_respawn = c.respawn_round;
+-            dirty = true;
+-            return true;
+-        });
++    // Told only once written: a turn abandoned stale writes nothing.
++    struct Mark {
++        std::uint64_t code;
++        std::uint32_t kind;
++        int slot;
++    };
++    std::array<Mark, max_slots> marks{};
++    int marked = 0;
++    if (room > 0) {
++        std::array<std::uint64_t, max_slots> news{};
++        std::array<std::uint32_t, max_slots> kind_of{};
++        const int n = gather_news(world, L, room, news, kind_of);
++        // Each into a free slot not already holding its code: rewriting a code changes no bit, and
++        // readers take only slots that change.
++        // A slot still holding our previous turn's post gives way only to a more urgent kind: else one
++        // champion with news every turn would keep every slot, and its post would leave before
++        // teammates acting earlier next round read it.
++        const bool own_last = state.own_round >= 0 && state.own_round == state.prev_round;
++        std::uint32_t used = 0;
++        for (int k = 0; k < n; ++k)
++            for (int f = 0; f < room; ++f) {
++                const int j = free_slots[static_cast<std::size_t>(f)];
++                const auto& slot = L.slot[static_cast<std::size_t>(j)];
++                const auto held = slot.get(bits), code = news[static_cast<std::size_t>(k)];
++                if ((used >> f & 1) || held == code) continue;
++                if (own_last && (state.own_slots >> j & 1) && held != 0
++                    && static_cast<int>(kind_of[static_cast<std::size_t>(k)] & 3) >= static_cast<int>(kind_of_code(L, held)))
++                    continue;
++                used |= 1u << f;
++                slot.set(bits, code);
++                marks[static_cast<std::size_t>(marked++)] = {code, kind_of[static_cast<std::size_t>(k)], j};
++                dirty = true;
++                break;
++            }
+     }
+ 
+     // Only we write our field, so it holds what we last posted.
+@@ -282,7 +565,20 @@
+         dirty = true;
+     }
+     world.throw_if_stale();
+-    if (dirty) write_bits(bits, round);
++    if (dirty) {
++        write_bits(bits, round);
++        state.own_slots = 0, state.own_round = round;
++        for (int k = 0; k < marked; ++k) {
++            mark_told(world, L, marks[static_cast<std::size_t>(k)].code, marks[static_cast<std::size_t>(k)].kind);
++            state.own_slots |= 1u << marks[static_cast<std::size_t>(k)].slot;
++        }
++    }
++    debug_block({
++        if (round % 50 == 0 && L.slots > 0)
++            std::printf("CAMPCOMMS %d %u posted %d %d %d read %d %d %d applied %d %d %d\n", round, static_cast<std::uint32_t>(world.me().handle),
++                        posted_count[0], posted_count[1], posted_count[2], read_count[0], read_count[1], read_count[2],
++                        applied_count[0], applied_count[1], applied_count[2]);
++    });
+ }
+ 
+ void bag(int gems) { detail::posts.my_bag = gems; }
+diff -ru bots/variants/chy-ref/src/model/world.cc bots/variants/tcp/src/model/world.cc
+--- bots/variants/chy-ref/src/model/world.cc	2026-11-13 01:55:42.827717757 +0000
++++ bots/variants/tcp/src/model/world.cc	2026-11-13 02:47:06.271880408 +0000
+@@ -1753,6 +1753,8 @@
+     for (std::size_t g = 0; g < groups; ++g) clear_health[g] = group[g].health;
+     altars.assign(s.altars.size(), AltarBelief{});
+     stirring_.assign((s.groups.size() + 63) / 64, 0);
++    camp_returns.assign(groups, 0);
++    camp_bound_.assign(groups, 0);
+     cleared_.assign((s.groups.size() + 63) / 64, 0);
+     respawning_.assign((s.groups.size() + 63) / 64, 0);
+ }
+@@ -2136,12 +2138,13 @@
+     clear_health[g] = sound ? sum : 0.0f;
+ }
+ 
+-void World::note_capture(int group, int respawn_round) {
+-    if (group < 0 || group >= static_cast<int>(camps.size()) || respawn_round <= round) return;
++bool World::note_capture(int group, int respawn_round) {
++    if (group < 0 || group >= static_cast<int>(camps.size()) || respawn_round <= round) return false;
+     auto& c = camps[group];
+     c.told_respawn = respawn_round;
+-    if (c.state_round == round) return; // in view: our own reading stands
+-    if (static_cast<std::size_t>(group) < 64 * camps_pending_.size()) camps_pending_[group >> 6] |= std::uint64_t{1} << (group & 63);
++    if (c.state_round == round) return false; // in view: our own reading stands
++    const bool changed = c.state != CampState::respawning || c.respawn_round != respawn_round;
++    set_pending(group, true);
+     if (c.state == CampState::alive) ++camp_geometry_version, ++c.geometry_version;
+     const bool moved = c.state != CampState::respawning;
+     c.version += moved;
+@@ -2151,8 +2154,95 @@
+     c.asleep = 0;
+     c.holder.reset();
+     c.held_since = -1;
++    camp_bound_[static_cast<std::size_t>(group)] = 0;
+     if (moved) camp_moved(static_cast<std::size_t>(group));
+     note_stirring(group);
++    return changed;
++}
++
++bool World::note_member_health(int group, int member, float health, int seen) {
++    if (group < 0 || group >= static_cast<int>(camps.size())) return false;
++    auto& c = camps[group];
++    const auto& members = map().groups[static_cast<std::size_t>(group)].members;
++    const auto i = static_cast<std::size_t>(member);
++    // In view this turn (state_round): our own reading stands; any older one is older than the
++    // teammate's. Within a life health only falls: a member we hold dead, or a group we hold not alive,
++    // is another life's, and a bound above our reading tells nothing. In doubt, not applied.
++    if (member < 0 || i >= members.size() || i >= 64 || c.state != CampState::alive || c.state_round >= round
++        || c.health_round[i] > seen || !(c.health[i] > 0) || health >= c.health[i])
++        return false;
++    if (health <= 0) {
++        // The last one alive dies with the group, which the teammate would have seen cleared.
++        bool others = false;
++        for (std::size_t j = 0; j < members.size(); ++j) others |= j != i && c.health[j] > 0;
++        if (!others) return false;
++        ++camp_geometry_version, ++c.geometry_version;
++        health = 0;
++    }
++    // A drop is damage, which woke the group, as update_camp reads one: after our reading, so awake
++    // now if that was within a sleep (the teammate read it this round at the latest), and no member
++    // asleep since; else perhaps asleep again, and members we read asleep after it still are.
++    if (round - c.health_round[i] <= cambc::constants::camp_sleep_time) {
++        c.awake = Awake::awake;
++        c.asleep = 0;
++        c.last_damaged_round = std::max(c.last_damaged_round, seen);
++        // Its sleep counts from the round after our reading at the earliest, as update_camp's.
++        c.state_round = std::max(c.state_round, std::min(c.health_round[i] + 1, seen));
++        set_pending(group, true);
++    } else if (c.awake == Awake::asleep) {
++        c.awake = Awake::unknown;
++    }
++    c.health[i] = health;
++    c.health_round[i] = seen;
++    auto& bound = camp_bound_[static_cast<std::size_t>(group)];
++    bound = health > 0 ? bound | std::uint64_t{1} << i : bound & ~(std::uint64_t{1} << i);
++    ++c.version;
++    c.settled_round = -1;
++    camp_moved(static_cast<std::size_t>(group));
++    note_stirring(group);
++    return true;
++}
++
++bool World::note_cleared(int group, std::optional<team> holder, int held_since, int seen) {
++    if (group < 0 || group >= static_cast<int>(camps.size())) return false;
++    auto& c = camps[group];
++    // In view this turn: our own reading stands; any older one is older than the teammate's. A group
++    // we or a teammate saw respawning returned and was cleared again only after its timer, which
++    // update_camps would have run out; one we inferred respawning from a hold out of sight may not
++    // have been paid.
++    const auto& G = map().groups[static_cast<std::size_t>(group)];
++    if (c.state_round > seen || c.state_round >= round) return false;
++    const bool inferred = c.state == CampState::respawning && c.state_round + G.respawn < c.respawn_round && c.told_respawn != c.respawn_round;
++    if (c.state == CampState::respawning && !inferred) return false;
++    const auto& members = G.members;
++    const bool was_alive = c.state == CampState::alive;
++    if (inferred) {
++        c.state = CampState::cleared;
++        c.respawn_round = -1;
++        ++c.version;
++    }
++    if (!holder) held_since = -1;
++    const bool changed = was_alive || inferred || c.holder != holder || c.held_since != held_since;
++    if (was_alive) {
++        ++camp_geometry_version, ++c.geometry_version;
++        c.state = CampState::cleared;
++        ++c.version;
++        for (std::size_t i = 0; i < members.size(); ++i) c.health[i] = 0, c.health_round[i] = seen;
++        c.awake = Awake::asleep;
++        c.asleep = 0;
++        c.witness = -1;
++        c.occupants = 0;
++        camp_bound_[static_cast<std::size_t>(group)] = 0;
++    }
++    c.state_round = seen;
++    c.holder = holder;
++    c.held_since = held_since;
++    c.settled_round = -1;
++    // Unseen, a hold pays out on its timer (update_camp); without one nothing changes until seen.
++    set_pending(group, holder.has_value());
++    if (was_alive || inferred) camp_moved(static_cast<std::size_t>(group));
++    note_stirring(group);
++    return changed;
+ }
+ 
+ void World::note_stirring(int g) {
+@@ -2631,6 +2721,8 @@
+             ++camp_geometry_version, ++c.geometry_version;
+             c.state = CampState::alive;
+             restore(c, G, c.respawn_round - 1); // a new version
++            ++camp_returns[g];
++            camp_bound_[g] = 0;
+         }
+         if (c.awake == Awake::awake && round - c.state_round > cambc::constants::camp_sleep_time) c.awake = Awake::unknown;
+         return;
+@@ -2650,8 +2742,11 @@
+     c.version += c.state != previous;
+     c.state_round = round;
+     // Not alive when last seen: it returned at full health after that, and after its timer.
+-    if (c.state == CampState::alive && previous != CampState::alive)
++    if (c.state == CampState::alive && previous != CampState::alive) {
+         restore(c, G, std::max(previous_round, previous_respawn - 1));
++        ++camp_returns[g];
++        camp_bound_[g] = 0;
++    }
+ 
+     // Member health; a visible camp tile with no live camp on it is a dead member. Any drop,
+     // a kill included, is damage, which wakes the group, but if the health is older than a
+@@ -2672,6 +2767,8 @@
+         std::uint32_t version = c.version;
+         bool striker_awake = false, striker_asleep = false, striker_unread = false, woke = false;
+         std::uint64_t read_asleep = 0, read_awake = 0, unseen = 0;
++        std::uint64_t bound = camp_bound_[g];
++        bool risen = false;
+         int harmless = -1, witness = -1;
+         const bool cleared = c.state == CampState::cleared;
+         const int width = map().width;
+@@ -2692,7 +2789,10 @@
+                     continue;
+                 }
+                 const float hp = live ? engine::camp_health(m.handle).value_or(0.0f) : 0.0f;
+-                if (hp < health[i] - 1e-3f) {
++                // A teammate's bound lies up to a step above the truth: only a lower reading is damage.
++                const float slack = (bound & bit) ? m.max_health / camp_health_steps : 0.0f;
++                bound &= ~bit;
++                if (hp < health[i] - slack - 1e-3f) {
+                     // Hit at the earliest just after that reading: the next camp phase counts as occupied,
+                     // so it sleeps at the earliest camp_sleep_time + 1 phases on.
+                     if (now - health_round[i] <= cambc::constants::camp_sleep_time) {
+@@ -2704,8 +2804,11 @@
+                         woke = true;
+                     }
+                 }
+-                if constexpr (live)
++                if constexpr (live) {
+                     if ((hp > 0) != (health[i] > 0)) ++camp_geometry_version, ++c.geometry_version;
++                    // Camps never regenerate: a rise is a new life, captured and returned out of sight.
++                    risen |= hp > health[i] + 1e-3f;
++                }
+                 version += hp != health[i];
+                 health[i] = hp;
+                 health_round[i] = now;
+@@ -2724,6 +2827,8 @@
+         };
+         if (alive) read_members(std::true_type{});
+         else read_members(std::false_type{});
++        camp_bound_[g] = risen ? 0 : bound;
++        if (risen) ++camp_returns[g];
+         debug_block({
+             // The vision boards of awake and asleep camps (unused: a host read per member costs less
+             // than a board read in place) and the not-alive shortcut, against the per-camp reads.
+diff -ru bots/variants/chy-ref/src/model/world.h bots/variants/tcp/src/model/world.h
+--- bots/variants/chy-ref/src/model/world.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/tcp/src/model/world.h	2026-11-13 02:25:26.403554782 +0000
+@@ -431,6 +431,8 @@
+ inline constexpr int altar_lock_range = 2;        // a lock is placed on an altar within this
+ inline int ward_range() { return static_cast<int>(cambc::constants::ward_placement_radius); }
+ inline constexpr int vision_radius = 8;           // a champion's
++// Comms post a camp member's health in this many steps of its max, rounded up (0 only when dead).
++inline constexpr int camp_health_steps = 16;
+ inline constexpr int max_camp_range = 5;          // the rules' camp table: a Monolith's, the longest
+ inline constexpr unsigned shard_price = 30;
+ inline constexpr unsigned shards_per_emblem = 5; // identical shards that combine
+@@ -662,8 +664,20 @@
+         vec2 pos{-1, -1};
+         int round = -1;
+     } expected_sighting, expected_second;
+-    // A teammate saw the group captured, returning at `respawn_round`.
+-    void note_capture(int group, int respawn_round);
++    // A teammate saw the group captured, returning at `respawn_round`. True if our belief changed.
++    bool note_capture(int group, int respawn_round);
++    // A teammate read member `member` of a live group at no more than `health` (0: dead, exact) in
++    // round `seen` or later. Applied only over an older reading of ours, and only as a drop: camps never
++    // regenerate. True if applied.
++    bool note_member_health(int group, int member, float health, int seen);
++    // A teammate saw every member of the group dead and uncaptured in round `seen` or later, held as
++    // given (held_since -1 without a holder). Applied only over an older reading of ours. True if our
++    // belief changed.
++    bool note_cleared(int group, std::optional<team> holder, int held_since, int seen);
++    // By group: the times we saw or inferred it return after a capture. A life's facts are stamped with it.
++    std::vector<std::uint16_t> camp_returns;
++    // Groups with a camp tile in view at the last update(), bit g.
++    const std::vector<std::uint64_t>& groups_in_view() const { return group_visible_; }
+ 
+     void debug_output() const;
+ 
+@@ -822,6 +836,15 @@
+     // Bit g: unseen, update_camps() could still change it (a hold paying out, a return, an
+     // awake group's wakefulness going unknown).
+     std::vector<std::uint64_t> camps_pending_;
++    // By group, bit i: member i's health is a teammate's bound (note_member_health), up to one comms
++    // step above the truth, until we read it: a lower reading within that step is not damage.
++    std::vector<std::uint64_t> camp_bound_;
++    void set_pending(int g, bool on) {
++        if (static_cast<std::size_t>(g) >= 64 * camps_pending_.size()) return;
++        auto& word = camps_pending_[static_cast<std::size_t>(g) >> 6];
++        const std::uint64_t bit = std::uint64_t{1} << (g & 63);
++        word = on ? word | bit : word & ~bit;
++    }
+     struct Tracked {
+         std::uint32_t before, after;
+         int leader, turns, tsf;
+diff -ru bots/variants/chy-ref/src/params.h bots/variants/tcp/src/params.h
+--- bots/variants/chy-ref/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/tcp/src/params.h	2026-11-13 02:27:42.095591773 +0000
+@@ -46,8 +46,9 @@
+ // (draft.cc test_compositions) instead of the model or the tables.
+ constexpr bool test_draft = false;
+ // Each ally but the healers posts its own position in turn, in the shared bytes' free bits, for
+-// Willow's follow (support.cc); off on maps where it does not fit (comms.cc).
+-inline constexpr bool comms_ally = true;
++// Willow's follow (support.cc); off on maps where it does not fit (comms.cc). Off: worth nothing
++// measured, its bits go to camp events.
++inline constexpr bool comms_ally = false;
+ // tools/draftlab/parity.py's copies only: print the model draft's features and team in draft round 0
+ // (debug builds), to compare with features.mjs and model.mjs.
+ constexpr bool draft_parity = false;

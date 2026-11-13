@@ -1,0 +1,198 @@
+diff -ruN -x .cambc -x compile_commands.json bots/variants/chy-ref/src/bot_parts.h bots/variants/h-terr/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 01:55:41.692004138 +0000
++++ bots/variants/h-terr/src/bot_parts.h	2026-11-13 03:36:23.438703394 +0000
+@@ -298,6 +298,10 @@
+ float shielded_clear(float damage, float rounds, float shield, float ready_in = 0);
+ float home_ground(const StaticMap& map, int g, bool first_turn);
+ float home_side(const StaticMap& map, int g, bool first_turn);
++float enemy_presence(const World& world, int g, int end);
++bool enemy_dead(const World& world);
++float home_present(float weight, float presence);
++void refresh_home_weights(const World& world, vec2 here, int capture);
+ float spell_output(const ChampionBelief& c);
+ float basic_output(const ChampionBelief& c);
+ float spell_clear_rounds(const StaticMap& map, int g, const CampBelief& belief, int range, float spells, float basic);
+diff -ruN -x .cambc -x compile_commands.json bots/variants/chy-ref/src/economy/camps.cc bots/variants/h-terr/src/economy/camps.cc
+--- bots/variants/chy-ref/src/economy/camps.cc	2026-11-13 01:55:41.693413067 +0000
++++ bots/variants/h-terr/src/economy/camps.cc	2026-11-13 03:36:46.283657123 +0000
+@@ -659,14 +659,23 @@
+     return weights;
+ }
+ 
++namespace {
++bool enemy_dead_flag = false; // refresh_home_weights' enemy_dead, this turn
++bool enemy_dead_now() { return enemy_dead_flag; }
++struct KeptHome {
++    float weight = -1; // until read
++};
++std::array<KeptHome, 256>& home_cache() {
++    static std::array<KeptHome, 256> cache;
++    return cache;
++}
++} // namespace
++
+ // A group's weight by its side of the map: 1 in our half, falling towards the enemy spawn. Kept
+ // per group. The first turn reads one group's enemy steps; the turn end then decodes them all,
+ // since a play turn's farm weighs nearly every group.
+ float home_ground(const StaticMap& map, int g, bool first_turn) {
+-    struct Kept {
+-        float weight = -1; // until read
+-    };
+-    static std::array<Kept, 256> cache;
++    auto& cache = home_cache();
+     float uncached = -1;
+     auto& weight = static_cast<std::size_t>(g) < cache.size() ? cache[g].weight : uncached;
+     if (weight < 0) {
+@@ -682,11 +691,59 @@
+             const float share = std::min(1.0f, 2.0f * static_cast<float>(from_them) / static_cast<float>(from_us + from_them));
+             weight = std::pow(share, params::home_power);
+         }
+-        if (static_cast<std::size_t>(g) < 256) home_weights()[static_cast<std::size_t>(g)] = weight;
++        // With an enemy dead, farm weighs more than this: the 1 stays until refresh_home_weights.
++        if (static_cast<std::size_t>(g) < 256 && !enemy_dead_now()) home_weights()[static_cast<std::size_t>(g)] = weight;
+     }
+     return weight;
+ }
+ 
++// The share of the enemy's bodies (one each, Cassi and Issac two) that can be at group g by round
++// `end`: all but those dead whose earliest respawn (rules death.respawn) plus the walk from their
++// spawn, on which no step is taken, is later. home_ground's discount prices the enemy team at home.
++float enemy_presence(const World& world, int g, int end) {
++    if (world.enemies.empty()) return 1;
++    const auto& map = world.map();
++    int steps = -1, absent = 0;
++    for (const auto& e : world.enemies) {
++        if (e.alive || e.respawn_earliest < 0) continue;
++        if (steps < 0) {
++            steps = map.enemy_steps(g);
++            if (steps == unreachable) steps = dist(map.enemy_spawn_centre, map.groups[g].centre);
++        }
++        if (e.respawn_earliest + steps > end) ++absent;
++    }
++    return static_cast<float>(static_cast<int>(world.enemies.size()) - absent) / static_cast<float>(world.enemies.size());
++}
++
++bool enemy_dead(const World& world) {
++    for (const auto& e : world.enemies)
++        if (!e.alive && e.respawn_earliest >= 0) return true;
++    return false;
++}
++
++// home_ground's weight with its power scaled by the enemy's presence: weight^presence.
++float home_present(float weight, float presence) {
++    return presence >= 1 ? weight : presence <= 0 ? 1.0f : std::pow(weight, presence);
++}
++
++// home_weights() for this turn: the weights read so far at the presence of a work there ending as
++// soon as our walk and a capture could (no clear), so at least farm's, which add the clear.
++void refresh_home_weights(const World& world, vec2 here, int capture) {
++    static bool scaled = false;
++    const bool dead = enemy_dead_flag = enemy_dead(world);
++    if (!dead && !scaled) return;
++    scaled = dead;
++    const auto& map = world.map();
++    auto& cache = home_cache();
++    const int n = std::min(static_cast<int>(map.groups.size()), static_cast<int>(cache.size()));
++    for (int g = 0; g < n; ++g) {
++        const float weight = cache[static_cast<std::size_t>(g)].weight;
++        if (weight < 0) continue;
++        home_weights()[static_cast<std::size_t>(g)]
++            = dead ? home_present(weight, enemy_presence(world, g, world.round + dist(here, map.groups[g].centre) + capture)) : weight;
++    }
++}
++
+ // Damage spells a turn on camps, spread over their cooldown.
+ float spell_output(const ChampionBelief& c) {
+     float damage = 0;
+diff -ruN -x .cambc -x compile_commands.json bots/variants/chy-ref/src/economy/farm.cc bots/variants/h-terr/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 01:55:41.693702461 +0000
++++ bots/variants/h-terr/src/economy/farm.cc	2026-11-13 03:51:40.700580503 +0000
+@@ -287,6 +287,7 @@
+     int to_spawn = -1;
+     int gap = -1, gap_range = -1; // home_gap, for range gap_range
+     float home = -1;
++    float presence = -1; // enemy_presence when `weight` was read
+     int to_altar = -1;
+     std::uint32_t context = 0, gold_context = 0, version = ~0u;
+     bool sticky = false, planned = false;
+@@ -1476,6 +1477,15 @@
+     // is tested alone, as the larger of the two fails the test exactly when either does.
+     const int capture = capture_rounds(world);
+     const float cap_rounds = static_cast<float>(capture);
++    // The enemy's presence at a group over our work there: our walk (as the crow flies) or its
++    // respawn, its clear alone and the capture, from now. The bounds' work starts at the walk.
++    refresh_home_weights(world, here, capture);
++    const bool enemy_down = enemy_dead(world);
++    const auto presence_of = [&](int g, float fastest) {
++        if (!enemy_down) return 1.0f;
++        const int start = std::max(dist(here, groups[g].centre), respawn_in(world.camps[g]));
++        return enemy_presence(world, g, world.round + start + static_cast<int>(std::ceil(fastest)) + capture);
++    };
+     const float horizon = cycle_horizon(map);
+     const float partner_part = unclaimed_partner_output > 0 ? strength / (strength + unclaimed_partner_output) : 0.0f;
+     const auto rated_below = [&](float worth, float trip, float fastest, float crew) __attribute__((always_inline)) {
+@@ -1784,17 +1794,19 @@
+             if (tight && !banks_bag && !wins && !claimed && barred() && g != farm_group && prunable(g) && (!hop_any || map.group_hop(g) < 0)) {
+                 if (const int near = dist(here, group.centre); !may_help(group, belief, near)) {
+                     auto& kf = group_facts[g];
++                    float fastest;
++                    if (kf.version == belief.version && kf.fastest_strength == strength) fastest = kf.fastest;
++                    else if (belief.version == 0) fastest = group.health / strength;
++                    else kf.version = belief.version, kf.fastest_strength = strength, fastest = kf.fastest = fastest_clear(world, g, strength);
+                     float worth;
+-                    if (kf.context == context && !kf.sticky && kf.gold_context == gold_context) {
++                    // Kept facts only at the presence the facts read, from the same clear.
++                    const bool kept_clear = kf.version == belief.version && kf.fastest_strength == strength;
++                    if (kept_clear && kf.context == context && !kf.sticky && kf.gold_context == gold_context && kf.presence == presence_of(g, fastest)) {
+                         worth = kf.gems + kf.gold + kf.gems * keep_most;
+                     } else {
+                         const float gems = static_cast<float>(std::min(worth_gems[g], short_by));
+                         worth = gems + per_gold * worth_gold[g] + bound_tribute * gems;
+                     }
+-                    float fastest;
+-                    if (kf.version == belief.version && kf.fastest_strength == strength) fastest = kf.fastest;
+-                    else if (belief.version == 0) fastest = group.health / strength;
+-                    else kf.version = belief.version, kf.fastest_strength = strength, fastest = kf.fastest = fastest_clear(world, g, strength);
+                     if (rated_below(worth, soonest(group, belief, pulled_near(g, near)), fastest, crew_most(g, false))) continue;
+                 }
+             }
+@@ -1808,7 +1820,10 @@
+                 continue;
+         }
+         auto& known = group_facts[g];
+-        if (known.context != context || known.sticky != (g == farm_group) || known.planned != (g == planned_now)) {
++        if (known.version != belief.version || known.fastest_strength != strength)
++            known.version = belief.version, known.fastest_strength = strength, known.fastest = fastest_clear(world, g, strength);
++        const float presence = presence_of(g, known.fastest);
++        if (known.context != context || known.sticky != (g == farm_group) || known.planned != (g == planned_now) || known.presence != presence) {
+             if (known.tribute == 0 || known.emblems != emblems) {
+                 known.emblems = emblems;
+                 known.tribute = tribute_turns(world, group.gems);
+@@ -1827,14 +1842,16 @@
+             known.walked_cycle = banks ? static_cast<float>(known.walk) + static_cast<float>(known.tribute) : 0.0f;
+             // From the draft's spawn steps; without a plan, two spawn floods once a game.
+             if (known.home < 0) known.home = home_ground(map, g, opening);
+-            float weight = known.home;
++            const float home = home_present(known.home, presence);
++            float weight = home;
+             // Staying with last turn's choice keeps near ties from turning us back and forth.
+             if (g == farm_group) weight *= stickiness;
+             // The plan's group is weighted on its own: farm's last choice keeps its stickiness, so the two do not trade places.
+             if (g == planned_now) weight *= params::open_plan::weight;
+             // A Monolith's long clear gives the enemy time to steal it: its side counts twice.
+-            if (group.has_monolith) weight *= known.home;
++            if (group.has_monolith) weight *= home;
+             known.weight = weight;
++            known.presence = presence;
+             // A Prospector emblem's extra as if alone on the capture, as the reward is valued.
+             known.gems = weight * static_cast<float>(std::min(group.gems + (prospector ? prospected(group.cluster_gems, 1) : 0), short_by));
+             known.context = context;
+@@ -1848,8 +1865,6 @@
+             known.gold = known.weight * (per_gold * static_cast<float>(gold) + tribute_gold * static_cast<float>(std::min(gems, short_by)));
+             known.gold_context = gold_context;
+         }
+-        if (known.version != belief.version || known.fastest_strength != strength)
+-            known.version = belief.version, known.fastest_strength = strength, known.fastest = fastest_clear(world, g, strength);
+         const float bonus = keep_bonus(group);
+         // Ren's for the rated prunes; its plain ones keep the fastest.
+         const float exposed = exposure(g) * (pull.on && home_side(map, g, opening) < 0.5f ? pull.deny_scale : 1.0f);

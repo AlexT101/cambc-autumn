@@ -1,0 +1,49 @@
+Build 4 conversion probes of the charybdis bot. These are lever probes, so a crude but correct change is fine.
+
+Setup:
+- Worktree: /home/ubuntu/wt/mac13-argo. Read AGENTS.md and cambc-rules.yaml (tribute, stun, altar_locks) first.
+- For each probe, run `./copybot variants/chy-ref variants/pb4-NAME` and edit only its src/.
+- Then write `diff -ru bots/variants/chy-ref/src bots/variants/pb4-NAME/src > research/mac13-argo/patches/pb4-NAME.diff`.
+- Never edit chy-ref (frozen charybdis 525). Leave draft/, picks, emblems and shop alone. Commit nothing.
+
+WHY. These are mirror games of chy-ref against itself.
+- Once the eventual winner first reaches 1000 wealth (tributed + carried), the finishing phase takes a median 29
+  rounds but a mean of 124, and the bag holder is channelling 71% of that time.
+- Completion by starting bag:
+  | starting bag | completed |
+  |---|---|
+  | 100-199 | 65% |
+  | 300-499 | 32% |
+  | 500-799 | 21% |
+  | 800+ | 5% |
+- The winner's Prism starts 4.7 bags of 500+ a game, and 11% of them complete. Stops: stun 45%, self 23%, lock 20%.
+- Under a per-turn stop hazard h, a channel of L turns with restarts takes ((1-h)^-L - 1)/h rounds, which grows
+  exponentially in L. So smaller final bags convert much faster.
+- A variant that waited for safe windows before long channels lost 4.4 points. It slowed conversion by 77 rounds
+  and completed no more channels, so conversion SPEED is a lever.
+- Today the Prism keeps its whole bag for Focus (economy/bank.cc keeps_gems) until winning_bag() or closing(). So
+  its last channel is ~550-900 gems, 55-90 turns.
+
+PROBES
+1. pb4-chunk300: once our team wealth (score.ally + our bodies' bags, as bank.cc reads them: race_left_now and
+   gems_short have the pieces) is >= 700, the Prism stops keeping gems whenever its bag is >= 300. It banks through
+   the normal bank path (banks_bag / bankable_bag / tribute_ok), as any non-Prism body would.
+2. pb4-chunk150: the same with a bag >= 150, from team wealth >= 600.
+3. pb4-eager: a winning-bag channel (winning_bag() true) of any length is started and kept at any risk, as any_risk()
+   already allows for short ones and for the round limit. The only exception: drop it if we would be killed before
+   it ends, keeping tribute_ok's kill test for the turns left as in CHANGES 525. It is also started at the nearest
+   reachable altar as soon as we reach one.
+4. pb4-eager-rich: pb4-eager, plus: once the team's wealth is >= 1000, every non-Prism body with >= 30 gems banks
+   at once (bag floor ignored), so its gems land in short parallel channels.
+
+VERIFY
+- Build all four.
+- Spawn ONE read-only auditor subagent and tell it NOT to edit. Fix what it finds.
+- Smoke each:
+  `source ~/venv/bin/activate && cd /home/ubuntu/wt/mac13-argo && CAMBC_BIN=/home/ubuntu/cambc-autumn/tools/fastengine/runner/fastrunner FASTRUNNER_MODE=native PATH=$HOME/.cargo/bin:$PATH py tools/ab.py variants/pb4-NAME variants/chy-ref --no-test-draft --fuel 200000 --name mac13-argo-smoke-pb4-NAME`
+  - That is 256 games. Run it in tmux sessions named mac13-argo-smoke-pb4-*, at most 2 at once.
+  - Requirements: no failed games, no DRAFT-UNFINISHED or PLAN-CHECK, out-of-fuel turns near chy-ref's.
+- Delete the smoke batch dirs afterwards.
+
+STOP CONDITION: built, audited, smoked, patches written. Report each probe's smoke win rate and a one-line
+description, plus anything not implemented as specified.

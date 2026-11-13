@@ -1,0 +1,104 @@
+diff -ru bots/variants/c7-pgem/src/economy/shop.cc bots/variants/c6-v3/src/economy/shop.cc
+--- bots/variants/c7-pgem/src/economy/shop.cc	2026-11-13 01:55:39.942678841 +0000
++++ bots/variants/c6-v3/src/economy/shop.cc	2026-11-13 06:58:20.142809474 +0000
+@@ -725,14 +725,31 @@
+     return t;
+ }
+ 
++// Our times home: turns starting on our spawn after one that ended off it (a recall, a walk home or a respawn),
++// over our turns alive, with a prior of one visit every visit_prior rounds (chy-ref's Prism against an idle
++// enemy on the study maps: 5.6 recalls by round 600, 2026-11-13).
++constexpr float visit_prior = 107;
++struct HomeVisits {
++    int visits = 0;
++};
++HomeVisits home_visits;
++float visit_rounds() { return (static_cast<float>(upkeep.turns) + visit_prior) / static_cast<float>(home_visits.visits + 1); }
++
+ // The stop's value as home_trip prices it for an empty bag: the heal, and the next emblem once our
+-// gold completes it; nothing once the end is close.
++// gold completes it; nothing once the end is close. Prism: a purchase skipped at this stop is not lost but made at our next time home, on average `visit_rounds`
++// later (home_visits), and it saves gain / T a round over the T rounds our farming has left: the stop's purchase
++// is worth what buying then would forgo, gain x min(1, visit_rounds / T).
+ FarmRecall farm_recall(const World& world, Pathing& pathing, int channel) {
+     FarmRecall r{channel, my_health() < my_max_health() ? 1 : 0, 0.0f};
+     if (closing(world, pathing)) return r;
+     r.value = heal_rounds_now(world);
+     if (shops_at_home(world))
+-        if (const auto& p = prices(world); my_gold() >= p.next.cost && std::isfinite(p.gain)) r.value += p.gain;
++        if (const auto& p = prices(world); my_gold() >= p.next.cost && std::isfinite(p.gain)) {
++            float due = 1;
++            if (world.me().facts().passive == Passive::gem_focus)
++                if (const float horizon = gems_share(world) * rounds_per_gem; horizon > 0) due = std::min(1.0f, visit_rounds() / horizon);
++            r.value += p.gain * due;
++        }
+     return r;
+ }
+ 
+@@ -741,6 +758,8 @@
+ // emptied by a completed tribute is skipped).
+ void note_income_start(const World& world) {
+     const std::uint32_t gems = my_gems(), gold = my_gold();
++    if (const auto& spawn = world.map().ally_spawn; test(spawn, my_position()) && income.end_pos.x >= 0 && !test(spawn, income.end_pos))
++        ++home_visits.visits;
+     if (income.end_round == world.round - 1 && gems >= income.gems_at && (gems > income.gems_at || gold > income.gold_at))
+         if (const int g = world.map().group_at(income.end_pos); g >= 0) {
+             const auto& G = world.map().groups[g];
+@@ -771,6 +790,20 @@
+     income.end_round = world.round, income.gems_at = gems, income.gold_at = gold, income.end_pos = my_position();
+ }
+ 
++bool awake_here(const World& world, vec2 here) {
++    bool awake = false;
++    world.each_stirring([&](int g) { awake = awake || awake_over(world, g, here); });
++    return awake;
++}
++
++// Our gold a turn alive: capture and kill gold paid at our bonuses, prior-weighted as income_rates.
++float gold_income(const World& world) {
++    const auto& prior = income_prior(world.map());
++    const float turns = static_cast<float>(upkeep.turns) + prior_rounds_per_gem * income_prior_gems;
++    const float kills = world.me().facts().heals() ? 0.0f : prior_kills_per_gem * static_cast<float>(kill_base_gold);
++    return gold_paid(world) * (income.capture_gold + income.kill_gold + (prior.gold + kills) * income_prior_gems) / turns;
++}
++
+ // With no bag to bank and the gold to complete the next emblem (Prism: any shard), home to shop when
+ // what it buys and the heal save outweigh the trip: there by recall unless walking is quicker, and
+ // back out.
+@@ -787,17 +820,31 @@
+         const int back = pathing.to_ally_spawn().at(here);
+         if (back == unreachable) return false;
+         const int hurt = my_health() < my_max_health() ? 1 : 0;
+-        const float value = params::shop_gain_scale * affordable_prefix(world).gain + heal_rounds_now(world);
+-        if (!std::isfinite(value) || !(value > static_cast<float>(std::min(back, recall_turns(world) + hurt) + back))) return false;
++        const int there = std::min(back, recall_turns(world) + hurt);
++        // The trip's rounds beyond the way to the next work anyway: back out to farm's group, not here.
++        float trip = static_cast<float>(there + back);
++        if (const int g = memory.farm_group; g >= 0 && g < static_cast<int>(world.camps.size()))
++            if (const auto* centre = pathing.centre_field(g))
++                if (const int walk = centre->at(here), out = pathing.centre_to_spawn(g); walk != unreachable && out != unreachable)
++                    trip = std::min(trip, static_cast<float>(std::max(0, there + out - walk)));
++        // The heal pays its part of the trip; the purchase, the rest.
++        const float cost = std::max(0.0f, trip - heal_rounds_now(world));
++        if (cost <= 0) return !awake_here(world, here);
++        // When to go, with gold still arriving: the purchase saves `gain` rounds over the horizon T our farming has
++        // left, s = gain / G a gold spent, so gold held unspent forgoes h = s / T rounds a gold-round, and a trip of
++        // `cost` rounds at our gold income D is best made at the economic order quantity sqrt(2 cost D / h):
++        // G >= it, gain G >= 2 cost D T. The last trip of the game only needs gain > cost.
++        const auto quote = affordable_prefix(world);
++        const float gold = static_cast<float>(quote.count * shard_price);
++        const float horizon = gems_share(world) * rounds_per_gem;
++        if (!std::isfinite(quote.gain) || !(quote.gain > cost) || !(quote.gain * gold >= 2.0f * cost * gold_income(world) * horizon)) return false;
+     } else {
+         const auto stop = home_trip(world, pathing, recall_turns(world), winning_bag(world));
+         if (stop.short_gold > 0) return false;
+         const int back = pathing.to_ally_spawn().at(here);
+         if (back != unreachable && stop.heal + params::shop_gain_scale * affordable_prefix(world).gain < static_cast<float>(std::min(back, stop.channel + stop.hurt) + back)) return false;
+     }
+-    bool awake = false;
+-    world.each_stirring([&](int g) { awake = awake || awake_over(world, g, here); });
+-    return !awake;
++    return !awake_here(world, here);
+ }
+ 
+ // Our gems collected per turn alive, prior-weighted as income_rates.

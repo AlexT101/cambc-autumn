@@ -1,0 +1,9 @@
+A/B mac13-argo-pb5-avoid160: CAND variants/pb5-avoid160 (dir) vs REF variants/chy-ref (dir)
+  probe2: running, log replays/ab/mac13-argo-pb5-avoid160/probe2.log
+CAND 49.6% of 5120 (2541-2579), 95% CI 48.3-51.0
+  probe2  49.6% of 5120 (2541-2579), 95% CI 48.3-51.0
+Failed matches: 0
+Out-of-fuel turns: CAND 300 in 196 games, REF 308 in 201 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 3m27s
+Results: replays/ab/mac13-argo-pb5-avoid160/summary.md

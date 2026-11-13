@@ -1,0 +1,493 @@
+diff --git a/bots/variants/chy-ref/src/bot.h b/bots/variants/sel-intel/src/bot.h
+index ac8d87c9f..3e0a6aed9 100644
+--- a/bots/variants/chy-ref/src/bot.h
++++ b/bots/variants/sel-intel/src/bot.h
+@@ -12,6 +12,7 @@ struct Memory {
+     float damage = 0;  // taken since, as of this turn's start (net of heals)
+     bool banking = false; // our bag headed for an altar rather than another capture last turn
+     int farm_group = -1;  // farm's latest choice: kept when near tied, walked to on short fuel
++    float farm_rate = 0;  // its value (camps.cc rate) when chosen: what a round of our farm earns
+     int open_step = 0;    // our next step of the draft's opening plan (farm open_plan_choice)
+     int recall_farm = -1; // farm_group, while a recall reaches it sooner by way of spawn (recall_to_farm)
+     int claim = -1;       // the group we told allies we work towards, or -1
+diff --git a/bots/variants/chy-ref/src/economy/bank.cc b/bots/variants/sel-intel/src/economy/bank.cc
+index 2aa0453ac..4684024c8 100644
+--- a/bots/variants/chy-ref/src/economy/bank.cc
++++ b/bots/variants/sel-intel/src/economy/bank.cc
+@@ -1121,8 +1121,9 @@ bool wake_ring(const World& world, Pathing& pathing, Safety& safety) {
+             if (e.channel == Channel::tribute && e.channel_end_round <= world.round) continue; // banked
+             const vec2 p = e.teleport_pending() ? e.tp_dest : e.pos;
+             if (!in_bounds(p) || !test(h.pocket, p)) continue;
++            // A teammate's told tile is a grid cell's centre, not where it stands.
+             if (!e.visible
+-                && (test(world.visible, p)
++                && (e.pos_source == Source::comms || test(world.visible, p)
+                     || world.round >= (e.seen_channel == Channel::recall ? e.channel_end_round : e.pos_round + e.recall_turns())))
+                 continue;
+             prey = &e, at = p;
+diff --git a/bots/variants/chy-ref/src/economy/farm.cc b/bots/variants/sel-intel/src/economy/farm.cc
+index 14d0908ac..afa74d623 100644
+--- a/bots/variants/chy-ref/src/economy/farm.cc
++++ b/bots/variants/sel-intel/src/economy/farm.cc
+@@ -646,6 +646,75 @@ void drop_carry_claim(Memory& memory) {
+     memo.carry_group = -1;
+ }
+ 
++// The enemy Prism, priced into the farm choice: working a group within its reach risks our death at
++// the measured hazard (params::duel). For our Prism the hazard is by the duel's openings: each side
++// opens with its damage spells at its Focus and the basic attacks of the turns it gets before the
++// reply (two after a stun, which takes the victim's turn), and the spells come back once a cooldown,
++// so a kill takes ceil(health / opening) openings.
++struct DuelPrice {
++    const ChampionBelief* enemy = nullptr; // null: nothing priced this turn
++    float hazard = 0; // chance we are killed working within its reach
++    float loss = 0;   // what our death costs, in worth: the bag, and the respawn's rounds of our farm
++    float tiles = 0;  // its possible tiles
++    int reach = 0;    // its stun's range, and a walk more on a double turn
++};
++
++float duel_opening(const ChampionBelief& c, float target_taken) {
++    float spells = 0;
++    bool stuns = false;
++    for (const auto& a : c.facts().abilities) {
++        if (a.kind == AbilityKind::damage || a.lands()) spells += a.multiplier;
++        stuns |= a.stuns;
++    }
++    return (spells * c.focus + static_cast<float>(stuns ? 2 : 1) * c.strength) * c.scale * target_taken;
++}
++
++DuelPrice duel_price(const World& world, const Memory& memory) {
++    DuelPrice d;
++    const auto& me = world.me();
++    const int bag = static_cast<int>(my_gems());
++    if (!params::duel::on || !me.alive || (me.facts().passive != Passive::gem_focus && bag < params::duel::carrier_bag)) return d;
++    const ChampionBelief* e = nullptr;
++    for (const auto& x : world.enemies)
++        if (x.facts().passive == Passive::gem_focus) e = &x;
++    // Fresh information only: `possible` is informative while tracked, within track_horizon of a
++    // sighting, ours or a teammate's.
++    if (!e || !e->alive || !e->tracked) return d;
++    if (me.facts().passive == Passive::gem_focus) {
++        const float on_us = duel_opening(*e, me.taken), on_them = duel_opening(me, e->taken);
++        if (!(on_us > 0)) return d;
++        const float ours = std::ceil((my_health() + me.shield) / on_us);
++        const float theirs = on_them > 0 ? std::ceil((e->health + e->shield) / on_them) : ours + 1;
++        d.hazard = ours < theirs ? params::duel::lose_hazard : ours == theirs ? params::duel::even_hazard : 0.0f;
++    } else {
++        d.hazard = params::duel::carrier_hazard;
++    }
++    if (d.hazard <= 0) return d;
++    d.tiles = static_cast<float>(board_count(e->possible));
++    if (!(d.tiles > 0)) return d;
++    const auto& f = e->facts();
++    d.reach = std::max({f.stun_range[0], f.stun_range[1], f.attack_range()}) + 1;
++    d.loss = static_cast<float>(bag) + static_cast<float>(cambc::constants::respawn_time) * std::max(0.0f, memory.farm_rate);
++    d.enemy = e;
++    return d;
++}
++
++// The chance we are killed working group g: the hazard, at the share of its possible tiles within its
++// reach of where we work it (its camp tiles and, while it lives, our attack range around them).
++float duel_hazard(const World& world, const DuelPrice& d, int g) {
++    const auto& G = world.map().groups[static_cast<std::size_t>(g)];
++    static std::vector<std::int16_t> radius; // by group: its farthest camp tile from the centre
++    if (radius.size() != world.map().groups.size()) radius.assign(world.map().groups.size(), -1);
++    auto& r = radius[static_cast<std::size_t>(g)];
++    if (r < 0) {
++        int most = 0;
++        for (const auto& m : G.members) most = std::max(most, dist(m.pos, G.centre));
++        r = static_cast<std::int16_t>(most);
++    }
++    const auto n = possible_count_within(*d.enemy, G.centre, r + walk_range(world, g) + d.reach);
++    return d.hazard * static_cast<float>(n) / d.tiles;
++}
++
+ template <bool opening, bool banking = false, bool repricing = false> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ [[gnu::noinline]] bool farm_banking(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+@@ -1054,6 +1123,16 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+     int best = -1, best_steps = unreachable, risky = -1, risky_steps = unreachable, shared = -1, shared_steps = unreachable;
+     bool best_spell = false;
+     float best_value = 0, risky_value = 0, shared_value = 0;
++    // Each choice's value less the duel's expected loss there; the prunes' bounds leave it out, so
++    // they stay upper bounds.
++    const DuelPrice duel_now = duel_price(world, memory);
++    // The loop's own choice as it would be without the duel's price: taken when every priced value
++    // fell to 0 or below, since idling in its reach is worse than working (the share is for traces).
++    int raw_best = -1, raw_best_steps = unreachable;
++    bool raw_best_spell = false;
++    float raw_best_value = 0;
++    [[maybe_unused]] int duel_groups = 0, raw_shared = -1;
++    [[maybe_unused]] float raw_shared_value = 0;
+     // How the best and the share were priced, for the traces and the proposal: mode (S alone, K
+     // kited, C crew, J joining), our extra trips home, the crew's tank, its expected allies, its output.
+     struct Priced {
+@@ -2014,6 +2093,8 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+         // Solo, kited and as the crew's proposer the Focus is in the worth (a crew's part of it, as of
+         // the rest); joining, the share is of `plain` and the Focus is added whole.
+         const float plain = gems + gold - toll, worth = plain + carried;
++        const float duel = duel_now.enemy ? duel_now.loss * duel_hazard(world, duel_now, g) : 0.0f;
++        debug_block({ duel_groups += duel > 0; });
+         // Health past what we can spare costs trips home, each a recall and the walk back out. By
+         // way of spawn we arrive healed.
+         const float budget = by_spawn ? usable_health : trip_spare;
+@@ -2088,8 +2169,13 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+             if (carry > 0 && my_health() - (kite_hit ? kite_hits() : damage) < params::hurt_health_fraction * max_health) carry = 0, hold = 0;
+             // No capture rounds but a keeping Prism's: the claimer holds it, and the crew moves on once it is cleared.
+             // A crew we are in holds us against small pulls: one member leaving shrinks it for the rest.
+-            const float value = rate(world, plain * part + carry, trip + rounds + hold + trips_home(static_cast<float>(trips)))
++            const float value = rate(world, plain * part + carry - duel, trip + rounds + hold + trips_home(static_cast<float>(trips)))
+                                 * (op && memory.claim == g ? crew_hold(g) : 1.0f);
++            debug_block({
++                const float raw = rate(world, plain * part + carry, trip + rounds + hold + trips_home(static_cast<float>(trips)))
++                                  * (op && memory.claim == g ? crew_hold(g) : 1.0f);
++                if (raw > raw_shared_value && !too_late(rounds) && !(kite_hit && kite_hits() > spare_health)) raw_shared = g, raw_shared_value = raw;
++            });
+             // Only a better share counts, and the final pick takes none a group of our own beats.
+             if (g == memory.mono_group) mono_seen = value;
+             if ((value < shared_value || (value == shared_value && !earlier(g, shared))) || (best >= 0 && value <= best_value) || too_late(rounds))
+@@ -2132,17 +2218,21 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+             const bool cast = kite >= 0 && (damage > spare_health || kite < rounds + heal(g, damage));
+             if (cast) damage = 0, rounds = kite;
+             if (too_late(rounds)) continue;
+-            float value = rate(world, worth, trip + rounds + capture);
++            float value = rate(world, worth - duel, trip + rounds + capture);
++            float raw = duel > 0 ? rate(world, worth, trip + rounds + capture) : value;
+             if (damage > spare_health && unclaimed_partner_output > 0 && alive) {
+                 float joint_rounds = 0;
+                 const float part = strength / (strength + unclaimed_partner_output);
+-                if (soften * min_camp_damage(world, g, strength + unclaimed_partner_output, &joint_rounds) * part <= spare_health)
+-                    damage = 0, value = rate(world, worth * part, trip + joint_rounds + capture);
++                if (soften * min_camp_damage(world, g, strength + unclaimed_partner_output, &joint_rounds) * part <= spare_health) {
++                    damage = 0, value = rate(world, worth * part - duel, trip + joint_rounds + capture);
++                    raw = duel > 0 ? rate(world, worth * part, trip + joint_rounds + capture) : value;
++                }
+             }
+             if (damage > spare_health && !ally_engaged(world, g)) {
+                 if (value > risky_value || (value == risky_value && earlier(g, risky))) risky = g, risky_value = value, risky_steps = steps;
+                 continue;
+             }
++            if (raw > raw_best_value) raw_best = g, raw_best_value = raw, raw_best_steps = steps, raw_best_spell = cast;
+             if (value > best_value || (value == best_value && earlier(g, best)))
+                 best = g, best_value = value, best_steps = steps, best_spell = cast, best_priced = {cast ? 'K' : 'S', 0, -1, 0, strength, damage};
+             if (banks_bag && walk_out != unreachable) {
+@@ -2174,7 +2264,8 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+         // A Monolith is a crew's only: alone, the walk there is often given up for nearer camps on
+         // the way, and a lone chip only softens it for whoever comes next.
+         bool late = too_late(clear_rounds) || (group.has_monolith && belief.state != CampState::cleared);
+-        float value = late ? 0.0f : rate(world, worth, trip + clear_rounds + capture + trips_home(static_cast<float>(trips)));
++        float value = late ? 0.0f : rate(world, worth - duel, trip + clear_rounds + capture + trips_home(static_cast<float>(trips)));
++        float raw = late || duel <= 0 ? value : rate(world, worth, trip + clear_rounds + capture + trips_home(static_cast<float>(trips)));
+         // Banking: the cycle from the altar after the tribute (from_altar_value's candidate).
+         const float via_altar = banks_bag && walk_out != unreachable && belief.state == CampState::respawning
+                                     ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk_out) - bank_now) : 0.0f;
+@@ -2225,13 +2316,15 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+                 // way gives way to joining it rather than split the free allies.
+                 const float hold = memory.claim == g ? crew_hold(g)
+                                    : plan.claimers == 0 && rival_op() ? params::crew_rival_factor : 1.0f;
+-                const float crew_value = rate(world, worth * part, trip + plan.rounds + capture + trips_home(static_cast<float>(my_trips))) * hold;
++                const float crew_value = rate(world, worth * part - duel, trip + plan.rounds + capture + trips_home(static_cast<float>(my_trips))) * hold;
++                if (duel > 0) raw = std::max(raw, rate(world, worth * part, trip + plan.rounds + capture + trips_home(static_cast<float>(my_trips))) * hold);
+                 debug_block({
+                     if (group.has_monolith && round % 25 == 0)
+                         std::printf("MONO VALUE %d %u g%d worth %.0f part %.2f trip %.0f rounds %.0f trips %d home %.0f crew %d+%d output %.0f value %.4f best-so-far %.4f\n",
+                                     round, my_handle(), g, worth, part, trip, plan.rounds, my_trips, trips_home(1), plan.claimers, plan.n_expected,
+                                     plan.output, crew_value, best_value);
+                 });
++                if (duel <= 0) raw = std::max(raw, crew_value);
+                 if (crew_value > value) {
+                     value = crew_value, late = false, spell = false;
+                     clear_rounds = plan.rounds, trips = my_trips, share = worth * part;
+@@ -2241,12 +2334,23 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+         }
+         if (g == memory.mono_group) mono_seen = value;
+         if (late) continue;
++        if (raw > raw_best_value) raw_best = g, raw_best_value = raw, raw_best_steps = steps, raw_best_spell = spell;
+         if (value > best_value || (value == best_value && earlier(g, best)))
+             best = g, best_value = value, best_steps = steps, best_spell = spell, best_priced = priced;
+         if (banks_bag && walk_out != unreachable) from_altar_value = std::max(from_altar_value, altar_rate(share, clear_rounds, trips));
+     }
+     read_g = -1;
+     if (k < evaluated) note_shortcut("farm-partial-evaluation");
++    debug_block({
++        if (duel_now.enemy && !repricing) {
++            const int pick = shared >= 0 && (best < 0 || shared_value > best_value) ? shared : best;
++            const int raw_pick = raw_shared >= 0 && (raw_best < 0 || raw_shared_value > raw_best_value) ? raw_shared : raw_best;
++            std::printf("DUELPICK %d %u prism %d hazard %.3f loss %.0f groups %d pick %d raw %d visible %d age %d told %d bag %u\n", round, my_handle(),
++                        world.me().facts().passive == Passive::gem_focus ? 1 : 0, duel_now.hazard, duel_now.loss, duel_groups, pick, raw_pick,
++                        duel_now.enemy->visible ? 1 : 0, round - duel_now.enemy->fixed.round,
++                        duel_now.enemy->pos_source == Source::comms ? 1 : 0, my_gems());
++        }
++    });
+     need_zone();
+     // An ally's hold that pays more with us on it: the rounds we then hold free the holder, worth
+     // what our best cycle earns a round, so the walk is what it costs.
+@@ -2376,6 +2480,8 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+     if (banks_bag && attack_in_range()) return true;
+     if (world.is_stale()) return true;
+     if (best < 0 && risky >= 0) best = risky, best_steps = risky_steps, best_value = risky_value, best_priced = Priced{'r'};
++    if (best < 0 && shared < 0 && raw_best >= 0)
++        best = raw_best, best_steps = raw_best_steps, best_spell = raw_best_spell, best_priced = Priced{raw_best_spell ? 'K' : 'S'};
+     const int prev_claim = memory.claim;
+     const bool prev_crew = memory.crew;
+     memory.claim = best;
+@@ -2435,6 +2541,9 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
+         return true;
+     }
+     memory.farm_group = best;
++    if constexpr (!repricing) {
++        if (const float v = std::max(best_value, shared_value); v > 0) memory.farm_rate = v;
++    }
+     if (farm_monolith(world, best) && memory.claim == best) {
+         if (memory.mono_group != best) {
+             memory.mono_group = best, memory.mono_staged = -1, memory.mono_since = round, memory.mono_taken = 0;
+diff --git a/bots/variants/chy-ref/src/model/comms.cc b/bots/variants/sel-intel/src/model/comms.cc
+index 059344778..385110d67 100644
+--- a/bots/variants/chy-ref/src/model/comms.cc
++++ b/bots/variants/sel-intel/src/model/comms.cc
+@@ -16,6 +16,12 @@ namespace {
+ // teammate derives the same layout. Least significant first:
+ //   claims    one field per ally index: its claimed group + 1, 0 for none
+ //   bag       bag in fours, rounded up, * team + carrying ally's index
++//   prism     facing an enemy Prism only: 0 = none, else 1 + (cell * 8 + stamp) * 16 + Focus level, of
++//             the latest sighting of it by any of us: a c x c square (c odd: 1, 3 or 5) centred on its
++//             tile, the stamp 2 * (round mod 4) + whether it had acted, the Focus on a log scale
++//             (prism_focus_levels, or none: one level); the finest grid that leaves room for the camp and
++//             ally records (with the Focus, then without), else for the camp record (likewise), else the
++//             finest that fits alone; left out when none fits
+ //   camp      0 = none, else 1 + offset[captured group] + its respawn round mod period[group];
+ //             left out (never posted) when it does not fit
+ //   ally      0 = none, else 1 + cell * 4 team + 4 ally index + round mod 4 (params::comms_ally): a
+@@ -34,6 +40,8 @@ struct BitField {
+ };
+ 
+ constexpr int max_group = (1 << 8) - 1; // groups from here on are never posted or claimed
++// The posted Prism Focus: level q is focus0 x 2^(q / 5), so 16 levels span 8x its base at ~7% error.
++constexpr int prism_focus_levels = 16;
+ // A posted respawn round lies within a group's respawn of the post, which a reader reads within a
+ // round; the slack covers a reader that missed this many turns (out of fuel).
+ constexpr int camp_slack = 16;
+@@ -50,6 +58,13 @@ struct Layout {
+     BitField ally;
+     std::uint64_t ally_bits = 0;
+     int cell = 1, cells_y = 1;
++    bool prism_on = false;
++    int prism_enemy = -1; // its index among the enemies
++    BitField prism;
++    std::uint64_t prism_bits = 0;
++    int prism_cell = 1, prism_cells_y = 1;
++    float prism_focus0 = 1; // level 0's Focus: the Prism's base
++    int prism_levels = prism_focus_levels; // 1: no Focus posted
+     int period(int g) const { return camp_offset[g + 1] - camp_offset[g]; }
+ };
+ 
+@@ -78,9 +93,35 @@ Layout layout_;
+     for (int i = 0; i < L.team; ++i) L.claim[static_cast<std::size_t>(i)] = field(claim_width);
+     L.bag = field(bag_width);
+     const int camp_width = static_cast<int>(std::bit_width(static_cast<std::uint64_t>(L.camp_offset.back())));
++    // Only a healer's team posts allies' positions (send).
++    bool with_ally = false;
++    for (const auto& a : world.allies) with_ally |= a.facts().heals();
++    with_ally &= params::comms_ally;
++    // A team cannot repeat its own pick: at most one enemy Prism.
++    for (const auto& e : world.enemies)
++        if (e.facts().passive == Passive::gem_focus) L.prism_enemy = e.index, L.prism_focus0 = e.facts().focus.base;
++    if (L.prism_enemy >= 0) {
++        const auto cells_of = [&](int c) {
++            return static_cast<std::uint64_t>((map.width + c - 1) / c) * static_cast<std::uint64_t>((map.height + c - 1) / c);
++        };
++        const auto width = [&](int c, int levels) { return width_of(cells_of(c) * 8 * static_cast<std::uint64_t>(levels) + 1); };
++        // The ally record at its coarsest, laid out only for a team with a healer.
++        const int ally_least = with_ally ? width_of(cells_of(5) * 4 * static_cast<std::uint64_t>(L.team) + 1) : 0;
++        int pick = -1, levels = prism_focus_levels;
++        for (const auto [others, n] : {std::pair{camp_width + ally_least, prism_focus_levels}, std::pair{camp_width + ally_least, 1},
++                                       std::pair{camp_width, prism_focus_levels}, std::pair{camp_width, 1}, std::pair{0, prism_focus_levels}})
++            for (const int c : {1, 3, 5})
++                if (pick < 0 && shift + width(c, n) + others <= 64) pick = c, levels = n;
++        if (pick > 0) {
++            L.prism_cell = pick, L.prism_cells_y = (map.height + pick - 1) / pick;
++            L.prism_levels = levels;
++            L.prism = field(width(pick, levels));
++            L.prism_on = true;
++        }
++    }
+     L.camp_on = shift + camp_width <= 64;
+     if (L.camp_on) L.camp = field(camp_width);
+-    if (params::comms_ally && L.camp_on)
++    if (with_ally && L.camp_on)
+         for (const int c : {1, 3, 5}) {
+             const auto cells = static_cast<std::uint64_t>((map.width + c - 1) / c) * static_cast<std::uint64_t>((map.height + c - 1) / c);
+             const int width = width_of(cells * 4 * static_cast<std::uint64_t>(L.team) + 1);
+@@ -91,9 +132,14 @@ Layout layout_;
+             break;
+         }
+     L.ally_bits = L.ally.mask;
++    L.prism_bits = L.prism.mask;
+     L.bag_bits = L.bag.mask;
+     L.camp_bits = L.camp.mask;
+     L.ready = true;
++    debug_block({
++        std::printf("LAYOUT %d %u team %d groups %d prism %d cell %d camp %d ally %d bits %d levels %d\n", world.round, my_handle(), L.team, groups,
++                    L.prism_enemy >= 0 ? 1 : 0, L.prism_on ? L.prism_cell : 0, L.camp_on ? 1 : 0, L.ally_on ? 1 : 0, shift, L.prism_levels);
++    });
+ }
+ 
+ const Layout& layout(const World& world) {
+@@ -120,6 +166,28 @@ struct Told {
+ };
+ std::array<Told, 8> told_allies;
+ 
++// The Prism record now in the bits, as we last read or wrote it: its sighting's round (-1 unknown) and
++// whether the Prism had acted then.
++struct PrismPost {
++    int round = -1;
++    bool acted = false;
++} prism_post;
++
++constexpr float prism_level_ratio = 1.14869835f; // 2^(1 / 5)
++
++int prism_level(const Layout& L, float focus) {
++    int q = 0;
++    // Rounded in log space: each level's upper edge lies half a step above it.
++    for (float edge = L.prism_focus0 * 1.07177346f; q < L.prism_levels - 1 && focus >= edge; edge *= prism_level_ratio) ++q;
++    return q;
++}
++
++float prism_focus(const Layout& L, int q) {
++    float f = L.prism_focus0;
++    for (int i = 0; i < q; ++i) f *= prism_level_ratio;
++    return f;
++}
++
+ support_mailbox::State support;
+ int support_intent_round = -1;
+ bool support_intent_value = false;
+@@ -163,7 +231,7 @@ void write_bits(std::uint64_t bits, int round) {
+ std::uint64_t changes(const Layout& L, std::uint64_t bits) {
+     const auto x = bits ^ state.last;
+     const auto whole = [x](std::uint64_t mask) { return (x & mask) ? mask : 0; };
+-    return whole(L.bag_bits) | whole(L.camp_bits) | whole(L.ally_bits);
++    return whole(L.bag_bits) | whole(L.camp_bits) | whole(L.ally_bits) | whole(L.prism_bits);
+ }
+ 
+ // A nonzero capture record's group, and the respawn round it encodes: the first from our previous
+@@ -200,6 +268,23 @@ std::pair<int, int> decode_capture(const Layout& L, std::uint64_t record) {
+                                                             std::min(cell % L.cells_y * L.cell + h, world.map().height - 1)},
+                                                            round - ((round - kind) & 3)};
+     }
++    if (const auto v = L.prism.get(bits); L.prism_on && (state.fresh & L.prism_bits) && v != 0) {
++        const auto code = v - 1;
++        const auto levels = static_cast<std::uint64_t>(L.prism_levels);
++        const int q = static_cast<int>(code % levels), stamp = static_cast<int>(code / levels % 8);
++        const int cell = static_cast<int>(code / (levels * 8)), c = L.prism_cell;
++        // Written since our previous read: within 3 rounds of it, round mod 4 dates it exactly.
++        const int previous = state.last_round;
++        if (previous >= 0 && round - previous <= 3) {
++            prism_post = {round - ((round - (stamp >> 1)) & 3), (stamp & 1) != 0};
++            const vec2 at{std::min(cell / L.prism_cells_y * c + c / 2, world.map().width - 1),
++                          std::min(cell % L.prism_cells_y * c + c / 2, world.map().height - 1)};
++            world.note_told(L.prism_enemy, at, c / 2, prism_post.round, prism_post.acted, L.prism_levels > 1 ? prism_focus(L, q) : -1.0f);
++            debug_block({ std::printf("PRISMTOLD %d %u age %d cell %d\n", round, my_handle(), round - prism_post.round, c); });
++        } else {
++            prism_post = {};
++        }
++    }
+     if (const auto record = L.camp.get(bits); (state.fresh & L.camp_bits) && record != 0) {
+         const auto [g, respawn] = decode_capture(L, record);
+         world.note_capture(g, respawn);
+@@ -269,6 +354,23 @@ void send(World& world, bool moved, bool refresh) {
+         }
+     }
+ 
++    // Our sighting of the enemy Prism (ours or our ward's), when newer than the posted one: a later
++    // round, or the same after its turn there.
++    if (L.prism_on) {
++        const auto& e = world.enemies[static_cast<std::size_t>(L.prism_enemy)];
++        // Not while a teleport or a kept recall moves it farther than readers' walking growth allows.
++        if (e.alive && e.visible && e.stats_round == round && in_bounds(e.pos) && e.channel != Channel::teleport && !real_recall(e)
++            && (prism_post.round < round || (prism_post.round == round && !prism_post.acted && e.acted))) {
++            const int c = L.prism_cell;
++            const auto cell = static_cast<std::uint64_t>(e.pos.x / c * L.prism_cells_y + e.pos.y / c);
++            const auto stamp = static_cast<std::uint64_t>((round & 3) << 1 | (e.acted ? 1 : 0));
++            L.prism.set(bits, 1 + (cell * 8 + stamp) * static_cast<std::uint64_t>(L.prism_levels) + static_cast<std::uint64_t>(prism_level(L, e.focus)));
++            prism_post = {round, e.acted};
++            dirty = true;
++            debug_block({ std::printf("PRISMPOST %d %u cell %d\n", round, my_handle(), c); });
++        }
++    }
++
+     // Bags change at captures, kills, deaths and tributes. A bag not yet read at our previous turn
+     // may not have reached every teammate: ours waits. Turn order changes every round, so a
+     // teammate can miss a bag overwritten before its next turn: each in turn re-posts its own.
+diff --git a/bots/variants/chy-ref/src/model/world.cc b/bots/variants/sel-intel/src/model/world.cc
+index a3febc34d..eff1427c4 100644
+--- a/bots/variants/chy-ref/src/model/world.cc
++++ b/bots/variants/sel-intel/src/model/world.cc
+@@ -2119,6 +2119,30 @@ void World::note_sighting(int enemy_index, vec2 pos, int seen_round, float healt
+     track(b);
+ }
+ 
++void World::note_told(int enemy_index, vec2 centre, int half, int seen_round, bool acted, float focus) {
++    if (enemy_index < 0 || enemy_index >= static_cast<int>(enemies.size()) || !in_bounds(centre) || round - seen_round > params::track_horizon) return;
++    auto& b = enemies[enemy_index];
++    const Moment told{seen_round, acted ? Moment::end : -1};
++    if (!b.alive || b.visible || seen_round < b.pos_round || (b.tracked && !(b.fixed < told))) return;
++    // A teleport we saw under way lands where we expect it; the teammate's tile would undo that.
++    if (b.seen_channel == Channel::teleport && b.channel_end_round >= seen_round) return;
++    b.pos = centre;
++    b.pos_round = seen_round;
++    b.pos_source = Source::comms;
++    if (b.stats_round < seen_round && focus > 0) b.focus = focus;
++    if (half <= 0) {
++        fix(b, centre, told);
++    } else {
++        copy_into(within(map().open_for_them, centre, half), b.possible);
++        b.possible_box.set(centre);
++        b.possible_box.grow(half);
++        mark_fixed(b, told);
++        b.fixed_tile = {-1, -1};
++        b.lineage = 0;
++    }
++    track(b);
++}
++
+ void World::camp_moved(std::size_t g) {
+     ++camps_version;
+     if (camps_dirty.size() <= g / 64) camps_dirty.resize(g / 64 + 1);
+diff --git a/bots/variants/chy-ref/src/model/world.h b/bots/variants/sel-intel/src/model/world.h
+index bdb6e43ea..2e6abeb71 100644
+--- a/bots/variants/chy-ref/src/model/world.h
++++ b/bots/variants/sel-intel/src/model/world.h
+@@ -655,6 +655,11 @@ public:
+     // Merge a teammate's sighting (from comms), with health as a share of max; ignored if not
+     // fresher than ours.
+     void note_sighting(int enemy_index, vec2 pos, int round, float health);
++    // A teammate's sighting (comms) of an enemy within `half` of `centre` in `seen_round`, after its
++    // turn there if `acted`, with its Focus then (none if not above 0): fixed there (the square's open tiles) and tracked
++    // to now, as our own sightings are, but never visible. Ignored unless fresher than ours and
++    // within track_horizon.
++    void note_told(int enemy_index, vec2 centre, int half, int seen_round, bool acted, float focus);
+     // The sighting comms::receive merges after the next update, if any: that enemy is fixed then,
+     // so the update does not track it first.
+     struct Sighting {
+diff --git a/bots/variants/chy-ref/src/params.h b/bots/variants/sel-intel/src/params.h
+index d8ae6e752..0a145bfe9 100644
+--- a/bots/variants/chy-ref/src/params.h
++++ b/bots/variants/sel-intel/src/params.h
+@@ -257,6 +257,16 @@ inline constexpr float efficiency_power = 1.4653788f;
+ // group's walk as steps - pull_lam * max(0, steps - pull_c * mirror_steps), mirror_steps from the mirror of our
+ // tile; enemy-side groups' worth weighs 1 + deny_w; and a lost chase is taken against a carrier of bar_bag or more
+ // while we last bar turns, with the other allies (up to two) within pack_radius.
++// Farm prices working within the enemy Prism's reach (economy/farm.cc duel_price): for our Prism, and
++// for any of us carrying at least carrier_bag gems (an empty-handed death costs little).
++namespace duel {
++inline constexpr bool on = true;
++inline constexpr int carrier_bag = 100;
++// Measured on charybdis mirrors (1,024 games, research/mac13-selene): P(killed by the enemy Prism within
++// 10 rounds | within 5 of it), for our Prism by the duel's openings (lose: it needs fewer to kill us;
++// even; win: none), and for other carriers of 100+ gems.
++inline constexpr float lose_hazard = 0.267f, even_hazard = 0.059f, carrier_hazard = 0.099f;
++} // namespace duel
+ namespace comeback {
+ inline constexpr int enemy_min = 400, gap = 150, gap_off = 100;
+ inline constexpr float pull_c = 1.0f, pull_lam = 1.0f;

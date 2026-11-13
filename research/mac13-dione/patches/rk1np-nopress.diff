@@ -1,0 +1,12 @@
+diff -ru '--exclude=.cambc' bots/variants/rk1np/src/params.h bots/variants/rk1np-nopress/src/params.h
+--- bots/variants/rk1np/src/params.h	2026-11-13 08:17:37.009493964 +0000
++++ bots/variants/rk1np-nopress/src/params.h	2026-11-13 09:31:05.699642574 +0000
+@@ -297,7 +297,7 @@
+ // press_taken's escape plan (escape::min_fuel) and its walk's lethal reads come on top of the turn's own work.
+ namespace press {
+ inline constexpr int min_window = 2;
+-inline constexpr std::uint64_t min_fuel = 60000;
++inline constexpr std::uint64_t min_fuel = ~std::uint64_t{0}; // ablation: the press is never weighed
+ } // namespace press
+ // Fuel left below which safety's refinements fall back to the reads they refine: a stun's follow-up in lethal(),
+ // coming_casts' ranking in retreat, the lethal reads of reached escape steps. Each lethal() then costs ~1k again.

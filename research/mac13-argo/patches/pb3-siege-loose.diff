@@ -1,0 +1,48 @@
+diff -ru bots/variants/chy-ref/src/economy/siege.cc bots/variants/pb3-siege-loose/src/economy/siege.cc
+--- bots/variants/chy-ref/src/economy/siege.cc	2026-11-13 01:55:39.400671530 +0000
++++ bots/variants/pb3-siege-loose/src/economy/siege.cc	2026-11-13 05:28:19.321968264 +0000
+@@ -115,17 +115,19 @@
+         // A big group our kite works stays the kite's: melee at its camps would wake it on the casters.
+         if (map.shared_gems && kite_owns(world, g)) return;
+         const auto& c = world.camps[g];
++        // Probe pb3-siege-any: every Monolith is a candidate, as on Monolith-only maps.
++        const bool mono_any = map.monolith_only || map.groups[g].has_monolith;
+         // Off Monolith-only maps a live Monolith counts only if it seals, the enemy is sieging it, the
+         // team clears it in a burst or it is hit from home (home_siege). Members of farm's crew
+         // operation on a Monolith stay farm's (allies join an operation through farm, so an ally's
+         // claim alone is no siege).
+-        if (!map.monolith_only && !seal && farm_op) return;
+-        const bool join = !map.monolith_only && !seal && c.state == CampState::alive && c.awake != Awake::asleep
++        if (!mono_any && !seal && farm_op) return;
++        const bool join = !mono_any && !seal && c.state == CampState::alive && c.awake != Awake::asleep
+                           && (enemy_in_reach(world, g) || (memory.siege && memory.claim == g));
+-        const bool burst = !map.monolith_only && !seal && !join && c.state == CampState::alive
++        const bool burst = !mono_any && !seal && !join && c.state == CampState::alive
+                            && siege_load(world, g).health <= power() * static_cast<float>(params::burst_rounds);
+         const bool home = !seal && !join && home_siege(world, g);
+-        if (!map.monolith_only && !seal && !join && !burst && !home && c.state != CampState::cleared) return;
++        if (!mono_any && !seal && !join && !burst && !home && c.state != CampState::cleared) return;
+         const int wait = c.state == CampState::respawning ? c.respawn_round - world.round : 0;
+         if (wait > params::siege_respawn_wait) return;
+         if (c.state == CampState::cleared && c.holder == team::enemy) return;
+@@ -161,7 +163,10 @@
+ bool siege_ready(const World& world, const SiegeTarget& target, const SiegeLoad& load, bool committed, TeamPower& team) {
+     if (load.health <= 0) return true;
+     float power = team();
+-    float limit = world.map().monolith_only || target.sealing || target.joining ? params::siege_rounds
++    // Probe pb3-siege-loose: siege_rounds and siege_pool_share x1.5 here.
++    constexpr float loose = 1.5f;
++    float limit = world.map().monolith_only || world.map().groups[target.g].has_monolith || target.sealing || target.joining
++                      ? loose * static_cast<float>(params::siege_rounds)
+                   : target.bursting ? params::burst_rounds : 0;
+     if (target.home) {
+         // Only bodies on its stands hit it for free: the output those stands hold.
+@@ -200,7 +205,7 @@
+     // A live member hit from a spawn stand whose fire the sturdiest of us, standing there, outlasts for
+     // a phase costs no health: the turn end there heals it (rules rounds.turn_end; home_free).
+     const float hit = std::max(0.0f, fire - home_free(world, target.g, range, survivable)) * params::siege_hit_share;
+-    if (rounds * hit <= params::siege_pool_share * pool * slack) return true;
++    if (rounds * hit <= loose * params::siege_pool_share * pool * slack) return true;
+     // Past the pool, heal trips (heal_trip, from the group's nearest stand off spawn): the health a
+     // body brings above where siege() sends it home (a phase of the group's fire for each step out of
+     // its reach or home, and its strongest hit) costs it a trip's rounds of output, which slows the clear.

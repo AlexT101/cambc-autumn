@@ -1,0 +1,21 @@
+diff -ru bots/variants/chy-ref/src/bot.cc bots/variants/k17-nolock/src/bot.cc
+--- bots/variants/chy-ref/src/bot.cc	2026-11-13 01:55:42.268220790 +0000
++++ bots/variants/k17-nolock/src/bot.cc	2026-11-13 08:35:09.263425375 +0000
+@@ -321,14 +321,12 @@
+     if (step) pathing.try_move(*step);
+ }
+ 
+-// Buys what we may here: consumables on our spawn or dead, shards there too or anywhere for Tavi.
+-// The crystal first: an altar only it reaches holds our bags, and shards could spend its gold.
++// Buys what we may here: the crystal on our spawn or dead, shards there too or anywhere for Tavi; never a lock
++// (k17 probe). The crystal first: an altar only it reaches holds our bags, and shards could spend its gold.
+ // True if shards changed our stats.
+ bool shop(const World& world, const Memory& memory, bool consumables, bool shards) {
+     if (consumables) buy_crystal(memory);
+-    const bool bought = shards && buy_shards(world);
+-    if (consumables) buy_lock();
+-    return bought;
++    return shards && buy_shards(world);
+ }
+ 
+ // The strike search's walk, hits and casts, then the heal and shield it left. True if it attacked.

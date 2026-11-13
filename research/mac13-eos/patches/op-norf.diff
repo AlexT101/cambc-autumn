@@ -1,0 +1,44 @@
+diff -ru bots/variants/chy-ref/src/economy/bank.cc bots/variants/op-norf/src/economy/bank.cc
+--- bots/variants/chy-ref/src/economy/bank.cc	2026-11-13 01:55:41.153190600 +0000
++++ bots/variants/op-norf/src/economy/bank.cc	2026-11-13 02:32:53.355198181 +0000
+@@ -1411,6 +1411,7 @@
+ // too) and no enemy can cancel it.
+ bool recall_to_farm(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, int g) {
+     if (g < 0 || g != memory.farm_group || g >= static_cast<int>(world.camps.size()) || memory.siege) return false;
++    if (world.round <= params::probe_opening_end) return false; // probe op-norf
+     const vec2 here = my_position();
+     if (safety.threatened(here) || !recall_outruns(safety)) {
+         debug_block({ std::printf("RFWHY %d %u threat %d\n", world.round, my_handle(), static_cast<int>(safety.threatened(here))); });
+diff -ru bots/variants/chy-ref/src/economy/farm.cc bots/variants/op-norf/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 01:55:41.153695176 +0000
++++ bots/variants/op-norf/src/economy/farm.cc	2026-11-13 02:32:53.357184277 +0000
+@@ -1025,7 +1025,8 @@
+     // way. Not where the recall would be cancelled or not started, nor out of a pocket (its own way).
+     // Carrying too (a recall keeps the gems), with the bag's walk to an altar then from the group.
+     // While repricing, our own recall is the one channelling.
+-    const bool recall_out = !in_pocket && !stunned_turn && !memory.siege
++    // probe op-norf: no recall out to a group in the opening, so none is priced (nor chosen, kept or repriced).
++    const bool recall_out = world.round > params::probe_opening_end && !in_pocket && !stunned_turn && !memory.siege
+                             && !test(map.ally_spawn, here) && (repricing || !channelling()) && !safety.threatened(here)
+                             && recall_outruns(safety, repricing ? static_cast<int>(my_channel_time()) : recall_turns(world));
+     const FarmRecall via_recall = recall_out ? farm_recall(world, pathing, repricing ? static_cast<int>(my_channel_time()) : recall_turns(world)) : FarmRecall{};
+@@ -1273,7 +1274,7 @@
+     };
+     // After the tribute, the walk out from the altar or a recall and the walk from spawn.
+     const auto altar_out = [&](int g, int walk) __attribute__((always_inline)) {
+-        if (walk == unreachable) return walk;
++        if (walk == unreachable || world.round <= params::probe_opening_end) return walk; // probe op-norf: walked out in the opening
+         const int out = spawn_steps(g);
+         return out == unreachable ? walk : std::min(walk, recall_turns(world) + out);
+     };
+diff -ru bots/variants/chy-ref/src/params.h bots/variants/op-norf/src/params.h
+--- bots/variants/chy-ref/src/params.h	2026-11-13 01:55:41.155695203 +0000
++++ bots/variants/op-norf/src/params.h	2026-11-13 02:32:41.964309114 +0000
+@@ -313,4 +313,7 @@
+ inline constexpr int steps = 6;
+ } // namespace open_plan
+ 
++// Diagnostic probe (research/mac13-eos): the last round of the opening whose mechanism this variant removes.
++inline constexpr int probe_opening_end = 200;
++
+ } // namespace aph::params

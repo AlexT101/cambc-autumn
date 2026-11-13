@@ -1,0 +1,32 @@
+diff -ru bots/variants/chy-ref/src/economy/capture.cc bots/variants/pb2-funnel-off/src/economy/capture.cc
+--- bots/variants/chy-ref/src/economy/capture.cc	2026-11-13 01:55:39.400671530 +0000
++++ bots/variants/pb2-funnel-off/src/economy/capture.cc	2026-11-13 04:24:31.026368107 +0000
+@@ -473,6 +473,7 @@
+ // Prism sure to come in time we keep: Prism held up on the way would otherwise have us leave it as it is
+ // about to pay.
+ Leave leave_for_prism(const World& world, Pathing& pathing, int g, const LeftRecord& left) {
++    if (true) return Leave::no; // probe pb2-funnel-off
+     static int kept_group = -1, kept_since = -1;
+     const auto& map = world.map();
+     const auto& G = map.groups[g];
+@@ -854,6 +855,7 @@
+ // holder and the allies step off (yield_capture) with the tiles never empty; after it, they have
+ // left it to us (left_for_prism). In `timer` the rounds to the payout.
+ bool prism_takeover(const World& world, Safety& safety, const CampGroup& G, int& timer, bitboard& goal) {
++    if (true) return false; // probe pb2-funnel-off: Prism never takes over an ally's hold
+     if (G.gems <= 0 || G.has_monolith || enemy_seen(world) || test(G.tiles(), my_position()) || sole_capture_holder(world, G)) return false;
+     bool held = false;
+     for (const auto& a : world.allies) {
+diff -ru bots/variants/chy-ref/src/economy/farm.cc bots/variants/pb2-funnel-off/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 01:55:39.400671530 +0000
++++ bots/variants/pb2-funnel-off/src/economy/farm.cc	2026-11-13 04:36:26.266855457 +0000
+@@ -2326,7 +2326,8 @@
+     // makes us its sole holder (sole_capture_holder) at their payout, else it is left to us once cleared
+     // (left_for_prism) for a whole hold of ours. A group the claimers fill is not taken: its hold can't be
+     // handed over. Posted as the carry ('G', 'L'), so a turn off the way withdraws it.
+-    if (keeps && !banks_bag && !memory.banking && !enemy_seen(world) && my_health() >= params::hurt_health_fraction * max_health) {
++    // Probe pb2-funnel-off: no 'Q', whose capture an ally's claimers would yield to us at their payout.
++    if (false && keeps && !banks_bag && !memory.banking && !enemy_seen(world) && my_health() >= params::hurt_health_fraction * max_health) {
+         const int bag = static_cast<int>(my_gems()), winning = static_cast<int>(cambc::constants::winning_gems);
+         std::array<int, 8> asked;
+         int n_asked = 0;

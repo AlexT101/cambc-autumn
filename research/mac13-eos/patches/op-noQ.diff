@@ -1,0 +1,22 @@
+diff -ru bots/variants/chy-ref/src/economy/capture.cc bots/variants/op-noQ/src/economy/capture.cc
+--- bots/variants/chy-ref/src/economy/capture.cc	2026-11-13 01:55:41.153190600 +0000
++++ bots/variants/op-noQ/src/economy/capture.cc	2026-11-13 02:32:53.355003608 +0000
+@@ -955,6 +955,7 @@
+     if (!wins && (retaining_gems(world, pathing) || (prism && prism->is_self && !enemy_may_see(world, here)))) {
+         // A bag kept off the altar: only Prism rides home, when the shop and heal there outweigh
+         // the rounds the trip costs.
++        if (world.round <= params::probe_opening_end) return false; // probe op-noQ
+         if (world.me().facts().passive != Passive::gem_focus || !shops_at_home(world) || winning_bag(world)
+             || closing(world, pathing) || !recall_outruns(safety) || enemy_on(world, G.tiles()))
+             return false;
+diff -ru bots/variants/chy-ref/src/params.h bots/variants/op-noQ/src/params.h
+--- bots/variants/chy-ref/src/params.h	2026-11-13 01:55:41.155695203 +0000
++++ bots/variants/op-noQ/src/params.h	2026-11-13 02:32:41.950690822 +0000
+@@ -313,4 +313,7 @@
+ inline constexpr int steps = 6;
+ } // namespace open_plan
+ 
++// Diagnostic probe (research/mac13-eos): the last round of the opening whose mechanism this variant removes.
++inline constexpr int probe_opening_end = 200;
++
+ } // namespace aph::params

@@ -1,0 +1,9 @@
+A/B mac13-argo-via-final-fin4: CAND variants/via-final (dir) vs REF variants/chy-ref (dir)
+  fin4: running, log replays/ab/mac13-argo-via-final-fin4/fin4.log
+CAND 50.4% of 5120 (2582-2538), 95% CI 49.1-51.8
+  fin4  50.4% of 5120 (2582-2538), 95% CI 49.1-51.8
+Failed matches: 0
+Out-of-fuel turns: CAND 305 in 218 games, REF 335 in 239 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 2m23s
+Results: replays/ab/mac13-argo-via-final-fin4/summary.md

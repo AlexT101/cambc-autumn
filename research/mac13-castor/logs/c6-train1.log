@@ -1,0 +1,9 @@
+A/B mac13-castor-c6-train1: CAND variants/c6-prism (dir) vs REF variants/chy-ref (dir)
+  train: running, log replays/ab/mac13-castor-c6-train1/train.log
+CAND 53.5% of 10240 (5478-4762), 95% CI 52.5-54.5
+  train  53.5% of 10240 (5478-4762), 95% CI 52.5-54.5
+Failed matches: 0
+Out-of-fuel turns: CAND 764 in 494 games, REF 674 in 425 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 15m42s
+Results: replays/ab/mac13-castor-c6-train1/summary.md

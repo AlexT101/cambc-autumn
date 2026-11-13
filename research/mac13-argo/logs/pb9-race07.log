@@ -1,0 +1,9 @@
+A/B mac13-argo-pb9-race07: CAND variants/pb9-race07 (dir) vs REF variants/chy-ref (dir)
+  probe2: running, log replays/ab/mac13-argo-pb9-race07/probe2.log
+CAND 49.9% of 5120 (2557-2563), 95% CI 48.6-51.3
+  probe2  49.9% of 5120 (2557-2563), 95% CI 48.6-51.3
+Failed matches: 0
+Out-of-fuel turns: CAND 308 in 199 games, REF 323 in 206 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 10m25s
+Results: replays/ab/mac13-argo-pb9-race07/summary.md

@@ -1,0 +1,282 @@
+diff -ru bots/variants/chy-ref/src/bot.cc bots/variants/pkg-end/src/bot.cc
+--- bots/variants/chy-ref/src/bot.cc	2026-11-13 01:55:39.398989147 +0000
++++ bots/variants/pkg-end/src/bot.cc	2026-11-13 07:01:56.763462895 +0000
+@@ -422,7 +422,25 @@
+     fixc_bush_threatened = false;
+     if (!world.me().can_act(world.round)) return;
+     fixc_bush_threatened = fixc_bush_threat(world, safety);
+-    if (const auto* ender = game_ender(world); ender && holds_hard_stop(world, *ender)) {
++    const auto* ender = game_ender(world);
++    const bool goes = ender && onestop_goes(world, pathing, *ender);
++    // Probe pb4-eager: a winning bag at an altar starts its channel before any fight, support or retreat,
++    // unless we would be killed before it ends (tribute_ok). Not after continue_tribute cancelled ours this
++    // turn, nor while an enemy's winning tribute that lands first waits on our stop: continue_tribute's test,
++    // onestop's stopper included, so a channel kept and one started agree.
++    if (!stunned_turn && !state.contains(cambc::champion_state::submitting_gems) && winning_bag(world)
++        && banks_bag(world, pathing) && can_tribute_safely(world, pathing, safety, memory)) {
++        const auto* stop = goes ? ender : stoppable_winning_tribute(world);
++        if (!stop || ally_stops(world, *stop)) {
++            // Acting before the channel starts is free: the basic attack and its reset first.
++            if (attack_enemy(world)) reset_and_attack_enemy(world);
++            decision = Branch::bank;
++            memory.banking = true;
++            bank_gems(world, pathing, safety, memory, false);
++            return;
++        }
++    }
++    if (goes) {
+         stop_game_ender(world, pathing, memory, *ender);
+         return;
+     }
+diff -ru bots/variants/chy-ref/src/bot_parts.h bots/variants/pkg-end/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 01:55:39.399032918 +0000
++++ bots/variants/pkg-end/src/bot_parts.h	2026-11-13 06:09:27.669032534 +0000
+@@ -356,6 +356,7 @@
+ const ChampionBelief* game_ender(const World& world);
+ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e);
+ bool holds_hard_stop(const World& world, const ChampionBelief& e);
++bool onestop_goes(const World& world, Pathing& pathing, const ChampionBelief& e);
+ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ 
+ // economy/comeback.cc: cooked comebacks.
+diff -ru bots/variants/chy-ref/src/combat/fight.cc bots/variants/pkg-end/src/combat/fight.cc
+--- bots/variants/chy-ref/src/combat/fight.cc	2026-11-13 01:55:39.399251641 +0000
++++ bots/variants/pkg-end/src/combat/fight.cc	2026-11-13 07:01:56.763825420 +0000
+@@ -1210,6 +1210,8 @@
+     std::optional<Moment> win;
+     const ChampionBelief* best = nullptr;
+     int best_steps = unreachable;
++    const ChampionBelief* tribute = nullptr; // probe onestop: the nearest qualifying tribute we can stop
++    int tribute_steps = unreachable;
+     for (const auto& e : world.enemies) {
+         if (!e.alive || !e.visible) continue;
+         const bool tributing = e.channel == Channel::tribute;
+@@ -1229,8 +1231,13 @@
+                 debug_block({ std::printf("ENDER-WALK %d %u\n", world.round, static_cast<unsigned>(world.me().handle)); });
+             }
+         }
+-        if (const int steps = intercept_steps(world, e, *here); steps < best_steps) best = &e, best_steps = steps;
++        const int steps = intercept_steps(world, e, *here);
++        if (steps < best_steps) best = &e, best_steps = steps;
++        if (tributing && steps < tribute_steps && holds_hard_stop(world, e)) tribute = &e, tribute_steps = steps;
+     }
++    // Probe onestop: a winning tribute we hold a hard stop for comes before a nearer walking carrier (its
++    // pair's other body), as the stoppers' ranking assumes of every holder.
++    if (tribute && tribute != best) return tribute;
+     return best;
+ }
+ 
+@@ -1243,6 +1250,147 @@
+     return tribute_altar(world, e.pos) >= 0 && carried_locks() > 0;
+ }
+ 
++// Probe onestop: whether we walk in on the ender's tribute while holding a hard stop, or play on as if it
++// were not there. Each body ranks every body by the round its stop could land, its cooldown's wait included
++// (ties by index): the first goes, the second too when the first has no spare turn, and a ready stun landing
++// this turn always goes. Allies are read from above (unseen: their posted tile's worst, an unseen cast, a
++// teleport), on fields every body builds alike, never earlier than their own reading: the body truly first
++// ranks itself first, so someone goes. With none that lands in time, or two enders (each body takes its
++// nearest), every holder goes as before.
++bool onestop_goes(const World& world, Pathing& pathing, const ChampionBelief& e) {
++    if (!holds_hard_stop(world, e)) return false;
++    const auto& self = world.me();
++    const bool stunnable = e.facts().passive != Passive::stun_immune;
++    // Cancelling our tribute or recall frees the walk.
++    const auto state = my_state();
++    const bool walk = my_can_move() || state.contains(cambc::champion_state::submitting_gems) || state.contains(cambc::champion_state::recalling);
++    if (stunnable && dist(my_position(), e.pos) <= self.ready_stun_reach(world.round, walk)) return true;
++    for (const auto& o : world.enemies)
++        if (&o != &e && o.alive && o.visible && o.channel == Channel::tribute && enemy_tribute_wins(world, o)) return true;
++    // The ranking, once a turn: read again only after we moved.
++    static int kept_round = -1;
++    static std::uint32_t kept_ender = 0;
++    static vec2 kept_at{-1, -1};
++    static bool kept = false;
++    const vec2 here = my_position();
++    if (kept_round == world.round && kept_ender == static_cast<std::uint32_t>(e.handle) && kept_at == here) return kept;
++    kept_round = world.round, kept_ender = static_cast<std::uint32_t>(e.handle), kept_at = here;
++    kept = true;
++    const auto& map = world.map();
++    const int altar = tribute_altar(world, e.pos);
++    const int end = e.channel_end_round;
++    // Walking fields over the static walls every body shares (a dasher's own would read walkers short), cut
++    // off past any walk that lands in time: farther is unlabelled, as out of time.
++    const int layers = std::max(0, end - world.round) + vision_radius + 2;
++    static bitboard sight{cambc::uninitialized}, goal{cambc::uninitialized}, square{cambc::uninitialized};
++    static std::optional<Field> to_ender, to_lock;
++    map.sight_off_bushes_into(e.pos, vision_radius, sight); // the tiles that see it: sight is symmetric
++    clear_board(goal);
++    goal.set(e.pos);
++    // Labels past the cut are unreachable, as a partial field is kept (make_field's capped form drops it).
++    const auto capped = [&](std::optional<Field>& f, const bitboard& goals) {
++        static bitboard visited{cambc::uninitialized};
++        f.reset();
++        f.emplace();
++        not_into(map.blocked_for_us, f->goals);
++        f->goals &= goals;
++        f->steps.compute_with_expansion_count(map.blocked_for_us, f->goals, visited, static_cast<std::uint16_t>(std::min<int>(layers, unreachable)));
++    };
++    capped(to_ender, goal);
++    if (altar >= 0) capped(to_lock, map.altars[altar].tribute_tiles());
++    else to_lock.reset();
++    const auto at = [](const std::optional<Field>& f, vec2 p) { return f ? f->at(p) : unreachable; };
++    const int need = static_cast<int>(cambc::constants::winning_gems) - world.score.ally;
++    int bags = 0; // every ally's bag, from above: a body whose bag may win first races instead of stopping
++    for (const auto& a : world.allies)
++        if (a.alive) bags += a.is_self ? static_cast<int>(my_gems()) : a.visible ? a.gems : comms::bag_of(world, a.index);
++    // The round a body's stop lands, from its next turn r0: a stun once it holds one for its next turn
++    // (holds_hard_stop: it walks only then), `steps` its walk onto the ender's tile; a lock placed after the
++    // turn's step, `lock_steps` its walk to the altar's tribute tiles. unreachable without one.
++    const auto lands = [&](const ChampionFacts& f, int r0, const std::array<int, 2>& ready, int steps, int lock_steps, bool lock) {
++        int k = unreachable;
++        if (stunnable && steps != unreachable)
++            for (int s = 0; s < 2; ++s)
++                if (const int reach = f.stun_reach_with_walk(s); reach >= 0) {
++                    const int wait = std::max(0, ready[s] - 1 - r0);
++                    k = std::min(k, std::max(wait + std::max(0, steps - reach), ready[s] - r0));
++                }
++        if (lock && lock_steps != unreachable) k = std::min(k, std::max(0, lock_steps - altar_lock_range));
++        return k == unreachable ? unreachable : r0 + k;
++    };
++    struct Eta {
++        int round, index;
++        bool operator<(const Eta& o) const { return round != o.round ? round < o.round : index < o.index; }
++    };
++    std::array<Eta, 8> etas;
++    int n = 0;
++    std::optional<Eta> mine;
++    if (int r = lands(self.facts(), world.round, self.ready_round, at(to_ender, here), at(to_lock, here), carried_locks() > 0);
++        r <= last_round_before_channel_ends(world, e))
++        mine = etas[static_cast<std::size_t>(n++)] = {r, self.index};
++    constexpr int teleport_reach = 3; // a crystal's landing, from the channel's tile
++    const int lock_id = static_cast<int>(cambc::detail::raw_consumable_ids[static_cast<std::size_t>(cambc::consumable_type::altar_lock)]);
++    for (const auto& a : world.allies) {
++        if (a.is_self || !a.alive || n >= static_cast<int>(etas.size())) continue;
++        const int bag = a.visible ? a.gems : comms::bag_of(world, a.index);
++        if (bag > 0 && bags >= need) continue;
++        int round = unreachable;
++        if (a.visible) {
++            if (held_by_channel(a) || !test(sight, a.pos)) continue;
++            int r0 = a.acted ? world.round + 1 : world.round;
++            if (!a.can_act(r0)) ++r0;
++            if (a.stun_pending) ++r0;
++            bool lock = false;
++            if (to_lock) {
++                std::array<std::uint32_t, 4> counts{};
++                lock = cambc::detail::sdk_champion_consumables(static_cast<std::uint32_t>(a.handle), counts.data()) == 0
++                       && counts[static_cast<std::size_t>(lock_id)] > 0;
++            }
++            round = lands(a.facts(), r0, a.ready_round, at(to_ender, a.pos), at(to_lock, a.pos), lock);
++        } else {
++            // Its stun may hold a cast unseen this round: read ready at round + ability_cooldown, it lands no
++            // sooner, never before us then. Its tile as posted (to within 2) or seen, a round old at most, up to
++            // a dash a round since and a teleport's 3, each of which must see the ender; a teleport may hold
++            // its next turns, and its locks are not read.
++            if (mine && mine->round < world.round + ability_cooldown) continue;
++            vec2 from{-1, -1};
++            int told = -1, slack = 0;
++            if (params::comms_ally && comms::told_ally(a.index, from, told) && told >= world.round - 1 && told > a.pos_round)
++                slack = 2 + dash_range * (world.round - told) + teleport_reach;
++            else if (a.pos_source == Source::seen && a.pos_round >= world.round - 1 && in_bounds(a.pos))
++                from = a.pos, slack = dash_range * (world.round - a.pos_round + 1) + teleport_reach; // it may have acted since
++            else
++                continue;
++            clear_board(square);
++            draw_square(square, from, static_cast<float>(slack));
++            and_into(square, map.open_for_us, square);
++            static bitboard unseen{cambc::uninitialized};
++            copy_into(square, unseen);
++            drop(unseen, sight);
++            if (!board_empty(unseen)) continue;
++            int steps = -1;
++            for (auto t : Tiles<15 * 15>{square}) steps = std::max(steps, at(to_ender, t));
++            if (steps < 0 || steps == unreachable) continue;
++            const int r0 = world.round + 1 + cambc::constants::tp_crystal_time;
++            std::array<int, 2> ready = a.ready_round;
++            for (auto& r : ready) r = std::max(r, world.round + ability_cooldown);
++            round = lands(a.facts(), r0, ready, steps, unreachable, false);
++        }
++        if (round == unreachable || round > end - 1) continue;
++        etas[static_cast<std::size_t>(n++)] = {round, a.index};
++    }
++    if (n == 0) return kept = true; // none lands in time by our reading: every holder tries, as before
++    if (!mine) return kept = false;
++    // pkg-end: a bag of ours that may win ranks us last, as every ally reads us (it races instead).
++    if (my_gems() > 0 && bags >= need && n > 1) return kept = false;
++    std::sort(etas.begin(), etas.begin() + n);
++    const int rank = static_cast<int>(std::find_if(etas.begin(), etas.begin() + n, [&](const Eta& x) { return x.index == mine->index; }) - etas.begin());
++    // The second goes when the first's stop, read from above, leaves no spare turn before the channel ends.
++    const bool backup = rank == 1 && etas[0].round + 1 > end - 1;
++    debug_block({ std::printf("ONESTOP %d %u rank %d of %d lands %d first %d end %d%s\n", world.round, static_cast<unsigned>(self.handle), rank, n, mine->round, etas[0].round, end, backup ? " backup" : ""); });
++    return kept = rank == 0 || backup;
++}
++
+ // Into reach of the enemy whose bag ends the game, whatever the risk: a stun or a lock if it is
+ // tributing, else attacks, followed until it stops at an altar.
+ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e) {
+diff -ru bots/variants/chy-ref/src/economy/bank.cc bots/variants/pkg-end/src/economy/bank.cc
+--- bots/variants/chy-ref/src/economy/bank.cc	2026-11-13 01:55:39.400484737 +0000
++++ bots/variants/pkg-end/src/economy/bank.cc	2026-11-13 06:53:09.931137558 +0000
+@@ -912,11 +912,10 @@
+ bool banks_bag(const World& world, Pathing& pathing) { return bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing); }
+ 
+ // A tribute started or kept now is the bag's last chance to score, or wins the game while fleeing
+-// gives the enemy time to win first: take it at any risk. Not a long winning channel: standing
+-// that long beside an enemy hands it the bag, so it waits for a safe window like any other.
++// gives the enemy time to win first: take it at any risk. Probe pb4-eager: a winning channel of any
++// length; its kill tests stay (tribute_ok, and take_hop's for the crystal and the ring).
+ bool any_risk(const World& world, int channel_turns) {
+-    return (winning_bag(world) && channel_turns <= params::tribute_window)
+-           || rounds_left(world) <= channel_turns + endgame_slack;
++    return winning_bag(world) || rounds_left(world) <= channel_turns + endgame_slack;
+ }
+ 
+ // A channel still running at the round limit scores nothing.
+@@ -1026,9 +1025,11 @@
+               bool bold) {
+     const auto& hop = world.map().hops()[h];
+     if (test(hop.sources, my_position())) {
+-        if (!bold && !tribute_safe(safety, memory, cambc::constants::tp_crystal_time)) return false;
++        // Probe pb4-eager: a winning bag's boldness waives only the watched landing, not the kill tests.
++        const bool kill_tests = !bold || winning_bag(world);
++        if (kill_tests && !tribute_safe(safety, memory, cambc::constants::tp_crystal_time)) return false;
+         // The bag is at stake from the channel's start to the tribute's end.
+-        if (!bold && hop.camps && !ring_quiet(world, safety, hop, cambc::constants::tp_crystal_time + tribute_turns(world, my_gems())))
++        if (kill_tests && hop.camps && !ring_quiet(world, safety, hop, cambc::constants::tp_crystal_time + tribute_turns(world, my_gems())))
+             return false;
+         auto targets = pathing.teleport_targets();
+         // Its camp tiles too, which teleport_targets keeps only while their camp is believed dead.
+@@ -1457,10 +1458,10 @@
+ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home) {
+     auto& me = cambc::self();
+     decision = Branch::tribute_kept;
+-    // The enemy's winning tribute, while we hold a hard stop for it (holds_hard_stop) or a ready stun
++    // The enemy's winning tribute, while we hold a hard stop for it and go (onestop_goes) or a ready stun
+     // in reach, is the game: ours waits, unless ours wins first or, winning later, an ally stops theirs in time.
+     const auto* ender = game_ender(world);
+-    const auto* stop = ender && holds_hard_stop(world, *ender) ? ender : stoppable_winning_tribute(world);
++    const auto* stop = ender && onestop_goes(world, pathing, *ender) ? ender : stoppable_winning_tribute(world);
+     if (stop && !(winning_bag(world) && ally_stops(world, *stop))) {
+         throw_if_stale();
+         try {
+@@ -1493,7 +1494,7 @@
+ bool continue_recall(World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home, int recall_farm) {
+     auto& me = cambc::self();
+     decision = Branch::recall_kept;
+-    if (const auto* ender = game_ender(world); ender && holds_hard_stop(world, *ender)) {
++    if (const auto* ender = game_ender(world); ender && onestop_goes(world, pathing, *ender)) {
+         throw_if_stale();
+         try {
+             self_acted(), me.cancel_recall();
+diff -ru bots/variants/chy-ref/src/params.h bots/variants/pkg-end/src/params.h
+--- bots/variants/chy-ref/src/params.h	2026-11-13 01:55:39.402671557 +0000
++++ bots/variants/pkg-end/src/params.h	2026-11-13 06:53:09.931316591 +0000
+@@ -148,7 +148,7 @@
+ // `finish_lead`, only while the enemy's clock (its gems short over its recent tribute rate) runs past
+ // our trip home and on to an altar; `finish_no_prism`, only while the enemy drafted no Prism (a hoard
+ // it carries puts its clock out of sight).
+-inline constexpr bool finish_heal = true;
++inline constexpr bool finish_heal = false; // probe pb4-eager: no heal trip before the winning channel
+ inline constexpr bool finish_lead = true;
+ inline constexpr bool finish_no_prism = false;
+ // Most rounds to wait at a camp for it to return. Also bounds the wait after a recall out to farm.

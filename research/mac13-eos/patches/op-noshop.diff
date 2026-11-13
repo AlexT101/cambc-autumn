@@ -1,0 +1,22 @@
+diff -ru bots/variants/chy-ref/src/economy/shop.cc bots/variants/op-noshop/src/economy/shop.cc
+--- bots/variants/chy-ref/src/economy/shop.cc	2026-11-13 01:55:41.153695176 +0000
++++ bots/variants/op-noshop/src/economy/shop.cc	2026-11-13 02:32:53.355095969 +0000
+@@ -775,6 +775,7 @@
+ // what it buys and the heal save outweigh the trip: there by recall unless walking is quicker, and
+ // back out.
+ [[gnu::flatten]] bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
++    if (world.round <= params::probe_opening_end) return false; // probe op-noshop
+     if (banks_bag(world, pathing) || memory.damage > 0 || !shops_at_home(world)) return false;
+     const auto gold = my_gold();
+     const bool prism = world.me().facts().passive == Passive::gem_focus;
+diff -ru bots/variants/chy-ref/src/params.h bots/variants/op-noshop/src/params.h
+--- bots/variants/chy-ref/src/params.h	2026-11-13 01:55:41.155695203 +0000
++++ bots/variants/op-noshop/src/params.h	2026-11-13 02:32:41.957808237 +0000
+@@ -313,4 +313,7 @@
+ inline constexpr int steps = 6;
+ } // namespace open_plan
+ 
++// Diagnostic probe (research/mac13-eos): the last round of the opening whose mechanism this variant removes.
++inline constexpr int probe_opening_end = 200;
++
+ } // namespace aph::params

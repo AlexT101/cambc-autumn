@@ -1,0 +1,52 @@
+diff -ru bots/variants/chy-ref/src/bot.cc bots/variants/k10-lockres/src/bot.cc
+--- bots/variants/chy-ref/src/bot.cc	2026-11-13 01:55:42.268220790 +0000
++++ bots/variants/k10-lockres/src/bot.cc	2026-11-13 05:49:50.607353255 +0000
+@@ -323,12 +323,12 @@
+ 
+ // Buys what we may here: consumables on our spawn or dead, shards there too or anywhere for Tavi.
+ // The crystal first: an altar only it reaches holds our bags, and shards could spend its gold.
++// The lock before the shards too: it is the hard stop for a game-ending channel (holds_hard_stop),
++// worth more than one more shard, at a third of one's price.
+ // True if shards changed our stats.
+ bool shop(const World& world, const Memory& memory, bool consumables, bool shards) {
+-    if (consumables) buy_crystal(memory);
+-    const bool bought = shards && buy_shards(world);
+-    if (consumables) buy_lock();
+-    return bought;
++    if (consumables) buy_crystal(memory), buy_lock();
++    return shards && buy_shards(world);
+ }
+ 
+ // The strike search's walk, hits and casts, then the heal and shield it left. True if it attacked.
+diff -ru bots/variants/chy-ref/src/economy/bank.cc bots/variants/k10-lockres/src/economy/bank.cc
+--- bots/variants/chy-ref/src/economy/bank.cc	2026-11-13 01:55:42.269658549 +0000
++++ bots/variants/k10-lockres/src/economy/bank.cc	2026-11-13 06:03:06.654248729 +0000
+@@ -49,6 +49,15 @@
+     return side[a] > 0;
+ }
+ 
++// Rules win: the enemy wins once its tributed gems reach winning_gems, so the gems we believe its living
++// champions carry (as game_ender counts them) can end the game in one tribute. One lock cancels that
++// channel (altar_locks.effect) and only one is carried: while this holds it is kept for that channel.
++bool enemy_bags_win(const World& world) {
++    int carried = 0;
++    for (const auto& e : world.enemies) carried += e.alive ? e.gems : 0;
++    return world.score.enemy + carried >= static_cast<int>(cambc::constants::winning_gems);
++}
++
+ [[gnu::flatten]] void place_lock(const World& world) {
+     auto& me = cambc::self();
+     if (stunned_turn || !world.me().alive) return;
+@@ -101,6 +110,12 @@
+                     ours_wins |= world.score.ally + ally.gems >= static_cast<int>(cambc::constants::winning_gems)
+                                  && (!ally.visible || !enemy_win || turn_start(world, ally, ally.channel_end_round) < *enemy_win);
+             if (tributing && (!winning || ours_wins)) continue;
++            // Our lock (one is carried, so the last) is not spent denying an altar while the enemy's bags win:
++            // the guard's lock is.
++            if (!enemy_tribute && enemy_bags_win(world) && !keep_guard_lock(world, a)) {
++                debug_block({ std::printf("LOCKRES %d %u withheld\n", world.round, my_handle()); });
++                continue;
++            }
+             const auto note_own_lock = [&] {
+                 if (own_lock_round.size() < map.altars.size()) own_lock_round.resize(map.altars.size(), -1);
+                 own_lock_round[a] = world.round;

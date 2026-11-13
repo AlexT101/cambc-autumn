@@ -1,0 +1,11 @@
+note: --suites not given, so only the 256 ladder games: a quick check, not a judgement (pass --suites maps/suites/... for 20k+ games, or use tools/fgate.py)
+A/B mac13-argo-smoke-pb8-banksafe: CAND variants/pb8-banksafe (dir) vs REF variants/chy-ref (dir)
+  ladder: running, log replays/ab/mac13-argo-smoke-pb8-banksafe/ladder.log
+CAND 48.4% of 256 (124-132), 95% CI 42.4-54.5
+  ladder  48.4% of 256 (124-132), 95% CI 42.4-54.5
+Failed matches: 0
+Out-of-fuel turns: CAND 30 in 13 games, REF 29 in 13 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 2m02s
+Results: replays/ab/mac13-argo-smoke-pb8-banksafe/summary.md
+DONE

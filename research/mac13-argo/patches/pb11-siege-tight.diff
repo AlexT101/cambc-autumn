@@ -1,0 +1,24 @@
+diff -ru bots/variants/chy-ref/src/economy/siege.cc bots/variants/pb11-siege-tight/src/economy/siege.cc
+--- bots/variants/chy-ref/src/economy/siege.cc	2026-11-13 01:55:39.400671530 +0000
++++ bots/variants/pb11-siege-tight/src/economy/siege.cc	2026-11-13 07:48:20.675536111 +0000
+@@ -161,7 +161,10 @@
+ bool siege_ready(const World& world, const SiegeTarget& target, const SiegeLoad& load, bool committed, TeamPower& team) {
+     if (load.health <= 0) return true;
+     float power = team();
+-    float limit = world.map().monolith_only || target.sealing || target.joining ? params::siege_rounds
++    // Probe pb11-siege-tight: siege_rounds and siege_pool_share x(1/1.5) here.
++    constexpr float tight = 1.0f / 1.5f;
++    float limit = world.map().monolith_only || world.map().groups[target.g].has_monolith || target.sealing || target.joining
++                      ? tight * static_cast<float>(params::siege_rounds)
+                   : target.bursting ? params::burst_rounds : 0;
+     if (target.home) {
+         // Only bodies on its stands hit it for free: the output those stands hold.
+@@ -200,7 +203,7 @@
+     // A live member hit from a spawn stand whose fire the sturdiest of us, standing there, outlasts for
+     // a phase costs no health: the turn end there heals it (rules rounds.turn_end; home_free).
+     const float hit = std::max(0.0f, fire - home_free(world, target.g, range, survivable)) * params::siege_hit_share;
+-    if (rounds * hit <= params::siege_pool_share * pool * slack) return true;
++    if (rounds * hit <= tight * params::siege_pool_share * pool * slack) return true;
+     // Past the pool, heal trips (heal_trip, from the group's nearest stand off spawn): the health a
+     // body brings above where siege() sends it home (a phase of the group's fire for each step out of
+     // its reach or home, and its strongest hit) costs it a trip's rounds of output, which slows the clear.

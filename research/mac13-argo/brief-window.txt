@@ -1,0 +1,89 @@
+TASK: build "window", a conversion design for the charybdis bot. The aim is to start long tributes only when they
+can finish, and to bank in chunks once the team is rich.
+
+SETUP
+- Worktree: /home/ubuntu/wt/mac13-argo (branch mac13-argo-20261113).
+- Read AGENTS.md and cambc-rules.yaml first (tribute, stun, altar_locks, respawn, recall).
+- Make the variant with `cd /home/ubuntu/wt/mac13-argo && ./copybot variants/chy-ref variants/window`.
+- Edit only bots/variants/window/src.
+- Never edit bots/variants/chy-ref (frozen charybdis 525, the reference).
+- Leave draft/, picks, emblems and the shop alone. Commit nothing.
+
+EVIDENCE (mirror games of chy-ref against itself, 2,560 maps)
+- Tribute completion by starting bag:
+  | starting bag | completed |
+  |---|---|
+  | 1-29 | 96% |
+  | 100-199 | 65% |
+  | 200-299 | 39% |
+  | 300-499 | 32% |
+  | 500-799 | 21% |
+  | 800+ | 5% |
+- There are 3.5 starts of 800+ a game, and only 17% of them finish even with no enemy within 8 at the start.
+- When a team first reaches 1000 wealth (tributed + carried), its Prism carries a median 562 and the team has
+  tributed 345.
+- The winner then takes a median 56 rounds, and a mean of ~170, to convert. 11.6% of games are lost by the team
+  that reached 1000 wealth first.
+- Winning-bag channels are cancelled after a median 6 rounds: stun 45%, self 23%, lock 20%. The stunners are
+  mostly Prism, Ryth and Cassi.
+- Defenders who come to stun die 66% of the time within 15 rounds. Respawn takes 60 rounds, so a stopper's death
+  opens a long window.
+
+WHY THE CURRENT CODE STARTS HOPELESS CHANNELS
+- economy/bank.cc tribute_safe/tribute_ok only ask whether we would be killed within params::tribute_window turns.
+  They never ask whether a stopper reaches us before a channel of ceil(bag/10) turns ends.
+- keeps_gems makes the Prism keep its whole bag (for Focus) until winning_bag() or closing(), so its last bag is
+  huge and its channel very long.
+
+DESIGN
+1. Stop window, W(altar). The rounds until any enemy could stop a channel at that altar, as a lower bound from what
+   we know:
+   - a living enemy with a stun ability: its steps to within its stun reach of our tribute tile;
+   - any living enemy: its steps to within lock range (2) of the altar, since locks can't be seen in a bag;
+   - an unseen enemy: count from its last known tile, less the rounds since we saw it (the existing unseen-enemy
+     beliefs may already do this);
+   - a dead enemy: its respawn round plus its steps from its spawn.
+   Use the existing pathing and enemy beliefs, and cache per round. Watch fuel: an estimate as the crow flies
+   (Chebyshev) is acceptable where fields are too dear.
+2. Start rule for a long channel (L = tribute_turns(bag) > params::tribute_window):
+   - Start only at an altar where L <= W, keeping one turn of margin.
+   - Prefer the altar with the most W - L among those reachable now, counting the walk to it in both L's start time
+     and W.
+   - If no altar fits, don't start. Keep farming or fighting as chy-ref would, and re-check every turn: W grows when
+     stoppers die or leave.
+   - Fallbacks, so we never lose by waiting:
+     - Endgame by rounds: rounds_left <= L + slack keeps today's any-risk rule.
+     - The enemy will win first unless we start now (enemy_tributes_win / their wealth race).
+     - We have waited more than L rounds since we first held the winning bag. Then today's rule applies.
+3. Rich-team chunking. Once our team wealth (score + carried) >= 1000, but before any single bag wins:
+   - the Prism stops keeping gems (keeps_gems false) whenever a fitting window exists at a reachable altar for its
+     current bag;
+   - so it banks chunks while the window allows, and the final channel is short.
+   Reason: once rich, Focus buys less than conversion, and every completed chunk shortens the last channel.
+4. A fitting channel already running is not self-cancelled for threats that can't stop it before it ends (W > turns
+   left). Kill threats are still respected: keep tribute_safe's kill test for the turns that remain.
+5. Leave untouched: game_ender/stop_game_ender (defence), farm valuation, crews, fights, funnel/carry logic before
+   the team is rich, and everything for non-Prism bodies except that the start rule (2) applies to any long channel.
+
+VERIFY
+- Build in release.
+- Spawn ONE read-only auditor subagent and tell it explicitly NOT to edit. Have it check correctness: turn order,
+  respawn timing, unseen enemies, the fallbacks that keep us from losing the race by waiting, and fuel. Fix its
+  findings.
+- Smoke:
+  `source ~/venv/bin/activate && cd /home/ubuntu/wt/mac13-argo && CAMBC_BIN=/home/ubuntu/cambc-autumn/tools/fastengine/runner/fastrunner FASTRUNNER_MODE=native PATH=$HOME/.cargo/bin:$PATH py tools/ab.py variants/window variants/chy-ref --no-test-draft --fuel 200000 --name mac13-argo-smoke-window`
+  - That is 256 ladder games.
+  - Requirements: no failed games, no DRAFT-UNFINISHED or PLAN-CHECK, out-of-fuel turns not far above chy-ref's.
+  - Run it in a tmux session named mac13-argo-smoke-window, in the background, not as a foreground sleep loop.
+- Behaviour check on the smoke's replays: use tools/replay/extract.mjs, and see research/mac13-argo/scripts/tribbins.py
+  and abmetrics.py for how to read the extracts. Compare with chy-ref:
+  - completion rate of long tributes (100+ gems);
+  - starts of 500+ bag channels a game;
+  - rounds from first reaching 1000 wealth to the win.
+- Write `diff -ru bots/variants/chy-ref/src bots/variants/window/src > research/mac13-argo/patches/window.diff`.
+- Delete the batch dirs and extracts you made.
+
+STOP CONDITION: built, audited, smoked, behaviour-checked, patch written. Report:
+- the design as built;
+- the auditor's findings and what you fixed;
+- the smoke and behaviour numbers.

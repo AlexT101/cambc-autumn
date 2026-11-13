@@ -1,0 +1,9 @@
+A/B mac13-argo-fight-shy-dev: CAND variants/pb-fight-shy (dir) vs REF variants/chy-ref (dir)
+  dev: running, log replays/ab/mac13-argo-fight-shy-dev/dev.log
+CAND 50.2% of 10240 (5142-5098), 95% CI 49.2-51.2
+  dev  50.2% of 10240 (5142-5098), 95% CI 49.2-51.2
+Failed matches: 0
+Out-of-fuel turns: CAND 650 in 401 games, REF 604 in 421 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 23m47s
+Results: replays/ab/mac13-argo-fight-shy-dev/summary.md

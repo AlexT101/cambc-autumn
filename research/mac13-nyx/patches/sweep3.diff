@@ -1,0 +1,314 @@
+diff -ru bots/variants/vlx/src/params.h bots/variants/sw-camp-hi/src/params.h
+--- bots/variants/vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-camp-hi/src/params.h	2026-11-13 04:55:20.300606735 +0000
+@@ -73,7 +73,7 @@
+ // Below the recall line, stay to finish a camp whose remaining damage is under this share of our health.
+ inline constexpr float finish_camp_health_fraction = 0.6881714f;
+ // Camp damage counted against the health we can spare when choosing a camp (below 1: bolder).
+-inline constexpr float camp_risk = 0.45716766f;
++inline constexpr float camp_risk = 0.6400347f;
+ // Enemy-ground discount: a group's weight is min(1, 2 d_enemy / (d_ally + d_enemy)) to this power.
+ inline constexpr float home_power = 1.8913636f;
+ // An ally this near with no claim of its own can partner on a group too costly for us alone.
+diff -ru bots/variants/vlx/src/params.h bots/variants/sw-camp-lo/src/params.h
+--- bots/variants/vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-camp-lo/src/params.h	2026-11-13 04:55:20.232568167 +0000
+@@ -73,7 +73,7 @@
+ // Below the recall line, stay to finish a camp whose remaining damage is under this share of our health.
+ inline constexpr float finish_camp_health_fraction = 0.6881714f;
+ // Camp damage counted against the health we can spare when choosing a camp (below 1: bolder).
+-inline constexpr float camp_risk = 0.45716766f;
++inline constexpr float camp_risk = 0.3200174f;
+ // Enemy-ground discount: a group's weight is min(1, 2 d_enemy / (d_ally + d_enemy)) to this power.
+ inline constexpr float home_power = 1.8913636f;
+ // An ally this near with no claim of its own can partner on a group too costly for us alone.
+diff -ru bots/variants/vlx/src/model/safety.h bots/variants/sw-cred-hi/src/model/safety.h
+--- bots/variants/vlx/src/model/safety.h	2026-11-13 01:55:42.827717757 +0000
++++ bots/variants/sw-cred-hi/src/model/safety.h	2026-11-13 04:55:20.731687009 +0000
+@@ -35,7 +35,7 @@
+ // enemy in reach is enough on its own; an unseen one needs a weight near 1.
+ inline constexpr float recall_risk = params::recall_risk;
+ // Unseen enemies with a lower best weight are left out entirely.
+-inline constexpr float credible_weight = 0.5f;
++inline constexpr float credible_weight = 0.7f;
+ // An awake camp we have not watched for 2 rounds may have fallen asleep.
+ inline constexpr float unknown_camp_weight = 0.5f;
+ inline constexpr int fight_ally_radius = 4;
+diff -ru bots/variants/vlx/src/model/safety.h bots/variants/sw-cred-lo/src/model/safety.h
+--- bots/variants/vlx/src/model/safety.h	2026-11-13 01:55:42.827717757 +0000
++++ bots/variants/sw-cred-lo/src/model/safety.h	2026-11-13 04:55:20.676272886 +0000
+@@ -35,7 +35,7 @@
+ // enemy in reach is enough on its own; an unseen one needs a weight near 1.
+ inline constexpr float recall_risk = params::recall_risk;
+ // Unseen enemies with a lower best weight are left out entirely.
+-inline constexpr float credible_weight = 0.5f;
++inline constexpr float credible_weight = 0.35f;
+ // An awake camp we have not watched for 2 rounds may have fallen asleep.
+ inline constexpr float unknown_camp_weight = 0.5f;
+ inline constexpr int fight_ally_radius = 4;
+diff -ru bots/variants/vlx/src/params.h bots/variants/sw-drec-hi/src/params.h
+--- bots/variants/vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-drec-hi/src/params.h	2026-11-13 04:55:17.805961058 +0000
+@@ -60,13 +60,13 @@
+ // Below this share of max health a champion goes home; camps may cost only the health above it.
+ // This is the line while an enemy threatens us (fight.cc recall_line); safe_recall_health_fraction otherwise.
+ // Set per map on a champion's first turn (draft.cc condition_on_map); this is the value without map features.
+-inline float recall_health_fraction = 0.31549114f;
++inline float recall_health_fraction = 0.4416876f;
+ // The recall line while no enemy can credibly reach us within threat_radius steps.
+ inline constexpr float safe_recall_health_fraction = 0.10935836f;
+ // recall_line: steps past an enemy's reach within which it threatens us.
+ inline constexpr int threat_radius = 8;
+ // The draft's fixed recall line for usable health (draft.cc type_facts).
+-inline constexpr float draft_recall_health_fraction = 0.22716701f;
++inline constexpr float draft_recall_health_fraction = 0.3180338f;
+ // Below this share of max health a champion, ours or an enemy, is hurt: ours retreat from smaller
+ // packs, no longer count their own ground as safe from pursuit, and are healed for any gain.
+ inline constexpr float hurt_health_fraction = 0.4532513f;
+diff -ru bots/variants/vlx/src/params.h bots/variants/sw-drec-lo/src/params.h
+--- bots/variants/vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-drec-lo/src/params.h	2026-11-13 04:55:17.675826465 +0000
+@@ -60,13 +60,13 @@
+ // Below this share of max health a champion goes home; camps may cost only the health above it.
+ // This is the line while an enemy threatens us (fight.cc recall_line); safe_recall_health_fraction otherwise.
+ // Set per map on a champion's first turn (draft.cc condition_on_map); this is the value without map features.
+-inline float recall_health_fraction = 0.31549114f;
++inline float recall_health_fraction = 0.2208438f;
+ // The recall line while no enemy can credibly reach us within threat_radius steps.
+ inline constexpr float safe_recall_health_fraction = 0.10935836f;
+ // recall_line: steps past an enemy's reach within which it threatens us.
+ inline constexpr int threat_radius = 8;
+ // The draft's fixed recall line for usable health (draft.cc type_facts).
+-inline constexpr float draft_recall_health_fraction = 0.22716701f;
++inline constexpr float draft_recall_health_fraction = 0.1590169f;
+ // Below this share of max health a champion, ours or an enemy, is hurt: ours retreat from smaller
+ // packs, no longer count their own ground as safe from pursuit, and are healed for any gain.
+ inline constexpr float hurt_health_fraction = 0.4532513f;
+diff -ru bots/variants/vlx/src/params.h bots/variants/sw-fw-hi/src/params.h
+--- bots/variants/vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-fw-hi/src/params.h	2026-11-13 04:55:20.408862507 +0000
+@@ -236,7 +236,7 @@
+ 
+ // An emblem's fight value (shop.cc current_emblem): this weight x the share of the damage we take that comes
+ // from champions, with fight_camp_prior camp damage as a prior, x the fight power it adds (output x effective health).
+-inline constexpr float fight_weight = 0.6882139f;
++inline constexpr float fight_weight = 0.9634995f;
+ inline constexpr float fight_camp_prior = 490.12277f;
+ // wants_shop: a shopping trip goes when shop_gain_scale x the purchase's saving (plus the heal) beats the trip.
+ inline constexpr float shop_gain_scale = 0.75106156f;
+diff -ru bots/variants/vlx/src/params.h bots/variants/sw-fw-lo/src/params.h
+--- bots/variants/vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-fw-lo/src/params.h	2026-11-13 04:55:20.358333358 +0000
+@@ -236,7 +236,7 @@
+ 
+ // An emblem's fight value (shop.cc current_emblem): this weight x the share of the damage we take that comes
+ // from champions, with fight_camp_prior camp damage as a prior, x the fight power it adds (output x effective health).
+-inline constexpr float fight_weight = 0.6882139f;
++inline constexpr float fight_weight = 0.4817497f;
+ inline constexpr float fight_camp_prior = 490.12277f;
+ // wants_shop: a shopping trip goes when shop_gain_scale x the purchase's saving (plus the heal) beats the trip.
+ inline constexpr float shop_gain_scale = 0.75106156f;
+diff -ru bots/variants/vlx/src/params.h bots/variants/sw-haz-hi/src/params.h
+--- bots/variants/vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-haz-hi/src/params.h	2026-11-13 04:55:22.160328590 +0000
+@@ -117,7 +117,7 @@
+ // game's hazard a round (economy/bank.cc carrier_hazard, a posterior from this prior), and the killer
+ // takes the bag, a swing of bag_swing times it. The prior is bag-carrier deaths per champion-round
+ // alive with 25+ gems, measured on 10,240 macro3-base games.
+-inline constexpr float carrier_hazard = 0.86e-3f;
++inline constexpr float carrier_hazard = 1.72e-3f;
+ inline constexpr float bag_swing = 2.0f;
+ 
+ // Cassi's or Issac's hold is worth this share of another ally's in the holder choice
+diff -ru bots/variants/vlx/src/params.h bots/variants/sw-haz-lo/src/params.h
+--- bots/variants/vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-haz-lo/src/params.h	2026-11-13 04:55:21.976514482 +0000
+@@ -117,7 +117,7 @@
+ // game's hazard a round (economy/bank.cc carrier_hazard, a posterior from this prior), and the killer
+ // takes the bag, a swing of bag_swing times it. The prior is bag-carrier deaths per champion-round
+ // alive with 25+ gems, measured on 10,240 macro3-base games.
+-inline constexpr float carrier_hazard = 0.86e-3f;
++inline constexpr float carrier_hazard = 0.43e-3f;
+ inline constexpr float bag_swing = 2.0f;
+ 
+ // Cassi's or Issac's hold is worth this share of another ally's in the holder choice
+diff -ru bots/variants/vlx/src/params.h bots/variants/sw-hgr-hi/src/params.h
+--- bots/variants/vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-hgr-hi/src/params.h	2026-11-13 04:55:14.797917682 +0000
+@@ -241,7 +241,7 @@
+ // wants_shop: a shopping trip goes when shop_gain_scale x the purchase's saving (plus the heal) beats the trip.
+ inline constexpr float shop_gain_scale = 0.75106156f;
+ // safety_params::hit_given_reach and recall_risk (model/safety.h), tunable here.
+-inline constexpr float hit_given_reach = 0.2338928f;
++inline constexpr float hit_given_reach = 0.3508392f;
+ inline constexpr float recall_risk = 0.20703878f;
+ 
+ // The reveal ward (bot.cc reveal_ward): the least share of an unseen enemy's possible tiles a bush cluster must hold,
+diff -ru bots/variants/vlx/src/params.h bots/variants/sw-home-hi/src/params.h
+--- bots/variants/vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-home-hi/src/params.h	2026-11-13 04:55:19.535453592 +0000
+@@ -134,7 +134,7 @@
+ // makes our own ground no refuge from pursuit.
+ inline constexpr int brake_bag = 19;
+ // In our own half, give way to packs at this ratio: an enemy pack there has come to fight.
+-inline constexpr float home_retreat_ratio = 2.1740904f;
++inline constexpr float home_retreat_ratio = 3.043727f;
+ // Leave before contact when the visible enemies within this many steps of their reach would win
+ // even if we struck first (stand_lost_at). At most 3: Safety::late packs it in 2 bits.
+ inline constexpr int pursuit_steps = 2;
+diff -ru bots/variants/vlx/src/params.h bots/variants/sw-home-lo/src/params.h
+--- bots/variants/vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-home-lo/src/params.h	2026-11-13 04:55:19.197294426 +0000
+@@ -134,7 +134,7 @@
+ // makes our own ground no refuge from pursuit.
+ inline constexpr int brake_bag = 19;
+ // In our own half, give way to packs at this ratio: an enemy pack there has come to fight.
+-inline constexpr float home_retreat_ratio = 2.1740904f;
++inline constexpr float home_retreat_ratio = 1.521863f;
+ // Leave before contact when the visible enemies within this many steps of their reach would win
+ // even if we struck first (stand_lost_at). At most 3: Safety::late packs it in 2 bits.
+ inline constexpr int pursuit_steps = 2;
+diff -ru bots/variants/vlx/src/params.h bots/variants/sw-hurt-hi/src/params.h
+--- bots/variants/vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-hurt-hi/src/params.h	2026-11-13 04:55:18.140933692 +0000
+@@ -129,7 +129,7 @@
+ // leave when their health times damage beats ours by hurt_retreat_ratio. Healthy outside our own
+ // half, no pack sends us back early.
+ inline constexpr int pack_ally_radius = 6;
+-inline constexpr float hurt_retreat_ratio = 3.3350472f;
++inline constexpr float hurt_retreat_ratio = 4.669066f;
+ // A bag this big (a tribute of two turns or more) is worth chasing: it counts as hurt above, and
+ // makes our own ground no refuge from pursuit.
+ inline constexpr int brake_bag = 19;
+diff -ru bots/variants/vlx/src/params.h bots/variants/sw-hurt-lo/src/params.h
+--- bots/variants/vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-hurt-lo/src/params.h	2026-11-13 04:55:18.052457764 +0000
+@@ -129,7 +129,7 @@
+ // leave when their health times damage beats ours by hurt_retreat_ratio. Healthy outside our own
+ // half, no pack sends us back early.
+ inline constexpr int pack_ally_radius = 6;
+-inline constexpr float hurt_retreat_ratio = 3.3350472f;
++inline constexpr float hurt_retreat_ratio = 2.334533f;
+ // A bag this big (a tribute of two turns or more) is worth chasing: it counts as hurt above, and
+ // makes our own ground no refuge from pursuit.
+ inline constexpr int brake_bag = 19;
+diff -ru bots/variants/vlx/src/params.h bots/variants/sw-life-hi/src/params.h
+--- bots/variants/vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-life-hi/src/params.h	2026-11-13 04:55:20.566821868 +0000
+@@ -207,7 +207,7 @@
+ 
+ // Values in enemy health points: a champion's life over its health, each gem it carries, a stopped
+ // tribute (besides its gems) and a cancelled recall or teleport.
+-inline constexpr float life_value = 276.60016f;
++inline constexpr float life_value = 387.2402f;
+ inline constexpr float gem_value = 17.52141f;
+ inline constexpr float tribute_value = 83.167366f;
+ inline constexpr float recall_value = 66.34215f;
+diff -ru bots/variants/vlx/src/params.h bots/variants/sw-life-lo/src/params.h
+--- bots/variants/vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-life-lo/src/params.h	2026-11-13 04:55:20.465535907 +0000
+@@ -207,7 +207,7 @@
+ 
+ // Values in enemy health points: a champion's life over its health, each gem it carries, a stopped
+ // tribute (besides its gems) and a cancelled recall or teleport.
+-inline constexpr float life_value = 276.60016f;
++inline constexpr float life_value = 193.6201f;
+ inline constexpr float gem_value = 17.52141f;
+ inline constexpr float tribute_value = 83.167366f;
+ inline constexpr float recall_value = 66.34215f;
+diff -ru bots/variants/vlx/src/params.h bots/variants/sw-maxx-hi/src/params.h
+--- bots/variants/vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-maxx-hi/src/params.h	2026-11-13 04:55:15.618315709 +0000
+@@ -203,7 +203,7 @@
+ inline constexpr float mid_low_share = 0.25452974f;
+ inline constexpr float mid_exposure = 1.3611484f;
+ inline constexpr float mid_edge = 0.055977345f;
+-inline constexpr float max_exposure = 1.2148346f;
++inline constexpr float max_exposure = 1.518543f;
+ 
+ // Values in enemy health points: a champion's life over its health, each gem it carries, a stopped
+ // tribute (besides its gems) and a cancelled recall or teleport.
+diff -ru bots/variants/vlx/src/params.h bots/variants/sw-maxx-lo/src/params.h
+--- bots/variants/vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-maxx-lo/src/params.h	2026-11-13 04:55:15.324541274 +0000
+@@ -203,7 +203,7 @@
+ inline constexpr float mid_low_share = 0.25452974f;
+ inline constexpr float mid_exposure = 1.3611484f;
+ inline constexpr float mid_edge = 0.055977345f;
+-inline constexpr float max_exposure = 1.2148346f;
++inline constexpr float max_exposure = 0.9718677f;
+ 
+ // Values in enemy health points: a champion's life over its health, each gem it carries, a stopped
+ // tribute (besides its gems) and a cancelled recall or teleport.
+diff -ru bots/variants/vlx/src/params.h bots/variants/sw-midx-hi/src/params.h
+--- bots/variants/vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-midx-hi/src/params.h	2026-11-13 04:55:15.097001286 +0000
+@@ -201,7 +201,7 @@
+ // tuned apart and below mid_exposure (farm.cc exposure_most bounds exposure() for the exact bounds).
+ inline constexpr float own_ground_share = 0.6832753f;
+ inline constexpr float mid_low_share = 0.25452974f;
+-inline constexpr float mid_exposure = 1.3611484f;
++inline constexpr float mid_exposure = 1.701436f;
+ inline constexpr float mid_edge = 0.055977345f;
+ inline constexpr float max_exposure = 1.2148346f;
+ 
+diff -ru bots/variants/vlx/src/params.h bots/variants/sw-midx-lo/src/params.h
+--- bots/variants/vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-midx-lo/src/params.h	2026-11-13 04:55:14.994553016 +0000
+@@ -201,7 +201,7 @@
+ // tuned apart and below mid_exposure (farm.cc exposure_most bounds exposure() for the exact bounds).
+ inline constexpr float own_ground_share = 0.6832753f;
+ inline constexpr float mid_low_share = 0.25452974f;
+-inline constexpr float mid_exposure = 1.3611484f;
++inline constexpr float mid_exposure = 1.088919f;
+ inline constexpr float mid_edge = 0.055977345f;
+ inline constexpr float max_exposure = 1.2148346f;
+ 
+diff -ru bots/variants/vlx/src/params.h bots/variants/sw-srec-hi/src/params.h
+--- bots/variants/vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-srec-hi/src/params.h	2026-11-13 04:55:17.357320077 +0000
+@@ -62,7 +62,7 @@
+ // Set per map on a champion's first turn (draft.cc condition_on_map); this is the value without map features.
+ inline float recall_health_fraction = 0.31549114f;
+ // The recall line while no enemy can credibly reach us within threat_radius steps.
+-inline constexpr float safe_recall_health_fraction = 0.10935836f;
++inline constexpr float safe_recall_health_fraction = 0.1640375f;
+ // recall_line: steps past an enemy's reach within which it threatens us.
+ inline constexpr int threat_radius = 8;
+ // The draft's fixed recall line for usable health (draft.cc type_facts).
+diff -ru bots/variants/vlx/src/params.h bots/variants/sw-srec-lo/src/params.h
+--- bots/variants/vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-srec-lo/src/params.h	2026-11-13 04:55:16.611435506 +0000
+@@ -62,7 +62,7 @@
+ // Set per map on a champion's first turn (draft.cc condition_on_map); this is the value without map features.
+ inline float recall_health_fraction = 0.31549114f;
+ // The recall line while no enemy can credibly reach us within threat_radius steps.
+-inline constexpr float safe_recall_health_fraction = 0.10935836f;
++inline constexpr float safe_recall_health_fraction = 0.06561502f;
+ // recall_line: steps past an enemy's reach within which it threatens us.
+ inline constexpr int threat_radius = 8;
+ // The draft's fixed recall line for usable health (draft.cc type_facts).
+diff -ru bots/variants/vlx/src/params.h bots/variants/sw-trip-hi/src/params.h
+--- bots/variants/vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-trip-hi/src/params.h	2026-11-13 04:55:21.613972631 +0000
+@@ -87,7 +87,7 @@
+ inline constexpr float crew_tank_line = 0.32032415f;
+ // Camp damage counted against the health that prices trips home (farm, crew.cc), camp_risk's
+ // boldness. With share_damage's spread, 0.45 and 0.6 smoked level with it (2026-10-31).
+-inline constexpr float crew_trip_risk = 0.795274f;
++inline constexpr float crew_trip_risk = 1.113384f;
+ // A strong group's crew value while we claim it, over farm's stickiness; a fresh proposal's while an
+ // ally's operation on another strong group is under way.
+ inline constexpr float crew_stickiness = 1.4112711f;
+diff -ru bots/variants/vlx/src/params.h bots/variants/sw-trip-lo/src/params.h
+--- bots/variants/vlx/src/params.h	2026-11-13 01:55:42.828717771 +0000
++++ bots/variants/sw-trip-lo/src/params.h	2026-11-13 04:55:21.365062994 +0000
+@@ -87,7 +87,7 @@
+ inline constexpr float crew_tank_line = 0.32032415f;
+ // Camp damage counted against the health that prices trips home (farm, crew.cc), camp_risk's
+ // boldness. With share_damage's spread, 0.45 and 0.6 smoked level with it (2026-10-31).
+-inline constexpr float crew_trip_risk = 0.795274f;
++inline constexpr float crew_trip_risk = 0.5566918f;
+ // A strong group's crew value while we claim it, over farm's stickiness; a fresh proposal's while an
+ // ally's operation on another strong group is under way.
+ inline constexpr float crew_stickiness = 1.4112711f;

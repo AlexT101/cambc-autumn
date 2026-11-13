@@ -1,0 +1,9 @@
+A/B mac13-argo-onestop-a-hold: CAND variants/onestop-a (dir) vs REF variants/chy-ref (dir)
+  hold: running, log replays/ab/mac13-argo-onestop-a-hold/hold.log
+CAND 50.0% of 5120 (2558-2562), 95% CI 48.6-51.3
+  hold  50.0% of 5120 (2558-2562), 95% CI 48.6-51.3
+Failed matches: 0
+Out-of-fuel turns: CAND 323 in 222 games, REF 323 in 219 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 10m40s
+Results: replays/ab/mac13-argo-onestop-a-hold/summary.md

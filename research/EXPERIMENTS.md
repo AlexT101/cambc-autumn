@@ -10,6 +10,33 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## (charybdis = 525, 2026-11-13) Macro programme mac13: eight orchestrators at 2x fuel; CASTOR's consistent Prism-gem pricing + shop timing wins 54.1% at 100k, 54.85% with no locks
+
+Eight independent orchestrators (argo, castor, dione, eos, hecate, kronos, nyx, selene), 02:00-10:00 UTC, each A/B
+against a frozen charybdis 525 at `--fuel 200000` on fresh ladder-v2 suites; notes, patches and scripts in
+`research/mac13-<name>/` (bots on branches `mac13-<name>-20261113`). Overseer reads at the real budget against
+`bots/charybdis` (40,960 games a suite, `maps/suites/overseer-{nyx,lockconf}`) and the lock and ward-fuel side
+studies are in [overseer-2026-11-13](overseer-2026-11-13/candidates.md).
+
+- **CASTOR c11-noscr** (branch @b36621954): (1) a Prism gem premium expm1(k·rho·H), the Focus a kept gem compounds,
+  priced the same by the Prism and by every ally's crew, claim, handoff and holder choice; (2) Willow heals as a
+  medic out of fights; (3) Prism shop and farm-recall timing as a deferred purchase (credit ×min(1, visit/T)) with an
+  economic-order-quantity trip rule. 55.2% of 56,320 held-out games at 2x; **54.1% at 100k on both overseer suites**
+  (OOF +15%: a fuel candidate). Shop timing is worth ~2.5, the medic ~0.8. **With lock buying off: 55.0 / 54.7.**
+- **NYX sw-midx-hi**: value-placed wards + no locks + mid_exposure 1.70: 53.8% at 2x (ladder mix; 52.9-53.0 on
+  ladder-v2), 51.5% at 100k (OOF +36%). The ward search's fuel is the loss; nyx-vl-fuel2 (turn-start ward call on the
+  draft tile only) recovers OOF to +2% and reads 51.9 / 51.3 against charybdis on the two suites.
+- **Altar locks** (20 policy variants, `overseer-2026-11-13/locks/RESULTS.md`): never buying reads 51.0% at 100k,
+  flat by altar count; no placement rule beats it. A variant that buys and never places reads as charybdis, so the cost
+  is the purchase (gold timing), not placement. KRONOS found the same (~+0.65). Live risk unmeasured: fgate first.
+- **Level or lost** (most others pooled 50.3-51.25): caution and yielding lose everywhere (race -6/-7, twin -4 to -8,
+  avoid enemy Prisms -6, value-at-risk retreat), Prism bag caps and bank-earlier/later lose 9-22, removing crews / Prism
+  trips / the max_wait cliff / the camp record loses 20 / 17 / 11 / 5. Comms intel (team vision, camp picture,
+  enemy-Prism sightings) changed no decision that mattered or cost farm. Constant sweeps (~80 variants) were level.
+- **Lessons**: the gains came from pricing a mechanic consistently with rule-derived values (Prism Focus, deferred
+  purchases), not from new coordination layers; 5-10k screens above 51 regressed to the mean; the first Prism death
+  decides ~55% of games; games where we draft no Prism (~22%) stayed level.
+
 ## (charybdis book, 2026-11-13) Foreign Mite wins: three locally exact candidates, live identity pending
 
 A read-only capture query since 08:00 found 454 other-team wins against Mite on 203 map/side cells; 10

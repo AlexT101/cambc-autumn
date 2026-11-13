@@ -1,0 +1,9 @@
+A/B mac13-castor-c3-dbg: CAND variants/c3-screen (dir) vs REF variants/chy-ref (dir)
+  study: running, log replays/ab/mac13-castor-c3-dbg/study.log
+CAND 52.2% of 2048 (1069-979), 95% CI 50.0-54.4
+  study  52.2% of 2048 (1069-979), 95% CI 50.0-54.4
+Failed matches: 0
+Out-of-fuel turns: CAND 239 in 141 games, REF 103 in 77 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 2m12s
+Results: replays/ab/mac13-castor-c3-dbg/summary.md

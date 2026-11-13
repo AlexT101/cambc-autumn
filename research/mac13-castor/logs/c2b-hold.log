@@ -1,0 +1,9 @@
+A/B mac13-castor-c2b-hold: CAND variants/c2-medic (dir) vs REF variants/chy-ref (dir)
+  hold: running, log replays/ab/mac13-castor-c2b-hold/hold.log
+CAND 50.4% of 5120 (2579-2541), 95% CI 49.0-51.7
+  hold  50.4% of 5120 (2579-2541), 95% CI 49.0-51.7
+Failed matches: 0
+Out-of-fuel turns: CAND 310 in 219 games, REF 306 in 202 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 2m46s
+Results: replays/ab/mac13-castor-c2b-hold/summary.md

@@ -1,0 +1,63 @@
+diff -ru bots/variants/chy-ref/src/economy/farm.cc bots/variants/k4-cal/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 01:55:42.269710230 +0000
++++ bots/variants/k4-cal/src/economy/farm.cc	2026-11-13 03:56:18.003887447 +0000
+@@ -7,6 +7,8 @@
+ namespace {
+ 
+ constexpr float stickiness = 1.2f;
++// The hold the farm prices: arrival to payout measured 6.6 rounds against capture_rounds' 5.4 (mac13 s1).
++int priced_hold(const World& world) { return capture_rounds(world) + 1; }
+ // pack_zone's cost with a bag at stake: p50 0.7k, p99 3.3k, at most ~10k (wa maps, real budget).
+ constexpr std::uint64_t pack_zone_cost_bound = 3500;
+ 
+@@ -263,7 +265,7 @@
+ // to `crew` times our output may clear it, paying our part (crew_rate), partners included.
+ bool rated_beaten(const World& world, float worth, float trip, float fastest, float strength, float partner, float best, float from_altar,
+                   int walk, float cycle_bank, float crew) {
+-    const float cap = static_cast<float>(capture_rounds(world));
++    const float cap = static_cast<float>(priced_hold(world));
+     float bound = crew > 0 ? crew_rate(world, worth, trip + cap, fastest, 1.0f, crew) : rate(world, worth, trip + cap + fastest);
+     if (partner > 0 && crew <= 0) {
+         const float part = strength / (strength + partner);
+@@ -1474,7 +1476,7 @@
+     // rated_beaten before farm reads the group's facts, with its turn constants hoisted: empty-handed
+     // and short of the win, no walk to an altar is in the trip and the weight is at most 1. Each rate
+     // is tested alone, as the larger of the two fails the test exactly when either does.
+-    const int capture = capture_rounds(world);
++    const int capture = priced_hold(world);
+     const float cap_rounds = static_cast<float>(capture);
+     const float horizon = cycle_horizon(map);
+     const float partner_part = unclaimed_partner_output > 0 ? strength / (strength + unclaimed_partner_output) : 0.0f;
+@@ -2290,7 +2292,7 @@
+             const float worth = static_cast<float>(gems) * (1.0f + keep_bonus(G)) + per_gold * static_cast<float>(gold);
+             // The fewest rounds it can take (a payout comes after our arrival): no better than the best, and not
+             // the best already, it is not picked (a worth's rate falls with its rounds).
+-            if (best != g && worth >= 0 && !(rate(world, worth, static_cast<float>(least + (held ? 1 : capture_rounds(world)))) > best_value)) return;
++            if (best != g && worth >= 0 && !(rate(world, worth, static_cast<float>(least + (held ? 1 : priced_hold(world)))) > best_value)) return;
+             int timer = 0;
+             if (held ? !prism_takeover(world, safety, G, timer, goal) : !prism_carries(world, safety, G, goal)) return;
+             // The fuel is for the field's search: made already, the read is free (the test dropped ~8% of Prism's gems).
+@@ -2311,7 +2313,7 @@
+             // A holder whose recall lands before we arrive leaves the tiles empty for a whole hold of ours.
+             const bool in_time = held && walk < timer && holders_stay(world, G, round + walk);
+             // No more than the loop's bound on a cleared group: the walk is at least the crow's.
+-            const int rounds = in_time ? timer : walk + capture_rounds(world);
++            const int rounds = in_time ? timer : walk + priced_hold(world);
+             const float value = rate(world, worth, static_cast<float>(rounds));
+             // Our pick already, taken over as the carry for its goal and the carry's stickiness.
+             if (value > best_value || (best == g && !in_time)) {
+@@ -2355,12 +2357,12 @@
+             float health = 0;
+             for (std::size_t i = 0; i < G.members.size(); ++i) health += std::max(0.0f, c.health[i]);
+             if (!(health > 0)) continue;
+-            const float clear = health / output, ours = clear + static_cast<float>(capture_rounds(false));
++            const float clear = health / output, ours = clear + static_cast<float>(capture_rounds(false) + 1);
+             const int gems = std::min(G.gems + (prospector ? prospected(G.cluster_gems, 1) : 0), short_by);
+             const int gold = G.gold + (prospector ? prospected(G.cluster_gold, 1) : 0);
+             const float worth = static_cast<float>(gems) * (1.0f + keep_bonus(G)) + per_gold * static_cast<float>(gold);
+             // Its rounds grow with the walk, at least the crow's: no better than the best then, it is not picked.
+-            const auto rounds_at = [&](int walk) { return static_cast<float>(walk) < ours ? ours : static_cast<float>(walk + capture_rounds(world)); };
++            const auto rounds_at = [&](int walk) { return static_cast<float>(walk) < ours ? ours : static_cast<float>(walk + priced_hold(world)); };
+             if (worth >= 0 && !(rate(world, worth, rounds_at(steps_to(G, here))) > best_value)) continue;
+             bool seen = false;
+             for (const auto& m : G.members) seen |= enemy_may_see(world, m.pos);

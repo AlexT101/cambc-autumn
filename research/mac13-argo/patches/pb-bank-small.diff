@@ -1,0 +1,12 @@
+diff -ru bots/variants/chy-ref/src/params.h bots/variants/pb-bank-small/src/params.h
+--- bots/variants/chy-ref/src/params.h	2026-11-13 01:55:39.402671557 +0000
++++ bots/variants/pb-bank-small/src/params.h	2026-11-13 02:14:18.197306868 +0000
+@@ -118,7 +118,7 @@
+ // takes the bag, a swing of bag_swing times it. The prior is bag-carrier deaths per champion-round
+ // alive with 25+ gems, measured on 10,240 macro3-base games.
+ inline constexpr float carrier_hazard = 0.86e-3f;
+-inline constexpr float bag_swing = 2.0f;
++inline constexpr float bag_swing = 18.0f;
+ 
+ // Cassi's or Issac's hold is worth this share of another ally's in the holder choice
+ // (economy/capture.cc hold_shy): the pair hands captures to the rest of the team.

@@ -1,0 +1,431 @@
+diff -ruN -x .cambc bots/variants/chy-ref/src/economy/farm.cc bots/variants/h-campnet/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 01:55:41.693702461 +0000
++++ bots/variants/h-campnet/src/economy/farm.cc	2026-11-13 03:31:29.260719873 +0000
+@@ -1768,8 +1768,14 @@
+         if ((group.has_monolith && map.monolith_only) || group.gems + group.gold == 0
+             || (belief.state == CampState::cleared && (ally_holding(g) || belief.holder == team::enemy))
+             || (belief.state != CampState::cleared && kited(g) && kite_owns(world, g)) || siege_declines(world, g)
+-            || (belief.state == CampState::cleared && left_for_prism(world, pathing, g)))
++            || (belief.state == CampState::cleared && left_for_prism(world, pathing, g))) {
++            debug_block({
++                if constexpr (!repricing)
++                    if (belief.state == CampState::cleared && belief.holder == team::enemy && belief.reported >= 0)
++                        std::printf("CAMPNET avoid %d %u g%d\n", round, my_handle(), g);
++            });
+             continue;
++        }
+         // A Monolith with an enemy in sight near it is not taken up: our crew would clear it for
+         // them. Unless the enemy already stands in its reach, taking the hits.
+         if (group.has_monolith && g != memory.claim && belief.state != CampState::cleared && mono_contested(world, g)) continue;
+@@ -2424,6 +2430,12 @@
+                         chosen.mode, chosen.trips, chosen.tank, chosen.expected, chosen.output, chosen.damage, my_health(), max_health);
+         }
+     });
++    debug_block({
++        if constexpr (!repricing)
++            if (best >= 0 && world.camps[best].state == CampState::cleared && world.camps[best].reported >= 0)
++                std::printf("CAMPNET pick %d %u g%d %c prism %d hold %d\n", round, my_handle(), best, chosen.mode,
++                            world.me().facts().passive == Passive::gem_focus, world.camps[best].holder ? 1 : 0);
++    });
+     if constexpr (!repricing) memo.carry_group = best >= 0 && (chosen.mode == 'G' || chosen.mode == 'L' || chosen.mode == 'Q') ? best : -1, memo.carry_round = round;
+     if (best < 0) {
+         if constexpr (repricing) return true;
+diff -ruN -x .cambc bots/variants/chy-ref/src/model/comms.cc bots/variants/h-campnet/src/model/comms.cc
+--- bots/variants/chy-ref/src/model/comms.cc	2026-11-13 01:55:41.693702461 +0000
++++ bots/variants/h-campnet/src/model/comms.cc	2026-11-13 03:50:51.396949858 +0000
+@@ -16,8 +16,12 @@
+ // teammate derives the same layout. Least significant first:
+ //   claims    one field per ally index: its claimed group + 1, 0 for none
+ //   bag       bag in fours, rounded up, * team + carrying ally's index
+-//   camp      0 = none, else 1 + offset[captured group] + its respawn round mod period[group];
+-//             left out (never posted) when it does not fit
++//   camp      0 = none, else 1 + offset[g] + one of group g's codes, a correction of the team's
++//             picture of g: [0, period[g]) respawning, its respawn round mod period[g]; period[g] and
++//             + 1 cleared with no capture under way, seen since the reader's previous turn (two
++//             codes, alternating by report life, so a repost always changes the bits); then
++//             [period[g] + 2, + hold_period) the enemy capturing it, its payout round mod
++//             hold_period. Left out (never posted) when it does not fit
+ //   ally      0 = none, else 1 + cell * 4 team + 4 ally index + round mod 4 (params::comms_ally): a
+ //             c x c square (c odd: 1, 3 or 5, the narrowest that fits) centred on the record's tile;
+ //             left out when it does not fit
+@@ -37,6 +41,10 @@
+ // A posted respawn round lies within a group's respawn of the post, which a reader reads within a
+ // round; the slack covers a reader that missed this many turns (out of fuel).
+ constexpr int camp_slack = 16;
++// An enemy hold's payout lies within capture_time + 1 rounds of the post: decoded exactly by a reader
++// that missed up to this many turns since the post's round.
++constexpr int hold_slack = 2;
++int hold_period() { return cambc::constants::capture_time + 1 + hold_slack; }
+ 
+ struct Layout {
+     bool ready = false, camp_on = false;
+@@ -45,12 +53,14 @@
+     std::array<BitField, 8> claim{}; // by ally index
+     BitField bag, camp;
+     std::vector<int> camp_offset; // by group, then the total
++    std::vector<int> camp_period; // by group: its respawn codes
++    int clear_codes = 0, hold_codes = 0; // a group's codes past them: 2 and hold_period, or 0 where they don't fit
+     std::uint64_t bag_bits = 0, camp_bits = 0;
+     bool ally_on = false;
+     BitField ally;
+     std::uint64_t ally_bits = 0;
+     int cell = 1, cells_y = 1;
+-    int period(int g) const { return camp_offset[g + 1] - camp_offset[g]; }
++    int period(int g) const { return camp_period[static_cast<std::size_t>(g)]; }
+ };
+ 
+ Layout layout_;
+@@ -62,9 +72,9 @@
+     const auto& map = world.map();
+     L.team = std::clamp(static_cast<int>(world.allies.size()), 1, 8);
+     const int groups = std::min(static_cast<int>(map.groups.size()), max_group);
+-    L.camp_offset.assign(static_cast<std::size_t>(groups + 1), 0);
++    L.camp_period.assign(static_cast<std::size_t>(groups), 0);
+     for (int g = 0; g < groups; ++g)
+-        L.camp_offset[static_cast<std::size_t>(g + 1)] = L.camp_offset[static_cast<std::size_t>(g)] + map.groups[static_cast<std::size_t>(g)].respawn + 1 + camp_slack;
++        L.camp_period[static_cast<std::size_t>(g)] = map.groups[static_cast<std::size_t>(g)].respawn + 1 + camp_slack;
+     const auto width_of = [](std::uint64_t states) { return static_cast<int>(std::bit_width(states - 1)); };
+     int shift = 0;
+     const auto field = [&](int width) {
+@@ -77,19 +87,46 @@
+     L.claim_cap = (1 << claim_width) - 1;
+     for (int i = 0; i < L.team; ++i) L.claim[static_cast<std::size_t>(i)] = field(claim_width);
+     L.bag = field(bag_width);
+-    const int camp_width = static_cast<int>(std::bit_width(static_cast<std::uint64_t>(L.camp_offset.back())));
+-    L.camp_on = shift + camp_width <= 64;
+-    if (L.camp_on) L.camp = field(camp_width);
+-    if (params::comms_ally && L.camp_on)
++    // The camp record's width with `extra` codes a group past its respawn codes, and the ally record's
++    // cell then (0: left out).
++    const auto camp_width_of = [&](int extra) {
++        std::uint64_t total = 0;
++        for (const int period : L.camp_period) total += static_cast<std::uint64_t>(period + extra);
++        return static_cast<int>(std::bit_width(total));
++    };
++    // -1: no camp record either.
++    const auto ally_cell = [&](int camp_width) {
++        const int at = shift + camp_width;
++        if (at > 64) return -1;
++        if (!params::comms_ally) return 0;
+         for (const int c : {1, 3, 5}) {
+             const auto cells = static_cast<std::uint64_t>((map.width + c - 1) / c) * static_cast<std::uint64_t>((map.height + c - 1) / c);
+-            const int width = width_of(cells * 4 * static_cast<std::uint64_t>(L.team) + 1);
+-            if (shift + width > 64) continue;
+-            L.cell = c, L.cells_y = (map.height + c - 1) / c;
+-            L.ally = field(width);
+-            L.ally_on = true;
+-            break;
++            if (at + width_of(cells * 4 * static_cast<std::uint64_t>(L.team) + 1) <= 64) return c;
+         }
++        return 0;
++    };
++    // The clear and hold codes only where the camp record still fits and the ally record keeps the
++    // cell it has with respawns alone: first both, then the clears alone, else neither.
++    const int bare = ally_cell(camp_width_of(0));
++    L.clear_codes = 2, L.hold_codes = hold_period();
++    if (ally_cell(camp_width_of(L.clear_codes + L.hold_codes)) != bare) L.hold_codes = 0;
++    if (ally_cell(camp_width_of(L.clear_codes + L.hold_codes)) != bare) L.clear_codes = 0;
++    L.camp_offset.assign(static_cast<std::size_t>(groups + 1), 0);
++    for (int g = 0; g < groups; ++g)
++        L.camp_offset[static_cast<std::size_t>(g + 1)] = L.camp_offset[static_cast<std::size_t>(g)] + L.period(g) + L.clear_codes + L.hold_codes;
++    const int camp_width = static_cast<int>(std::bit_width(static_cast<std::uint64_t>(L.camp_offset.back())));
++    L.camp_on = shift + camp_width <= 64;
++    if (L.camp_on) L.camp = field(camp_width);
++    if (const int c = ally_cell(0); L.camp_on && c > 0) {
++        const auto cells = static_cast<std::uint64_t>((map.width + c - 1) / c) * static_cast<std::uint64_t>((map.height + c - 1) / c);
++        L.cell = c, L.cells_y = (map.height + c - 1) / c;
++        L.ally = field(width_of(cells * 4 * static_cast<std::uint64_t>(L.team) + 1));
++        L.ally_on = true;
++    }
++    debug_block({
++        std::printf("CAMPNET layout groups %d team %d camp %d bits %d (was %d) used %d ally %d cell %d was_cell %d codes %d %d\n", groups, L.team,
++                    L.camp_on, camp_width, camp_width_of(0), shift, L.ally_on, L.ally_on ? L.cell : 0, std::max(bare, 0), L.clear_codes, L.hold_codes);
++    });
+     L.ally_bits = L.ally.mask;
+     L.bag_bits = L.bag.mask;
+     L.camp_bits = L.camp.mask;
+@@ -166,13 +203,34 @@
+     return whole(L.bag_bits) | whole(L.camp_bits) | whole(L.ally_bits);
+ }
+ 
+-// A nonzero capture record's group, and the respawn round it encodes: the first from our previous
+-// turn on with that residue.
+-std::pair<int, int> decode_capture(const Layout& L, std::uint64_t record) {
++enum class CampNote { respawning, cleared, enemy_hold };
++
++// The first round from `base` on with the residue r mod period.
++int first_from(int base, int r, int period) { return base + ((r - base % period) % period + period) % period; }
++
++// A nonzero camp record's group, its kind, and the round it encodes: the respawn or payout round, the
++// first from our previous turn on with its residue; for a clear, our previous turn's round.
++struct CampRecord {
++    int g;
++    CampNote note;
++    int round;
++};
++CampRecord decode_camp(const Layout& L, std::uint64_t record, int now) {
+     const int code = static_cast<int>(record) - 1;
+     const int g = static_cast<int>(std::upper_bound(L.camp_offset.begin(), L.camp_offset.end(), code) - L.camp_offset.begin()) - 1;
+-    const int period = L.period(g), base = std::max(state.last_round, 0) + 1;
+-    return {g, base + ((code - L.camp_offset[static_cast<std::size_t>(g)] - base % period) % period + period) % period};
++    const int k = code - L.camp_offset[static_cast<std::size_t>(g)], period = L.period(g);
++    const int base = state.last_round >= 0 ? state.last_round + 1 : now;
++    if (k < period) return {g, CampNote::respawning, first_from(base, k, period)};
++    if (k < period + L.clear_codes) return {g, CampNote::cleared, base - 1};
++    return {g, CampNote::enemy_hold, first_from(base, k - period - L.clear_codes, hold_period())};
++}
++
++std::uint64_t camp_code(const Layout& L, int g, CampNote note, int round) {
++    const auto at = static_cast<std::uint64_t>(1 + L.camp_offset[static_cast<std::size_t>(g)]);
++    const int period = L.period(g);
++    if (note == CampNote::respawning) return at + static_cast<std::uint64_t>(round % period);
++    if (note == CampNote::cleared) return at + static_cast<std::uint64_t>(period + (round / World::cleared_report_life() & 1));
++    return at + static_cast<std::uint64_t>(period + L.clear_codes + round % hold_period());
+ }
+ 
+ } // namespace
+@@ -201,8 +259,13 @@
+                                                            round - ((round - kind) & 3)};
+     }
+     if (const auto record = L.camp.get(bits); (state.fresh & L.camp_bits) && record != 0) {
+-        const auto [g, respawn] = decode_capture(L, record);
+-        world.note_capture(g, respawn);
++        const auto r = decode_camp(L, record, round);
++        debug_block({ std::printf("CAMPNET apply %d %u g%d %d at %d seen %d\n", round, my_handle(), r.g, static_cast<int>(r.note), r.round,
++                                  world.camps[static_cast<std::size_t>(r.g)].state_round == round); });
++        if (r.note == CampNote::respawning) world.note_capture(r.g, r.round);
++        else if (r.note == CampNote::cleared) world.note_cleared(r.g, r.round);
++        // Past hold_slack missed turns the payout's residue is ambiguous.
++        else if (state.last_round < 0 || round - state.last_round <= hold_slack) world.note_enemy_hold(r.g, r.round);
+     }
+     state.last = bits;
+     state.last_round = round;
+@@ -225,19 +288,66 @@
+     else if (moved) note_shortcut("comms-stale-vision");
+     if (world.resumed()) return;
+ 
++    // The most valuable correction of the team's camp picture: a capture seen (its respawn), then a
++    // gem group in sight cleared and free to take (most gems first), then an enemy hold in sight.
++    // Our own team's holds the holders and claimers know already.
+     if (camp_free) {
+         const auto& groups = world.map().groups;
++        const int camp_groups = static_cast<int>(L.camp_period.size());
++        bool posted = false;
+         world.each_respawning([&](int g) {
+-            if (g >= max_group) return true;
++            if (g >= camp_groups) return true;
+             auto& c = world.camps[g];
+             if (c.respawn_round <= round || c.told_respawn == c.respawn_round) return false;
+             // Seen respawning, not inferred from a hold out of sight.
+             if (c.state_round + groups[g].respawn < c.respawn_round) return false;
+-            L.camp.set(bits, static_cast<std::uint64_t>(1 + L.camp_offset[static_cast<std::size_t>(g)] + c.respawn_round % L.period(g)));
++            L.camp.set(bits, camp_code(L, g, CampNote::respawning, c.respawn_round));
+             c.told_respawn = c.respawn_round;
+-            dirty = true;
++            debug_block({ std::printf("CAMPNET post %d %u g%d 0 at %d\n", round, my_handle(), g, c.respawn_round); });
++            dirty = posted = true;
+             return true;
+         });
++        if (!posted) {
++            // Read in sight this turn, and again now: our own turn may have stepped on it or killed its holder.
++            // The team was told neither this hold nor, within a report's life, this clear: reposted a little
++            // before the readers' copies lapse (a reader dates it from its previous turn).
++            static cambc::detail::camp_group_capture_state capture;
++            const auto capture_reads = [&](const CampGroup& G, cambc::map::camp_group_capture_type want) {
++                return cambc::detail::sdk_camp_group_capture_state(G.handle, &capture) == 0 && capture.state == static_cast<std::int32_t>(want);
++            };
++            const int renew = World::cleared_report_life() - hold_slack;
++            int clear = -1, hold = -1, hold_payout = -1;
++            world.each_cleared([&](int g) {
++                const auto& c = world.camps[g];
++                const auto& G = groups[g];
++                // A cleared Monolith is its crew's, all in sight of it: its siege reads it there.
++                if (g >= camp_groups || c.state_round != round || G.gems <= 0 || G.has_monolith) return;
++                if (c.holder == team::enemy) {
++                    if (L.hold_codes == 0) return;
++                    if (c.held_since < 0 || c.payout_round() <= round || c.told_hold == c.payout_round()) return;
++                    if (hold >= 0 && G.gems <= groups[hold].gems) return;
++                    if (!capture_reads(G, cambc::map::camp_group_capture_type::enemy_capturing) || capture.timer <= 0) return;
++                    hold = g, hold_payout = round + capture.timer;
++                    return;
++                }
++                if (c.holder || L.clear_codes == 0 || (c.told_cleared >= 0 && round - c.told_cleared < renew)) return;
++                if (clear >= 0 && G.gems <= groups[clear].gems) return;
++                // Not contested and nobody counting: the record says it is there to take.
++                if (!capture_reads(G, cambc::map::camp_group_capture_type::capture_available)) return;
++                clear = g;
++            });
++            if (clear >= 0) {
++                L.camp.set(bits, camp_code(L, clear, CampNote::cleared, round));
++                world.camps[clear].told_cleared = static_cast<std::int16_t>(round);
++                debug_block({ std::printf("CAMPNET post %d %u g%d 1 at %d\n", round, my_handle(), clear, round); });
++                dirty = true;
++            } else if (hold >= 0) {
++                L.camp.set(bits, camp_code(L, hold, CampNote::enemy_hold, hold_payout));
++                world.camps[hold].told_hold = static_cast<std::int16_t>(hold_payout);
++                debug_block({ std::printf("CAMPNET post %d %u g%d 2 at %d\n", round, my_handle(), hold, hold_payout); });
++                dirty = true;
++            }
++        }
+     }
+ 
+     // Only we write our field, so it holds what we last posted.
+diff -ruN -x .cambc bots/variants/chy-ref/src/model/world.cc bots/variants/h-campnet/src/model/world.cc
+--- bots/variants/chy-ref/src/model/world.cc	2026-11-13 01:55:41.695702488 +0000
++++ bots/variants/h-campnet/src/model/world.cc	2026-11-13 03:41:27.147658331 +0000
+@@ -1727,17 +1727,17 @@
+     // Each a copy of one start belief, held in SIMD locals, and its slices: constructing each wrote
+     // every field (~110 fuel a group), and a memcpy is a memory.copy at a fuel a byte.
+     camps.resize(groups);
+-    static_assert(sizeof(CampBelief) == 104 && std::is_trivially_copyable_v<CampBelief>);
++    static_assert(sizeof(CampBelief) == 112 && std::is_trivially_copyable_v<CampBelief>);
+     const CampBelief start;
+     const auto* from = reinterpret_cast<const unsigned char*>(&start);
+     const v128_t s0 = wasm_v128_load(from), s1 = wasm_v128_load(from + 16), s2 = wasm_v128_load(from + 32);
+     const v128_t s3 = wasm_v128_load(from + 48), s4 = wasm_v128_load(from + 64), s5 = wasm_v128_load(from + 80);
+-    const v128_t s6 = wasm_v128_load64_zero(from + 96);
++    const v128_t s6 = wasm_v128_load(from + 96);
+     auto* to = reinterpret_cast<unsigned char*>(camps.data());
+     for (std::size_t g = 0; g < groups; ++g, to += sizeof(CampBelief)) {
+         wasm_v128_store(to, s0), wasm_v128_store(to + 16, s1), wasm_v128_store(to + 32, s2);
+         wasm_v128_store(to + 48, s3), wasm_v128_store(to + 64, s4), wasm_v128_store(to + 80, s5);
+-        wasm_v128_store64_lane(to + 96, s6, 0);
++        wasm_v128_store(to + 96, s6);
+         auto& c = *reinterpret_cast<CampBelief*>(to);
+         const auto size = group[g].members.size();
+         c.health = StaticArray<float>(health_pool, health_used, size);
+@@ -2151,10 +2151,63 @@
+     c.asleep = 0;
+     c.holder.reset();
+     c.held_since = -1;
++    c.reported = -1;
+     if (moved) camp_moved(static_cast<std::size_t>(group));
+     note_stirring(group);
+ }
+ 
++namespace {
++// A teammate's report of group g cleared, no earlier than `seen_round`, merged into a belief not read
++// this turn: every member dead, nobody's capture under way.
++bool note_reported_clear(CampBelief& c, const CampGroup& G, int seen_round, std::uint32_t& camp_geometry_version) {
++    bool died = c.state == CampState::alive;
++    for (std::size_t i = 0; i < G.members.size(); ++i) {
++        died |= c.health[i] > 0;
++        if (c.health[i] != 0) ++c.version;
++        c.health[i] = 0, c.health_round[i] = std::max(c.health_round[i], seen_round);
++    }
++    if (died) ++camp_geometry_version, ++c.geometry_version;
++    const bool moved = c.state != CampState::cleared || c.holder;
++    c.version += moved;
++    c.state = CampState::cleared;
++    c.awake = Awake::asleep;
++    c.asleep = 0;
++    c.holder.reset();
++    c.held_since = -1;
++    c.occupants = 0;
++    c.reported = static_cast<std::int16_t>(seen_round);
++    return moved || died;
++}
++} // namespace
++
++void World::note_cleared(int group, int seen_round) {
++    if (group < 0 || group >= static_cast<int>(camps.size()) || seen_round > round) return;
++    auto& c = camps[group];
++    c.told_cleared = static_cast<std::int16_t>(std::max<int>(c.told_cleared, seen_round));
++    if (c.state_round == round) return; // in view: our own reading stands
++    if (static_cast<std::size_t>(group) < 64 * camps_pending_.size()) camps_pending_[group >> 6] |= std::uint64_t{1} << (group & 63);
++    const auto version = c.version;
++    note_reported_clear(c, map().groups[group], seen_round, camp_geometry_version);
++    if (c.version != version) camp_moved(static_cast<std::size_t>(group));
++    note_stirring(group);
++}
++
++void World::note_enemy_hold(int group, int payout_round) {
++    if (group < 0 || group >= static_cast<int>(camps.size()) || payout_round <= round) return;
++    auto& c = camps[group];
++    c.told_hold = static_cast<std::int16_t>(payout_round);
++    if (c.state_round == round) return; // in view: our own reading stands
++    if (static_cast<std::size_t>(group) < 64 * camps_pending_.size()) camps_pending_[group >> 6] |= std::uint64_t{1} << (group & 63);
++    if (c.state == CampState::cleared && c.holder == team::enemy && c.held_since == payout_round - cambc::constants::capture_time - 1) return;
++    const auto version = c.version;
++    // Seen this round or last, held from no later than that.
++    note_reported_clear(c, map().groups[group], round - 1, camp_geometry_version);
++    c.holder = team::enemy;
++    c.held_since = payout_round - cambc::constants::capture_time - 1;
++    if (c.version != version) camp_moved(static_cast<std::size_t>(group));
++    note_stirring(group);
++}
++
+ void World::note_stirring(int g) {
+     const auto& c = camps[g];
+     const std::uint64_t bit = std::uint64_t{1} << (g % 64);
+@@ -2565,6 +2618,7 @@
+                 // Out of view, it changes only when a timer runs out.
+                 const auto& c = camps[g];
+                 if (!(c.state == CampState::cleared && c.holder && round >= c.payout_round())
++                    && !(c.state == CampState::cleared && !c.holder && c.reported >= 0 && round > c.reported + cleared_report_life())
+                     && !(c.state == CampState::respawning && round >= c.respawn_round)
+                     && !(c.awake == Awake::awake && round - c.state_round > cambc::constants::camp_sleep_time))
+                     continue;
+@@ -2576,7 +2630,8 @@
+             if (settled) continue;
+             guard("camp", [&] { update_camp(g, in_view, views); });
+             const auto& c = camps[g];
+-            const bool pending = (c.state == CampState::cleared && c.holder) || c.state == CampState::respawning || c.awake == Awake::awake;
++            const bool pending = (c.state == CampState::cleared && (c.holder || c.reported >= 0)) || c.state == CampState::respawning
++                                 || c.awake == Awake::awake;
+             camps_pending_[w] = pending ? camps_pending_[w] | bit : camps_pending_[w] & ~bit;
+             if (c.version != version) camp_moved(g);
+             note_stirring(static_cast<int>(g));
+@@ -2627,6 +2682,13 @@
+             c.holder.reset();
+             c.held_since = -1;
+         }
++        // A reported clear not seen again since its report's life: taken by then, at the soonest.
++        if (c.state == CampState::cleared && !c.holder && c.reported >= 0 && round > c.reported + cleared_report_life()) {
++            c.state = CampState::respawning;
++            ++c.version;
++            c.respawn_round = c.reported + cambc::constants::capture_time + 1 + G.respawn;
++        }
++        if (c.state != CampState::cleared) c.reported = -1;
+         if (c.state == CampState::respawning && round >= c.respawn_round) {
+             ++camp_geometry_version, ++c.geometry_version;
+             c.state = CampState::alive;
+@@ -2636,6 +2698,7 @@
+         return;
+     }
+ 
++    c.reported = -1;
+     const auto [code, timer] = engine::group_state(G.handle);
+     const auto previous = c.state;
+     const int previous_round = c.state_round;
+diff -ruN -x .cambc bots/variants/chy-ref/src/model/world.h bots/variants/h-campnet/src/model/world.h
+--- bots/variants/chy-ref/src/model/world.h	2026-11-13 01:55:41.695702488 +0000
++++ bots/variants/h-campnet/src/model/world.h	2026-11-13 03:26:19.222956798 +0000
+@@ -607,6 +607,12 @@
+     // Who stood on its tiles when last fully seen: bit i for allies[i], 16 + i for enemies[i].
+     std::uint32_t occupants = 0;
+     int told_respawn = -1; // the respawn round the team was told through comms
++    // Through comms (comms.cc's camp record): the round the team was last told it stood cleared and
++    // unheld, and the payout of the enemy hold it was told of.
++    std::int16_t told_cleared = -1, told_hold = -1;
++    // The round a teammate's report of it cleared (unheld or enemy-held) set this belief; -1 once our
++    // own reading follows.
++    std::int16_t reported = -1;
+     int cleared_by_us = -1; // the round our own turn killed its last member while we stood on it
+     // Changes whenever `state` or `health` does: results computed from them keep while it holds.
+     std::uint32_t version = 0;
+@@ -664,6 +670,14 @@
+     } expected_sighting, expected_second;
+     // A teammate saw the group captured, returning at `respawn_round`.
+     void note_capture(int group, int respawn_round);
++    // A teammate saw the group cleared with no capture under way, no earlier than `seen_round`.
++    void note_cleared(int group, int seen_round);
++    // A teammate saw the enemy capturing the cleared group, paying at `payout_round`.
++    void note_enemy_hold(int group, int payout_round);
++    // A teammate's report of a group cleared and unheld stands this many rounds unless our own sight
++    // or a later report renews it: long enough for the Prism a clearer leaves it to (carry_reach) to
++    // come, after which anyone near could have taken it.
++    static int cleared_report_life() { return 2 * cambc::constants::capture_time; }
+ 
+     void debug_output() const;
+ 
