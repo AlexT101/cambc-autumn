@@ -19157,6 +19157,24 @@ same-pin comparison. The older531/r8/Miter13 ablation remains parked.
 Evidence: [results and audit](ideas-2026-11-13/chy531-live/fish-r9-results.json),
 [audit script](ideas-2026-11-13/chy531-live/audit_fish_r9.py).
 
+### 2026-11-13 — Mite r13 is stale; latest531 baseline moved to r14
+
+The same v134 book, map/side, engine and seed wins all three recovery cells against
+r13, but against current Mite loses00rows/b and04two_kingdoms/a while retaining
+00galaxy/b. All five group replays, including two fillers, differ; each ZIP passed
+CRC and each task/source provenance check passed. A separate current00lanes/b
+observation also changes Mite's fourth draft pick from Cassi & Issac to Prism.
+This establishes changed opponent behavior, not a count of intervening uploads.
+Evidence: [direct comparison](ideas-2026-11-13/rbook/mite-r13-stale-v134.json).
+
+At21:22 UTC the coordinator moved the Mite campaign to r14 and queued v132/531
+on all170 maps from both sides (69 groups,340 unique cells). Its first submitted
+group will capture the fresh pin. Groups containing the six retained Fish-book
+cells run first for collateral eligibility. REST stays latest531book v134; old
+ablation tasks remain parked. The planned23-cell r13 eligibility check was cancelled
+before submission because its opponent pin is stale. Old r13 winning lines may be
+considered as explicitly unverified r14 handover candidates, never relabeled proof.
+
 v133 qualification completed: Fish 6/31, Mite collateral 3/6; all 37 source-pin
 proofs and ZIP CRCs passed. All six Fish wins came after replay divergence. Forced
 Fish lines on 00galaxy/b, 00rows/b and 04two_kingdoms/a regressed natural Mite wins.

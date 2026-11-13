@@ -131,6 +131,22 @@ class SchedPhases(unittest.TestCase):
         self.b.hold_control(118,hold=True,parked=[t['id'] for t in tasks])
         self.assertEqual(ls.held_tasks(),{tasks[1]['id']})
 
+    def test_gate_ignores_parked_campaigns_on_the_same_version(self):
+        wanted = ctask(0)
+        old_pin = dict(ctask(1), id='v117-old-pin-fish-01')
+        other_cells = dict(ctask(2), id='v117-earlier-cells-mite-01')
+        for t in (wanted, old_pin, other_cells):
+            ls.append_jsonl(ls.DATA/'tasks.jsonl', t)
+        unplanned, pending, *_ = self.b.gate_tasks(self.cur)
+        self.assertEqual([t['id'] for t in pending], [wanted['id']])
+        self.assertEqual(len(unplanned), 9)
+        for t in (wanted, *unplanned):
+            if t != wanted:
+                ls.append_jsonl(ls.DATA/'tasks.jsonl', t)
+            self.create(t, 117)
+        unplanned, pending, *_ = self.b.gate_tasks(self.cur)
+        self.assertEqual((unplanned, pending), ([], []))
+
     def test_explicit_cells_can_check_current_without_changing_source_pin(self):
         oid, name = ls.TEAMS['mite']
         cells = [dict(map=f'map{i}', map_id=f'id{i}', side='a') for i in range(5)]

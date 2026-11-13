@@ -511,7 +511,8 @@ class Batches:
                 tasks, created, dropped
         allspec = specs(self.ls, cur['version'], cur['rsets'], self.s.now(), cur.get('parts')) if cur['version'] else None
         unplanned = [t for t in allspec if t['id'] not in ids] if allspec else None
-        planned_pending = [t for t in tasks if t['version'] == cur['version'] and t.get('campaign') == 'batches'
+        campaign_ids = {t['id'] for t in allspec} if allspec else set()
+        planned_pending = [t for t in tasks if t['id'] in campaign_ids
                            and t['id'] not in created and t['id'] not in dropped] if cur['version'] else []
         return unplanned, planned_pending, tasks, created, dropped
 

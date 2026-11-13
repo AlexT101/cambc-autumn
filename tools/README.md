@@ -308,6 +308,8 @@ py tools/version_record.py 50                        # our version 50's record p
   continuously, and `baseline_version` to compare with a completed candidate instead of the legacy control.
   `set-full170.json` covers all 170 ladder maps in five-map chunks, interleaving both opponents and both sides.
   Scheduler `parked_task_ids` remain held across control changes, preserving unfinished lower-priority tests.
+  Campaign completion counts only its generated task IDs (or explicit cell-task IDs), so parked tests of the
+  same bot on older opponent pins do not block a new-pin campaign.
   - **Outcome-only baselines:** `data/OUTCOME-ONLY-VERSIONS.json` optionally lists versions whose pinned `set`
     games need only outcomes and drafts from group detail. These rows explicitly say `collection: outcome_only`
     and have no replay/summary metrics. Use only for book-free host-loss selection; other versions and all
