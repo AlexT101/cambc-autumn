@@ -1,5 +1,19 @@
 # Replay book: handoff (2026-11-13 09:00Z)
 
+## Update 09:50Z (successor agent)
+
+- x1 (`rbook-x`, 411) passed every check (verify 411/411, bundle 4,833,618, fallback 0 invalid, 100M 49/52 = forced
+  cells, forcecheck 21/0 bad); live as a candidate on `x1/cells30-{fish,mite}.json`. Real fuel 192/300 = v122's 191:
+  the recorded-format host's per-turn overhead, not the book.
+- v123 (forced lines vs Mite r10): 11/35 won. Rule applied in x2 (`rbook-x2`, work `x2`): 4 displaced cells un-forced
+  (00expanse a, 00elkring b, 05nest b, 05space_station b), 8 forced cells added where the line beat Mite, v123 wins as
+  forced Mite entries (`extra.tsv` 5th field `mite`: replaces that opponent's entry; `--force-versions 901,123`).
+  x2: 410 (Fish 208, Mite 202, 34 forced), all checks pass (100M 48/52 = forced cells). To go up as REST once x1's
+  games replay. Sweep lists: `x2/sweep-mite.json` (202), `sweep-fish.json` (26 forced/exact), `sweep-fish-rest.json`.
+- v124 (stage 1, plain): Mite reads priorities too (25/40 diverged, 34/40 won); Fish 7/10 same, 10/10 won. Plain is
+  out for both.
+- Host swap: `hostswap.sh SRC DST`, then `REF=DST-base PRIO=seeded stage.sh ...` (it prints the commands).
+
 Goal: a book of recorded wins that the finals bot replays against Fish and Mite on the 170 ladder maps (340 cells
 each), Fish and Mite roughly level ("80%-80% or 70%-70%", user). Lock is Fri 23:59Z. Report to the coordinator
 ("main", via SendMessage); it relays live actions and the user.
