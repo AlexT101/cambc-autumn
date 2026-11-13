@@ -1,0 +1,114 @@
+diff -ru ia-contest/src/bot.cc ia-prism/src/bot.cc
+--- ia-contest/src/bot.cc	2026-11-13 15:12:58.938667279 +0000
++++ ia-prism/src/bot.cc	2026-11-13 17:45:15.590392970 +0000
+@@ -662,7 +662,7 @@
+     fixc_bush_threatened = false;
+     if (!world.me().can_act(world.round)) return;
+     fixc_bush_threatened = fixc_bush_threat(world, safety);
+-    if (const auto* ender = game_ender(world); ender && holds_hard_stop(world, *ender)) {
++    if (const auto* ender = ender_to_stop(world); ender && holds_hard_stop(world, *ender) && stop_due(world, *ender)) {
+         stop_game_ender(world, pathing, memory, *ender);
+         return;
+     }
+diff -ru ia-contest/src/bot_parts.h ia-prism/src/bot_parts.h
+--- ia-contest/src/bot_parts.h	2026-11-13 15:47:49.608416658 +0000
++++ ia-prism/src/bot_parts.h	2026-11-13 16:54:33.746588994 +0000
+@@ -358,6 +358,9 @@
+ const ChampionBelief* game_ender(const World& world);
+ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e);
+ bool holds_hard_stop(const World& world, const ChampionBelief& e);
++bool stop_due(const World& world, const ChampionBelief& e);
++// game_ender, else the unseen winning tribute whose stop we put off.
++const ChampionBelief* ender_to_stop(const World& world);
+ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ 
+ // economy/comeback.cc: cooked comebacks.
+diff -ru ia-contest/src/combat/abilities.cc ia-prism/src/combat/abilities.cc
+--- ia-contest/src/combat/abilities.cc	2026-11-13 14:14:04.880897624 +0000
++++ ia-prism/src/combat/abilities.cc	2026-11-13 16:54:43.330885401 +0000
+@@ -154,6 +154,9 @@
+ 
+ float stun_worth(const World& world, const ChampionBelief& e, bool damaging) {
+     if (e.facts().passive == Passive::stun_immune) return 0;
++    // A winning tribute's stun before its stop is due (stop_due) gains nothing: the channeller would not act, and the
++    // stun frees it.
++    if (e.channel == Channel::tribute && enemy_tribute_wins(world, e) && !stop_due(world, e)) return 0;
+     // The turn it loses: in sight, what that turn's strike deals at our nearest body (cooldowns as
+     // they will be then); else its damage a turn. A stunned tributer keeps its bag: the stun only
+     // puts off its tribute, by the lost turn and a channel restarted whole.
+diff -ru ia-contest/src/combat/fight.cc ia-prism/src/combat/fight.cc
+--- ia-contest/src/combat/fight.cc	2026-11-13 15:59:12.897448024 +0000
++++ ia-prism/src/combat/fight.cc	2026-11-13 17:41:30.240036803 +0000
+@@ -1271,6 +1271,46 @@
+     return tribute_altar(world, e.pos) >= 0 && carried_locks() > 0;
+ }
+ 
++// A tribute's stop goes in at its channel's end, not its start: a stun or lock cancels it whenever it lands, but an
++// early one frees the channeller to act and lets it restart a channel it must sit through again, while the stopper
++// waits beside its guards. Due once the rounds to the channel's last stop are within our steps to a stop and one
++// ability cooldown, in which each enemy stunner can cost us at most one turn and a stun of ours spent meanwhile is back.
++// Judged once a turn, from the turn's start: a step in towards the stop would put it off again mid-turn.
++bool stop_due(const World& world, const ChampionBelief& e) {
++    if (e.channel != Channel::tribute) return true;
++    static int round = -1;
++    static std::array<signed char, 8> kept;
++    if (round != world.round) round = world.round, kept.fill(-1);
++    auto& k = kept[static_cast<std::size_t>(e.index & 7)];
++    if (k < 0) {
++        const int steps = intercept_steps(world, e, my_position());
++        k = steps == unreachable || last_round_before_channel_ends(world, e) - world.round <= steps + ability_cooldown;
++    }
++    return k > 0;
++}
++
++namespace {
++// The winning tribute whose stop we put off (stop_due), kept for the turns it is out of our sight: a channel cannot move.
++int deferred_ender = -1;
++} // namespace
++
++const ChampionBelief* ender_to_stop(const World& world) {
++    if (const auto* e = game_ender(world)) {
++        deferred_ender = e->index;
++        return e;
++    }
++    if (deferred_ender < 0 || deferred_ender >= static_cast<int>(world.enemies.size())) return nullptr;
++    const auto& e = world.enemies[static_cast<std::size_t>(deferred_ender)];
++    // Seen and no longer an ender, or its channel over by our belief: forgotten.
++    if (e.visible || !e.alive || e.channel != Channel::tribute || e.channel_end_round < world.round) {
++        deferred_ender = -1;
++        return nullptr;
++    }
++    // As game_ender: our winning bag's win landing first leaves it no ender.
++    if (winning_bag(world) && win_lands(world) < turn_start(world, e, e.channel_end_round)) return nullptr;
++    return &e;
++}
++
+ // Into reach of the enemy whose bag ends the game, whatever the risk: a stun or a lock if it is
+ // tributing, else attacks, followed until it stops at an altar.
+ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e) {
+diff -ru ia-contest/src/economy/bank.cc ia-prism/src/economy/bank.cc
+--- ia-contest/src/economy/bank.cc	2026-11-13 14:14:04.882606986 +0000
++++ ia-prism/src/economy/bank.cc	2026-11-13 17:41:30.240876904 +0000
+@@ -1459,9 +1459,9 @@
+     decision = Branch::tribute_kept;
+     // The enemy's winning tribute, while we hold a hard stop for it (holds_hard_stop) or a ready stun
+     // in reach, is the game: ours waits, unless ours wins first or, winning later, an ally stops theirs in time.
+-    const auto* ender = game_ender(world);
++    const auto* ender = ender_to_stop(world);
+     const auto* stop = ender && holds_hard_stop(world, *ender) ? ender : stoppable_winning_tribute(world);
+-    if (stop && !(winning_bag(world) && ally_stops(world, *stop))) {
++    if (stop && stop_due(world, *stop) && !(winning_bag(world) && ally_stops(world, *stop))) {
+         throw_if_stale();
+         try {
+             self_acted(), me.cancel_submit_gems();
+@@ -1493,7 +1493,8 @@
+ bool continue_recall(World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home, int recall_farm) {
+     auto& me = cambc::self();
+     decision = Branch::recall_kept;
+-    if (const auto* ender = game_ender(world); ender && holds_hard_stop(world, *ender)) {
++    // Cancelled while we hold a stop, due or not: a recall lands where the stop may be out of reach when it comes due.
++    if (const auto* ender = ender_to_stop(world); ender && holds_hard_stop(world, *ender)) {
+         throw_if_stale();
+         try {
+             self_acted(), me.cancel_recall();
+Only in ia-prism/src/economy: bank.cc.orig

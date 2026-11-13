@@ -1,0 +1,127 @@
+diff -ru ia-prism-v1/src/bot.cc ia-duel-v5/src/bot.cc
+--- ia-prism-v1/src/bot.cc	2026-11-13 16:54:33.746734696 +0000
++++ ia-duel-v5/src/bot.cc	2026-11-13 17:55:47.117092322 +0000
+@@ -1016,6 +1016,35 @@
+                         ender ? static_cast<int>(ally_stops(world, *ender)) : -1);
+         }
+     });
++    // Study trace (line G): our Prism's predicted danger at its end tile and every enemy belief.
++    debug_block({
++        if (world.me().alive && world.me().facts().passive == Passive::gem_focus && !world.is_stale()) {
++            try {
++                const vec2 here = my_position();
++                const auto b = safety.bound(here, world.me().taken);
++                const float camp = safety.camp_damage(here, true, true);
++                const int tki = my_gems() >= 50 ? safety.turns_to_kill_idle(here, 12) : -1;
++                std::array<Safety::ThreatAt, 16> at{};
++                const int n = safety.threats_at(here, at);
++                std::printf("PZ %d %u %.0f %.0f %u %d %d %c %.0f %.0f %.0f %d %.0f %d", world.round, my_handle(), my_health(), my_max_health(),
++                            my_gems(), here.x, here.y, static_cast<char>(decision), memory.damage, b.damage, b.doubled,
++                            static_cast<int>(b.stuns), camp, tki);
++                for (const auto& e : world.enemies) {
++                    if (!e.alive) continue;
++                    float blow = -1;
++                    int st = 0;
++                    for (int i = 0; i < n; ++i)
++                        if (at[i].enemy == e.index) blow = at[i].blow.damage, st = at[i].blow.stuns;
++                    const int cred = e.visible ? 2 : safety.credible_unseen(e) ? 1 : 0;
++                    std::printf(" e%u:%d%d%d:%d,%d:%d:%.0f:%d:%d,%d:%.0f:%d", static_cast<std::uint32_t>(e.handle), static_cast<int>(e.visible),
++                                static_cast<int>(e.tracked), cred, e.pos.x, e.pos.y, e.pos_round, e.focus, e.gems, e.ready_round[0],
++                                e.ready_round[1], blow, st);
++                }
++                std::printf("\n");
++            } catch (const std::exception&) {
++            }
++        }
++    });
+     debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), static_cast<char>(decision), memory.farm_group, memory.claim); });
+ }
+ 
+diff -ru ia-prism-v1/src/model/escape.cc ia-duel-v5/src/model/escape.cc
+--- ia-prism-v1/src/model/escape.cc	2026-11-13 14:14:04.883917424 +0000
++++ ia-duel-v5/src/model/escape.cc	2026-11-13 18:41:20.330124107 +0000
+@@ -269,6 +269,9 @@
+     // map's symmetry takes the field's tiles to the runner's.
+     const std::uint16_t* field = nullptr;
+     bool flip_x = false, flip_y = false;
++    // The pursuers' team sets its order each round: a ranged one acting after us in one round and before us in
++    // the next walks and shoots between two of our turns (turn_order.cc seats strikers to straddle the round).
++    bool straddle = false;
+ };
+ 
+ void Plan::build(const World& world, Pathing& pathing, Safety& safety) {
+@@ -319,6 +322,7 @@
+         home_ready[which] = true;
+     }
+     race.field = home_steps[which].data();
++    race.straddle = world.enemy_priorities_change;
+     finish(pathing, race);
+     debug_block({
+         if (active_)
+@@ -505,6 +509,13 @@
+                 } else {
+                     strike(k, moved, near_moved, kind.reach, false);
+                 }
++                // A straddled gap (Race::straddle): a walk, then the shot or the cast. Turn 1's gap is Safety's,
++                // which reads the turn order.
++                if (race.straddle && k >= 2) {
++                    const Rows stepped = near_moved & walk_them, near_stepped = grow(stepped);
++                    strike(k, stepped, near_stepped, kind.reach, false);
++                    if (kind.burst > 0 && (k == kind.burst_turn || k == kind.burst_turn + 1)) strike(k, stepped, near_stepped, kind.burst, kind.blind);
++                }
+             }
+             walked = near_walked & walk_them, moved = near_moved & walk_them;
+             if (dash) {
+diff -ru ia-prism-v1/src/model/turn_window.cc ia-duel-v5/src/model/turn_window.cc
+--- ia-prism-v1/src/model/turn_window.cc	2026-11-13 14:14:04.884421000 +0000
++++ ia-duel-v5/src/model/turn_window.cc	2026-11-13 18:41:43.061193215 +0000
+@@ -145,6 +145,7 @@
+         int i, d;
+         float strength;
+         bool lost; // stunned with its turn this round still to come
++        float blow; // what it could deal us next round, after its walk this round if it has a turn left
+     };
+     std::array<Maybe, window_cap> maybe;
+     int k = 0;
+@@ -156,7 +157,7 @@
+             if (room > 0) chosen |= static_cast<std::uint16_t>(1u << i), --room;
+             continue;
+         }
+-        maybe[static_cast<std::size_t>(k++)] = {i, -1, e.strength, false};
++        maybe[static_cast<std::size_t>(k++)] = {i, -1, e.strength, false, 0};
+     }
+     if (room <= 0 || k == 0) return chosen;
+     if (k <= room) {
+@@ -170,16 +171,29 @@
+         auto& m = maybe[static_cast<std::size_t>(j)];
+         const auto& e = world.enemies[static_cast<std::size_t>(m.i)];
+         m.d = e.visible ? dist(from, e.pos) : unseen_distance(e, from);
++        if (!e.visible) {
++            // A tracked lurker whose possible tiles are within its strike and a walk of us competes as a seen one does.
++            if (e.tracked) {
++                const auto& next = strike(e, world.round + 1);
++                if (next.reach >= 0 && possible_within(e, from, next.reach + move + 1)) m.blow = next.at(std::clamp(m.d - move - 1, 0, next.reach));
++            }
++            continue;
++        }
++        const auto& next = strike(e, world.round + 1);
+         // Only where its next-round strike can reach us does that turn matter.
+-        m.lost = e.visible && !e.acted && e.stun_pending && m.d <= strike(e, world.round + 1).reach + move;
++        m.lost = !e.acted && e.stun_pending && m.d <= next.reach + move;
++        // A stunned one yet to act loses that turn: no walk before its next-round strike.
++        if (!m.lost) m.blow = next.at(std::max(0, m.d - move - (e.acted || e.stun_pending ? 0 : 1)));
+     }
+-    // The `room` first: the stunned yet to act, then by (distance, strength descending, index), a
+-    // strict order, picked one by one. A stunned enemy still sets its priority on the turn it loses
++    // The `room` first: the stunned yet to act, then those whose next-round strike reaches us by what it
++    // deals (a team seats its strikers to straddle the round: turn_order.cc's kill and contact bands),
++    // then by (distance, strength descending, index), a strict order, picked one by one. A stunned enemy still sets its priority on the turn it loses
+     // (rules: abilities.stun), so its next-round slot is as open as any unsettled one's, and that
+     // slot is its only turn before ours: the others yet to act have one this round already.
+     const auto pick = [&](bool lost_first) {
+         const auto before = [&](const Maybe& a, const Maybe& b) {
+             if (lost_first && a.lost != b.lost) return a.lost;
++            if (a.blow != b.blow) return a.blow > b.blow;
+             return a.d != b.d ? a.d < b.d : a.strength != b.strength ? a.strength > b.strength : a.i < b.i;
+         };
+         std::uint16_t out = chosen;

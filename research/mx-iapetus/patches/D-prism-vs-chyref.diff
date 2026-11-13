@@ -1,0 +1,301 @@
+diff -ru chy-ref/src/bot.cc ia-prism/src/bot.cc
+--- chy-ref/src/bot.cc	2026-11-13 14:14:04.880679181 +0000
++++ ia-prism/src/bot.cc	2026-11-13 17:45:15.590392970 +0000
+@@ -616,6 +616,7 @@
+ inline constexpr std::uint64_t goal_least = 4000, farm_least = 6000;
+ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     comeback::cooked(world); // every turn: the cook's hysteresis reads each round's scores
++    contest_claim = memory.claim >= 0 ? memory.claim : memory.farm_group;
+     // Last turn's, for continue_recall: kept only while that recall is, else farm sets it again.
+     const int recall_farm = std::exchange(memory.recall_farm, -1);
+     if (!world.me().alive || !banks_bag(world, pathing)) memory.banking = false;
+@@ -661,7 +662,7 @@
+     fixc_bush_threatened = false;
+     if (!world.me().can_act(world.round)) return;
+     fixc_bush_threatened = fixc_bush_threat(world, safety);
+-    if (const auto* ender = game_ender(world); ender && holds_hard_stop(world, *ender)) {
++    if (const auto* ender = ender_to_stop(world); ender && holds_hard_stop(world, *ender) && stop_due(world, *ender)) {
+         stop_game_ender(world, pathing, memory, *ender);
+         return;
+     }
+diff -ru chy-ref/src/bot_parts.h ia-prism/src/bot_parts.h
+--- chy-ref/src/bot_parts.h	2026-11-13 14:14:04.880897624 +0000
++++ ia-prism/src/bot_parts.h	2026-11-13 16:54:33.746588994 +0000
+@@ -65,6 +65,8 @@
+ bool stunned_turn = false; // stunned at this turn's start
+ bool struck = false;       // the strike search ran this turn
+ bool searched = false;     // and priced every enemy we see: none its own moves revealed
++// The group our stands are about (economy/contest.cc): our claim, else our farm choice, as of the turn's start.
++int contest_claim = -1;
+ // The Prism-Willow support code chose this turn: the wrap-up's strike, heal, shield and recall stay out.
+ bool support_owned = false;
+ // For the turn end's comms::support_intent: Prism waits on a heal (requested) or Willow can give
+@@ -356,6 +358,9 @@
+ const ChampionBelief* game_ender(const World& world);
+ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e);
+ bool holds_hard_stop(const World& world, const ChampionBelief& e);
++bool stop_due(const World& world, const ChampionBelief& e);
++// game_ender, else the unseen winning tribute whose stop we put off.
++const ChampionBelief* ender_to_stop(const World& world);
+ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ 
+ // economy/comeback.cc: cooked comebacks.
+@@ -545,6 +550,19 @@
+ bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ float farm_step_value(const World& world);
+ 
++// economy/contest.cc
++// Our fall at p, in a stand the team wins, costs more than holding wins there: the group at stake at p
++// (our claim within fight_ally_radius, or the group under p, cleared or with work under way), to us and to
++// the enemy. With no group at stake, always.
++bool fall_outweighs(const World& world, vec2 p);
++// The stand at group g's camp tile nearest us, every champion in sight within crew_enemy_radius of it
++// fighting: 0 with no enemy in sight that near, 1 won, 2 lost (or our fall there outweighs it, or no fuel to
++// read it). Once a turn.
++int group_contest(const World& world, Safety& safety, int g);
++// We or an ally in sight claiming g are at work on it (in reach of a live member, or within attack
++// range of a cleared group's tiles), or `claim` is g with an ally claiming it beside us.
++bool team_invested(const World& world, int g, int claim);
++
+ // economy/siege.cc
+ bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ const bitboard* home_reach_avoid(const World& world, const Memory& memory);
+diff -ru chy-ref/src/combat/abilities.cc ia-prism/src/combat/abilities.cc
+--- chy-ref/src/combat/abilities.cc	2026-11-13 14:14:04.880897624 +0000
++++ ia-prism/src/combat/abilities.cc	2026-11-13 16:54:43.330885401 +0000
+@@ -154,6 +154,9 @@
+ 
+ float stun_worth(const World& world, const ChampionBelief& e, bool damaging) {
+     if (e.facts().passive == Passive::stun_immune) return 0;
++    // A winning tribute's stun before its stop is due (stop_due) gains nothing: the channeller would not act, and the
++    // stun frees it.
++    if (e.channel == Channel::tribute && enemy_tribute_wins(world, e) && !stop_due(world, e)) return 0;
+     // The turn it loses: in sight, what that turn's strike deals at our nearest body (cooldowns as
+     // they will be then); else its damage a turn. A stunned tributer keeps its bag: the stun only
+     // puts off its tribute, by the lost turn and a channel restarted whole.
+diff -ru chy-ref/src/combat/fight.cc ia-prism/src/combat/fight.cc
+--- chy-ref/src/combat/fight.cc	2026-11-13 14:14:04.881180648 +0000
++++ ia-prism/src/combat/fight.cc	2026-11-13 17:41:30.240036803 +0000
+@@ -559,12 +559,19 @@
+         }
+     const auto roster = safety.stand_roster(p, reach, pursued ? params::pursuit_steps : 0, unseen);
+     if (roster.key == Safety::no_fight) return false;
+-    // Prism leaves a stand it falls in even where the team wins it: its death hands over the bag the team's gems ride in.
+-    // So does any carrier of a bag worth a life or more (params::gem_value a gem against params::life_value).
++    // Prism's fall hands over the bag the team's gems ride in, Cassi's or Issac's both bodies, a carrier's a bag
++    // worth a life or more (params::gem_value a gem against params::life_value): in a stand the team wins they
++    // leave only when that fall costs more than the group holding wins (fall_outweighs). Our fall settles the
++    // fight first, as it settles most stands; only a fall worth taking plays it on to whether the team wins.
+     const bool falls = partner(world) != nullptr || world.me().facts().passive == Passive::gem_focus
+                        || params::gem_value * static_cast<float>(bag_at_stake(world)) >= params::life_value || lethal();
+-    const auto t = safety.stand_trade(roster, falls);
+-    return t.lost || (falls && t.self_falls);
++    const auto t = safety.stand_trade(roster, falls, true);
++    if (t.lost) return true;
++    if (!falls || !t.self_falls || fall_outweighs(world, p)) return falls && t.self_falls;
++    if (t.lost_known) return t.lost;
++    // Short of fuel for the play-out, the settled answer: we fall, so we leave.
++    if (!fuel_ok(safety.fight_cost_estimate() + end_reserve)) return true;
++    return safety.stand_trade(roster, falls, false).lost;
+ }
+ 
+ } // namespace
+@@ -1264,6 +1271,46 @@
+     return tribute_altar(world, e.pos) >= 0 && carried_locks() > 0;
+ }
+ 
++// A tribute's stop goes in at its channel's end, not its start: a stun or lock cancels it whenever it lands, but an
++// early one frees the channeller to act and lets it restart a channel it must sit through again, while the stopper
++// waits beside its guards. Due once the rounds to the channel's last stop are within our steps to a stop and one
++// ability cooldown, in which each enemy stunner can cost us at most one turn and a stun of ours spent meanwhile is back.
++// Judged once a turn, from the turn's start: a step in towards the stop would put it off again mid-turn.
++bool stop_due(const World& world, const ChampionBelief& e) {
++    if (e.channel != Channel::tribute) return true;
++    static int round = -1;
++    static std::array<signed char, 8> kept;
++    if (round != world.round) round = world.round, kept.fill(-1);
++    auto& k = kept[static_cast<std::size_t>(e.index & 7)];
++    if (k < 0) {
++        const int steps = intercept_steps(world, e, my_position());
++        k = steps == unreachable || last_round_before_channel_ends(world, e) - world.round <= steps + ability_cooldown;
++    }
++    return k > 0;
++}
++
++namespace {
++// The winning tribute whose stop we put off (stop_due), kept for the turns it is out of our sight: a channel cannot move.
++int deferred_ender = -1;
++} // namespace
++
++const ChampionBelief* ender_to_stop(const World& world) {
++    if (const auto* e = game_ender(world)) {
++        deferred_ender = e->index;
++        return e;
++    }
++    if (deferred_ender < 0 || deferred_ender >= static_cast<int>(world.enemies.size())) return nullptr;
++    const auto& e = world.enemies[static_cast<std::size_t>(deferred_ender)];
++    // Seen and no longer an ender, or its channel over by our belief: forgotten.
++    if (e.visible || !e.alive || e.channel != Channel::tribute || e.channel_end_round < world.round) {
++        deferred_ender = -1;
++        return nullptr;
++    }
++    // As game_ender: our winning bag's win landing first leaves it no ender.
++    if (winning_bag(world) && win_lands(world) < turn_start(world, e, e.channel_end_round)) return nullptr;
++    return &e;
++}
++
+ // Into reach of the enemy whose bag ends the game, whatever the risk: a stun or a lock if it is
+ // tributing, else attacks, followed until it stops at an altar.
+ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e) {
+diff -ru chy-ref/src/combat/guard.cc ia-prism/src/combat/guard.cc
+--- chy-ref/src/combat/guard.cc	2026-11-13 14:14:04.881180648 +0000
++++ ia-prism/src/combat/guard.cc	2026-11-13 15:27:16.524512183 +0000
+@@ -497,7 +497,8 @@
+ }
+ 
+ // The tiles a step (or a ready dash) could end on that want_home would leave at once: stopping
+-// there hands the enemy the first strike. Cassi and Issac also keep off tiles where one would fall.
++// there hands the enemy the first strike. Cassi and Issac also keep off tiles where one would fall
++// for less than holding there wins (fall_outweighs), as Prism and a big bag's carrier do.
+ const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int radius) {
+     world.throw_if_stale();
+     if (!enemy_seen(world)) return nullptr;
+@@ -527,7 +528,7 @@
+         if (const auto now = fuel(); now <= placing) costliest = std::max(placing - now, costliest - costliest / 8);
+     };
+     if (!shared) g.expose_here(here);
+-    // Prism too keeps off every tile where it would fall (stand_lost_at).
++    // Prism too keeps off the tiles where it would fall (stand_lost_at).
+     const bool linked = partner(world) != nullptr || world.me().facts().passive == Passive::gem_focus
+                         || params::gem_value * static_cast<float>(bag_at_stake(world)) >= params::life_value;
+     // Unless the list filled up, the foes hold every visible threat that could hit a tile this near.
+@@ -673,7 +674,7 @@
+         if (k == 2 && !linked && !safety.lethal(q)) continue;
+         if (k == 0 || k == 1) lost = falls = k == 1;
+         else if (!simulate(key, lost, falls)) return any ? &guard : nullptr;
+-        if (lost || (falls && (linked || safety.lethal(q)))) {
++        if (lost || (falls && (linked || safety.lethal(q)) && fall_outweighs(world, q))) {
+             if (!any) clear_board(guard), any = true;
+             set_tile(guard, q);
+         }
+diff -ru chy-ref/src/economy/bank.cc ia-prism/src/economy/bank.cc
+--- chy-ref/src/economy/bank.cc	2026-11-13 14:14:04.882606986 +0000
++++ ia-prism/src/economy/bank.cc	2026-11-13 17:41:30.240876904 +0000
+@@ -1459,9 +1459,9 @@
+     decision = Branch::tribute_kept;
+     // The enemy's winning tribute, while we hold a hard stop for it (holds_hard_stop) or a ready stun
+     // in reach, is the game: ours waits, unless ours wins first or, winning later, an ally stops theirs in time.
+-    const auto* ender = game_ender(world);
++    const auto* ender = ender_to_stop(world);
+     const auto* stop = ender && holds_hard_stop(world, *ender) ? ender : stoppable_winning_tribute(world);
+-    if (stop && !(winning_bag(world) && ally_stops(world, *stop))) {
++    if (stop && stop_due(world, *stop) && !(winning_bag(world) && ally_stops(world, *stop))) {
+         throw_if_stale();
+         try {
+             self_acted(), me.cancel_submit_gems();
+@@ -1493,7 +1493,8 @@
+ bool continue_recall(World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home, int recall_farm) {
+     auto& me = cambc::self();
+     decision = Branch::recall_kept;
+-    if (const auto* ender = game_ender(world); ender && holds_hard_stop(world, *ender)) {
++    // Cancelled while we hold a stop, due or not: a recall lands where the stop may be out of reach when it comes due.
++    if (const auto* ender = ender_to_stop(world); ender && holds_hard_stop(world, *ender)) {
+         throw_if_stale();
+         try {
+             self_acted(), me.cancel_recall();
+Only in ia-prism/src/economy: bank.cc.orig
+Only in ia-prism/src/economy: contest.cc
+diff -ru chy-ref/src/economy/farm.cc ia-prism/src/economy/farm.cc
+--- chy-ref/src/economy/farm.cc	2026-11-13 14:14:04.882606986 +0000
++++ ia-prism/src/economy/farm.cc	2026-11-13 15:59:12.897129250 +0000
+@@ -2420,6 +2420,28 @@
+                                       chosen.tank, chosen.trips, chosen.output, shared_value); });
+         }
+     }
++    // A contested group the team is at work on and wins the stand at stays our choice: switching away
++    // hands the enemy there what we put into it, and the stand it would take from us (economy/contest.cc).
++    if constexpr (!opening) {
++        const int c = farm_group;
++        const auto commits = [&] {
++            // Not over a bag's way to an altar, nor over a capture that wins the game.
++            if (c < 0 || c >= n_groups || best == c || banks_bag || (best >= 0 && groups[best].gems >= short_by)) return false;
++            const auto& G = groups[c];
++            const auto& b = world.camps[c];
++            if ((G.has_monolith && map.monolith_only) || G.gems + G.gold == 0 || b.state == CampState::respawning
++                || (b.state == CampState::cleared && (ally_holding(c) || b.holder == team::enemy || left_for_prism(world, pathing, c)))
++                || (b.state != CampState::cleared && kited_of(c) && kite_owns(world, c)) || siege_declines(world, c))
++                return false;
++            return team_invested(world, c, contest_claim) && group_contest(world, safety, c) == 1;
++        };
++        if (commits()) {
++            const int s = steps_data[c];
++            best = c, best_steps = s >= 0 && s != unreachable ? s : dist(here, groups[c].centre);
++            memory.claim = c, memory.crew = prev_claim == c && prev_crew, spell = false, chosen = Priced{'X'};
++            debug_block({ std::printf("CONTEST KEEP %d %u g%d\n", round, my_handle(), c); });
++        }
++    }
+     // Help does not pull a member off a Monolith operation.
+     if (help_group >= 0 && !(farm_monolith(world, best) && memory.claim == best))
+         best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, spell = false, chosen = Priced{'H'};
+diff -ru chy-ref/src/model/safety.cc ia-prism/src/model/safety.cc
+--- chy-ref/src/model/safety.cc	2026-11-13 14:14:04.884421000 +0000
++++ ia-prism/src/model/safety.cc	2026-11-13 15:11:21.030296523 +0000
+@@ -3621,18 +3621,19 @@
+     return r;
+ }
+ 
+-Trade Safety::stand_trade(const StandRoster& r, bool falls) {
++Trade Safety::stand_trade(const StandRoster& r, bool falls, bool settle) {
+     if (r.key == no_fight) return {};
++    settle = settle && falls;
+     const auto key = r.key;
+     const auto walking = r.walking;
+-    if (!walking && r.camp <= 0) return fight_of(key, falls, 0, falls);
++    if (!walking && r.camp <= 0) return fight_of(key, falls, 0, settle);
+     // A fight on with walkers is fight_of's with them late, and memoised with it: the stands of the
+     // tiles around ours share their fights.
+     if ((key >> 16) != 0 && r.camp <= 0 && (walking & ~threat_mask_) == 0) {
+         std::uint32_t late = 0;
+         for (auto left = walking; left; left &= left - 1)
+             if (const int i = std::countr_zero(left); i < 16) late |= static_cast<std::uint32_t>(r.walks[static_cast<std::size_t>(i)]) << 2 * i;
+-        return fight_of(key, falls, late, falls);
++        return fight_of(key, falls, late, settle);
+     }
+     const std::uint32_t enemies = (key >> 16 & threat_mask_) | walking;
+     Side us, them;
+@@ -3646,7 +3647,7 @@
+     us.camp = r.camp / world_.me().taken;
+     us.camp_raw = r.camp / world_.me().camp_taken;
+     // With nobody in reach yet, we strike first: they must still win.
+-    return trade(us, them, (key >> 16) != 0, falls, falls);
++    return trade(us, them, (key >> 16) != 0, falls, settle);
+ }
+ 
+ int Safety::turns_to_kill_idle(vec2 p, int horizon) { return turns_to_harm_idle(world_.me(), p, horizon, 0, true); }
+diff -ru chy-ref/src/model/safety.h ia-prism/src/model/safety.h
+--- chy-ref/src/model/safety.h	2026-11-13 14:14:04.884421000 +0000
++++ ia-prism/src/model/safety.h	2026-11-13 15:11:21.029728956 +0000
+@@ -490,9 +490,9 @@
+     // may strike p in its turns between our next turn and the one after. At least 1.
+     int pursuit_gain(const ChampionBelief& e);
+     StandRoster stand_roster(vec2 p, const StandReach& reach, int approach, bool unseen);
+-    // `falls` as for fight(); without walkers or camps it is fight(p). With `falls`, our fall settles
+-    // it (Trade::lost_known).
+-    Trade stand_trade(const StandRoster& r, bool falls);
++    // `falls` as for fight(); without walkers or camps it is fight(p). With `settle` (and `falls`), our
++    // fall settles it (Trade::lost_known); without, the fight plays on past it to whether we lose.
++    Trade stand_trade(const StandRoster& r, bool falls, bool settle);
+     // Their turns for the enemies (the unseen by unseen_approach) and camps to kill us at p if we never
+     // act (channelling), each enemy walking a step a turn until in reach; 0 if not within `horizon` turns.
+     int turns_to_kill_idle(vec2 p, int horizon);
+diff -ru chy-ref/src/unity.cpp ia-prism/src/unity.cpp
+--- chy-ref/src/unity.cpp	2026-11-13 14:14:04.885421013 +0000
++++ ia-prism/src/unity.cpp	2026-11-13 15:12:36.582031033 +0000
+@@ -12,6 +12,7 @@
+ #include "economy/bank.cc"
+ #include "economy/capture.cc"
+ #include "economy/crew.cc"
++#include "economy/contest.cc"
+ #include "economy/farm.cc"
+ #include "economy/siege.cc"
+ #include "combat/support.cc"

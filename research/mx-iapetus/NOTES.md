@@ -1,12 +1,14 @@
 # IAPETUS: macro refactor of charybdis (2026-11-13, 14:20-22:30 UTC)
 
 ## Status
-- Time: 17:08 UTC. Best candidate: D v1 `ia-prism-v1` (= `bots/charybdis`), held-out 53.3 [52.8-53.8] over 40,800. B 51.1; A, C dropped. Running: D (iterating), E (`ia-watch`, rebasing onto D v1). A 10,200-game read takes ~2-4 min of wall time (40,800 in ~7 min); the one 34 s read was an outlier.
+- Time: 19:30 UTC. Final: `ia-final` (= `bots/charybdis`), held out 53.2 [52.8-53.7] over 51,000 at 2x fuel. Run ended early by instruction; no subagents or runs open.
 
 Reference `bots/variants/chy-ref` (charybdis 529). Every A/B: `tools/ab.py variants/CAND variants/chy-ref
 --no-test-draft --fuel 200000`, fast runner, release builds unless noted. Suites: `maps/suites/mx/dev` (5,100 maps),
 `maps/suites/mx/hold` (5,100), mine (seeds 61451000-61459999, ladder-v4): `maps/suites/mxi/study` (61451000-002,
-1,020 maps, study only, never decisions), `maps/suites/mxi/conf` (61451100-114, 5,100 maps).
+1,020 maps, study only, never decisions), `maps/suites/mxi/conf` (61451100-114, 5,100 maps), `train`
+(61451200-214, implementers only), `fin` (61451300-314, the normal-fuel read), `x1` (61451400-414), `x2`
+(61451500-514, fresh for the final confirmation; never read before it).
 
 ## Log
 - 14:20 Read brief, rules, AGENTS, priors (2026-11-11 programme, mac13 NOTES, overseer candidates). Priors that
@@ -114,3 +116,74 @@ Reference `bots/variants/chy-ref` (charybdis 529). Every A/B: `tools/ab.py varia
   enemy deaths 8.5 -> 10.3 a game, ours flat; E runs 5.2 -> 3.9; bodies dead within 25 rounds of an E start 3.3 ->
   1.9; our Prism deaths 0.90 -> 0.70. The enemy's early runs at our long tributes now die to us.
 - E-r1 (relay + known-tribute enders on D v1) train 52.7 [51.7-53.6] vs base 53.6 (reproduced): diagnosing.
+
+### E `ia-watch` (altar relay, response, watch; brief `briefs/E-altar-watch.md`, log `logs/E-watch.log`, patch `patches/E-watch-final.diff`, on D v1) — dropped
+- Change: a tribute record in comms (enemy, altar, tile, end mod 64, bag class; fits 76% of ladder maps) folded into
+  beliefs so `game_ender`/`place_lock`/`stop_due` see unseen channels; path-timed `stop_due`; race-phase wards watch
+  unwatched altars; killers also respond.
+- Train vs base 53.6: r1 52.7 (end period 32 bug), r2 53.5, r3 53.7 (+watch), r4 53.6, r5 53.5, r6 53.5. Smoke clean.
+- Learning: our stops replace the enemy's own cancels; it restarts and as many land (paired: landed 90 vs 93 of ~600
+  win-alone attempts), while our deaths inside those channels rise (260 -> 406 in 256 games). Stopping buys only delay;
+  holding the altar (lock + kill threat) would be needed to convert it.
+- 17:50 D final report. Death classes before 300+ Prism deaths (mirror): E (stopping an ender) 81/211, R (retreat)
+  60, T (tribute) 29, B (bank walk) 23. T/B: `closing` banks a 400-950 bag in a 40-95 turn channel; an enemy big-bag
+  Prism walks in from 6-8 and one-shots it. R: our Prism spends stun/AoE on camps while an enemy Prism closes with both
+  ready. D's rule patches on top of v1 (habit gate 52.2 with OOF x2.7 — caution again; keep-stun-off-camps 53.5;
+  duel-first 53.7; audit fixes 53.4/53.3) all level. Final `ia-prism` (v1 + audit fixes: recall cancels on a hard stop,
+  out-of-sight ender checks our bag lands first, stop_due decided once a round) held out **53.1 [52.6-53.6] over
+  40,800** (paired with v1's 53.3: level). `bots/charybdis` stays v1; the audit fixes go into the final merge.
+- 17:55 F launched (`briefs/F-death-audit.md`, all bodies' deaths, on v1); G launched (`briefs/G-prism-duel.md`,
+  the threat model behind Prism duels, on v1).
+- 18:20 F audit (v1 base, 1000 study replays): our deaths 6.56 a game (bag 229), kills 8.03 (245). The enemy Prism
+  (300+ bag in 79%) lands 51% of our deaths. Commit classes (lives/gems a game): R 2.03/64, E 1.08/54, F 1.71/26, B
+  0.39/35. G study: our Prism deaths 0.73 a game (128 gems); the per-turn damage bound is right (visible Prism blow
+  exceeded in 0.2% of 114k turns); the misses are untracked lurkers (dropped 3 rounds after sighting) and a double turn
+  across the round boundary that pick_second gives to the nearest enemy instead of the one whose strike reaches us.
+  F-r1 (pick_second by strike gap) 53.1 [52.2-54.1]; G-r1 (track while `possible` is small) 52.5 [51.5-53.5], OOF up:
+  both neutral or worse against 53.6. Deconflicted: G owns the Prism-killer model; F the other deaths and kills.
+
+### F `ia-audit` (death audit on D v1; brief `briefs/F-death-audit.md`, log `logs/F-audit.log`, patch `patches/F-audit-final.diff`) — dropped
+- Death table (1000 debug study games, per game): our 6.56 lives / 229 bag gems, kills 8.03 / 245. Enemy Prism lands
+  51% of our deaths (bag 300+ in 79%). By commit branch: R 2.03 lives/64 gems, E (stop) 1.08/54, F 1.71/26, B
+  0.39/35, T 0.07/29. E deaths are 85% in lost games; the stopped tribute was cancelled by our lock 342, our stun
+  439, the channeller itself 252. Non-Prism killers 3.13/56 (Vesper last hit in ganks 1.40). Pack-zone retreats end in
+  a death 1.8% vs stand retreats 0.5%; 113 stand-retreat starts a game (flip-flopping).
+- Changes (rare, mechanism-correct): pick_second by strike gap (v1, 53.1, handed to G); dasher retreat by the foot
+  field beside dash-only lines (v2, 53.5); price the stay when the walk gains nothing (v3, 53.6); audit fixes (v4,
+  53.5). Firing ~0.2 and ~0.05 a game: neutral, not shipped.
+- 18:55 Macro report of D v1 vs chy-ref (1000 release study games, `/tmp/mxi/rep-v1`): dead time 7.4 vs 9.2%,
+  conversion 67.5 vs 63.4%, contest_win 51.8 vs 48.2, outnumbered 13.7 vs 15.8%; no loss cluster with a clear excess.
+- 18:58 H launched (`briefs/H-stop-execution.md`: who stops and how, on D final), the largest remaining class.
+
+### G `ia-duel` (Prism threat model; brief `briefs/G-prism-duel.md`, log `logs/G-duel.log`, patches `patches/G-duel-v*.diff`)
+- Findings: the one-turn damage bound is right (visible enemy Prism blow exceeded in 0.2% of 114k turns). Errors: the
+  slot before ours goes to the nearest enemy, not the one whose strike reaches us (64 big-bag deaths read safe); the
+  3-round tracking horizon drops lurkers (40 deaths to untracked killers, last seen median 44 rounds earlier, median 4
+  tiles away); the escape plan gives a ranged pursuer no walk-and-cast across the round boundary. The duels are
+  lopsided: the enemy Prism's stun alone kills us in 175 of 186 big-bag deaths (ours kills it in 39).
+- Train: r1 (track while possible small) 52.5, r2 (v2 pick_second by blow) 53.7, r3 (+per-enemy credible tracking)
+  53.7, r4 (+escape straddle, audit) 53.3, r5 (v4 without tracking) 53.1 — all level with 53.6.
+- Mechanism (v4 vs base, 1000 debug games): Prism deaths 0.73 -> 0.58, bag lost 128 -> 95, 100+ bag deaths 0.278 ->
+  0.221, tributed 273 -> 264, working time ~85%: the bag saved shows up as a more cautious Prism, not as wins.
+- 19:06 judging v2 (`ia-duel`) and v4 held out (`mx-iapetus-G2-held`, `-G4-held`).
+- 19:16 G held out (paired with v1's 53.3 and D final's 53.1 on the same 40,800): **v2 53.6 [53.1-54.1]** (OOF
+  4404/4091, +11% vs v1), v4 52.4 [51.9-52.9] (OOF 4986): v4's bag savings cost wins (a more cautious Prism); v2's
+  pick_second fix is level-to-slightly-up (+0.3 held out, +0.1 train). Merge implementer building `ia-final` =
+  `ia-prism` (D final) + G v2's pick_second.
+
+### H `ia-stop` (stop execution; brief `briefs/H-stop-execution.md`, log `logs/H-stop.log`, patches `patches/H-stop-v*.diff`) — stopped by instruction, neutral
+- Train vs ia-prism 53.3: v1 (stun before lock; lock now when the ring is lethal) 53.3, v2 (leave a lock stop to a
+  ready ally stunner) 53.5, v3 (lock inside stun reach, both in one turn) 52.9, v4 (lethal-ring stunner defers) 53.4.
+- Learning: stun stops (0.75 a game) lose the stopper within 12 rounds 38% of the time, lock stops (0.34) 84%;
+  channellers are rarely killable (median health ~3,400), and they restart at the same altar after ~89% of stops. A
+  Prism's ground cast reaches 5 against our stun's 4: the stun ring is a death zone, whoever stops.
+
+## Final: `ia-final` = `bots/charybdis`
+- `ia-final` = D final (`ia-prism`: B contest pricing + D `stop_due` + D audit fixes) + G v2 `pick_second` ordering
+  (only `model/turn_window.cc`). Built release and debug; read-only audit clean (one open logic gap: a stunned enemy
+  that already acted still gets a positive blow in `pick_second`; not a regression, unfixed to keep the measured v2);
+  smoke 50.4 of 256, 0 failed, no DRAFT-UNFINISHED / PLAN-CHECK. Diff vs chy-ref: `patches/final-vs-chyref.diff`.
+- Held out at 2x fuel vs chy-ref: dev 53.5 [52.6-54.5], hold 53.0 [52.0-54.0], conf 53.7 [52.7-54.7], x1 53.1
+  [52.1-54.0], fresh x2 52.9 [52.0-53.9]: **pooled 53.2 [52.8-53.7] over 51,000** (OOF 5339 / 5018). Paired: D v1 on
+  the four older suites 53.3, on x2 53.4 (OOF 967/947): level with v1 (-0.1 to -0.5, within noise), with D's audit
+  fixes in. Committed as `bots/charybdis` per the coordinator; the normal-fuel read is the coordinator's.

@@ -1,0 +1,614 @@
+diff -ru ia-prism-v1/src/bot.cc ia-watch/src/bot.cc
+--- ia-prism-v1/src/bot.cc	2026-11-13 16:54:33.746734696 +0000
++++ ia-watch/src/bot.cc	2026-11-13 17:45:03.504800263 +0000
+@@ -374,6 +374,63 @@
+     return value;
+ }
+ 
++// The race phase (rules result.win): the enemy's tributed gems and the bags we believe it carries reach the
++// win, so any one of its tributes may end the game, and a tribute seen can be stopped (a stun or a lock
++// cancels it) where one unseen lands.
++bool enemy_race(const World& world) {
++    int wealth = world.score.enemy;
++    for (const auto& e : world.enemies) wealth += e.alive ? e.gems : 0;
++    return wealth >= static_cast<int>(cambc::constants::winning_gems);
++}
++
++// A watched altar tile outranks any sight around our work, through the replace margin too: a ward sees at most
++// its (2r+1)^2 square, each tile worth at most 3.
++inline const int watch_weight = static_cast<int>(ward_replace_margin * 3.0f * static_cast<float>(
++    (2 * cambc::constants::ward_vision_radius + 1) * (2 * cambc::constants::ward_vision_radius + 1))) + 1;
++
++// In the race phase, the tiles a tribute can start from (within 1 of an altar, standable for them) at every altar
++// the enemy can bank at (no lock of ours), within ward reach of here, that no other allied ward in sight watches.
++// False if none.
++bool watch_tiles(const World& world, const Memory& memory, vec2 here, const bitboard& allied, std::uint64_t floor, bitboard& out) {
++    const auto& map = world.map();
++    clear_board(out);
++    bool any = false;
++    for (std::size_t a = 0; a < map.altars.size(); ++a) {
++        const vec2 p = map.altars[a].pos;
++        if (dist(p, here) > ward_reach + 1 || (a < world.altars.size() && world.altars[a].ally_lock)) continue;
++        for (int dy = -1; dy <= 1; ++dy)
++            for (int dx = -1; dx <= 1; ++dx)
++                if (const vec2 q{p.x + dx, p.y + dy}; in_bounds(q) && dist(q, here) <= ward_reach && test(map.open_for_them, q)) set_tile(out, q), any = true;
++    }
++    if (!any) return false;
++    static bitboard sight{cambc::uninitialized};
++    for (auto w : Tiles<64>{allied}) {
++        if (w == memory.ward || dist(w, here) > ward_reach + static_cast<int>(cambc::constants::ward_vision_radius)) continue;
++        if (test(map.bushes, w) && !map.find_bush_clusters(w, 0, floor)) continue;
++        ward_sight_from(map, w, static_cast<int>(cambc::constants::ward_vision_radius), sight);
++        drop(out, sight);
++    }
++    return !board_empty(out);
++}
++
++// The tiles of `watch` a ward on w sees, from ward_value's sight cache. w's cluster must be found.
++int ward_watch(const StaticMap& map, vec2 w, const bitboard& watch) {
++    static bitboard sight{cambc::uninitialized};
++    const int r = static_cast<int>(cambc::constants::ward_vision_radius);
++    const SightWindow window = sight_window(w, r);
++    if (const std::uint64_t* seen = cached_sight(map, ward_sights, w, r, window, sight)) {
++        const std::uint64_t* const watch_w = watch.ptr();
++        const int stride = static_cast<int>(cambc::detail::layout().chunk_stride);
++        int n = 0;
++        for (int cy = window.y0; cy <= window.y1; ++cy)
++            for (int at = cy * stride + window.x0, end = cy * stride + window.x1; at <= end; ++at) n += __builtin_popcountll(*seen++ & watch_w[at]);
++        return n;
++    }
++    ward_sight_from(map, w, r, sight);
++    and_into(sight, watch, sight);
++    return static_cast<int>(board_count(sight));
++}
++
+ // When our ward is ready: the best tile within placement range, if it beats our current ward's value
+ // by the margin. `start`: the turn's start, where the strike search follows and bush clusters grow
+ // at most reveal_grow_fuel (the turn end grows the rest).
+@@ -392,17 +449,29 @@
+     const int allied_near = static_cast<int>(count_within(allied, here, ward_range()));
+     // The map is static: a look from the same tile, for the same site, ward and allied wards in
+     // placement range, that placed nothing would again.
++    // In the race phase the watch depends on allied wards farther off too.
++    const bool race = enemy_race(world);
++    // The allied wards' tiles and our locks, which the watch depends on.
++    int allied_all = 0;
++    if (race) {
++        std::uint32_t h = 0;
++        for (auto w : Tiles<64>{allied}) h = h * 31u + static_cast<std::uint32_t>(tile_index(w) + 1);
++        for (std::size_t k = 0; k < world.altars.size() && k < 16; ++k) h ^= (world.altars[k].ally_lock ? 1u : 0u) << (15 - k);
++        allied_all = static_cast<int>(h & 0x7fffffffu);
++    }
+     static struct {
+         vec2 here{-1, -1}, ward{-1, -1};
+-        int site = -2, allied = -1;
++        int site = -2, allied = -1, race = -1;
+     } looked;
+-    if (looked.here == here && looked.ward == memory.ward && looked.site == site && looked.allied == allied_near) return false;
++    if (looked.here == here && looked.ward == memory.ward && looked.site == site && looked.allied == allied_near
++        && looked.race == (race ? allied_all : -1))
++        return false;
+     static std::uint64_t no_ward[128];
+     const int cell = tile_index(here);
+     const std::uint64_t key = (static_cast<std::uint64_t>(site + 2) << 32)
+         | (static_cast<std::uint64_t>(in_bounds(memory.ward) ? tile_index(memory.ward) + 1 : 0) << 16)
+         | static_cast<unsigned>(cell + 1);
+-    std::uint64_t* const previous = allied_near == 0 && map_width * map_height <= 10000
++    std::uint64_t* const previous = !race && allied_near == 0 && map_width * map_height <= 10000
+         ? &no_ward[cell % 128] : nullptr;
+     if (previous && *previous == key) return false;
+     const int asked_site = site;
+@@ -444,13 +513,17 @@
+         drop(*b, own);
+         if (site >= 0) *b |= b == &near ? boards->near : boards->far;
+     }
+-    const int old = in_bounds(memory.ward) ? ward_value(map, memory.ward, near, far) : 0;
++    static bitboard watch{cambc::uninitialized};
++    const bool watching = race && watch_tiles(world, memory, here, allied, floor, watch);
++    const auto worth = [&](vec2 w) { return ward_value(map, w, near, far) + (watching ? watch_weight * ward_watch(map, w, watch) : 0); };
++    const int old = in_bounds(memory.ward) ? worth(memory.ward) : 0;
+     const auto remember = [&] {
+-        looked = {here, memory.ward, asked_site, allied_near};
++        looked = {here, memory.ward, asked_site, allied_near, race ? allied_all : -1};
+         if (previous) *previous = key;
+     };
+     // Every candidate sees within 8 of here at most: when that bound fails the margin, none passes.
+-    const int bound = static_cast<int>(2 * count_within(near, here, ward_reach) + count_within(far, here, ward_reach));
++    const int bound = static_cast<int>(2 * count_within(near, here, ward_reach) + count_within(far, here, ward_reach))
++                      + (watching ? watch_weight * static_cast<int>(count_within(watch, here, ward_reach)) : 0);
+     if (static_cast<float>(bound) <= ward_replace_margin * static_cast<float>(old)) {
+         if (site == asked_site) remember();
+         return false;
+@@ -481,7 +554,7 @@
+             note_shortcut("ward-fuel");
+             break;
+         }
+-        const int v = ward_value(map, p, near, far);
++        const int v = worth(p);
+         if (static_cast<float>(v) <= ward_replace_margin * static_cast<float>(old)) continue;
+         order[static_cast<std::size_t>(n++)] = {v, p};
+     }
+@@ -499,7 +572,7 @@
+         order[static_cast<std::size_t>(best)].first = -1;
+         if (try_ward(p, memory)) {
+             warded_round = world.round;
+-            debug_block({ std::printf("WARD %d %u %d %d %d %d\n", world.round, my_handle(), p.x, p.y, value, old); });
++            debug_block({ std::printf("WARD %d %u %d %d %d %d%s\n", world.round, my_handle(), p.x, p.y, value, old, value >= watch_weight ? " watch" : ""); });
+             return true;
+         }
+     }
+@@ -662,7 +735,11 @@
+     fixc_bush_threatened = false;
+     if (!world.me().can_act(world.round)) return;
+     fixc_bush_threatened = fixc_bush_threat(world, safety);
+-    if (const auto* ender = ender_to_stop(world); ender && holds_hard_stop(world, *ender) && stop_due(world, *ender)) {
++    if (const auto* ender = ender_to_stop(world); ender && holds_hard_stop(world, *ender) && stop_due(world, *ender, &pathing)) {
++        debug_block({
++            std::printf("STOP-ENDER %d %u e%d %s relayed %d end %d dist %d\n", world.round, my_handle(), ender->index, ender->visible ? "seen" : "unseen",
++                        ender->relayed_round, ender->channel_end_round, dist(my_position(), ender->pos));
++        });
+         stop_game_ender(world, pathing, memory, *ender);
+         return;
+     }
+diff -ru ia-prism-v1/src/bot_parts.h ia-watch/src/bot_parts.h
+--- ia-prism-v1/src/bot_parts.h	2026-11-13 16:54:33.746588994 +0000
++++ ia-watch/src/bot_parts.h	2026-11-13 17:29:43.855163594 +0000
+@@ -358,7 +358,7 @@
+ const ChampionBelief* game_ender(const World& world);
+ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e);
+ bool holds_hard_stop(const World& world, const ChampionBelief& e);
+-bool stop_due(const World& world, const ChampionBelief& e);
++bool stop_due(const World& world, const ChampionBelief& e, Pathing* pathing = nullptr);
+ // game_ender, else the unseen winning tribute whose stop we put off.
+ const ChampionBelief* ender_to_stop(const World& world);
+ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+diff -ru ia-prism-v1/src/combat/abilities.cc ia-watch/src/combat/abilities.cc
+--- ia-prism-v1/src/combat/abilities.cc	2026-11-13 16:54:43.330885401 +0000
++++ ia-watch/src/combat/abilities.cc	2026-11-13 17:08:19.851469505 +0000
+@@ -668,7 +668,7 @@
+ } // namespace
+ 
+ bool enemy_tribute_wins(const World& world, const ChampionBelief& e) {
+-    if (!e.alive || !e.visible || e.channel != Channel::tribute) return false;
++    if (!known_tribute(e)) return false;
+     const int need = static_cast<int>(cambc::constants::winning_gems) - world.score.enemy;
+     if (e.gems >= need) return true;
+     const auto win = enemy_tributes_win(world);
+@@ -676,7 +676,7 @@
+     // Of the tributes landing by the win, those whose stop keeps it short; with none, every one must be stopped.
+     if (win->gems - e.gems < need) return true;
+     for (const auto& o : world.enemies)
+-        if (o.alive && o.visible && o.channel == Channel::tribute && !(win->lands < turn_start(world, o, o.channel_end_round))
++        if (known_tribute(o) && !(win->lands < turn_start(world, o, o.channel_end_round))
+             && win->gems - o.gems < need)
+             return false;
+     return true;
+diff -ru ia-prism-v1/src/combat/abilities.h ia-watch/src/combat/abilities.h
+--- ia-prism-v1/src/combat/abilities.h	2026-11-13 14:14:04.881180648 +0000
++++ ia-watch/src/combat/abilities.h	2026-11-13 17:08:19.851545036 +0000
+@@ -57,7 +57,7 @@
+ // A ranged caster's safe approach: a harmful unit target or at least two harmful ground targets.
+ bool cast_at_camp_on_approach(const World& world, int group);
+ 
+-// A visible enemy tributing a bag part of the enemy tributes' win (enemy_tributes_win), without which
++// An enemy known tributing (known_tribute) a bag part of the enemy tributes' win (enemy_tributes_win), without which
+ // the tributes landing by then fall short of it: stopping it stops that win.
+ bool enemy_tribute_wins(const World& world, const ChampionBelief& e);
+ 
+diff -ru ia-prism-v1/src/combat/fight.cc ia-watch/src/combat/fight.cc
+--- ia-prism-v1/src/combat/fight.cc	2026-11-13 16:54:22.299098432 +0000
++++ ia-watch/src/combat/fight.cc	2026-11-13 17:29:43.855007592 +0000
+@@ -1142,11 +1142,11 @@
+     std::array<std::pair<Moment, int>, 8> t;
+     int n = 0, all = 0;
+     for (const auto& e : world.enemies)
+-        if (e.alive && e.visible && e.channel == Channel::tribute && n < static_cast<int>(t.size())) all += e.gems, t[n++].second = e.gems;
++        if (known_tribute(e) && n < static_cast<int>(t.size())) all += e.gems, t[n++].second = e.gems;
+     if (all < need) return std::nullopt;
+     n = 0;
+     for (const auto& e : world.enemies)
+-        if (e.alive && e.visible && e.channel == Channel::tribute && n < static_cast<int>(t.size()))
++        if (known_tribute(e) && n < static_cast<int>(t.size()))
+             t[n++].first = turn_start(world, e, e.channel_end_round);
+     std::sort(t.begin(), t.begin() + n);
+     // Landings at one moment (an order we cannot tell apart) count together.
+@@ -1229,7 +1229,7 @@
+ // own bag wins first. The nearest; null if none.
+ const ChampionBelief* game_ender(const World& world) {
+     const int need = static_cast<int>(cambc::constants::winning_gems) - world.score.enemy;
+-    if (!enemy_seen(world)) return nullptr;
++    if (!enemy_seen(world) && !unseen_tribute_known(world)) return nullptr;
+     // No pair carries more than every living enemy's bag together.
+     int carried = 0;
+     for (const auto& e : world.enemies) carried += e.alive ? e.gems : 0;
+@@ -1239,7 +1239,8 @@
+     const ChampionBelief* best = nullptr;
+     int best_steps = unreachable;
+     for (const auto& e : world.enemies) {
+-        if (!e.alive || !e.visible) continue;
++        // Out of sight, only a channel holds it where it was seen.
++        if (!e.alive || (!e.visible && !known_tribute(e))) continue;
+         const bool tributing = e.channel == Channel::tribute;
+         // A tribute scores only the tributing body's bag; one by its spawn can still be stunned or locked.
+         if (tributing ? !enemy_tribute_wins(world, e) : (pair_gems(world, e) < need || test(world.map().near_enemy_spawn, e.pos))) continue;
+@@ -1275,10 +1276,24 @@
+ // early one frees the channeller to act and lets it restart a channel it must sit through again, while the stopper
+ // waits beside its guards. Due once the rounds to the channel's last stop are within our steps to a stop and one
+ // ability cooldown, in which each enemy stunner can cost us at most one turn and a stun of ours spent meanwhile is back.
+-bool stop_due(const World& world, const ChampionBelief& e) {
++// With `pathing`, the steps are the walk's, not the crow's: a relayed tribute's responder starts from far off, often
++// beyond walls, and a crow-flies count set it off too late.
++bool stop_due(const World& world, const ChampionBelief& e, Pathing* pathing) {
+     if (e.channel != Channel::tribute) return true;
+-    const int steps = intercept_steps(world, e, my_position());
+-    return steps == unreachable || last_round_before_channel_ends(world, e) - world.round <= steps + ability_cooldown;
++    int steps = intercept_steps(world, e, my_position());
++    if (steps == unreachable) return true;
++    const int last = last_round_before_channel_ends(world, e);
++    if (const int a = pathing ? tribute_altar(world, e.pos) : -1; a >= 0 && fuel_ok(end_reserve + full_field_cost_estimate())) {
++        // To the altar's tribute tiles, the channeller within 2 of each and the altar within 1.
++        if (const int w = pathing->to_altar(a).at(my_position()); w != unreachable) {
++            int walk = unreachable;
++            if (e.facts().passive != Passive::stun_immune)
++                if (const int r = world.me().ready_stun_reach(last, true); r >= 0) walk = std::max(0, w + 2 - r);
++            if (carried_locks() > 0) walk = std::min(walk, std::max(0, w + 1 - altar_lock_range));
++            if (walk != unreachable) steps = std::max(steps, walk);
++        }
++    }
++    return last - world.round <= steps + ability_cooldown;
+ }
+ 
+ namespace {
+diff -ru ia-prism-v1/src/economy/bank.cc ia-watch/src/economy/bank.cc
+--- ia-prism-v1/src/economy/bank.cc	2026-11-13 16:54:33.746919388 +0000
++++ ia-watch/src/economy/bank.cc	2026-11-13 17:29:43.855456218 +0000
+@@ -82,7 +82,7 @@
+             bool enemy_tribute = false;
+             int stopped = 0; // the gems of the enemy tributes' win it cancels
+             for (const auto& e : world.enemies)
+-                if (e.alive && e.visible && e.channel == Channel::tribute && dist(e.pos, p) <= cambc::constants::submit_gems_range) {
++                if (known_tribute(e) && dist(e.pos, p) <= cambc::constants::submit_gems_range) {
+                     enemy_tribute = true;
+                     if (win && !(win->lands < turn_start(world, e, e.channel_end_round))) stopped += e.gems;
+                 }
+@@ -1461,7 +1461,7 @@
+     // in reach, is the game: ours waits, unless ours wins first or, winning later, an ally stops theirs in time.
+     const auto* ender = ender_to_stop(world);
+     const auto* stop = ender && holds_hard_stop(world, *ender) ? ender : stoppable_winning_tribute(world);
+-    if (stop && stop_due(world, *stop) && !(winning_bag(world) && ally_stops(world, *stop))) {
++    if (stop && stop_due(world, *stop, &pathing) && !(winning_bag(world) && ally_stops(world, *stop))) {
+         throw_if_stale();
+         try {
+             self_acted(), me.cancel_submit_gems();
+@@ -1493,7 +1493,7 @@
+ bool continue_recall(World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home, int recall_farm) {
+     auto& me = cambc::self();
+     decision = Branch::recall_kept;
+-    if (const auto* ender = ender_to_stop(world); ender && holds_hard_stop(world, *ender) && stop_due(world, *ender)) {
++    if (const auto* ender = ender_to_stop(world); ender && holds_hard_stop(world, *ender) && stop_due(world, *ender, &pathing)) {
+         throw_if_stale();
+         try {
+             self_acted(), me.cancel_recall();
+diff -ru ia-prism-v1/src/model/comms.cc ia-watch/src/model/comms.cc
+--- ia-prism-v1/src/model/comms.cc	2026-11-13 14:14:04.883420987 +0000
++++ ia-watch/src/model/comms.cc	2026-11-13 17:44:49.786372994 +0000
+@@ -18,9 +18,14 @@
+ //   bag       bag in fours, rounded up, * team + carrying ally's index
+ //   camp      0 = none, else 1 + offset[captured group] + its respawn round mod period[group];
+ //             left out (never posted) when it does not fit
+-//   ally      0 = none, else 1 + cell * 4 team + 4 ally index + round mod 4 (params::comms_ally): a
+-//             c x c square (c odd: 1, 3 or 5, the narrowest that fits) centred on the record's tile;
+-//             left out when it does not fit
++//   post      one slot for two records, 0 = none:
++//             ally     1 + cell * 4 team + 4 ally index + round mod 4 (params::comms_ally): a c x c
++//                      square (c odd: 1, 3 or 5) centred on the record's tile; only on a team with a
++//                      healer, the only one that posts it
++//             tribute  1 + ally states + an enemy tribute an ally sees: (((enemy * altars + altar) *
++//                      tiles + its tile around the altar, if `tiles` is 8) * 64 + its channel's end
++//                      round mod 64) * 8 + its bag class (bag_class)
++//             the widest pair (c, tiles) that fits; left out when none does
+ //   then free bits
+ // Each ally's priority payload (turn_order.h) also carries its claim + 1 in its low 8 bits, and
+ // support_mailbox.h's intents above them.
+@@ -50,9 +55,34 @@
+     BitField ally;
+     std::uint64_t ally_bits = 0;
+     int cell = 1, cells_y = 1;
++    bool tribute_on = false;
++    std::uint64_t ally_states = 0; // post values 1..ally_states are ally records, the rest tributes
++    int enemies = 1, altars = 1, tiles = 1;
+     int period(int g) const { return camp_offset[g + 1] - camp_offset[g]; }
+ };
+ 
++// A tribute record's channel end, mod the period: a reader takes the first end from `slack` rounds
++// before its own round on, which covers a reader that missed a few turns. A longer channel is posted
++// ending sooner, and again before that end: its stop is due (stop_due) only once its last stop is within
++// a responder's steps and a cooldown, so a period this long keeps that early end from ever reading due.
++constexpr int tribute_period = 64, tribute_slack = 4;
++// Bag classes: 0 a cancel (seen no longer tributing); 1-6 the bag by powers of two (1-31, 32-63, ...,
++// 512+); 7 a bag that wins the game alone, which the reader's own ender tests need exactly.
++constexpr int bag_classes = 8, winning_class = 7;
++int bag_class(int gems, int need) {
++    if (gems >= need) return winning_class;
++    return std::clamp(static_cast<int>(std::bit_width(static_cast<unsigned>(std::max(1, gems)))) - 4, 1, 6);
++}
++// A class's bag: the middle of its range (geometric), kept on the class's side of the win.
++int class_gems(int c, int need, int believed) {
++    const int low = c == 1 ? 1 : 16 << (c - 1);
++    // The score only rises between post and read: a class whose least bag wins now wins alone.
++    if (c == winning_class || low >= need) return std::max(need, believed);
++    return std::max(1, std::min(c == 1 ? 16 : low + low / 2, need - 1));
++}
++// The 8 tiles around an altar, a tribute's tiles (rules gems.tribute: within 1).
++constexpr std::array<vec2, 8> around{{{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}}};
++
+ Layout layout_;
+ 
+ // Worst case (6 bodies, 128+ groups): 6 x 8 claim + 10 bag = 58 bits, leaving no room for the camp
+@@ -80,16 +110,46 @@
+     const int camp_width = static_cast<int>(std::bit_width(static_cast<std::uint64_t>(L.camp_offset.back())));
+     L.camp_on = shift + camp_width <= 64;
+     if (L.camp_on) L.camp = field(camp_width);
+-    if (params::comms_ally && L.camp_on)
+-        for (const int c : {1, 3, 5}) {
+-            const auto cells = static_cast<std::uint64_t>((map.width + c - 1) / c) * static_cast<std::uint64_t>((map.height + c - 1) / c);
+-            const int width = width_of(cells * 4 * static_cast<std::uint64_t>(L.team) + 1);
+-            if (shift + width > 64) continue;
+-            L.cell = c, L.cells_y = (map.height + c - 1) / c;
+-            L.ally = field(width);
+-            L.ally_on = true;
+-            break;
+-        }
++    bool healer = false;
++    for (const auto& a : world.allies) healer |= a.facts().heals();
++    const bool ally = params::comms_ally && L.camp_on && healer;
++    L.enemies = std::clamp(static_cast<int>(world.enemies.size()), 1, 8);
++    L.altars = std::max(1, static_cast<int>(map.altars.size()));
++    const auto cells_of = [&](int c) {
++        return static_cast<std::uint64_t>((map.width + c - 1) / c) * static_cast<std::uint64_t>((map.height + c - 1) / c);
++    };
++    const auto tribute_states = [&](int tiles) {
++        return map.altars.empty() ? 0
++                                  : static_cast<std::uint64_t>(L.enemies) * static_cast<std::uint64_t>(L.altars) * static_cast<std::uint64_t>(tiles)
++                                        * tribute_period * bag_classes;
++    };
++    const auto take = [&](int c, int tiles) {
++        const auto ally_states = c > 0 ? cells_of(c) * 4 * static_cast<std::uint64_t>(L.team) : 0;
++        const auto tributes = tribute_states(tiles);
++        if (ally_states + tributes == 0) return false;
++        const int width = width_of(ally_states + tributes + 1);
++        if (shift + width > 64) return false;
++        if (c > 0) L.cell = c, L.cells_y = (map.height + c - 1) / c, L.ally_on = true;
++        L.ally_states = ally_states;
++        L.tribute_on = tributes > 0, L.tiles = tiles;
++        L.ally = field(width);
++        return true;
++    };
++    bool placed = false;
++    for (const int c : {1, 3, 5}) {
++        if (!ally) break;
++        for (const int tiles : {8, 1})
++            if (!placed) placed = take(c, tiles);
++    }
++    // No room for both: the ally record alone, as before; with no healer, the tribute record alone.
++    for (const int c : {1, 3, 5})
++        if (ally && !placed) placed = take(c, 0);
++    for (const int tiles : {8, 1})
++        if (!ally && !placed) placed = take(0, tiles);
++    debug_block({
++        std::printf("LAYOUT team %d enemies %d groups %d altars %zu used %d ally %d cell %d tribute %d tiles %d\n", L.team, L.enemies, groups,
++                    map.altars.size(), shift, L.ally_on ? 1 : 0, L.cell, L.tribute_on ? 1 : 0, L.tiles);
++    });
+     L.ally_bits = L.ally.mask;
+     L.bag_bits = L.bag.mask;
+     L.camp_bits = L.camp.mask;
+@@ -120,6 +180,16 @@
+ };
+ std::array<Told, 8> told_allies;
+ 
++// By enemy index: the tribute the team was last told of (posted or read), as its end round as posted
++// and bag class (0 for a cancel), so that each is posted once.
++struct ToldTribute {
++    int end = -1, bag = -1;
++};
++std::array<ToldTribute, 8> told_tributes;
++// The round a tribute record was last posted or first read: it stays up through the next round, by when every
++// teammate has had a turn whatever the turn order (a reader's `fresh` covers only its own turns).
++int tribute_round = -10;
++
+ support_mailbox::State support;
+ int support_intent_round = -1;
+ bool support_intent_value = false;
+@@ -192,7 +262,7 @@
+         const auto p = payload_of(world, a);
+         detail::posts.claims[a.index] = p >= 0 ? static_cast<int>(p & 0xff) - 1 : static_cast<int>(L.claim[static_cast<std::size_t>(a.index)].get(bits)) - 1;
+     }
+-    if (const auto v = L.ally.get(bits); L.ally_on && (state.fresh & L.ally_bits) && v != 0) {
++    if (const auto v = L.ally.get(bits); L.ally_on && (state.fresh & L.ally_bits) && v != 0 && v <= L.ally_states) {
+         const auto code = v - 1, kinds = 4 * static_cast<std::uint64_t>(L.team);
+         const int kind = static_cast<int>(code % kinds), cell = static_cast<int>(code / kinds), ally = kind >> 2, h = L.cell / 2;
+         if (ally != world.me().index)
+@@ -200,6 +270,38 @@
+                                                             std::min(cell % L.cells_y * L.cell + h, world.map().height - 1)},
+                                                            round - ((round - kind) & 3)};
+     }
++    if (const auto v = L.ally.get(bits); L.tribute_on && (state.fresh & L.ally_bits) && v > L.ally_states) {
++        auto code = v - 1 - L.ally_states;
++        const int cls = static_cast<int>(code % bag_classes);
++        code /= bag_classes;
++        const int residue = static_cast<int>(code % tribute_period);
++        code /= tribute_period;
++        const int tile = static_cast<int>(code % static_cast<std::uint64_t>(L.tiles));
++        code /= static_cast<std::uint64_t>(L.tiles);
++        const int altar = static_cast<int>(code % static_cast<std::uint64_t>(L.altars));
++        const int enemy = static_cast<int>(code / static_cast<std::uint64_t>(L.altars));
++        const int base = round - tribute_slack;
++        const int end = base + ((residue - base) % tribute_period + tribute_period) % tribute_period;
++        const auto& map = world.map();
++        if (enemy < L.enemies && enemy < static_cast<int>(world.enemies.size()) && altar < static_cast<int>(map.altars.size())) {
++            tribute_round = round;
++            told_tributes[static_cast<std::size_t>(enemy)] = {end, cls};
++            const auto& e = world.enemies[static_cast<std::size_t>(enemy)];
++            const vec2 a = map.altars[static_cast<std::size_t>(altar)].pos;
++            // Without its tile, the tile there nearest where we last placed it.
++            vec2 at{-1, -1};
++            if (L.tiles == 8) at = a + around[static_cast<std::size_t>(tile)];
++            else
++                for (const auto d : around)
++                    if (const vec2 q = a + d; in_bounds(q) && test(map.open_for_them, q) && (!in_bounds(at) || (in_bounds(e.pos) && dist(q, e.pos) < dist(at, e.pos))))
++                        at = q;
++            const int need = static_cast<int>(cambc::constants::winning_gems) - world.score.enemy;
++            // A bag we know exactly in the posted class stays exact: update_scores matches landed bags exactly.
++            const int gems = cls == 0 ? 0 : e.gems > 0 && bag_class(e.gems, need) == cls ? e.gems : class_gems(cls, need, e.gems);
++            world.note_tribute(enemy, at, end, gems);
++            debug_block({ std::printf("RELAY-READ %d %u e%d %d %d end %d class %d gems %d\n", round, my_handle(), enemy, at.x, at.y, end, cls, gems); });
++        }
++    }
+     if (const auto record = L.camp.get(bits); (state.fresh & L.camp_bits) && record != 0) {
+         const auto [g, respawn] = decode_capture(L, record);
+         world.note_capture(g, respawn);
+@@ -240,6 +342,60 @@
+         });
+     }
+ 
++    // An enemy tribute we see that the team was not told of, or one told of that we see has stopped:
++    // the biggest bag first. A tribute someone posted since our last turn stays up for the rest of the team.
++    const bool tribute_up = L.tribute_on && L.ally.get(bits) > L.ally_states && ((state.fresh & L.ally_bits) || round <= tribute_round + 1);
++    bool tribute_posted = false;
++    if (L.tribute_on && !tribute_up) {
++        const int need = static_cast<int>(cambc::constants::winning_gems) - world.score.enemy;
++        // The latest end a reader within tribute_slack rounds decodes.
++        const int latest = round + tribute_period - 1 - tribute_slack;
++        int pick = -1, pick_class = -1, pick_end = -1;
++        vec2 pick_at{-1, -1};
++        for (const auto& e : world.enemies) {
++            if (!e.alive || !e.visible || e.index >= L.enemies) continue;
++            const auto& told = told_tributes[static_cast<std::size_t>(e.index)];
++            if (e.channel == Channel::tribute) {
++                // A channel ending before any teammate's next turn is past stopping.
++                if (e.channel_end_round <= round) continue;
++                const int cls = bag_class(e.gems, need);
++                // Told already: its end, or, for a channel longer than the record carries, an end not yet near.
++                if (told.bag == cls && (told.end == e.channel_end_round || (told.end < e.channel_end_round && told.end > round + 1))) continue;
++                if (cls > pick_class) pick = e.index, pick_class = cls, pick_end = std::min(e.channel_end_round, latest), pick_at = e.pos;
++            } else if (told.bag > 0 && told.end > round && pick < 0) {
++                pick = e.index, pick_class = 0, pick_end = told.end, pick_at = e.pos;
++            }
++        }
++        if (pick >= 0) {
++            const auto& altars = world.map().altars;
++            int altar = -1, tile = 0;
++            for (int k = 0; k < static_cast<int>(altars.size()) && altar < 0; ++k)
++                for (int t = 0; t < 8; ++t)
++                    if (altars[static_cast<std::size_t>(k)].pos + around[static_cast<std::size_t>(t)] == pick_at) {
++                        altar = k, tile = t;
++                        break;
++                    }
++            auto& told = told_tributes[static_cast<std::size_t>(pick)];
++            // A cancel's champion may have stepped off: the altar within a step of it, whose tile a cancel does not read.
++            if (altar < 0 && pick_class == 0)
++                for (int k = 0; k < static_cast<int>(altars.size()) && altar < 0; ++k)
++                    if (dist(pick_at, altars[static_cast<std::size_t>(k)].pos) <= 2) altar = k;
++            if (altar < 0) told.bag = 0; // nowhere near an altar: nothing to tell
++            else {
++                if (L.tiles == 1) tile = 0;
++                const auto code = (((static_cast<std::uint64_t>(pick) * static_cast<std::uint64_t>(L.altars) + static_cast<std::uint64_t>(altar))
++                                        * static_cast<std::uint64_t>(L.tiles) + static_cast<std::uint64_t>(tile))
++                                       * tribute_period + static_cast<std::uint64_t>(((pick_end % tribute_period) + tribute_period) % tribute_period))
++                                      * bag_classes + static_cast<std::uint64_t>(pick_class);
++                L.ally.set(bits, 1 + L.ally_states + code);
++                told = {pick_end, pick_class};
++                tribute_round = round;
++                tribute_posted = dirty = true;
++                debug_block({ std::printf("RELAY-POST %d %u e%d %d %d end %d class %d\n", round, my_handle(), pick, pick_at.x, pick_at.y, pick_end, pick_class); });
++            }
++        }
++    }
++
+     // Only we write our field, so it holds what we last posted.
+     const int me = world.me().index;
+     const int mine = detail::posts.mine;
+@@ -261,7 +417,7 @@
+             if (a.is_self) rank = posters;
+             ++posters;
+         }
+-        if (healer && round % posters == rank) {
++        if (healer && round % posters == rank && !tribute_up && !tribute_posted) {
+             const vec2 p = my_position();
+             const auto v = 1 + static_cast<std::uint64_t>(p.x / L.cell * L.cells_y + p.y / L.cell) * 4 * static_cast<std::uint64_t>(L.team)
+                            + static_cast<std::uint64_t>(4 * me + (round & 3));
+diff -ru ia-prism-v1/src/model/world.cc ia-watch/src/model/world.cc
+--- ia-prism-v1/src/model/world.cc	2026-11-13 14:14:04.884421000 +0000
++++ ia-watch/src/model/world.cc	2026-11-13 17:44:42.043366007 +0000
+@@ -1927,6 +1927,8 @@
+         if (b.shield > 0
+             && (round > b.shield_end_round || (round == b.shield_end_round && slot(b, round) < my_slot_now_)))
+             b.shield = 0, b.shield_turns = 0;
++        // A channel holds its owner on its tile: that tile in our sight without it means the channel ended.
++        if (enemy && b.channel == Channel::tribute && in_bounds(b.pos) && test(visible, b.pos)) b.channel = Channel::none;
+         // A channel completes at its owner's turn start.
+         // A stun, lock or damage may have cancelled it: a tribute's bag is emptied by update_scores
+         // only when the score shows it landed, and a recall leaves `pos` to the last sighting.
+@@ -2119,6 +2121,25 @@
+     track(b);
+ }
+ 
++void World::note_tribute(int enemy_index, vec2 at, int end_round, int gems) {
++    if (enemy_index < 0 || enemy_index >= static_cast<int>(enemies.size())) return;
++    auto& b = enemies[enemy_index];
++    if (!b.alive || b.visible) return;
++    if (gems <= 0) {
++        if (b.channel == Channel::tribute) b.channel = Channel::none;
++        return;
++    }
++    // In our sight and empty, the tile disproves it.
++    if (end_round <= round || !in_bounds(at) || test(visible, at)) return;
++    // Channelling, it stands where it was seen.
++    if (b.pos != at || b.pos_round < round - 1) note_sighting(enemy_index, at, round, b.max_health > 0 ? b.health / b.max_health : 1.0f);
++    b.channel = b.seen_channel = Channel::tribute;
++    b.channel_end_round = end_round;
++    if (b.facts().passive == Passive::gem_focus) b.focus += cambc::constants::passive_abilities::prism_focus_per_gem * static_cast<float>(gems - b.gems);
++    b.gems = gems;
++    b.relayed_round = round;
++}
++
+ void World::camp_moved(std::size_t g) {
+     ++camps_version;
+     if (camps_dirty.size() <= g / 64) camps_dirty.resize(g / 64 + 1);
+diff -ru ia-prism-v1/src/model/world.h ia-watch/src/model/world.h
+--- ia-prism-v1/src/model/world.h	2026-11-13 14:14:04.885421013 +0000
++++ ia-watch/src/model/world.h	2026-11-13 17:08:19.852345247 +0000
+@@ -548,6 +548,7 @@
+     std::uint32_t lineage = 0;
+     Moment fixed, at; // when `possible` was last known exactly, and when it describes
+     int turns_since_fixed = 0;
++    int relayed_round = -1; // the round a teammate's tribute record about it was read (comms)
+ 
+     const ChampionFacts& facts() const { return aph::facts(type); }
+     bool ability_ready(int slot, int round) const { return alive && round >= ready_round[slot]; }
+@@ -662,6 +663,9 @@
+         vec2 pos{-1, -1};
+         int round = -1;
+     } expected_sighting, expected_second;
++    // A teammate saw the enemy tributing at `at`, its channel ending at `end_round`, carrying `gems`
++    // (0: seen no longer tributing). Ignored while it is in our own sight.
++    void note_tribute(int enemy_index, vec2 at, int end_round, int gems);
+     // A teammate saw the group captured, returning at `respawn_round`.
+     void note_capture(int group, int respawn_round);
+ 
+@@ -890,6 +894,15 @@
+ 
+ inline bool enemy_seen(const World& world) { return world.enemy_seen(); }
+ 
++// An enemy believed tributing: in sight, or out of it as last seen or as a teammate relayed it (comms), its
++// channel not yet past its end (World clears it then). Channelling, it stays on its tile.
++inline bool known_tribute(const ChampionBelief& e) { return e.alive && e.channel == Channel::tribute; }
++inline bool unseen_tribute_known(const World& world) {
++    for (const auto& e : world.enemies)
++        if (!e.visible && known_tribute(e)) return true;
++    return false;
++}
++
+ // Our picks, Cassi and Issac counting once: fixed after the draft.
+ inline int economy_pick_count(const World& world) {
+     static const int count = [&] {

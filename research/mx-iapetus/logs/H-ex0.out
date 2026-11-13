@@ -1,0 +1,44 @@
+1000 replays (1000 distinct): 849 to extract, 151 cached
+[25/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/124-gen-classic-6145100101019-21.repl26a 
+[50/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/1298-gen-ladder05-6145100218054-21.repl26a 
+[75/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/1345-gen-lanes-6145100105001-12.repl26a 
+[100/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/1379-gen-monolith-6145100108000-12.repl26a 
+[125/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/1418-gen-rows-6145100009000-21.repl26a 
+[150/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/1451-gen-shared-gems-6145100214002-12.repl26a 
+[175/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/1476-gen-small-brawl-6145100202003-21.repl26a 
+[200/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/1510-gen-tiny-6145100211004-21.repl26a 
+[225/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/1548-mut-05bookends-6145100019013-21.repl26a 
+[250/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/1639-mut-05savanna-6145100219014-12.repl26a 
+[275/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/1673-mut-big-world-6145100017048-12.repl26a 
+[300/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/1719-mut-corners-6145100017046-12.repl26a 
+[325/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/1757-mut-elk-arena-6145100017036-12.repl26a 
+[350/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/1795-mut-galaxy-6145100117005-12.repl26a 
+[375/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/1834-mut-great-wall-6145100217058-21.repl26a 
+[400/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/1890-mut-monolith-6145100217034-21.repl26a 
+[425/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/1923-mut-pilgrimage-6145100117026-12.repl26a 
+[450/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/1990-mut-sunburst-6145100117019-21.repl26a 
+[475/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/202-gen-classic-6145100201028-21.repl26a 
+[500/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/221-gen-contested-centre-6145100210000-12.repl26a 
+[525/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/272-gen-ladder-6145100000003-21.repl26a 
+[550/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/326-gen-ladder-6145100000030-21.repl26a 
+[575/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/386-gen-ladder-6145100000060-21.repl26a 
+[600/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/437-gen-ladder-6145100000086-12.repl26a 
+[625/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/494-gen-ladder-6145100100002-21.repl26a 
+[650/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/582-gen-ladder-6145100100046-21.repl26a 
+[675/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/613-gen-ladder-6145100100062-12.repl26a 
+[700/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/666-gen-ladder-6145100100088-21.repl26a 
+[725/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/731-gen-ladder-6145100200009-12.repl26a 
+[750/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/787-gen-ladder-6145100200037-12.repl26a 
+[775/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/841-gen-ladder-6145100200064-12.repl26a 
+[800/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/893-gen-ladder-6145100200090-12.repl26a 
+[825/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/940-gen-ladder05-6145100018001-21.repl26a 
+[849/849] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/997-gen-ladder05-6145100018030-12.repl26a 
+extracted 849/849 in 641.9 s (756 ms/replay wall, 8 threads); 867 soft validation notes
+petus-H-dbg0-study/693-gen-ladder-6145100100102-12.repl26a 
+[900/1000] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/787-gen-ladder-6145100200037-12.repl26a 
+[925/1000] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/841-gen-ladder-6145100200064-12.repl26a 
+[950/1000] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/893-gen-ladder-6145100200090-12.repl26a 
+[975/1000] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/923-gen-ladder-6145100200105-12.repl26a 
+[1000/1000] ok   replays/batch-20261113-190001-ab-mx-iapetus-H-dbg0-study/997-gen-ladder05-6145100018030-12.repl26a 
+extracted 1000/1000 in 764.3 s (764 ms/replay wall, 8 threads); 1054 soft validation notes
+done

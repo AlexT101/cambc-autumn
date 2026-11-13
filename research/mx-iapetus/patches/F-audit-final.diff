@@ -1,0 +1,77 @@
+diff -ru ia-prism-v1/src/combat/fight.cc ia-audit/src/combat/fight.cc
+--- ia-prism-v1/src/combat/fight.cc	2026-11-13 16:54:22.299098432 +0000
++++ ia-audit/src/combat/fight.cc	2026-11-13 18:46:46.311916913 +0000
+@@ -375,7 +375,30 @@
+     std::stable_sort(last.begin(), last.begin() + lasts, by_index);
+     for (int i = 0; i < lasts; ++i)
+         if (pathing.try_move(options[last[i]].p)) return;
++    // A wait beside a line only a dash crosses counts as the walk's success: only a move ends the retreat's step.
+     pathing.step_towards(home);
++    if (!my_can_move() || my_position() != here || steps == 0) return;
++    // No step gains on home (beside a line a cooling dash crosses, or boxed in) and the longer ones are all in reach,
++    // so none was tried: the stay is in reach too. A longer step that takes less than standing is the turn's retreat.
++    const float taken = world.me().taken;
++    const auto& open = pathing.blocked(); // rebuilt if the walk bumped a hidden unit
++    auto stay = safety.tally(here, taken);
++    safety.finish(stay, here, taken);
++    if (stay.damage <= 0 && !stay.stuns) return;
++    vec2 best{-1, -1};
++    float least = stay.damage;
++    for (const auto d : directions) {
++        const vec2 p = here + d;
++        if (!in_bounds(p) || test(open, p) || home.at(p) == unreachable) continue;
++        auto t = safety.tally(p, taken);
++        safety.finish(t, p, taken);
++        if ((t.stuns && !stay.stuns) || t.damage >= least) continue;
++        least = t.damage, best = p;
++    }
++    if (best.x >= 0) {
++        debug_block({ std::printf("RSTAY %d %u %.0f->%.0f\n", world.round, my_handle(), stay.damage, least); });
++        pathing.try_move(best);
++    }
+ }
+ 
+ // The rounds until the payout of the hold we would keep at p (one not yet counting starts now), or
+@@ -1634,6 +1657,29 @@
+     return false;
+ }
+ 
++// The field a retreat walks home by. A dasher's crosses hole and altar lines as its dash does (Pathing::static_walls),
++// so beside such a line, with no step on it that gains, its next gain is the dash: while that cools, the walk round
++// is home sooner once it is no longer than the wait and the dashed route.
++const Field& retreat_home(const World& world, Pathing& pathing) {
++    const auto& dashed = pathing.to_ally_spawn();
++    const int slot = world.me().facts().slot_of(AbilityKind::dash);
++    if (slot < 0) return dashed;
++    const int wait = my_cooldown(slot);
++    if (wait <= 0) return dashed;
++    const vec2 here = my_position();
++    const int by_dash = dashed.at(here);
++    if (by_dash == unreachable || by_dash == 0) return dashed;
++    const auto& foot = world.map().from_ally_spawn();
++    const int by_foot = foot.at(here);
++    if (by_foot == unreachable || by_foot <= by_dash) return dashed;
++    for (const auto d : directions) {
++        const vec2 q = here + d;
++        // A walk that gains on it without losing on the walk round (else, a step round, the next turn would step back).
++        if (in_bounds(q) && foot.at(q) != unreachable && foot.at(q) <= by_foot && dashed.at(q) < by_dash) return dashed;
++    }
++    return by_foot <= by_dash + wait ? foot : dashed;
++}
++
+ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     world.throw_if_stale();
+     auto& me = cambc::self();
+@@ -1689,7 +1735,11 @@
+     else see_stuns(world, safety); // Heart of Ruin's landing
+     if (bool deferred = false; !flee_camps(world, pathing, safety, pathing.to_ally_spawn(), deferred)) {
+         const vec2 from = my_position();
+-        retreat_step(world, pathing, safety, pathing.to_ally_spawn());
++        const Field& home = my_can_move() ? retreat_home(world, pathing) : pathing.to_ally_spawn();
++        debug_block({
++            if (&home != &pathing.to_ally_spawn()) std::printf("RHOME %d %u %d,%d\n", world.round, my_handle(), from.x, from.y);
++        });
++        retreat_step(world, pathing, safety, home);
+         if (deferred) {
+             debug_block({ std::printf("LSTEP %d %u %d,%d %d,%d\n", world.round, my_handle(), from.x, from.y, my_position().x, my_position().y); });
+         }

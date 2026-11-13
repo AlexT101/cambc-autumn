@@ -38,6 +38,13 @@ Notes, briefs, patches and scripts: [mx-rhea](mx-rhea/NOTES.md), [mx-crius](mx-c
 
 - **Kept (CHANGES 530):** IAPETUS's stop_due + contest judgement, 53.3 held out at 2x, **52.9 of 40,120 at 100k**.
 - **Level at 100k:** IAPETUS line B (contest judgement) alone, 51.1 held out at 2x but 50.3 (49.8-50.8) of 40,120 at 100k.
+- **Lost to 531 at 100k:** IAPETUS `ia-final` (530 + D's audit fixes: recall cancels on a hard stop, one stop decision
+  a round; + G's `pick_second` turn-window fix: the slot before ours goes to the enemy whose strike reaches us),
+  53.2 (52.8-53.7) of 51,000 held out at 2x against 529, level with v1's 53.3 on the same maps. Rebased onto 531
+  (`variants/ia-final-531`, the 3-way merge of 3bf1525b5..f32ce0a89): **49.3 (48.8-49.7) of 40,120** against 531
+  at 100k (unused seeds 61490400-61490458), OOF 357,693 / 343,175 (+4%): not merged. IAPETUS's other lines
+  (finish window, live territory, relay/altar watch, death audit, Prism threat model v4, stop execution) were level;
+  the threat-model fixes cut Prism deaths 20% but read 52.4 (a more cautious Prism).
 - **Lost to 530 at 100k:** THEIA `dnw-min` (scylla's tribute denial ported onto 529, keeping only `deny_late`, the
   stop timed for the channel's last turns, and `deny_alarm`, a seen enemy tribute posted to allies): 52.1 pooled held
   out at 2x and 51.4 (50.4-52.4) of 10,200 at 100k, both against 529; against 530 at 100k **49.0 (48.5-49.5) of

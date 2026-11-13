@@ -1,0 +1,9 @@
+A/B mx-iapetus-H-r1: CAND variants/ia-stop-v1 (dir) vs REF variants/chy-ref (dir)
+  train: running, log replays/ab/mx-iapetus-H-r1/train.log
+CAND 53.3% of 10200 (5440-4760), 95% CI 52.4-54.3
+  train  53.3% of 10200 (5440-4760), 95% CI 52.4-54.3
+Failed matches: 0
+Out-of-fuel turns: CAND 1122 in 650 games, REF 1081 in 610 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 1m48s
+Results: replays/ab/mx-iapetus-H-r1/summary.md

@@ -17,7 +17,7 @@ def game(args):
     open_={}
     for e in ev:
         if e['k']=='death':
-            o['deaths_c' if ch[e['a']]['team']==ct else 'deaths_r']+=1
+            o['deaths_c' if ch[e['v']]['team']==ct else 'deaths_r']+=1
         if e['k']=='tribute_start': open_[e['a']]=e
         elif e['k'] in ('tribute_end','tribute_cancel') and e['a'] in open_:
             s=open_.pop(e['a']); g=s.get('gems',0)
