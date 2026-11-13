@@ -11,9 +11,26 @@ import rbuild
 import refresh_build
 import refresh_live
 import loss_refresh
+import loss_live_plan
 
 
 class RefreshGates(unittest.TestCase):
+    def test_live_plan_preserves_other_opponent_wins_on_forced_or_shared_drafts(self):
+        entry=dict(key='map-a-v125-source',map='map',side='a',opp='fish')
+        sources={'source':dict(our_picks=[1],opp_picks=[2])}
+        baseline={('fish','map','a'):dict(result='loss',our_picks=[1],opp_picks=[2]),
+                  ('mite','map','a'):dict(result='win',our_picks=[3],opp_picks=[4])}
+        checks=loss_live_plan.coverage([entry],{entry['key']},baseline,sources,['fish','mite'])
+        self.assertTrue(checks[('mite','map','a')]['require_win'])
+        checks=loss_live_plan.coverage([entry],set(),baseline,sources,['fish','mite'])
+        self.assertNotIn(('mite','map','a'),checks)
+        baseline[('mite','map','a')].update(our_picks=[1],opp_picks=[2])
+        checks=loss_live_plan.coverage([entry],set(),baseline,sources,['fish','mite'])
+        self.assertTrue(checks[('mite','map','a')]['require_win'])
+        baseline[('fish','map','a')]['result']='win'
+        with self.assertRaisesRegex(RuntimeError,'host loss'):
+            loss_live_plan.coverage([entry],set(),baseline,sources,['fish','mite'])
+
     def test_loss_refresh_requires_complete_clean_host_coverage(self):
         pins=dict(fish='r8',mite='r12')
         tasks=[dict(id=opp,version=128,purpose='set',opp_name=name,refset=pins[opp],

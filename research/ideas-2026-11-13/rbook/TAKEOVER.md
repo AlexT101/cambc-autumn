@@ -36,6 +36,9 @@ required. Masked v119 remains useful source data but differs in production fuel 
   applies `--host-losses-only`, and identifies forced drafts per recording. It runs the local stage and
   forced-draft check, then holds for target-pin live checks including forced-draft collateral cells.
   Work: `/home/ubuntu/tmp-offload/rbook/loss-v128`. It never uploads or changes pins.
+  On success, loss_live_plan.py writes live-steps.json and live-expectations.json: target-pin entry cells,
+  forced/shared-draft collateral cells, and bounded current-opponent checks. Collateral host wins must remain
+  wins; a current win after divergence counts. The plan does not upload or promote anything.
 - The legacy r11 410-entry book passed the corrected local stage at 14:37 (4,834,462 bytes;
   410 exact, fallback invalid 0). HOLD-LIVE-CHECK prevents its superseded selection being uploaded.
 - Foreign v127: requested r11 cells 3/3 exact wins; requested current cells 0/3 wins, all diverged.

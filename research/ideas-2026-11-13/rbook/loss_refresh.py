@@ -133,6 +133,8 @@ def build(work, version, pins):
           host_version=version,pins=pins,entries=len(actual),
           opponents=dict(collections.Counter(c['opp'] for c in actual)),
           forced_entries=len(force_keys),publication='held until target-pin and forced collateral checks'))
+    from loss_live_plan import plan
+    plan(work)
 
 
 def main():
