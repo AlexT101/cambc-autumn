@@ -41,3 +41,5 @@ If the win rate drops versus 2x and out-of-fuel turns rise versus charybdis, mar
 | c527-lethal | HECATE h-atlasf (press disarmed + lethal fixes 3/5) | 49.3 (48.8-49.8) | 392,802 / 312,731 (+26%) |
 
 **charybdis 528 = 527 + pursuit fix** (`variants/chy-528`) vs 527 (`variants/castor-nyx-lock`) on fresh `overseer-528` (seeds 148200-148279, 40,960 games, 100k): **50.7 (50.3-51.2)**, OOF 308,466 / 311,059.
+
+**fgate charybdis 528 (`variants/chy-528`) vs 525 (`variants/chy-bagfocus-525`)**: **ACCEPT (screen H1) at batch 4**. Fresh **51.37% (50.92-51.82)** over 10,240 map units (81,920 games); Fish 51.38, Mite 51.36, one-site 51.49, multi-site 51.32, ladder side read 51.47 (49.36-53.58). Against the bodies CAND 85.35%, REF 83.97%. The mirror's +4.8 is +1.4 against the bodies.

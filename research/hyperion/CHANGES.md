@@ -4991,6 +4991,9 @@ Vendetta keep `pursuit_steps`. Hurt, the wider margin stays.
 Against charybdis 527, own drafts, release, 100k fuel: **50.7% (50.3-51.2)** of 40,960 games on fresh ladder-v2
 `maps/suites/overseer-528` (seeds 148200-148279); 50.6% (50.1-51.1) on overseer-nyx. Out-of-fuel turns 308,466 /
 311,059 (level). No failed game or broken draft. On 525 at 2x SELENE read about +0.3-0.4.
+527 + 528 against 525 by `fgate.py` (Fish r8 and Mite bodies): **ACCEPT at batch 4, 51.37% (50.92-51.82)** of 81,920
+fresh games; Fish 51.38, Mite 51.36, one-site 51.49, multi-site 51.32, ladder side 51.47; against the bodies 85.35%
+(525: 83.97%), about +18 Elo against the mirror's +38.
 
 Frozen as `variants/chy-528` (= bots/charybdis).
 
