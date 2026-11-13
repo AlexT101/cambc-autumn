@@ -10,6 +10,49 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## (charybdis = 525, 2026-11-13) Exact fuel cuts: altar stands and the shop's shared emblem prefix take out-of-fuel turns at 100k down 5.5% (Fish body) and 6.3% (Mite body); the live priority mask costs +7%
+
+Patches (diffs against `variants/chy-525`, `patch -p1` in the bot dir) and scripts: `research/fuel-2026-11-13/`.
+- **Where the fuel goes.** Release fuelprof profile (-g build) and a debug scope trace (pool-v4 batch 0 part p6,
+  1,280 games against fr8-g25 and mf-f9 at 100k). Fight turns are flat:
+  - farm_turn's pruned loop is 13.6% of heavy-turn fuel, spread over its lines.
+  - Capped route fields (host calls, priced per layer) are 5.5%; the strike search is about 2%.
+  - The exact levers are one-time spikes.
+- **01-stands.diff** (`altar_guard.cc`): stands() tested every camp member on the map against each tile within r of
+  the guarded altar. Only members within reach + r of the altar can reach one (Chebyshev), so those are collected
+  first. Its spike ended 0.20 turns a game in the trace.
+- **02-shop-memo.diff** (`shop.cc`): within one best_emblem call, every current_emblem call shares one prefix:
+  - the build, upkeep basis, fight scale, output and collecting flag;
+  - best_stat by main stat, and the passive's value by family.
+  - Callers (reactive_over, lab_pinned, best_emblem) all run inside one best_emblem call with its arguments.
+- **Identity at 100M.** Each patch: 52/52 `wide`, 96/96 on 48 v4 maps, 52/52 test drafts. The bundle: 52/52 `wide`.
+  Total fuel moves 0.01-0.03% (the turn-end queue spends what is saved); p99 falls 0.1%.
+- **Out-of-fuel turns a game at 100k** (fgate v4, batches 0-3, 21,504 games a body; `tools/oofc.py`):
+
+  | build | fr8-g25 | mf-f9 | win% (95% CI), 81,920 fresh games |
+  |---|---|---|---|
+  | chy-525 | 6.741 | 6.450 | |
+  | stands | 6.465 (-4.1%) | 6.160 (-4.5%) | 50.03 (49.93-50.14) |
+  | shop memo | 6.645 (-1.4%) | 6.341 (-1.7%) | 50.34 (50.04-50.64) |
+  | both | 6.369 (-5.5%) | 6.042 (-6.3%) | 50.38 (50.07-50.69) |
+  | chy-525 + live mask (`stream_patch.py`, keyed) | 7.265 (+7.8%) | 6.891 (+6.8%) | 50.02 (49.57-50.46) |
+
+- **The priority mask.**
+  - Fuel: paired at 100M against a hyperion blind to enemy priorities (52 games, 220,679 turns), it adds +225 a turn
+    (p50 +211, +236 on turns over 90k) and +1.9k on first turns.
+  - Play: identical 52/52 at 100M, priority sets aside (`tools/antire/same_play.mjs`). Allies read the masked values
+    only as rank comparisons, which the strictly increasing per-game map keeps, and as payloads that payload_of
+    decodes exactly.
+  - Unmasked builds: `stream_patch.py --zero` builds byte-identical to chy-525; live_sched submits a dir in
+    `UNMASKED` unpatched.
+  - A book bot replays recorded, masked priorities: an unmasked build of it misreads them once some of its bodies
+    have left the book and others have not.
+- **Elasticity.** +225 fuel a turn gave +7% out-of-fuel turns: about 3% per 100 fuel on hot turns.
+- **Left.**
+  - Rounds 1-5 hold 0.65 out-of-fuel turns a game: first-turn World init on big maps (97k in the world scope on
+    first turns that run out), carried into round 2 by finish_late.
+  - No other spike stands out in fight turns.
+
 ## (charybdis = 525, 2026-11-13) Cassi's one-turn kill zone against Fish r8's Vesper: the pair already retreats and Cassi dies in the chase; leaving earlier is level (49.87% at 200k) and leaves her deaths unchanged
 
 Note, patches and scripts: [ideas-2026-11-13/cassi-one-turn-kill-zone/README.md](ideas-2026-11-13/cassi-one-turn-kill-zone/README.md).
