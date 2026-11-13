@@ -1,0 +1,110 @@
+{
+  "at": "2026-11-13T21:19:26Z",
+  "version": 134,
+  "rest": 134,
+  "helper_exit": 0,
+  "live_confirmed_at": "2026-11-13T21:12:11Z",
+  "published_at": "2026-11-13T21:17:53Z",
+  "masked": false,
+  "source_files": 64,
+  "source_byte_identity": true,
+  "uploaded_workspace": "/home/ubuntu/tmp-offload/handoff/sched/build/rbook-loss-v132-r9-qualified-v133-1794603791",
+  "book": "/home/ubuntu/cambc-autumn/bots/variants/rbook-loss-v132-r9-qualified-v133",
+  "entries": 30,
+  "fish_entries": 6,
+  "mite_entries": 24,
+  "required_pinned_cells": 3,
+  "digest": "0beffef8f9238647f9d4e7a9b69aa498fd548f7dc3cd62e58d0d794a87f7d285",
+  "scheduler_pid": 3798,
+  "runner_pid": 2787885,
+  "qualification": "3/3 recovery wins with clean pinned r13 provenance; source lines retain prior qualification",
+  "recovery_crc": [
+    {
+      "map": "00galaxy",
+      "side": "b",
+      "match": "01a1d6c1-07d5-77f4-856e-3b330555007e",
+      "result": "win",
+      "zip_crc": "pass"
+    },
+    {
+      "map": "04two_kingdoms",
+      "side": "a",
+      "match": "01a1d6c1-07d5-7c33-b81b-59457cfb1285",
+      "result": "win",
+      "zip_crc": "pass"
+    },
+    {
+      "map": "00rows",
+      "side": "b",
+      "match": "01a1d6c1-07d5-7c8c-80e4-5185d2e59bcf",
+      "result": "win",
+      "zip_crc": "pass"
+    }
+  ],
+  "current_mite_evidence": {
+    "at": "2026-11-13T21:19:26Z",
+    "cell": [
+      "00lanes",
+      "b"
+    ],
+    "book_key": "00lanes-b-v126-e8af734318e1",
+    "first_divergence_index": 0,
+    "local_combined_exact": true,
+    "zip_crc": "pass",
+    "source": {
+      "version": 126,
+      "match": "01a1d5a3-ef11-7f63-80e0-e8af734318e1",
+      "task": "v126-loss-book-r13-mite-rest-r13-mite-03",
+      "group": "01a1d5a3-ef0f-7eaa-8748-7a4547ee8626",
+      "source_group": "01a1d598-e831-779c-b788-7710ca8d3f9a",
+      "opp_name": "Mite",
+      "our_picks": [
+        "Vendetta",
+        "Cassi & Issac",
+        "Prism",
+        "Willow",
+        "Tavi"
+      ],
+      "opp_picks": [
+        "Vesper Vale",
+        "Vendetta",
+        "Heart of Ruin",
+        "Cassi & Issac",
+        "Tavi"
+      ],
+      "seed": "15497727643895809986",
+      "map_id": "62128fd1-03f3-4ce9-8e11-a953c91137a6",
+      "engine_hash": "96ce858f548c",
+      "result": "win",
+      "replay": "replays/ladder-scrims/01a1d5a3-ef0f-7eaa-8748-7a4547ee8626/2-00lanes.zip"
+    },
+    "current": {
+      "version": 134,
+      "match": "01a1d6c1-0ae0-790f-9327-ea6c5347d629",
+      "task": "batches-hour36-v134-mite-cur",
+      "group": "01a1d6c1-0adc-72a6-8c1e-6156b4a38db0",
+      "source_group": null,
+      "opp_name": "Mite",
+      "our_picks": [
+        "Vendetta",
+        "Cassi & Issac",
+        "Prism",
+        "Willow",
+        "Tavi"
+      ],
+      "opp_picks": [
+        "Vesper Vale",
+        "Vendetta",
+        "Heart of Ruin",
+        "Prism",
+        "Tavi"
+      ],
+      "seed": "15497727643895809986",
+      "map_id": "62128fd1-03f3-4ce9-8e11-a953c91137a6",
+      "engine_hash": "96ce858f548c",
+      "result": "win",
+      "replay": "replays/ladder-scrims/01a1d6c1-0adc-72a6-8c1e-6156b4a38db0/4-00lanes.zip"
+    },
+    "conclusion": "Current Mite changes fourth draft pick from Cassi & Issac to Prism under the same own picks/map/seed/engine. The r13 draft-keyed book entry cannot match. Current win is not evidence of r13 compatibility. Parent owns further same-version comparison and repin."
+  }
+}

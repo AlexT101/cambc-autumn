@@ -485,3 +485,22 @@ Unknown Mite cache:23 proven r13 winning recordings on90 unknown132 cells, acros
 as five groups/25 games, NOT queued until corrected recovery. All original18 tasks
 stay held; parent owns insertion. Worker has not changed the queue. These source
 wins become book candidates only if the new132 outcomes prove losses.
+
+## 2026-11-13 21:18 UTC: corrected v134 published; current Mite draft changed
+
+Corrected 30-entry book uploaded once as v134 at21:05:07, became live/REST21:12:11,
+and cycle4036458 published21:17:54 after all three recovery cells won against r13:
+00galaxy/b,00rows/b,04two_kingdoms/a. Exact task/version/source-pin provenance and
+all three replay ZIP CRCs pass. All64 uploaded source files equal the verified
+unmasked local variant. Receipt and cell evidence: `qualified531-release.json`;
+full local work remains `loss-v132-r9-qualified-v133`. Scheduler3798, runner2787885;
+reserve0, all quota available unless teammate requests priority. No worker queue edits.
+
+Hour36 current-Mite 00lanes/b WON but is not r13-compatible: its fourth draft pick
+is Prism instead of Cassi & Issac, with identical own picks, map, seed and engine.
+The replay differs at index0 from the locally exact r13 recording. Its old book
+draft key therefore cannot match; the win does not validate the old pin. Full
+source/current provenance is in `hour36-mite-r13-incompatibility.json` in the work,
+also embedded in the tracked receipt. Parent owns the already queued three-cell
+same-v134 current-Mite comparison, repin decision and any host eligibility work.
+The 23-cell r13 eligibility proposal remains unqueued pending that decision.

@@ -10,6 +10,19 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## (charybdis 531 book, 2026-11-13) Corrected v134 restores three collateral wins
+
+The 30-entry book retains six live-qualified Fish r9 lines and 24 proven Mite r13
+lines, removing all 25 failed provisional Fish entries from v133. Local combined
+replay verification passed30/30; wide100M identity52/52; fallback24 games with131
+handovers and no invalid reads. Uploaded64 source files exactly match the verified
+variant. All three deliberate regression-repair checks won against pinned Mite r13:
+00galaxy/b,00rows/b,04two_kingdoms/a; exact provenance and replay ZIP CRCs passed.
+v134 became REST21:12:11 and completed qualification21:17:54. These are targeted
+repair checks, not a broad strength estimate. Hour36 current Mite changed its
+00lanes/b fourth pick from Cassi & Issac to Prism; its win there is not proof of
+r13 compatibility. [Release and replay evidence](ideas-2026-11-13/rbook/qualified531-release.json).
+
 ## (charybdis 529, 2026-11-13) Full book-free live ladder: gain against Mite, Fish level
 
 Unmasked v129 (`bbc7cddb6`, Charybdis 529) versus book-free v128 (525 + fuel 01-02), **all 170 ladder maps, both sides, Fish r8 and Mite r13: 680 unique cells**. Exact opponent source groups match between versions. Fish **194/340 vs 197/340** (-3; paired flips 56 for / 59 against); Mite **226/340 vs 204/340** (+22;65 for / 43 against). Total **420/680 (61.8%) vs 401/680 (59.0%)**, +19 wins / +2.8 points. The gain is concentrated against this Mite pin; Fish is essentially level. These completed outcomes supersede early partial reads. Uploaded candidate source was verified byte-identical to the frozen commit, with own drafts and no book masking. [Per-cell evidence and protocol](ideas-2026-11-13/chy529-live/README.md). All 680 replays and summaries are retained; the ZIP CRC audit passed.
