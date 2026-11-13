@@ -1,169 +1,202 @@
-# Replay book: handoff (2026-11-13 08:20Z)
+# Replay book: handoff (2026-11-13 09:00Z)
 
-Goal: a book of our recorded wins that the finals bot replays against Fish (and Mite), about 80% against each.
-Lock is Fri 23:59Z; the seeding sim wants the book live by about 12:00Z. Report to the coordinator ("main").
+Goal: a book of recorded wins that the finals bot replays against Fish and Mite on the 170 ladder maps (340 cells
+each), Fish and Mite roughly level ("80%-80% or 70%-70%", user). Lock is Fri 23:59Z. Report to the coordinator
+("main", via SendMessage); it relays live actions and the user.
+
+**Main line now: the exact format (`bots/variants/rbook-x`, work dir `~/tmp-offload/rbook/x1`). Its build and
+checks are running; read `x1/stage.out` when `x1/stage.DONE` exists, then `x1/forcecheck.out` (`x1/go.DONE`).**
 
 ## Constraints
 
 - Never edit `bots/charybdis`, `bots/ocean` or `bots/baselines`. Work in `bots/variants/` (gitignored).
 - Commit only paths under `research/ideas-2026-11-13/rbook/`, explicitly; never push.
 - No uploads, no scrim quota, no edits to the live scheduler or queue: the coordinator's live agent does those.
-- Uploads are unmasked now. Never print or commit `tools/livemask/livemask.key`; delete any masked copy after use.
+- Uploads are unmasked. Never print or commit `tools/livemask/livemask.key` (seeds.py reads it; nothing stores it).
 - Games: fastrunner and the slot pool (rbuild and the scripts here already do). Never `pkill -f`/`pgrep -f` a
   pattern that matches your own command line; wait on done-files.
-- Size: the platform rejects a compressed source over 5 MB. Target a `cambc bundle` zip of at most 4.9 MB.
-- Keep token use low: one background waiter a phase, scripts for bulk work.
+- Size: the platform rejects a compressed source over 5 MB. Keep a `cambc bundle` zip at or under 4.9 MB.
+- Upload notes: 80 characters at most (the platform refused a longer one).
+- Token use is tight: one background waiter a phase, scripts for bulk work, short reports at decisions only.
+
+## What changed since 08:20Z
+
+- **Fish reads our priority values** (v121 live test of plain priorities, 40 cells against the Fish r8 pin): 26
+  replayed exactly, 14 diverged (rounds 49 to 992); 37 of 40 won (3 diverged and lost: 04duel_ring b, 02guardians b,
+  01hooks a). Controls with recorded priorities: v120 21 of 21 exact, v122 (rbook-ff) 6 of 6. So an entry must
+  publish exactly what its recording published; the local verify cannot see this (the puppet ignores our values).
+  A plain-format Fish cell is worth about 0.92, not 1. Whether Mite reads them is unknown (stage 1 measures it).
+- **How to compare a live version with its recordings**: `oppwatch.py` reads only the unpinned hourly checks. Use
+  `python3 livecmp.py --version N --book WORK [--plain] [--bot variants/BOT] [--opp Mite]` (from this directory):
+  every finished game of version N on a book cell, pinned or not; `--plain` for a plain-priority book. Takes a few
+  minutes on a loaded box.
+- **Mite r10 plays as r9**: all 40 r10 games of v119 that were in games.jsonl at 08:14Z equal v119's r9 game on the
+  cell (picks, rounds, gems, gold, kills). So the Mite book is built from r9 (`--opp Mite:r9`): 268 cells have a
+  win by v117/118/119, 267 reproduce locally. The coordinator reports a Mite change at 08:46Z; I have not looked
+  at it (`oppwatch.py --opp Mite --refset r10`, and compare newer games with the r9 ones by cell).
+- **Same-draft cells** (the user's classification question): the book key is order-sensitive (`book.cc start()`
+  compares both teams' picks round by round). Fish r8 and Mite r9 draft the same team in the same order against us
+  on 18 of 340 cells (32 if order is ignored). We hold a win against both on 7 (01broken_curve a/b, 02guardians a,
+  03honeycomb a, 04mesas b, 05sweet_shop a/b). The builder keeps one entry a key (first `--opp`, Fish); against the
+  other opponent the book replays the shared opening and hands over. Decision: no two-entries-per-key code.
+- **Stage 1, `rbook-fm1`** (work `~/tmp-offload/rbook/fm1`), handed to the coordinator 08:50Z as a candidate:
+  rbook-prio's host, plain priorities, 481 entries: Fish 230 (229 ours + `03contours b`, NEETCoders, exact draft,
+  key v900), Mite 251. Left out for size by `pick_entries.py`: 28 Fish and 9 Mite entries on cells all our versions
+  won; the 7 same-draft Mite entries; `adgato_gemcombat5 b` (does not reproduce locally). Checks: verify 481/481;
+  bundle 4,808,789 bytes; 100M bench 52/52 identical to chy-525f; fallback test 24 games, 123 bodies handed over,
+  150,865 off-book reads, 0 invalid; real fuel 232/300 fresh games identical; 12 of 25,600 fresh maps share terrain
+  and camp layout with an entry (all `mut-*` copies of ladder maps). Note: `Charybdis 525 + fuel 01-02 + Fish
+  r8/Mite r9 book, plain prio (481)`. Test cells: `fm1/cells40-mite.json` (Mite r10 pin), `fm1/cells10-fish.json`
+  (Fish cells v121 did not play). The coordinator sends the version number when the games are in: run livecmp.py
+  with `--plain --bot variants/rbook-fm1 --book ~/tmp-offload/rbook/fm1`.
+- **Stage 2, `rbook-fm2`** (work `~/tmp-offload/rbook/fm2`): stage 1 plus 21 forced Fish entries, plain priorities,
+  479 entries (Fish 239, Mite 240). **Held: not to be uploaded as a plain build.** All checks done: verify 479/479;
+  bundle 4,837,090; fallback test 0 invalid; 100M bench 49/52 identical, the three that differ are forced cells
+  (00expanse a/b, 00swirl a), as intended; forcecheck 21 cells, 0 bad (11 won against chy-525f).
+- **Forced entries** (other teams' wins against Fish whose picks our draft does not make): files in
+  `~/tmp-offload/rbook-foreign/w4/` (`extra.tsv`, fingerprints `fp.json`), write-up
+  `research/ideas-2026-11-13/rbook-foreign/README.md`, `costs-w4.tsv`. Keys `-v901-` are forced (`rbuild
+  --force-versions 901`), `-v900-` is the exact one. In the builds: the 15 the user approved (they displace no Mite
+  entry: 00expanse b, 00the_line a, 00rows b, 00stampede a/b, 04gap b, 04two_kingdoms a, 05chiseled_brick b,
+  05mineshaft b, 00galaxy a/b, 00swirl a, 00vault a, 01elk_arena a, 05runway a) and 6 the coordinator agreed (their
+  Mite entry is a v117/v118 game: 00expanse a, 00elkring b, 04bowls b, 05border a, 05nest b, 05space_station b);
+  the Mite entries on those 6 cells are dropped (`drop.txt`). The other 16 are not approved. `x1/extra.tsv` is the
+  22-line list (21 forced + exact).
+- **Forced-line test against Mite**: the coordinator is uploading `bots/variants/rbfor-prio` (all 37 forced, plain
+  priorities) to play `~/tmp-offload/rbook/forced-mite/cells35.json` against the Mite r10 pin. Its wins are Mite
+  wins on the forced draft: record them as Mite entries (`--extra`, forced; they are games of an unmasked bot, so
+  they store as they are). Rule agreed: force a displaced cell if the forced line beat Mite there, and book that game.
+
+## The exact format (`--prio seeded`), the main line
+
+Why: recorded priorities replay exactly but our masked versions' values are half noise (245 entries filled the
+bundle); plain priorities are small but Fish reacts to them.
+
+Design:
+- A masked version (v106-v120) published `rank << 16 | tag << 14 | (payload ^ mask)`, mask and 2-bit round tag drawn
+  per round and body from a per-game seed (`tools/livemask/prio_stream.h`: `publish`, `mask_of`, `tag_of`).
+- `game.seed = mix(mix(place ^ key[1]) ^ picks ^ key[0])`: place is the map's width, height, group count and our
+  spawn centre; picks our side and body types. `seeds.py place` played a chy-525f copy that prints those facts at
+  World's init and resigns, on all 340 cells: `place.json` (committed). `seeds.seed(map, side, picks)` then needs
+  only the key file. **The bot holds the seed (8 bytes an entry), never the key.**
+- `build_book.py --prio seeded`: each priority is xored with `seeds.word(seed, round, body)` (what the mask added
+  to its low half) and coded as its change from the last unmasked value; the decoder xors the word back, so the
+  value set is the recorded one bit for bit whatever the seed (a wrong seed costs size only). Seed 0 = stored as it
+  was: other teams' games, puppets, and games of our unmasked versions (v121 and later).
+- Host: `rbook-x` = `rbook-ff` (recorded format + the per-body plain bit in `comms.cc`, live as v122) with three
+  edits in `book.cc`: `mask_mix`/`mask_word`, `Stream::{seed, body, round}` (round counted in `turn()`), and the
+  `book_data::prio_seeded` branch of the priority decode; `start()` sets the stream's seed and body. `Entry` has a
+  `seed` field; `book_data.h` carries `prio_seeded`. A header from this build_book works in the older hosts too.
+
+Shown so far:
+- `seeds.py check` on four entries (v117, v118, v119): the round tag comes out 0 on 100% of priorities and the
+  unmasked low halves take 24 to 99 distinct values among thousands: the seeds are right.
+- Size (sizes run, 539 entries incl. 21 forced + exact): blob 5,730,966, about 10.6 KB an entry (plain 8.9, recorded
+  16.9). `pick_entries.py --blob 4130000 --balance` keeps 411: Fish 206, Mite 205; dropped 73 Fish and 49 Mite
+  entries on cells our versions mostly won (expected cost 27.7 cells of 680).
+
+Not shown yet (the running job answers the first four):
+- Verify: `rbuild --prio seeded` compares with `cmp.mjs` (priority values included), so N/N proves the decode.
+- Bundle size, fallback test (`--plain`, as for rbook-ff), 100M bench, real-fuel bench, forcecheck.
+- Live: exact replays as for v120/v122 (livecmp.py without `--plain`). Other teams' entries have never been
+  played live: their replay rests on Fish being deterministic against the recorded actions.
+
+What other teams' priorities look like: plain small values (NEETCoders: 204 sets, 18 distinct) or structured
+unmasked ones (a Mite game: 1,250 sets, 486 distinct). Stored as they are, so they replay exactly.
+
+Known to be hard or open:
+- Recordings of our unmasked versions (v121 plain book, v122, rbook-fm1, rbfor-prio): seed 0, no mask. A game that
+  left a plain book mid-way publishes plain marks, then host payloads: store as recorded (seeded format, seed 0),
+  never through `plain_priorities` (that rewrites the values). `build_book` picks seed 0 by the key's version
+  (106-120 are masked): keep that rule true for new keys.
+- A masked turn that set its priority after a rollover may carry the previous round's mask: it codes badly, exactly.
+- Squeezing more: priorities cost about 1.8 KB an entry and fingerprints about 2.1 KB. A value cache would gain
+  about 14 entries; not worth new decode code. The host's source is 598 KB of the bundle.
+- A host swap (the user expects a newer charybdis before the lock): copy the new host, apply the book code
+  (regenerate `host.patch` from `rbook-x` against its base: book.cc, book.h, draft.cc, main.cc, unity.cpp, and
+  rbook-ff's plain bit in comms.cc/comms.h/turn_order.cc), then `PRIO=seeded stage.sh` with the same keys: verify
+  fails on any entry whose picks the new draft no longer makes (those then need `--force` or are dropped).
+  `host.patch` in this directory is still the 01:48Z one: regenerate it from the bot that becomes the final.
+
+## Estimates (mine, not measured; per 340 cells)
+
+- v122 as is: Fish 78%, Mite 66%. Stage 1 plain: Fish about 72%, Mite 75-80%.
+- Exact build (411): Fish about 80% (206 exact + dropped cells at about 0.79 + cells nobody won at about 0.12),
+  Mite about 76%. Assumes Mite still plays as r9.
+
+## Decision rules agreed with the coordinator
+
+- Stage 1 replaces v122 as REST if its 40 Mite cells come in at 90% or better, until the exact build exists.
+- Forced and other-team entries go into the exact-format build, not a plain one.
+- A sweep of a candidate over its own cells (to drop entries it loses) is deferred: exact entries make it unneeded.
+- Balance Fish and Mite when size or forced trades bind (`pick_entries.py --balance`).
+- A host swap must stay a quick scripted step (above).
+- Report when the exact format verifies or hits a wall; hand over a stage as dir + note + cell list.
+
+## Commands (from the repo root)
+
+```
+R=research/ideas-2026-11-13/rbook; W=~/tmp-offload/rbook/x1
+ARGS=(--opp 'Intercontinental Fish:r8' --opp Mite:r9 --extra $W/extra.tsv --force-versions 901)
+# sizes of everything, then the pick, then build + verify + bundle + fallback + fresh maps + benches (x1/go.sh does all)
+python3 $R/rbuild.py --host variants/rbook-x --work $W --prio seeded "${ARGS[@]}" --no-build > $W/sizes.out 2>&1
+python3 $R/pick_entries.py $W --blob 4130000 --opp 'Intercontinental Fish:r8' --opp Mite:r9 --balance \
+        --drop $(cat $W/drop.txt) > $W/keys.txt 2> $W/pick.out
+PRIO=seeded $R/stage.sh rbook-x $W $W/keys.txt "${ARGS[@]}"        # -> $W/stage.out, $W/stage.DONE
+(cd $R && python3 forcecheck.py --host variants/rbook-x --opp variants/chy-525f --work $W)
+(cd $R && python3 seeds.py check ~/tmp-offload/rbook/fish/ent/KEY.json)
+(cd $R && python3 livecmp.py --version N --book $W --bot variants/rbook-x [--opp Mite])
+```
+
+- A new work dir: symlink `raw` and `ent` to `~/tmp-offload/rbook/fish/`, copy `fp.json`, `bad.json`, `extra.tsv`,
+  `drop.txt` from `x1`.
+- `rbuild --opp NAME:REFSET` takes, per cell, our shortest win with that refset; where two opponents pick alike the
+  first keeps the entry. `--keys FILE` keeps only those entries (`--cells` cannot split a cell by opponent).
+- `stage.sh` pass criteria: verify N/N; bundle at most 4.9 MB; fallback test with every game finished and 0 invalid
+  reads; 100M bench identical except on forced cells (49/52 with these 21: 00expanse a/b, 00swirl a differ).
+- `pick_entries.py`: an entry is worth 1 - (w + 1) / (n + 2) over our n versions that played the cell, kept by
+  worth per byte; blob 4,130,000 gives a bundle of about 4.84 MB.
 
 ## Bots (`bots/variants/`)
 
 | Dir | What it is |
 |---|---|
-| `chy-525` | The host: charybdis 525, frozen. |
-| `chy-525f` | chy-525 + fuel patches `research/fuel-2026-11-13/patches/01,02`. Bench reference. |
-| `rbook-525` | chy-525 + `host.patch` (the book code), older working copy. |
-| `rbook-525f` | chy-525f + `host.patch` + the 169-entry d2 book. |
-| `rbook-fish-d1` | Live v120 (masked upload), 193 entries. Frozen. |
-| `rbook-fish-d2` | 169 entries with the camp-layout check. Frozen. |
-| `rbook-ff` | **Fallback final, handed to the live side 08:15Z.** rbook-525f + per-body plain bit (below) + 245 Fish r8 entries, recorded priorities. |
-| `rbook-ff2` | rbook-ff before the plain bit, 250-entry book (5.01 MB: too big). Base of rbook-prio. |
-| `rbook-prio` | **Plain-priority candidate.** rbook-ff2's host + mark test in `comms.cc` + plain decode in `book.cc`; 257 Fish r8 entries, 2.97 MB. |
-| `*-pup-fish`, `*-rec-fish`, `*-fb`, `*-fb-pup` | Made by rbuild / fallbacktest (puppet, recorder, traced copies). Rebuilt on each run. |
-| `rbook-test*`, `rbook-ocean`, `rbook-mfb*`, `rbook-opp*`, `rbook-d1-mverify` | Old tests. Unused. |
+| `chy-525`, `chy-525f` | The host (charybdis 525) and the same + fuel patches 01, 02: the bench reference. |
+| `rbook-ff` | Live v122, REST: recorded priorities, 245 Fish entries. |
+| `rbook-prio` | Live v121: plain priorities, 257 Fish entries. |
+| `rbook-fm1` | Stage 1, handed over: plain, Fish 230 + Mite 251. |
+| `rbook-fm2` | Stage 2, held: plain, + 21 forced. |
+| `rbook-x` | **Exact format: rbook-ff + seeded decode; the book in it is the 411-entry pick.** |
+| `rbfor-prio` | The foreign agent's: 37 forced + exact, plain; in the forced-line Mite test. |
+| `rbook-placebot` | seeds.py's map-facts tool. Unneeded once place.json exists. |
+| `*-pup-*`, `*-rec-*`, `*-fb`, `*-fb-pup` | Made by rbuild / fallbacktest. Rebuilt on each run. |
 
-`host.patch` is the book code against chy-525 (book.cc, book.h, draft.cc, main.cc, unity.cpp), without rbook-ff's
-plain bit and without rbook-prio's two edits. Regenerate it from the bot that becomes the final.
+## Running now
 
-## Data (`~/tmp-offload/rbook/`)
+- `~/tmp-offload/rbook/x1/go.sh` (nohup): the exact build's `stage.sh`, then forcecheck. Outputs `x1/stage.out`
+  (done-marker `x1/stage.DONE`), `x1/forcecheck.out` (`x1/go.DONE`), log `x1/go.log`, benches
+  `~/tmp-offload/rbook/bench/rbook-x-*.json`. At 08:57Z it was in rbuild's build and verify.
+- Nothing else of mine runs; fm1 and fm2 are finished. No waiter is armed.
 
-- `fish/`: `raw/KEY.repl26a` (every extracted live replay) and `ent/KEY.json` (extract.mjs output). Other work
-  dirs symlink both. Also d2's book files.
-- `ff/`: rbook-ff's work dir. `book_cells.json`, `book.jsonl`, `cells-ff.txt` (the kept cells), `final.out` (its
-  check results), `fallback/` (fallback test replays), `bundle.zip`.
-- `prio/`: rbook-prio's work dir. `build.out`, `cells40.json` (the live test cells), `final.out` + `final.DONE`.
-- `bench/`: bench.py outputs, `BOT-100M.json`, `BOT-0.json`, `BOT-fresh-0.json`.
-- `fresh_bench.txt`: the 300 fresh maps of the real-fuel bench. `freshids/partNN.json`: ids of 25,600 fresh maps.
-- `hostcheck/`: which v119 wins a host build replays exactly (only meaningful for a masked host).
-- `fp.json` in a work dir caches the recorded fingerprints by game key; copy it into a new work dir.
-- `~/tmp-offload/rbook-foreign/w3/`: the foreign agent's files (not mine).
+## Owed, in order
 
-## Design
-
-- **Entry**: one recorded win (map, our side, both teams' picks). Key `MAP-SIDE-vVERSION-MATCHID12`.
-- **Match** (`book.cc start()`, cheapest first, on each champion's first turn): side and size table, tile counts
-  per kind, number of draft rounds, both teams' picks, terrain hash (`map_id`), camp layout hash.
-- **Play**: each champion replays its recorded actions per round. Each turn it first checks a 4-bit fingerprint
-  of what it sees (champions in sight, own gold and gems, both tributes). On a mismatch, an action error or the
-  entry's end it hands over for good and the host cold-starts (`play_turn(true)`). Recorded out-of-fuel turns
-  spin to the round's end.
-- **Draft**: the host's own draft makes the recorded picks (117, 118, 119 draft as 525 does), so forcing is
-  compiled out (`force_draft = false`). `model_draft()` is always called first, as its first call must fall in the
-  10M first draft turn.
-- **Forced picks** (not approved by the user): `build_book --force KEYS|FILE` or `rbuild --force-versions V,..`
-  marks entries; `book::draft_order()` then plays an entry's picks while the opponent's match. Code exists and
-  was tested 8/8 on ocean 506 games under a 525 host. Cost: the forced pick is made blind, on every game on
-  that map and side, whoever the opponent is.
-- **Priorities, recorded format** (rbook-ff): on-book bodies publish the recorded values (masked ones, from
-  masked live games). An unmasked host must not read them, so on a book game the shared-byte layout reserves one
-  bit a body (`comms.cc`: `plain_on`, `plain_published`), set when a body first publishes its own priority;
-  `payload_of` ignores allies whose bit is unset. Costs about 34 fuel a turn in every game.
-- **Priorities, plain format** (rbook-prio, `build_book --prio plain`, `plain_priorities()`): each on-book body
-  publishes `(k << 16) | 0xE000`, k its place in the team's order for the next round (0, 1, .. for positive
-  recorded values, -1, -2, .. for negative, since an unset priority is 0). Bits 14-15 of the low half are the
-  on-book mark: the host's own payloads never set them, and `payload_of` returns -1 on them
-  (`on_book_mark = 0xC000`). The builder asserts the order, ties included, is kept every round. `book_data.h`
-  carries `plain_prio`; a host with the plain decode needs a header that has it.
-  The replay then differs from the live game in our priority values only: compare with `cmp2.mjs`, not `cmp.mjs`.
-  Not yet shown: that Fish ignores the values (live test below).
-- **Host cells**: an unmasked or fuel-patched host does not replay v119's masked live wins exactly, so every
-  cell any of our versions won gets an entry (no `--host-version`).
-
-## Commands (from the repo root)
-
-```
-R=research/ideas-2026-11-13/rbook
-# Build a book into a bot, record what is new, verify, bundle (work dir: symlink raw and ent, copy fp.json, bad.json)
-python3 $R/rbuild.py --host variants/BOT --work WORK [--prio plain] [--cells FILE | --cap N] \
-        [--opp "Intercontinental Fish:r8" --opp Mite:r10] [--versions 117,118,119] [--extra EXTRA.tsv]
-# Verify another build of a book (entries read from the bot's book_data.h)
-python3 $R/rbuild.py --host variants/BOT --work WORK --verify-only [--prio plain]
-# 100M identity and real-fuel benches against chy-525f (its files are in bench/)
-B=~/tmp-offload/rbook/bench
-python3 tools/fuel/bench.py run variants/BOT --set wide --jobs 32 --out $B/BOT-100M.json
-python3 tools/fuel/bench.py run variants/BOT --set wide --jobs 32 --fuel 0 --out $B/BOT-0.json
-python3 tools/fuel/bench.py run variants/BOT --maps $(cat ~/tmp-offload/rbook/fresh_bench.txt) --fuel 0 --jobs 32 --out $B/BOT-fresh-0.json
-python3 tools/fuel/bench.py compare $B/chy-525f-100M.json $B/BOT-100M.json     # want "identical replays: 52/52"
-# Fallback test (opponent leaves at round 150; --plain = unmasked host)
-(cd $R && python3 fallbacktest.py --host variants/BOT --work WORK --plain)
-# Fresh-map false matches
-python3 $R/freshcheck.py WORK/book.jsonl ~/tmp-offload/rbook/freshids/part??.json
-# Size: rbuild prints "bundle: N bytes"; or
-rm -f OUT.zip; cambc bundle bots/variants/BOT --output OUT.zip
-# A live version's book games against their recordings (and whether the opponent changed)
-python3 $R/oppwatch.py --book-version N --book WORK [--book-cells bots/variants/BOT/src/book/book_data.h] [--book-plain]
-python3 $R/oppwatch.py --opp Mite --refset r10
-```
-
-- `rbuild --opp NAME:REFSET` selects, per cell, our shortest win in games.jsonl with that `refset`; the tag is
-  the name's last word (`fish`, `mite`), with a puppet per tag. Where two opponents pick alike on a cell the
-  first `--opp` keeps the entry.
-- `--extra` lines: `REPLAY(.zip|.repl26a) OUR_SIDE KEY MAP`, added to the first `--opp`.
-- Pass criteria used so far: verify N/N; 100M bench 52/52 identical; fallback test with every game finished, no
-  payload read from an on-book ally, off-book reads 100% valid; bundle at most 4.9 MB.
-
-## Results so far
-
-- rbook-ff: verify 245/245; 4,825,558 bytes; 100M 52/52; fallback test passed (126 bodies handed over, median 3
-  rounds from first to last, max 25; 0 reads from on-book allies; 135,756 off-book reads all valid).
-  Real fuel: 191/300 fresh games identical to chy-525f, winner flips 11 against 9 (the plain bit's fuel).
-  Left out for size: `00interlock a`, `00ribs b`, `01fracture a`, `01starfish b`, `05burger a` and the 8 newest
-  v119 wins. `adgato_gemcombat5 b` does not reproduce locally.
-- rbook-prio: verify 257/257 with cmp2; 2,965,484 bytes. Benches and fallback test: see running jobs.
-- Fresh maps (25,600): 11 share terrain and camp layout with an entry; 8 have another team size (rejected by the
-  draft-rounds check), 1 is the ladder map, 2 (mut-keyhole, mut-horseshoes) are the ladder map with its camps
-  listed in another order (the book would start there on matching picks and hand over at the first difference).
-- The fallback test's "reader off, ally on-book" valid count under `--plain` includes bodies whose BKOFF trace
-  line is missing from stdout; a read happens only once the ally's bit is set, so those are off-book.
+1. Read `x1/stage.out`: if verify is N/N and the checks pass, hand `rbook-x` to the coordinator (dir, note of at
+   most 80 characters, e.g. `Charybdis 525 + fuel 01-02 + Fish r8/Mite r9 exact book (411, 21 forced)`, and a
+   cell list that includes forced cells and Mite cells). If verify fails on some entries, look at whether they are
+   masked-version entries (decode) or forced ones before anything else.
+2. Stage 1's live games (version number from the coordinator): livecmp.py; report exact / diverged / won for Mite
+   and Fish. 90% or better on the Mite cells makes stage 1 REST.
+3. rbfor-prio's Mite games: record the wins as forced Mite entries, apply the rule above, rebuild the exact book.
+4. The 08:46Z Mite change: how many r9 entries still replay (a small live check group, or compare new unpinned
+   Mite games with r9's by cell).
+5. Regenerate `host.patch` from the final bot; keep the host swap scripted.
 
 ## Traps
 
 - `cambc bundle` does not overwrite an existing zip.
+- rbuild copies the host's `src` at its start and builds the host at its end: do not edit a host while it runs.
+- A sizes run rewrites `WORK/book_cells.json` with every entry; a `--keys` build rewrites it with the kept ones.
+  `pick_entries.py` needs the sizes run's.
+- Any fuel overhead changes about 8% of real-fuel games chaotically; judge by the 100M identity.
 - The JS map holds the canonical half: `layoutHash` adds each camp's mirror.
-- Any fuel overhead, even 100 a turn, changes about 8% of real-fuel games chaotically; judge by 100M identity
-  and, if needed, fgate (d2 against chy-525 at 100k was level: 50.07% (49.91-50.24) of 40,960).
-- rbuild copies the host's `src` to the puppet and recorder at its start and builds the host at its end: do not
-  edit the host while it runs.
-- Debug traces (`debug_block`) need a debug build: fallbacktest runs without `--release`.
-- Mite changes every 1-2 hours; Fish has been r8 since 2026-11-12 13:59Z.
-
-## Running now
-
-- A `nohup bash` chain for rbook-prio: fallback test, then the three benches and compares. Output
-  `~/tmp-offload/rbook/prio/final.out`, done-marker `~/tmp-offload/rbook/prio/final.DONE`, bench files
-  `~/tmp-offload/rbook/bench/rbook-prio-*.json`. Read `final.out` when the marker exists and judge it by the
-  pass criteria above (for the fallback test: "payload left unread, ally on-book" should be about 100 and no
-  invalid reads).
-
-## Owed, in order
-
-1. rbook-prio's benches and fallback test (above): report to the coordinator.
-2. The live test of 40 plain-priority cells against the Fish r8 pin (`prio/cells40.json`; the coordinator sends
-   the version number): `oppwatch.py --book-version N --book ~/tmp-offload/rbook/prio --book-plain --since ...`.
-   Every game must show "book same". If so, plain priorities become the format.
-3. Then rbook-prio as the final: add Mite entries (`--opp "Intercontinental Fish:r8" --opp Mite:r10` once the
-   r10 sweep is in games.jsonl: v119 on 340 cells, then v118 and v117 on its losses; r9 data exists, up to 285
-   cells), rerun every check, regenerate `host.patch`, send dir + upload note
-   (`Charybdis 525 + fuel 01-02 + Fish r8 / Mite rN replay book, plain priorities (N cells)`).
-4. The stale-entry question: ask for one check group of 5 r9-book cells against current Mite, to see how far
-   stale entries replay before handing over.
-5. Size choices if it does not all fit: our wins on cells the host loses first, then v119's wins, then others.
-6. A fuel-patch bundle against chy-525f may arrive by about 12:00Z: one host refresh, then rerun the checks.
-
-## New inputs
-
-- A verified other-team entry: `03contours b` (NEETCoders), files in `~/tmp-offload/rbook-foreign/w3/`, built
-  with recorded priorities; rebuild it with `--prio plain` through `--extra`.
-- The foreign agent reports the other-team game on `04keyhole a`, `c6c5aaa4cb1e`, is not Fish r8 (signature
-  0.13): drop it from any build that uses it. No book of mine holds it.
-- Forced-pick entries (31 + 8 candidates) are being re-verified by that agent and are **not approved by the
-  user**. They need `--force` (see Design).
-- `COMPRESSION-LEAD.md`: only relevant if plain priorities fail the live test.
+- Debug traces need a debug build: fallbacktest runs without `--release`.
