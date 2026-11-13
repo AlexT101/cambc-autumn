@@ -12,7 +12,7 @@ Steps (each cached under --work by game key, so a rerun after new games only doe
   1. select: per (map, side), one winning game of ours (the shortest), from --versions against --opp/--refset;
      cells the host's own live version (--host-version) won are left out: the host plays them the same way unaided
      (with --host-repro, only those hostcheck.py found the host build replays exactly).
-     --extra adds lines "REPLAY(.zip|.repl26a) OUR_SIDE KEY MAP" (e.g. other teams' wins).
+     --extra adds lines "REPLAY(.zip|.repl26a) OUR_SIDE KEY MAP [OPP]" (e.g. other teams' wins; OPP: replaces that opponent's entry).
   2. extract (extract.mjs): both teams' turns, picks, map id.
   3. record: build HOST-rec (our turns, record mode) and HOST-pup (the opponent's turns, puppet mode), play each game
      between them on the fast runner, keep the games whose every round state matches the live replay (cmp.mjs), and
@@ -81,10 +81,19 @@ def select(a, opp, refset, tag):
         g = min(gs, key=lambda x: (x['rounds'], -x['version']))
         chosen.append(dict(key=f"{g['map']}-{g['side']}-v{g['version']}-{g['match'][-12:]}", replay=str(ROOT / g['replay']), side=g['side'],
                            map=g['map'], version=g['version'], rounds=g['rounds'], opp=tag))
-    if a.extra and tag == opponents(a)[0][2]:
+    if a.extra:
         for line in open(a.extra):
             if line.strip() and not line.startswith('#'):
-                rep, side, key, mp = line.split()[:4]
+                p = line.split()
+                rep, side, key, mp = p[:4]
+                # A 5th field names the opponent and replaces our own entry on the cell (a forced line's win against it,
+                # where the forced pick makes our own entry unreachable); untagged lines are the first --opp's, extra cells.
+                if len(p) > 4:
+                    if p[4] != tag:
+                        continue
+                    chosen = [c for c in chosen if (c['map'], c['side']) != (mp, side)]
+                elif tag != opponents(a)[0][2]:
+                    continue
                 if (mp, side) not in {(c['map'], c['side']) for c in chosen} and (mp, side) not in host_won:
                     v = re.match(r'^.+-[ab]-v(\d+)-', key)
                     chosen.append(dict(key=key, replay=rep, side=side, map=mp, version=int(v.group(1)) if v else None, rounds=None, opp=tag))
