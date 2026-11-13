@@ -126,9 +126,15 @@ def build(work, version, pins, resume=False):
             sizes[p[3]]=int(p[4])+sum((len(n)+1)//2 for n in fps[p[3]])
     if sizes.keys()!=cells.keys():
         raise RuntimeError('Missing entry size evidence')
+    exclusion_file = work/'excluded-keys.json'
+    excluded = json.loads(exclusion_file.read_text()) if exclusion_file.exists() else {}
+    if not isinstance(excluded,dict) or not set(excluded) <= cells.keys():
+        raise RuntimeError('Excluded entries do not match this frozen candidate book')
     kept,used=[],0
     # Every entry repairs a confirmed loss: maximize coverage within the source-size budget.
     for key in sorted(sizes,key=lambda k:(sizes[k],k)):
+        if key in excluded:
+            continue
         if used+sizes[key]<=4130000:
             kept.append(key);used+=sizes[key]
     if not kept:
