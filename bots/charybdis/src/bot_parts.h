@@ -434,7 +434,7 @@ int holders(const CampGroup& G);
 const ChampionBelief* sole_capture_holder(const World& world, const CampGroup& G);
 const ChampionBelief* value_holder(const World& world, const CampGroup& G);
 bool keeps_bag(const World& world, const ChampionBelief& a, int gems);
-float carried_bonus(const World& world, const ChampionBelief& a, int gems, float price);
+float prism_premium(const World& world, const ChampionBelief& a, int gems);
 bool outvalues_holders(const World& world, const CampGroup& G);
 bool takes_over(const World& world);
 bool may_take_over(const World& world, const CampGroup& G);
@@ -568,10 +568,17 @@ bool willow_independent_heal_step(World& world, Pathing& pathing, Safety& safety
 bool willow_follow(World& world, Pathing& pathing, Safety& safety);
 bool support_work(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
 bool local_support(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool leave, bool& mate_eligible);
+bool mate_needs_support(const World& world);
+bool willow_medic(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+float medic_credit(const World& world, Safety& safety);
+float medic_credit_now(const World& world); // with the turn's Safety, 0 without one
+
+// combat/self_abilities.cc
+float ally_camp_fire(const World& world, const ChampionBelief& a, vec2 p);
 
 // bot.cc
 void log_fight(const char* tag, const World& world, Safety& safety, vec2 p, const Trade& t, int target = -1);
-bool place_ward(const World& world, Memory& memory, bool bushes = true);
+bool place_ward(const World& world, Memory& memory, bool start = false);
 void see_again(World& world, Pathing& pathing, Safety& safety);
 void see_stuns(World& world, Safety& safety);
 bool see_revealed(World& world, Pathing& pathing, Safety& safety);

@@ -15,6 +15,18 @@ EXPERIMENTS.
   plan is [GATE-PLACEMENT.md](GATE-PLACEMENT.md).
 - Keep the teleport, Tavi and Willow code.
 
+## Charybdis 527: altar locks (2026-11-13)
+
+- Open: whether charybdis should keep buying altar locks. Never buying reads +1.0 in the mirror (chy-nolock 51.0%
+  of 40,960 against 525; castor-nyx 55.7 / 55.3 against 527's 54.7 / 54.9 on the same suites) but about level against the Fish r8 and Mite
+  bodies (fgate chy-nolock vs charybdis 525, 9 batches, 23,040 fresh map units: -0.07 ±0.27 points; Fish -0.33, Mite +0.19, one-site maps -0.65, multi-site +0.16, ladder side read -0.65), and our own
+  locks have mattered live before. Charybdis buys 7.3 locks a game, places 3.8 (3.2 pre-emptive, 2.6 destroyed) and
+  cancels 0.75 enemy tributes; a bot that buys and never places reads as charybdis, so the mirror cost is the purchase
+  (gold timing), not placement. Patches: [no-lock.diff](../overseer-2026-11-13/patches/no-lock.diff) (never buy),
+  [one-site-lock.diff](../overseer-2026-11-13/patches/one-site-lock.diff) (buy only on one-site maps; level with
+  no-lock in the mirror), `git apply -p0` from the repo root. Verify on more fgate batches and live before shipping
+  either; the 20-variant policy study is [locks/RESULTS.md](../overseer-2026-11-13/locks/RESULTS.md).
+
 ## Scylla, and what it showed about charybdis (2026-11-13)
 
 `bots/scylla` (CHANGES 526) wins 35.6% against charybdis 525 ([vfish](../ideas-2026-11-12/vfish/README.md)).

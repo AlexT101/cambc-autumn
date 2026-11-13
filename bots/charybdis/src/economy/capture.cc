@@ -148,26 +148,89 @@ bool hold_shy(const World& world, const ChampionBelief& a) {
     return p && p->alive;
 }
 
-// A healthy Prism keeps its bag for Focus with `gems` more in it: short of the win, and early enough to bank
-// it later. Else the bag goes to an altar, and a hurt one leaves a hold. Read from a's visible bag and health
-// and the team's score, so allies agree.
-bool keeps_bag(const World& world, const ChampionBelief& a, int gems) {
-    const auto& map = world.map();
-    return a.facts().passive == Passive::gem_focus && a.health >= params::hurt_health_fraction * a.max_health
-           && world.score.ally + a.gems + gems < static_cast<int>(cambc::constants::winning_gems)
-           && rounds_left(world) > tribute_turns(a.gems + gems, a.fast_tribute) + map.width + map.height + endgame_margin;
+// An ally's bag as the whole team reads it: its own exact, else as seen, else as posted.
+int team_bag(const World& world, const ChampionBelief& a) {
+    if (a.is_self) return static_cast<int>(my_gems());
+    if (!a.alive) return 0;
+    return a.visible ? a.gems : comms::bag_of(world, a.index);
 }
 
-// Gems one gem in a's kept bag is worth beyond itself, at `price` gems a gold: Prism's prism_focus_per_gem
-// Focus a gem is what prism_focus_per_gem / growth Focus shards would buy, at shard_price gold each.
-float carried_bonus(const World& world, const ChampionBelief& a, int gems, float price) {
-    if (!keeps_bag(world, a, gems)) return 0.0f;
-    const float shards = cambc::constants::passive_abilities::prism_focus_per_gem / a.facts().focus.growth;
-    return std::max(0.0f, price) * shards * static_cast<float>(shard_price);
+// A healthy Prism keeps its bag for Focus with `gems` more in it: short of the win, and early enough to bank
+// it later. Else the bag goes to an altar, and a hurt one leaves a hold. Read from a's bag (team_bag), its
+// health only while in sight, and the team's score, so allies agree.
+bool keeps_bag(const World& world, const ChampionBelief& a, int gems) {
+    const auto& map = world.map();
+    const int bag = team_bag(world, a);
+    return a.facts().passive == Passive::gem_focus && (!(a.is_self || a.visible) || a.health >= params::hurt_health_fraction * a.max_health)
+           && world.score.ally + bag + gems < static_cast<int>(cambc::constants::winning_gems)
+           && rounds_left(world) > tribute_turns(bag + gems, a.fast_tribute) + map.width + map.height + endgame_margin;
+}
+
+// The team's farm as every ally reads it (score, bags, stats in sight or last seen), once a round:
+// `per_output`, the gems a round it collects per point of camp output a round (its collected gems
+// since round 1, score and living bags, over the rounds, against the summed camp_output, with
+// gem_income_rate's prior on each body), and `to_win`, the rounds until that pace has collected the
+// win, when a kept bag stops being kept (winning_bag).
+struct TeamFarm {
+    float per_output = 0, to_win = 0;
+};
+const TeamFarm& team_farm(const World& world) {
+    static TeamFarm kept;
+    static int round = -1;
+    static std::uint32_t observations = ~0u, gems = ~0u;
+    if (round == world.round && observations == world.observations && gems == my_gems()) return kept;
+    round = world.round, observations = world.observations, gems = my_gems();
+    int collected = world.score.ally;
+    float output = 0;
+    for (const auto& a : world.allies) collected += team_bag(world, a), output += camp_output(a);
+    const float n = static_cast<float>(std::max<std::size_t>(1, world.allies.size()));
+    const float per_round = (static_cast<float>(collected) + n * income_prior_gems)
+                            / (static_cast<float>(std::max(0, world.round)) + prior_rounds_per_gem * income_prior_gems);
+    kept.per_output = per_round / std::max(1.0f, output);
+    kept.to_win = static_cast<float>(std::max(0, static_cast<int>(cambc::constants::winning_gems) - collected)) / per_round;
+    return kept;
+}
+
+// Gems one more gem in Prism ally a's kept bag (keeps_bag, with `gems` more) is worth beyond itself. Its
+// prism_focus_per_gem Focus adds k camp output a round (the spells' multipliers over their cooldown), which
+// farms k x rho gems a round, rho the team's gems per output (team_farm); those gems join the bag and
+// compound, so over the H rounds it stays kept one gem becomes exp(k rho H) gems. H runs to the win at the
+// team's pace, or to the last round that still leaves the bag's tribute. Gems past the win are worth
+// nothing. Read from what every ally reads alike, so all agree.
+float prism_premium(const World& world, const ChampionBelief& a, int gems) {
+    if (gems <= 0 || !keeps_bag(world, a, gems)) return 0.0f;
+    // The gem-independent part, kept per ally while its inputs hold; the bag's tribute is read per call, so the
+    // result never depends on which `gems` was asked first and only falls with them.
+    struct Kept {
+        int round = -1;
+        std::uint32_t observations = ~0u, gems = ~0u;
+        int bag = -1;
+        float focus = -1, rate = 0, to_win = 0;
+        int margin = 0, last = -1 << 30;
+        float growth = 0; // at `last`
+    };
+    static std::array<Kept, 16> kept;
+    auto& k = kept[static_cast<std::size_t>(a.index) & 15];
+    const int bag = team_bag(world, a);
+    if (k.round != world.round || k.observations != world.observations || k.gems != my_gems() || k.bag != bag || k.focus != a.focus) {
+        const auto& map = world.map();
+        const auto& tf = team_farm(world);
+        const auto& f = a.facts();
+        const float per_gem = cambc::constants::passive_abilities::prism_focus_per_gem;
+        const float output = (f.raw_output(a.strength, a.focus + per_gem) - f.raw_output(a.strength, a.focus)) * camp_scale(a);
+        k = {world.round, world.observations, my_gems(), bag, a.focus, output * tf.per_output, tf.to_win,
+             rounds_left(world) - map.width - map.height - endgame_margin, -1 << 30, 0.0f};
+    }
+    if (const int last = k.margin - tribute_turns(bag + gems, a.fast_tribute); last != k.last)
+        k.last = last, k.growth = std::expm1(k.rate * std::max(0.0f, std::min(k.to_win, static_cast<float>(last))));
+    const float growth = k.growth;
+    const int room = static_cast<int>(cambc::constants::winning_gems) - world.score.ally - bag - gems;
+    return std::max(0.0f, std::min(growth, static_cast<float>(room) / static_cast<float>(gems)));
 }
 
 // What a's lone hold of G pays the team, in gems at `price` a gold: its share with a Prospector
-// emblem's extra, gems past the win dropped, the gold at its bonuses and Marcella's gold on the gems.
+// emblem's extra, gems past the win dropped, a keeping Prism's premium on them, the gold at its bonuses
+// and Marcella's gold on the gems.
 float holder_value(const World& world, const ChampionBelief& a, const CampGroup& G, float price) {
     // The team's score, not our bag (gems_short): allies must agree.
     const int room = std::max(0, static_cast<int>(cambc::constants::winning_gems) - world.score.ally);
@@ -175,14 +238,17 @@ float holder_value(const World& world, const ChampionBelief& a, const CampGroup&
     const int gold = G.gold + (a.prospector ? prospected(G.cluster_gold, 1, true) : 0);
     const float rate = ally_gold_paid(world, a);
     // The gold goes further on the more efficient of us: x its relative efficiency (which holds its rate again).
-    const float value = static_cast<float>(gems)
+    const float value = static_cast<float>(gems) * (1.0f + prism_premium(world, a, gems))
                         + price * rate * (static_cast<float>(gems) * a.facts().tribute_gold_per_gem() + static_cast<float>(gold))
                               * relative_efficiency(world)[a.index & 63];
     return hold_shy(world, a) ? params::pair_hold_share * value : value;
 }
 
-// Holders of G differ in what it pays: it has gold (priced by efficiency), or gems and a has Marcella's tribute gold.
-bool multiplies(const ChampionBelief& a, const CampGroup& G) { return G.gold > 0 || (G.gems > 0 && a.facts().tribute_gold_per_gem() > 0); }
+// Holders of G differ in what it pays: it has gold (priced by efficiency), or gems and a has Marcella's tribute
+// gold or is a keeping Prism (prism_premium).
+bool multiplies(const World& world, const ChampionBelief& a, const CampGroup& G) {
+    return G.gold > 0 || (G.gems > 0 && (a.facts().tribute_gold_per_gem() > 0 || prism_premium(world, a, G.gems) > 0));
+}
 
 // For value_holder's ties: the more hurt holds, the healthier farms.
 bool holds_before(const ChampionBelief& a, float va, const ChampionBelief& b, float vb) {
@@ -220,7 +286,7 @@ const ChampionBelief* value_holder(const World& world, const CampGroup& G) {
         if (!on && !test(G.adjacent(), p)) continue;
         if (held_back(world, a, on)) continue;
         const float v = holder_value(world, a, G, holder_gold_price);
-        multiplier |= multiplies(a, G) || hold_shy(world, a);
+        multiplier |= multiplies(world, a, G) || hold_shy(world, a);
         if (n++ == 0) low = v;
         low = std::min(low, v);
         if (!best || holds_before(a, v, *best, best_value)) best = &a, best_value = v;
@@ -231,7 +297,7 @@ const ChampionBelief* value_holder(const World& world, const CampGroup& G) {
 // Our hold of G would pay more than that of every ally in sight on its tiles, and a tile is free.
 bool outvalues_holders(const World& world, const CampGroup& G) {
     if (G.has_monolith || G.gems + G.gold <= 0 || holders(G) != 1) return false;
-    const bool multiplier = multiplies(world.me(), G);
+    const bool multiplier = multiplies(world, world.me(), G);
     if (!multiplier && hold_shy(world, world.me())) return false;
     const float mine = holder_value(world, world.me(), G, holder_gold_price);
     bool any = false, shy = false;
@@ -485,6 +551,12 @@ Leave leave_for_prism(const World& world, Pathing& pathing, int g, const LeftRec
     // Short of fuel for a walk's field, the crow's steps: no more than the walk.
     const bool walks = pathing.group_walking_ready(g) || fuel_ok(full_field_cost_estimate() + end_reserve);
     const auto walk_from = [&](vec2 p) { return walks ? team_walk_to(world, pathing, g, p) : steps_to(G, p); };
+    // Leaving pays when a's premium on the gems (prism_premium) beats the payout `late` rounds later than ours:
+    // each later return of the group comes that much later, at most one capture a respawn and a hold.
+    const float cycle = static_cast<float>(G.respawn + capture_rounds(false));
+    const auto worth_wait = [&](const ChampionBelief& a, int late) {
+        return prism_premium(world, a, G.gems) * cycle > static_cast<float>(std::max(0, late));
+    };
     for (const auto& a : world.allies) {
         if (a.is_self || !a.alive || a.facts().passive != Passive::gem_focus) continue;
         const bool claimed = comms::claim_of(world, a.index) == g;
@@ -510,9 +582,13 @@ Leave leave_for_prism(const World& world, Pathing& pathing, int g, const LeftRec
             // Short of fuel for the field, a leave under way stands: lapsing it would hand the group back for good.
             if (eta < 0) return left.left && !held ? Leave::near : Leave::no;
             if (eta > remaining) return Leave::no;
-            if (!held) return Leave::near;
+            const int prism_rounds = eta + capture_rounds(a.fast_capture) - 1;
+            if (!held) {
+                if (left.left || worth_wait(a, prism_rounds - (capture_rounds(world) - 1 + std::max(1, walk_from(my_position()))))) return Leave::near;
+                return Leave::no;
+            }
             const int rounds = c.payout_round() - world.round;
-            if (eta - slack >= rounds) return Leave::near;
+            if (eta - slack >= rounds) return left.left || worth_wait(a, prism_rounds - rounds) ? Leave::near : Leave::no;
             if (eta + slack < rounds && test(G.tiles(), my_position())) kept_group = g, kept_since = c.held_since;
             return Leave::no;
         }
@@ -523,7 +599,7 @@ Leave leave_for_prism(const World& world, Pathing& pathing, int g, const LeftRec
         // Left already, claimed now: a Prism nearer than our hold's payout would call us back to begin it.
         if (!held && left.left && !left.lapsed) return Leave::claimed;
         const int rounds = held ? c.payout_round() - world.round : capture_rounds(world) - 1 + std::max(1, walk_from(my_position()));
-        if (walk - slack >= rounds) return Leave::claimed;
+        if (walk - slack >= rounds) return worth_wait(a, walk + capture_rounds(a.fast_capture) - 1 - rounds) ? Leave::claimed : Leave::no;
         if (held && walk + slack < rounds && test(G.tiles(), my_position())) kept_group = g, kept_since = c.held_since;
         return Leave::no;
     }
@@ -755,6 +831,8 @@ bool take_capture_handoff(const World& world, Pathing& pathing, Safety& safety, 
         || rounds_left(world) <= tribute_turns(world, my_gems() + G.gems) + map.width + map.height + endgame_margin
         || safety.any_threat() || safety.camp_damage(here) > 0 || safety.camp_damage(incumbent->pos) > 0)
         return false;
+    // A Prism sole holder keeps the hold (yield_capture would undo the dash).
+    if (const auto* sole = sole_capture_holder(world, G); sole && sole->facts().passive == Passive::gem_focus) return false;
     const int dash = world.me().facts().slot_of(AbilityKind::dash);
     if (dash < 0 || !world.me().ability_ready(dash, world.round) || my_cooldown(dash) > 0) return false;
     std::optional<vec2> landing;

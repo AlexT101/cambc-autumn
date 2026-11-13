@@ -1,0 +1,11 @@
+--- bots/charybdis/src/bot.cc	2026-11-13 13:14:17.401699384 +0000
++++ bots/charybdis/src/bot.cc	2026-11-13 12:55:13.236925431 +0000
+@@ -527,7 +527,7 @@
+ bool shop(const World& world, const Memory& memory, bool consumables, bool shards) {
+     if (consumables) buy_crystal(memory);
+     const bool bought = shards && buy_shards(world);
+-    if (consumables) buy_lock();
++    // overseer probe: no altar locks (buy_lock skipped; place_lock then never has one)
+     return bought;
+ }
+ 

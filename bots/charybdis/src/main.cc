@@ -205,7 +205,7 @@ struct TurnEndQueue {
         if (world.round == world.first_round) map.warm_enemy_steps(floor);
         // Only a turn-end ward reads it, and until it is made that tests a square around us instead.
         if (!map.near_bushes_ready() && room()) (void)map.near_bushes();
-        // ward_bushes' clusters, here and a walk on, which its own floor rarely leaves fuel for in the
+        // place_ward's clusters, here and a walk on, which its own floor rarely leaves fuel for in the
         // first rounds.
         if (const auto here = aph::my_position(); !warmed_up && me.alive && here.x >= 0 && room()
             && map.find_bush_clusters(here, aph::ward_range() + 1, floor) && aph::in_bounds(memory.ward)

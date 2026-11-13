@@ -235,7 +235,7 @@ bool pick_up(const World& world, Pathing& pathing, Memory& memory) {
             // Cassi and Issac leave it to any other claimer in pick-up reach.
             if (shy && !hold_shy(world, a) && d <= params::pick_up_radius) ours = false;
             ours &= d > steps || (d == steps && a.index > world.me().index) || outvalues
-                    || (holders(G) == 1 && (multiplies(world.me(), G) || (!shy && hold_shy(world, a)))
+                    || (holders(G) == 1 && (multiplies(world, world.me(), G) || (!shy && hold_shy(world, a)))
                         && holder_value(world, world.me(), G, holder_gold_price) > holder_value(world, a, G, holder_gold_price) + 1e-3f);
         }
         if (!ours) continue;
@@ -670,9 +670,11 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
     const float strength = camp_output(world.me()), soften = camp_hit_factor(), reflect = world.me().retaliation();
     const float max_health = my_max_health();
     const float line = recall_line(world, safety);
-    const float spare_health = (my_health() - line * max_health) / params::camp_risk;
+    // A heal Willow brings soon (medic_credit) restores that much of what the camps take.
+    const float counted_health = my_health() + medic_credit(world, safety);
+    const float spare_health = (counted_health - line * max_health) / params::camp_risk;
     // Trips home: the health we spend before one and on each, as crew.cc prices them.
-    const float trip_spare = std::max(0.0f, my_health() - line * max_health) / params::crew_trip_risk;
+    const float trip_spare = std::max(0.0f, counted_health - line * max_health) / params::crew_trip_risk;
     const float usable_health = max_health * (1.0f - line) / params::crew_trip_risk;
     const float shield = self_shield_amount(world.me());
     const int shield_slot = world.me().facts().slot_of(AbilityKind::shield);
@@ -976,18 +978,42 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
     auto& gold_context = memo.gold_context;
     if (gold_context == 0 || per_gold != last_per_gold || tribute_gold != last_tribute_gold)
         last_per_gold = per_gold, last_tribute_gold = tribute_gold, ++gold_context;
-    // A Prism keeping its gems (keeps_gems) gains carried_bonus on each gem of a capture it takes part in,
-    // at its takeover price: every pick type, the carries' 'G' and 'L' too. Applied past the kept facts,
-    // which hold none of it. Not on a Monolith or a capture that wins. keeps_bag only tightens with the
-    // gems, so `keep_most`, a gem's at 1, bounds every group's: the prunes add it to the gems' price as
-    // tribute_gold is.
-    const bool keeper = keeps;
-    const float keeper_price = keeper ? prices(world).per_gold : 0.0f;
-    const float keep_most = keeper && short_by > 1 ? carried_bonus(world, world.me(), 1, keeper_price) : 0.0f;
+    // A Prism keeping its gems (keeps_gems) gains prism_premium on each gem of a capture it takes part in:
+    // every pick type, the carries' 'G' and 'L' too. Off Prism, the gems of a group a keeping Prism ally
+    // claims go to its bag (sole_capture_holder, left_for_prism): our part of them carries its premium.
+    // Applied past the kept facts, which hold none of it. Not on a Monolith or a capture that wins.
+    // prism_premium only falls with the gems, so `keep_most`, a gem's at 1 (the most of any Prism ally's
+    // off Prism), bounds every group's: the prunes add it to the gems' price as tribute_gold is.
+    const bool keeper = keeps, feeder = world.me().facts().passive != Passive::gem_focus;
+    float keep_most = 0;
+    std::array<const ChampionBelief*, 4> fed_by{}; // the claiming Prism allies, off Prism
+    std::array<int, 4> fed_claim{};
+    int n_fed = 0;
+    if (short_by > 1 && keeper) keep_most = prism_premium(world, world.me(), 1);
+    if (short_by > 1 && feeder)
+        for (const auto& a : world.allies)
+            if (const int claim = comms::claim_of(world, a.index);
+                !a.is_self && a.alive && a.facts().passive == Passive::gem_focus && claim >= 0 && n_fed < static_cast<int>(fed_by.size()))
+                if (const float p = prism_premium(world, a, 1); p > 0) keep_most = std::max(keep_most, p), fed_by[n_fed] = &a, fed_claim[n_fed++] = claim;
     const auto keep_bonus = [&](const CampGroup& G) __attribute__((always_inline)) {
-        return keep_most > 0 && G.gems > 0 && G.gems < short_by && !G.has_monolith ? carried_bonus(world, world.me(), G.gems, keeper_price) : 0.0f;
+        if (!(keep_most > 0) || G.gems <= 0 || G.gems >= short_by || G.has_monolith) return 0.0f;
+        if (keeper) return prism_premium(world, world.me(), G.gems);
+        const int g = static_cast<int>(&G - &groups[0]);
+        float most = 0;
+        for (int i = 0; i < n_fed; ++i)
+            if (fed_claim[i] == g) most = std::max(most, prism_premium(world, *fed_by[i], G.gems));
+        return most;
     };
     const float bound_tribute = tribute_gold + keep_most;
+    debug_block({
+        static int traced = -1;
+        if (keeper && world.round / 25 != traced) {
+            traced = world.round / 25;
+            const auto& tf = team_farm(world);
+            std::printf("PREM r=%d bag=%u foc=%.1f prem=%.4f rho=%.6f towin=%.0f out=%.1f\n", world.round, my_gems(), world.me().focus, keep_most,
+                        tf.per_output, tf.to_win, camp_output(world.me()));
+        }
+    });
     const float spells = world.me().facts().ranged ? spell_output(world.me()) : 0.0f, basic = std::max(1.0f, basic_output(world.me()));
     auto& last_clearing = memo.last_clearing;
     auto& clearing = memo.clearing;
@@ -1718,8 +1744,9 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
         const float worth = std::max(0.0f, gems + std::max(0.0f, per_gold) * worth_gold[g] + std::max(0.0f, tribute_gold) * gems);
         const float weight = g < 256 ? home_weights()[static_cast<std::size_t>(g)] : 1.0f;
         // The join's Focus is no share: at most its rate over the trip and the hold (rate is linear in worth).
-        const float carry = gems * keep_bonus(G) * exposure_most * weight;
-        return (claim_bound(worth * exposure_most * weight, health, health / strength, trip) + (carry > 0 ? rate(world, carry, trip + cap_rounds) : 0.0f))
+        // Off Prism, the premium is a part of the share, as the gems are (the claimed path's `fed`).
+        const float bonus = gems * keep_bonus(G), carry = keeper ? bonus * exposure_most * weight : 0.0f;
+        return (claim_bound((worth + (keeper ? 0.0f : bonus)) * exposure_most * weight, health, health / strength, trip) + (carry > 0 ? rate(world, carry, trip + cap_rounds) : 0.0f))
                * 1.0002f;
     };
     static const bool any_mono = [&] {
@@ -2036,11 +2063,14 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             // takes, with r at most health / (S + others). An operation's crew is plan_crew's, whose
             // claimers are those seen lately and whose expected allies only shrink r. A winning
             // capture's rate falls in r.
-            const bool bounded = plain > 0 && health > 0 && (shared >= 0 || best >= 0) && g != memory.mono_group;
+            // Off Prism, a claiming Prism's premium on the gems is shared as they are (`fed`), and the Prism holds.
+            const bool fed = !keeper && carried > 0;
+            const float shared_plain = fed ? plain + carried : plain;
+            const bool bounded = shared_plain > 0 && health > 0 && (shared >= 0 || best >= 0) && g != memory.mono_group;
             float others_claiming = 0;
             // The Focus on the weighted gems, held for the capture's rounds; in the bounds, its rate
             // over the trip and the hold alone.
-            float carry = carried, hold = carry > 0 ? cap_rounds : 0.0f;
+            float carry = fed ? 0.0f : carried, hold = carry > 0 ? cap_rounds : 0.0f;
             const float carry_most = carry > 0 ? rate(world, carry, trip + hold) : 0.0f;
             const auto beaten_claimed = [&](float most) __attribute__((always_inline)) {
                 most = (most + carry_most) * (op && memory.claim == g ? crew_hold(g) : 1.0f) * 1.0001f;
@@ -2050,7 +2080,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
                 const auto& allies = crew_allies_now();
                 for (int k = 0; k < allies.n_claiming; ++k)
                     if (const auto& a = allies.at[allies.claiming[static_cast<std::size_t>(k)]]; a.claim == g && (!op || a.seen)) others_claiming += crew_output(a);
-                if (beaten_claimed(wins ? rate(world, plain, trip) : claim_bound(plain, health, health / (strength + others_claiming), trip))) continue;
+                if (beaten_claimed(wins ? rate(world, shared_plain, trip) : claim_bound(shared_plain, health, health / (strength + others_claiming), trip))) continue;
             }
             const int waiting = fresh ? std::max(0, belief.respawn_round - round) : 0;
             const int working = std::max(0, reach - waiting);
@@ -2060,7 +2090,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             // The bound above again with r at most health_left / (S + others): the claimers' work before
             // we arrive leaves our part less to clear. Checked before the plan, which only shrinks r.
             if (bounded && op && !wins && health_left < health
-                && beaten_claimed(claim_bound(plain, health, health_left / (strength + others_claiming), trip)))
+                && beaten_claimed(claim_bound(shared_plain, health, health_left / (strength + others_claiming), trip)))
                 continue;
             // A strong group's crew as its proposer counts it, available allies included: joining
             // only on the claimers seen so far, each joiner would find too small a crew.
@@ -2088,7 +2118,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
             if (carry > 0 && my_health() - (kite_hit ? kite_hits() : damage) < params::hurt_health_fraction * max_health) carry = 0, hold = 0;
             // No capture rounds but a keeping Prism's: the claimer holds it, and the crew moves on once it is cleared.
             // A crew we are in holds us against small pulls: one member leaving shrinks it for the rest.
-            const float value = rate(world, plain * part + carry, trip + rounds + hold + trips_home(static_cast<float>(trips)))
+            const float value = rate(world, shared_plain * part + carry, trip + rounds + hold + trips_home(static_cast<float>(trips)))
                                 * (op && memory.claim == g ? crew_hold(g) : 1.0f);
             // Only a better share counts, and the final pick takes none a group of our own beats.
             if (g == memory.mono_group) mono_seen = value;

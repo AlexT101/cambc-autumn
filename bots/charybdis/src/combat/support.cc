@@ -412,6 +412,231 @@ bool willow_follow(World& world, Pathing& pathing, Safety& safety) {
     return true;
 }
 
+void drop_claim(Memory& memory);
+
+// We see the mate hurt, or an enemy in sight that could reach it within the recall line's threat
+// radius. Not while it heals on spawn or channels: local_support leaves it alone then.
+bool mate_in_danger(const World& world, const ChampionBelief& mate) {
+    if (!mate.alive || !mate.visible || test(world.map().ally_spawn, mate.pos) || mate.channel == Channel::tribute
+        || mate.channel == Channel::teleport || real_recall(mate))
+        return false;
+    if (mate.health < params::hurt_health_fraction * mate.max_health) return true;
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible && enemy_reach::within(world, e, enemy_reach::origin(e), mate.pos, Strike::max_reach + params::threat_radius))
+            return true;
+    return false;
+}
+
+// The pair's support binds Willow to its mate: the mate asks for a heal, or is in danger as we see it.
+bool mate_needs_support(const World& world) {
+    const auto* mate = support_endpoint(world, false);
+    if (!mate || !mate->alive || !support_healer(world.me())) return false;
+    return comms::support_request(world) || mate_in_danger(world, *mate);
+}
+
+// Willow as the team's medic: the ally whose next heal saves the most rounds of farm, net of our
+// walk there. An ally's heal is priced as heal_value prices it (the trip home it replaces) at the
+// health it will have when the heal can land: the later of our cooldown and our walk into range,
+// its missing health growing by the camp fire it stands in. An ally out of sight counts only while
+// it works the live group it claims (where its told tile or last sighting puts it), at its last
+// sighting's health less the fire since. The horizon is a walk that ends within one cooldown of
+// heal range: farther, the walk costs heal time the cooldown would not.
+struct MedicTarget {
+    const ChampionBelief* ally = nullptr;
+    vec2 pos{-1, -1};
+    float net = 0;
+    bool urgent = false;
+};
+
+MedicTarget medic_target(const World& world, Safety& safety, vec2 here, int range, float amount, int cooldown) {
+    const int horizon = range + ability_cooldown;
+    const auto& groups = world.map().groups;
+    HealGate gate(world, safety, here, horizon, amount);
+    MedicTarget best;
+    for (const auto& a : world.allies) {
+        if (a.is_self || !a.alive || a.facts().heals()) continue;
+        vec2 pos = a.pos;
+        float health = a.health, max_health = a.max_health;
+        int since = 0;
+        if (a.visible) {
+            const auto* live = visible_record(a.handle);
+            if (!live || kept_recall(a.handle, a.recall_turns())) continue;
+            pos = {live->x, live->y}, health = live->health, max_health = live->max_health;
+        } else {
+            const int g = comms::claim_of(world, a.index);
+            if (g < 0 || g >= static_cast<int>(groups.size()) || world.camps[g].state != CampState::alive || real_recall(a)) continue;
+            vec2 at;
+            int told = -1;
+            if (params::comms_ally && comms::told_ally(a.index, at, told) && told > a.pos_round && told >= world.round - ability_cooldown) pos = at;
+            else if (a.pos_round < world.round - ability_cooldown || a.pos.x < 0) continue;
+            if (dist(pos, groups[g].centre) > groups[g].threat_radius()) continue;
+            // A sighting older than a cooldown says little of its health now.
+            if (a.pos_round >= world.round - ability_cooldown) since = world.round - a.pos_round;
+            else health = max_health;
+        }
+        if (max_health <= 0 || !in_bounds(pos) || test(world.map().ally_spawn, pos)) continue;
+        const int d = dist(here, pos);
+        if (d > horizon) continue;
+        const int walk = std::max(0, d - range), lands = std::max(walk, cooldown);
+        float fire = ally_camp_fire(world, a, pos);
+        // Working its claim wakes it: count the fire its members in reach will give it there.
+        if (const int g = comms::claim_of(world, a.index); g >= 0 && g < static_cast<int>(groups.size())
+                                                            && world.camps[g].state == CampState::alive && world.camps[g].awake != Awake::awake) {
+            float claimed = 0;
+            for (std::size_t i = 0; i < groups[g].members.size(); ++i) {
+                const auto& m = groups[g].members[i];
+                if (world.camps[g].health[i] > 0 && m.strength > 0 && dist(pos, m.pos) <= m.reach) claimed += m.strength;
+            }
+            fire = std::max(fire, claimed * a.camp_taken);
+        }
+        const float at_heal = health - fire * static_cast<float>(since + lands);
+        const bool urgent = a.visible && lands == 0 && gate.urgent(a, pos, health);
+        // Below the line it goes home (or falls) before the heal lands.
+        if (!urgent && at_heal <= params::safe_recall_health_fraction * max_health) continue;
+        const float gain = std::min(amount, max_health - std::max(0.0f, at_heal));
+        if (!worth_healing(amount, gain, std::max(0.0f, at_heal) / max_health)) continue;
+        const float net = heal_value(world, a, pos, gain, max_health) - static_cast<float>(walk);
+        if (!urgent && net <= 0) continue;
+        if (!best.ally || urgent > best.urgent || (urgent == best.urgent && net > best.net)) best = {&a, pos, net, urgent};
+    }
+    return best;
+}
+
+// With no fight to join and the mate not needing us (mate_needs_support): the heal now if one is
+// worth it, then a hold in heal range of the best target out of every camp's fire, hitting only
+// what support may hit, or a step towards such a tile. False when no heal is worth our walk: the
+// support formation, the crowd and the farm take the turn.
+bool willow_medic(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+    const auto& f = world.me().facts();
+    if (!f.heals() || stunned_turn || !my_can_move()) return false;
+    const int slot = f.slot_of(AbilityKind::heal);
+    if (slot < 0) return false;
+    const vec2 here = my_position();
+    const int range = f.abilities[slot].range();
+    const float amount = my_heal(slot);
+    const int cooldown = my_can_cast() ? my_cooldown(slot) : ability_cooldown;
+    auto target = medic_target(world, safety, here, range, amount, cooldown);
+    if (!target.ally) return false;
+    world.throw_if_stale();
+    guard_steps(world, pathing, safety);
+    bool healed = false;
+    if (cooldown == 0) {
+        healed = heal_ally(world, safety);
+        if (healed) {
+            // The walk is still ours: towards the next heal, else to the rest of the turn.
+            target = medic_target(world, safety, here, range, amount, ability_cooldown);
+            if (!target.ally) return false;
+        }
+    }
+    const int walk = std::max(0, dist(here, target.pos) - range), left = healed ? ability_cooldown : cooldown;
+    const int work = comms::claim_of(world, target.ally->index);
+    debug_block({
+        std::printf("MED %d %u t%u d%d cd%d net%.1f u%d healed%d\n", world.round, my_handle(),
+                    static_cast<std::uint32_t>(target.ally->handle), dist(here, target.pos), left, target.net, target.urgent, healed);
+    });
+    if (walk == 0) {
+        // Holding in reach of the heal: off camp tiles (a respawn waits for them, a hold's payout is
+        // split), an enemy's likely hit and every awake camp's fire (a sleeping member does not wake
+        // for standing near it). While the heal cools, only if we hit something from here; else the
+        // turn is the formation's, the crowd's or the farm's. A told tile out of sight is off by a cell.
+        if (!target.ally->visible || test(world.map().camp_tiles, here) || stations(world, safety, here).tiles[0].risk.enemy
+            || test(safety.camp_area(), here))
+            return false;
+        if (!stationary_support_output(world, work) && left > 0) return false;
+        // Our claim would count us in a crew we are not working.
+        drop_claim(memory);
+        decision = Branch::willow_support;
+        return true;
+    }
+    // Out early only for a heal back within the walk, or one that may save a life now.
+    if (!target.urgent && left > walk) return false;
+    static bitboard goals{cambc::uninitialized};
+    copy_into(within(world.map().open_for_us, target.pos, range), goals);
+    drop(goals, world.map().camp_tiles);
+    static bitboard fire_free{cambc::uninitialized};
+    copy_into(goals, fire_free);
+    drop(fire_free, safety.camp_area());
+    const bitboard& to = board_empty(fire_free) ? goals : fire_free;
+    if (board_empty(to)) return false;
+    // Each step ends a turn: off camp tiles and awake camps' fire on the way, unless no route keeps off them.
+    static bitboard avoid{cambc::uninitialized};
+    or_into(world.map().camp_tiles, safety.camp_area(), avoid);
+    world.throw_if_stale();
+    const int cap = 2 * (range + ability_cooldown);
+    if (!pathing.step_towards(to, &avoid, cap) && !pathing.step_towards(to, nullptr, cap)) return false;
+    drop_claim(memory);
+    see_revealed(world, pathing, safety);
+    if (!healed) heal_ally(world, safety);
+    decision = Branch::willow_support;
+    return true;
+}
+
+// The heal a visible Willow brings us soon, as health we may count on: camps only (none while an
+// enemy may reach us), within one cooldown (her cooldown, or her walk into heal range), what it can
+// restore of our missing health and the camp fire here until it lands, while that fire leaves us
+// above our recall line. Only for the ally she heals first, by one order every ally reads the same:
+// the most missing health, then the nearest her, then the lowest index; none while her mate is in
+// danger, which binds her to it. Memoised for the turn's tile, health and vision.
+float medic_credit(const World& world, Safety& safety) {
+    const auto& self = world.me();
+    if (!self.alive || self.facts().heals()) return 0;
+    const vec2 here = my_position();
+    const float health = my_health(), max_health = my_max_health();
+    static struct {
+        int round = -1;
+        std::uint32_t observations = 0;
+        vec2 p{-1, -1};
+        float health = -1, max_health = -1, credit = 0;
+    } memo;
+    if (memo.round == world.round && memo.observations == world.observations && memo.p == here && memo.health == health
+        && memo.max_health == max_health)
+        return memo.credit;
+    float credit = 0;
+    const float missing = max_health - health;
+    const auto* mate = support_endpoint(world, false);
+    const bool bound = mate && mate != &self && mate_in_danger(world, *mate);
+    for (const auto& w : world.allies) {
+        if (bound || test(world.map().ally_spawn, here)) break;
+        if (w.is_self || !w.alive || !w.facts().heals() || !w.visible || !w.can_act(world.round) || w.stun_pending) continue;
+        const auto* live = visible_record(w.handle);
+        if (!live) continue;
+        const auto state = cambc::champion_state::from_bits_retain(live->state);
+        const vec2 at{live->x, live->y};
+        const float focus = live->focus;
+        if (state.contains(cambc::champion_state::submitting_gems) || state.contains(cambc::champion_state::teleporting)
+            || (state.contains(cambc::champion_state::recalling) && kept_recall(w.handle, w.recall_turns())))
+            continue;
+        const int slot = w.facts().slot_of(AbilityKind::heal);
+        if (slot < 0) continue;
+        std::int32_t cooldown = 0;
+        ok(cambc::detail::sdk_champion_cooldown(static_cast<std::uint32_t>(w.handle), slot, &cooldown));
+        const int range = w.facts().abilities[slot].range();
+        const auto lands_on = [&](vec2 p) { return std::max<int>(cooldown, std::max(0, dist(at, p) - range)); };
+        const int lands = lands_on(here), d = dist(at, here);
+        if (lands > ability_cooldown) continue;
+        bool first = true;
+        for (const auto& o : world.allies) {
+            if (o.is_self || !o.alive || !o.visible || o.facts().heals() || test(world.map().ally_spawn, o.pos) || lands_on(o.pos) > ability_cooldown
+                || kept_recall(o.handle, o.recall_turns()))
+                continue;
+            const float m = o.max_health - o.health;
+            const int od = dist(at, o.pos);
+            if (m > missing || (m == missing && (od < d || (od == d && o.index < self.index)))) first = false;
+        }
+        if (!first) continue;
+        const float line = recall_line(world, safety);
+        if (line > params::safe_recall_health_fraction) break;
+        const float fire = safety.camp_damage(here);
+        if (health - fire * static_cast<float>(lands + 1) <= line * max_health) continue;
+        const float gain = std::min(w.facts().abilities[slot].multiplier * focus, missing + fire * static_cast<float>(lands));
+        credit = std::max(credit, gain);
+    }
+    memo = {world.round, world.observations, here, health, max_health, credit};
+    return credit;
+}
+
+float medic_credit_now(const World& world) { return hold_safety ? medic_credit(world, *hold_safety) : 0.0f; }
+
 // Work the support formation must not interrupt: a capture, a bag to bank, a trip to shop.
 bool support_work(const World& world, Pathing& pathing, Safety& safety, const Memory& memory) {
     return holding_capture(world, pathing) || contesting(world)

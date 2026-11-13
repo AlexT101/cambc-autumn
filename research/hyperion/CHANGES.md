@@ -4952,3 +4952,30 @@ denies a hoard's tribute.
 
 Evidence: EXPERIMENTS "Charybdis without Prism, around a fed Vesper". Frozen as `variants/scylla-526` (= bots/scylla).
 
+## 527: Consistent Prism-gem pricing, Willow medic, Prism shop timing (CASTOR) + value-placed wards (NYX) (charybdis, 2026-11-13)
+
+From the mac13 macro programme ([EXPERIMENTS](../EXPERIMENTS.md) "Macro programme mac13"); patch
+[charybdis-527.diff](../overseer-2026-11-13/patches/charybdis-527.diff). Altar locks unchanged.
+- **Prism gem premium** (`economy/capture.cc`, `farm.cc`, `bot_parts.h`): `prism_premium(a, gems)` = expm1(k·rho·H),
+  the Focus a kept gem compounds (k camp output per Focus gem, rho the team's gems per output-round, H the rounds the
+  bag stays kept, capped by the rounds left for its tribute; 0 when it won't be kept or is past the win). It replaces
+  `carried_bonus` and every "who gets this group's gems" choice uses it: the Prism's farm, `holder_value`,
+  `multiplies`, leaving a group to the Prism, handoffs, and the allies' crew and claim pricing.
+- **Willow as medic** (`bot.cc`, `combat/support.cc`, `farm.cc`, `shop.cc`): out of a fight, with her paired Prism not
+  needing her, she heals the ally whose next heal saves the most farm rounds net of her walk.
+- **Prism shop and farm-recall timing** (`economy/shop.cc`): a purchase skipped at a farm recall is deferred to the
+  next visit home, so its emblem credit is gain × min(1, visit_rounds / T) (visit_rounds measured, prior 107); shop
+  trips follow an economic-order-quantity rule G ≥ sqrt(2·cost·D/h), crediting trips on the way and the heal;
+  `shop_gain_scale` is gone.
+- **Wards by value** (`bot.cc` `place_ward`, `ward_value`, `ward_site*`; `main.cc`): one value over unseen tiles near
+  work and fights where an enemy could stand replaces the fixed ward triggers; the turn-start call weighs only the
+  draft's ward tile and the full search runs at turn end; per-tile sight caches and one fuel check for the
+  candidate loop.
+
+Against charybdis 525, own drafts, release, 100k fuel, 40,960 games each on fresh ladder-v2 `overseer-nyx` and
+`overseer-lockconf`: **54.7% (54.3-55.2) and 54.9% (54.4-55.4)**, no failed game or broken draft; out-of-fuel turns
+301,468 / 253,680 and 307,041 / 256,581 (+19%). With locks off as well (castor-nyx) the same suites read 55.7 / 55.3. CASTOR alone (with locks) read 54.1 / 54.1 and 55.2% of 56,320 at 2x against chy-ref. Out-of-fuel
+The wards add +0.6 / +0.8 over CASTOR alone. A fuel candidate. Lock policy is open (TODO).
+
+Frozen as `variants/castor-nyx-lock` (= bots/charybdis).
+

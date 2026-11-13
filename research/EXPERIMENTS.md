@@ -23,12 +23,14 @@ studies are in [overseer-2026-11-13](overseer-2026-11-13/candidates.md).
   medic out of fights; (3) Prism shop and farm-recall timing as a deferred purchase (credit ×min(1, visit/T)) with an
   economic-order-quantity trip rule. 55.2% of 56,320 held-out games at 2x; **54.1% at 100k on both overseer suites**
   (OOF +15%: a fuel candidate). Shop timing is worth ~2.5, the medic ~0.8. **With lock buying off: 55.0 / 54.7.**
+  **Shipped as charybdis 527 with NYX's wards and locks kept: 54.7 / 54.9** (castor-nyx, no locks: 55.7 / 55.3).
 - **NYX sw-midx-hi**: value-placed wards + no locks + mid_exposure 1.70: 53.8% at 2x (ladder mix; 52.9-53.0 on
   ladder-v2), 51.5% at 100k (OOF +36%). The ward search's fuel is the loss; nyx-vl-fuel2 (turn-start ward call on the
   draft tile only) recovers OOF to +2% and reads 51.9 / 51.3 against charybdis on the two suites.
 - **Altar locks** (20 policy variants, `overseer-2026-11-13/locks/RESULTS.md`): never buying reads 51.0% at 100k,
   flat by altar count; no placement rule beats it. A variant that buys and never places reads as charybdis, so the cost
-  is the purchase (gold timing), not placement. KRONOS found the same (~+0.65). Live risk unmeasured: fgate first.
+  is the purchase (gold timing), not placement. KRONOS found the same (~+0.65). Against the Fish r8 and Mite bodies it
+  is level (fgate, 9 batches: -0.07 ±0.27; one-site maps -0.65, ladder side -0.65), so 527 keeps locks (TODO).
 - **Level or lost** (most others pooled 50.3-51.25): caution and yielding lose everywhere (race -6/-7, twin -4 to -8,
   avoid enemy Prisms -6, value-at-risk retreat), Prism bag caps and bank-earlier/later lose 9-22, removing crews / Prism
   trips / the max_wait cliff / the camp record loses 20 / 17 / 11 / 5. Comms intel (team vision, camp picture,
