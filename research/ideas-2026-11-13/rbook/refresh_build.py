@@ -49,9 +49,10 @@ def build(work, refset, publish):
     host = ROOT / 'bots/variants' / name
     if host.exists() or (work / 'build-started.json').exists():
         raise RuntimeError('Build already started; inspect artifacts rather than overwriting or resubmitting')
-    if any(r['group'] in ls.suspect_groups() for r in ls.read_jsonl(ls.DATA/'games.jsonl')
-           if r.get('refset') == refset):
-        raise RuntimeError('Suspect sweep provenance')
+    suspect = ls.suspect_groups()
+    excluded = sorted({r['group'] for r in ls.read_jsonl(ls.DATA/'games.jsonl')
+                       if r.get('refset') == refset and r['group'] in suspect})
+    write(work/'excluded-groups.json', excluded)
     write(work/'build-started.json', {'at': ls.now(), 'host': str(host)})
     run(['./copybot', 'variants/rbook-x2', f'variants/{name}'], work/'copy.log')
     for directory in ('raw', 'ent'):
@@ -127,6 +128,10 @@ def build(work, refset, publish):
               'refset':refset,'book_free_sources':[117,118,119]}
     write(work/'build-state.json',result)
     if not publish:
+        return
+    if (work/'HOLD-PUBLISH').exists():
+        result.update(phase='ready_publication_held', reason=(work/'HOLD-PUBLISH').read_text().strip())
+        write(work/'build-state.json', result)
         return
     current = sched.load()
     if current['batches']['rest'] != 126 or sched.queue_lines() or (work/'STOP').exists():

@@ -21,6 +21,20 @@ does not write DONE on failure; hostswap.sh refuses existing destinations. No ma
 
 ## Active refresh
 
+13:49 UTC update: r11 was pinned after two stable checks; v119 won 224/340 book-free. All follow-up games
+have played. v117 has all 24 groups collected; v118 has 17/24 collected. At 13:46 the clean union was 252
+winning map/sides, before size selection. Nine v117 groups were marked suspect at the switch back to REST;
+rbuild now excludes suspect groups before selecting recordings, and refresh_build records them in
+excluded-groups.json rather than rejecting the entire clean sweep. Six offline regression checks pass.
+
+Mite current checks changed again at 12:40 and 13:37. `HOLD-PUBLISH` in the refresh work directory allows
+build/verification but holds publication for current-Mite validation. The refresh service was restarted with
+the corrected selection at 13:48, build stage only, three-hour cap (16:48 UTC). No extra games or agents.
+fish:0 is now active on charybdis 528 following committed 527; a coordination message was sent about live
+ownership, book-free host tests, suspect groups and the publication hold. Preserve their source edits.
+All old x2 sweep comparisons finished: forced Fish 26 exact; ordinary Fish 182 unique exact; Mite 202 unique
+exact (waiter reports 204 including duplicates/fillers). Foreign Mite candidates still await live validation.
+
 Systemd user service: `rbook-refresh-r11.service`. Artifacts/state:
 `/home/ubuntu/tmp-offload/rbook/refresh-r11/` (queue-state.json, build-state.json); journal via journalctl.
 A STOP file there yields before new phases/publication. The one refresh has a six-hour service cap.

@@ -30,6 +30,7 @@ MAP_DIRS = [ROOT / 'maps', ROOT / 'replays/v118/ws/maps']
 FAST = ROOT / 'tools/fastengine/runner/fastrunner'
 sys.path.insert(0, str(ROOT / 'tools'))
 import cpu_slots  # noqa: E402
+import ladder_scrims as ls  # noqa: E402
 
 
 def log(*a):
@@ -57,8 +58,11 @@ def select(a, opp, refset, tag):
     versions = {int(v) for v in a.versions.split(',')}
     cells = collections.defaultdict(list)
     host_won = set()
+    suspect = ls.suspect_groups()
     for line in open(GAMES):
         g = json.loads(line)
+        if g.get('group') in suspect:
+            continue
         if g.get('status') != 'finished' or not g['opp_name'].startswith(opp) or g.get('refset') != refset:
             continue
         cell = (g['map'], g['side'])

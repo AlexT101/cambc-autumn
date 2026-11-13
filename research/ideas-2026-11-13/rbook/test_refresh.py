@@ -12,6 +12,23 @@ import refresh_build
 
 
 class RefreshGates(unittest.TestCase):
+    def test_suspect_shorter_win_cannot_enter_book(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp)
+            replay = work/'replay.zip'
+            replay.touch()
+            common = dict(status='finished', opp_name='Mite', refset='r11', map='map',
+                          side='a', version=119, result='win', replay=str(replay))
+            rows = [dict(common, group='bad', rounds=10, match='suspect'),
+                    dict(common, group='good', rounds=20, match='clean')]
+            games = work/'games.jsonl'
+            games.write_text(''.join(json.dumps(r)+'\n' for r in rows))
+            args = types.SimpleNamespace(versions='119', host_version=None, extra=None)
+            with mock.patch.object(rbuild, 'GAMES', games), mock.patch.object(
+                    rbuild.ls, 'suspect_groups', return_value={'bad'}):
+                selected = rbuild.select(args, 'Mite', 'r11', 'mite')
+            self.assertEqual([c['key'] for c in selected], ['map-a-v119-clean'])
+
     def test_shared_cell_accepts_either_exact_draft_entry(self):
         with mock.patch.object(oppwatch, 'book_divergence', side_effect=[-1, 0]):
             self.assertEqual(oppwatch.cell_divergence({}, ['fish', 'mite']), -1)
