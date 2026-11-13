@@ -1,3 +1,13 @@
+## 2026-11-13 16:08 UTC: incremental first release
+
+User explicitly accepts a partial book and wants incremental improvements, and now authorizes delegation. One worker (Hilbert, 01a1d5a9-f826-7e32-9a88-be2271ac138c) investigates slow source collection and opt-in winning-recording-only downloads; no descendants. Parent retains scheduler and book publication ownership.
+
+Mite r13 baseline complete: 204/340 wins, 136 losses. Source v126 sweep has 28 groups, 26 created; remaining two await quota. Loss builder unit restarted with --minimum-source-fraction 0.7: a complete clean host baseline is still mandatory, but source downloads need not all finish. Selection is frozen in selection.json for both sizing and final build so subsequent collection cannot change drafts/entries mid-build. Foreign candidates fill only uncovered cells. 16 book regression tests pass.
+
+NEETCoders 00crater side A (15:40, e3ce5d6fff3f) is a confirmed r13 host-loss cell and reproduced exactly locally with the fixed host. Added to loss-v128 foreign-extra/metadata, copied raw/ent and exact fp from same host. Target-pin live validation remains required. Together with six prior Fish extras, seven provisional foreign candidates; own winning sources take precedence.
+
+Fish session reports no live-test candidate ready at16:00. Best preliminary phb-hub 51.3%/2720 debug games still needs larger held-out and normal-fuel evidence. Fish will coordinate rather than upload independently. Big-arm capture remains indefinitely paused.
+
 # Codex takeover, 2026-11-13
 
 Coordinator: Codex in prominence:0; teammate: fish:0. Claude in prominence:2 stopped on authentication at

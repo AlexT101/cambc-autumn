@@ -27,9 +27,11 @@ def baseline_rows(version, pins):
             and pins.get(r['opp_name'].split()[-1].lower()) == r.get('refset')]
 
 
-def ready(version, pins, steps):
+def ready(version, pins, steps, minimum_source_fraction=1.0):
+    if not 0 < minimum_source_fraction <= 1:
+        raise ValueError('Source fraction must be in (0, 1]')
     state = sched.load()
-    if not set(steps) <= set(state['batches'].get('after_done', [])):
+    if minimum_source_fraction == 1 and not set(steps) <= set(state['batches'].get('after_done', [])):
         return False
     tasks, created, finished, dropped, _ = ls.state()
     required = [t for t in tasks if t.get('part') in steps or
@@ -37,10 +39,17 @@ def ready(version, pins, steps):
                  and pins.get(t['opp_name'].split()[-1].lower()) == t.get('refset'))]
     if any(t['id'] in dropped for t in required):
         raise RuntimeError('Required source task dropped')
-    if not required or any(t['id'] not in created or created[t['id']]['group'] not in finished for t in required):
+    def collected(t):
+        return t['id'] in created and created[t['id']]['group'] in finished
+    baselines = [t for t in required if t['version'] == version]
+    if not baselines or not all(collected(t) for t in baselines):
         return False
+    for step in steps:
+        sources = [t for t in required if t.get('part') == step]
+        if not sources or sum(collected(t) for t in sources) / len(sources) < minimum_source_fraction:
+            return False
     suspect = ls.suspect_groups()
-    if any(created[t['id']]['group'] in suspect for t in required):
+    if any(created[t['id']]['group'] in suspect for t in required if collected(t)):
         raise RuntimeError('Required source group is suspect; repair coverage before building')
     actual = collections.defaultdict(set)
     for row in baseline_rows(version, pins):
@@ -66,7 +75,8 @@ def build(work, version, pins):
                 for r in baseline_rows(version,pins)}
     extra = work/'foreign-extra.tsv'
     selection = types.SimpleNamespace(versions='117,118,119,125,126', host_version=version,
-                                      host_losses_only=True, extra=extra if extra.exists() else None)
+                                      host_losses_only=True, extra_uncovered_only=True,
+                                      extra=extra if extra.exists() else None)
     chosen = []
     for opp, pin in pins.items():
         chosen += rbuild.select(selection,ls.TEAMS[opp][1],pin,opp)
@@ -91,6 +101,7 @@ def build(work, version, pins):
     # This frozen copy includes the verified stale-round handover guard; main bots stay untouched.
     run(['./copybot','variants/rbook-refresh-r11',f'variants/{name}'],work/'copy.log')
     args = ['--versions',selection.versions,'--host-version',str(version),'--host-losses-only',
+            '--selection',work/'selection.json','--extra-uncovered-only',
             '--force-keys',work/'forced-candidates.txt','--jobs','8']
     if selection.extra:
         args += ['--extra',selection.extra]
@@ -148,6 +159,8 @@ def main():
     ap.add_argument('--mite-pin',required=True)
     ap.add_argument('--fish-pin',default='r8')
     ap.add_argument('--after-step',action='append',required=True)
+    ap.add_argument('--minimum-source-fraction',type=float,default=1.0,
+                    help='allow a partial source sweep; the host baseline must still be complete')
     a=ap.parse_args();a.work.mkdir(parents=True,exist_ok=True)
     pins=dict(fish=a.fish_pin,mite=a.mite_pin)
     with (a.work/'build.lock').open('a') as lock:
@@ -156,7 +169,7 @@ def main():
             raise RuntimeError('Existing build requires reconciliation')
         write(a.work/'build-state.json',dict(phase='waiting_for_sweeps',at=ls.now(),host_version=a.host_version,pins=pins))
         try:
-            while not ready(a.host_version,pins,a.after_step):
+            while not ready(a.host_version,pins,a.after_step,a.minimum_source_fraction):
                 if (a.work/'STOP').exists():
                     return
                 time.sleep(30)

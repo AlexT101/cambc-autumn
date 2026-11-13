@@ -101,6 +101,9 @@ def select(a, opp, refset, tag):
                 if len(p) > 4:
                     if p[4] != tag:
                         continue
+                    if getattr(a, 'extra_uncovered_only', False) and any(
+                            (c['map'], c['side']) == (mp, side) for c in chosen):
+                        continue
                     chosen = [c for c in chosen if (c['map'], c['side']) != (mp, side)]
                 elif tag != opponents(a)[0][2]:
                     continue
@@ -304,6 +307,10 @@ def main():
     ap.add_argument('--host-version', type=int)
     ap.add_argument('--host-losses-only', action='store_true', help='keep only confirmed losses of the matching book-free host, separately for each opponent/refset; unknown cells are excluded')
     ap.add_argument('--extra')
+    ap.add_argument('--extra-uncovered-only', action='store_true',
+                    help='foreign recordings fill gaps without replacing our own winning sources')
+    ap.add_argument('--selection', type=Path,
+                    help='frozen selection.json candidates; later downloads cannot change this build')
     ap.add_argument('--host-repro', help="hostcheck.py's outputs (comma-separated, lines MAP SIDE OPP): of --host-version's live "
                     "wins, only the cells the host build replays exactly are left to it; the others get entries")
     ap.add_argument('--work', default=str(Path.home() / 'tmp-offload/rbook/fish'))
@@ -344,7 +351,8 @@ def main():
         return
     chosen, cs, fps = [], [], {}
     for opp, refset, tag in opponents(a):
-        ch = select(a, opp, refset, tag)
+        ch = ([c for c in json.loads(a.selection.read_text())['candidates'] if c['opp'] == tag]
+              if a.selection else select(a, opp, refset, tag))
         c = extract_all(ch, work, min(a.jobs, 16))
         log(f'extract {tag}: {len(c)} entries')
         fps.update(record(c, a, work, host, tag))

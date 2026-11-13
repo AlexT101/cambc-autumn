@@ -70,6 +70,24 @@ class RefreshGates(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError,'suspect'):
                     loss_refresh.ready(128,pins,['wins'])
 
+    def test_partial_sources_still_require_complete_host_baseline(self):
+        pins=dict(mite='r13')
+        tasks=[dict(id='base',version=128,purpose='set',opp_name='Mite',refset='r13',
+                    games=[dict(map='map',side='a')])]
+        tasks += [dict(id=str(i),version=126,purpose='set',part='wins',opp_name='Mite',refset='r13')
+                  for i in range(4)]
+        created={t['id']:dict(group=t['id']) for t in tasks[:-1]}
+        finished=set(created)
+        with mock.patch.object(loss_refresh.sched,'load',return_value={'batches':{'after_done':[]}}), \
+             mock.patch.object(loss_refresh.ls,'state',return_value=(tasks,created,finished,set(),{})), \
+             mock.patch.object(loss_refresh.ls,'suspect_groups',return_value=set()), \
+             mock.patch.object(loss_refresh,'baseline_rows',return_value=[dict(opp_name='Mite',map='map',side='a')]):
+            self.assertTrue(loss_refresh.ready(128,pins,['wins'],.7))
+            self.assertFalse(loss_refresh.ready(128,pins,['wins'],.8))
+            self.assertFalse(loss_refresh.ready(128,pins,['wins']))
+            finished.remove('base')
+            self.assertFalse(loss_refresh.ready(128,pins,['wins'],.7))
+
     def test_live_win_after_divergence_counts_but_loss_does_not(self):
         outcome = refresh_live.validate_live_results([dict(result='win',diff=-1),dict(result='win',diff=700)])
         self.assertEqual(outcome, dict(wins=2,exact_wins=1,wins_after_divergence=1))
@@ -94,6 +112,13 @@ class RefreshGates(unittest.TestCase):
                 self.assertEqual(len(rbuild.select(args,'Mite','r12','mite')),1)
                 self.assertEqual(rbuild.select(args,'Intercontinental Fish','r8','fish'),[])
                 self.assertEqual(rbuild.select(args,'Mite','r13','mite'),[])
+                extra=work/'extra.tsv'
+                extra.write_text(f'{replay} a shared-a-v901-foreign shared mite\n')
+                args.extra=extra
+                args.extra_uncovered_only=True
+                self.assertEqual(rbuild.select(args,'Mite','r12','mite')[0]['version'],117)
+                args.extra_uncovered_only=False
+                self.assertEqual(rbuild.select(args,'Mite','r12','mite')[0]['version'],901)
 
     def test_stage_rejects_successful_command_with_different_replays(self):
         text = 'plain: 24 games, 5 bodies handed over, invalid 0\n== 100M\nidentical replays: 51/52\n'
