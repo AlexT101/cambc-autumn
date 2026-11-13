@@ -307,6 +307,7 @@ py tools/version_record.py 50                        # our version 50's record p
   A scheduler campaign can supply `parts` as `[set, part, priority]` triples to cover a custom map set
   continuously, and `baseline_version` to compare with a completed candidate instead of the legacy control.
   `set-full170.json` covers all 170 ladder maps in five-map chunks, interleaving both opponents and both sides.
+  Scheduler `parked_task_ids` remain held across control changes, preserving unfinished lower-priority tests.
   - **Outcome-only baselines:** `data/OUTCOME-ONLY-VERSIONS.json` optionally lists versions whose pinned `set`
     games need only outcomes and drafts from group detail. These rows explicitly say `collection: outcome_only`
     and have no replay/summary metrics. Use only for book-free host-loss selection; other versions and all
@@ -326,6 +327,8 @@ py tools/version_record.py 50                        # our version 50's record p
     renewable 90-second leases; crashed owners release priority immediately, and stopped owners expire.
     A read-only 429 before any unconfirmed creates releases the switch lock before backing off, so activation
     can proceed. Confirmation after creates retains the lock and the existing suspect-group protection.
+    A successful advisory quota read survives a deferred version check; the live version is always checked
+    again under the switch lock. A definite server quota refusal ends the create pass promptly.
   - **Latest book as REST:** `research/ideas-2026-11-13/rbook/loss_live.py upload` uses the tracked
     `live_test.sh --rest` helper after local verification. The uploaded book becomes REST immediately while
     its live checks continue; ranked activation is not evidence that qualification passed. Ordinary strength

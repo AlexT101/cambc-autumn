@@ -284,7 +284,8 @@ class Batches:
             s.log(f"batches: v{cur['version']} control yields to a waiting candidate")
             cur = B['cur'] = None
         self.hold_control(ctl, hold=(cur is not None and not cur.get('control')) or waiting,
-                          leaving=B.get('rest_from'), exempt=set((cur or {}).get('task_ids', ())))
+                          leaving=B.get('rest_from'), exempt=set((cur or {}).get('task_ids', ())),
+                          parked=B.get('parked_task_ids', ()))
         if cur is None:
             self.batch_file(False)
             self.plan_rest(B, ctl, rsets_now)
@@ -308,7 +309,7 @@ class Batches:
                 s.save(st)
                 return
             else:
-                self.hold_control(ctl, hold=True, leaving=B.get('rest_from'))
+                self.hold_control(ctl, hold=True, leaving=B.get('rest_from'), parked=B.get('parked_task_ids', ()))
                 cur = B['cur'] = {'cand': c, 'label': c['label'], 'version': None, 'rsets': rsets_now,
                                   'phase': 'rest', 'batches': [], 'picked_at': s.now()}
                 s.log(f"batches: next candidate {c['label']} on {rsets_now}; v{rest} control held until candidates "
@@ -457,12 +458,12 @@ class Batches:
         self.s.log(f"batches: rest version v{B['rest_from']} -> v{v} (sched/REST)")
         self.s.save(st)
 
-    def hold_control(self, rest, hold, leaving=None, exempt=()):
+    def hold_control(self, rest, hold, leaving=None, exempt=(), parked=()):
         tasks, created, finished, dropped, _ = self.ls.state()
         ids = sorted(t['id'] for t in tasks if t['id'] not in created and t['id'] not in dropped
-                     and t['id'] not in exempt
-                     and (t['version'] == leaving
-                          or (hold and t['version'] == rest and t.get('purpose') == 'set' and t['id'] != PROBE)))
+                     and (t['id'] in parked or (t['id'] not in exempt
+                          and (t['version'] == leaving
+                               or (hold and t['version'] == rest and t.get('purpose') == 'set' and t['id'] != PROBE)))))
         f = self.ls.DATA / 'HOLD-TASKS.json'
         try:
             if json.loads(f.read_text()) == ids:

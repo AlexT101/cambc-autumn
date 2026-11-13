@@ -1,6 +1,6 @@
 # Charybdis 531 live comparison
 
-In progress: platform **v132**, uploaded 2026-11-13 at18:55:42 UTC and first active at18:57:13.
+Parked on user instruction at19:46 UTC: platform **v132**, uploaded 2026-11-13 at18:55:42 UTC and first active at18:57:13.
 Frozen source: `bots/variants/chy-531`, main commit `c451e3387`.
 The uploaded workspace's61 source files match that commit exactly; the sorted
 `relative path + NUL + contents` SHA256 is
@@ -17,9 +17,12 @@ The opponent source groups are:
 The campaign uses `data/set-full170.json`, ordered by an outcome-independent hash.
 Each four-group block covers five maps against both opponents from both sides.
 The scheduler's explicit baseline is129, independent of its legacy control118.
-REST remains latest book131 between quota windows. No fixed quota reserve; teammate
-requests take priority as slots return. Current-Fish book repinning follows this campaign
-and does not change these comparison pins.
+The user prioritized the new Fish pin and book over completing this comparison.
+100 groups /500 games were submitted; the remaining36 groups /180 games are held in
+the scheduler's `parked_task_ids`, with the original campaign archived locally.
+Fishr9's book-free host baseline and loss-only book refresh run first. The collected
+comparison retains its original Fishr8/Miter13 pins. See `partial-results.json`.
+REST remains latest book131 between quota windows, with no fixed quota reserve.
 
 Runtime evidence and completion auditors are in
 `/home/ubuntu/tmp-offload/live-chy531/`: `intent.json`, `played_progress.py`,

@@ -147,6 +147,11 @@ def _cambc(args, timeout, retries, limited_retries, renew, background):
         wait = re.search(r"retry after (\d+) seconds", out)
         if r.returncode == 0:
             return r.stdout
+        status = re.search(r'HTTP\s+(4\d\d)\b', out)
+        if (args[:2] == ('match-groups', 'create') and status and status.group(1) != '429'
+                and re.search(r'quota|limit', out, re.I)):
+            # A yielded quota snapshot is advisory: a definite refusal must end the pass, not monopolize the lock.
+            raise CambcError(f"cambc {' '.join(args[:3])}: {out.strip()[-400:]}")
         if (getattr(_READ_RETRY, 'defer', False)
                 and args[:2] in (('submissions', 'list'), ('match-groups', 'quota'))
                 and re.search(r'HTTP\s+429\b', out)):
@@ -489,6 +494,7 @@ def cmd_run(args):
             waiting_note = msg
 
     unconfirmed = []   # groups created since the last live/selected read
+    pending_quota = None  # successful advisory read while a pre-create live read is rate-limited
 
     def check_live(why):
         # A switch between two reads may have bound the groups created between them to the new selection.
@@ -532,14 +538,18 @@ def cmd_run(args):
         """Creates every runnable task the quota has room for, back to back: one quota read and one live read, then
         only creates (the collector's calls wait), re-reading both every --recheck creates so a long burst cannot
         miss a teammate's quota use or a submission switch for long."""
-        nonlocal waiting_note
+        nonlocal waiting_note, pending_quota
         made = []
         with live_lock(DATA):
             if probe_active(DATA):
+                pending_quota = None
                 return made
             # Only an empty confirmation window can yield the switch lock on a read-only 429.
             with defer_control_reads(not unconfirmed):
-                q = quota()
+                # Do not spend each newly available API token repeating quota before retrying live_version.
+                # Only quota can survive a yielded lock: version/selection must always be read again here.
+                q = pending_quota if pending_quota is not None and not unconfirmed else quota()
+                pending_quota = None
                 qq = q.get("quota") or {}
                 used, limit = qq.get("used", 0), qq.get("limit") or 100
                 if not q.get("ready", True):
@@ -548,7 +558,11 @@ def cmd_run(args):
                 if limit - used - (0 if cand[0][0]["priority"] >= 100 else args.reserve) <= 0:
                     note(f"quota {used}/{limit}, reserve {args.reserve}: waiting (resets {qq.get('resetsAt')})")
                     return made
-                live, selected = check_live("before create")
+                try:
+                    live, selected = check_live("before create")
+                except ControlReadLimited:
+                    pending_quota = q
+                    raise
             ready = [c for c in cand if c[0]["version"] == live] if selected == live else []
             if not ready:
                 note(f"nothing runnable: live v{live}, selected v{selected}, pending versions "

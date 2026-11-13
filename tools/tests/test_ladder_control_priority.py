@@ -65,6 +65,15 @@ class PriorityCalls(unittest.TestCase):
             ls.cambc('summary', 'local-file', '-o', '-')
             wait.assert_not_called()
 
+    def test_ambiguous_quota_5xx_keeps_existing_retry_behavior(self):
+        failure=types.SimpleNamespace(returncode=1,stdout='',stderr='HTTP 503: quota service unavailable')
+        success=types.SimpleNamespace(returncode=0,stdout='ok',stderr='')
+        with mock.patch.object(ls.subprocess,'run',side_effect=[failure,success]) as run, \
+                mock.patch.object(ls.time,'sleep') as sleep:
+            self.assertEqual(ls.cambc('match-groups','create','opp'),'ok')
+            self.assertEqual(run.call_count,2)
+            sleep.assert_called_once_with(15)
+
     def test_fresh_timestamp_without_owner_does_not_hold_collection(self):
         (self.data/'api-control.lock').touch()
         with mock.patch.object(coordination.time, 'sleep') as sleep:
@@ -154,6 +163,28 @@ class RateLimitedApi(FakeApi):
         return super().run(cmd, **kwargs)
 
 
+class OnePerIntervalApi(FakeApi):
+    """One server request per virtual interval; only a server-directed retry advances the clock."""
+    def __init__(self, **kwargs):
+        super().__init__(play=30, **kwargs)
+        self.interval, self.next_interval = 0, 0
+        self.accepted, self.budget_lock = [], threading.Lock()
+
+    def run(self, cmd, **kwargs):
+        if cmd[1]=='summary':
+            return super().run(cmd, **kwargs)
+        with self.budget_lock:
+            if self.interval < self.next_interval:
+                return types.SimpleNamespace(returncode=1, stdout='', stderr='HTTP 429; retry after 1 seconds')
+            self.next_interval = self.interval + 1
+            self.accepted.append(tuple(cmd[1:3]))
+        return super().run(cmd, **kwargs)
+
+    def refill(self):
+        with self.budget_lock:
+            self.interval += 1
+
+
 class RunnerPriority(runner_tests.RunTest):
     # Reuse only the runner fixture; the ordinary runner cases run in their own module.
     test_burst_then_refill = test_successful_calls_have_no_local_wait = None
@@ -221,6 +252,89 @@ class RunnerPriority(runner_tests.RunTest):
 
     def test_postcreate_429_retains_lock_and_marks_unconfirmed_switch(self):
         self.concurrent_retry(after_create=True)
+
+    def test_capacity_one_server_makes_progress_through_all_preflight_reads(self):
+        api, real_sleep = OnePerIntervalApi(), time.sleep
+        def sleep(seconds):
+            if threading.current_thread() is self.th and seconds >= 1:
+                api.refill()
+                real_sleep(0.001)
+            else:
+                real_sleep(seconds)
+        with mock.patch.object(ls.time, 'sleep', side_effect=sleep):
+            try:
+                self.start(api, [task(0,pin='none')], pace=0, exit_when_done=False)
+                self.wait(lambda: bool(self.created()) or api.interval >= 6, secs=3)
+                self.assertEqual(len(self.created()),1,api.accepted)
+                self.wait(lambda: api.accepted.count(('submissions','list'))>=2,secs=3)
+                self.assertEqual(api.accepted[:4],[('match-groups','quota'),('submissions','list'),
+                                                  ('match-groups','create'),('submissions','list')])
+                self.assertEqual(self.created()[0]['live'],118)
+                self.assertEqual(self.created()[0]['selected'],118)
+            finally:
+                (ls.DATA/'STOP').touch()
+                self.th.join(3)
+
+    def test_capacity_one_rechecks_live_selection_after_scheduler_switch(self):
+        api, real_sleep = OnePerIntervalApi(), time.sleep
+        switched = threading.Event()
+        def switch():
+            with ls.live_lock(ls.DATA):
+                api.live = 117
+                switched.set()
+        def sleep(seconds):
+            if threading.current_thread() is self.th and seconds >= 1:
+                if not switched.is_set():
+                    scheduler = threading.Thread(target=switch)
+                    scheduler.start(); scheduler.join(2)
+                    if scheduler.is_alive(): raise AssertionError('Scheduler excluded during read retry')
+                api.refill()
+                real_sleep(0.001)
+            else:
+                real_sleep(seconds)
+        with mock.patch.object(ls.time, 'sleep', side_effect=sleep):
+            try:
+                self.start(api, [task(0,pin='none'),task(1,version=117,pin='none')],pace=0,exit_when_done=False)
+                self.wait(lambda: bool(self.created()) or api.interval>=6,secs=3)
+                self.assertTrue(switched.is_set())
+                self.assertEqual([(e['task'],e['live'],e['selected']) for e in self.created()],
+                                 [('t001',117,117)])
+                self.wait(lambda: api.accepted.count(('submissions','list'))>=2,secs=3)
+            finally:
+                (ls.DATA/'STOP').touch()
+                self.th.join(3)
+
+    def test_quota_spent_during_yield_refuses_once_without_drop_or_long_lock_backoff(self):
+        api, real_sleep = OnePerIntervalApi(limit=1), time.sleep
+        consumed = False
+        sleeps = []
+        def sleep(seconds):
+            nonlocal consumed
+            if threading.current_thread() is self.th and seconds >= 1:
+                if not consumed:
+                    api.used = 1  # A teammate consumes the room after our quota read.
+                    consumed = True
+                sleeps.append(seconds)
+                api.refill()
+                real_sleep(0.001)
+            else:
+                real_sleep(seconds)
+        def log(message):
+            if message.startswith('quota 1/1,'):
+                (ls.DATA/'STOP').touch()
+        with mock.patch.object(ls.time, 'sleep', side_effect=sleep), mock.patch.object(ls,'log',side_effect=log):
+            try:
+                self.start(api,[task(0,pin='none')],pace=0,exit_when_done=False)
+                self.th.join(3)
+                self.assertFalse(self.th.is_alive())
+                self.assertEqual(self.created(),[])
+                self.assertFalse(any(e['ev']=='dropped' for e in ls.read_jsonl(ls.DATA/'events.jsonl')))
+                self.assertEqual(api.accepted.count(('match-groups','quota')),2)  # Abandoned preflight is cleared.
+                self.assertEqual(api.accepted.count(('match-groups','create')),1)
+                self.assertTrue(all(s<=2 for s in sleeps),sleeps)  # Only server 429 backoff, not generic 15/30s retry.
+            finally:
+                (ls.DATA/'STOP').touch()
+                self.th.join(3)
 
 
 if __name__ == '__main__':

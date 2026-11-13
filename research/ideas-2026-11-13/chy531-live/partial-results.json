@@ -1,0 +1,32 @@
+{
+  "at": "2026-11-13T19:47:32Z",
+  "candidate": 132,
+  "baseline": 129,
+  "source": "played events; replay downloads still in progress",
+  "checked_against_collected_cells": 435,
+  "paired": {
+    "Intercontinental Fish": {
+      "cells": 250,
+      "wins": 144,
+      "baseline_wins": 146,
+      "flips_for": 29,
+      "flips_against": 31
+    },
+    "Mite": {
+      "cells": 250,
+      "wins": 170,
+      "baseline_wins": 166,
+      "flips_for": 30,
+      "flips_against": 26
+    }
+  },
+  "status": "parked_by_user",
+  "planned_cells": 680,
+  "played_cells": 500,
+  "remaining_cells_held": 180,
+  "reason": "New Fish pin and book refresh take priority over completing 529-to-531 ablation",
+  "pins": {
+    "fish": "r8",
+    "mite": "r13"
+  }
+}

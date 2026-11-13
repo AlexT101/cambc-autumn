@@ -122,6 +122,15 @@ class SchedPhases(unittest.TestCase):
         ls.append_jsonl(ls.DATA / "events.jsonl", {"ev": "created", "task": t["id"], "group": "g-" + t["id"],
                                                    "at": ls.now(), "live": version, "selected": version})
 
+    def test_parked_tasks_survive_control_release_and_skip_created(self):
+        tasks=[ctask(i,version=132) for i in range(2)]
+        for t in tasks: ls.append_jsonl(ls.DATA/'tasks.jsonl',t)
+        self.create(tasks[0],132)
+        self.b.hold_control(118,hold=False,parked=[t['id'] for t in tasks])
+        self.assertEqual(ls.held_tasks(),{tasks[1]['id']})
+        self.b.hold_control(118,hold=True,parked=[t['id'] for t in tasks])
+        self.assertEqual(ls.held_tasks(),{tasks[1]['id']})
+
     def test_explicit_cells_can_check_current_without_changing_source_pin(self):
         oid, name = ls.TEAMS['mite']
         cells = [dict(map=f'map{i}', map_id=f'id{i}', side='a') for i in range(5)]
