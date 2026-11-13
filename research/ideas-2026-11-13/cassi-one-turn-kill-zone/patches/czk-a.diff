@@ -1,0 +1,37 @@
+diff -ru bots/variants/chy-525/src/combat/fight.cc bots/variants/cassi-one-turn-kill-zone/src/combat/fight.cc
+--- bots/variants/chy-525/src/combat/fight.cc	2026-11-12 22:24:17.864543095 +0000
++++ bots/variants/cassi-one-turn-kill-zone/src/combat/fight.cc	2026-11-13 00:57:42.112617023 +0000
+@@ -507,8 +507,22 @@
+     return outmatched(world, safety, hold) && !hold.keeps_us(safety);
+ }
+ 
++// A seen enemy whose whole kit in one turn (attack, reset and attack; a dash and attack) kills us
++// from our health now: for a linked body the kill takes both bodies and both bags at no risk to it.
++bool one_turn_killer_seen(const World& world, Safety& safety) {
++    const float life = my_health() + world.me().shield;
++    for (auto left = safety.seen_enemies(); left; left &= left - 1) {
++        const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
++        const Strike& s = strike_with(e, 0b11u);
++        for (int d = 0; d <= s.reach && d <= Strike::max_reach; ++d)
++            if (s.damage[static_cast<std::size_t>(d)] >= life) return true;
++    }
++    return false;
++}
++
+ // A stand at p we lose, or, linked or lethal there, one we fall in. Healthy on our own ground, they
+-// have no reason to come for us, unless we carry a bag: a kill takes it. Every input is read at p.
++// have no reason to come for us, unless we carry a bag: a kill takes it; or, linked, one of them
++// kills us in a turn. Every input is read at p.
+ bool stand_lost_at(const World& world, Safety& safety, HoldAt& hold) {
+     const vec2 p = hold.p;
+     // lethal(p), worked out where read: an enemy that hits p now leaves the roster blind to it, so
+@@ -533,7 +547,8 @@
+     if ((!reach.hit && (reach.walking | reach.pending)) || !world.map().from_ally_spawn_ready()) {
+         const float health = my_health();
+         pursued = !paying_soon(world, safety, p, hold.rounds())
+-                  && !(own_ground(world, p) && health >= params::hurt_health_fraction * my_max_health() && bag_at_stake(world) < params::brake_bag);
++                  && !(own_ground(world, p) && health >= params::hurt_health_fraction * my_max_health() && bag_at_stake(world) < params::brake_bag
++                       && !(partner(world) != nullptr && one_turn_killer_seen(world, safety)));
+     }
+     if (reach.hit || pursued) safety.stand_walks(p, params::pursuit_steps, reach);
+     const auto roster = safety.stand_roster(p, reach, pursued ? params::pursuit_steps : 0, unseen);

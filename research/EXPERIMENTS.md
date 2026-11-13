@@ -10,6 +10,49 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## (charybdis = 525, 2026-11-13) Cassi's one-turn kill zone against Fish r8's Vesper: the pair already retreats and Cassi dies in the chase; leaving earlier is level (49.87% at 200k) and leaves her deaths unchanged
+
+Note, patches and scripts: [ideas-2026-11-13/cassi-one-turn-kill-zone/README.md](ideas-2026-11-13/cassi-one-turn-kill-zone/README.md).
+- **Idea.** The fed Vesper two-shots Cassi late. While a seen enemy can kill a linked body in one turn, the pair
+  should read the stand over that enemy's approach and leave before the run starts.
+- **Live data** (132 games against Fish's Vesper):
+  - By the body actually hit (the death event without `linked`), her late pair kills are Cassi 0.55 and Issac 0.44 a
+    game. The ideation's "Cassi in 129 of 129" counted the first event.
+  - Cassi first sees her at a median 6.5 tiles, about 7 rounds before dying, and deals no damage in 38 of 72.
+  - Issac's deaths are fights he loses with Cassi about 9 tiles away.
+- **Body:** fr8-g25 reproduces it at half the live rate (Cassi 0.279, Issac 0.237 a game).
+- **Arms:**
+  - czk-a: a linked body loses the own-ground exemption from pursuit while a seen enemy's whole-kit one-turn strike
+    covers its health.
+  - czk-w: czk-a, plus the work guard keeps the body off tiles whose stand is lost to pursuers.
+- **Death profile** (1,280 games at 200k), Cassi deaths to Vesper a game: base 0.251, czk-a 0.251, czk-w 0.245.
+  czk-w's out-of-fuel turns are 303 against the base's 82.
+
+Results against chy-525 (fgate `--pool v4 --fish-body fr8-g25 --mite-body mf-f9`, batches 0-3):
+
+| arm | fuel | win% (95% CI), fresh | Fish | Mite | games | outcome |
+|---|---|---|---|---|---|---|
+| czk-a | 200k | 49.87 (49.64-50.10) | 49.70 | 50.04 | 81,920 | NARROWED, level (high SPRT H0 at batch 1) |
+| czk-w | – | not gated: deaths unchanged, 3.7x the out-of-fuel turns | | | | |
+
+- **Why** (debug trace, `variants/czk-trace`):
+  - On her last turn alive Cassi was already retreating in 181 of 283 deaths.
+  - Her steps rarely enter Vesper's reach (25). Vesper closes on her own turn and keeps 4-5 tiles, out of Cassi's
+    stun range of 4. With the stun ready, Vesper was within it at the start of Cassi's last turn in only 13 of 283.
+  - Dash and reset each land a basic once every 8 turns. One-shots, prior damage, blocked steps and routes home that
+    bend toward Vesper finish the chase.
+  - Against a two-shot target, the two-turn kill reach equals the one-turn strike reach that `step_guard` already
+    prices.
+- **Cassi's late value:** 3.6 stuns on enemy champions a game, 42% of ours, so holding her out of fights is not
+  free. That avoidance arm was not built.
+- **Verdict.** Nothing ships, and no 100k run.
+- **Don't retry:**
+  - earlier leaving;
+  - pursuit guards for the pair;
+  - Cassi's stun on a chasing Vesper.
+
+  A revival needs a way through the chase: earlier sight of her, or retreat routes away from her.
+
 ## (charybdis = 525, 2026-11-13) Bag-carrier prey against Fish r8: isolated Fish carriers away from its Vesper are rare and we already take them; abandoned before building
 
 Note, scripts and the trace patch: [ideas-2026-11-13/bag-carrier-prey/README.md](ideas-2026-11-13/bag-carrier-prey/README.md).

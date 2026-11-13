@@ -1,0 +1,53 @@
+diff -ru bots/variants/cassi-one-turn-kill-zone/src/bot_parts.h bots/variants/cassi-one-turn-kill-zone-w/src/bot_parts.h
+--- bots/variants/cassi-one-turn-kill-zone/src/bot_parts.h	2026-11-12 13:28:45.818322409 +0000
++++ bots/variants/cassi-one-turn-kill-zone-w/src/bot_parts.h	2026-11-13 01:00:41.179033215 +0000
+@@ -338,6 +338,10 @@
+ bool finish_heal(const World& world, Pathing& pathing, Safety& safety);
+ // want_home's recall line and pack zone (drawn_home) at p, as if we stood there with last round's loss `damage`.
+ bool drawn_home_at(const World& world, Pathing& pathing, Safety& safety, vec2 p, float damage);
++// We are Cassi or Issac, and a seen enemy's whole kit kills us in one turn.
++bool linked_killer_seen(const World& world, Safety& safety);
++// want_home's stand_lost_at at p, as if we stood there with last round's loss `damage`.
++bool stand_lost_at(const World& world, Pathing& pathing, Safety& safety, vec2 p, float damage);
+ const ChampionBelief* prey(const World& world, Pathing& pathing, Safety& safety);
+ vec2 chase_aim(const World& world, Pathing& pathing, Safety& safety);
+ // A successful chase keeps its guard; a failed one restores the work guard.
+diff -ru bots/variants/cassi-one-turn-kill-zone/src/combat/fight.cc bots/variants/cassi-one-turn-kill-zone-w/src/combat/fight.cc
+--- bots/variants/cassi-one-turn-kill-zone/src/combat/fight.cc	2026-11-13 00:57:42.112617023 +0000
++++ bots/variants/cassi-one-turn-kill-zone-w/src/combat/fight.cc	2026-11-13 01:00:38.860002323 +0000
+@@ -568,6 +568,13 @@
+     return drawn_home(world, safety, hold);
+ }
+ 
++bool linked_killer_seen(const World& world, Safety& safety) { return partner(world) != nullptr && one_turn_killer_seen(world, safety); }
++
++bool stand_lost_at(const World& world, Pathing& pathing, Safety& safety, vec2 p, float damage) {
++    HoldAt hold(world, pathing, p, damage);
++    return stand_lost_at(world, safety, hold);
++}
++
+ // A Prism carrying the bag that wins the game heals before its tribute: below the health one round of
+ // every living enemy's strikes takes (capped at full), it neither starts the channel nor walks the bag
+ // on, but goes home, by the recall when that is sooner. A winning bag's channel is long (a turn per 10
+diff -ru bots/variants/cassi-one-turn-kill-zone/src/combat/guard.cc bots/variants/cassi-one-turn-kill-zone-w/src/combat/guard.cc
+--- bots/variants/cassi-one-turn-kill-zone/src/combat/guard.cc	2026-11-12 22:24:17.866042315 +0000
++++ bots/variants/cassi-one-turn-kill-zone-w/src/combat/guard.cc	2026-11-13 01:00:45.885096359 +0000
+@@ -788,13 +788,16 @@
+     const float health = my_health();
+     if (made.round == world.round && made.observations == world.observations && made.here == here && made.health == health) return made.tiles;
+     made.round = world.round, made.observations = world.observations, made.here = here, made.health = health, made.tiles = 0;
+-    if (!may_draw_home(world, safety, here)) return 0;
++    // A linked body that a seen enemy kills in a turn also keeps off the stands it would leave there,
++    // pursuers included: else the work walks it straight back into the reach it retreated from.
++    const bool killer = linked_killer_seen(world, safety);
++    if (!killer && !may_draw_home(world, safety, here)) return 0;
+     const auto& open = world.map().open_for_us;
+     for (int i = 0; i < 8; ++i) {
+         const vec2 q = here + directions[i];
+         // want_home never leaves our spawn, which heals us at the turn end.
+         if (!in_bounds(q) || !test(open, q) || test(world.map().ally_spawn, q)) continue;
+-        if (drawn_home_at(world, pathing, safety, q, damage)) made.tiles |= 1u << i;
++        if (drawn_home_at(world, pathing, safety, q, damage) || (killer && stand_lost_at(world, pathing, safety, q, damage))) made.tiles |= 1u << i;
+     }
+     return made.tiles;
+ }
