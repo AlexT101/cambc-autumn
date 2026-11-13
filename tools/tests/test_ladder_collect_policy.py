@@ -1,5 +1,6 @@
 """Outcome-only baselines must retain drafts and never suppress source/check downloads."""
 import json
+import fcntl
 from pathlib import Path
 import sys
 import tempfile
@@ -11,6 +12,17 @@ import ladder_scrims as ls
 
 
 class CollectionPolicy(unittest.TestCase):
+    def test_duplicate_runner_preserves_live_pid(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/'run.lock'
+            with path.open('w') as owner:
+                owner.write('1908511\n');owner.flush()
+                fcntl.flock(owner,fcntl.LOCK_EX|fcntl.LOCK_NB)
+                with mock.patch.object(ls,'DATA',Path(tmp)):
+                    with self.assertRaisesRegex(SystemExit,'holds the lock'):
+                        ls.cmd_run(None)
+                self.assertEqual(path.read_text(),'1908511\n')
+
     def collect(self, version=128, purpose='set', pin='ref'):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)

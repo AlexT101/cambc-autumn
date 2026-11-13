@@ -436,11 +436,14 @@ def groups_over(want, pages=12):
 
 
 def cmd_run(args):
-    lock = open(DATA / "run.lock", "w")
+    lock = open(DATA / "run.lock", "a+")
     try:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except OSError:
+        lock.close()
         sys.exit("another `ladder_scrims.py run` holds the lock")
+    lock.seek(0)
+    lock.truncate()
     lock.write(str(os.getpid()))
     lock.flush()
     log(f"run: pid {os.getpid()}, reserve {args.reserve}, inflight {args.inflight or 'no cap'}, pace {args.pace}s, "
