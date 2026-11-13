@@ -316,6 +316,10 @@ py tools/version_record.py 50                        # our version 50's record p
   - **API pacing:** no local token bucket, minimum call gap, or reserved API tokens. The CLI wrapper
     retries server `retry after N seconds` responses with bounded exponential backoff. The platform's rolling
     scrim quota still controls group creation. Source tasks may skip losing replay downloads as above.
+  - **Latest book as REST:** `research/ideas-2026-11-13/rbook/loss_live.py upload` uses the tracked
+    `live_test.sh --rest` helper after local verification. The uploaded book becomes REST immediately while
+    its live checks continue; ranked activation is not evidence that qualification passed. Ordinary strength
+    test uploads keep the existing REST. The coordinator serializes use of `~/tmp-offload/rbook-mask/prepared.json`.
   - **To test a version at full rate:** write its number to `sched/REST` (the scheduler activates it between
     candidates and plans its gate on `refsets.json`), or with the scheduler stopped activate it and `plan` its tasks.
 - **live_sched.py** is the unattended live-gate scheduler (one at a time: `setsid nohup py tools/live_sched.py >> ~/tmp-offload/handoff/sched/sched.out 2>&1 < /dev/null &`).

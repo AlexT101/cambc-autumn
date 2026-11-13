@@ -9,7 +9,7 @@ Commands (run from repo root; replace WORK):
   py research/ideas-2026-11-13/rbook/loss_live.py --work WORK confirm
 
 prepare/reconcile/validate do not call the API or change scheduler state. upload invokes
-multi_test.sh ONCE (it uploads, activates and queues checks). An interrupted upload is
+live_test.sh ONCE (it uploads, makes the latest book REST and queues checks). An interrupted upload is
 never retried: reconcile history and queue; repair missing queue steps separately.
 promote writes REST after revalidation; reconcile checks the scheduler configuration.
 confirm reads platform live/selected versions before marking published. No polling
@@ -31,7 +31,7 @@ import oppwatch
 from refresh_build import ROOT, ls, sched, validate_stage
 from refresh_queue import write
 
-HELPER = Path('/home/ubuntu/tmp-offload/rbook-mask/multi_test.sh')
+HELPER = Path(__file__).with_name('live_test.sh')
 STATE = 'loss-live-state.json'
 
 
@@ -190,10 +190,10 @@ def upload(work,state):
     pins = a['build']['pins']
     note = f"Charybdis 525 + fuel 01-02 + Fish {pins['fish']}/Mite {pins['mite']} loss book ({len(a['entries'])})"
     ensure(len(note)<=80, 'Upload note too long')
-    state.update(phase='upload_attempt',at=ls.now(),note=note)
+    state.update(phase='upload_attempt',at=ls.now(),note=note,rest_on_upload=True)
     write(work/STATE,state)
     with (work/'loss-live-upload.log').open('w') as out:
-        result = subprocess.run(['bash',str(HELPER),state['bot'],note,'',str(work/'live-steps.json')],
+        result = subprocess.run(['bash',str(HELPER),state['bot'],note,'',str(work/'live-steps.json'),'--rest'],
                                 cwd=ROOT,stdout=out,stderr=subprocess.STDOUT,
                                 env=dict(os.environ,CAMBC_SLOT_WEIGHT='0.25'))
     state['helper_exit'] = result.returncode
@@ -267,6 +267,8 @@ def promote(work,state):
     if state['phase'] in ('promotion_requested','promotion_configured'):
         return reconcile(work,state)
     state = validate(work,state)
+    if state.get('rest_on_upload'):
+        return confirm(work,state)
     guards(work,state['expected_rest'])
     state.update(phase='promotion_requested',at=ls.now())
     write(work/STATE,state)
@@ -278,8 +280,8 @@ def promote(work,state):
 
 
 def confirm(work,state):
-    ensure(state['phase'] in ('promotion_requested','promotion_configured','published'),
-           'No promotion requested')
+    ensure(state['phase'] in ('promotion_requested','promotion_configured','published')
+           or (state['phase']=='validated' and state.get('rest_on_upload')), 'No promotion requested')
     state = reconcile(work,state)
     ensure(sched.load()['batches']['rest']==state['version'], 'Scheduler has not adopted REST yet')
     live,selected = ls.live_version()

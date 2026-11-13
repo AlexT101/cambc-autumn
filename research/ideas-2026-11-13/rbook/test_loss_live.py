@@ -114,6 +114,8 @@ class LossLiveTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError,'interrupted'): live.upload(work,state)
             saved=json.loads((work/live.STATE).read_text())
             self.assertEqual(saved['phase'],'upload_attempt')
+            self.assertTrue(saved['rest_on_upload'])
+            self.assertEqual(run.call_args.args[0][-1],'--rest')
             with self.assertRaisesRegex(RuntimeError,'already attempted'): live.upload(work,saved)
             self.assertEqual(run.call_count,1)
 
@@ -182,6 +184,13 @@ class LossLiveTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError,'activation pending'): live.confirm(Path(tmp),state)
             platform.return_value=(130,130)
             self.assertEqual(live.confirm(Path(tmp),state)['phase'],'published')
+
+    def test_latest_rest_does_not_imply_live_checks_passed(self):
+        state=dict(phase='waiting_for_live_checks',version=130,rest_on_upload=True)
+        with tempfile.TemporaryDirectory() as tmp,mock.patch.object(live.ls,'live_version') as platform:
+            with self.assertRaisesRegex(RuntimeError,'No promotion requested'):
+                live.confirm(Path(tmp),state)
+            platform.assert_not_called()
 
 
 if __name__=='__main__': unittest.main()
