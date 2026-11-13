@@ -1,3 +1,11 @@
+## 2026-11-13 17:01 UTC: user policy — REST is latest uploaded book
+
+Explicit user: "rest version should be latest book". This supersedes waiting for live qualification before ranked use. SetREST130, adoptedby scheduler17:00:23; platformselected130, activationpending17:00:59. Continue47livecheckswhilelatestbookrests. Recordactualqualificationresults honestly; do notmarkchecks passed merelybecausebookisREST. Onlaterlocallyverifiedbookuploads, moveRESTtolatestbookwhilecheckscontinue. Useracceptspartialcoverage. Firstbook164isv130 (alllocalchecks passed), separate receipt loss-v128/rest-user-request.json; loss-live-state retainsqualificationphase.
+
+v129first50Fishcomplete24wins vs29forunmaskedv128 onsame50cells. Schedulerdefaultcontrol118prints27baselinewins; reportrealstrengthagainst128explicitly, not118. Full680 remainsqueued. BookchecksinsertedbetweenfirstFish50andfirstMite50. Firstbookdriver uploadcompleted; nosecondsubmit. Scheduler4027905, runner3211816.
+
+OneworkerHilbert resumed(01a1d5a9-f826-7e32-9a88-be2271ac138c) preparing/building increment2 with13latecurrentRESTsourcewins; NEWwork loss-v128-r13-increment2, NEWbot samename. Parentretainsscheduler/APIownership. Workereditingloss_refresh.py/test_refresh.py fordistinct--bot-name; don'tstageuntilworkerready. Inc2 started16:56:20, preservingfirstwork/sourcehash. No129sources/newforeignunrankedextras inthisincrement. UserRESTlatestpolicysenttoworker.
+
 ## 2026-11-13 16:41 UTC: combined partial book passes exact replay
 
 After excluding the3conflicting forcedFish entries,164/164combinedbookentries reproduceexactly.103Fish+61Mite,29forcedkeys; bundle3296250bytes. Builder3528047 continuingfallback/fuel/forcechecks; do not upload untilready_for_live_checks. Fullr13v126sourcepass finished136hostlosscells:74wins62losses.13winningcells arrived afterfrozenfirstselection; saved loss-v128/late-source-wins.json fornextincrement.
