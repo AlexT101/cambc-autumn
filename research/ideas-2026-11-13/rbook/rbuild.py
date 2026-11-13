@@ -10,7 +10,8 @@ own puppet, and the bot holds them all (where two opponents pick alike on a cell
 
 Steps (each cached under --work by game key, so a rerun after new games only does the new ones):
   1. select: per (map, side), one winning game of ours (the shortest), from --versions against --opp/--refset;
-     cells the host's own live version (--host-version) won are left out: the host plays them the same way unaided.
+     cells the host's own live version (--host-version) won are left out: the host plays them the same way unaided
+     (with --host-repro, only those hostcheck.py found the host build replays exactly).
      --extra adds lines "REPLAY(.zip|.repl26a) OUR_SIDE KEY MAP" (e.g. other teams' wins).
   2. extract (extract.mjs): both teams' turns, picks, map id.
   3. record: build HOST-rec (our turns, record mode) and HOST-pup (the opponent's turns, puppet mode), play each game
@@ -65,9 +66,17 @@ def select(a, opp, refset, tag):
             host_won.add(cell)
         if g['version'] in versions and g['result'] == 'win' and g.get('replay') and (ROOT / g['replay']).exists():
             cells[cell].append(g)
+    repro = None
+    if getattr(a, 'host_repro', None):
+        repro = set()
+        for f in a.host_repro.split(','):
+            for l in Path(f).expanduser().read_text().splitlines():
+                p = l.split()
+                if len(p) >= 2 and (len(p) < 3 or p[2] == tag):
+                    repro.add((p[0], p[1]))
     chosen = []
     for cell, gs in sorted(cells.items()):
-        if cell in host_won:
+        if cell in host_won and (repro is None or cell in repro):
             continue
         g = min(gs, key=lambda x: (x['rounds'], -x['version']))
         chosen.append(dict(key=f"{g['map']}-{g['side']}-v{g['version']}-{g['match'][-12:]}", replay=str(ROOT / g['replay']), side=g['side'],
@@ -79,7 +88,8 @@ def select(a, opp, refset, tag):
                 if (mp, side) not in {(c['map'], c['side']) for c in chosen} and (mp, side) not in host_won:
                     v = re.match(r'^.+-[ab]-v(\d+)-', key)
                     chosen.append(dict(key=key, replay=rep, side=side, map=mp, version=int(v.group(1)) if v else None, rounds=None, opp=tag))
-    log(f'select {tag} {refset}: {len(chosen)} cells ({len(host_won)} left to the host: its own live wins)')
+    left = host_won if repro is None else host_won & repro
+    log(f'select {tag} {refset}: {len(chosen)} cells ({len(left)} of its {len(host_won)} live wins left to the host)')
     return chosen
 
 
@@ -267,6 +277,8 @@ def main():
     ap.add_argument('--versions', default='117,118,119')
     ap.add_argument('--host-version', type=int)
     ap.add_argument('--extra')
+    ap.add_argument('--host-repro', help="hostcheck.py's outputs (comma-separated, lines MAP SIDE OPP): of --host-version's live "
+                    "wins, only the cells the host build replays exactly are left to it; the others get entries")
     ap.add_argument('--work', default=str(Path.home() / 'tmp-offload/rbook/fish'))
     ap.add_argument('--jobs', type=int, default=32)
     ap.add_argument('--no-build', action='store_true')
