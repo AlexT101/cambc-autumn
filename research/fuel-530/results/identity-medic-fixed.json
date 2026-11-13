@@ -1,0 +1,18 @@
+[
+  {
+    "file": "replays/fuel/f530/np-combo2fix-id.json",
+    "identical": 52,
+    "games": 52,
+    "differ": [],
+    "turns": [
+      270410,
+      18502,
+      14484
+    ],
+    "saved_per_turn": [
+      61.685,
+      46.936,
+      45.882
+    ]
+  }
+]

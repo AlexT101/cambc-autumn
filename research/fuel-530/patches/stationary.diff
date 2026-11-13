@@ -1,0 +1,25 @@
+diff -ruN bots/variants/chy-530/src/combat/plan.cc bots/variants/f530-stationary/src/combat/plan.cc
+--- bots/variants/chy-530/src/combat/plan.cc	2026-11-13 17:35:32.292655743 +0000
++++ bots/variants/f530-stationary/src/combat/plan.cc	2026-11-13 17:44:10.406308451 +0000
+@@ -494,9 +494,13 @@
+         return plan_tables.land_from[c];
+     }
+ 
++    bool mobile() const { return moves && (can_walk || dash_ready || (vendetta && can_cast && dash >= 0)); }
++
+     // Tiles within r of the visible unit at p that see it. attack_viewers leaves out bushes beyond
+     // a step, but the start tile is exact: the unit is visible from there now.
+     Grid viewers(vec2 p, int r) const {
++        // The target is already visible here; a turn with no possible move needs no other viewers.
++        if (!mobile()) return dist(here, p) <= r ? gbit(cell(here)) : 0;
+         if (ward_sees(p)) return square(p, r);
+         static_assert(grid_n == 7 && view_n == 9);
+         auto w = viewer_window(p, r);
+@@ -978,6 +982,7 @@
+ }
+ 
+ void Search::read_geometry() {
++    if (!mobile()) return;
+     auto& t = search_scratch;
+     across = in_place_across(world.map());
+     const auto& terrain = terrain_grid(world.map(), here, across > 0 ? nullptr : &grid_box(here), t);

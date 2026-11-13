@@ -1,0 +1,625 @@
+[
+  {
+    "file": "replays/fuel/f530/base-dev.json",
+    "games": 1360,
+    "errors": [],
+    "handoff": 0,
+    "capped": 0,
+    "max_stdout": 1142894,
+    "censored": [
+      {
+        "key": "gen-classic-6149600101002-a",
+        "size": 1131434,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-classic-6149600101002-b",
+        "size": 1131062,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000019-a",
+        "size": 1131850,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000019-b",
+        "size": 1140217,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000034-a",
+        "size": 1142894,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000053-a",
+        "size": 1134077,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000053-b",
+        "size": 1136607,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder05-6149600018036-a",
+        "size": 1133523,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder05-6149600018036-b",
+        "size": 1130669,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-tiny-6149600111002-b",
+        "size": 1131482,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-tiny-6149600111003-a",
+        "size": 1136001,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-05waffle-6149600119020-a",
+        "size": 1132236,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-adgato-gemcombat5-6149600017014-a",
+        "size": 1127900,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-adgato-gemcombat5-6149600017014-b",
+        "size": 1133684,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-treasure-box-6149600117039-a",
+        "size": 1110840,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-treasure-box-6149600117039-b",
+        "size": 1102534,
+        "text_size": 1048576
+      }
+    ],
+    "missing": []
+  },
+  {
+    "file": "replays/fuel/f530/lazy-dev.json",
+    "games": 1360,
+    "errors": [],
+    "handoff": 0,
+    "capped": 0,
+    "max_stdout": 1136459,
+    "censored": [
+      {
+        "key": "gen-classic-6149600101002-b",
+        "size": 1136459,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000019-a",
+        "size": 1132247,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000019-b",
+        "size": 1135337,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000053-b",
+        "size": 1134985,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600100039-b",
+        "size": 1107571,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600100082-a",
+        "size": 1130504,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-tiny-6149600111002-a",
+        "size": 1133531,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-tiny-6149600111002-b",
+        "size": 1133386,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-treasure-box-6149600117039-a",
+        "size": 1101211,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-treasure-box-6149600117039-b",
+        "size": 1100297,
+        "text_size": 1048576
+      }
+    ],
+    "missing": []
+  },
+  {
+    "file": "replays/fuel/f530/contest-dev.json",
+    "games": 1360,
+    "errors": [],
+    "handoff": 0,
+    "capped": 0,
+    "max_stdout": 1140354,
+    "censored": [
+      {
+        "key": "gen-classic-6149600101002-a",
+        "size": 1131434,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-classic-6149600101002-b",
+        "size": 1130509,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-classic-6149600101006-b",
+        "size": 1128813,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-contested-centre-6149600010003-b",
+        "size": 1140354,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000019-b",
+        "size": 1134144,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000053-a",
+        "size": 1135605,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000053-b",
+        "size": 1136605,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder05-6149600018036-a",
+        "size": 1136419,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-tiny-6149600111002-b",
+        "size": 1131510,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-05harmonica-6149600119006-b",
+        "size": 1124573,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-adgato-gemcombat5-6149600017014-a",
+        "size": 1132291,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-braided-river-6149600017017-a",
+        "size": 1130239,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-collision-6149600117041-b",
+        "size": 1136314,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-honeycomb-6149600117030-b",
+        "size": 1131156,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-treasure-box-6149600117039-a",
+        "size": 1110849,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-treasure-box-6149600117039-b",
+        "size": 1102530,
+        "text_size": 1048576
+      }
+    ],
+    "missing": []
+  },
+  {
+    "file": "replays/fuel/f530/stationary-dev.json",
+    "games": 1360,
+    "errors": [],
+    "handoff": 0,
+    "capped": 0,
+    "max_stdout": 1140217,
+    "censored": [
+      {
+        "key": "gen-classic-6149600101002-a",
+        "size": 1131078,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-classic-6149600101006-a",
+        "size": 1126439,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000019-b",
+        "size": 1140217,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000053-b",
+        "size": 1132558,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600100098-b",
+        "size": 1139049,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder05-6149600018036-b",
+        "size": 1130717,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-tiny-6149600111003-a",
+        "size": 1136001,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-collision-6149600117041-a",
+        "size": 1133489,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-crater-6149600117018-b",
+        "size": 1126900,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-fan-6149600017052-b",
+        "size": 1130041,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-treasure-box-6149600117039-a",
+        "size": 1092211,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-treasure-box-6149600117039-b",
+        "size": 1096978,
+        "text_size": 1048576
+      }
+    ],
+    "missing": []
+  },
+  {
+    "file": "replays/fuel/f530/supportmask-dev.json",
+    "games": 1360,
+    "errors": [],
+    "handoff": 0,
+    "capped": 0,
+    "max_stdout": 1139601,
+    "censored": [
+      {
+        "key": "gen-classic-6149600001005-a",
+        "size": 1139601,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-classic-6149600101002-a",
+        "size": 1132468,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000019-a",
+        "size": 1138876,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000053-a",
+        "size": 1129785,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000053-b",
+        "size": 1129481,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600100104-b",
+        "size": 1134101,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-tiny-6149600011003-b",
+        "size": 1126775,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-tiny-6149600111002-b",
+        "size": 1132676,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-collision-6149600117041-a",
+        "size": 1126529,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-treasure-box-6149600117039-a",
+        "size": 1110840,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-treasure-box-6149600117039-b",
+        "size": 1102534,
+        "text_size": 1048576
+      }
+    ],
+    "missing": []
+  },
+  {
+    "file": "replays/fuel/f530/wardproof-dev.json",
+    "games": 1360,
+    "errors": [],
+    "handoff": 0,
+    "capped": 0,
+    "max_stdout": 1143314,
+    "censored": [
+      {
+        "key": "gen-ladder-6149600000034-a",
+        "size": 1143314,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000053-a",
+        "size": 1132794,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000053-b",
+        "size": 1133686,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600100082-b",
+        "size": 1132045,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder05-6149600018036-b",
+        "size": 1138301,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder05-6149600018038-b",
+        "size": 1133120,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-tiny-6149600111002-b",
+        "size": 1131482,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-05harmonica-6149600119006-b",
+        "size": 1130779,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-05waffle-6149600119020-a",
+        "size": 1129055,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-treasure-box-6149600117039-a",
+        "size": 1110840,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-treasure-box-6149600117039-b",
+        "size": 1108522,
+        "text_size": 1048576
+      }
+    ],
+    "missing": []
+  },
+  {
+    "file": "replays/fuel/f530/conteststamp-dev.json",
+    "games": 1360,
+    "errors": [],
+    "handoff": 0,
+    "capped": 0,
+    "max_stdout": 1140469,
+    "censored": [
+      {
+        "key": "gen-classic-6149600101002-a",
+        "size": 1131372,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-classic-6149600101002-b",
+        "size": 1129629,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-contested-centre-6149600010003-b",
+        "size": 1135991,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000019-a",
+        "size": 1131592,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000019-b",
+        "size": 1130521,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000053-b",
+        "size": 1136607,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000075-a",
+        "size": 1140469,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600100082-b",
+        "size": 1125862,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder05-6149600018023-b",
+        "size": 1135142,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder05-6149600018036-b",
+        "size": 1130669,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder05-6149600118049-b",
+        "size": 1130771,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-small-brawl-6149600102003-b",
+        "size": 1135855,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-tiny-6149600111002-b",
+        "size": 1131482,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-05harmonica-6149600119006-b",
+        "size": 1125893,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-05waffle-6149600119020-b",
+        "size": 1127327,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-treasure-box-6149600117039-a",
+        "size": 1110840,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-treasure-box-6149600117039-b",
+        "size": 1102534,
+        "text_size": 1048576
+      }
+    ],
+    "missing": []
+  },
+  {
+    "file": "replays/fuel/f530/supportbatch-dev.json",
+    "games": 1360,
+    "errors": [],
+    "handoff": 0,
+    "capped": 0,
+    "max_stdout": 1137588,
+    "censored": [
+      {
+        "key": "gen-classic-6149600001005-b",
+        "size": 1135110,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-classic-6149600001025-b",
+        "size": 1135687,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-classic-6149600101002-b",
+        "size": 1128553,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000019-a",
+        "size": 1127947,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000053-a",
+        "size": 1134649,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600000053-b",
+        "size": 1133409,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600100022-b",
+        "size": 1137588,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder-6149600100082-a",
+        "size": 1128618,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-ladder05-6149600018036-b",
+        "size": 1137278,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-tiny-6149600011003-a",
+        "size": 1132390,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-tiny-6149600111002-b",
+        "size": 1135440,
+        "text_size": 1048576
+      },
+      {
+        "key": "gen-tiny-6149600111003-b",
+        "size": 1134630,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-treasure-box-6149600117039-a",
+        "size": 1110840,
+        "text_size": 1048576
+      },
+      {
+        "key": "mut-treasure-box-6149600117039-b",
+        "size": 1102534,
+        "text_size": 1048576
+      }
+    ],
+    "missing": []
+  }
+]

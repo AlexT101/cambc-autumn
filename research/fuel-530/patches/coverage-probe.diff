@@ -1,0 +1,59 @@
+diff -ruN bots/variants/f530-cov-final/src/bot.cc bots/variants/f530-cov-probe/src/bot.cc
+--- bots/variants/f530-cov-final/src/bot.cc	2026-11-13 18:02:50.921499558 +0000
++++ bots/variants/f530-cov-probe/src/bot.cc	2026-11-13 18:24:39.132440662 +0000
+@@ -406,7 +406,7 @@
+     const bool no_other_ward = allied_near == 0 || (allied_near == 1 && in_bounds(memory.ward)
+         && dist(here, memory.ward) <= ward_range() && test(allied, memory.ward));
+     std::uint64_t* const previous = no_other_ward && map_width * map_height <= 10000 ? &no_ward[cell] : nullptr;
+-    if (previous && *previous == key) return false;
++    if (previous && *previous == key) { debug_block({ static bool once = false; if (!once) { once = true; std::printf("COV ward-proof-hit\n"); } }); return false; }
+     const int asked_site = site;
+     if (start) {
+         const vec2 drafted = site >= 0 ? map.drafted_ward(site) : vec2{-1, -1};
+@@ -502,6 +502,7 @@
+         if (try_ward(p, memory)) {
+             // The complete search's maximum cannot beat 1.25 times itself on a later visit.
+             if (!start && !cut && i == 0 && site == asked_site && previous) {
++                debug_block({ static bool once = false; if (!once) { once = true; std::printf("COV ward-proof-place\n"); } });
+                 *previous = (key & ~(std::uint64_t{65535} << 16))
+                     | (static_cast<std::uint64_t>(tile_index(memory.ward) + 1) << 16);
+             }
+diff -ruN bots/variants/f530-cov-final/src/combat/support.cc bots/variants/f530-cov-probe/src/combat/support.cc
+--- bots/variants/f530-cov-final/src/combat/support.cc	2026-11-13 18:18:29.604955951 +0000
++++ bots/variants/f530-cov-probe/src/combat/support.cc	2026-11-13 18:24:39.132202789 +0000
+@@ -39,6 +39,7 @@
+ // Camp exposure of the nine stations, with each nearby group read once.
+ unsigned camp_station_mask(const World& world, vec2 here) {
+     unsigned mask = 0;
++    debug_block({ static bool once = false; if (!once) { once = true; std::printf("COV camp-mask\n"); } });
+     for (const int g : world.map().groups_near(here, world.map().max_camp_reach + 1)) {
+         const auto& group = world.map().groups[g];
+         if (group.strength <= 0) continue;
+@@ -645,16 +646,18 @@
+         if (bound < 0) {
+             const auto* mate = support_endpoint(world, false);
+             bound = mate && mate != &self && mate_in_danger(world, *mate);
++            debug_block({ static bool once = false; if (!once) { once = true; std::printf("COV medic-bound\n"); } });
+         }
+         if (bound) break;
+         bool first = true;
+         for (const auto& o : world.allies) {
++            debug_block({ static bool once = false; if (!once && !o.is_self && o.alive && o.visible && !visible_record(o.handle)) { once = true; std::printf("COV medic-hidden-ally\n"); } });
+             if (o.is_self || !o.alive || !o.visible || o.facts().heals() || test(world.map().ally_spawn, o.pos) || lands_on(o.pos) > ability_cooldown
+                 || o.recall_kept)
+                 continue;
+             const float m = o.max_health - o.health;
+             const int od = dist(at, o.pos);
+-            if (m > missing || (m == missing && (od < d || (od == d && o.index < self.index)))) { first = false; break; }
++            if (m > missing || (m == missing && (od < d || (od == d && o.index < self.index)))) { debug_block({ static bool once = false; if (!once) { once = true; std::printf("COV medic-rank-stop\n"); } }); first = false; break; }
+         }
+         if (!first) continue;
+         const float line = recall_line(world, safety);
+@@ -664,6 +667,7 @@
+         const float gain = std::min(w.facts().abilities[slot].multiplier * focus, missing + fire * static_cast<float>(lands));
+         credit = std::max(credit, gain);
+     }
++    debug_block({ static bool once = false; if (!once && bound < 0) { once = true; std::printf("COV medic-unbound-skip\n"); } });
+     memo = {world.round, world.observations, here, health, max_health, credit};
+     return credit;
+ }

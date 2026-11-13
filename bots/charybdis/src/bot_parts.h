@@ -88,6 +88,9 @@ struct Station {
 };
 // Cached per origin and World::observations.
 struct Stations {
+    unsigned known = 0, camps_known = 0;
+    int camp_mask = -1;
+    bool enemies = false;
     std::array<Station, 9> tiles; // ours first
     bitboard guard;               // the stations an enemy is likely to hit
     vec2 origin{-1, -1};
@@ -558,6 +561,7 @@ bool fall_outweighs(const World& world, vec2 p);
 // The stand at group g's camp tile nearest us, every champion in sight within crew_enemy_radius of it
 // fighting: 0 with no enemy in sight that near, 1 won, 2 lost (or our fall there outweighs it, or no fuel to
 // read it). Once a turn.
+bool enemy_near_group(const World& world, int g);
 int group_contest(const World& world, Safety& safety, int g);
 // We or an ally in sight claiming g are at work on it (in reach of a live member, or within attack
 // range of a cleared group's tiles), or `claim` is g with an ally claiming it beside us.

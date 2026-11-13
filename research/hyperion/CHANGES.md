@@ -5052,3 +5052,26 @@ does not survive normal fuel; the commit keeps it as the base D was measured on.
 (`fgate.py`) or live; a fuel pass is planned first.
 
 Frozen as `variants/chy-530` (= bots/charybdis = `variants/ia-prism-3bf1525`).
+
+## 531: Reuse support and ward work, and avoid the medic's hidden-ally query (charybdis, 2026-11-13)
+
+One nearby-group pass prices the nine support stations' camp exposure; stations and heal views wait until
+needed, and a support tile that cannot win the ranking needs no safety query. The medic defers partner-danger
+work until a healer can reach it and stops once another ally wins the heal. Other allies' recall state is
+already known during our turn: use it instead of querying an ally movement may have hidden (error 97 used to
+abandon the remaining actions). Complete ward-search maxima prove no replacement can win on a revisit when
+no external allied ward intervenes. Contested farming first checks whether an enemy is near the group.
+
+Against frozen 530 on unused ladder-v4 seeds 61496020–61496049, 20,400 release games: exhausted turns
+**179,881 → 174,727 (-2.87%, map-paired 95% -4.57..-1.21)**, wins **50.40% (49.72–51.09)**. Debug confirmation,
+4,080 games: exhaustion **38,574 → 37,313 (-3.27%, -7.58..+1.37)**, shortcuts **2,536,911 → 2,475,566
+(-2.42%, -4.49..-0.39)**. Dropping stdout-capped maps leaves shortcuts **-2.32% (-4.20..-0.43)**. No failed
+games or broken/capped drafts. The 10% exhaustion target was not met; further cuts stopped paying.
+
+100M benches: **146/228 directly identical**; **228/228 identical** with the recall-query fix applied to the
+reference and next-turn preparation disabled in both diagnostic copies. Production retains preparation.
+This separates the intentional bug fix and established fuel-dependent preparation coupling from the exact
+calculation changes. All champions covered, Willow forced; conditional probes verify the affected branches.
+Details, intervals, rejected ideas and source hashes: [fuel-530](../fuel-530/README.md).
+
+Frozen as `variants/f530-final` (= bots/charybdis).

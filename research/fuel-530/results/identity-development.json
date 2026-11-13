@@ -1,0 +1,598 @@
+[
+  {
+    "file": "replays/fuel/f530/lazy-id.json",
+    "identical": 51,
+    "games": 52,
+    "differ": [
+      [
+        "00fragment",
+        "a"
+      ]
+    ],
+    "turns": [
+      267838,
+      18105,
+      14056
+    ],
+    "saved_per_turn": [
+      6.159,
+      12.81,
+      8.826
+    ]
+  },
+  {
+    "file": "replays/fuel/f530/contest-id.json",
+    "identical": 52,
+    "games": 52,
+    "differ": [],
+    "turns": [
+      273245,
+      18311,
+      14216
+    ],
+    "saved_per_turn": [
+      10.53,
+      40.452,
+      42.569
+    ]
+  },
+  {
+    "file": "replays/fuel/f530/stationary-id.json",
+    "identical": 51,
+    "games": 52,
+    "differ": [
+      [
+        "01hooks",
+        "a"
+      ]
+    ],
+    "turns": [
+      268052,
+      17952,
+      13959
+    ],
+    "saved_per_turn": [
+      3.041,
+      11.775,
+      12.95
+    ]
+  },
+  {
+    "file": "replays/fuel/f530/supportmask-id.json",
+    "identical": 49,
+    "games": 52,
+    "differ": [
+      [
+        "00fragment",
+        "a"
+      ],
+      [
+        "00swirl",
+        "a"
+      ],
+      [
+        "01boss-battle",
+        "a"
+      ]
+    ],
+    "turns": [
+      248611,
+      15420,
+      11832
+    ],
+    "saved_per_turn": [
+      109.029,
+      289.463,
+      311.731
+    ]
+  },
+  {
+    "file": "replays/fuel/f530/wardproof-id.json",
+    "identical": 52,
+    "games": 52,
+    "differ": [],
+    "turns": [
+      273245,
+      18311,
+      14216
+    ],
+    "saved_per_turn": [
+      21.413,
+      50.574,
+      59.113
+    ]
+  },
+  {
+    "file": "replays/fuel/f530/conteststamp-id.json",
+    "identical": 51,
+    "games": 52,
+    "differ": [
+      [
+        "00fragment",
+        "a"
+      ]
+    ],
+    "turns": [
+      267838,
+      18105,
+      14056
+    ],
+    "saved_per_turn": [
+      2.81,
+      16.223,
+      17.677
+    ]
+  },
+  {
+    "file": "replays/fuel/f530/rankorder-id.json",
+    "identical": 49,
+    "games": 52,
+    "differ": [
+      [
+        "00corners",
+        "b"
+      ],
+      [
+        "00pilgrimage",
+        "a"
+      ],
+      [
+        "01boss-battle",
+        "a"
+      ]
+    ],
+    "turns": [
+      249075,
+      14929,
+      11445
+    ],
+    "saved_per_turn": [
+      -498.344,
+      -1304.693,
+      -1379.085
+    ]
+  },
+  {
+    "file": "replays/fuel/f530/rankcheck-id.json",
+    "identical": 52,
+    "games": 52,
+    "differ": [],
+    "turns": [
+      273245,
+      18311,
+      14216
+    ],
+    "saved_per_turn": [
+      -129.615,
+      -331.137,
+      -346.061
+    ]
+  },
+  {
+    "file": "replays/fuel/f530/supportbatch-id.json",
+    "identical": 47,
+    "games": 52,
+    "differ": [
+      [
+        "00corners",
+        "b"
+      ],
+      [
+        "00interlock",
+        "a"
+      ],
+      [
+        "00fragment",
+        "a"
+      ],
+      [
+        "00swirl",
+        "a"
+      ],
+      [
+        "01boss-battle",
+        "a"
+      ]
+    ],
+    "turns": [
+      240754,
+      14663,
+      11211
+    ],
+    "saved_per_turn": [
+      162.207,
+      444.41,
+      479.662
+    ]
+  },
+  {
+    "file": "replays/fuel/f530/combo-id.json",
+    "identical": 46,
+    "games": 52,
+    "differ": [
+      [
+        "00corners",
+        "b"
+      ],
+      [
+        "00interlock",
+        "a"
+      ],
+      [
+        "00fragment",
+        "a"
+      ],
+      [
+        "00swirl",
+        "a"
+      ],
+      [
+        "00pilgrimage",
+        "b"
+      ],
+      [
+        "01boss-battle",
+        "a"
+      ]
+    ],
+    "turns": [
+      232512,
+      14263,
+      10899
+    ],
+    "saved_per_turn": [
+      189.957,
+      514.525,
+      554.862
+    ]
+  },
+  {
+    "file": "replays/fuel/f530/combo2-id.json",
+    "identical": 42,
+    "games": 52,
+    "differ": [
+      [
+        "00corners",
+        "b"
+      ],
+      [
+        "00contest",
+        "b"
+      ],
+      [
+        "00interlock",
+        "a"
+      ],
+      [
+        "00fragment",
+        "a"
+      ],
+      [
+        "00swirl",
+        "a"
+      ],
+      [
+        "00pilgrimage",
+        "a"
+      ],
+      [
+        "00pilgrimage",
+        "b"
+      ],
+      [
+        "00monolith",
+        "a"
+      ],
+      [
+        "01boss-battle",
+        "a"
+      ],
+      [
+        "gen-chambers-102206117",
+        "a"
+      ]
+    ],
+    "turns": [
+      205429,
+      11788,
+      8955
+    ],
+    "saved_per_turn": [
+      240.473,
+      509.234,
+      545.367
+    ]
+  },
+  {
+    "file": "replays/fuel/f530/combo3-id.json",
+    "identical": 35,
+    "games": 52,
+    "differ": [
+      [
+        "00ambush",
+        "a"
+      ],
+      [
+        "00lanes",
+        "b"
+      ],
+      [
+        "01hooks",
+        "a"
+      ],
+      [
+        "00corners",
+        "b"
+      ],
+      [
+        "00contest",
+        "a"
+      ],
+      [
+        "00contest",
+        "b"
+      ],
+      [
+        "00interlock",
+        "a"
+      ],
+      [
+        "00fragment",
+        "a"
+      ],
+      [
+        "00swirl",
+        "a"
+      ],
+      [
+        "00swirl",
+        "b"
+      ],
+      [
+        "00pilgrimage",
+        "a"
+      ],
+      [
+        "00pilgrimage",
+        "b"
+      ],
+      [
+        "00monolith",
+        "a"
+      ],
+      [
+        "01boss-battle",
+        "a"
+      ],
+      [
+        "01boss-battle",
+        "b"
+      ],
+      [
+        "gen-dense-camps-102108100",
+        "a"
+      ],
+      [
+        "gen-chambers-102206117",
+        "a"
+      ]
+    ],
+    "turns": [
+      152579,
+      7172,
+      5391
+    ],
+    "saved_per_turn": [
+      231.986,
+      578.584,
+      627.068
+    ]
+  },
+  {
+    "file": "replays/fuel/f530/combo4-id.json",
+    "identical": 35,
+    "games": 52,
+    "differ": [
+      [
+        "00ambush",
+        "a"
+      ],
+      [
+        "00lanes",
+        "b"
+      ],
+      [
+        "01hooks",
+        "a"
+      ],
+      [
+        "00corners",
+        "b"
+      ],
+      [
+        "00contest",
+        "a"
+      ],
+      [
+        "00contest",
+        "b"
+      ],
+      [
+        "00interlock",
+        "a"
+      ],
+      [
+        "00fragment",
+        "a"
+      ],
+      [
+        "00swirl",
+        "a"
+      ],
+      [
+        "00swirl",
+        "b"
+      ],
+      [
+        "00pilgrimage",
+        "a"
+      ],
+      [
+        "00pilgrimage",
+        "b"
+      ],
+      [
+        "00monolith",
+        "a"
+      ],
+      [
+        "01boss-battle",
+        "a"
+      ],
+      [
+        "01boss-battle",
+        "b"
+      ],
+      [
+        "gen-dense-camps-102108100",
+        "a"
+      ],
+      [
+        "gen-chambers-102206117",
+        "a"
+      ]
+    ],
+    "turns": [
+      152579,
+      7172,
+      5391
+    ],
+    "saved_per_turn": [
+      249.13,
+      657.096,
+      722.841
+    ]
+  },
+  {
+    "file": "replays/fuel/f530/exitwalk-id.json",
+    "identical": 46,
+    "games": 52,
+    "differ": [
+      [
+        "00corners",
+        "b"
+      ],
+      [
+        "00interlock",
+        "a"
+      ],
+      [
+        "00fragment",
+        "a"
+      ],
+      [
+        "00swirl",
+        "a"
+      ],
+      [
+        "00pilgrimage",
+        "b"
+      ],
+      [
+        "01boss-battle",
+        "a"
+      ]
+    ],
+    "turns": [
+      232512,
+      14263,
+      10899
+    ],
+    "saved_per_turn": [
+      190.031,
+      514.537,
+      554.858
+    ]
+  },
+  {
+    "file": "replays/fuel/f530/medicfix-id.json",
+    "identical": 36,
+    "games": 52,
+    "differ": [
+      [
+        "00ambush",
+        "a"
+      ],
+      [
+        "00lanes",
+        "b"
+      ],
+      [
+        "00corners",
+        "b"
+      ],
+      [
+        "00contest",
+        "a"
+      ],
+      [
+        "00contest",
+        "b"
+      ],
+      [
+        "00interlock",
+        "a"
+      ],
+      [
+        "00fragment",
+        "a"
+      ],
+      [
+        "00swirl",
+        "a"
+      ],
+      [
+        "00swirl",
+        "b"
+      ],
+      [
+        "00pilgrimage",
+        "a"
+      ],
+      [
+        "00pilgrimage",
+        "b"
+      ],
+      [
+        "00monolith",
+        "a"
+      ],
+      [
+        "01boss-battle",
+        "a"
+      ],
+      [
+        "01boss-battle",
+        "b"
+      ],
+      [
+        "gen-city-102106900",
+        "a"
+      ],
+      [
+        "gen-chambers-102206117",
+        "a"
+      ]
+    ],
+    "turns": [
+      162190,
+      8030,
+      6021
+    ],
+    "saved_per_turn": [
+      240.633,
+      542.292,
+      584.865
+    ]
+  }
+]

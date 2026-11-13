@@ -1,0 +1,34 @@
+diff -ruN '--exclude=.cambc' '--exclude=build' '--exclude=bot.wasm' bots/variants/chy-530/src/bot.cc bots/variants/f530-wardproof/src/bot.cc
+--- bots/variants/chy-530/src/bot.cc	2026-11-13 17:35:32.292026275 +0000
++++ bots/variants/f530-wardproof/src/bot.cc	2026-11-13 17:53:11.584423325 +0000
+@@ -397,13 +397,15 @@
+         int site = -2, allied = -1;
+     } looked;
+     if (looked.here == here && looked.ward == memory.ward && looked.site == site && looked.allied == allied_near) return false;
+-    static std::uint64_t no_ward[128];
++    static std::uint64_t no_ward[10000];
+     const int cell = tile_index(here);
+     const std::uint64_t key = (static_cast<std::uint64_t>(site + 2) << 32)
+         | (static_cast<std::uint64_t>(in_bounds(memory.ward) ? tile_index(memory.ward) + 1 : 0) << 16)
+         | static_cast<unsigned>(cell + 1);
+-    std::uint64_t* const previous = allied_near == 0 && map_width * map_height <= 10000
+-        ? &no_ward[cell % 128] : nullptr;
++    // Our own ward cannot beat its replacement margin, so excluding it loses no candidate.
++    const bool no_other_ward = allied_near == 0 || (allied_near == 1 && in_bounds(memory.ward)
++        && dist(here, memory.ward) <= ward_range() && test(allied, memory.ward));
++    std::uint64_t* const previous = no_other_ward && map_width * map_height <= 10000 ? &no_ward[cell] : nullptr;
+     if (previous && *previous == key) return false;
+     const int asked_site = site;
+     if (start) {
+@@ -498,6 +500,11 @@
+         const auto [value, p] = order[static_cast<std::size_t>(best)];
+         order[static_cast<std::size_t>(best)].first = -1;
+         if (try_ward(p, memory)) {
++            // The complete search's maximum cannot beat 1.25 times itself on a later visit.
++            if (!start && !cut && i == 0 && site == asked_site && previous) {
++                *previous = (key & ~(std::uint64_t{65535} << 16))
++                    | (static_cast<std::uint64_t>(tile_index(memory.ward) + 1) << 16);
++            }
+             warded_round = world.round;
+             debug_block({ std::printf("WARD %d %u %d %d %d %d\n", world.round, my_handle(), p.x, p.y, value, old); });
+             return true;

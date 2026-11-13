@@ -1,0 +1,83 @@
+[
+  {
+    "file": "replays/fuel/f530/medicfix-id.json",
+    "identical": 36,
+    "games": 52,
+    "differ": [
+      [
+        "00ambush",
+        "a"
+      ],
+      [
+        "00lanes",
+        "b"
+      ],
+      [
+        "00corners",
+        "b"
+      ],
+      [
+        "00contest",
+        "a"
+      ],
+      [
+        "00contest",
+        "b"
+      ],
+      [
+        "00interlock",
+        "a"
+      ],
+      [
+        "00fragment",
+        "a"
+      ],
+      [
+        "00swirl",
+        "a"
+      ],
+      [
+        "00swirl",
+        "b"
+      ],
+      [
+        "00pilgrimage",
+        "a"
+      ],
+      [
+        "00pilgrimage",
+        "b"
+      ],
+      [
+        "00monolith",
+        "a"
+      ],
+      [
+        "01boss-battle",
+        "a"
+      ],
+      [
+        "01boss-battle",
+        "b"
+      ],
+      [
+        "gen-city-102106900",
+        "a"
+      ],
+      [
+        "gen-chambers-102206117",
+        "a"
+      ]
+    ],
+    "turns": [
+      162190,
+      8030,
+      6021
+    ],
+    "saved_per_turn": [
+      240.633,
+      542.292,
+      584.865
+    ]
+  }
+]

@@ -1,0 +1,18 @@
+[
+  {
+    "file": "replays/fuel/f530/np-medicfix-cov.json",
+    "identical": 176,
+    "games": 176,
+    "differ": [],
+    "turns": [
+      777658,
+      32203,
+      23912
+    ],
+    "saved_per_turn": [
+      178.368,
+      388.302,
+      378.64
+    ]
+  }
+]

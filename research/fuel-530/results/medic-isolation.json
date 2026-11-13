@@ -1,0 +1,39 @@
+[
+  {
+    "file": "replays/fuel/f530/np-mediccredit-id.json",
+    "identical": 47,
+    "games": 52,
+    "differ": [
+      [
+        "00lanes",
+        "a"
+      ],
+      [
+        "00contest",
+        "b"
+      ],
+      [
+        "00swirl",
+        "b"
+      ],
+      [
+        "00monolith",
+        "a"
+      ],
+      [
+        "01boss-battle",
+        "a"
+      ]
+    ],
+    "turns": [
+      240883,
+      14437,
+      11055
+    ],
+    "saved_per_turn": [
+      234.323,
+      553.523,
+      582.129
+    ]
+  }
+]

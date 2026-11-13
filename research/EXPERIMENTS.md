@@ -14,6 +14,19 @@ idea as is: it needs a new mechanism or ladder evidence. Results on older bots a
 
 Unmasked v129 (`bbc7cddb6`, Charybdis 529) versus book-free v128 (525 + fuel 01-02), **all 170 ladder maps, both sides, Fish r8 and Mite r13: 680 unique cells**. Exact opponent source groups match between versions. Fish **194/340 vs 197/340** (-3; paired flips 56 for / 59 against); Mite **226/340 vs 204/340** (+22;65 for / 43 against). Total **420/680 (61.8%) vs 401/680 (59.0%)**, +19 wins / +2.8 points. The gain is concentrated against this Mite pin; Fish is essentially level. These completed outcomes supersede early partial reads. Uploaded candidate source was verified byte-identical to the frozen commit, with own drafts and no book masking. [Per-cell evidence and protocol](ideas-2026-11-13/chy529-live/README.md). Full replay collection continues separately.
 
+## (charybdis 531, 2026-11-13) Fuel pass on 530 (Codex): -2.87% exhausted turns, target of 10% not met
+
+Worked alone in `wt/fuel-530` (Codex, gpt-6-astra), 15 development variants on 1,360 games, confirmed on unused
+ladder-v4 seeds 61496020-61496049. Kept (CHANGES 531): one camp-exposure pass for the nine support stations,
+deferred support and medic queries, ward-search maxima that rule out a winning replacement on a revisit, an enemy
+precheck before the contested-group query, and the medic's use of the already-read ally recall state (a live query
+of an ally that movement hid threw error 97 and abandoned the turn). Release: exhausted turns **-2.87%
+(-4.57..-1.21)** of 20,400 games, wins 50.40 (49.72-51.09). Identity 146/228 direct, 228/228 with the recall fix in
+the reference and next-turn preparation off in both. Rejected (all in [fuel-530](fuel-530/README.md)): lazy unseen
+fields, stationary strike geometry and rank caches (OOF intervals spanning zero, ~0.01% identical-game savings),
+retreat-path memoization (0.08 fuel a turn, none on heavy turns, adds initialization). Census: 42% of first OOF
+episodes start in the goal branch, 12% in retreat; no dominant new 530 check.
+
 ## (charybdis 530, 2026-11-13) Macro round mx: six independent orchestrators, one gain (IAPETUS's stop-due)
 
 Six orchestrators (TETHYS, RHEA, PHOEBE, THEIA, CRIUS, IAPETUS) each owned a macro refactor of 529 in their own

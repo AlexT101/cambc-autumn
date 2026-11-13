@@ -1,0 +1,6 @@
+{
+  "bench_game_directories_removed": 8512,
+  "release_replay_files_removed": 1000,
+  "release_batch": "/home/ubuntu/wt/fuel-530/replays/batch-20261113-182212-ab-f530-final-f530-final",
+  "kept": "bench JSON, logs, manifests, release results.json and committed paired counts"
+}

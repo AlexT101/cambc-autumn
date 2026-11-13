@@ -2433,7 +2433,7 @@ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm
                 || (b.state == CampState::cleared && (ally_holding(c) || b.holder == team::enemy || left_for_prism(world, pathing, c)))
                 || (b.state != CampState::cleared && kited_of(c) && kite_owns(world, c)) || siege_declines(world, c))
                 return false;
-            return team_invested(world, c, contest_claim) && group_contest(world, safety, c) == 1;
+            return enemy_near_group(world, c) && team_invested(world, c, contest_claim) && group_contest(world, safety, c) == 1;
         };
         if (commits()) {
             const int s = steps_data[c];

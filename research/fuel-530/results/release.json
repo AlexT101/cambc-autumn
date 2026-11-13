@@ -1,0 +1,33 @@
+{
+  "games": 20400,
+  "maps": 10200,
+  "baseline_oof": 179881,
+  "candidate_oof": 174727,
+  "win_pct": 50.4,
+  "win_ci95": [
+    49.72,
+    51.09
+  ],
+  "errors": 0,
+  "early_losses": {
+    "cand": 0,
+    "ref": 0
+  },
+  "handoff_failures": {
+    "cand": 0,
+    "ref": 0
+  },
+  "capped_drafts": {
+    "cand": 0,
+    "ref": 0
+  },
+  "change_pct": {
+    "oof": {
+      "estimate": -2.865227567113815,
+      "ci95": [
+        -4.569821310390465,
+        -1.2073005783242552
+      ]
+    }
+  }
+}

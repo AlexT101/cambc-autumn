@@ -1,0 +1,123 @@
+games 52; OOF-first 491, OOF-late 150, heavy-fine 9079
+
+== OOF-first (491)
+  bucket: 300+ 241 (49%), 61-300 175 (36%), 11-60 68 (14%), 2-10 7 (1%)
+  type: prism 94 (19%), willow 89 (18%), vesper_vale 80 (16%), issac 63 (13%), cassi 58 (12%), ryth 42 (9%), heart_of_ruin 20 (4%), ren 18 (4%), vendetta 14 (3%), varg 10 (2%), tavi 3 (1%)
+  map class: chambers 230 (47%), 00corners 48 (10%), 00pilgrimage 27 (5%), 00contest 26 (5%), 00swirl 26 (5%), huge-shared 26 (5%), 00lanes 23 (5%), 01boss-battle 22 (4%), dense-camps 18 (4%), 01hooks 13 (3%), 00ambush 12 (2%), hourglass 8 (2%)
+  visible enemies: 0 92 (19%), 3 87 (18%), 4 84 (17%), 5 66 (13%), 2 64 (13%), 1 61 (12%), 6 37 (8%)
+  enemies within 6: 0 179 (36%), 1 96 (20%), 2 67 (14%), 3 62 (13%), 4 46 (9%), 5 35 (7%), 6 6 (1%)
+  branch (D line; ? = abandoned): ? 459 (93%), F 19 (4%), R 4 (1%), h 2 (0%), A 2 (0%), B 2 (0%), X 1 (0%), U 1 (0%), C 1 (0%)
+
+== OOF-late (150)
+  bucket: 300+ 52 (35%), 61-300 49 (33%), 11-60 44 (29%), 1 5 (3%)
+  type: prism 31 (21%), willow 29 (19%), issac 27 (18%), vesper_vale 20 (13%), ryth 15 (10%), cassi 12 (8%), ren 6 (4%), varg 5 (3%), heart_of_ruin 4 (3%), vendetta 1 (1%)
+  map class: chambers 89 (59%), 00corners 16 (11%), dense-camps 9 (6%), huge-shared 9 (6%), 00lanes 7 (5%), 00pilgrimage 5 (3%), 00swirl 4 (3%), 01boss-battle 3 (2%), 00ambush 2 (1%), 01hooks 2 (1%), open-field 2 (1%), city 1 (1%)
+  visible enemies: 0 27 (18%), 1 27 (18%), 4 26 (17%), 5 24 (16%), 6 20 (13%), 3 14 (9%), 2 12 (8%)
+  enemies within 6: 0 60 (40%), 4 20 (13%), 3 19 (13%), 2 18 (12%), 1 15 (10%), 5 14 (9%), 6 4 (3%)
+  branch (D line; ? = abandoned): F 96 (64%), R 24 (16%), h 8 (5%), B 4 (3%), C 4 (3%), U 4 (3%), - 3 (2%), X 2 (1%), A 2 (1%), k 1 (1%), G 1 (1%), W 1 (1%)
+
+== heavy-fine (9079)
+  bucket: 61-300 4726 (52%), 11-60 3105 (34%), 2-10 788 (9%), 300+ 460 (5%)
+  type: cassi 1856 (20%), issac 1644 (18%), prism 1169 (13%), willow 1111 (12%), vesper_vale 1107 (12%), ryth 571 (6%), vendetta 528 (6%), heart_of_ruin 371 (4%), varg 287 (3%), tavi 243 (3%), ren 80 (1%), stellar 75 (1%), marcella 37 (0%)
+  map class: chambers 826 (9%), hourglass 719 (8%), 01boss-battle 510 (6%), 00ambush 442 (5%), 00pilgrimage 425 (5%), 00lanes 423 (5%), 00corners 416 (5%), labyrinth 410 (5%), 00contest 406 (4%), open-field 395 (4%), dense-camps 363 (4%), 00expanse 356 (4%)
+  visible enemies: 0 6212 (68%), 1 837 (9%), 3 654 (7%), 2 632 (7%), 4 479 (5%), 5 211 (2%), 6 54 (1%)
+  enemies within 6: 0 7020 (77%), 1 811 (9%), 2 531 (6%), 3 443 (5%), 4 206 (2%), 5 63 (1%), 6 5 (0%)
+  branch (D line; ? = abandoned): F 7625 (84%), R 731 (8%), C 265 (3%), h 206 (2%), B 112 (1%), P 44 (0%), X 38 (0%), G 20 (0%), K 9 (0%), H 7 (0%), U 6 (0%), A 5 (0%), W 5 (0%), - 3 (0%), k 3 (0%)
+
+== Component inclusive fuel: share of turns with it (>=1k), mean and median where present, mean over all
+  component                                OOF-first                          OOF-late                        heavy-fine
+  world              100%    13906    13927    13906   100%    17526    15498    17526   100%     9151     8222     9150
+  update             100%    13758    13780    13758   100%    15216    15268    15216   100%     9005     8077     9005
+  observe              5%     2440     2322      129     1%     1646     1646       22    80%     1593     1414     1278
+  track               15%     2996     2079      458    15%     2761     1865      423    11%     3500     3012      377
+  comms receive        2%     1117     1120       23     5%     1576     1807       84     2%     1090     1079       21
+  safety_ctor          0%        0        0        0     0%        0        0        0     0%        0        0        0
+  approach_walk        0%        0        0        0     0%        0        0        0     0%        0        0        0
+  channels             0%        0        0        0     0%        0        0        0     0%        0        0        0
+  ward_planned         0%        0        0        0     0%        0        0        0     0%        0        0        0
+  want_home           94%    22944    18580    21589    95%    22830    18617    21765    62%     9072     4373     5667
+  support_work         1%     1604     1383       13     1%     2941     2941       39     0%     2498     2270        1
+  local_support       24%    12333     6768     2989    33%    14339     8395     4780    15%     7120     4304     1049
+  retreat             15%    38531    35034     5964    15%    30809    27149     4519     8%    29471    30258     2373
+  guard_steps          0%        0        0        0     0%        0        0        0     0%        0        0        0
+  captures             0%        0        0        0     0%        0        0        0     0%        0        0        0
+  holding              0%        0        0        0     0%        0        0        0     0%        0        0        0
+  strike_search        0%        0        0        0     0%        0        0        0     0%        0        0        0
+  post_search          1%     1883     2127       23     1%     2396     2396       16     0%     1640     1471        5
+  guard_steps2         0%        0        0        0     0%        0        0        0     0%        0        0        0
+  hold_capture         0%        0        0        0     0%        0        0        0     0%     2555     1344        5
+  carry_bag            0%        0        0        0     0%        0        0        0     0%        0        0        0
+  goal                58%    42652    48762    24844    49%    48590    55744    23971    89%    44989    46575    40167
+  chase                0%        0        0        0     0%        0        0        0     0%        0        0        0
+  siege_kite           0%        0        0        0     0%        0        0        0     0%        0        0        0
+  farm                 0%        0        0        0     0%        0        0        0     0%        0        0        0
+  see_revealed         0%        0        0        0     0%        0        0        0     0%        0        0        0
+  strike_after         0%        0        0        0     0%        0        0        0     0%        0        0        0
+  act_end              0%        0        0        0     0%        0        0        0     0%        0        0        0
+  turn_order           0%        0        0        0     0%        0        0        0     0%        0        0        0
+  publish_order        0%        0        0        0     0%        0        0        0     0%        0        0        0
+  turn end             0%        0        0        0     0%        0        0        0     0%        0        0        0
+  comms send           0%        0        0        0     0%        0        0        0    87%     2009     1868     1746
+  queue                0%    16579    16579       34     0%        0        0        0    52%     8697     7116     4554
+  field                5%     9103     4982      445     4%     4987     2636      199    13%     8349     6311     1089
+  route                8%     7023     2241      558     5%     9269     4639      433    53%     3050     2024     1614
+  safety              24%     2644     2324      636    17%     2245     1797      374     9%     1977     1647      179
+  attack_tiles         0%        0        0        0     0%        0        0        0     0%     2255     1428        4
+  approach            11%     3483     2648      397    39%     2457     2695      966    26%     2726     2159      704
+  farm.loop           30%    33933    33184    10090    30%    37504    35897    11251    74%    24812    23954    18357
+  farm.post           31%    11622     9167     3645    26%    14793    13594     3846    75%    11465    10416     8626
+  s.stand              0%        0        0        0     0%        0        0        0     0%        0        0        0
+  s.fight_of          34%    14960    12973     5149    37%    14961    14405     5585    12%     9881     9252     1142
+  s.lethal            29%     3099     1746      909    31%     2305     1570      722     4%     2373     1399      101
+  s.bound              0%        0        0        0     0%        0        0        0     0%     2518     2518        1
+  wh.outmatched        0%        0        0        0     0%        0        0        0     0%        0        0        0
+  wh.camp_trapped     59%     6867     5356     4084    81%     7270     5885     5865    33%     2752     1946      900
+  read_vision          0%        0        0        0     0%        0        0        0     0%     1077     1077        0
+  rank_turns          70%     1353     1344      945    69%     1356     1344      931    20%     1310     1344      265
+  priorities          41%     1079     1064      437    45%     1097     1092      490     5%     1068     1054       52
+  champion            95%     2020     2071     1921    97%     2150     2267     2093    97%     1889     1937     1837
+  champion_enemy      86%     3088     2582     2642    89%     3017     2676     2675    88%     2562     1224     2263
+  camps               96%     5759     6298     5525    96%     6957     7478     6679    80%     3603     2853     2900
+  altars               3%     1195     1180       34     1%     1172     1172       16     4%     1141     1157       50
+  scores               0%        0        0        0     0%        0        0        0     0%        0        0        0
+  static_camps         0%        0        0        0     3%    10778    10870      359     0%        0        0        0
+  init_beliefs         0%        0        0        0     3%     9075     9234      302     0%        0        0        0
+  build_static         0%        0        0        0     3%    33534    36154     1118     0%        0        0        0
+  warm_up              0%        0        0        0     0%        0        0        0    31%     8079     7021     2476
+
+== OOF-first: where fuel ran out
+  innermost scope: farm.post 103 (21%), act 66 (13%), plan_strikes 59 (12%), goal 57 (12%), retreat 56 (11%), decide 43 (9%), farm.loop 29 (6%), simulate 13 (3%), publish_order 8 (2%), route 8 (2%), turn 6 (1%), group_contest 6 (1%), Search::read 6 (1%), post_search 5 (1%), team_invested 5 (1%), Safety::find_members 3 (1%), local_support 3 (1%), wh.camp_trapped 2 (0%), Search::read_spells 2 (0%), group_hops 1 (0%)
+  decide-level scope: goal 207 (42%), act 66 (13%), retreat 61 (12%), plan_strikes 59 (12%), decide 43 (9%), want_home 15 (3%), publish_order 8 (2%), turn 6 (1%), Search::read 6 (1%), post_search 5 (1%), Safety::find_members 3 (1%), local_support 3 (1%), Search::read_spells 2 (0%), queue 1 (0%), Search::read_mates 1 (0%), Safety::strike_foe 1 (0%), intercept_steps 1 (0%), champion_enemy 1 (0%), guard_steps2 1 (0%), Search::read_camps 1 (0%)
+  innermost scope (OOF-late): farm.post 30 (20%), plan_strikes 27 (18%), act 19 (13%), retreat 15 (10%), goal 14 (9%), farm.loop 13 (9%), decide 7 (5%), local_support 5 (3%), group_contest 4 (3%), simulate 2 (1%), Search::read_spells 2 (1%), Search::read_geometry 1 (1%)
+
+== OOF turns (first+late): heavy components (>= 15k inclusive) present, as a signature
+  signature: want_home 143 (22%), (none >=15k) 141 (22%), world 106 (17%), world+want_home 99 (15%), world+want_home+retreat 45 (7%), want_home+retreat 32 (5%), world+local_support 23 (4%), want_home+local_support 16 (2%), world+want_home+local_support 11 (2%), retreat 10 (2%), local_support 10 (2%), world+retreat 4 (1%), retreat+local_support 1 (0%)
+  signature heavy-fine: (none >=15k) 7013 (77%), want_home 646 (7%), world 409 (5%), want_home+retreat 355 (4%), retreat 206 (2%), world+want_home 179 (2%), local_support 102 (1%), world+want_home+retreat 53 (1%), want_home+local_support 41 (0%), world+local_support 37 (0%), world+retreat 27 (0%), world+want_home+local_support 10 (0%), want_home+retreat+local_support 1 (0%)
+
+== Self fuel summed over OOF turns (first+late), top labels
+  act 12%, farm.loop 10%, goal 10%, plan_strikes 8%, simulate 5%, retreat 5%, camp 4%, Safety::find_members 4%, Safety::strike_foe 3%, local_support 3%, farm.post 3%, champion_enemy 2%, Safety::stand_reach 2%, champion 2%, s.fight_of 2%, Search::read 2%, outmatched 1%, camps 1%, stand_lost_at 1%, decide 1%, rank_turns 1%, Safety::stand_trade 1%, wh.camp_trapped 1%, s.lethal 1%, update 1%
+
+== By champion type, OOF turns: mean inclusive of key components
+  type              n        world comms receiv     channels    want_home      retreat strike_searc strike_after         farm   turn_order
+  prism           125        13725           42            0        18091         3376            0            0            0            0
+  willow          118        14407           40            0        16184          935            0            0            0            0
+  vesper_vale     100        13431           23            0        28450         7324            0            0            0            0
+  issac            90        19209          106            0        25653        11187            0            0            0            0
+  cassi            70        15327            0            0        19819         4975            0            0            0            0
+  ryth             57        15723            0            0        25707         4234            0            0            0            0
+  heart_of_ruin    24        11133            0            0        17562         5938            0            0            0            0
+  ren              24        12638           42            0        30658        22936            0            0            0            0
+  vendetta         15        15640           68            0        14495            0            0            0            0            0
+  varg             15        10417            0            0        16445         3460            0            0            0            0
+  tavi              3        12818            0            0        22029            0            0            0            0            0
+
+== SRCH lines on OOF turns: 149
+  fuel: mean 27055 median 26851 max 62760
+  read: mean 10215 median 7988 max 35546
+  grow: mean 8763 median 6018 max 39859
+  price: mean 13157 median 8780 max 55477
+  act: mean 608 median 460 max 3920
+  tiles: mean 6 median 6 max 19
+  priced: mean 3 median 1 max 10
+  nodes: mean 7 median 5 max 24
+  foes: mean 3 median 2 max 6

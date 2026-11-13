@@ -1,0 +1,14 @@
+skipped in bot.cc: if (!world.is_stale()) see_stuns(world, safety);
+skipped in bot.cc: if (const int g = walk_target(world, pathing, memory); g >= 0) pathing.approach(g, walk_ra
+skipped in bot.cc: if (world.me().alive && see_revealed(world, pathing, safety)) search.chose = false;
+skipped in bot.cc: const bool leave = !mend && (home ? *home : want_home(world, pathing, safety, memory));
+skipped in bot.cc: if (leave) {
+skipped in bot.cc: if (my_can_move() || my_can_cast()) guard_work(world, pathing, safety, memory.damage);
+skipped in bot.cc: if (chase(world, pathing, safety)) return;
+skipped in bot.cc: if ((world.map().shared_gems && kite(world, pathing, memory)) || siege(world, pathing, saf
+skipped in bot.cc: if (state.contains(cambc::champion_state::submitting_gems) && continue_tribute(world, path
+skipped in bot.cc: if (place_ward(world, memory, false)) {
+skipped in bot.cc: if (const auto* ender = game_ender(world)) {
+skipped in model/safety.cc: Trade Safety::stand(vec2 p, int approach, bool falls, bool unseen, int joined) {
+skipped in combat/fight.cc: bool outmatched(const World& world, Safety& safety, vec2 p, int rounds) {
+ok

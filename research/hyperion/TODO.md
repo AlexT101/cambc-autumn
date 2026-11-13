@@ -64,6 +64,10 @@ one more such hit.
 
 ## Charybdis fuel in fights (2026-11-12)
 
+- Done (2026-11-13, CHANGES 531): the pass from 530 confirms **2.87% fewer release exhausted turns**
+  and **2.32% fewer uncensored debug shortcuts**. The requested additional 10% was not met; further variants
+  stopped paying. [Fuel 530](../fuel-530/README.md) records the 15 screens, identity diagnosis and fresh tests.
+
 On 520 the Prism's own fuel no longer pays; the team's +1.5 at 200k is spread over out-of-fuel turns, gates and the
 opening, none of them a lever alone ([fightfuel](../ideas-2026-11-12/fightfuel/README.md)).
 - CHANGES 521 (goal steps not started under 4k, the siege and farm under 6k) took out-of-fuel turns down 10%, the
