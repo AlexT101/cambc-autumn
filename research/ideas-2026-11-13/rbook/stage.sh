@@ -3,6 +3,7 @@
 #   BOT under bots/variants (a copy of the final host), KEYS from pick_entries.py, the rest are rbuild arguments.
 # Results: WORK/stage.out, done-marker WORK/stage.DONE. Pass: verify N/N, bundle <= 4.9 MB, fallback test with no
 # invalid read, 100M bench 52/52 identical to chy-525f.
+set -euo pipefail
 BOT=$1; W=$2; KEYS=$3; shift 3   # PRIO=plain|seeded (rbuild --prio; default plain); REF: bench reference (default chy-525f)
 R=research/ideas-2026-11-13/rbook; B=~/tmp-offload/rbook/bench
 rm -f $W/stage.DONE

@@ -10,6 +10,16 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## (charybdis book v126, 2026-11-13) Exact-book sweep and reporting correction
+
+The existing x2 sweep played 208/208 wins against Fish r8 and 202/202 against Mite r10 on its requested book
+cells (deduplicated, excluding fillers; played events, replay collection still finishing). This is conditional
+book coverage, not host strength. All 182 ordinary Fish cells already compare exactly with their recordings.
+The unpinned Fish divergence alarm was an oppwatch.py bug: one entry per map/side overwrote Fish with Mite.
+Comparing all entries gives 8/8 exact wins across two checks of four cells. Mite really differs on its three
+covered check cells at round indices 2, 3 and 272; drafts still match. 03one_gem a has only a Fish entry.
+Details and the authorized programmatic refresh: [rbook/TAKEOVER.md](ideas-2026-11-13/rbook/TAKEOVER.md).
+
 ## (charybdis = 525, 2026-11-13) Exact fuel cuts: altar stands and the shop's shared emblem prefix take out-of-fuel turns at 100k down 5.5% (Fish body) and 6.3% (Mite body); the live priority mask costs +7%
 
 Patches (diffs against `variants/chy-525`, `patch -p1` in the bot dir) and scripts: `research/fuel-2026-11-13/`.

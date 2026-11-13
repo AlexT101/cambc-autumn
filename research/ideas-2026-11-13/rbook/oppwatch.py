@@ -48,6 +48,12 @@ def book_divergence(g, recorded, plain=False):
     return -1 if v['firstDiff'] == -1 and v['finalSame'] else max(v['firstDiff'], 0)
 
 
+def cell_divergence(g, recordings, plain=False):
+    # Fish and Mite can share a map/side but use different draft-keyed entries.
+    differences = [book_divergence(g, recorded, plain) for recorded in recordings]
+    return -1 if -1 in differences else max((d for d in differences if d is not None), default=None)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--opp', default='Intercontinental Fish')
@@ -71,8 +77,10 @@ def main():
                 cells.append(dict(key=k, map=m.group(1), side=m.group(2)))
         else:
             cells = json.loads((w / 'book_cells.json').read_text())
-        book = {(c['map'], c['side']): w / 'raw' / f"{c['key']}.repl26a" for c in cells}
-        missing = [str(p) for p in book.values() if not p.exists()]
+        book = collections.defaultdict(list)
+        for c in cells:
+            book[(c['map'], c['side'])].append(w / 'raw' / f"{c['key']}.repl26a")
+        missing = [str(p) for recordings in book.values() for p in recordings if not p.exists()]
         if missing:
             print(f'warning: {len(missing)} recorded replays missing, e.g. {missing[0]}')
     ref, cur = {}, collections.defaultdict(list)
@@ -93,7 +101,7 @@ def main():
         for g in gs:
             cell = (g['version'], g['map'], g['side'])
             if book and g['version'] == a.book_version and (g['map'], g['side']) in book:
-                d = book_divergence(g, book[(g['map'], g['side'])], a.book_plain)
+                d = cell_divergence(g, book[(g['map'], g['side'])], a.book_plain)
                 if d is not None:
                     if d < 0: book_same += 1
                     else: book_diff += 1

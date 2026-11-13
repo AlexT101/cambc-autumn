@@ -241,6 +241,8 @@ def verify(cs, a, work, host):
         log('  VERIFY FAILED:', k, w)
     log(f'verify: {len(cs) - len(bad)}/{len(cs)} live games reproduced by the shipped bot against the opponent puppet')
     (work / 'verify.json').write_text(json.dumps(dict(res)))
+    if bad:
+        raise SystemExit(f'verification failed for {len(bad)} book entries')
 
 
 def verify_one(cs, a, work, host, tag):
@@ -368,6 +370,7 @@ def main():
             log(f'bundle: {out.stat().st_size} bytes (platform limit 5 MB compressed)')
         else:
             log('bundle:', r.stdout[-500:], r.stderr[-500:])
+            raise SystemExit('bundle creation failed')
 
 
 if __name__ == '__main__':

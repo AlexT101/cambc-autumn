@@ -16,6 +16,8 @@ ap.add_argument('--book', required=True)
 ap.add_argument('--bot')
 ap.add_argument('--opp', default='')
 ap.add_argument('--plain', action='store_true')
+ap.add_argument('--cells', help='only these cells: a JSON list of [map, side]')
+ap.add_argument('--refset', help="only games against this refset ('none': the unpinned opponent checks)")
 a = ap.parse_args()
 w = Path(a.book).expanduser()
 if a.bot:
@@ -26,16 +28,20 @@ book = collections.defaultdict(list)  # a cell can hold one entry an opponent
 for k in keys:
     m = re.match(r'^(.+)-([ab])-v\d+-', k)
     book[(m.group(1), m.group(2))].append(k)
+cells = json.loads(Path(a.cells).expanduser().read_text()) if a.cells else None
 games = []
 for line in open(o.GAMES):
     g = json.loads(line)
     if g.get('version') == a.version and g.get('status') == 'finished' and g['opp_name'].startswith(a.opp) and (g['map'], g['side']) in book:
+        if a.cells and [g['map'], g['side']] not in cells:
+            continue
+        if a.refset and (g.get('refset') or 'none') != a.refset:
+            continue
         games.append(g)
 
 
 def one(g):
-    ds = [o.book_divergence(g, w / 'raw' / f'{k}.repl26a', a.plain) for k in book[(g['map'], g['side'])]]
-    return g, (-1 if -1 in ds else max((d for d in ds if d is not None), default=None))
+    return g, o.cell_divergence(g, [w / 'raw' / f'{k}.repl26a' for k in book[(g['map'], g['side'])]], a.plain)
 
 
 res, bad = collections.Counter(), []
@@ -44,7 +50,7 @@ with cf.ThreadPoolExecutor(16) as ex:
         kind = 'same' if d == -1 else 'unreadable' if d is None else 'diverged'
         res[(g['opp_name'][:22], g.get('refset'), kind, g['result'])] += 1
         if kind == 'diverged':
-            bad.append((g['map'], g['side'], g['opp_name'][:12], f'round {d}', g['result']))
+            bad.append((g['map'], g['side'], g['opp_name'][:12], g.get('refset') or 'none', g.get('created', '')[:16], f'round {d}', g['result']))
 for k, v in sorted(res.items(), key=str):
     print(*k, v)
 for b in sorted(bad):
