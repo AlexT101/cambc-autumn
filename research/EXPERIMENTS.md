@@ -25,6 +25,11 @@ Notes, briefs, patches and scripts: [mx-rhea](mx-rhea/NOTES.md), [mx-crius](mx-c
 
 - **Kept (CHANGES 530):** IAPETUS's stop_due + contest judgement, 53.3 held out at 2x, **52.9 of 40,120 at 100k**.
 - **Level at 100k:** IAPETUS line B (contest judgement) alone, 51.1 held out at 2x but 50.3 (49.8-50.8) of 40,120 at 100k.
+- **Lost to 530 at 100k:** THEIA `dnw-min` (scylla's tribute denial ported onto 529, keeping only `deny_late`, the
+  stop timed for the channel's last turns, and `deny_alarm`, a seen enemy tribute posted to allies): 52.1 pooled held
+  out at 2x and 51.4 (50.4-52.4) of 10,200 at 100k, both against 529; against 530 at 100k **49.0 (48.5-49.5) of
+  40,120** (unused ladder-v4 seeds 61490200-61490258; OOF 335,594 / 346,804). Its gain is the late-stop timing
+  (the alarm alone 49.8 at 2x), which 530's `stop_due` already has in a stronger form: no merge.
 - **Level or lost (2x, vs 529):**
   - RHEA: enemy-presence pricing 50.1/50.3; Prism duel hunt 44.8 (spacing -5) / 49.9; mid_exposure 1.0/1.7/2.2
     flat or worse (1.36 is the optimum); post-retreat group bar 46.5; ally-claim recall 50.1; worst-case-safe tribute

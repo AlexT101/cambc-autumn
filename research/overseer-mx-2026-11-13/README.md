@@ -24,6 +24,7 @@ Smoke before launch: chy-ref copy vs chy-ref, 256 ladder games at 2x fuel: 50.0%
 |---|---|---|---|---|
 | IAPETUS `ia-contest` (line B: contest judgement; branch mx-iapetus-20261113 @d250e0662) | `bots/variants/ia-contest-d250e06` | pooled held-out 51.1 (50.6-51.7) of 30,600 | **50.3 (49.8-50.8) of 40,120** (`overseer-mx-iacontest-100k`, suite `maps/suites/overseer-mx/iac100k` = seeds 61490000-61490058, ladder-v4, 20,060 maps) | 292,880 / 278,255 (+5%) |
 | IAPETUS `ia-prism-v1` (line D v1: the Prism's bag, stop_due; branch mx-iapetus-20261113 @3bf1525b5) | `bots/variants/ia-prism-3bf1525` | pooled held-out 53.3 (52.8-53.8) of 40,800 | **52.9 (52.4-53.4) of 40,120** (`overseer-mx-iaprism-100k`, suite `maps/suites/overseer-mx/iap100k` = seeds 61490100-61490158, ladder-v4, 20,060 maps) | 318,049 / 309,008 (+3%) |
+| THEIA `dnw-min` (deny_late + deny_alarm on 529; branch mx-theia-20261113 @ba7a6c500) | `bots/variants/theia-dnwmin-ba7a6c500` | pooled held-out 52.1 of 30,600 (vs 529) | **49.0 (48.5-49.5) of 40,120 against chy-530** (`overseer-mx-dnwmin-vs530-100k`, seeds 61490200-61490258) | 335,594 / 346,804 (-3%) |
 
 ## Process notes
 - 16:00 UTC: subagents are handed back after ~100 min of runtime (RHEA twice). Each hand-back is resumed by SendMessage.
