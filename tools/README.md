@@ -845,3 +845,10 @@ changes before that transaction. Existing cycle state refuses blind restarts.
 Optional plan `upload_deadline` passes `BOOK_UPLOAD_DEADLINE_EPOCH` to live_test.sh;
 late uploads stop, restarting a scheduler already stopped for the transaction.
 Checks continue after upload, and the latest book is REST under current user policy.
+
+For an urgent starter, `loss_refresh.py --existing-sources-only` explicitly replaces
+`--after-step`; it uses existing proven recordings plus explicitly labeled provisional
+sources, without waiting for a new source campaign. Matching baseline thresholds and
+unknown-collateral deferral remain enforced. Cycle plans opt in with
+`existing_sources_only: true`. Partial books with fewer than24 long entries must test
+all available long fallback cases; no handovers or invalid reads still fail.

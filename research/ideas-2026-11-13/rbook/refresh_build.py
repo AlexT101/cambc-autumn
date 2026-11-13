@@ -46,8 +46,15 @@ def ready(work, refset):
 
 
 def validate_stage(stage, work=None):
+    expected_fallback = 24
+    if work is not None and (work/'book.jsonl').exists():
+        cells = {c['key'] for c in json.loads((work/'book_cells.json').read_text())}
+        entries = {e['key']:e for e in map(json.loads,(work/'book.jsonl').read_text().splitlines())}
+        # Match fallbacktest's distinct long-entry sample; a small partial book cannot supply 24 cases.
+        expected_fallback = min(24,sum(entries[k]['rounds'] > 450 for k in cells))
     invalid = re.findall(r'invalid\s+(\d+)', stage)
-    if not invalid or any(int(n) for n in invalid) or not re.search(r'plain: 24 games, [1-9]\d* bodies handed over', stage):
+    if (not expected_fallback or not invalid or any(int(n) for n in invalid)
+            or not re.search(rf'plain: {expected_fallback} games, [1-9]\d* bodies handed over', stage)):
         raise RuntimeError('Fallback verification missing, incomplete or invalid')
     wide = re.search(r'== 100M\nidentical replays: (\d+)/(\d+)([^\n]*)', stage)
     if not wide or int(wide[2]) != 52:
