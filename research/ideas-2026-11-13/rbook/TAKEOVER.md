@@ -46,6 +46,11 @@ required. Masked v119 remains useful source data but differs in production fuel 
 - v128 baseline collection uses outcomes and drafts only, explicitly marked in games.jsonl; no replay/summary
   downloads. Source versions and opponent checks retain full replay evidence. This avoids downloading host wins
   that cannot enter the book and does not weaken source replay verification.
+- Fish v128 r8 baseline complete: 197/340 wins, 143 losses. Clean recorded wins from v117/118/119/125/126
+  cover 100 of those losses before combined-book gates. v125 adds 00elkring b, 05nest b, 05space_station b
+  beyond the initial source list. Source recording lookup must use exact match IDs, not per-cell deduplication.
+- `ladder_scrims.games()` now excludes fillers before deduplication, so a filler cannot hide a requested cell.
+  The earlier 335-cell Fish summary was a reporting artifact; corrected coverage is 340.
 - Fish teammate was notified of live/book ownership and the host policy. Their six local macro jobs
   remain under their control. No agent was launched by this coordinator.
 

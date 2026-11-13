@@ -64,7 +64,7 @@ def build(work, version, pins):
         raise RuntimeError('Build already started; reconcile artifacts instead of overwriting')
     baseline = {(r['opp_name'].split()[-1].lower(),r['map'],r['side']):r
                 for r in baseline_rows(version,pins)}
-    selection = types.SimpleNamespace(versions='117,118,119,126', host_version=version,
+    selection = types.SimpleNamespace(versions='117,118,119,125,126', host_version=version,
                                       host_losses_only=True, extra=None)
     chosen = []
     for opp, pin in pins.items():
