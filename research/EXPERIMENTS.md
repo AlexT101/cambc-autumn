@@ -76,6 +76,26 @@ Note and scripts: [ideas-2026-11-13/fwin/README.md](ideas-2026-11-13/fwin/README
   - denying Vesper gold from Fish's half;
   - a global ban on our Vesper.
 
+## (charybdis = 525, 2026-11-13) Dropping our Vesper against fed-Vesper teams, per map: the ban loses where it acts, a ban on the enemy's revealed Vesper would too, and the live signal is map difficulty
+
+Note, patch and scripts: [ideas-2026-11-13/draft-drop-our-vesper/README.md](ideas-2026-11-13/draft-drop-our-vesper/README.md).
+Follow-up to the entry above: `variants/draft-drop-our-vesper` is the same one-line ban as `fw-nv`, built
+independently, with identical games and reads (fgate v4, fr8-g25 + mf-f9, 200k: **48.41% (47.73-49.08)** of 5,120
+fresh maps, Fish 47.73%, Mite 49.09%; REJECT at batch 2). No 100k run.
+
+- **Live signal** (scrim log, v113+): our Vesper cells lose more than our other cells, against other teams on the
+  same cells: Fish r8 −10.9 ±4.7, Mite −13.5 ±2.7 points.
+- **Where the loss sits** (per-map units joined to draft-only drafts): chy-525 drafts Vesper on 62% of fresh maps.
+  There the ban costs −2.57 ±1.09 (Fish −3.67, Mite −1.47). Every replacement loses. It loses most on gem-poor
+  (gems_side < 100: −6.9) and gold-poor maps, the opposite of the live gem-poor split.
+- **A ban on the enemy's revealed Vesper (not built) is ruled out.** The bodies draft Vesper as often as live (80% /
+  85%). On those maps the ban costs −3.90 ±2.14 against the Fish body and −1.74 ±2.15 against the Mite body.
+- **The live pattern is map difficulty.** In the body games chy-525 also wins less on its Vesper maps (Fish body
+  73.9% against 78.8% elsewhere; Mite body 72.1% against 79.5%). Banning her there lowers that further (70.2%,
+  70.6%).
+- **Don't retry** a conditional Vesper ban, or the live cell signal as causal, without a mechanism the body lacks.
+  The body's weaker Vesper kills (2.08 against 3.06 a game) would have to hide more than 3.9 points.
+
 ## (charybdis = 525, 2026-11-13) Camp-death gem denial: a doomed hoarder dying to a camp instead of to Fish fits 0-3 of 78 live hoard kills; abandoned before building
 
 Note and scripts: [ideas-2026-11-13/camp-death-gem-denial/README.md](ideas-2026-11-13/camp-death-gem-denial/README.md).
