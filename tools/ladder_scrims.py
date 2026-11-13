@@ -691,7 +691,7 @@ def games(version=None, purposes=None, include_suspect=False):
     for r in read_jsonl(DATA / "games.jsonl"):
         k = (r["version"], r["opp_id"], r.get("refset") if r.get("pin") == "ref" else r.get("source_group"),
              r["map"], r["side"])
-        if k in seen or r.get("result") not in ("win", "loss") or r["group"] in bad:
+        if k in seen or r.get('filler') or r.get("result") not in ("win", "loss") or r["group"] in bad:
             continue
         if version and r["version"] != version or purposes and r["purpose"] not in purposes:
             continue

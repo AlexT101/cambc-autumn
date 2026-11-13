@@ -71,7 +71,8 @@ def build(work, version, pins):
         chosen += rbuild.select(selection,ls.TEAMS[opp][1],pin,opp)
     if not chosen:
         raise RuntimeError('No target-pin wins on host losses yet')
-    rows = {r['match'][-12:]:r for r in ls.games() if r.get('purpose') == 'set'}
+    # select() names an exact recording; a per-cell deduplicated view can hide that match.
+    rows = {r['match'][-12:]:r for r in ls.read_jsonl(ls.DATA/'games.jsonl') if r.get('purpose') == 'set'}
     forced = []
     for cell in chosen:
         source = rows[cell['key'].rsplit('-',1)[1]]

@@ -12,6 +12,14 @@ import ladder_scrims as ls
 
 
 class CollectionPolicy(unittest.TestCase):
+    def test_filler_cannot_hide_later_requested_cell(self):
+        row=dict(version=128,opp_id='opp',pin='ref',refset='r12',map='map',side='a',
+                 result='win',purpose='set',group='group')
+        rows=[dict(row,filler=True,match='filler'),dict(row,filler=False,match='requested')]
+        with mock.patch.object(ls,'read_jsonl',return_value=rows), \
+             mock.patch.object(ls,'suspect_groups',return_value=set()):
+            self.assertEqual([r['match'] for r in ls.games(128)],['requested'])
+
     def test_duplicate_runner_preserves_live_pid(self):
         with tempfile.TemporaryDirectory() as tmp:
             path=Path(tmp)/'run.lock'
