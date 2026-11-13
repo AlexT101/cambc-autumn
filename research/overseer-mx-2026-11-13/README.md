@@ -48,3 +48,7 @@ Smoke before launch: chy-ref copy vs chy-ref, 256 ladder games at 2x fuel: 50.0%
 
 ## Round closed (19:50 UTC)
 All six orchestrators exited; their notes are under `research/mx-*/`. Main ships 530 (IAPETUS's stop_due + contest judgement) and 531 (Codex fuel pass). Every later candidate read level or below against 531 at 100k.
+
+`results/` holds each overseer A/B's `summary.md` (win rates, intervals, out-of-fuel turns, batch names). The
+orchestrators' mapgen logs (`logs/gen*.log`) stay on their branches; Codex's full transcript stays in
+`/home/ubuntu/wt/fuel-530/research/fuel-530/codex.log` (its final summary: `research/fuel-530/CODEX-SUMMARY.md`).
