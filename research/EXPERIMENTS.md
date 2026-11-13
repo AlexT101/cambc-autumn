@@ -10,6 +10,49 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## (charybdis = 525, 2026-11-13) Why games against Fish r8 are won: no team beats it more on the same cells; wins part from losses only in fights after r200; banning our Vesper (the one cross-team draft signal) loses against the bodies
+
+Note and scripts: [ideas-2026-11-13/fwin/README.md](ideas-2026-11-13/fwin/README.md).
+
+- **Data.**
+  - 5,083 platform games against Fish r8 since 11-12 14:00.
+  - 755 of our games, traced.
+  - 422 other teams' replays checked as r8 by the mask signature.
+- **No team beats r8 more often on the cells we share.** A cell is a map and Fish's side.
+  - Mite −5.8 ±3.7 points against us on 250 cells; its many wins come from volume (1,129 games at 42%).
+  - BattleCats −15.2 ±3.7 on 225 cells.
+  - Per-cell correlation with our win rate is 0.1-0.3. Our own versions agree per cell at phi 0.48-0.61.
+- **Their style differs, their results don't.** Mite and BattleCats have more gold at r100, tribute earlier and more,
+  place 50-70 more wards and keep the Prism's bag small. None of this separates their wins from their losses.
+- **Within a cell, wins and losses are identical at r100** (Fish's opening is deterministic). They part after r200,
+  through fights.
+  - At r500, in every team, wins have 1.4-3.1 more kills, 56-63 fewer of our gems lost and fewer kills by Fish's
+    Vesper.
+  - 53 cells went to one team and not the other, and they show the same signature for whichever team won.
+  - Taking gold from Fish's half shows nothing (+12.6 ±16.5 at r300).
+  - When Fish's Vesper dies at all, we win 76.3% (186 of 563 games), against 44.8% when she survives.
+- **Draft.** Over all teams, with team and cell fixed effects, picking Vesper against r8 scores −0.72 ±0.12 log-odds,
+  against −0.09 ±0.07 against r2. Our r2-to-r8 drop is 0.25 on our Vesper cells against 0.11-0.13 on the others.
+- **Test: `fw-nv`** (chy-525, Vesper banned in its own draft) at 200k, fgate v4 against fr8-g25 and mf-f9. **REJECT.**
+
+  Results against chy-525:
+
+  | read | win% (95% CI) | maps | games |
+  |---|---|---:|---:|
+  | fresh (decides) | 48.41% (47.73-49.08) | 5,120 | 40,960 |
+  | fresh, Fish | 47.73% (46.82-48.63) | 5,120 | 20,480 |
+  | fresh, Mite | 49.09% (48.18-50.00) | 5,120 | 20,480 |
+  | ladder (side read) | 46.88% (43.91-49.84) | 256 | 2,048 |
+
+  The body doesn't show the live Vesper effect: its excess over live on our Vesper cells is +4 ±7 points relative to
+  our other cells. So only a live pairing could test the draft signal.
+- **The book question.** Matching the book would teach openings (the same in wins and losses) and fight luck. The
+  book's value is replaying a win on the exact cell, and that doesn't carry to fresh maps.
+- **Don't retry:**
+  - copying Mite's or BattleCats' style against Fish (early tributes, wards, small Prism bags);
+  - denying Vesper gold from Fish's half;
+  - a global ban on our Vesper.
+
 ## (charybdis = 525, 2026-11-13) Camp-death gem denial: a doomed hoarder dying to a camp instead of to Fish fits 0-3 of 78 live hoard kills; abandoned before building
 
 Note and scripts: [ideas-2026-11-13/camp-death-gem-denial/README.md](ideas-2026-11-13/camp-death-gem-denial/README.md).
