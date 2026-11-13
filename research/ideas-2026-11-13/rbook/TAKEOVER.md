@@ -428,3 +428,26 @@ profile, foreign provenance and validation policy; oldv131digest remains unchang
 56offline tests pass, including originalr8 provenance retained with r9target check,
 small-partial fallback completeness, source-provenance digest drift and no retry
 of any prior upload attempt.
+
+## 2026-11-13 20:33 UTC: v133 starter uploaded and REST; qualification pending
+
+Single upload accepted20:26:22 as133, platform queued until20:30:26, then helper
+confirmed live133 and setREST133. Scheduler3458710 restarted independently; runner
+2787885 unchanged. Release cycle3347601 waits for37essential checks after current
+132/r9 baseline finishes. Helper exit0; upload's64sourcefiles byte-identical to the
+verified unmasked starter. `upload-rest-receipt.json` and `loss-live-upload.log` in
+`loss-v132-starter-expanded` record the transaction. No duplicate upload attempted.
+
+All51combinedentries exact; bundle1,421,604bytes; fallback24games/128handovers,
+invalid0;13forcedcells0bad. Wide100M51/52identical: only00swirl/a differs, a declared
+forcedFishline whose firstMarcella pick then hands over to531's draft. Fresh300are
+all geometrically off-book:128replay-identical,172differ at normal fuel, +0.07497%
+fuel on identicalgames; aggregate mean52051→52175(+0.238%). This is measured overhead,
+not zero-cost/strength evidence. Details tracked in `starter531-release.json`.
+
+37qualificationcells (31Fishr9,6Miter13collateral) pending; do not label133fullyqualified.
+Use winning133target qualification replays as the nextincrement's Fish sources,
+retain validMite sources and known132loss/collateral guards, remove failed collateral
+causes. No generic119-cell sweep and no additional upload before source qualification.
+Generic131source/Miteprobe remain afterhold-control. Final tournament API deadline
+is23:59UTC13Nov; no automatic book-free final activation or stripping is scheduled.

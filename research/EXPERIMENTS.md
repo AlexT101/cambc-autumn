@@ -19106,3 +19106,27 @@ snapshot; a direct r13 comparison is required before declaring that pin stale. R
 is retained under the user's latest-book policy; qualification failed on8 current-Fish
 losses. Fish refresh queued behind the teammate's531 campaign, loss-only, no new upload.
 Evidence: [increment2 live audit](ideas-2026-11-13/rbook/increment2-live-results.json).
+
+### 2026-11-13 — Charybdis 531 seeding book, v133 (qualification pending)
+
+The replay overlay uses the exact unmasked 531/c451e3387 source uploaded as v132:
+all 61 base files match. This partial book has 20 proven Mite r13 repairs and 31
+coordinator-proposed Fish r8 handover lines on confirmed 531/r9 losses, with known
+collateral baselines. The Fish lines retain their original r8 provenance and still
+require r9 qualification. Natural 531 wins and unknown cells are excluded.
+
+Local checks: 51/51 combined replays exact; 1.42 MB bundle; 24 fallback games,
+128 handovers, zero invalid reads; all 13 forced-draft checks passed. Wide 100M
+replay identity is 51/52: only the declared forced entry on 00swirl/a differs
+(Marcella first pick, then 531 draft fallback). All 300 fresh benchmark games are
+geometrically off-book: 128 replays identical, 172 differ under normal fuel.
+Identical-game fuel increased 0.07497%; aggregate mean rose 52051 to 52175 (0.238%).
+This measures overhead, not strength or zero cost. Book-free 531 remains preserved.
+
+Uploaded once as v133 at 20:26:22; confirmed live and REST at 20:30:26. All 64
+uploaded source files match the verified starter, unmasked. The 37 essential checks
+(31 Fish r9 targets, six Mite r13 collateral cells) are pending. Latest-book REST
+policy is independent of qualification. Winning qualification replays will supply
+the next increment without another 119-loss source sweep.
+Evidence: [release audit](ideas-2026-11-13/rbook/starter531-release.json) and
+`/home/ubuntu/tmp-offload/rbook/loss-v132-starter-expanded/`.
