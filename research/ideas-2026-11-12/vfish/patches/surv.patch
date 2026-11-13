@@ -1,0 +1,414 @@
+diff -ruN bots/variants/vfish-m1/src/combat/fight.cc bots/variants/vfish-surv/src/combat/fight.cc
+--- bots/variants/vfish-m1/src/combat/fight.cc	2026-11-12 22:24:17.864543095 +0000
++++ bots/variants/vfish-surv/src/combat/fight.cc	2026-11-13 02:45:14.262634449 +0000
+@@ -260,6 +260,7 @@
+         int rank = 0;  // the group it is tried in, after HomeWalk's: the plan's rank, or without a plan, damage now
+         bool dashes = false; // ranked as a walk then a dash (walk_dash_deferred): this turn does not end here
+         bool held = false;   // on a sole Prism's hold (`held`)
++        bool doomed = false; // inside a stun's kill reach (Safety::stun_kill)
+     };
+     Unwritten<Option, 8> scratch;
+     auto& options = scratch.a;
+@@ -305,6 +306,31 @@
+         // A clear step away may be the plan's way round.
+         add(true);
+     }
++    // A step inside a stun's kill reach is as one whose damage now kills us: tried last. With every step
++    // so far inside one, the steps away that are outside it come in, touched or not: a blow we survive.
++    if (safety.stun_kill_within(here, 1)) {
++        bool spared = false;
++        for (int i = 0; i < n; ++i) spared |= !(options[i].doomed = safety.stun_kill(options[i].p));
++        for (auto d : directions) {
++            if (spared) break;
++            const vec2 p = here + d;
++            if (!in_bounds(p) || test(blocked, p)) continue;
++            const int s = home.at(p);
++            if (s == unreachable || s <= steps) continue;
++            bool listed = false;
++            for (int i = 0; i < n; ++i) listed |= options[i].p == p;
++            if (listed || safety.stun_kill(p)) continue;
++            const auto t = safety.tally(p, world.me().taken);
++            int gap = unreachable;
++            for (const auto& e : world.enemies)
++                if (e.alive && e.visible) gap = std::min(gap, dist(p, e.pos));
++            options[n++] = {p, t.damage, t.stuns, s, gap, pathing.pull(p), false, t};
++            auto& o = options[n - 1];
++            o.bush = fixc_bush_rank(world, p);
++            o.held = held && test(*held, p);
++            o.eff = o.damage - (fixc_bush_threatened && o.bush == 0 ? params::fixc::bush_margin * my_health_and_shield(world) : 0.0f);
++        }
++    }
+     // This turn's hit: with a plan, priced in full, and a heavy one (a third of us) counts twice.
+     float life = -1;
+     if (plan.active()) {
+@@ -357,6 +383,10 @@
+         int e = g, m = 0;
+         for (; e < n && options[order[e]].home == lead_home && options[order[e]].rank == lead_rank; ++e) {
+             auto& o = options[order[e]];
++            if (o.doomed) {
++                last[lasts++] = order[e];
++                continue;
++            }
+             if (o.home || o.t.left) price(o);
+             if (plan.active() && !o.home && o.damage > 0 && !o.dashes) {
+                 if (life < 0) life = my_health_and_shield(world);
+@@ -589,8 +619,8 @@
+     return true;
+ }
+ 
+-// Retreat: low under the recall line (bar finishing a camp), a pack's zone (drawn_home), a camp we
+-// could no longer walk out of, or a stand we lose (stand_lost_at). A hold that outlasts what can
++// Retreat: low under the recall line (bar finishing a camp), a pack's zone (drawn_home), a stun's kill
++// reach, a camp we could no longer walk out of, or a stand we lose (stand_lost_at). A hold that outlasts what can
+ // reach us to its payout keeps us through all but the camps (hold_outlasts). The work guard keeps
+ // the economy's steps off the tiles beside us that the zone or the recall line would send us back
+ // from (combat/guard.cc).
+@@ -601,6 +631,8 @@
+     const float health = my_health();
+     HoldAt hold(world, pathing, here, memory.damage);
+     if (drawn_home(world, safety, hold)) return true;
++    // Inside a stun's kill reach (Safety::stun_kill) no hold keeps us: a payout before the second strike still costs the body.
++    if (safety.stun_kill(here)) return true;
+     const int mono = mono_trapped(world, pathing, safety, memory, health);
+     if (mono >= 0 ? mono == 1 : camp_trapped(world, pathing, safety, here, health, memory.siege)) return true;
+     // Once camps sent us home, only a heal brings us back: stepping back into their reach to work
+@@ -1576,10 +1608,55 @@
+     return false;
+ }
+ 
++// The retreat's steps and dash landings keep out of a stun's kill reach (Safety::stun_kill) while a free
++// step beside us is outside it: by distance, bar the tiles beside us its caster does not see. Each
++// chooser ranks by one round of blows, which a stun there outlasts.
++bitboard& stun_zone() {
++    static bitboard zone{cambc::uninitialized};
++    return zone;
++}
++void drop_stun_zone(Pathing& pathing) {
++    if (pathing.held_guard().guard == &stun_zone()) pathing.set_guard(nullptr);
++}
++// Made again after the retreat's later hits: what they killed or stunned casts none. `hits_unseen`: ours
++// this turn that Safety has not looked at yet.
++void guard_stun_kill(World& world, Pathing& pathing, Safety& safety, vec2 here, bool hits_unseen) {
++    drop_stun_zone(pathing);
++    constexpr int far = dash_range + 1; // a step after a dash
++    bool near = false;
++    // No visible caster that near: only where we stand in an unseen one's.
++    const auto any = [&] { return (near = safety.stun_kill_within(here, far)) || safety.stun_kill(here); };
++    if (!any()) return;
++    if (hits_unseen) {
++        see_kills(world, pathing, safety);
++        if (!any()) return;
++    }
++    auto& zone = stun_zone();
++    clear_board(zone);
++    if (near) safety.draw_stun_kill(zone, here, far);
++    bool in = false, out = false;
++    const auto& blocked = pathing.blocked();
++    for (auto d : directions) {
++        const vec2 p = here + d;
++        if (!in_bounds(p) || test(blocked, p)) continue;
++        const bool kill = safety.stun_kill(p);
++        if (kill != test(zone, p)) set_tile(zone, p, kill);
++        in = in || kill, out = out || !kill;
++    }
++    if (!in || !out) return;
++    set_tile(zone, here, false);
++    pathing.set_guard(&zone);
++}
++
+ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     world.throw_if_stale();
+     auto& me = cambc::self();
+     decision = Branch::retreat;
++    // The turn's end after us (see_revealed, strike_after) runs unguarded, as before.
++    struct Unzone {
++        Pathing& pathing;
++        ~Unzone() { drop_stun_zone(pathing); }
++    } unzone{pathing};
+     const int mono = mono_trapped(world, pathing, safety, memory, my_health());
+     memory.claim = -1;
+     if (!memory.siege && (mono >= 0 ? mono == 1 : camp_trapped(world, pathing, safety, my_position(), my_health(), false)))
+@@ -1605,6 +1682,7 @@
+     const bool held = melee && my_can_attack() && sure_kill(world, here, range + 1);
+     if (melee && !held) attack_enemy(world);
+     if (!my_can_attack()) reset_and_attack_enemy(world, true);
++    if (my_can_move()) guard_stun_kill(world, pathing, safety, my_position(), !my_can_attack() || !my_can_cast());
+     const auto& f = world.me().facts();
+     const int escape_slot = f.slot_of(AbilityKind::dash);
+     const bool contested = escape_slot >= 0 && (f.abilities[escape_slot].lands() || f.abilities[1 - escape_slot].hits_enemies());
+@@ -1618,6 +1696,7 @@
+         if (!escape_walk(world, pathing, safety, kept) || my_can_cast()) cast_at_enemies(world, kept ? lethal_step_value : escape_step_value);
+         if (!me.is_alive()) return;
+         if (!my_can_attack() || !my_can_cast()) see_kills(world, pathing, safety);
++        guard_stun_kill(world, pathing, safety, my_position(), false);
+         // A tribute survives damage; a recall does not.
+         if (can_tribute_safely(world, pathing, safety, memory)) {
+             bank_gems(world, pathing, safety, memory, false);
+@@ -1629,6 +1708,7 @@
+     const bool walk_dash = walk_dash_deferred(world) && my_can_cast();
+     if (!walk_dash && reset_and_attack_enemy(world)) see_kills(world, pathing, safety);
+     else see_stuns(world, safety); // Heart of Ruin's landing
++    if (my_can_move()) guard_stun_kill(world, pathing, safety, my_position(), false);
+     if (bool deferred = false; !flee_camps(world, pathing, safety, pathing.to_ally_spawn(), deferred)) {
+         const vec2 from = my_position();
+         retreat_step(world, pathing, safety, pathing.to_ally_spawn());
+diff -ruN bots/variants/vfish-m1/src/combat/guard.cc bots/variants/vfish-surv/src/combat/guard.cc
+--- bots/variants/vfish-m1/src/combat/guard.cc	2026-11-12 23:55:51.844969798 +0000
++++ bots/variants/vfish-surv/src/combat/guard.cc	2026-11-13 02:44:55.806275898 +0000
+@@ -475,7 +475,7 @@
+ 
+ // The tiles step_guard could guard by its first test alone, null if none: the plan search works
+ // the guard out only once one of them would count.
+-const bitboard* step_guard_cover(const World& world, Safety& safety, vec2 here, int radius) {
++const bitboard* fight_step_cover(const World& world, Safety& safety, vec2 here, int radius) {
+     world.throw_if_stale();
+     if (!enemy_seen(world)) return nullptr;
+     auto& fp = first_pass;
+@@ -498,7 +498,7 @@
+ 
+ // The tiles a step (or a ready dash) could end on that want_home would leave at once: stopping
+ // there hands the enemy the first strike. Cassi and Issac also keep off tiles where one would fall.
+-const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int radius) {
++const bitboard* fight_step_guard(const World& world, Safety& safety, vec2 here, int radius) {
+     world.throw_if_stale();
+     if (!enemy_seen(world)) return nullptr;
+     static bitboard guard{cambc::uninitialized};
+@@ -681,6 +681,29 @@
+     return any ? &guard : nullptr;
+ }
+ 
++// `guard` with the tiles within `radius` of us inside a stun's kill reach (Safety::stun_kill, by distance
++// alone), in `out`: want_home leaves those at once too, whatever fight would form there.
++const bitboard* with_stun_tiles(Safety& safety, vec2 here, int radius, const bitboard* guard, bitboard& out) {
++    // Standing inside one that want_home did not leave (its caster does not see us), any way out is ours.
++    if (!safety.stun_kill_within(here, radius) || safety.stun_kill_within(here, 0)) return guard;
++    if (guard) copy_into(*guard, out);
++    else clear_board(out);
++    safety.draw_stun_kill(out, here, radius);
++    // Where we stand is no step's end, and a route starts from it.
++    set_tile(out, here, false);
++    return &out;
++}
++
++const bitboard* step_guard_cover(const World& world, Safety& safety, vec2 here, int radius) {
++    static bitboard out{cambc::uninitialized};
++    return with_stun_tiles(safety, here, radius, fight_step_cover(world, safety, here, radius), out);
++}
++
++const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int radius) {
++    static bitboard out{cambc::uninitialized};
++    return with_stun_tiles(safety, here, radius, fight_step_guard(world, safety, here, radius), out);
++}
++
+ // prism_hold_tiles, asked only while our one Prism ally (a team picks each champion once) is in sight:
+ // without it, it answers null, and most teams have none.
+ const bitboard* prism_hold_seen(const World& world, bool on_too) {
+@@ -711,8 +734,9 @@
+     const auto& fp = first_pass;
+     const bool covered = fp.valid && fp.here == here && fp.radius == radius && fp.generation == Safety::generation()
+                              ? fp.m > 0
+-                             : step_guard_cover(world, safety, here, radius) != nullptr;
+-    const bitboard* strikes = covered ? step_guard(world, safety, here, radius) : nullptr;
++                             : fight_step_cover(world, safety, here, radius) != nullptr;
++    static bitboard stuns{cambc::uninitialized};
++    const bitboard* strikes = with_stun_tiles(safety, here, radius, covered ? fight_step_guard(world, safety, here, radius) : nullptr, stuns);
+     return with_held_tiles(strikes, out);
+ }
+ const bitboard* held_step_cover(const World& world, Safety& safety, vec2 here, int radius) {
+@@ -814,7 +838,8 @@
+     if (strikes)
+         for (int dy = -radius; dy <= radius; ++dy)
+             for (int dx = -radius; dx <= radius; ++dx)
+-                if (const vec2 q{here.x + dx, here.y + dy}; in_bounds(q) && test(*strikes, q) && !(in.avoid && test(*in.avoid, q)))
++                // Not inside a stun's kill reach, which want_home leaves whatever hold is there.
++                if (const vec2 q{here.x + dx, here.y + dy}; in_bounds(q) && test(*strikes, q) && !(in.avoid && test(*in.avoid, q)) && !safety.stun_kill_within(q, 0))
+                     if (const int rounds = hold_rounds(world, pathing, q); rounds >= 0 && hold_outlasts(safety, in.damage, q, rounds))
+                         edit(), set_tile(out, q, false);
+     const unsigned kept = keep_out(world, pathing, safety, here, in.damage);
+diff -ruN bots/variants/vfish-m1/src/model/safety.cc bots/variants/vfish-surv/src/model/safety.cc
+--- bots/variants/vfish-m1/src/model/safety.cc	2026-11-12 22:24:17.872186166 +0000
++++ bots/variants/vfish-surv/src/model/safety.cc	2026-11-13 02:44:55.805933754 +0000
+@@ -3659,6 +3659,122 @@
+     return true;
+ }
+ 
++const Safety::StunChain& Safety::stun_chain(const ChampionBelief& e) {
++    auto& c = chains_[static_cast<std::size_t>(e.index)];
++    const auto bit = static_cast<std::uint16_t>(1u << e.index);
++    if (chain_known_ & bit) return c;
++    chain_known_ |= bit;
++    c.reach = -1;
++    c.damage.fill(0);
++    auto& x = struck(e);
++    const int turns = turns_before_ours(world_, e, x.turns);
++    // Its next turn stuns and the one after strikes. With two turns before ours those are the two (a stun on
++    // the second leaves it no turn before our next: teams alternate who starts a round, rules rounds.champion_order).
++    const int cast_round = next_turn_round(world_, e);
++    const auto ready = [&](int round) { return (e.ability_ready(0, round) ? 1u : 0u) | (e.ability_ready(1, round) ? 2u : 0u); };
++    const unsigned now = ready(cast_round), after = ready(cast_round + 1);
++    for (unsigned k = 0; k < 2; ++k) {
++        if (!(now >> k & 1)) continue;
++        // One cast a turn: the stunning slot alone, then what is left without it.
++        const Strike& first = strike_with(e, 1u << k);
++        const Strike& second = strike_with(e, after & ~(1u << k));
++        for (int d = 0; d <= first.reach; ++d) {
++            if (!first.stuns[static_cast<std::size_t>(d)]) continue;
++            c.damage[static_cast<std::size_t>(d)] = std::max(c.damage[static_cast<std::size_t>(d)], first.at(d) + second.at(d));
++            c.reach = std::max(c.reach, d);
++        }
++    }
++    // With none of its turns before our next, we step once more before it acts, then it has both: only the
++    // tiles a step does not take us out from count, the reach less one.
++    if (turns <= 0 && c.reach >= 0) {
++        for (int d = 0; d < c.reach; ++d) c.damage[static_cast<std::size_t>(d)] = c.damage[static_cast<std::size_t>(d + 1)];
++        c.damage[static_cast<std::size_t>(c.reach--)] = 0;
++    }
++    return c;
++}
++
++int Safety::stun_kill_reach(const ChampionBelief& e) {
++    if (own_health_ < 0) own_health_ = my_health() + (world_.me().shield_slot >= 0 ? shield_value(world_.me().handle) : 0.0f);
++    const auto& c = stun_chain(e);
++    const float taken = world_.me().taken;
++    // The chain only falls with distance: each strike's damage does, and its stun's reach is one stretch from 0.
++    int reach = c.reach;
++    while (reach >= 0 && c.damage[static_cast<std::size_t>(reach)] * taken < own_health_) --reach;
++    return reach;
++}
++
++// Who stun_kill() must look at, found once for our health and where we stand: most turns nobody.
++std::span<const Safety::StunKiller> Safety::stun_killers() {
++    if (own_health_ < 0) own_health_ = my_health() + (world_.me().shield_slot >= 0 ? shield_value(world_.me().handle) : 0.0f);
++    const vec2 here = my_position();
++    if (stun_killer_count_ < 0 || stun_health_ != own_health_ || !in_square(here, stun_at_, stun_near)) {
++        stun_health_ = own_health_, stun_at_ = here;
++        int n = 0;
++        const float taken = world_.me().taken;
++        // A kit with a stun, and two turns of its most at no distance (a bound on the chain) reaching our
++        // health: else no strike needs working out.
++        const auto may = [&](const ChampionBelief& e) {
++            const auto& a = e.facts().abilities;
++            return (a[0].stuns || a[1].stuns) && 2 * most_damage(e) * taken >= own_health_;
++        };
++        if (world_.me().facts().passive != Passive::stun_immune) {
++            for (auto left = seen_enemies(); left && n < static_cast<int>(stun_killers_.size()); left &= left - 1) {
++                const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
++                if (!in_square(here, acts_from(e), Strike::max_reach + 2 * stun_near) || !may(e)) continue;
++                if (const int reach = stun_kill_reach(e); reach >= 0) stun_killers_[static_cast<std::size_t>(n++)] = {e.index, reach, true};
++            }
++            // Out of sight, likewise only one near enough for a tile within stun_near of where we may stand.
++            for (auto left = live_enemies() & ~seen_enemies(); left && n < static_cast<int>(stun_killers_.size()); left &= left - 1) {
++                const auto& e = world_.enemies[static_cast<std::size_t>(std::countr_zero(left))];
++                if (!e.possible_box.meets(here, Strike::max_reach + 2 * stun_near) || !may(e) || !credible_unseen(e)) continue;
++                if (const int reach = stun_kill_reach(e); reach >= 0) stun_killers_[static_cast<std::size_t>(n++)] = {e.index, reach, false};
++            }
++        }
++        stun_killer_count_ = n;
++    }
++    return {stun_killers_.data(), static_cast<std::size_t>(stun_killer_count_)};
++}
++
++bool Safety::stun_kill(vec2 p) {
++    const auto killers = stun_killers();
++    if (killers.empty() || test(world_.map().ally_spawn, p)) return false;
++    for (const auto& k : killers) {
++        const auto& e = world_.enemies[static_cast<std::size_t>(k.enemy)];
++        if (!k.seen) {
++            // From the tiles it may be on, as near as an unseen threat's strike counts (unseen_radius).
++            if (possible_within(e, p, unseen_radius(k.reach, foe(e).tiles))) return true;
++            continue;
++        }
++        if (!in_square(p, acts_from(e), k.reach) || gone(e)) continue;
++        // Its sight of p and the walls, as its blow has them.
++        if (const Blow b = blow(e, p); b.hits && b.stuns) return true;
++    }
++    return false;
++}
++
++bool Safety::stun_kill_within(vec2 p, int r) {
++    const auto killers = stun_killers();
++    if (killers.empty() || (r == 0 && test(world_.map().ally_spawn, p))) return false;
++    for (const auto& k : killers)
++        if (const auto& e = world_.enemies[static_cast<std::size_t>(k.enemy)]; k.seen && in_square(p, acts_from(e), k.reach + r) && !gone(e)) return true;
++    return false;
++}
++
++bool Safety::draw_stun_kill(bitboard& b, vec2 p, int r) {
++    bool any = false;
++    for (const auto& k : stun_killers()) {
++        const auto& e = world_.enemies[static_cast<std::size_t>(k.enemy)];
++        const vec2 from = acts_from(e);
++        if (!k.seen || !in_square(p, from, k.reach + r) || gone(e)) continue;
++        draw_square(b, from, static_cast<float>(k.reach));
++        any = true;
++        // Our spawn heals us at each turn end, a stunned one too (stun_kill).
++        for (const vec2 t : world_.map().ally_spawn_tiles)
++            if (in_square(t, from, k.reach)) set_tile(b, t, false);
++    }
++    return any;
++}
++
+ bool Safety::lethal(vec2 p) {
+     if (own_health_ < 0) own_health_ = my_health() + (world_.me().shield_slot >= 0 ? shield_value(world_.me().handle) : 0.0f);
+     // A turn ended on our spawn heals to full before any enemy acts (rules rounds.turn_end).
+diff -ruN bots/variants/vfish-m1/src/model/safety.h bots/variants/vfish-surv/src/model/safety.h
+--- bots/variants/vfish-m1/src/model/safety.h	2026-11-12 01:56:13.793206623 +0000
++++ bots/variants/vfish-surv/src/model/safety.h	2026-11-13 02:44:55.795180890 +0000
+@@ -499,6 +499,16 @@
+     // Could the credible threats and camps kill us at p before our next turn? Against our health
+     // and shield now: Ren's retaliation and our shield cast this turn count once refreshed.
+     bool lethal(vec2 p);
++    // A stun takes our next turn (rules: abilities.stun), so the enemy that lands one plays the turn after it
++    // too before we act again, with the casts left to it then: a slot cast is not back for 8 rounds. Whether one
++    // enemy, by a stun that reaches p and that following turn alone, takes all our health and shield there
++    // (one out of sight as a credible unseen threat strikes: from the tiles it may be on). It needs no ally
++    // of its own, so no fight we would win at p comes first.
++    bool stun_kill(vec2 p);
++    // stun_kill(q) may hold by a visible enemy for a tile q within r of p: by distance alone, without its sight of q.
++    bool stun_kill_within(vec2 p, int r);
++    // Adds to `b` the tiles off our spawn that stun_kill_within(q, 0) holds for, if any comes within r of p; false if none does.
++    bool draw_stun_kill(bitboard& b, vec2 p, int r);
+     bool unseen_beyond(vec2 p);
+ 
+     // Live members of awake (or maybe awake) groups, bar those read asleep that nobody else is near
+@@ -571,6 +581,23 @@
+     template <class F> bool any_threat_at(vec2 p, F&& f);
+     // Seen alive at turn start but dead now, once refreshed.
+     bool gone(const ChampionBelief& c);
++    // An enemy's stunning strike and its following turn's on a target that stays put, by distance
++    // (stun_kill); beliefs are fixed for the turn, so each is worked out once.
++    struct StunChain {
++        std::array<float, Strike::max_reach + 1> damage;
++        int reach; // farthest distance that counts; -1: none
++    };
++    const StunChain& stun_chain(const ChampionBelief& e);
++    // The farthest distance at which stun_chain(e) takes our health and shield; -1: none.
++    int stun_kill_reach(const ChampionBelief& e);
++    struct StunKiller {
++        int enemy; // index into World::enemies
++        int reach; // stun_kill_reach
++        bool seen;
++    };
++    // A tile asked about lies within a dash and a step of where we stand; the list holds for that far again.
++    static constexpr int stun_near = 3;
++    std::span<const StunKiller> stun_killers();
+ 
+     const World& world_;
+     std::uint16_t reached_ = 0; // bit i: reach_pool()[i] is built for enemies[i] this turn
+@@ -590,6 +617,16 @@
+     union {
+         std::array<Foe, 16> foes_;
+     };
++    std::uint16_t chain_known_ = 0; // bit i: chains_[i] is set
++    union {
++        std::array<StunChain, 16> chains_;
++    };
++    union {
++        std::array<StunKiller, 8> stun_killers_;
++    };
++    int stun_killer_count_ = -1; // -1: not found yet
++    float stun_health_ = -1;     // our health and shield they were found for
++    vec2 stun_at_{};             // and where we stood
+     // The first `threat_count_` of a pool kept across turns (one Safety lives at a time): growing a
+     // vector reallocates at ~300 fuel a time, and each Threat allocates a bitboard.
+     std::vector<Threat>& threats_;

@@ -1,0 +1,478 @@
+diff -ruN bots/variants/vfish-b0/src/economy/crew.cc bots/variants/vfish-pack-feed/src/economy/crew.cc
+--- bots/variants/vfish-b0/src/economy/crew.cc	2026-11-11 18:50:25.012681192 +0000
++++ bots/variants/vfish-pack-feed/src/economy/crew.cc	2026-11-13 00:39:15.584277625 +0000
+@@ -317,6 +317,82 @@
+     return plan;
+ }
+ 
++// The output of the allies free to join an operation of ours (crew_available for some group): the most plan_crew
++// expects beside a group's claimers.
++float crew_free_output(const World& world, const CrewAllies& allies) {
++    float output = 0;
++    for (int i = 0; i < allies.n; ++i) {
++        const auto& a = allies.at[static_cast<std::size_t>(i)];
++        if (!a.has_avail) read_avail(world, allies, a);
++        if (a.avail != 0) output += crew_output(a);
++    }
++    return output;
++}
++
++// The share of its output an emblem of a's better stat adds. An emblem's price (prices) is the rounds it saves, which
++// scale with this share: it stands in for an ally's price, which only the ally can read.
++float emblem_share(const ChampionBelief& a) {
++    const auto& f = a.facts();
++    const bool seen = a.max_health > 0;
++    const float str = seen ? a.strength : f.strength.base, foc = seen ? a.focus : f.focus.base;
++    const float shards = static_cast<float>(shards_per_emblem);
++    return std::max(f.raw_output(str + shards * f.strength.growth, foc), f.raw_output(str, foc + shards * f.focus.growth))
++           / std::max(1.0f, f.raw_output(str, foc)) - 1.0f;
++}
++
++// The gold payee: the living ally value_holder hands a gold hold to (the highest relative_efficiency, never a
++// hold-shy body). A payout goes to whoever stands on the group: where the payee can be that holder, the gold is worth
++// the payee's price to every ally clearing the group, and to the payee all of it but what the next-best holder would
++// have been paid.
++struct GoldPayee {
++    const ChampionBelief* a = nullptr;
++    // A gold on the payee, and on the best other ally (read for ourselves only), in golds of ours before our own
++    // bonuses and efficiency: farm's price of it (gold bonuses x relative_efficiency), at its emblem_share over ours.
++    float rate = 0, next = 0;
++    vec2 at{-1, -1}; // where its holds are counted from: its claim's centre, else its tile as last known; else off the map
++};
++const GoldPayee& gold_payee(const World& world) {
++    static GoldPayee p;
++    static int round = -1;
++    static std::uint32_t gold = ~0u;
++    if (round == world.round && gold == my_gold()) return p; // relative_efficiency's key
++    round = world.round, gold = my_gold();
++    p = {};
++    const auto& rel = relative_efficiency(world);
++    // holder_value's order of a gold hold, at the passive's gold rate (an ally's emblems are read only in sight).
++    static const cambc::enum_map<cambc::item_type> none{};
++    const auto rank = [&](const ChampionBelief& a) { return gold_rate(a.facts(), none) * rel[a.index & 63]; };
++    const ChampionBelief *second = nullptr, *shy = nullptr;
++    for (const auto& a : world.allies) {
++        if (!(a.alive || a.is_self)) continue;
++        if (hold_shy(world, a)) {
++            if (!shy || rank(a) > rank(*shy)) shy = &a;
++        } else if (!p.a || rank(a) > rank(*p.a)) second = p.a, p.a = &a;
++        else if (!second || rank(a) > rank(*second)) second = &a;
++    }
++    if (!p.a) return p;
++    const float mine = std::max(1e-6f, emblem_share(world.me()));
++    const auto price = [&](const ChampionBelief& a) { return ally_gold_paid(world, a) * rel[a.index & 63] * emblem_share(a) / mine; };
++    p.rate = price(*p.a);
++    if (p.a->is_self) {
++        // With none but hold-shy bodies beside us, one of those holds.
++        if (const auto* other = second ? second : shy) p.next = price(*other);
++        return p;
++    }
++    // Held by a channel (a recall home, a tribute, a teleport), it holds nothing here.
++    if (p.a->visible && held_by_channel(*p.a)) return p;
++    const int claim = comms::claim_of(world, p.a->index);
++    vec2 tile{-1, -1};
++    int slack = 0;
++    const bool placed = recent_tile(world, *p.a, tile, slack);
++    if (claim >= 0 && claim < static_cast<int>(world.map().groups.size())) {
++        // A claim it is known to be far from is one it left (to bank, to shop) or has yet to walk to: its tile counts.
++        const vec2 centre = world.map().groups[claim].centre;
++        p.at = placed && dist(tile, centre) > carry_reach() ? tile : centre;
++    } else if (placed) p.at = tile;
++    return p;
++}
++
+ bool farm_monolith(const World& world, int g) {
+     const auto& map = world.map();
+     return g >= 0 && g < static_cast<int>(map.groups.size()) && map.groups[g].has_monolith && !map.monolith_only;
+diff -ruN bots/variants/vfish-b0/src/economy/farm.cc bots/variants/vfish-pack-feed/src/economy/farm.cc
+--- bots/variants/vfish-b0/src/economy/farm.cc	2026-11-12 04:51:16.758538378 +0000
++++ bots/variants/vfish-pack-feed/src/economy/farm.cc	2026-11-13 00:39:15.584333246 +0000
+@@ -289,7 +289,7 @@
+     float home = -1;
+     int to_altar = -1;
+     std::uint32_t context = 0, gold_context = 0, version = ~0u;
+-    bool sticky = false, planned = false;
++    bool sticky = false, planned = false, fed = false; // fed: `gold` at the payee's price
+     std::uint8_t emblems = 0; // `emblems` when `tribute` and `gold_in` were read
+     int walk = 0, chained_tribute = 0, tribute = 0;
+     std::uint32_t gold_in = 0;
+@@ -347,6 +347,8 @@
+     static FarmMemo memo;
+     return memo;
+ }
++// With FarmMemo's last_per_gold: our own price of a gold, where per_gold is the payee's.
++float farm_last_own_gold = 0;
+ 
+ // Carrying gems, farming on chains a capture onto the bag: it saves the walk to the altar and
+ // back but keeps the bag at risk for longer. It goes ahead only if the next group, by the time it
+@@ -396,6 +398,12 @@
+     int short_by, recall;
+     float per_gold, tribute_gold, cap_rounds, horizon, bank_now;
+     bool recall_out, prospector, banking, reflects = false;
++    bool whole = false; // the gold payee's: a crew's clear pays it the worth whole
++    // Fed groups (within feed_reach of feed_at) take per_gold, the rest own_gold; `feeds` off, all per_gold.
++    bool feeds = false;
++    float own_gold = 0;
++    vec2 feed_at{};
++    int feed_reach = 0;
+     FarmRecall via;
+     const float* health = nullptr; // World::clear_health
+     float clear_scale = 0, other_part = 1;
+@@ -486,7 +494,7 @@
+     struct {
+         const float *health, *weight;
+         float *out, *alt, *test, *test_alt, *value, *old, *old_alt;
+-        bool banking, recall_out;
++        bool banking, recall_out, whole, feeds;
+         float other_part;
+     } p;
+     struct {
+@@ -495,9 +503,10 @@
+     const std::int32_t *worth_gems, *worth_gold;
+     v128_t hx, hy, short_by, help, one, slack, horizon, cap, exposure, most_exposure, most_scale, channel, value, out_base, inf;
+     v128_t crew_most, bank_now, zero, recall, clear, bank_floor, reflects, other_part, per_gold, tribute_gold;
++    v128_t own_gold, feed_x, feed_y, feed_reach;
+ 
+     [[gnu::always_inline]] PreLanes(const PreUpper& p, const PreColumns& c)
+-        : p{p.health, p.weight, p.out, p.alt, p.test, p.test_alt, p.value, p.old, p.old_alt, p.banking, p.recall_out, p.other_part},
++        : p{p.health, p.weight, p.out, p.alt, p.test, p.test_alt, p.value, p.old, p.old_alt, p.banking, p.recall_out, p.whole, p.feeds, p.other_part},
+           t{c.cx, c.cy, c.spawn_near, c.gems, c.striker, c.kited, c.altar_near} {
+         worth_gems = p.prospector ? c.pro_gems : c.gems, worth_gold = p.prospector ? c.pro_gold : c.gold;
+         hx = wasm_i32x4_splat(p.here.x), hy = wasm_i32x4_splat(p.here.y), short_by = wasm_i32x4_splat(p.short_by);
+@@ -512,6 +521,8 @@
+         recall = wasm_i32x4_splat(p.recall), clear = wasm_f32x4_splat(p.clear_scale), bank_floor = wasm_f32x4_splat(p.bank_floor);
+         reflects = wasm_i32x4_splat(p.reflects ? -1 : 0), other_part = wasm_f32x4_splat(p.other_part);
+         per_gold = wasm_f32x4_splat(std::max(0.0f, p.per_gold)), tribute_gold = wasm_f32x4_splat(std::max(0.0f, p.tribute_gold));
++        own_gold = wasm_f32x4_splat(std::max(0.0f, p.own_gold));
++        feed_x = wasm_i32x4_splat(p.feed_at.x), feed_y = wasm_i32x4_splat(p.feed_at.y), feed_reach = wasm_i32x4_splat(p.feed_reach);
+     }
+ 
+     [[gnu::always_inline]] void block(int g) const {
+@@ -522,6 +533,7 @@
+         // crew_rate's: a crew k times our output pays w / k and clears in fastest / k, best at the clamped k.
+         const auto crew_rated = [&](v128_t w, v128_t trip, v128_t fastest, v128_t most) __attribute__((always_inline)) {
+             const v128_t base = wasm_f32x4_add(trip, cap);
++            if (p.whole) return rate_of(w, wasm_f32x4_add(base, wasm_f32x4_div(fastest, most)));
+             const v128_t k = wasm_f32x4_pmin(wasm_f32x4_pmax(wasm_f32x4_div(fastest, wasm_f32x4_sqrt(wasm_f32x4_mul(base, wasm_f32x4_add(horizon, base)))), one), most);
+             return rate_of(wasm_f32x4_div(w, k), wasm_f32x4_add(base, wasm_f32x4_div(fastest, k)));
+         };
+@@ -530,7 +542,13 @@
+         // The scalar max(0, gems + per_gold gold + tribute_gold gems), operation for operation.
+         const v128_t gems = wasm_f32x4_convert_i32x4(wasm_i32x4_min(wasm_v128_load(&worth_gems[g]), short_by));
+         const v128_t gold = wasm_f32x4_convert_i32x4(wasm_v128_load(&worth_gold[g]));
+-        const v128_t worth = wasm_f32x4_pmax(zero, wasm_f32x4_add(wasm_f32x4_add(gems, wasm_f32x4_mul(per_gold, gold)), wasm_f32x4_mul(tribute_gold, gems)));
++        v128_t price = per_gold;
++        if (p.feeds) {
++            const v128_t from = wasm_i32x4_max(wasm_i32x4_abs(wasm_i32x4_sub(wasm_v128_load(&t.cx[g]), feed_x)),
++                                               wasm_i32x4_abs(wasm_i32x4_sub(wasm_v128_load(&t.cy[g]), feed_y)));
++            price = wasm_v128_bitselect(per_gold, own_gold, wasm_i32x4_le(from, feed_reach));
++        }
++        const v128_t worth = wasm_f32x4_pmax(zero, wasm_f32x4_add(wasm_f32x4_add(gems, wasm_f32x4_mul(price, gold)), wasm_f32x4_mul(tribute_gold, gems)));
+         const v128_t striker = wasm_v128_load(&t.striker[g]);
+         const v128_t fastest = wasm_f32x4_mul(wasm_v128_load(&p.health[g]), clear);
+         const v128_t most = wasm_v128_bitselect(crew_most, one, striker);
+@@ -562,7 +580,7 @@
+             wasm_v128_store(&p.alt[g], wasm_v128_bitselect(inf, crew_rated(w, out_walk, quick, most), skip));
+             // The plain ratios: a zero denominator gives inf or NaN, which no prune passes.
+             const v128_t base = wasm_f32x4_add(cap, fastest);
+-            const v128_t unprunable = wasm_v128_or(skip, reflected);
++            const v128_t unprunable = wasm_v128_or(skip, p.whole ? striker : reflected);
+             wasm_v128_store(&p.test[g], wasm_v128_bitselect(inf, wasm_f32x4_mul(wasm_f32x4_div(w, wasm_f32x4_add(trip, base)), slack), unprunable));
+             wasm_v128_store(&p.test_alt[g], wasm_v128_bitselect(inf, wasm_f32x4_mul(wasm_f32x4_div(w, wasm_f32x4_add(out_walk, base)), slack), unprunable));
+             return;
+@@ -953,10 +971,32 @@
+     }
+     // Per base gold of a group: we are paid it with our bonuses.
+     const float paid = gold_paid(world);
+-    float per_gold = prices(world).per_gold * paid * (gold_farmer ? params::gold_farmer_weight : 1.0f);
++    const float gold_weight = prices(world).per_gold * (gold_farmer ? params::gold_farmer_weight : 1.0f);
+     // Gold is worth more to the more efficient of us (relative_efficiency): it completes stronger emblems sooner
+     // funnelled than spread.
+-    per_gold *= relative_efficiency(world)[world.me().index & 63];
++    const float own_gold = gold_weight * paid * relative_efficiency(world)[world.me().index & 63];
++    // Fed groups, within a carried capture's reach of the gold payee (GoldPayee): their gold is priced as paid to it.
++    // `per_gold` is the most a gold is worth this turn, for the prunes.
++    const GoldPayee& payee = gold_payee(world);
++    const bool feeds = payee.a && !payee.a->is_self && in_bounds(payee.at);
++    const float per_gold = feeds ? std::max(own_gold, gold_weight * payee.rate) : own_gold;
++    const int feed_reach = carry_reach();
++    const auto fed = [&](int g) __attribute__((always_inline)) { return feeds && dist(payee.at, groups[g].centre) <= feed_reach; };
++    const auto gold_price = [&](int g) __attribute__((always_inline)) { return fed(g) ? per_gold : own_gold; };
++    // The payee itself: of a clear it does part of, its part, and of the rest's gold what its hold adds to the
++    // next-best holder's (`premium`). Its bounds take a crew's clear as paying it whole. Not a Monolith's, split
++    // among its holders.
++    const float premium = payee.a && payee.a->is_self && payee.rate > 0 ? std::clamp(1.0f - payee.next / payee.rate, 0.0f, 1.0f) : 0.0f;
++    const bool funnelled = premium > 0;
++    const auto crew_part = [&](bool mine, float worth, float gold, float part) __attribute__((always_inline)) {
++        return mine ? worth * part + std::min(gold, worth) * (1.0f - part) * premium : worth * part;
++    };
++    debug_block({
++        if (world.round % 50 == 1)
++            std::printf("GOLDPRICE %d %u type %d price %.3f paid %.2f rel %.2f per_gold %.3f own %.3f payee %d rate %.2f premium %.2f\n", world.round,
++                        my_handle(), static_cast<int>(world.me().type), prices(world).per_gold, paid,
++                        relative_efficiency(world)[world.me().index & 63], per_gold, own_gold, payee.a ? payee.a->index : -1, payee.rate, premium);
++    });
+     const int n_groups = static_cast<int>(groups.size());
+     auto& few_facts = memo.few_facts;
+     auto& many_facts = memo.many_facts;
+@@ -974,8 +1014,8 @@
+     auto& last_per_gold = memo.last_per_gold;
+     auto& last_tribute_gold = memo.last_tribute_gold;
+     auto& gold_context = memo.gold_context;
+-    if (gold_context == 0 || per_gold != last_per_gold || tribute_gold != last_tribute_gold)
+-        last_per_gold = per_gold, last_tribute_gold = tribute_gold, ++gold_context;
++    if (gold_context == 0 || per_gold != last_per_gold || own_gold != farm_last_own_gold || tribute_gold != last_tribute_gold)
++        last_per_gold = per_gold, farm_last_own_gold = own_gold, last_tribute_gold = tribute_gold, ++gold_context;
+     // A Prism keeping its gems (keeps_gems) gains carried_bonus on each gem of a capture it takes part in,
+     // at its takeover price: every pick type, the carries' 'G' and 'L' too. Applied past the kept facts,
+     // which hold none of it. Not on a Monolith or a capture that wins. keeps_bag only tightens with the
+@@ -1268,8 +1308,15 @@
+     };
+     // The team's output over ours for a strong group short of the win, else 0 (no crew bound).
+     const auto crew_most = [&](int g, bool wins) __attribute__((always_inline)) { return strong(g) && !wins ? 1.0f / team_scale() : 0.0f; };
+-    const auto prune_fastest = [&](int g, float fastest, bool wins) __attribute__((always_inline)) {
+-        return strong(g) && wins ? fastest * team_scale() : fastest;
++    // The payee's crew on a group no ally claims (no prune reads a claimed one) is of the allies free to join it.
++    float free_part = -1;
++    const auto free_scale = [&]() __attribute__((always_inline)) {
++        if (free_part < 0) free_part = strength / (strength + crew_free_output(world, crew_allies_now()));
++        return free_part;
++    };
++    // `whole`: 1 a winning capture, the team's; 2 the payee's gold.
++    const auto prune_fastest = [&](int g, float fastest, int whole) __attribute__((always_inline)) {
++        return !strong(g) || whole == 0 ? fastest : fastest * (whole == 1 ? team_scale() : free_scale());
+     };
+     // After the tribute, the walk out from the altar or a recall and the walk from spawn.
+     const auto altar_out = [&](int g, int walk) __attribute__((always_inline)) {
+@@ -1494,15 +1541,15 @@
+         return rated(worth, near_trip + fastest) * 1.0001f < bar
+                && (unclaimed_partner_output <= 0 || rated(worth * partner_part, near_trip + fastest * partner_part) * 1.0001f < bar);
+     };
+-    const auto unweighed_beaten = [&](const CampGroup& group, const CampBelief& belief, int g, float trip) __attribute__((always_inline)) {
++    const auto unweighed_beaten = [&](const CampGroup& group, const CampBelief& belief, int g, float trip, int whole) __attribute__((always_inline)) {
+         const int gems = std::min(group.gems + (prospector ? prospected(group.cluster_gems, 1) : 0), short_by);
+         const int gold = group.gold + (prospector ? prospected(group.cluster_gold, 1) : 0);
+-        const float worth = static_cast<float>(gems) + per_gold * static_cast<float>(gold) + bound_tribute * static_cast<float>(gems);
++        const float worth = static_cast<float>(gems) + gold_price(g) * static_cast<float>(gold) + bound_tribute * static_cast<float>(gems);
+         // At version 0 every member is alive at full health: the bound needs no pass over them.
+         const float fastest = reflect > 0          ? reflected_clear(world, g, strength, reflect)
+                               : belief.version == 0 ? group.health / strength
+                                                     : fastest_clear(world, g, strength);
+-        return rated_below(worth, trip, fastest, crew_most(g, false));
++        return rated_below(worth, trip, prune_fastest(g, fastest, whole), crew_most(g, whole != 0));
+     };
+     const int* worth_gems = nullptr;
+     const float* worth_gold = nullptr;
+@@ -1547,6 +1594,7 @@
+     const bool hops = can_bound && hop_any;
+     const int offset = dist(here, groups[first].centre);
+     const float most_tribute = std::max(0.0f, tribute_gold) + keep_most, most_per_gold = std::max(0.0f, per_gold);
++    const int fed_offset = feeds ? dist(payee.at, groups[first].centre) : 0;
+     const FarmMemo::Most* most = nullptr;
+     float tested_value = 0; // the threshold the stop was searched for
+     const auto threshold = [&]() __attribute__((always_inline)) { return banks_bag ? std::max(best_value, from_altar_value) : bar_lt(); };
+@@ -1555,8 +1603,10 @@
+         const int near = m.near - offset;
+         if (!banks_bag && near <= params::help_radius) return false;
+         const int gems = std::max(0, std::min(prospector ? m.gems_prospected : m.gems, short_by));
++        // Every group from here on is at least m.near - fed_offset from the payee: past its reach, none is fed.
++        const float price = m.near - fed_offset <= feed_reach ? most_per_gold : std::max(0.0f, own_gold);
+         const float worth = params::max_exposure * pull.deny_scale * (static_cast<float>(gems) * (1.0f + most_tribute)
+-                            + most_per_gold * static_cast<float>(prospector ? m.gold_prospected : m.gold));
++                            + price * static_cast<float>(prospector ? m.gold_prospected : m.gold));
+         const float via = via_bound(m.spawn_near, 0);
+         if (banks_bag) return rate(world, worth, std::max(0.0f, std::min(static_cast<float>(near), via) - bank_now) + cap_rounds) * 1.0001f < tested_value;
+         return rate(world, worth, std::min(static_cast<float>(near), via) + cap_rounds) * 1.0001f < tested_value;
+@@ -1566,7 +1616,7 @@
+         const int walk = altar_out(g, pathing.centre_to_altar(g));
+         if (walk == unreachable) return true;
+         const int gems = std::max(0, std::min(worth_gems[g], short_by));
+-        const float worth = params::max_exposure * pull.deny_scale * (static_cast<float>(gems) * (1.0f + most_tribute) + most_per_gold * worth_gold[g]);
++        const float worth = params::max_exposure * pull.deny_scale * (static_cast<float>(gems) * (1.0f + most_tribute) + std::max(0.0f, gold_price(g)) * worth_gold[g]);
+         return rate(world, worth, static_cast<float>(walk) + cap_rounds) * 1.0001f < tested_value;
+     };
+     // The first position the bound covers. It holds from there on (r_k rises, the most held falls),
+@@ -1642,11 +1692,13 @@
+             for (auto* v : {&pre_upper, &pre_alt, &pre_test, &pre_test_alt, &pre_value, &pre_old, &pre_old_alt}) v->resize(n_groups + 3);
+         }
+         p.here = here, p.short_by = short_by, p.per_gold = per_gold, p.tribute_gold = bound_tribute;
++        p.feeds = feeds && own_gold < per_gold, p.own_gold = own_gold, p.feed_at = payee.at, p.feed_reach = feed_reach;
+         p.cap_rounds = cap_rounds, p.horizon = horizon, p.recall_out = recall_out, p.prospector = prospector, p.via = via_recall;
+         p.banking = pre_banked, p.bank_now = bank_now, p.recall = pre_banked ? recall_turns(world) : 0;
+         // Shaved for fastest_clear's sum taken member by member.
+         p.health = pre_health = world.clear_health.data(), p.clear_scale = 0.9999f / strength, p.reflects = reflect > 0;
+-        p.crew_most = 1.0f / team_scale(), p.other_part = unclaimed_partner_output > 0 ? partner_part : 1.0f;
++        p.crew_most = 1.0f / (funnelled ? free_scale() : team_scale()), p.other_part = unclaimed_partner_output > 0 ? partner_part : 1.0f;
++        p.whole = funnelled;
+         p.weight = known_weights(n_groups);
+         p.out = pre_upper.data(), p.alt = pre_alt.data(), p.test = pre_test.data(), p.test_alt = pre_test_alt.data();
+         p.old = pre_old.data(), p.old_alt = pre_old_alt.data();
+@@ -1715,12 +1767,14 @@
+         if (recall_out) trip = std::min(trip, via_recall.rounds(dist(spawn_centre, G.centre), 0));
+         if (banks_bag) trip = std::max(0.0f, trip - bank_now);
+         const float gems = static_cast<float>(std::min(worth_gems[g], short_by));
+-        const float worth = std::max(0.0f, gems + std::max(0.0f, per_gold) * worth_gold[g] + std::max(0.0f, tribute_gold) * gems);
++        const float worth = std::max(0.0f, gems + std::max(0.0f, gold_price(g)) * worth_gold[g] + std::max(0.0f, tribute_gold) * gems);
+         const float weight = g < 256 ? home_weights()[static_cast<std::size_t>(g)] : 1.0f;
+         // The join's Focus is no share: at most its rate over the trip and the hold (rate is linear in worth).
+         const float carry = gems * keep_bonus(G) * exposure_most * weight;
+-        return (claim_bound(worth * exposure_most * weight, health, health / strength, trip) + (carry > 0 ? rate(world, carry, trip + cap_rounds) : 0.0f))
+-               * 1.0002f;
++        float share = claim_bound(worth * exposure_most * weight, health, health / strength, trip);
++        // The payee staying for the payout: at most all of the worth, over the trip and its hold.
++        if (funnelled && G.gold > 0 && !G.has_monolith) share = std::max(share, rate(world, worth * exposure_most * weight, trip + cap_rounds));
++        return (share + (carry > 0 ? rate(world, carry, trip + cap_rounds) : 0.0f)) * 1.0002f;
+     };
+     static const bool any_mono = [&] {
+         for (int g = 0; g < n_groups; ++g)
+@@ -1778,6 +1832,9 @@
+         // tribute. Empty-handed, only a capture that wins counts that walk, as no later one shares
+         // it. Gems past the win are worth nothing.
+         const bool wins = group.gems >= short_by;
++        // The payee's gold; and for the bounds, a clear that pays us the worth whole, however many clear it.
++        const bool mine = funnelled && group.gold > 0 && !group.has_monolith;
++        const int whole = wins ? 1 : mine ? 2 : 0;
+         // Later turns: the same bound before facts, the fastest clear and steps, for every group (the
+         // facts' weighted worth while they hold). The fastest it reads is the one the facts keep.
+         if constexpr (!opening) {
+@@ -1785,17 +1842,17 @@
+                 if (const int near = dist(here, group.centre); !may_help(group, belief, near)) {
+                     auto& kf = group_facts[g];
+                     float worth;
+-                    if (kf.context == context && !kf.sticky && kf.gold_context == gold_context) {
++                    if (kf.context == context && !kf.sticky && kf.gold_context == gold_context && kf.fed == fed(g)) {
+                         worth = kf.gems + kf.gold + kf.gems * keep_most;
+                     } else {
+                         const float gems = static_cast<float>(std::min(worth_gems[g], short_by));
+-                        worth = gems + per_gold * worth_gold[g] + bound_tribute * gems;
++                        worth = gems + gold_price(g) * worth_gold[g] + bound_tribute * gems;
+                     }
+                     float fastest;
+                     if (kf.version == belief.version && kf.fastest_strength == strength) fastest = kf.fastest;
+                     else if (belief.version == 0) fastest = group.health / strength;
+                     else kf.version = belief.version, kf.fastest_strength = strength, fastest = kf.fastest = fastest_clear(world, g, strength);
+-                    if (rated_below(worth, soonest(group, belief, pulled_near(g, near)), fastest, crew_most(g, false))) continue;
++                    if (rated_below(worth, soonest(group, belief, pulled_near(g, near)), prune_fastest(g, fastest, whole), crew_most(g, whole != 0))) continue;
+                 }
+             }
+         }
+@@ -1804,7 +1861,7 @@
+         // rules out from as close as the Chebyshev distance needs none.
+         if (rated && !banks_bag && !wins && !claimed && barred() && g != farm_group && prunable(g) && (!hop_any || map.group_hop(g) < 0)) {
+             if (const int near = dist(here, group.centre); !may_help(group, belief, near)
+-                && unweighed_beaten(group, belief, g, static_cast<float>(near + near_wait(belief, near))))
++                && unweighed_beaten(group, belief, g, static_cast<float>(near + near_wait(belief, near)), whole))
+                 continue;
+         }
+         auto& known = group_facts[g];
+@@ -1842,11 +1899,11 @@
+             known.planned = g == planned_now;
+             known.gold_context = 0;
+         }
+-        if (known.gold_context != gold_context) {
++        if (const bool feed = fed(g); known.gold_context != gold_context || known.fed != feed) {
+             const int gold = group.gold + (prospector ? prospected(group.cluster_gold, 1) : 0);
+             const int gems = group.gems + (prospector ? prospected(group.cluster_gems, 1) : 0);
+-            known.gold = known.weight * (per_gold * static_cast<float>(gold) + tribute_gold * static_cast<float>(std::min(gems, short_by)));
+-            known.gold_context = gold_context;
++            known.gold = known.weight * ((feed ? per_gold : own_gold) * static_cast<float>(gold) + tribute_gold * static_cast<float>(std::min(gems, short_by)));
++            known.gold_context = gold_context, known.fed = feed;
+         }
+         if (known.version != belief.version || known.fastest_strength != strength)
+             known.version = belief.version, known.fastest_strength = strength, known.fastest = fastest_clear(world, g, strength);
+@@ -1881,8 +1938,8 @@
+                 const float trip = to_altar ? std::max(0.0f, std::min(static_cast<float>(std::max(pulled, respawn)) + bank,
+                                                                       via_bound(dist(spawn_centre, group.centre), respawn)) - bank_now)
+                                             : std::max(0.0f, soonest(group, belief, pulled) - bank_now + bank);
+-                const float fastest = prune_fastest(g, known.fastest, wins);
+-                if (by_rate) return beaten(worth, trip, opening ? prune_fastest(g, quickest, wins) : fastest, walk_out, cycle_bank, crew_most(g, wins));
++                const float fastest = prune_fastest(g, known.fastest, whole);
++                if (by_rate) return beaten(worth, trip, opening ? prune_fastest(g, quickest, whole) : fastest, walk_out, cycle_bank, crew_most(g, whole != 0));
+                 const float near_cycle = trip + cap_rounds + fastest;
+                 return near_cycle > 0 && worth / near_cycle <= bar_le()
+                        && (!banks_bag || worth / (static_cast<float>(walk_out + capture) + cycle_bank + fastest) <= from_altar_value);
+@@ -1998,10 +2055,10 @@
+         // Skip the costly clearing estimate for groups that cannot beat the best even with no
+         // clearing. A crew's share can.
+         if (!claimed && barred() && prunable(g)
+-            && ((rated && g != farm_group && beaten(gems + gold + carried, trip, prune_fastest(g, quickest, wins), walk_out, cycle_bank, crew_most(g, wins)))
++            && ((rated && g != farm_group && beaten(gems + gold + carried, trip, prune_fastest(g, quickest, whole), walk_out, cycle_bank, crew_most(g, whole != 0)))
+                 || ((!rated || g == farm_group || reflect > 0)
+-                    && (gems + gold + carried) / (trip + cap_rounds + prune_fastest(g, fastest, wins)) <= bar_le()
+-                    && (!banks_bag || (gems + gold + carried) / (static_cast<float>(walk_out + capture) + cycle_bank + prune_fastest(g, fastest, wins)) <= from_altar_value))))
++                    && (gems + gold + carried) / (trip + cap_rounds + prune_fastest(g, fastest, whole)) <= bar_le()
++                    && (!banks_bag || (gems + gold + carried) / (static_cast<float>(walk_out + capture) + cycle_bank + prune_fastest(g, fastest, whole)) <= from_altar_value))))
+             continue;
+         // No known way to an altar (sealed, or a centre walls hide) is no deadline: the gold still counts.
+         const auto too_late = [&](float clear_rounds) __attribute__((always_inline)) {
+@@ -2050,7 +2107,10 @@
+                 const auto& allies = crew_allies_now();
+                 for (int k = 0; k < allies.n_claiming; ++k)
+                     if (const auto& a = allies.at[allies.claiming[static_cast<std::size_t>(k)]]; a.claim == g && (!op || a.seen)) others_claiming += crew_output(a);
+-                if (beaten_claimed(wins ? rate(world, plain, trip) : claim_bound(plain, health, health / (strength + others_claiming), trip))) continue;
++                float most = wins ? rate(world, plain, trip) : claim_bound(plain, health, health / (strength + others_claiming), trip);
++                // The payee staying: its part is at most its output's beside the claimers, and crew_part rises with the part.
++                if (mine && !wins) most = std::max(most, rate(world, crew_part(true, plain, gold, strength / (strength + others_claiming)), trip + cap_rounds));
++                if (beaten_claimed(most)) continue;
+             }
+             const int waiting = fresh ? std::max(0, belief.respawn_round - round) : 0;
+             const int working = std::max(0, reach - waiting);
+@@ -2059,9 +2119,14 @@
+             if (health <= 0 || health_left <= 0) continue;
+             // The bound above again with r at most health_left / (S + others): the claimers' work before
+             // we arrive leaves our part less to clear. Checked before the plan, which only shrinks r.
+-            if (bounded && op && !wins && health_left < health
+-                && beaten_claimed(claim_bound(plain, health, health_left / (strength + others_claiming), trip)))
+-                continue;
++            if (bounded && op && !wins && (health_left < health || mine)) {
++                float most = claim_bound(plain, health, health_left / (strength + others_claiming), trip);
++                // The payee staying: that part of the health left, cleared no sooner than with every free ally beside the claimers.
++                if (mine)
++                    most = std::max(most, rate(world, crew_part(true, plain, gold, strength * health_left / ((strength + others_claiming) * health)),
++                                               trip + cap_rounds + health_left / (strength / free_scale() + others_claiming)));
++                if (beaten_claimed(most)) continue;
++            }
+             // A strong group's crew as its proposer counts it, available allies included: joining
+             // only on the claimers seen so far, each joiner would find too small a crew.
+             const bool expect = may_expect(g);
+@@ -2088,8 +2153,10 @@
+             if (carry > 0 && my_health() - (kite_hit ? kite_hits() : damage) < params::hurt_health_fraction * max_health) carry = 0, hold = 0;
+             // No capture rounds but a keeping Prism's: the claimer holds it, and the crew moves on once it is cleared.
+             // A crew we are in holds us against small pulls: one member leaving shrinks it for the rest.
+-            const float value = rate(world, plain * part + carry, trip + rounds + hold + trips_home(static_cast<float>(trips)))
+-                                * (op && memory.claim == g ? crew_hold(g) : 1.0f);
++            float value = rate(world, plain * part + carry, trip + rounds + hold + trips_home(static_cast<float>(trips)));
++            // The payee may stay for the payout: its hold adds the premium on the rest of the gold.
++            if (mine) value = std::max(value, rate(world, crew_part(true, plain, gold, part) + carry, trip + rounds + cap_rounds + trips_home(static_cast<float>(trips))));
++            value *= op && memory.claim == g ? crew_hold(g) : 1.0f;
+             // Only a better share counts, and the final pick takes none a group of our own beats.
+             if (g == memory.mono_group) mono_seen = value;
+             if ((value < shared_value || (value == shared_value && !earlier(g, shared))) || (best >= 0 && value <= best_value) || too_late(rounds))
+@@ -2206,7 +2273,7 @@
+                 const float lo = (strength + claimers) / strength, hi = all / strength;
+                 const float hold = memory.claim == g ? crew_hold(g) : 1.0f;
+                 const auto crew_bound = [&](float base) __attribute__((always_inline)) {
+-                    return wins ? rate(world, worth, base + fastest / hi) : crew_rate(world, worth, base, fastest, lo, hi);
++                    return whole ? rate(world, worth, base + fastest / hi) : crew_rate(world, worth, base, fastest, lo, hi);
+                 };
+                 const float most = crew_bound(trip + cap_rounds) * hold * 1.0001f;
+                 may_beat = most >= value && !((best >= 0 && most < best_value) || most < floor_value);
+@@ -2225,7 +2292,8 @@
+                 // way gives way to joining it rather than split the free allies.
+                 const float hold = memory.claim == g ? crew_hold(g)
+                                    : plan.claimers == 0 && rival_op() ? params::crew_rival_factor : 1.0f;
+-                const float crew_value = rate(world, worth * part, trip + plan.rounds + capture + trips_home(static_cast<float>(my_trips))) * hold;
++                const float crew_worth = crew_part(mine, worth, gold, part);
++                const float crew_value = rate(world, crew_worth, trip + plan.rounds + capture + trips_home(static_cast<float>(my_trips))) * hold;
+                 debug_block({
+                     if (group.has_monolith && round % 25 == 0)
+                         std::printf("MONO VALUE %d %u g%d worth %.0f part %.2f trip %.0f rounds %.0f trips %d home %.0f crew %d+%d output %.0f value %.4f best-so-far %.4f\n",
+@@ -2234,7 +2302,7 @@
+                 });
+                 if (crew_value > value) {
+                     value = crew_value, late = false, spell = false;
+-                    clear_rounds = plan.rounds, trips = my_trips, share = worth * part;
++                    clear_rounds = plan.rounds, trips = my_trips, share = crew_worth;
+                     priced = {'C', my_trips, plan.tank ? plan.tank->index : -1, plan.n_expected, plan.output, crew_share(plan, reach)};
+                 }
+             }

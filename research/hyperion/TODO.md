@@ -15,6 +15,18 @@ EXPERIMENTS.
   plan is [GATE-PLACEMENT.md](GATE-PLACEMENT.md).
 - Keep the teleport, Tavi and Willow code.
 
+## Scylla, and what it showed about charybdis (2026-11-13)
+
+`bots/scylla` (CHANGES 526) wins 35.6% against charybdis 525 ([vfish](../ideas-2026-11-12/vfish/README.md)).
+- Open, scylla: winning tributes still complete as often as before the denial (2.7 guards against 2.4 of ours); the
+  Prism kill's worth in the engage decision and the kill credit for Vesper were not built; Vesper sees the Prism at a
+  median r300 against a teammate's r95 and the shared bytes have no room for a sighting; the draft model was not
+  refitted on its games; the unused build and denial switches (`economy/shop.cc`, `params.h`) can be removed.
+- Open, charybdis: whether the Prism's 'G'/'L'/'Q' carry picks are skipped on turns the ranged hit in passing ends
+  first (on Vesper with that machinery, 79% of her turns near a mate's hold); the shop's pricing horizon as the
+  game's rounds left; its hoard tribute against an opponent that wards the altar and stops late (about 4 points to
+  scylla); late stops on Fish's tributes (the interrupt arms stopped while the channel had time).
+
 ## Charybdis: the out-scaled Prism's Health and shop trip (2026-11-12)
 
 Against Fish r8 the Prism's hoard is killed by a gold-fed Vesper (a median 465 Strength against 2,300 max health), and

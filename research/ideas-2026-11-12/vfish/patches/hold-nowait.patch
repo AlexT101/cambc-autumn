@@ -1,0 +1,628 @@
+diff -ruN bots/variants/vfish-b0/src/bot.cc bots/variants/vfish-hold-nowait/src/bot.cc
+--- bots/variants/vfish-b0/src/bot.cc	2026-11-12 13:16:04.503484706 +0000
++++ bots/variants/vfish-hold-nowait/src/bot.cc	2026-11-13 00:20:48.085709839 +0000
+@@ -540,6 +540,7 @@
+         decision = Branch::contest;
+         return;
+     }
++    if (await_carrier(world, pathing, safety, memory)) return;
+     decision = Branch::farm;
+     if (!fuel_ok(farm_least)) {
+         note_shortcut("goal-short");
+@@ -625,7 +626,7 @@
+     decide(world, pathing, safety, memory);
+     if (decision != Branch::wait_altar) memory.wait_altar = -1;
+     // A turn that takes Prism off its way withdraws the capture it carries (left_for_prism).
+-    if (world.me().facts().passive == Passive::gem_focus) {
++    if (world.me().facts().passive == Passive::gem_focus || carrier(world.me())) {
+         switch (decision) {
+         case Branch::retreat: case Branch::bank: case Branch::wait_altar: case Branch::guard_altar: case Branch::tribute_kept:
+         case Branch::recall_kept: case Branch::capture_recall: case Branch::mend: case Branch::shop: case Branch::prism_recovery:
+diff -ruN bots/variants/vfish-b0/src/bot_parts.h bots/variants/vfish-hold-nowait/src/bot_parts.h
+--- bots/variants/vfish-b0/src/bot_parts.h	2026-11-12 13:28:45.818322409 +0000
++++ bots/variants/vfish-hold-nowait/src/bot_parts.h	2026-11-13 00:38:47.417523171 +0000
+@@ -54,6 +54,7 @@
+     shop = 'S',           // a shopping trip
+     hold = 'P',           // holding a capture
+     capture_recall = 'Q',
++    await = 'w',          // beside a cleared group kept for the carrier (await_carrier)
+     siege = 'G',          // siege or kite of a big group
+     contest = 'X',
+     stop_ender = 'E',     // stopping a game-ending bag
+@@ -445,6 +446,18 @@
+ bool holders_stay(const World& world, const CampGroup& G, int round);
+ int carry_reach();
+ bool left_for_prism(const World& world, Pathing& pathing, int g, bool cleared_now = false);
++bool carrier(const ChampionBelief& a);
++bool carriable(const CampGroup& G);
++bool relayed(const CampGroup& G);
++int walk_to_free(const World& world, const CampGroup& G, const ChampionBelief& walker, vec2 from, int walk);
++struct CarryMate {
++    float value = 0, output = 0;
++    bool on = false;
++};
++float carry_gain(const World& world, const CampGroup& G, float price, CarryMate& mate);
++float earning_rate(const World& world, float per_gold);
++int fresh_ally_capture(const World& world, const CampGroup& group);
++bool await_carrier(const World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ bool yields_to_prism(const World& world, Pathing& pathing);
+ const bitboard* prism_hold_tiles(const World& world, bool on_too = false);
+ // The turn's Safety, which sole_capture_holder's threat test reads; null between turns.
+diff -ruN bots/variants/vfish-b0/src/combat/guard.cc bots/variants/vfish-hold-nowait/src/combat/guard.cc
+--- bots/variants/vfish-b0/src/combat/guard.cc	2026-11-12 22:24:17.866042315 +0000
++++ bots/variants/vfish-hold-nowait/src/combat/guard.cc	2026-11-12 23:55:51.844969798 +0000
+@@ -686,7 +686,7 @@
+ const bitboard* prism_hold_seen(const World& world, bool on_too) {
+     static const int prism = [&] {
+         for (const auto& a : world.allies)
+-            if (!a.is_self && a.facts().passive == Passive::gem_focus) return a.index;
++            if (!a.is_self && (a.facts().passive == Passive::gem_focus || carrier(a))) return a.index;
+         return -1;
+     }();
+     if (prism < 0) return nullptr;
+diff -ruN bots/variants/vfish-b0/src/economy/capture.cc bots/variants/vfish-hold-nowait/src/economy/capture.cc
+--- bots/variants/vfish-b0/src/economy/capture.cc	2026-11-12 04:51:16.760668576 +0000
++++ bots/variants/vfish-hold-nowait/src/economy/capture.cc	2026-11-13 00:45:09.982502220 +0000
+@@ -314,6 +314,8 @@
+ Safety* hold_safety = nullptr;
+ void use_hold_safety(Safety* safety) { hold_safety = safety; }
+ 
++const ChampionBelief* living_carrier(const World& world);
++
+ // With an enemy in sight, whether Prism ally a's hold on the group it stands on is contested, or the
+ // enemies we see, a standing idle as a channel does, could kill it or take it below fit_on's health in
+ // the enemy turns left before the payout (hold_outlasts' window). Kept per ally while the beliefs hold:
+@@ -351,6 +353,15 @@
+ // Tavi on a pure-gold group. Null if none.
+ const ChampionBelief* sole_capture_holder(const World& world, const CampGroup& G) {
+     const bool seen = enemy_seen(world);
++    // The carrier on a group with gold, as a Prism on gems: a second body on its tiles at the payout halves
++    // what her gold bonus is paid on.
++    if (const auto* a = living_carrier(world);
++        a && carriable(G) && fit_on(*a, G.tiles()) && a->channel != Channel::tribute && a->channel != Channel::teleport
++        && !(a->channel == Channel::recall && a->channel_end_round <= world.round + 1) && !(seen && prism_hold_threatened(world, *a, G))) {
++        // Unless an ally there pays the team more on it (a Marcella on a gem-rich group): value_holder's.
++        const auto* best = value_holder(world, G);
++        if (!best || best == a) return a;
++    }
+     if (G.gems <= 0) return seen ? nullptr : prospector_gold_holder(world, G);
+     const auto& map = world.map();
+     const int winning = static_cast<int>(cambc::constants::winning_gems);
+@@ -456,13 +467,97 @@
+ enum class Leave { no, claimed, near };
+ 
+ // A group's cleared episode (its geometry_version): the round we first asked of it, whether we left
+-// it for a Prism that had not claimed it, and whether that leave has lapsed.
++// it for a Prism that had not claimed it, and whether that leave has lapsed; since when we keep off it
++// for the carrier (awaits_carrier).
+ struct LeftRecord {
+     std::uint32_t version = ~0u;
+     int first = -1;
+     bool left = false, lapsed = false;
++    int awaited = -1;
+ };
+ 
++// Group g's record for its present cleared episode.
++LeftRecord& left_record(const World& world, int g) {
++    static std::vector<LeftRecord> records;
++    if (records.size() != world.map().groups.size()) records.assign(world.map().groups.size(), LeftRecord{});
++    auto& left = records[static_cast<std::size_t>(g)];
++    if (const auto version = world.camps[g].geometry_version; left.version != version) left = LeftRecord{version, world.round};
++    return left;
++}
++
++// The team's carrier, Vesper Vale: her passive pays a third more on every capture share's gold, so a group
++// with gold that one holder takes pays the team most with her alone on it at the payout (holder_value).
++bool carrier(const ChampionBelief& a) { return a.facts().passive == Passive::bonus_gold; }
++bool carriable(const CampGroup& G) { return G.gold > 0 && !G.has_monolith && holders(G) == 1; }
++// A payout needs its holder only in its last round (rules capture.reward), and a hold counts from whoever
++// first stands on a tile (capture.timing): on two tiles or more a mate begins it and she joins before it pays.
++// On one tile nobody joins: it is left empty for her or kept.
++bool relayed(const CampGroup& G) { return carriable(G) && G.members.size() >= 2; }
++
++// The team's carrier by ally index, -1 for a team without one.
++int carrier_index(const World& world) {
++    static const int index = [&] {
++        for (const auto& a : world.allies)
++            if (carrier(a)) return a.index;
++        return -1;
++    }();
++    return index;
++}
++const ChampionBelief* living_carrier(const World& world) {
++    const int index = carrier_index(world);
++    if (index < 0) return nullptr;
++    const auto& a = world.allies[static_cast<std::size_t>(index)];
++    return a.alive ? &a : nullptr;
++}
++
++// The steps from `from` onto a tile of G no ally in sight but `walker` stands on, given the `walk` to its nearest
++// tile: a step more when a tile that near is taken, and no fewer than the crow's to a free one. The carrier and
++// the mate that times a count for her both measure her way with it.
++int walk_to_free(const World& world, const CampGroup& G, const ChampionBelief& walker, vec2 from, int walk) {
++    int crow = unreachable;
++    bool taken_near = false;
++    for (const auto& m : G.members) {
++        bool taken = false;
++        for (const auto& a : world.allies)
++            taken |= &a != &walker && a.alive && (a.is_self || a.visible) && position_of(a) == m.pos;
++        const int d = dist(from, m.pos);
++        if (taken) taken_near |= d <= walk;
++        else crow = std::min(crow, d);
++    }
++    return std::max(walk + (taken_near ? 1 : 0), crow);
++}
++
++// A count of `rounds` to its payout pays the carrier alone only if she stands on a tile a turn of ours
++// before it: `walk` steps off, she arrives in walk - 1 rounds (a round later once she has acted this
++// round), and we step off in our next turn, at worst the round after.
++bool carrier_in_time(const ChampionBelief& a, int walk, int rounds) { return walk + (a.acted ? 1 : 0) < rounds; }
++
++// Off the carrier, no enemy in sight: cleared group g, with gold, is her claim from off its tiles (farm's
++// carry picks, or her own farm choice), she is in our sight, and a count running, or begun now, would pay
++// before she stands on a free tile of it. We keep off its tiles, the count reset or not begun, until one
++// begun now pays her (carrier_in_time); await_carrier then begins it. A wait ends for good after
++// carry_reach rounds, the longest slip she claims at, or once it is cut short. A one-tile group not yet
++// held is left empty while she is in sight and on it sooner than a count of ours would pay.
++bool awaits_carrier(const World& world, Pathing& pathing, int g, const LeftRecord& left) {
++    const auto* a = living_carrier(world);
++    if (!a || a->is_self || left.lapsed || comms::claim_of(world, a->index) != g) return false;
++    const auto& G = world.map().groups[g];
++    if (!carriable(G)) return false;
++    const auto& c = world.camps[g];
++    if (enemy_seen(world) || c.holder == team::enemy || winning_bag(world)) return false;
++    if (left.awaited >= 0 && world.round - left.awaited >= carry_reach()) return false;
++    const bool held = c.holder == team::ally && c.held_since >= 0, relay = relayed(G);
++    if (relay || held) return false;
++    // A wait under way goes on while she is out of our sight; none begins for a carrier we cannot place.
++    if (!a->visible) return relay && left.awaited >= 0;
++    if (test(G.tiles(), a->pos) || held_back(world, *a, false) || a->health < params::hurt_health_fraction * a->max_health) return false;
++    // A count we begin is as long as our own Capture emblem makes it.
++    const int rounds = held ? c.payout_round() - world.round : capture_rounds(world);
++    // Short of fuel for the walk's field, a wait under way stands: the crow's steps could end it too early, for good.
++    if (!pathing.group_walking_ready(g) && !fuel_ok(full_field_cost_estimate() + end_reserve)) return relay && left.awaited >= 0;
++    return carrier_in_time(*a, walk_to_free(world, G, *a, a->pos, team_walk_to(world, pathing, g, a->pos)), rounds) != relay;
++}
++
+ // Off Prism, no enemy in sight: a Prism ally keeping its gems (as far as the team's tests show), healthy
+ // and free to walk, near cleared gem group g. Claimed by it, within carry_reach, the group is left
+ // (`claimed`) when even at Prism's nearest it misses the payout of our hold on it (2 rounds or more off, as
+@@ -535,14 +630,19 @@
+ // for good. A leave cut short (an enemy in sight, Prism lost or hurt) is not resumed either: leaving
+ // again would have us step on and off it by turns.
+ bool left_for_prism(const World& world, Pathing& pathing, int g, bool cleared_now) {
+-    if (g < 0 || world.me().facts().passive == Passive::gem_focus) return false;
++    if (g < 0) return false;
+     const auto& G = world.map().groups[g];
+     const auto& c = world.camps[g];
+-    if (G.gems <= 0 || G.has_monolith || (c.state != CampState::cleared && !cleared_now)) return false;
+-    static std::vector<LeftRecord> records;
+-    if (records.size() != world.map().groups.size()) records.assign(world.map().groups.size(), LeftRecord{});
+-    auto& left = records[static_cast<std::size_t>(g)];
+-    if (left.version != c.geometry_version) left = LeftRecord{c.geometry_version, world.round};
++    const bool gems = G.gems > 0 && world.me().facts().passive != Passive::gem_focus;
++    if ((!gems && !(carrier_index(world) >= 0 && carriable(G))) || G.has_monolith || (c.state != CampState::cleared && !cleared_now)) return false;
++    auto& left = left_record(world, g);
++    // A wait for the carrier that ends is not resumed: the count we then begin is hers to reach, or ours.
++    if (awaits_carrier(world, pathing, g, left)) {
++        if (left.awaited < 0) left.awaited = world.round;
++        return true;
++    }
++    if (left.awaited >= 0) left.lapsed = true;
++    if (!gems) return false;
+     const Leave leave = leave_for_prism(world, pathing, g, left);
+     if (leave == Leave::near) left.left = true;
+     if (leave == Leave::no && left.left) left.lapsed = true;
+@@ -639,8 +739,9 @@
+     const auto* prism = sole_capture_holder(world, G);
+     const bool left = !prism && left_for_prism(world, pathing, g);
+     if (left != after_farm) return false;
+-    // A threat out of sight keeps us on only another's hold: Prism's is no safer shared (sole_capture_holder).
+-    const bool sole_prism = prism && prism->facts().passive == Passive::gem_focus;
++    // A threat out of sight keeps us on only another's hold: Prism's, or the carrier's, is no safer shared
++    // (sole_capture_holder has judged the enemies in sight).
++    const bool sole_prism = prism && (prism->facts().passive == Passive::gem_focus || carrier(*prism));
+     // Hit, by an enemy seen or not, staying only splits the sole Prism's payout (the step guard prices the step).
+     if (memory.damage > 0 && !sole_prism) return false;
+     if (left) {
+@@ -686,6 +787,89 @@
+     return false;
+ }
+ 
++// The group we kept off for the carrier at our last turn.
++int awaited_group = -1;
++
++// A cleared group we stand on or cleared from here that we keep off for the carrier to join (awaits_carrier): we
++// wait beside its tiles, hitting what cannot hit back, and step on to begin the count once the wait ends,
++// whether she is then in time or no longer coming. One mate waits: the nearest in sight (ties to the lower
++// index).
++bool await_carrier(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
++    const int was = std::exchange(awaited_group, -1);
++    if (carrier_index(world) < 0 || carrier(world.me()) || channelling() || winning_bag(world)) return false;
++    const auto& map = world.map();
++    const vec2 here = my_position();
++    const int range = world.me().facts().attack_range();
++    const bool can_move = my_can_move();
++    int seen[4], n = 0;
++    for (const int g : {map.group_at(here), was, memory.farm_group, memory.claim}) {
++        if (g < 0 || g >= static_cast<int>(map.groups.size()) || std::find(seen, seen + n, g) != seen + n) continue;
++        seen[n++] = g;
++        const auto& G = map.groups[g];
++        const auto& c = world.camps[g];
++        if (c.state != CampState::cleared || !relayed(G)) continue;
++        const int steps = steps_to(G, here);
++        if (steps > range) continue;
++        const bool on = steps == 0;
++        if (!left_for_prism(world, pathing, g)) {
++            // The wait is over: the count is ours to begin.
++            if (g != was || on || steps > 1 || left_record(world, g).awaited < 0 || allies_on(world, G.tiles()) > 0
++                || enemy_on(world, G.tiles()) || c.holder == team::enemy)
++                continue;
++            // Our step spent (a ranged hit), it is begun next turn.
++            if (!can_move) {
++                awaited_group = g;
++                continue;
++            }
++            for (const auto d : directions) {
++                const vec2 p = here + d;
++                if (!in_bounds(p) || !test(G.tiles(), p) || test(pathing.blocked(), p) || safety.camp_damage(p) > 0) continue;
++                if (walk_then(world, pathing, p, [&] {
++                        memory.claim = memory.farm_group = g;
++                        memory.crew = false;
++                        decision = Branch::hold;
++                    })) {
++                    debug_block({ std::printf("CARRY BEGIN %d %u g%d waited %d\n", world.round, my_handle(), g, world.round - left_record(world, g).awaited); });
++                    return true;
++                }
++            }
++            continue;
++        }
++        if (left_record(world, g).awaited < 0 || safety.any_threat() || memory.damage > 0) continue;
++        bool nearest = true;
++        for (const auto& a : world.allies) {
++            if (a.is_self || !a.alive || !a.visible || carrier(a) || held_back(world, a, false)) continue;
++            const int d = steps_to(G, a.pos);
++            // Only an ally that would wait too: within its own reach of the tiles, as we are.
++            nearest &= d > a.facts().attack_range() || d > steps || (d == steps && a.index > world.me().index);
++        }
++        if (!nearest) continue;
++        const auto waits = [&] {
++            awaited_group = g;
++            memory.farm_group = g, memory.claim = -1, memory.crew = false;
++            decision = Branch::await;
++        };
++        bool moved = steps == 1;
++        if (!can_move) {
++        } else if (on) {
++            for (const auto d : directions) {
++                const vec2 p = here + d;
++                if (!in_bounds(p) || test(G.tiles(), p) || !test(map.standable, p) || test(pathing.blocked(), p) || safety.camp_damage(p) > 0) continue;
++                if ((moved = walk_then(world, pathing, p, waits))) break;
++            }
++        } else if (steps > 1 && fuel_ok(search_cost_estimate(steps + max_detour) + end_reserve)) {
++            moved = pathing.step_towards(G.adjacent(), nullptr, steps + max_detour);
++            world.throw_if_stale();
++        }
++        if (!moved) continue;
++        hold_capture(world, memory, false);
++        waits();
++        debug_block({ std::printf("CARRY AWAIT %d %u g%d steps %d since %d\n", world.round, my_handle(), g, steps, left_record(world, g).awaited); });
++        return true;
++    }
++    return false;
++}
++
+ // 3 picks on Stellar maps: Marcella steps onto the gem group Stellar holds, for the hold to pass
+ // to her (sole_capture_holder).
+ bool join_marcella_capture(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+@@ -828,6 +1012,36 @@
+     return gain + static_cast<float>(hold) * work_rate;
+ }
+ 
++// What a turn alive of ours has earned, in gems at `per_gold` a base gold: our captures' gems and gold,
++// prior-weighted as gem_income_rate (shop.cc's income). Camps never regenerate (rules camps.sleep), so the
++// work a carry interrupts is only put off: its rounds away cost this, not the rate of the pick left standing.
++float earning_rate(const World& world, float per_gold) {
++    const float turns = static_cast<float>(upkeep.turns) + prior_rounds_per_gem * income_prior_gems;
++    return (income.gems + income_prior_gems + per_gold * (income.capture_gold + income_prior(world.map()).gold * income_prior_gems)) / turns;
++}
++
++// The carrier's own pick of a cleared group with gold: what her lone hold gains the team over that of the
++// best mate in sight on its tiles or within its own reach of them (where it cleared it from), the holder
++// it has otherwise, in gems at `price` a gold; negative with no such mate or no gain. In `mate` that
++// hold's value and the mate's camp output, and whether a mate stands on a tile.
++float carry_gain(const World& world, const CampGroup& G, float price, CarryMate& mate) {
++    mate = {};
++    bool any = false;
++    for (const auto& a : world.allies) {
++        if (a.is_self || !a.alive || !a.visible) continue;
++        const bool on = test(G.tiles(), a.pos);
++        if (!on && steps_to(G, a.pos) > a.facts().attack_range()) continue;
++        if (held_back(world, a, false)) {
++            if (on) return -1.0f; // cannot step off for us
++            continue;
++        }
++        const float v = holder_value(world, a, G, price);
++        if (!any || v > mate.value) mate.value = v, mate.output = camp_output(a);
++        mate.on |= on, any = true;
++    }
++    return any ? holder_value(world, world.me(), G, price) - mate.value : -1.0f;
++}
++
+ // Prism keeping its gems (keeps_gems) may hold G's capture from off its tiles: sole_capture_holder's
+ // tests of us, read before we get there. In `goal` the free tiles no camp hits.
+ bool prism_carries(const World& world, Safety& safety, const CampGroup& G, bitboard& goal) {
+@@ -882,19 +1096,19 @@
+     const int g = world.map().group_at(my_position());
+     if (g < 0 || world.camps[g].state != CampState::cleared) return false;
+     const auto* prism = sole_capture_holder(world, world.map().groups[g]);
+-    return prism ? !prism->is_self && prism->facts().passive == Passive::gem_focus : left_for_prism(world, pathing, g);
++    return prism ? !prism->is_self && (prism->facts().passive == Passive::gem_focus || carrier(*prism)) : left_for_prism(world, pathing, g);
+ }
+ 
+ // Off its tiles: those of the cleared gem group a Prism ally in sight holds alone (sole_capture_holder),
+ // where a step of ours that ends would split its payout. Null if none, or if we stand on them unless `on_too`.
+ const bitboard* prism_hold_tiles(const World& world, bool on_too) {
+-    if (world.me().facts().passive == Passive::gem_focus) return nullptr;
++    if (world.me().facts().passive == Passive::gem_focus || carrier(world.me())) return nullptr;
+     for (const auto& a : world.allies) {
+-        if (a.is_self || !a.alive || !a.visible || a.facts().passive != Passive::gem_focus) continue;
++        if (a.is_self || !a.alive || !a.visible || (a.facts().passive != Passive::gem_focus && !carrier(a))) continue;
+         const int g = world.map().group_at(a.pos);
+         if (g < 0 || world.camps[g].state != CampState::cleared) return nullptr;
+         const auto& G = world.map().groups[g];
+-        if (G.gems <= 0 || (!on_too && test(G.tiles(), my_position())) || sole_capture_holder(world, G) != &a) return nullptr;
++        if ((!on_too && test(G.tiles(), my_position())) || sole_capture_holder(world, G) != &a) return nullptr;
+         return &G.tiles();
+     }
+     return nullptr;
+diff -ruN bots/variants/vfish-b0/src/economy/farm.cc bots/variants/vfish-hold-nowait/src/economy/farm.cc
+--- bots/variants/vfish-b0/src/economy/farm.cc	2026-11-12 04:51:16.758538378 +0000
++++ bots/variants/vfish-hold-nowait/src/economy/farm.cc	2026-11-13 00:45:09.982799564 +0000
+@@ -320,6 +320,11 @@
+     float last_per_gold = 0, last_tribute_gold = 0;
+     std::uint32_t gold_context = 0;
+     int carry_group = -1, carry_round = -1; // the ally's capture our pick in carry_round takes over (prism_takeover)
++    int carry_since = -1; // the round carry_group became the pick
++    float work_rate = 0; // the loop's best rate when it last ran: what a round of ours earns
++    // The carrier's pick of a group whose count ran on to a payout before her: not picked again that episode.
++    int declined_group = -1;
++    std::uint32_t declined_version = 0;
+     FarmClearing last_clearing{};
+     std::uint32_t clearing = 0;
+     // By group: from each position of its nearest_groups order on, the most any group there holds.
+@@ -639,13 +644,51 @@
+     }
+ }
+ 
+-// Our claim, while it is the capture our last pick carried ('G' or 'L'), withdrawn.
++// Our claim, while it is the capture our last pick carried ('G', 'L' or 'Q'; the carrier's 'T' too), withdrawn.
+ void drop_carry_claim(Memory& memory) {
+     auto& memo = farm_memo();
+     if (memo.carry_group >= 0 && memory.claim == memo.carry_group) memory.claim = -1;
+     memo.carry_group = -1;
+ }
+ 
++// For the carrier's 'Q' pick: live group g in our sight, with gold, as the mates working it leave it to us.
++// `gain`: our lone hold's over the best claimer's (holder_value), negative when it is not ours to take.
++// `clear`: the rounds its clear takes them; `count`: until its first count pays, a whole count later.
++// `slip_cost`: what a round's slip of that payout costs, the group's next cycle and the best claimer's work
++// starting later.
++struct MateClear {
++    float gain = -1, clear = 0, count = 0, slip_cost = 0;
++};
++MateClear mate_clear(const World& world, int g, float price, float earning, float strength) {
++    const auto& G = world.map().groups[g];
++    const auto& c = world.camps[g];
++    MateClear m;
++    if (!relayed(G) || c.state != CampState::alive) return m;
++    float output = 0, held = 0, mate_output = 0;
++    bool worked = c.last_damaged_round >= world.round - 1;
++    for (const auto& b : world.allies) {
++        if (b.is_self || !b.alive || comms::claim_of(world, b.index) != g) continue;
++        output += camp_output(b);
++        if (b.visible) worked = worked || crew_in_reach(world, g, b.pos, b.facts().attack_range());
++        if (const float v = holder_value(world, b, G, price); v > held) held = v, mate_output = camp_output(b);
++    }
++    if (!worked || !(output > 0)) return m;
++    float health = 0;
++    for (std::size_t i = 0; i < G.members.size(); ++i) health += std::max(0.0f, c.health[i]);
++    if (!(health > 0)) return m;
++    m.clear = health / output, m.count = m.clear + static_cast<float>(capture_rounds(false));
++    m.slip_cost = held / static_cast<float>(G.respawn) + earning * mate_output / strength;
++    m.gain = holder_value(world, world.me(), G, price) - held;
++    return m;
++}
++// Its rate from `walk` steps off: the gain, less the slip when we come after its first count's last round (the
++// mates keep it for us), over the rounds there, to the payout and back.
++float mate_clear_rate(const World& world, const MateClear& m, int walk) {
++    const float late = static_cast<float>(walk + 1) - m.count;
++    if (!(m.gain > 0)) return 0.0f;
++    return rate(world, m.gain - std::max(0.0f, late) * m.slip_cost, std::max(m.count, static_cast<float>(walk + 1)) + static_cast<float>(walk));
++}
++
+ template <bool opening, bool banking = false, bool repricing = false> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ [[gnu::noinline]] bool farm_banking(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+@@ -850,11 +893,36 @@
+         return true;
+     };
+     const bool keeps = keeps_gems(world, pathing);
++    const bool carries = carrier(world.me());
+     // On the way to take over an ally's capture, a ranged hit in passing costs the step that makes the payout,
+     // and its claim the claim the ally leaves the group to us by (left_for_prism).
+-    const int carried = memo.carry_group;
+-    const bool taking_over = keeps && carried >= 0 && memo.carry_round == world.round - 1 && carried == memory.farm_group && world.camps[carried].state == CampState::cleared
+-                             && !test(groups[carried].tiles(), my_position());
++    const int carry_g = memo.carry_group;
++    bool taking_over = keeps && carry_g >= 0 && memo.carry_round == world.round - 1 && carry_g == memory.farm_group && world.camps[carry_g].state == CampState::cleared
++                       && !test(groups[carry_g].tiles(), my_position());
++    // The carrier: a mate's hold in reach that she gains on (carry_gain) is priced by the picks after the loop,
++    // on this turn rather than after the hit, unless its count leaves a round to spare: a payout needs her on
++    // it only in its last round, so until then her hits cost it nothing. A group a mate keeps for her is not
++    // kept waiting; nor is one whose gain over the rounds there and back is under what those rounds earn.
++    if (carries && !repricing && !banks_bag && !memory.banking && !enemy_seen(world) && my_health() >= params::hurt_health_fraction * max_health) {
++        const vec2 at = my_position();
++        const float price = prices(world).per_gold, earning = earning_rate(world, memo.last_per_gold), bar = std::min(memo.work_rate, earning);
++        world.each_cleared([&](int g) {
++            const auto& G = groups[g];
++            if (taking_over || world.camps[g].holder == team::enemy) return;
++            const int least = steps_to(G, at);
++            if (least < 1 || least > carry_reach() || !relayed(G) || (g == memo.declined_group && world.camps[g].geometry_version == memo.declined_version)) return;
++            CarryMate mate;
++            const float gain = carry_gain(world, G, price, mate);
++            if (!(gain > 0)) return;
++            const int timer = mate.on ? fresh_ally_capture(world, G) : -1;
++            // The walk is no shorter than the crow's steps; a step more where its field is not made.
++            const int field = pathing.group_walking_ready(g) ? team_walk_to(world, pathing, g, at) : least + 1;
++            if (field > carry_reach()) return;
++            const int walk = walk_to_free(world, G, world.me(), at, field);
++            if (timer >= 0 && walk + 1 < timer) return;
++            taking_over = (g == carry_g && memo.carry_round == world.round - 1) || rate(world, gain, static_cast<float>(2 * least + 1)) > bar;
++        });
++    }
+     if (!repricing && !banks_bag && !taking_over && attack_in_range()) return true;
+     if (world.is_stale()) return true;
+ 
+@@ -2250,6 +2318,7 @@
+     need_zone();
+     // An ally's hold that pays more with us on it: the rounds we then hold free the holder, worth
+     // what our best cycle earns a round, so the walk is what it costs.
++    memo.work_rate = best_value;
+     if (!banks_bag && !memory.banking && evaluated == n_groups && takes_over(world)) {
+         const float work_rate = best_value;
+         world.each_cleared([&](int g) {
+@@ -2271,12 +2340,97 @@
+             if (value > best_value) best = g, best_steps = walk, best_value = value, best_spell = false, best_priced = Priced{'T'};
+         });
+     }
++    static bitboard carry_goal{cambc::uninitialized}, goal{cambc::uninitialized};
++    const int reach = carry_reach();
++    // The carrier: a mate's hold of a group with gold, or one a mate keeps for her, that her lone hold pays the
++    // team more on (carry_gain). In time for its count ('G'), she joins it and the mate steps off; else ('L') her
++    // claim has the mate keep off its tiles until a count begun then pays her (awaits_carrier), about the round
++    // after she arrives, and the gain is less what that slip costs: the group's next cycle and the mate's work
++    // both start that much later. It costs her the rounds there, to the payout and back, at what her rounds earn
++    // (earning_rate): work left standing is only put off. Only another capture, which does not keep, is
++    // weighed at its own rate. A pick under way stands: the mate has reset its count for it. One whose count
++    // ran on (the mate sees an enemy, or missed the claim) is dropped for the episode.
++    if (carries && !banks_bag && !memory.banking && !enemy_seen(world) && my_health() >= params::hurt_health_fraction * max_health) {
++        const float price = prices(world).per_gold, earning = earning_rate(world, per_gold);
++        const float bar = best >= 0 && world.camps[best].state == CampState::cleared ? best_value : std::min(best_value, earning);
++        float carry_value = 0;
++        world.each_cleared([&](int g) {
++            const auto& G = groups[g];
++            const auto& c = world.camps[g];
++            if (!relayed(G) || c.holder == team::enemy || enemy_on(world, G.tiles())) return;
++            const int least = steps_to(G, here);
++            if (least < 1 || least > reach || (g == memo.declined_group && c.geometry_version == memo.declined_version)) return;
++            CarryMate mate;
++            const float gain = carry_gain(world, G, price, mate);
++            if (!(gain > 0)) return;
++            const int timer = mate.on ? fresh_ally_capture(world, G) : -1;
++            if (!pathing.group_ready(g) && !fuel_ok(full_field_cost_estimate() + loop_reserve())) return;
++            const int walk = pathing.to_group(g).at(here);
++            if (walk == unreachable || walk > reach) return;
++            // In time as the mate judges it (awaits_carrier): on foot, to a tile it does not stand on.
++            if (!pathing.group_walking_ready(g) && !fuel_ok(full_field_cost_estimate() + loop_reserve())) return;
++            const int foot = walk_to_free(world, G, world.me(), here, team_walk_to(world, pathing, g, here));
++            const bool in_time = timer >= 0 && foot < timer;
++            if (!in_time) return;
++            const bool under_way = memo.carry_group == g && memo.carry_round == round - 1;
++            // The mate's turn that reads our claim may come after our next one: its count is given a round more.
++            if (under_way && timer >= 0 && !in_time && round - memo.carry_since >= 2) {
++                memo.declined_group = g, memo.declined_version = c.geometry_version;
++                debug_block({ std::printf("CARRY DECLINED %d g%d walk %d timer %d\n", round, g, walk, timer); });
++                return;
++            }
++            // Late, the mate begins the count once we are in time for it: it pays the round after we arrive, no
++            // sooner than a whole count from now. The slip is from the running count's payout, or from that of
++            // one the mate would begin now.
++            const int payout = in_time ? foot + 1 : std::max(foot + 1, capture_rounds(false));
++            const float slip = in_time ? 0.0f : static_cast<float>(payout - (timer >= 0 ? timer : capture_rounds(false)));
++            const float worth = gain - slip * (mate.value / static_cast<float>(G.respawn) + earning * mate.output / strength);
++            if (!(worth > 0)) return;
++            const float value = rate(world, worth, static_cast<float>(payout + walk));
++            debug_block({ std::printf("CARRY PRICE %d g%d walk %d timer %d gain %.1f worth %.1f value %.3f bar %.3f best %.3f under %d\n", round, g, walk, timer, gain, worth, value, bar, best_value, int(under_way)); });
++            // The loop's own pick of it is this carry: the mate beside it waits on our claim.
++            if ((value > bar && value > carry_value) || under_way || (best == g && carry_value <= 0)) {
++                carry_value = under_way ? std::numeric_limits<float>::max() : std::max(value, carry_value);
++                best = g, best_steps = walk, best_value = std::max(value, best_value), best_spell = false, best_priced = Priced{in_time ? 'G' : 'L'};
++                copy_into(free_tiles(G.tiles()), carry_goal);
++            }
++        });
++    }
++    // The carrier: a live group with gold that mates claim and work in our sight, within carry_reach ('Q'). Its
++    // first count pays a whole count after their clear. There before the clear ends we join it, if we can afford
++    // its fire; in time for that count we join the hold; later the mates keep it for us, which costs the slip as
++    // for 'L'. Its gain is that of our hold over a claimer's, over the rounds there, to the payout and back; it
++    // replaces our work rather than interrupts it, so it is weighed against the loop's best like any pick.
++    if (carries && !banks_bag && !memory.banking && !enemy_seen(world) && my_health() >= params::hurt_health_fraction * max_health
++        && !(best >= 0 && (best_priced.mode == 'G' || best_priced.mode == 'L'))) {
++        const float price = prices(world).per_gold, earning = earning_rate(world, per_gold);
++        std::array<int, 8> asked;
++        int n_asked = 0;
++        for (const auto& a : world.allies) {
++            if (a.is_self || !a.alive) continue;
++            const int g = comms::claim_of(world, a.index);
++            if (g < 0 || g >= n_groups || n_asked == static_cast<int>(asked.size()) || std::find(asked.begin(), asked.begin() + n_asked, g) != asked.begin() + n_asked)
++                continue;
++            asked[static_cast<std::size_t>(n_asked++)] = g;
++            const auto& G = groups[g];
++            const int least = steps_to(G, here);
++            if (least > reach) continue;
++            const MateClear m = mate_clear(world, g, price, earning, strength);
++            // Its rate falls with the walk, at least the crow's steps.
++            if (!(mate_clear_rate(world, m, least) > best_value) || enemy_on(world, G.tiles()) || (kited(g) && kite_owns(world, g)) || siege_declines(world, g))
++                continue;
++            if (!pathing.group_ready(g) && !fuel_ok(full_field_cost_estimate() + loop_reserve())) continue;
++            const int walk = pathing.to_group(g).at(here);
++            if (walk == unreachable || walk > reach) continue;
++            const float value = mate_clear_rate(world, m, walk);
++            if (value > best_value && !(static_cast<float>(walk) < m.clear && !affordable(g)))
++                best = g, best_steps = walk, best_value = value, best_spell = false, best_priced = Priced{'Q'};
++        }
++    }
+     // Keeping our gems, as Prism: an ally's gem capture we reach before it pays ('G'), all of it ours once the
+     // ally yields, over the rounds to the payout. One we cannot reach in time, within carry_reach, the
+     // ally leaves to us (left_for_prism), as it does a cleared group we head for ('L'): ours over the
+     // walk and a whole hold of our own.
+-    static bitboard carry_goal{cambc::uninitialized}, goal{cambc::uninitialized};
+-    const int reach = carry_reach();
+     if (keeps && !banks_bag && !memory.banking) {
+         world.each_cleared([&](int g) {
+             const auto& G = groups[g];
+@@ -2383,7 +2537,8 @@
+     bool spell = best >= 0 && best_spell;
+     Priced chosen = best_priced;
+     if (chosen.mode == 'Q') memory.crew = true; // the claim an ally's leave_for_prism reads; the clear's crew if we come in time
+-    if (shared >= 0 && (best < 0 || shared_value > best_value)) {
++    // The carrier's 'G' or 'L' stands against a join as against the loop's best: the join is only put off.
++    if (shared >= 0 && (best < 0 || shared_value > best_value) && !(carries && (chosen.mode == 'G' || chosen.mode == 'L'))) {
+         best = shared, best_steps = shared_steps, memory.claim = shared, memory.crew = true, spell = false, chosen = shared_priced;
+         if (prev_claim != shared || !prev_crew) {
+             debug_block({ std::printf("CREW JOIN %d %u g%d tank %d trips %d output %.0f value %.4f\n", round, my_handle(), shared,
+@@ -2424,7 +2579,11 @@
+                         chosen.mode, chosen.trips, chosen.tank, chosen.expected, chosen.output, chosen.damage, my_health(), max_health);
+         }
+     });
+-    if constexpr (!repricing) memo.carry_group = best >= 0 && (chosen.mode == 'G' || chosen.mode == 'L' || chosen.mode == 'Q') ? best : -1, memo.carry_round = round;
++    if constexpr (!repricing) {
++        const int carry_now = best >= 0 && (chosen.mode == 'G' || chosen.mode == 'L' || chosen.mode == 'Q' || (carries && chosen.mode == 'T')) ? best : -1;
++        if (carry_now != memo.carry_group || memo.carry_round != round - 1) memo.carry_since = round;
++        memo.carry_group = carry_now, memo.carry_round = round;
++    }
+     if (best < 0) {
+         if constexpr (repricing) return true;
+         // Cut short before weighing even last turn's choice: walk on towards it, as its crew if we were.
+@@ -2538,8 +2697,8 @@
+     if (world.camps[best].state == CampState::cleared) {
+         // Taking over, to a tile the ally yields to us on (prism_takeover).
+         if (search) {
+-            const bool carry = chosen.mode == 'G' || chosen.mode == 'L';
+-            if (!pathing.step_towards(off_zone(carry ? carry_goal : groups[best].tiles()), zone, cap, groups[best].centre)) walk_on(best);
++            const bool to_goal = chosen.mode == 'G' || chosen.mode == 'L';
++            if (!pathing.step_towards(off_zone(to_goal ? carry_goal : groups[best].tiles()), zone, cap, groups[best].centre)) walk_on(best);
+         } else {
+             note_shortcut("farm-no-route");
+             walk_on(best);

@@ -18903,3 +18903,41 @@ Note, patches and tools: [ideas-2026-11-12/atlas525/README.md](ideas-2026-11-12/
   they start cut the step guard at entry on 15-19% of press turns. Cuts persist (a press turn after a cut turn is cut
   48% of the time, 16% otherwise); skipping the press then adds +0.2 to +0.4 but only reaches level.
 - Nothing kept. What would pay is fight turns that fit 100k, not a cheaper press.
+
+## (scylla, 2026-11-13) Charybdis without Prism, around a fed Vesper: 35.6% against charybdis 525, 19 points under it against the bodies
+
+The user's brief: a "Fish version" of charybdis that drafts Vesper Vale instead of Prism and feeds her, as strong as
+possible head to head against charybdis 525 (target 50%). Notes, scripts and every arm's patch:
+[ideas-2026-11-12/vfish/README.md](ideas-2026-11-12/vfish/README.md). Shipped as `bots/scylla` (CHANGES 526).
+
+Against charybdis 525 (`variants/chy-bagfocus-525`), own drafts, release, 100k fuel, fresh ladder-v4 maps. dev0 is
+4,080 games reused for every arm (+-1.4); g1 is 20,400 games no arm had played.
+
+| bot | dev0 | g1 (95% CI) |
+|---|---|---|
+| `vfish-b0`: 525 with Vesper required and Prism banned in the draft's team lock | 29.1 | 29.0 (28.4-29.6) |
+| b0 + mitefit's `rule_vcarry`, Fish's build order, fishr8's gold x2.5 | 28.3 | |
+| `vfish-m1`: b0 + hold + pack-feed + build-priced | 33.3 | 31.6 (30.9-32.2) |
+| **`vfish-kill` = scylla**: m1 + the tribute denial | **37.5** | **35.6 (35.0-36.3)** |
+
+- **The pieces** (dev0, on b0): hold 31.4 (Vesper the sole holder of gold groups; she joins a mate's count in time,
+  mates wait for her claim), pack 29.2 (mates price gold near her as paid to her), build-priced 31.1 (Greed in
+  150-gold steps ranked against every emblem; all 14 families priced; the game's rounds left as the horizon); Fish's
+  fixed build order 29.7, Greed first 22.4 of 680. On m1: the denial 37.5, without its watch ward 34.8, without ward
+  and alarm 33.0; stopping at once in place of late 29.9 of 680 against 38.4.
+- **Level or lost on m1:** health sized to the largest enemy burst seen (four rules: 32.1-33.0, and 36.0-37.7 on
+  kill against its 37.5), a stun and the caster's following turn as lethal reach (32.7, out-of-fuel turns +24% over
+  the reference's), 20 single-champion draft locks (best 33.9, ban Cassi & Issac 24.4).
+- **Side read:** `fgate --pool v4 --fish-body fr8-g25`, one batch (20,480 games): scylla wins 58.4% against the
+  bodies and charybdis 77.3%; -18.0 against the Fish r8 body, -19.9 against the Mite body.
+- **Why it stays under 50%:** the reference's Prism. Where the reference drafts none the swap bot is level; its casts
+  make 44-59% of our deaths; a completed hoard tribute is the loss in 419 of 468 card losses. Feeding Vesper to
+  Fish's level is worth about 2 points (Fish's gold lead is mostly the maps it drafts her on, 27% richer in camp
+  gold), and more stats on her in either stat do not turn the matchup.
+- **For charybdis:** its Prism's tribute is cheap to deny (a ward at the altar nearest its spawn, an alarm, stops in
+  the channel's last turns: about 4 points). The Prism's carry picks may be skipped on turns the ranged hit in
+  passing ends first (measured on Vesper running that machinery: 79% of her turns near a mate's hold). Late stops
+  were not tried in "Interrupting Fish r8's big tributes" above, which stopped while the channel had time.
+
+**Verdict:** kept as a bot of its own, not a main bot. Two implementer rounds; the draft lab refit was not run.
+

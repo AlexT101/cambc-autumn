@@ -4923,3 +4923,32 @@ programme's on `fgate --pool v4` batches 26-33, a replication on batches 34-45):
 - **Not in it:** the Prism's Health goal with its shop trip (`r8s-c3`), level locally on every read; open in TODO.
 
 Evidence: EXPERIMENTS "The out-scaled Prism against Fish r8". Frozen as `variants/chy-bagfocus-525` (= bots/charybdis).
+
+## 526: scylla, a new bot: charybdis 525 without Prism, around a fed Vesper Vale (scylla, 2026-11-13)
+
+`bots/scylla` is charybdis 525 with three additions ([vfish](../ideas-2026-11-12/vfish/README.md), patches
+`m1.patch` and `kill.patch`). It never drafts Prism and always drafts Vesper Vale (`draft_model.h` `required`,
+`banned`); the draft model is charybdis's.
+- **Funnel** (`economy/capture.cc`, `farm.cc`, `crew.cc`, `bot.cc`): Vesper is the sole holder of a group with gold;
+  she joins a mate's running count when her walk beats the payout ('G', priced before the ranged hit in passing), a
+  mate in her sight waits beside a group she has claimed and begins the count when it pays her ('L',
+  `awaits_carrier`), and she picks a gold clear mates are working ('Q'). Mates price the gold of groups within
+  `carry_reach` of the payee (`gold_payee`) as paid to her, and her share of a crew's clear carries her premium over
+  the next holder.
+- **Build** (`economy/shop.cc`): the carry buys Greed in 150-gold steps, each ranked against every other emblem by
+  its shards plus its part of the completion bonus, the bonus counted only if forecast gold completes it; she prices
+  all 14 families (no learned table); every champion's pricing horizon is the game's rounds left.
+- **Tribute denial** (`combat/fight.cc` `denial`, `bot.cc`, `model/comms.cc`, flags in `params.h`): a tribute of
+  half of what the enemy still needs is stopped as a winning one is, by any body but the carry holding a lock or a
+  stun; the stop is timed for the channel's last turns, a cancelled channel restarting whole; a seer posts the altar
+  and the channel's end in the shared bytes; the lock is bought before shards; one teammate leaves its ward for good
+  beside the altar nearest the enemy spawn.
+
+Against charybdis 525, own drafts, release, 100k fuel, 20,400 games on fresh ladder-v4 maps no arm had played:
+**35.6% (35.0-36.3)**; the draft swap alone 29.0%, with the funnel and build 31.6%. Out-of-fuel turns level with the
+reference's; no failed game or broken draft. Against the Fish r8 and Mite bodies it wins 58.4% where charybdis wins
+77.3% (one fgate batch). Not a main bot: a Vesper-carry line kept for reference and as a sparring opponent that
+denies a hoard's tribute.
+
+Evidence: EXPERIMENTS "Charybdis without Prism, around a fed Vesper". Frozen as `variants/scylla-526` (= bots/scylla).
+

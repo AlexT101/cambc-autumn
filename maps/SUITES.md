@@ -1051,3 +1051,9 @@ re-measured"; used).
 
 **Lab filler (2026-11-12, research/ideas-2026-11-12/labs):** `--mix ladder-v2`, under `~/tmp-offload/labs/rounds/ID/maps/fresh-{seed}`:
 - 7700000-7799999 reserved: each filler round takes 10,000 seeds from 7700000 + 10,000 x (rounds before it); emb rounds use 200 suites, draft 100, tune 40 (training pools, used by their labs). Rounds from 2026-11-12 ~10:25 (after emb6, which used `--mix ladder-v2` on 7700000-7700199) use `--mix ladder-v4` (340 maps a suite).
+
+**scylla (2026-11-13, research/ideas-2026-11-12/vfish):** `--mix ladder-v4`, under `~/tmp-offload/vfish/suites/SET/fresh-{seed}`:
+- 8860000-8860005 (`dev0`, 2,040 maps): the development set, every `vfish-*` arm against `variants/chy-bagfocus-525` (used many times).
+- 8860010 (`card`, 340 maps): the scorecard runs (used many times).
+- 8860100-8860129 (`g1`, 10,200 maps): the confirmation, `vfish-b0`, `vfish-m1` and `vfish-kill` (= bots/scylla) against `variants/chy-bagfocus-525`, `replays/ab/vf-vfish-*-g1/` (used).
+

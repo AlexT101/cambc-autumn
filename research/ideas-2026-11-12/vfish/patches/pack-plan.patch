@@ -1,0 +1,85 @@
+diff -ruN bots/variants/vfish-b0/src/draft/draft.cc bots/variants/vfish-pack-plan/src/draft/draft.cc
+--- bots/variants/vfish-b0/src/draft/draft.cc	2026-11-12 14:11:46.668287177 +0000
++++ bots/variants/vfish-pack-plan/src/draft/draft.cc	2026-11-13 00:39:15.583443954 +0000
+@@ -815,6 +815,23 @@
+     if (site < sites) a.ward_sites_max = site;
+ }
+ 
++// emblem_share (economy/crew.cc) and gold_efficiency (economy/capture.cc) of a body at its base stats.
++float base_emblem_share(const ChampionFacts& f) {
++    const float str = f.strength.base, foc = f.focus.base, shards = static_cast<float>(shards_per_emblem);
++    return std::max(f.raw_output(str + shards * f.strength.growth, foc), f.raw_output(str, foc + shards * f.focus.growth))
++           / std::max(1.0f, f.raw_output(str, foc)) - 1.0f;
++}
++float base_gold_efficiency(const ChampionFacts& f) {
++    static const cambc::enum_map<cambc::item_type> none{};
++    const float hp = f.health.base, str = f.strength.base, foc = f.focus.base;
++    const float p0 = std::max(1.0f, f.raw_output(str, foc)) * hp;
++    float best = std::max(1.0f, f.raw_output(str + 5 * f.strength.growth, foc)) * hp;
++    best = std::max(best, std::max(1.0f, f.raw_output(str, foc + 5 * f.focus.growth)) * hp);
++    const float ryth = f.passive == Passive::health_strength ? cambc::constants::passive_abilities::ryth_health_strength_ratio * 5 * f.health.growth : 0.0f;
++    best = std::max(best, std::max(1.0f, f.raw_output(str + ryth, foc)) * (hp + 5 * f.health.growth));
++    return std::max(1.0f, best - p0) * gold_rate(f, none);
++}
++
+ // The opening plan (open_plan.h) for the team we expect, into the facts block's slot. Last in the first turn, on the
+ // fuel the rest leaves: without room for its fields there is no plan (play farms as usual); its search stops at
+ // `floor`. Candidates: our half's groups (nearer our spawn than theirs: the model has no enemy, and the middle is
+@@ -875,13 +892,22 @@
+         for (int d = c + 1; d < p.cands; ++d)
+             if (open_centre[d]) p.steps[c][d] = p.steps[d][c] = static_cast<std::uint16_t>(steps_at(walk, map.groups[order[d].second].centre));
+     }
++    // A body's gold weighs as farm prices it in play: its gold bonus times its relative efficiency (economy/capture.cc),
++    // at its emblem's price over the team's mean (emblem_share), so the plan's holder is the gold payee and a capture
++    // it attends is worth the payee's price.
++    static const cambc::enum_map<cambc::item_type> no_items{};
++    float mean_efficiency = 0, mean_share = 0;
++    for (int b = 0; b < p.bodies; ++b) {
++        mean_efficiency += base_gold_efficiency(facts(a.lead_for[b])) / static_cast<float>(p.bodies);
++        mean_share += base_emblem_share(facts(a.lead_for[b])) / static_cast<float>(p.bodies);
++    }
+     for (int b = 0; b < p.bodies; ++b) {
+         const auto type = a.lead_for[b];
+         const auto& f = facts(type);
+         auto& B = p.body[b];
+         B.dps = base_output(type), B.range = f.attack_range(), B.melee = !f.ranged;
+         B.health = f.health.base, B.usable = f.health.base * (1.0f - params::draft_recall_health_fraction);
+-        B.bonus = f.passive == Passive::bonus_gold ? 1.0f + static_cast<float>(cambc::constants::passive_abilities::vesper_vale_bonus_gold_percent) / 100.0f : 1.0f;
++        B.bonus = gold_rate(f, no_items) * std::pow(base_gold_efficiency(f) / mean_efficiency, params::efficiency_power) * base_emblem_share(f) / mean_share;
+         const int i = body_spawn_index(map, b);
+         const bool by_tile = !a.spawn_steps.empty() && i < static_cast<int>(map.ally_spawn_tiles.size());
+         for (int c = 0; c < p.cands; ++c) B.from_spawn[c] = by_tile ? a.spawn_steps[order[c].second][i] : a.steps[order[c].second][0];
+@@ -900,7 +926,7 @@
+         std::printf("OPENPLAN value %.1f iterations %d cands %d bodies %d fuel start %llu search %llu end %llu\n", value, iterations, p.cands, p.bodies,
+                     static_cast<unsigned long long>(fuel_start), static_cast<unsigned long long>(fuel_search), static_cast<unsigned long long>(cambc::fuel_remaining()));
+         for (int b = 0; b < p.bodies; ++b) {
+-            std::printf("OPENPLAN body %d", b);
++            std::printf("OPENPLAN body %d type %d gold x%.2f:", b, static_cast<int>(a.lead_for[b]), p.body[b].bonus);
+             for (int k = 0; k < op::max_steps && steps[b][k]; ++k) std::printf(" g%d", steps[b][k] - 1);
+             std::printf("\n");
+         }
+diff -ruN bots/variants/vfish-b0/src/draft/open_plan.cc bots/variants/vfish-pack-plan/src/draft/open_plan.cc
+--- bots/variants/vfish-b0/src/draft/open_plan.cc	2026-11-11 18:50:25.011807821 +0000
++++ bots/variants/vfish-pack-plan/src/draft/open_plan.cc	2026-11-13 00:39:15.583524355 +0000
+@@ -300,15 +300,18 @@
+ };
+ 
+ // Each unit in turn takes the unclaimed group of best value per round (walk, clear, capture) from where its
+-// last one left it, until the horizon.
++// last one left it, until the horizon. The unit gold is worth most on picks first: its groups are worth less to the rest.
+ void greedy(const Problem& p, const std::array<Unit, max_bodies>& units, int n, std::array<std::array<std::int8_t, max_steps>, max_bodies>& out) {
+     std::array<bool, max_cands> claimed{};
+     std::array<float, max_bodies> t{};
+-    std::array<int, max_bodies> loc, len{};
++    std::array<int, max_bodies> loc, len{}, order{};
+     loc.fill(-1);
+     for (auto& l : out) l.fill(-1);
++    for (int u = 0; u < n; ++u) order[u] = u;
++    std::stable_sort(order.begin(), order.begin() + n, [&](int a, int b) { return units[a].bonus > units[b].bonus; });
+     for (int round = 0; round < max_steps; ++round)
+-        for (int u = 0; u < n; ++u) {
++        for (int i = 0; i < n; ++i) {
++            const int u = order[i];
+             int best = -1;
+             float best_rate = 0, best_rounds = 0;
+             for (int c = 0; c < p.cands; ++c) {

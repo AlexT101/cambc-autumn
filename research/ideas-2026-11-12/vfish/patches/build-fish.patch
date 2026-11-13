@@ -1,0 +1,492 @@
+diff -ruN bots/variants/vfish-b0/src/bot_parts.h bots/variants/vfish-build-fish/src/bot_parts.h
+--- bots/variants/vfish-b0/src/bot_parts.h	2026-11-12 13:28:45.818322409 +0000
++++ bots/variants/vfish-build-fish/src/bot_parts.h	2026-11-13 00:17:08.341564927 +0000
+@@ -193,6 +193,7 @@
+     Emblem next{};
+     unsigned count = 0;
+     float gain = 0;
++    float saved = 0; // the share of a turn the purchase saves, each emblem's as best_emblem prices it
+ };
+ 
+ // The way to an altar `walk` steps away, in rounds: the walk, or a recall less what the stop is
+diff -ruN bots/variants/vfish-b0/src/economy/shop.cc bots/variants/vfish-build-fish/src/economy/shop.cc
+--- bots/variants/vfish-b0/src/economy/shop.cc	2026-11-12 16:10:23.747362672 +0000
++++ bots/variants/vfish-build-fish/src/economy/shop.cc	2026-11-13 00:43:07.983340201 +0000
+@@ -23,6 +23,27 @@
+ 
+ unsigned shards_needed(int family) { return family == greed ? greed_shards : shards_per_emblem; }
+ 
++// The build arms of research/ideas-2026-11-12/vfish, one copy of the bot each; a merge keeps one value of each.
++// greed_rule, for the gold carry: `none` never prices Greed; `priced` buys a Greed step when it outranks every
++// other emblem; `first` buys nothing else while the forecast completes the Greed; `last` lets it outrank only the
++// stat emblems (a passive that beats those goes before it).
++enum class GreedRule { none, priced, first, last };
++inline constexpr GreedRule greed_rule = GreedRule::none;
++inline constexpr bool fish_order = true;   // the carry's emblems in Intercontinental Fish r8's order
++inline constexpr bool game_horizon = false;  // income_rates' horizon is the game's rounds left (game_rounds)
++inline constexpr bool waited_trips = false; // a shop stop is worth what its gold has lost by waiting (shop_wait)
++
++// The body the team's gold is fed to: the one whose passive multiplies it (Vesper Vale).
++bool gold_carry(const World& world) { return world.me().facts().passive == Passive::bonus_gold; }
++// It prices its emblems by the rules below, off the learned table.
++bool priced_carry(const World& world) { return greed_rule != GreedRule::none && gold_carry(world); }
++
++// The shards a completed Greed emblem adds to those bought.
++inline constexpr unsigned greed_bonus = greed_stats - greed_shards;
++// Greed is bought a plain emblem's worth of shards at a time, so that a step and an emblem compare at one price
++// and the choice is made again after each: the shards left of the step `have` Greed shards are in.
++unsigned greed_step(unsigned have) { return shards_per_emblem - have % shards_per_emblem; }
++
+ cambc::item_type shard_of(int family, int stat) {
+     return cambc::item_type{static_cast<std::uint32_t>(family * 6 + stat * 2)};
+ }
+@@ -131,7 +152,11 @@
+ std::optional<Begun> begun_emblem(const World& world, const cambc::enum_map<cambc::item_type>& owned) {
+     if (pin_family >= 0) return Begun{pin_family, pin_stat, priced_passive(pin_family)};
+     const auto& f = world.me().facts();
+-    const auto has = [&](int family, int stat) { return owned[shard_of(family, stat)] > 0; };
++    // Greed is begun only inside a step: between steps it is chosen again against the rest.
++    const auto has = [&](int family, int stat) {
++        const unsigned n = owned[shard_of(family, stat)];
++        return family == greed ? n % shards_per_emblem > 0 : n > 0;
++    };
+     if (f.passive == Passive::gem_focus && has(monster, health_stat)) return Begun{monster, health_stat};
+     if (f.passive == Passive::gem_focus && has(monster, focus_stat)) return Begun{monster, focus_stat};
+     if (f.passive == Passive::reset_on_kill && has(monster, strength_stat)) return Begun{monster, strength_stat};
+@@ -145,7 +170,7 @@
+         if (has(b.family, b.stat)) return b;
+     for (const int family : {treasure, tribute, capture, prospector, hunter, skirmish, greed, collectors})
+         for (int stat = strength_stat; stat <= health_stat; ++stat)
+-            if (has(family, stat)) return Begun{family, stat, true};
++            if (has(family, stat)) return Begun{family, stat, family != greed};
+     if (f.heals() && has(jungle, health_stat)) return Begun{jungle, health_stat};
+     if (f.passive == Passive::gem_focus)
+         for (const int family : {power, jungle, home})
+@@ -185,7 +210,7 @@
+ // stat, Greed fifteen more.
+ void add_completion(Build& b, const ChampionFacts& f, int family, int stat) {
+     if (family == power) add_shards(b, f, stat, 1);
+-    if (family == greed) add_shards(b, f, stat, static_cast<float>(greed_stats - greed_shards));
++    if (family == greed) add_shards(b, f, stat, static_cast<float>(greed_bonus));
+     if (family == bruiser)
+         for (int s = strength_stat; s <= health_stat; ++s)
+             if (s != stat) add_shards(b, f, s, 1);
+@@ -283,6 +308,10 @@
+ constexpr float prior_rounds_per_gem = 4.5f;
+ constexpr float prior_kills_per_gem = 0.005f;
+ constexpr float prior_tribute_cut = 0.015f;
++// The gold carry's recalls home per gem of its own, those that rode out a capture's count aside (a shorter channel
++// only starts those later): 7.1 a game for 354 gems (Vesper Vale, 400 games of vfish-b0).
++constexpr float prior_recalls_per_gem = 0.02f;
++float recalls_home = 0; // ours so far, counted at the landing
+ struct IncomePrior {
+     float holds = 0, prospected_gems = 0, prospected_gold = 0, gold = 0;
+ };
+@@ -309,13 +338,50 @@
+ struct IncomeRates {
+     float gems, turns, horizon;
+ };
++// The rounds the game has left: the leading team's gems still to tribute at the game's pace (a pick's share of
++// them takes rounds_per_gem each), or the round limit. Steadier than gems_share, which moves with who is alive.
++// rounds_per_gem is the late pace: the early game is slower, by early_pace at the start and no more from round
++// late_pace_round (the median of the rounds left over this forecast, 400 games of vfish-b0 against charybdis 525:
++// 0.59 at round 50, 0.70 at 200, 0.81 at 450 without it; 0.92, 0.97 and 0.92 with it).
++constexpr float early_pace = 1.6f, late_pace_round = 570;
++float game_rounds(const World& world) {
++    const int left = static_cast<int>(cambc::constants::winning_gems) - std::max(world.score.ally, world.score.enemy);
++    const float pace = std::max(1.0f, early_pace - (early_pace - 1.0f) * static_cast<float>(world.round) / late_pace_round);
++    return std::min(static_cast<float>(rounds_left(world)),
++                    static_cast<float>(std::max(0, left)) * rounds_per_gem * pace / static_cast<float>(economy_pick_count(world)));
++}
+ IncomeRates income_rates(const World& world) {
+     const float gems = income.gems + income_prior_gems;
+     const float turns = static_cast<float>(upkeep.turns) + prior_rounds_per_gem * income_prior_gems;
+-    return {gems, turns, std::min(static_cast<float>(bag_rounds_left(world)), gems_share(world) * turns / gems)};
++    // Our gold's use ends with the game: at our own pace through an even share of the gems, a fed carry's would
++    // end early and its crew's never.
++    const float left = game_horizon ? game_rounds(world) : gems_share(world) * turns / gems;
++    return {gems, turns, std::min(static_cast<float>(bag_rounds_left(world)), left)};
+ }
+ 
+-float fight_share() { return upkeep.champ_taken / (upkeep.camp_taken + upkeep.champ_taken + params::fight_camp_prior); }
++// Our base gold (before bonuses) a turn alive, prior-weighted: capture shares, kills, Marcella's tributes.
++float base_gold_rate(const World& world, const IncomeRates& rates) {
++    const auto& f = world.me().facts();
++    const float kills = f.heals() ? 0.0f : prior_kills_per_gem * static_cast<float>(kill_base_gold);
++    float gold = income.capture_gold + income.kill_gold + (income_prior(world.map()).gold + kills) * income_prior_gems;
++    if (f.passive == Passive::stun_immune) gold += static_cast<float>(cambc::constants::passive_abilities::marcella_tribute_gold_per_gem) * rates.gems;
++    return gold / rates.turns;
++}
++
++// The gold we still earn owning `owned`, at that rate to the game's end.
++float gold_left(const World& world, const IncomeRates& rates, const cambc::enum_map<cambc::item_type>& owned) {
++    return gold_rate(world.me().facts(), owned) * base_gold_rate(world, rates) * game_rounds(world);
++}
++
++// The share of the damage we take that champions deal, which weighs fight power in an emblem's price, with
++// fight_camp_prior camp damage as a prior. The gold carry's purchases are most of the team's fight power and are
++// made before its fights come: its prior holds champion damage too, at prior_fight_share.
++// Vesper Vale's share over a game: the median of 400 games of vfish-b0 against charybdis 525.
++constexpr float prior_fight_share = 0.53f;
++float fight_share(const World& world) {
++    const float prior = priced_carry(world) ? params::fight_camp_prior * prior_fight_share / (1.0f - prior_fight_share) : 0.0f;
++    return (upkeep.champ_taken + prior) / (upkeep.camp_taken + upkeep.champ_taken + params::fight_camp_prior + prior);
++}
+ 
+ // The reactive Tribute price: the cut on the bag we carry, from trib_min_bag gems, spread over the rounds our
+ // gold has left.
+@@ -347,7 +413,7 @@
+         if (lab_flag[14] <= 0 || has_family(owned, collectors)) return 0;
+         int n = 1;
+         for (int f = monster; f < collectors; ++f) n += has_family(owned, f);
+-        return lab_flag[14] * params::fight_weight * lab_flag[7] * fight_share() * (1.0f - 1.0f / (1.0f + 0.01f * static_cast<float>(n)));
++        return lab_flag[14] * params::fight_weight * lab_flag[7] * fight_share(world) * (1.0f - 1.0f / (1.0f + 0.01f * static_cast<float>(n)));
+     }
+     default: break;
+     }
+@@ -365,6 +431,7 @@
+     switch (family) {
+     case capture: return static_cast<float>(capture_rounds(false) - capture_rounds(true)) * per_turn(income.holds, prior.holds);
+     case tribute: return per_turn(income.tribute_cut, prior_tribute_cut) + reactive_tribute(rates);
++    case home: return static_cast<float>(recall_turns(world) - home_recall_time) * per_turn(recalls_home, prior_recalls_per_gem);
+     case prospector: {
+         const float extra = (income.prospected_gems + prior.prospected_gems * income_prior_gems) / gems;
+         return extra / (1 + extra) + gold * paid * per_turn(income.prospected_gold, prior.prospected_gold);
+@@ -376,11 +443,14 @@
+         return gold * treasure_gold * base;
+     }
+     case hunter: return gold * paid * static_cast<float>(hunter_kill_gold) / static_cast<float>(kill_base_gold) * kill_gold;
+-    case skirmish: return params::fight_weight * lab_flag[7] * fight_share() * (1.0f - 1.0f / skirmish_dealt);
++    case skirmish: return params::fight_weight * lab_flag[7] * fight_share(world) * (1.0f - 1.0f / skirmish_dealt);
+     default: return 0;
+     }
+ }
+ 
++// The gold best_emblem's caller has left to spend.
++unsigned budget = 0;
++
+ // `bought`: the stats of shards bought since the turn's start; `items`: what we would then own.
+ Emblem current_emblem(const World& world, const Build& bought, const cambc::enum_map<cambc::item_type>* items) {
+     const auto& f = world.me().facts();
+@@ -391,18 +461,52 @@
+     const UpkeepBasis basis = upkeep_basis(world, u, others, now);
+     const float base = upkeep_cost(basis, now);
+     // The fight value's shared terms stay outside the candidate loop.
+-    const float fight_scale = params::fight_weight * lab_flag[7] * fight_share();
++    const float fight_scale = params::fight_weight * lab_flag[7] * fight_share(world);
+     const float p_now = std::max(1.0f, f.raw_output(now.strength, now.focus)) * now.max_health / now.taken;
+     const bool collecting = has_family(owned, collectors); // every new family adds to its camp damage
+-    const auto value = [&](int family, int stat) __attribute__((always_inline)) -> Emblem {
+-        const unsigned left = shards_needed(family) - owned[shard_of(family, stat)];
++    const IncomeRates rates = income_rates(world);
++    // The gold carry prices every family: no learned table adds the ones the rest leave to it (Monster, Home).
++    const bool carry = priced_carry(world);
++    const int greed_main = carry ? main_stat(world) : strength_stat;
++    // The share of a Greed's completion that counts, in `stat` with `left` shards to buy: all of it when the gold
++    // in hand buys them; else that of one more emblem's price our gold and forecast income leave after them. The
++    // other stat's Greed, when nearer its end, completes first: its shards come out of the same gold. A Greed the
++    // game ends before is 25 plain shards.
++    std::optional<float> funds;
++    const auto completes = [&](int stat, unsigned left) {
++        const int other = stat == health_stat ? greed_main : health_stat;
++        unsigned need = left;
++        if (const unsigned begun = other == stat ? 0 : owned[shard_of(greed, other)];
++            begun > 0 && (greed_shards - begun < left || (greed_shards - begun == left && stat == health_stat)))
++            need += greed_shards - begun;
++        if (budget >= shard_price * need) return 1.0f;
++        if (!funds) funds = static_cast<float>(budget) + gold_left(world, rates, owned);
++        return std::clamp((*funds - static_cast<float>(shard_price * need)) / static_cast<float>(emblem_price), 0.0f, 1.0f);
++    };
++    // A Greed emblem is valued a step at a time: the step's shards and their part of the completion's greed_bonus,
++    // spread evenly over the Greed's shards (its price), or with `ranked` over those still to buy (its rank among
++    // the emblems: one bought before the step holds back the completion by its price, the step holds back that
++    // emblem by the Greed's remaining price, so the bonus weighs more the nearer it is).
++    const auto value = [&](int family, int stat, bool ranked = false) __attribute__((always_inline)) -> Emblem {
++        const unsigned have = owned[shard_of(family, stat)];
++        unsigned left = shards_needed(family) - have;
+         Build b = now;
+-        add_shards(b, f, stat, static_cast<float>(left));
+-        add_completion(b, f, family, stat);
++        int counted = family; // the family Collectors gains, once the emblem is whole
++        if (family == greed) {
++            const unsigned step = greed_step(have);
++            const float bonus = static_cast<float>(greed_bonus * step) * completes(stat, left) / static_cast<float>(ranked ? left : greed_shards);
++            add_shards(b, f, stat, static_cast<float>(step) + bonus);
++            if (step < left) counted = -1;
++            left = step;
++        } else {
++            add_shards(b, f, stat, static_cast<float>(left));
++            add_completion(b, f, family, stat);
++        }
+         if (family == jungle) b.camp_taken = jungle_camp_taken;
+         if (family == durability) b.taken = durability_taken;
+-        if (family == monster || family == collectors || collecting) b.camp_dealt = dealt_with(owned, family).camp;
+-        if (family == home) b.recall = home_recall_time;
++        if (family == monster || family == collectors || collecting) b.camp_dealt = dealt_with(owned, counted).camp;
++        // The carry's Home is priced by its recalls (passive_saved), heal trips among them.
++        if (family == home && !carry) b.recall = home_recall_time;
+         const float p_b = std::max(1.0f, f.raw_output(b.strength, b.focus)) * b.max_health / b.taken;
+         return {family, stat, base - upkeep_cost(basis, b) + fight_scale * std::max(0.0f, 1.0f - p_now / p_b), left * shard_price};
+     };
+@@ -419,7 +523,7 @@
+             if (const auto e = value(power, health_stat); e.saved > best.saved) best = e;
+         if (f.heals() && !has_family(owned, jungle))
+             if (const auto e = value(jungle, health_stat); e.saved > best.saved) best = e;
+-        if (three) {
++        if (three || carry) {
+             if (!has_family(owned, monster))
+                 if (const auto e = value(monster, main); e.saved > best.saved) best = e;
+         } else if (f.passive == Passive::reset_on_kill && !has_family(owned, monster)) {
+@@ -428,17 +532,30 @@
+         }
+         return best;
+     };
+-    // A passive's gold is priced at what the best stat emblem saves a gold.
+-    const auto per_gold = [](const Emblem& e) { return std::max(0.0f, e.saved) / static_cast<float>(emblem_price); };
++    // The Greed step in the better-ranked of our main stat and Health, with that rank.
++    std::optional<std::pair<Emblem, float>> greed_best;
++    const auto greed_choice = [&]() -> const std::pair<Emblem, float>& {
++        if (!greed_best) {
++            const float main = value(greed, greed_main, true).saved, health = value(greed, health_stat, true).saved;
++            greed_best = health > main ? std::pair{value(greed, health_stat), health} : std::pair{value(greed, greed_main), main};
++        }
++        return *greed_best;
++    };
++    // A passive's gold is priced at what the best stat emblem, the carry's Greed step among them, saves a gold.
++    const auto per_gold = [&](const Emblem& e) {
++        const float saved = carry ? std::max(e.saved, greed_choice().first.saved) : e.saved;
++        return std::max(0.0f, saved) / static_cast<float>(emblem_price);
++    };
+     // The best of `best` and a passive emblem: five shards in stat `a` or `b`, and its passive.
+     const auto or_passive = [&](Emblem best, int a, int b) {
+         Emblem shards = value(prospector, a);
+         if (const auto e = value(prospector, b); e.saved > shards.saved) shards = e;
+-        const IncomeRates rates = income_rates(world);
+         const float gold_saves = per_gold(best);
+-        for (const int family : {prospector, capture, treasure, hunter, tribute, skirmish})
++        for (const int family : {prospector, capture, treasure, hunter, tribute, skirmish, home}) {
++            if (family == home && !carry) continue;
+             if (const float saved = shards.saved + passive_saved(world, rates, owned, family, gold_saves); saved > best.saved)
+                 best = {family, shards.stat, saved, emblem_price, saved - shards.saved};
++        }
+         if (lab_flag[14] > 0 && !has_family(owned, collectors)) {
+             Emblem c = value(collectors, a);
+             if (const auto e = value(collectors, b); e.saved > c.saved) c = e;
+@@ -449,8 +566,8 @@
+     };
+     if (const auto b = begun_emblem(world, owned)) {
+         Emblem e = value(b->family, b->stat);
+-        if (b->passive) {
+-            e.passive = passive_saved(world, income_rates(world), owned, b->family, per_gold(best_stat(main_stat(world))));
++        if (b->passive || (b->family == home && carry)) {
++            e.passive = passive_saved(world, rates, owned, b->family, per_gold(best_stat(main_stat(world))));
+             e.saved += e.passive;
+         }
+         return e;
+@@ -484,8 +601,16 @@
+         return or_passive(best, health_stat, focus_stat);
+     }
+     const int main = main_stat(world);
+-    Emblem best = best_stat(main);
+-    return or_passive(best, main, health_stat);
++    const Emblem stats = best_stat(main);
++    // Only the gold carry earns a Greed's price: a body fed like the rest has 386 gold by round 600 (vfish-b0).
++    if (!carry) return or_passive(stats, main, health_stat);
++    const auto& [step, rank] = greed_choice();
++    // `first`: Greed while the forecast completes it.
++    if (greed_rule == GreedRule::first && completes(step.stat, greed_shards - owned[shard_of(greed, step.stat)]) >= 1.0f) return step;
++    const Emblem best = or_passive(stats, main, health_stat);
++    // `last`: a passive emblem that beat the stat emblems goes before Greed.
++    if (greed_rule == GreedRule::last && best.passive > 0) return best;
++    return rank > best.saved ? step : best;
+ }
+ 
+ // With a bag that a Tribute emblem would cut, the Tribute emblem in its best stat in place of `e` when it
+@@ -549,11 +674,25 @@
+ // The current logic's emblem, except that a new one is the learned one (tools/emblab) for our pick count, type and
+ // count of emblems owned (`items`, what we would own, else ours), unless its passive is already ours: what
+ // buy_shards buys, so prices() and affordable_prefix() forecast the same.
+-Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::enum_map<cambc::item_type>* items = nullptr) {
++// The gold carry's is always the current logic's: the table was learned for a Vesper Vale fed like the rest.
++// `gold`: what is left to spend.
++Emblem best_emblem(const World& world, unsigned gold, const Build& bought = {}, const cambc::enum_map<cambc::item_type>* items = nullptr) {
++    budget = gold;
+     const int picks = economy_pick_count(world), type = static_cast<int>(world.me().type);
+-    if (picks < 3 || picks > 5) return current_emblem(world, bought, items);
+     const auto& owned = items ? *items : my_items();
++    if (fish_order && gold_carry(world)) {
++        using P = std::pair<int, int>;
++        for (const auto [family, stat] :
++             {P{capture, strength_stat}, P{prospector, strength_stat}, P{treasure, strength_stat}, P{jungle, strength_stat},
++              P{prospector, health_stat}, P{monster, strength_stat}, P{hunter, health_stat}, P{durability, health_stat},
++              P{collectors, strength_stat}, P{skirmish, strength_stat}, P{home, health_stat}, P{tribute, health_stat},
++              P{bruiser, strength_stat}, P{greed, strength_stat}, P{greed, health_stat}})
++            if (owned[emblem_of(family, stat)] == 0) return lab_pinned(world, bought, items, family, stat);
++    }
++    if (picks < 3 || picks > 5) return current_emblem(world, bought, items);
+     if (begun_emblem(world, owned)) return current_emblem(world, bought, items);
++    // No reactive_over: the Tribute a bag would cut is among its candidates, against the Greed step's rank.
++    if (priced_carry(world)) return current_emblem(world, bought, items);
+     unsigned ordinal = 0;
+     for (int family = monster; family <= collectors; ++family)
+         for (int stat = strength_stat; stat <= health_stat; ++stat) ordinal += owned[emblem_of(family, stat)];
+@@ -581,9 +720,9 @@
+     const unsigned start = gold;
+     Build bought;
+     while (gold >= shard_price) {
+-        const auto [family, stat, saved, cost, passive] = best_emblem(world, bought);
++        const auto [family, stat, saved, cost, passive] = best_emblem(world, gold, bought);
+         const unsigned have = my_items()[shard_of(family, stat)];
+-        const unsigned count = std::min<unsigned>(shards_needed(family) - have, gold / shard_price);
++        const unsigned count = std::min<unsigned>(cost, gold) / shard_price;
+         if (!buy(shard_of(family, stat), count)) break;
+         gold -= shard_price * count;
+         add_shards(bought, world.me().facts(), stat, static_cast<float>(count));
+@@ -618,7 +757,7 @@
+ const Prices& prices(const World& world) {
+     struct Key {
+         float strength, focus, max_health;
+-        unsigned bag;
++        unsigned bag, emblems; // the emblems our gold buys: a Greed's completion is priced on the gold in hand
+         int main;
+         bool home, monster;
+         bool operator==(const Key&) const = default;
+@@ -630,13 +769,13 @@
+     const float share = gems_share(world);
+     // The share moves a little most rounds (any score): the choice is kept until it moves by a
+     // tenth (as affordable_prefix keeps its own), the prices follow it.
+-    if (const Key now{self.strength, self.focus, self.max_health, reactive_bag(), main_stat(world),
++    if (const Key now{self.strength, self.focus, self.max_health, reactive_bag(), priced_carry(world) ? my_gold() / emblem_price : 0, main_stat(world),
+                       self.facts().passive == Passive::gem_focus && has_family(my_items(), home),
+                       self.facts().passive == Passive::gem_focus && has_family(my_items(), monster)};
+         !(now == last) || !(std::abs(share - chosen_at) <= 0.1f * chosen_at)) {
+         last = now;
+         chosen_at = share;
+-        kept.next = best_emblem(world);
++        kept.next = best_emblem(world, my_gold());
+         priced_at = -1;
+     }
+     if (share != priced_at) {
+@@ -655,8 +794,8 @@
+ // share of the gems still to farm: the stats, and the passives of the emblems it completes. The
+ // saving is kept while our gold, stats and main stat hold.
+ PurchaseQuote affordable_prefix(const World& world, unsigned gold_in) {
+-    const unsigned budget = my_gold() + gold_in;
+-    if (budget < shard_price) return {};
++    const unsigned total = my_gold() + gold_in;
++    if (total < shard_price) return {};
+     const auto& self = world.me();
+     struct Key {
+         unsigned shards;
+@@ -667,21 +806,21 @@
+     };
+     static Key last{~0u};
+     static PurchaseQuote kept;
+-    const Key key{budget / shard_price, self.strength, self.focus, self.max_health, reactive_bag(), main_stat(world)};
++    const Key key{total / shard_price, self.strength, self.focus, self.max_health, reactive_bag(), main_stat(world)};
+     const float rounds = gems_share(world) * rounds_per_gem;
+-    if (key == last) return {kept.next, kept.count, kept.gain * rounds};
++    if (key == last) return {kept.next, kept.count, kept.gain * rounds, kept.saved};
+     last = key;
+     const auto& f = self.facts();
+     auto owned = my_items();
+     const auto build = [&](const Build& bought) { return build_of(world, owned, bought); };
+     const Build now = build({});
+-    PurchaseQuote quote{best_emblem(world)};
++    PurchaseQuote quote{best_emblem(world, total)};
+     Build bought;
+     float passives = 0;
+-    for (unsigned gold = budget; gold >= shard_price;) {
+-        const auto e = quote.count == 0 ? quote.next : best_emblem(world, bought, &owned);
++    for (unsigned gold = total; gold >= shard_price;) {
++        const auto e = quote.count == 0 ? quote.next : best_emblem(world, gold, bought, &owned);
+         const unsigned have = owned[shard_of(e.family, e.stat)];
+-        const unsigned count = std::min<unsigned>(shards_needed(e.family) - have, gold / shard_price);
++        const unsigned count = std::min<unsigned>(e.cost, gold) / shard_price;
+         gold -= shard_price * count;
+         quote.count += count;
+         add_shards(bought, f, e.stat, static_cast<float>(count));
+@@ -696,8 +835,31 @@
+     float others;
+     const Upkeep u = priced_upkeep(world, others);
+     quote.gain = upkeep_cost(world, u, others, now, now) - upkeep_cost(world, u, others, now, build(bought)) + passives;
++    if (waited_trips) {
++        // With the fight power it adds, as current_emblem prices it: a Greed's bonus only once it is whole.
++        const auto power = [&](const Build& b) { return std::max(1.0f, f.raw_output(b.strength, b.focus)) * b.max_health / b.taken; };
++        quote.saved = quote.gain + params::fight_weight * lab_flag[7] * fight_share(world) * std::max(0.0f, 1.0f - power(now) / power(build(bought)));
++    }
+     kept = quote;
+-    return {quote.next, quote.count, quote.gain * rounds};
++    return {quote.next, quote.count, quote.gain * rounds, quote.saved};
++}
++
++// What a stop on spawn to spend our gold and `gold_in` more is worth, in rounds: what the gold has lost by
++// waiting, the saving a round of what it buys over half the rounds it took to earn at our income, or over all the
++// rounds the saving has left when those are fewer. Stopping once that loss matches the trip makes the trips and
++// the waits cost least together; a stop worth the purchase's whole future is made for every emblem, however fast
++// the gold comes.
++float shop_wait(const World& world, unsigned gold_in = 0) {
++    static int round = -1;
++    static unsigned priced = 0;
++    static float kept = 0;
++    const unsigned gold = my_gold() + gold_in;
++    if (round == world.round && priced == gold) return kept; // asked several times a turn; a purchase changes the gold
++    round = world.round, priced = gold;
++    const IncomeRates rates = income_rates(world);
++    const float income = gold_rate(world.me().facts(), my_items()) * base_gold_rate(world, rates);
++    const float waited = std::min(0.5f * static_cast<float>(gold) / income, gems_share(world) * rounds_per_gem);
++    return kept = affordable_prefix(world, gold_in).saved * waited;
+ }
+ 
+ HomeTrip home_trip(const World& world, Pathing& pathing, int channel, bool wins) {
+@@ -721,7 +883,7 @@
+     const auto& p = prices(world);
+     const std::uint32_t gold = my_gold();
+     t.short_gold = gold >= p.next.cost ? 0 : p.next.cost - gold;
+-    t.emblem = p.gain;
++    t.emblem = waited_trips ? shop_wait(world, t.short_gold) : p.gain;
+     return t;
+ }
+ 
+@@ -732,7 +894,8 @@
+     if (closing(world, pathing)) return r;
+     r.value = heal_rounds_now(world);
+     if (shops_at_home(world))
+-        if (const auto& p = prices(world); my_gold() >= p.next.cost && std::isfinite(p.gain)) r.value += p.gain;
++        if (const auto& p = prices(world); my_gold() >= p.next.cost && std::isfinite(p.gain))
++            if (const float stop = waited_trips ? shop_wait(world) : p.gain; std::isfinite(stop)) r.value += stop;
+     return r;
+ }
+ 
+@@ -741,8 +904,10 @@
+ // emptied by a completed tribute is skipped).
+ void note_income_start(const World& world) {
+     const std::uint32_t gems = my_gems(), gold = my_gold();
++    bool paid = false;
+     if (income.end_round == world.round - 1 && gems >= income.gems_at && (gems > income.gems_at || gold > income.gold_at))
+         if (const int g = world.map().group_at(income.end_pos); g >= 0) {
++            paid = true;
+             const auto& G = world.map().groups[g];
+             const float gained = static_cast<float>(gems - income.gems_at), base_gold = static_cast<float>(gold - income.gold_at) / gold_paid(world);
+             income.holds += 1;
+@@ -756,6 +921,9 @@
+                 income.prospected_gold += static_cast<float>(prospected(G.cluster_gold, sharers));
+             }
+         }
++    // Moved onto our spawn between our turns: a recall landed (a crystal's hop from beside it is as rare as it is
++    // short). One that rode out a capture's count is left out: a shorter channel only starts it later.
++    if (!paid && income.end_round == world.round - 1 && my_position() != income.end_pos && test(world.map().ally_spawn, my_position())) recalls_home += 1;
+     income.start_round = world.round, income.gems_at = gems, income.gold_at = gold, income.spent = 0;
+ }
+ 
+@@ -793,7 +961,9 @@
+         const auto stop = home_trip(world, pathing, recall_turns(world), winning_bag(world));
+         if (stop.short_gold > 0) return false;
+         const int back = pathing.to_ally_spawn().at(here);
+-        if (back != unreachable && stop.heal + params::shop_gain_scale * affordable_prefix(world).gain < static_cast<float>(std::min(back, stop.channel + stop.hurt) + back)) return false;
++        if (back != unreachable
++            && stop.heal + (waited_trips ? stop.emblem : params::shop_gain_scale * affordable_prefix(world).gain) < static_cast<float>(std::min(back, stop.channel + stop.hurt) + back))
++            return false;
+     }
+     bool awake = false;
+     world.each_stirring([&](int g) { awake = awake || awake_over(world, g, here); });
