@@ -384,3 +384,28 @@ final bot. The exact book-free531 artifact remains preserved.
 
 Validation:53 offline book tests passed; shell syntax clean. Full populated-book
 validation is pending source collection, not claimed complete. Big-arm stays paused.
+
+## 2026-11-13 20:12 UTC: immediate531 starter, provisional Fish handover lines
+
+User now prioritizes replacing525-basedREST131 quickly, so the first531 book does
+not wait for the new Fish source campaign. Existing-sources-only mode still applies
+known-host-loss and collateral guards. Current frozen selection51:20 proven Miter13
+sources plus31 oldFishr8 winning recordings, all on confirmed132/r9losses with known
+Mite collateral. Eleven Fish entries force a draft change. The31Fish lines explicitly
+retain r8 refset/source-group provenance, are **unverified against r9**, and require
+r9 target live checks plus all forced/shared-draft collateral checks. No oldr8 source
+is relabeled as an r9-proved win; divergence followed by a531 win qualifies.
+
+Current work `/home/ubuntu/tmp-offload/rbook/loss-v132-starter-expanded`, bot
+`variants/rbook-loss-v132-starter-expanded`, cycle3107636 in
+`rbook-host132-expanded-v2-cycle.service`; building at20:11:39. The20-entry Mite-only
+local build was superseded before any upload, and a partially prepared intermediate
+work was stopped before upload and preserved. Only this current cycle runs. Parent
+owns queue and will change `loss-book-fish-r9-rest-v131`'s version to the new531 book
+once uploaded, retaining lost_by132; thereafter user wants only531book/531book-free
+toggles. Do not independently run the old131source campaign.
+
+54offline tests pass. Small books now require every available distinct fallback
+case above450rounds, up to24; zero cases/zerohandovers/invalidreads still fail. Full
+populated exact replay,352benchmarks,forced checks and coordinated upload remain
+mandatory. Final unknown-map activation policy is unchanged.

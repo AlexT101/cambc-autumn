@@ -222,6 +222,18 @@ class RefreshGates(unittest.TestCase):
             refresh_build.validate_stage(text)
         refresh_build.validate_stage(text.replace('51/52', '52/52'))
 
+    def test_small_partial_requires_every_available_long_fallback_case(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            work=Path(tmp)
+            cells=[dict(key=str(i)) for i in range(20)]
+            (work/'book_cells.json').write_text(json.dumps(cells))
+            (work/'book.jsonl').write_text(''.join(json.dumps(dict(key=str(i),rounds=600 if i<19 else 400))+'\n' for i in range(20)))
+            stage='plain: 19 games, 5 bodies handed over, invalid 0\n== 100M\nidentical replays: 52/52\n'
+            refresh_build.validate_stage(stage,work)
+            for bad in (stage.replace('19 games','18 games'),stage.replace('invalid 0','invalid 1'),stage.replace('5 bodies','0 bodies')):
+                with self.assertRaisesRegex(RuntimeError,'Fallback'):
+                    refresh_build.validate_stage(bad,work)
+
     def test_fresh_result_cannot_substitute_for_missing_wide_bench(self):
         text = 'plain: 24 games, 5 bodies handed over, invalid 0\n== 100M\n== fresh real fuel\nidentical replays: 52/52\n'
         with self.assertRaisesRegex(RuntimeError, '52 replays'):

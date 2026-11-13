@@ -243,11 +243,14 @@ def main():
                     help='minimum known fraction for each partial opponent; required when all are partial')
     ap.add_argument('--mite-pin',required=True)
     ap.add_argument('--fish-pin',default='r8')
-    ap.add_argument('--after-step',action='append',required=True)
+    ap.add_argument('--after-step',action='append',default=[])
+    ap.add_argument('--existing-sources-only',action='store_true',help='build from already available proven sources without waiting for a new source campaign')
     ap.add_argument('--resume',action='store_true',help='resume reconciled local artifacts using their frozen selection')
     ap.add_argument('--minimum-source-fraction',type=float,default=1.0,
                     help='allow a partial source sweep; baseline complete except explicit --partial-baseline')
     a=ap.parse_args();variant_name(a.host_version,a.bot_name)
+    if bool(a.after_step) == a.existing_sources_only:
+        ap.error('Choose --after-step or explicit --existing-sources-only')
     a.work.mkdir(parents=True,exist_ok=True)
     pins=dict(fish=a.fish_pin,mite=a.mite_pin)
     with (a.work/'build.lock').open('a') as lock:

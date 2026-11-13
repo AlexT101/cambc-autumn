@@ -82,7 +82,8 @@ def run(work):
                partial_baseline=plan['partial_baseline'])
         def ready():
             source_opportunity(work,plan)
-            return refresh.ready(plan['host_version'],plan['pins'],[plan['source_step']],
+            return refresh.ready(plan['host_version'],plan['pins'],
+                                 [] if plan.get('existing_sources_only') else [plan['source_step']],
                                  plan['minimum_source_fraction'],plan['partial_baseline'],
                                  plan.get('minimum_baseline_fraction',0))
         wait(ready)
@@ -94,8 +95,9 @@ def run(work):
              '--host-version',str(plan['host_version']),'--host-profile',str(work/'host-profile.json'),
              '--bot-name',plan['bot_name'],'--fish-pin',plan['pins']['fish'],'--mite-pin',plan['pins']['mite'],
              '--source-versions',plan['source_versions'],'--minimum-source-fraction',str(plan['minimum_source_fraction']),
-             '--after-step',plan['source_step'],
              '--minimum-baseline-fraction',str(plan.get('minimum_baseline_fraction',0))]
+        if plan.get('existing_sources_only'):cmd+=['--existing-sources-only']
+        else:cmd+=['--after-step',plan['source_step']]
         for opp in plan['partial_baseline']:cmd+=['--partial-baseline',opp]
         with (work/'build.out').open('w') as out:
             subprocess.run(cmd,cwd=ROOT,stdout=out,stderr=subprocess.STDOUT,check=True)
