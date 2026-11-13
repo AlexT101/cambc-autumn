@@ -17,6 +17,7 @@ done
 (cd $V && diff -ruN -x book_data.h -x .cambc chy-525f/src rbook-x/src) > $R/host.patch || true
 ./copybot "variants/$DST-base" "variants/$DST"
 patch -d $V/$DST -p1 -s -f < $R/host.patch   # paths are chy-525f/src/... -> -p1 leaves src/...
+patch -d $V/$DST -p1 -s -f < $R/handover-stale-read.patch
 cp $V/rbook-x/src/book/book_data.h $V/$DST/src/book/book_data.h
 find $V/$DST $V/$DST-base -name '*.rej' -o -name '*.orig' | grep . && { echo "patch leftovers above"; exit 1; } || true
 [ -n "${NOBENCH:-}" ] || python3 tools/fuel/bench.py run variants/$DST-base --set wide --jobs 32 --out $B/$DST-base-100M.json > $B/$DST-base-100M.log 2>&1

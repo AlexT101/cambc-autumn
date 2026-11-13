@@ -21,6 +21,28 @@ does not write DONE on failure; hostswap.sh refuses existing destinations. No ma
 
 ## Active refresh
 
+14:21 update: the first build reproduced all 410 entries exactly (208 Fish + 202 Mite), bundle 4,834,404
+bytes, but the fallback gate correctly held it for one invalid claim read in 03contours b. Diagnostic:
+body 0 had world/cached priority round 167, but resumed in actual round 168 while preparing comms. It read
+body 3's new plain-published bit with old priority 110; a fresh SDK read was 6029312. The new book-only
+round guard after layout/shared-memory read prevents this mixed-round read. Patch: handover-stale-read.patch;
+applied to the new variant only, and wired into future refresh copies and host swaps. Full stage rerunning.
+The failed artifacts are preserved in refresh-r11/before-handover-fix; diagnostic.repl26a retains the trace.
+
+The 100M bench is 48/52 identical versus plain chy-525f; all four differing cells are declared forced drafts,
+as allowed by the original HANDOFF.md gate. The validator now checks that explicit exception, complete 52
+coverage, and zero fallback invalid reads. Fresh fuel comparison: +0.07% on identical games, not a fuel gain.
+
+Foreign v127: all three requested entries exactly reproduced against r11. Current-Mite group created at
+14:20:39, pending collection. REST remains 126. The runner's new stdout is sched/runner.out (events/games
+are still in the usual data files); restore run.log redirection at the next idle checkpoint.
+
+Once the corrected local stage passes, a waiting continuation runs forcecheck, then refresh_live.py:
+one upload, 20 current-Mite + 10 current-Fish cells; promote that same version through sched/REST only
+on 30 exact wins with no suspect groups. Any divergence preserves v126 and writes live-check-error.json.
+The live-check upload has not begun. No agent was launched. Big-arm oarena-capture.service is temporarily
+stopped to free shared API/download budget; timer oarena-capture-resume-book-20261113 resumes it at 15:01 UTC.
+
 13:49 UTC update: r11 was pinned after two stable checks; v119 won 224/340 book-free. All follow-up games
 have played. v117 has all 24 groups collected; v118 has 17/24 collected. At 13:46 the clean union was 252
 winning map/sides, before size selection. Nine v117 groups were marked suspect at the switch back to REST;

@@ -4,6 +4,7 @@ Wait for the book-free sweeps, record new wins, fit the source-size budget, veri
 and optionally publish through the existing REST transaction. Never modify main bots.
 """
 import argparse
+import ast
 import collections
 import fcntl
 import json
@@ -44,6 +45,24 @@ def ready(work, refset):
     return bool(tasks) and all(t['id'] in created and created[t['id']]['group'] in finished for t in tasks)
 
 
+def validate_stage(stage, work=None):
+    invalid = re.findall(r'invalid\s+(\d+)', stage)
+    if not invalid or any(int(n) for n in invalid) or not re.search(r'plain: 24 games, [1-9]\d* bodies handed over', stage):
+        raise RuntimeError('Fallback verification missing, incomplete or invalid')
+    wide = re.search(r'== 100M\nidentical replays: (\d+)/(\d+)([^\n]*)', stage)
+    if not wide or int(wide[2]) != 52:
+        raise RuntimeError('100M bench requires all 52 replays compared')
+    if int(wide[1]) != 52:
+        if work is None or '; differ: ' not in wide[3]:
+            raise RuntimeError('100M bench requires 52 replays identical except documented forced-draft cells')
+        differs = ast.literal_eval(wide[3].split('; differ: ', 1)[1])
+        forced = set((work/'force.txt').read_text().splitlines())
+        allowed = {(c['map'],c['side']) for c in json.loads((work/'book_cells.json').read_text())
+                   if c['key'] in forced}
+        if len(differs) != 52-int(wide[1]) or not set(differs) <= allowed:
+            raise RuntimeError('100M bench differs outside the documented forced-draft cells')
+
+
 def build(work, refset, publish):
     name = f'rbook-refresh-{refset}'
     host = ROOT / 'bots/variants' / name
@@ -56,6 +75,8 @@ def build(work, refset, publish):
     write(work/'build-started.json', {'at': ls.now(), 'host': str(host)})
     write(work/'build-state.json', {'phase':'building', 'at':ls.now(), 'bot':str(host)})
     run(['./copybot', 'variants/rbook-x2', f'variants/{name}'], work/'copy.log')
+    with (HERE/'handover-stale-read.patch').open() as patch, (work/'handover-patch.log').open('w') as out:
+        subprocess.run(['patch','-p1'],cwd=host,stdin=patch,stdout=out,stderr=subprocess.STDOUT,check=True)
     for directory in ('raw', 'ent'):
         (work/directory).symlink_to((OLD/directory).resolve(), target_is_directory=True)
     for filename in ('fp.json', 'bad.json'):
@@ -115,9 +136,7 @@ def build(work, refset, publish):
     if set(verified) != kept or any(verified.values()):
         raise RuntimeError('Entry verification incomplete or failed')
     stage = (work/'stage.out').read_text()
-    invalid = re.findall(r'invalid\s+(\d+)',stage)
-    if not invalid or any(int(n) for n in invalid) or not re.search(r'plain: 24 games, [1-9]\d* bodies handed over',stage):
-        raise RuntimeError('Fallback verification missing, incomplete or invalid')
+    validate_stage(stage, work)
     if (work/'bundle.zip').stat().st_size > 4900000:
         raise RuntimeError('Bundle exceeds conservative size ceiling')
     run([sys.executable,HERE/'forcecheck.py','--host',f'variants/{name}',

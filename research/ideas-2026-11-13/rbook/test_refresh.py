@@ -12,6 +12,27 @@ import refresh_build
 
 
 class RefreshGates(unittest.TestCase):
+    def test_stage_rejects_successful_command_with_different_replays(self):
+        text = 'plain: 24 games, 5 bodies handed over, invalid 0\n== 100M\nidentical replays: 51/52\n'
+        with self.assertRaisesRegex(RuntimeError, '52 replays'):
+            refresh_build.validate_stage(text)
+        refresh_build.validate_stage(text.replace('51/52', '52/52'))
+
+    def test_fresh_result_cannot_substitute_for_missing_wide_bench(self):
+        text = 'plain: 24 games, 5 bodies handed over, invalid 0\n== 100M\n== fresh real fuel\nidentical replays: 52/52\n'
+        with self.assertRaisesRegex(RuntimeError, '52 replays'):
+            refresh_build.validate_stage(text)
+
+    def test_only_declared_forced_cells_may_differ_in_wide_bench(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            work=Path(tmp)
+            (work/'force.txt').write_text('forced\n')
+            (work/'book_cells.json').write_text(json.dumps([dict(key='forced',map='map',side='a')]))
+            text="plain: 24 games, 5 bodies handed over, invalid 0\n== 100M\nidentical replays: 51/52; differ: [('map', 'a')]\n"
+            refresh_build.validate_stage(text,work)
+            with self.assertRaisesRegex(RuntimeError,'outside'):
+                refresh_build.validate_stage(text.replace("('map', 'a')","('other', 'a')"),work)
+
     def test_suspect_shorter_win_cannot_enter_book(self):
         with tempfile.TemporaryDirectory() as tmp:
             work = Path(tmp)
