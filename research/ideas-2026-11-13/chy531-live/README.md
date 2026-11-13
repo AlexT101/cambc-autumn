@@ -26,7 +26,23 @@ The new Fish baseline uses **v132/531**, and the replacement book will use the s
 The briefly prepared v128 baseline submitted zero games and is held.
 All500 submitted comparison replays passed ZIP CRC checks, with binary summaries present
 (`partial-archive-audit.json`).
-REST remains latest book131 between quota windows, with no fixed quota reserve.
+REST became **v133 (531 + 51-entry book)** at20:30:26 UTC, replacing v131's525 host.
+The scheduler now switches between v132 book-free531 and v133 book531, with no fixed quota reserve.
+
+## New Fish r9 baseline
+
+The separate latest-Fish campaign uses v132 against source group
+`01a1d67e-e307-7f33-9412-90716c3b4ad9`. It covers all170 ladder maps from both sides:
+340 unique cells in69 groups, including five filler games that are excluded from win rates.
+`audit_fish_r9.py` checks the planned map coverage, own version at creation, opponent pin,
+suspect/dropped groups, and result provenance. It writes `fish-r9-results.json`; use
+`--require-complete` for a final audit. This campaign collects outcomes and drafts only;
+it does not claim downloaded replay archives. The old500 archived comparison games remain intact.
+Results on r9 must not be described as a same-pin comparison with529's r8 results.
+
+Completed at20:37 UTC: **159/340 wins (46.8%)**, 181 losses. All69 groups and345
+outcome records collected; five filler records excluded. The final audit passed
+with clean provenance and complete map/side coverage (`fish-r9-results.json`).
 
 Runtime evidence and completion auditors are in
 `/home/ubuntu/tmp-offload/live-chy531/`: `intent.json`, `played_progress.py`,

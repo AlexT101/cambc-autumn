@@ -19130,3 +19130,16 @@ policy is independent of qualification. Winning qualification replays will suppl
 the next increment without another 119-loss source sweep.
 Evidence: [release audit](ideas-2026-11-13/rbook/starter531-release.json) and
 `/home/ubuntu/tmp-offload/rbook/loss-v132-starter-expanded/`.
+
+### 2026-11-13 — Book-free Charybdis 531 against new Fish r9
+
+v132 (531/c451e3387), own drafts and unmasked, won **159/340 (46.8%)** against
+Fish r9 source `01a1d67e-e307-7f33-9412-90716c3b4ad9` on all170 ladder maps,
+both sides. Completed20:37 UTC:69 groups,345 collected outcome records including
+five excluded fillers. The audit verified complete coverage, own live/selected
+version at creation, opponent source provenance, and no suspect/dropped groups.
+This campaign collected outcomes and drafts only, not replay archives. It is a
+new-opponent baseline for the531 book;529's earlier Fishr8 results are not a
+same-pin comparison. The older531/r8/Miter13 ablation remains parked.
+Evidence: [results and audit](ideas-2026-11-13/chy531-live/fish-r9-results.json),
+[audit script](ideas-2026-11-13/chy531-live/audit_fish_r9.py).
