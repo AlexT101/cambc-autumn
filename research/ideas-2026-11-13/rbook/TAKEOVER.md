@@ -41,8 +41,11 @@ required. Masked v119 remains useful source data but differs in production fuel 
 - Foreign v127: requested r11 cells 3/3 exact wins; requested current cells 0/3 wins, all diverged.
   The old scheduler summary incorrectly reused pinned games; raw current game rows are correct.
   New task-scoped reports exclude fillers and cannot borrow another check's results.
-- Runner PID1320730 writes canonical data/run.log again. Big-arm capture remains paused until its
-  15:01 UTC resume timer; reassess only if downloads become the bottleneck.
+- Runner PID1320730 writes canonical data/run.log again. Big-arm capture is paused indefinitely by user request at 14:56 UTC: service stopped/disabled,
+  all resume timers canceled. Resume only on user instruction.
+- v128 baseline collection uses outcomes and drafts only, explicitly marked in games.jsonl; no replay/summary
+  downloads. Source versions and opponent checks retain full replay evidence. This avoids downloading host wins
+  that cannot enter the book and does not weaken source replay verification.
 - Fish teammate was notified of live/book ownership and the host policy. Their six local macro jobs
   remain under their control. No agent was launched by this coordinator.
 

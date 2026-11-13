@@ -301,6 +301,10 @@ py tools/version_record.py 50                        # our version 50's record p
   `live_restart_runner.sh` restarts it with reserve 10) and the rest as quota frees up, pins each opponent to its
   first group's bot (`--source-group`, usable once that group has played), and downloads every game's bundle and summary;
   `status`, `report --by side,map` and `pair OLD NEW` (paired flips between our versions) read the jsonl data.
+  - **Outcome-only baselines:** `data/OUTCOME-ONLY-VERSIONS.json` optionally lists versions whose pinned `set`
+    games need only outcomes and drafts from group detail. These rows explicitly say `collection: outcome_only`
+    and have no replay/summary metrics. Use only for book-free host-loss selection; other versions and all
+    opponent checks still download full evidence. Remove the version to restore full collection for future games.
   - **API pacing:** every call goes through a token bucket shared by our processes (`data/api.lock`: 24 calls of
     burst, one more every 3.5 s, at least 1 s apart; the limit measured 2026-11-12 was ~30 calls at one a second, then
     one every 3-4 s). Creates go first, the match-list sweep for played groups second (100 matches a call), and the

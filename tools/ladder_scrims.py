@@ -329,6 +329,13 @@ def summary_fields(raw, side):
 
 def collect(task, ev, detail):
     """Writes one games.jsonl row per finished game and downloads its replay bundle and summary."""
+    try:
+        outcome_versions = json.loads((DATA / 'OUTCOME-ONLY-VERSIONS.json').read_text())
+    except (OSError, ValueError):
+        outcome_versions = []
+    outcome_only = (isinstance(outcome_versions, list) and task['version'] in outcome_versions
+                    and ev['live'] == task['version'] and task.get('purpose') == 'set'
+                    and task.get('pin') == 'ref')
     folder = REPLAYS / ev["group"]
     folder.mkdir(parents=True, exist_ok=True)
     rows = []
@@ -346,7 +353,10 @@ def collect(task, ev, detail):
                "our_picks": [CHAMPS[i] if 0 <= i < len(CHAMPS) else i for i in (us or {}).get("draftPicks", [])],
                "opp_picks": [CHAMPS[i] if 0 <= i < len(CHAMPS) else i for i in (them or {}).get("draftPicks", [])],
                "created": ev["at"], "finished": m.get("finishedAt")}
-        if m["status"] == "finished":
+        if m["status"] == "finished" and outcome_only:
+            # Host-loss selection needs outcomes and drafts; these are not replay-source or detector records.
+            row.update(collection='outcome_only', replay=None)
+        elif m["status"] == "finished":
             stem = f"{m['position']}-{m['map']}"
             bundle, raw = folder / f"{stem}.zip", folder / f"{stem}.summary.bin"
             for path, what in ((bundle, "download"), (raw, "summary")):
