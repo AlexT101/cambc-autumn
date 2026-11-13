@@ -4979,3 +4979,18 @@ The wards add +0.6 / +0.8 over CASTOR alone. A fuel candidate. Lock policy is op
 
 Frozen as `variants/castor-nyx-lock` (= bots/charybdis).
 
+## 528: A pursued stand counts only walkers that close by our next turn (charybdis, 2026-11-13)
+
+SELENE's pursuit fix (mac13, `sel-pursue`; patch [charybdis-528-pursue.diff](../overseer-2026-11-13/patches/charybdis-528-pursue.diff)).
+In `stand_lost_at` (`combat/fight.cc`), a healthy champion judging a stand it is pursued at drops an enemy walker whose
+walk outlasts what it can close by our next turn: we look again from the stand then and leave if it comes on.
+`Safety::pursuit_gain` (`model/safety.cc`) is that bound from the rules: its turns before ours, a ready dash's range,
+and its strike reach over its turns before our turn after next, at least 1; a stunned enemy, an unseen dasher and
+Vendetta keep `pursuit_steps`. Hurt, the wider margin stays.
+
+Against charybdis 527, own drafts, release, 100k fuel: **50.7% (50.3-51.2)** of 40,960 games on fresh ladder-v2
+`maps/suites/overseer-528` (seeds 148200-148279); 50.6% (50.1-51.1) on overseer-nyx. Out-of-fuel turns 308,466 /
+311,059 (level). No failed game or broken draft. On 525 at 2x SELENE read about +0.3-0.4.
+
+Frozen as `variants/chy-528` (= bots/charybdis).
+

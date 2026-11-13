@@ -3562,6 +3562,37 @@ void Safety::stand_walks(vec2 p, int farthest, StandReach& r) {
     }
 }
 
+// A walk is the distance to p past its reach R0, which already spends its t0 turns before our next
+// one. By our next turn it closes t0 steps, plus a dash's range if it dashes, and its reach R1 over
+// its t1 turns between our next turn and the one after is counted afresh: the walk shrinks by
+// t0 (+ dash) + R1 - R0. t1 is its next-round turn if after ours and, at worst, one before ours the
+// round after (by its rank there if its team never changes priority, against our latest slot). So
+// with both slots ready and one turn a window: 1 for a melee dasher (its reach holds dash and
+// attack), 2 for Vesper (walk and dash, then walk, reset and attack 4), 3 for Ren (dash, then stun).
+int Safety::pursuit_gain(const ChampionBelief& e) {
+    auto& x = struck(e);
+    const int r0 = x.strike.reach;
+    // A stunned enemy's walk counts its lost turn (approach()): as before.
+    if (r0 < 0) return params::pursuit_steps;
+    const auto& f = e.facts();
+    const int s = f.slot_of(AbilityKind::dash);
+    // Out of sight, possible grows by a dash whenever one may be ready (World::grow): our next look
+    // can find it a dash nearer with the dash still counted. Vendetta's dash comes back on a kill.
+    if (s >= 0 && (!e.visible || f.passive == Passive::reset_on_kill)) return params::pursuit_steps;
+    if (x.turns < 0) x.turns = turns_before_ours(world_, e);
+    const int t0 = x.turns, r = world_.round;
+    const int rank = world_.enemy_priorities_change ? 0 : e.next_rank;
+    const int ours = slot_of_rank(world_, true, static_cast<int>(world_.allies.size()) - 1, r + 2);
+    const int t1 = (enemy_turn_before_ours_next(world_, e) ? 0 : 1) + (slot_of_rank(world_, false, rank, r + 2) < ours ? 1 : 0);
+    const int widen = std::max(1, t1) - 1; // threat_strike's: a walk, then the strike
+    // Its last turn before our turn after next is by round r + 2.
+    const unsigned slots = (e.ability_ready(0, r + 2) ? 1u : 0u) | (e.ability_ready(1, r + 2) ? 2u : 0u);
+    int closes = t0 + widen + strike_with(e, slots).reach;
+    if (s >= 0 && t0 > 0 && e.ability_ready(s, r + 1))
+        closes = std::max(closes, t0 + f.abilities[static_cast<std::size_t>(s)].range() + widen + strike_with(e, slots & ~(1u << s)).reach);
+    return std::max(1, closes - r0);
+}
+
 Safety::StandRoster Safety::stand_roster(vec2 p, const StandReach& reach, int approach, bool unseen) {
     StandRoster r;
     const std::uint32_t hit = reach.hit;

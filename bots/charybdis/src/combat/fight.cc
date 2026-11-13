@@ -536,6 +536,19 @@ bool stand_lost_at(const World& world, Safety& safety, HoldAt& hold) {
                   && !(own_ground(world, p) && health >= params::hurt_health_fraction * my_max_health() && bag_at_stake(world) < params::brake_bag);
     }
     if (reach.hit || pursued) safety.stand_walks(p, params::pursuit_steps, reach);
+    // Healthy, a walker whose walk outlasts what it can close by our next turn still walks when we
+    // look again from p (its walk read on the open board too, as it is once out of sight): we leave
+    // then if it comes on. Hurt, we keep the wider margin.
+    if (pursued && !reach.hit && my_health() >= params::hurt_health_fraction * my_max_health())
+        for (auto left = reach.walking; left; left &= left - 1) {
+            const int i = std::countr_zero(left);
+            const int walk = reach.walks[static_cast<std::size_t>(i)];
+            if (walk <= 1) continue; // every gain is at least 1
+            const auto& e = world.enemies[static_cast<std::size_t>(i)];
+            const int gain = safety.pursuit_gain(e);
+            const vec2 from = e.teleport_pending() && in_bounds(e.tp_dest) ? e.tp_dest : e.pos; // where it acts from
+            if (walk > gain && (!e.visible || dist(p, from) - safety.strike_of(e).reach > gain)) reach.walking &= ~(1u << i);
+        }
     const auto roster = safety.stand_roster(p, reach, pursued ? params::pursuit_steps : 0, unseen);
     if (roster.key == Safety::no_fight) return false;
     // Prism leaves a stand it falls in even where the team wins it: its death hands over the bag the team's gems ride in.

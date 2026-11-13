@@ -486,6 +486,9 @@ public:
     };
     StandReach stand_reach(vec2 p, int farthest);
     void stand_walks(vec2 p, int farthest, StandReach& r);
+    // The most a walker's walk (stand_reach's walks) can shrink by our next turn: one no farther
+    // may strike p in its turns between our next turn and the one after. At least 1.
+    int pursuit_gain(const ChampionBelief& e);
     StandRoster stand_roster(vec2 p, const StandReach& reach, int approach, bool unseen);
     // `falls` as for fight(); without walkers or camps it is fight(p). With `falls`, our fall settles
     // it (Trade::lost_known).

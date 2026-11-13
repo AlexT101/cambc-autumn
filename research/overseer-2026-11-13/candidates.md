@@ -29,3 +29,15 @@ If the win rate drops versus 2x and out-of-fuel turns rise versus charybdis, mar
 
 **fgate chy-nolock vs charybdis 525, extended** (stopped after batch 9 when bots/charybdis became 527; batches 1-9 played 525): fresh **-0.07 ±0.27** points over 23,040 map units; Fish -0.33, Mite +0.19, **one-site -0.65**, multi-site +0.16, ladder side read -0.65. Level against the bodies; one-site maps lean negative throughout.
 | **castor-nyx-lock = charybdis 527** (`bots/variants/castor-nyx-lock`) | CASTOR's three pieces + nyx-vl-fuel2 wards, locks kept | n/a | **54.7 (54.3-55.2)** nyx; **54.9 (54.4-55.4)** lockconf, vs chy-bagfocus-525 | 301,468 / 253,680; 307,041 / 256,581 (+19%) | merged into bots/charybdis |
+| sel-owner (SELENE, unmeasured lead) | sel-window + one owner for mutual non-crew claims (nearer claimer owns; the other becomes crew) | vs 525 on SELENE dev at 2x: 50.6 (49.6-51.5) of 10,240 (sel-window 50.8) | head-to-head vs sel-window at 2x: **49.2 (48.7-49.6)** of 51,200 (dev 49.7, overseer-nyx 49.0) | 3,120 / 3,468 | the owner rule loses ~0.8: dropped |
+
+**On top of charybdis 527** (each vs 527, overseer-nyx, 40,960 games, 100k fuel, own drafts):
+
+| Variant | From | Win % (95% CI) | OOF CAND / REF |
+|---|---|---|---|
+| c527-pursue | SELENE sel-pursue (walking allies count in a pursued stand only if they close by next turn) | **50.6 (50.1-51.1)** | 307,359 / 311,155 |
+| c527-quiet | KRONOS k7-quiet2 (no long non-winning channel with a seen enemy within 8) | 50.2 (49.7-50.7) | 307,858 / 308,448 |
+| c527-stance | EOS stance-risky2 (lead-conditioned risk knobs) | 49.5 (49.0-50.0) | 335,944 / 316,714 (+6%) |
+| c527-lethal | HECATE h-atlasf (press disarmed + lethal fixes 3/5) | 49.3 (48.8-49.8) | 392,802 / 312,731 (+26%) |
+
+**charybdis 528 = 527 + pursuit fix** (`variants/chy-528`) vs 527 (`variants/castor-nyx-lock`) on fresh `overseer-528` (seeds 148200-148279, 40,960 games, 100k): **50.7 (50.3-51.2)**, OOF 308,466 / 311,059.

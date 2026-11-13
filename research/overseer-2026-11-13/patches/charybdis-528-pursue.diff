@@ -1,0 +1,80 @@
+diff --git a/bots/charybdis/src/combat/fight.cc b/bots/charybdis/src/combat/fight.cc
+index 7484707ae..8abdad6d1 100644
+--- a/bots/charybdis/src/combat/fight.cc
++++ b/bots/charybdis/src/combat/fight.cc
+@@ -536,6 +536,19 @@ bool stand_lost_at(const World& world, Safety& safety, HoldAt& hold) {
+                   && !(own_ground(world, p) && health >= params::hurt_health_fraction * my_max_health() && bag_at_stake(world) < params::brake_bag);
+     }
+     if (reach.hit || pursued) safety.stand_walks(p, params::pursuit_steps, reach);
++    // Healthy, a walker whose walk outlasts what it can close by our next turn still walks when we
++    // look again from p (its walk read on the open board too, as it is once out of sight): we leave
++    // then if it comes on. Hurt, we keep the wider margin.
++    if (pursued && !reach.hit && my_health() >= params::hurt_health_fraction * my_max_health())
++        for (auto left = reach.walking; left; left &= left - 1) {
++            const int i = std::countr_zero(left);
++            const int walk = reach.walks[static_cast<std::size_t>(i)];
++            if (walk <= 1) continue; // every gain is at least 1
++            const auto& e = world.enemies[static_cast<std::size_t>(i)];
++            const int gain = safety.pursuit_gain(e);
++            const vec2 from = e.teleport_pending() && in_bounds(e.tp_dest) ? e.tp_dest : e.pos; // where it acts from
++            if (walk > gain && (!e.visible || dist(p, from) - safety.strike_of(e).reach > gain)) reach.walking &= ~(1u << i);
++        }
+     const auto roster = safety.stand_roster(p, reach, pursued ? params::pursuit_steps : 0, unseen);
+     if (roster.key == Safety::no_fight) return false;
+     // Prism leaves a stand it falls in even where the team wins it: its death hands over the bag the team's gems ride in.
+diff --git a/bots/charybdis/src/model/safety.cc b/bots/charybdis/src/model/safety.cc
+index 8550c1e42..09e3de9a6 100644
+--- a/bots/charybdis/src/model/safety.cc
++++ b/bots/charybdis/src/model/safety.cc
+@@ -3562,6 +3562,37 @@ void Safety::stand_walks(vec2 p, int farthest, StandReach& r) {
+     }
+ }
+ 
++// A walk is the distance to p past its reach R0, which already spends its t0 turns before our next
++// one. By our next turn it closes t0 steps, plus a dash's range if it dashes, and its reach R1 over
++// its t1 turns between our next turn and the one after is counted afresh: the walk shrinks by
++// t0 (+ dash) + R1 - R0. t1 is its next-round turn if after ours and, at worst, one before ours the
++// round after (by its rank there if its team never changes priority, against our latest slot). So
++// with both slots ready and one turn a window: 1 for a melee dasher (its reach holds dash and
++// attack), 2 for Vesper (walk and dash, then walk, reset and attack 4), 3 for Ren (dash, then stun).
++int Safety::pursuit_gain(const ChampionBelief& e) {
++    auto& x = struck(e);
++    const int r0 = x.strike.reach;
++    // A stunned enemy's walk counts its lost turn (approach()): as before.
++    if (r0 < 0) return params::pursuit_steps;
++    const auto& f = e.facts();
++    const int s = f.slot_of(AbilityKind::dash);
++    // Out of sight, possible grows by a dash whenever one may be ready (World::grow): our next look
++    // can find it a dash nearer with the dash still counted. Vendetta's dash comes back on a kill.
++    if (s >= 0 && (!e.visible || f.passive == Passive::reset_on_kill)) return params::pursuit_steps;
++    if (x.turns < 0) x.turns = turns_before_ours(world_, e);
++    const int t0 = x.turns, r = world_.round;
++    const int rank = world_.enemy_priorities_change ? 0 : e.next_rank;
++    const int ours = slot_of_rank(world_, true, static_cast<int>(world_.allies.size()) - 1, r + 2);
++    const int t1 = (enemy_turn_before_ours_next(world_, e) ? 0 : 1) + (slot_of_rank(world_, false, rank, r + 2) < ours ? 1 : 0);
++    const int widen = std::max(1, t1) - 1; // threat_strike's: a walk, then the strike
++    // Its last turn before our turn after next is by round r + 2.
++    const unsigned slots = (e.ability_ready(0, r + 2) ? 1u : 0u) | (e.ability_ready(1, r + 2) ? 2u : 0u);
++    int closes = t0 + widen + strike_with(e, slots).reach;
++    if (s >= 0 && t0 > 0 && e.ability_ready(s, r + 1))
++        closes = std::max(closes, t0 + f.abilities[static_cast<std::size_t>(s)].range() + widen + strike_with(e, slots & ~(1u << s)).reach);
++    return std::max(1, closes - r0);
++}
++
+ Safety::StandRoster Safety::stand_roster(vec2 p, const StandReach& reach, int approach, bool unseen) {
+     StandRoster r;
+     const std::uint32_t hit = reach.hit;
+diff --git a/bots/charybdis/src/model/safety.h b/bots/charybdis/src/model/safety.h
+index bf2aa4320..50c6e7860 100644
+--- a/bots/charybdis/src/model/safety.h
++++ b/bots/charybdis/src/model/safety.h
+@@ -486,6 +486,9 @@ public:
+     };
+     StandReach stand_reach(vec2 p, int farthest);
+     void stand_walks(vec2 p, int farthest, StandReach& r);
++    // The most a walker's walk (stand_reach's walks) can shrink by our next turn: one no farther
++    // may strike p in its turns between our next turn and the one after. At least 1.
++    int pursuit_gain(const ChampionBelief& e);
+     StandRoster stand_roster(vec2 p, const StandReach& reach, int approach, bool unseen);
+     // `falls` as for fight(); without walkers or camps it is fight(p). With `falls`, our fall settles
+     // it (Trade::lost_known).

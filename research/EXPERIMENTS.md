@@ -24,6 +24,9 @@ studies are in [overseer-2026-11-13](overseer-2026-11-13/candidates.md).
   economic-order-quantity trip rule. 55.2% of 56,320 held-out games at 2x; **54.1% at 100k on both overseer suites**
   (OOF +15%: a fuel candidate). Shop timing is worth ~2.5, the medic ~0.8. **With lock buying off: 55.0 / 54.7.**
   **Shipped as charybdis 527 with NYX's wards and locks kept: 54.7 / 54.9** (castor-nyx, no locks: 55.7 / 55.3).
+- **On top of 527** (each vs 527, overseer-nyx, 40,960, 100k): SELENE's pursuit fix 50.6 (shipped as 528: 50.7 on a fresh
+  suite); KRONOS's quiet channels 50.2; EOS's lead-conditioned stance 49.5 (OOF +6%); HECATE's press + lethal fixes 49.3
+  (OOF +26%). SELENE's unmeasured sel-owner (one owner for mutual claims) loses 0.8 head-to-head against sel-window at 2x.
 - **NYX sw-midx-hi**: value-placed wards + no locks + mid_exposure 1.70: 53.8% at 2x (ladder mix; 52.9-53.0 on
   ladder-v2), 51.5% at 100k (OOF +36%). The ward search's fuel is the loss; nyx-vl-fuel2 (turn-start ward call on the
   draft tile only) recovers OOF to +2% and reads 51.9 / 51.3 against charybdis on the two suites.
