@@ -27,8 +27,13 @@ def coverage(entries, forced, baseline, sources, opponents):
         key = (entry['opp'],*cell)
         if key not in baseline or baseline[key]['result'] != 'loss':
             raise RuntimeError(f'Entry is not a confirmed host loss: {key}')
-        checks[key] = dict(require_win=True,reason='book entry on host loss')
         source = sources[entry['key'].rsplit('-',1)[1]]
+        base = baseline[key]
+        known_win = (source.get('result') == 'win' and source.get('pin') == 'ref'
+                     and source.get('refset') == base.get('refset')
+                     and source.get('opp_id') == base.get('opp_id'))
+        if not known_win:
+            checks[key] = dict(require_win=True,reason='book entry needs target-pin validation')
         for other in opponents:
             other_key = (other,*cell)
             if other == entry['opp']:
@@ -38,11 +43,9 @@ def coverage(entries, forced, baseline, sources, opponents):
             base = baseline[other_key]
             same_draft = (source['our_picks'] == base['our_picks']
                           and source['opp_picks'] == base['opp_picks'])
-            if entry['key'] in forced or same_draft:
-                required = base['result'] == 'win' or checks.get(other_key,{}).get('require_win',False)
-                checks.setdefault(other_key,dict(require_win=required,
+            if (entry['key'] in forced or same_draft) and base['result'] == 'win':
+                checks.setdefault(other_key,dict(require_win=True,
                     reason='forced draft collateral' if entry['key'] in forced else 'shared draft collateral'))
-                checks[other_key]['require_win'] = required
     return checks
 
 
@@ -84,7 +87,9 @@ def plan(work):
     write(work/'live-expectations.json',expected)
     write(work/'live-plan.json',dict(phase='prepared',host_version=version,pins=pins,
           book_entries=len(entries),pinned_cells=len(checks),current_cells=len(expected)-len(checks),
-          note='No upload performed. Validate exact task provenance, full collection and zero suspect groups. '
+          note='No upload performed. Same-pin source wins rely on completed combined-book exact replay verification; '
+               'live pin checks cover provisional sources and collateral host wins. '
+               'Validate exact task provenance, full collection and zero suspect groups. '
                'Required wins include collateral host wins. Replay divergence alone is not failure.'))
 
 

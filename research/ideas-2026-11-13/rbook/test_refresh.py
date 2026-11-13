@@ -40,6 +40,16 @@ class RefreshGates(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError,'host loss'):
             loss_live_plan.coverage([entry],set(),baseline,sources,['fish','mite'])
 
+    def test_live_plan_reuses_known_pin_win_but_checks_other_pin_source(self):
+        entry=dict(key='map-a-v125-source',map='map',side='a',opp='fish')
+        base=dict(result='loss',our_picks=[1],opp_picks=[2],opp_id='fish-id',refset='r8')
+        source=dict(base,result='win',pin='ref')
+        self.assertEqual(loss_live_plan.coverage([entry],set(),{('fish','map','a'):base},
+                                                {'source':source},['fish']),{})
+        source['refset']='r7'
+        checks=loss_live_plan.coverage([entry],set(),{('fish','map','a'):base},{'source':source},['fish'])
+        self.assertTrue(checks[('fish','map','a')]['require_win'])
+
     def test_loss_refresh_requires_complete_clean_host_coverage(self):
         pins=dict(fish='r8',mite='r12')
         tasks=[dict(id=opp,version=128,purpose='set',opp_name=name,refset=pins[opp],
