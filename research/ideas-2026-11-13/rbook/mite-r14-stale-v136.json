@@ -1,0 +1,131 @@
+{
+  "at": "2026-11-13T22:21:50Z",
+  "run": {
+    "status": "complete",
+    "opponent": "mite",
+    "version": 136,
+    "snapshot_group": "01a1d6cd-2c33-7999-a960-ab7bd32a52c1",
+    "testing_source": "01a1d6cd-2c33-7999-a960-ab7bd32a52c1",
+    "testing_refset": "r14",
+    "baseline_task": "batches-hour37-v136-mite-observed",
+    "current_task": "batches-hour37-v136-mite-cur",
+    "task_specs": [
+      {
+        "id": "batches-hour37-v136-mite-observed",
+        "version": 136,
+        "set": "v1",
+        "part": "core",
+        "purpose": "oppcheck",
+        "opp_id": "ee83f5e5-bcad-4923-86b4-b79ea6083d2e",
+        "opp_name": "Mite",
+        "pin": "01a1d6cd-2c33-7999-a960-ab7bd32a52c1",
+        "refset": null,
+        "games": [
+          {
+            "map": "04sunburst",
+            "map_id": "907d112c-ba53-4c70-a4bf-e233e98a894a",
+            "side": "a"
+          },
+          {
+            "map": "03homonoliths",
+            "map_id": "c849ff13-ab55-429c-8369-e9275b4ee9b5",
+            "side": "b"
+          },
+          {
+            "map": "03the_front",
+            "map_id": "c3fdbaf2-96c2-4549-835c-67aebe4e71d7",
+            "side": "a"
+          },
+          {
+            "map": "00lanes",
+            "map_id": "62128fd1-03f3-4ce9-8e11-a953c91137a6",
+            "side": "b"
+          },
+          {
+            "map": "03one_gem",
+            "map_id": "cc27ea6f-c6bb-4b9a-801b-48da9d583a42",
+            "side": "a"
+          }
+        ],
+        "priority": 98,
+        "order": 1,
+        "planned": "2026-11-13T22:17:57Z",
+        "campaign": "batches",
+        "is_ref": false,
+        "note": "Hourly detector baseline"
+      },
+      {
+        "id": "batches-hour37-v136-mite-cur",
+        "version": 136,
+        "set": "v1",
+        "part": "core",
+        "purpose": "oppcheck",
+        "opp_id": "ee83f5e5-bcad-4923-86b4-b79ea6083d2e",
+        "opp_name": "Mite",
+        "pin": "none",
+        "refset": null,
+        "games": [
+          {
+            "map": "04sunburst",
+            "map_id": "907d112c-ba53-4c70-a4bf-e233e98a894a",
+            "side": "a"
+          },
+          {
+            "map": "03homonoliths",
+            "map_id": "c849ff13-ab55-429c-8369-e9275b4ee9b5",
+            "side": "b"
+          },
+          {
+            "map": "03the_front",
+            "map_id": "c3fdbaf2-96c2-4549-835c-67aebe4e71d7",
+            "side": "a"
+          },
+          {
+            "map": "00lanes",
+            "map_id": "62128fd1-03f3-4ce9-8e11-a953c91137a6",
+            "side": "b"
+          },
+          {
+            "map": "03one_gem",
+            "map_id": "cc27ea6f-c6bb-4b9a-801b-48da9d583a42",
+            "side": "a"
+          }
+        ],
+        "priority": 98,
+        "order": 1,
+        "planned": "2026-11-13T22:17:57Z",
+        "campaign": "batches",
+        "is_ref": false,
+        "note": "Hourly current opponent, never a repin"
+      }
+    ],
+    "planned_at": "2026-11-13T22:17:57Z",
+    "completed_at": "2026-11-13T22:20:38Z",
+    "result": {
+      "ev": "opp-check",
+      "event_id": "opp-observation-batches-hour37-v136-mite",
+      "at": "2026-11-13T22:20:38Z",
+      "task": "batches-hour37-v136-mite-cur",
+      "opponent": "Mite",
+      "version": 136,
+      "changed": true,
+      "maps": [
+        "00lanes/b",
+        "03homonoliths/b",
+        "03one_gem/a",
+        "03the_front/a",
+        "04sunburst/a"
+      ],
+      "comparison": "rolling observed behavior snapshot",
+      "previous_snapshot": "01a1d6cd-2c33-7999-a960-ab7bd32a52c1",
+      "baseline_task": "batches-hour37-v136-mite-observed",
+      "baseline_group": "01a1d6fd-3d6c-700b-a5f3-a64b0e6660bf",
+      "current_group": "01a1d6fd-3e71-71df-8fce-d0a92c93a00f",
+      "baseline_fingerprint": "57b89ab6e29ca241ae6eb1d2db7a8dce8d52f3de7b41abb4fb8126fa2e834417",
+      "current_fingerprint": "cc7259aa1973d7712083bf239f40cef04c3a72ff9126532b4ab1570554b283a6",
+      "testing_pins_unchanged": true,
+      "note": "Observed behavior difference on five matched cells, not an inferred upload count."
+    }
+  },
+  "note": "Different behavior on five same-own-version, same-engine, same-seed cells; does not infer upload count."
+}
