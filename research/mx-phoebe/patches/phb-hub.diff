@@ -1,0 +1,388 @@
+diff -ruN bots/variants/chy-ref/src/bot_parts.h bots/variants/phb-hub/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 14:14:03.116433193 +0000
++++ bots/variants/phb-hub/src/bot_parts.h	2026-11-13 15:37:05.916007719 +0000
+@@ -444,6 +444,10 @@
+ bool prism_takeover(const World& world, Safety& safety, const CampGroup& G, int& timer, bitboard& goal);
+ bool holders_stay(const World& world, const CampGroup& G, int round);
+ int carry_reach();
++const ChampionBelief* prism_collector(const World& world, Pathing& pathing, std::uint64_t reserve);
++void prism_collector_task(const World& world, Pathing& pathing, int& h, int& alive, int& task);
++bool prism_may_collect(const World& world, Pathing& pathing, int g, std::uint64_t reserve);
++int prism_collect_eta(const World& world, Pathing& pathing, int g, std::uint64_t reserve);
+ bool left_for_prism(const World& world, Pathing& pathing, int g, bool cleared_now = false);
+ bool yields_to_prism(const World& world, Pathing& pathing);
+ const bitboard* prism_hold_tiles(const World& world, bool on_too = false);
+diff -ruN bots/variants/chy-ref/src/economy/capture.cc bots/variants/phb-hub/src/economy/capture.cc
+--- bots/variants/chy-ref/src/economy/capture.cc	2026-11-13 14:14:03.118143405 +0000
++++ bots/variants/phb-hub/src/economy/capture.cc	2026-11-13 15:37:05.915804046 +0000
+@@ -522,6 +522,123 @@
+     return e.eta = task(team_walk_to(world, pathing, h, at)) + on;
+ }
+ 
++// Off Prism: the Prism ally that may collect a capture we begin (prism_collect_eta), read once a turn. It
++// comes only from posted work: its claim h (or the cleared group it holds, when that is its claim or it has
++// none), whose end it can time, then from its tile on h. In `task` the rounds until it is free there: h's
++// counting hold's payout, or its walk and a whole hold; for a live h also its clear at the other claimers'
++// and its camp output (the 'Q' pick's estimate). The walk runs from its posted tile, plus the steps it may
++// have made since. None without a claim (banking, fighting), with an enemy in our sight (leave_for_prism's
++// gate), short of the premium (keeps_bag), hurt, held back, or with no recent tile.
++struct Collector {
++    int round = -1;
++    std::uint32_t observations = ~0u;
++    const ChampionBelief* a = nullptr;
++    int h = -1, task = 0;
++    vec2 on{-1, -1}; // its tile on h, if it stands there
++};
++const Collector& collector(const World& world, Pathing& pathing, std::uint64_t reserve) {
++    static Collector k;
++    if (k.round == world.round && k.observations == world.observations) return k;
++    k = Collector{world.round, world.observations};
++    if (world.me().facts().passive == Passive::gem_focus || enemy_seen(world)) return k;
++    const auto& map = world.map();
++    const int n = static_cast<int>(map.groups.size());
++    for (const auto& a : world.allies) {
++        if (a.is_self || !a.alive || a.facts().passive != Passive::gem_focus) continue;
++        if (a.visible && (held_back(world, a, false) || a.health < params::hurt_health_fraction * a.max_health)) return k;
++        if (!keeps_bag(world, a, 1)) return k;
++        vec2 at;
++        int slack = 0;
++        if (!recent_tile(world, a, at, slack)) return k;
++        const int claim = comms::claim_of(world, a.index);
++        int h = a.visible ? map.group_at(a.pos) : -1;
++        if (h < 0 || world.camps[h].state != CampState::cleared || world.camps[h].holder != team::ally || (claim >= 0 && claim != h)) h = claim;
++        if (h < 0 || h >= n) return k;
++        const auto& H = map.groups[h];
++        const auto& ch = world.camps[h];
++        if (H.has_monolith || ch.holder == team::enemy) return k;
++        const int hold = capture_rounds(a.fast_capture) - 1;
++        if (!pathing.group_walking_ready(h) && !fuel_ok(full_field_cost_estimate() + reserve)) return k;
++        // A Prism that has acted this round moves next round.
++        const int to_h = team_walk_to(world, pathing, h, at) + slack + (a.visible && a.acted ? 1 : 0);
++        if (ch.state == CampState::cleared) {
++            const bool counting = ch.holder == team::ally && ch.held_since >= 0;
++            k.task = counting ? std::max(to_h, ch.payout_round() - world.round) : to_h + hold;
++        } else if (ch.state == CampState::alive) {
++            // Without us: a pick of ours elsewhere takes our output off h.
++            float output = 0, health = 0;
++            for (const auto& b : world.allies)
++                if (!b.is_self && b.alive && comms::claim_of(world, b.index) == h) output += camp_output(b);
++            for (std::size_t i = 0; i < H.members.size(); ++i) health += std::max(0.0f, ch.health[i]);
++            if (!(output > 0)) return k;
++            k.task = to_h + static_cast<int>(std::ceil(health / output)) + hold;
++        } else {
++            return k; // respawning: its return is not ours to time
++        }
++        if (a.visible && test(H.tiles(), a.pos)) k.on = a.pos;
++        k.a = &a, k.h = h;
++        return k;
++    }
++    return k;
++}
++
++// A capture of G we hold can pass to the Prism: a camp tile besides the holders' for it to step on
++// (prism_carries' goal is the free tiles).
++bool takeover_room(const CampGroup& G) { return static_cast<int>(G.members.size()) > holders(G); }
++
++// The tiles of h the collector walks on from: its own while it stands there, else all of them.
++template <class F> int from_h(const World& world, const Collector& k, F&& steps) {
++    if (in_bounds(k.on)) return steps(k.on);
++    int most = unreachable;
++    for (const auto& m : world.map().groups[k.h].members) most = std::min(most, steps(m.pos));
++    return most;
++}
++
++// Rounds until the Prism ally of `collector` can stand on group g's tiles, done with its task, by its walk
++// on from h; `unreachable` where it would not take the hold over: the walk on past carry_reach (the farthest
++// its 'G' and 'L' picks walk) or h's tiles beyond its sight of g ('G' needs to see us on it), no tile for it
++// beside the holders', an enemy that may see the group (prism_carries'), or short of fuel for g's field.
++// Once per group and round.
++int prism_collect_eta(const World& world, Pathing& pathing, int g, std::uint64_t reserve) {
++    const auto& k = collector(world, pathing, reserve);
++    if (!k.a || g == k.h) return unreachable;
++    struct Eta {
++        int round = -1;
++        std::uint32_t observations = ~0u;
++        int eta = unreachable;
++    };
++    static std::vector<Eta> etas;
++    const auto& map = world.map();
++    if (etas.size() != map.groups.size()) etas.assign(map.groups.size(), Eta{});
++    auto& e = etas[static_cast<std::size_t>(g)];
++    if (e.round == world.round && e.observations == world.observations) return e.eta;
++    const auto& G = map.groups[g];
++    if (!takeover_room(G) || from_h(world, k, [&](vec2 p) { return steps_to(G, p); }) > std::min(vision_radius, carry_reach()))
++        return e = {world.round, world.observations, unreachable}, unreachable;
++    for (const auto& m : G.members)
++        if (enemy_may_see(world, m.pos)) return e = {world.round, world.observations, unreachable}, unreachable;
++    // Short of fuel, no promise: not cached, a later call may have the fuel.
++    if (!pathing.group_walking_ready(g) && !fuel_ok(full_field_cost_estimate() + reserve)) return unreachable;
++    const int on = from_h(world, k, [&](vec2 p) { return team_walk_to(world, pathing, g, p); });
++    e = {world.round, world.observations, on > carry_reach() ? unreachable : k.task + on};
++    return e.eta;
++}
++
++// prism_collect_eta's bound before any field or fuel: false where it is surely unreachable.
++bool prism_may_collect(const World& world, Pathing& pathing, int g, std::uint64_t reserve) {
++    const auto& k = collector(world, pathing, reserve);
++    if (!k.a || g == k.h) return false;
++    const auto& G = world.map().groups[g];
++    return takeover_room(G) && from_h(world, k, [&](vec2 p) { return steps_to(G, p); }) <= std::min(vision_radius, carry_reach());
++}
++
++const ChampionBelief* prism_collector(const World& world, Pathing& pathing, std::uint64_t reserve) { return collector(world, pathing, reserve).a; }
++// For traces: the collector's task group, its state (0 cleared, 1 alive) and rounds.
++void prism_collector_task(const World& world, Pathing& pathing, int& h, int& alive, int& task) {
++    const auto& k = collector(world, pathing, end_reserve);
++    h = k.h, task = k.task, alive = k.h >= 0 && world.camps[k.h].state == CampState::alive;
++}
++
+ enum class Leave { no, claimed, near };
+ 
+ // A group's cleared episode (its geometry_version): the round we first asked of it, whether we left
+@@ -587,8 +704,13 @@
+             if (eta > remaining) return Leave::no;
+             const int prism_rounds = eta + capture_rounds(a.fast_capture) - 1;
+             if (!held) {
+-                if (left.left || worth_wait(a, prism_rounds - (capture_rounds(world) - 1 + std::max(1, walk_from(my_position()))))) return Leave::near;
+-                return Leave::no;
++                if (left.left) return Leave::near;
++                const int walk = std::max(1, walk_from(my_position())), ours = capture_rounds(world) - 1 + walk;
++                // Due after we stand on it and before the payout of the hold we would begin, Prism takes it whole
++                // when we step off (capture.reward), with the payout and the respawn sooner than had we left it
++                // empty: begun, where a tile is left for it to take over (takeover_room).
++                if (takeover_room(G) && eta - slack >= walk && eta + slack < ours) return Leave::no;
++                return worth_wait(a, prism_rounds - ours) ? Leave::near : Leave::no;
+             }
+             const int rounds = c.payout_round() - world.round;
+             if (eta - slack >= rounds) return left.left || worth_wait(a, prism_rounds - rounds) ? Leave::near : Leave::no;
+@@ -990,7 +1112,9 @@
+         if (a.visible && test(G.tiles(), a.pos)) return false; // there: sole_capture_holder's
+         return team_walk_to(world, pathing, g, a.pos) < c.payout_round() - world.round;
+     }
+-    return false;
++    // Or due to collect it (prism_collect_eta) before the payout, claiming it only once it picks the takeover.
++    const int eta = prism_collect_eta(world, pathing, g, end_reserve);
++    return eta != unreachable && eta < c.payout_round() - world.round;
+ }
+ 
+ // Another ally stands where the group's monsters reach. The radius test skips building the
+diff -ruN bots/variants/chy-ref/src/economy/farm.cc bots/variants/phb-hub/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 14:14:03.118397828 +0000
++++ bots/variants/phb-hub/src/economy/farm.cc	2026-11-13 15:37:19.746174890 +0000
+@@ -343,6 +343,10 @@
+     bool worth_prospector = false;
+     int banked_bag = 0; // bankable_bag, for the banking instance
+ };
++std::array<float, 256>& hub_finish() {
++    static std::array<float, 256> f{};
++    return f;
++}
+ FarmMemo& farm_memo() {
+     static FarmMemo memo;
+     return memo;
+@@ -1027,6 +1031,17 @@
+             if (const int claim = comms::claim_of(world, a.index);
+                 !a.is_self && a.alive && a.facts().passive == Passive::gem_focus && claim >= 0 && n_fed < static_cast<int>(fed_by.size()))
+                 if (const float p = prism_premium(world, a, 1); p > 0) keep_most = std::max(keep_most, p), fed_by[n_fed] = &a, fed_claim[n_fed++] = claim;
++    // Off Prism, a group the Prism ally can collect (prism_collect_eta: its 'G' takeover of the hold we begin
++    // when our clear ends, or its 'L' of the group we leave it) ends in its bag too: its premium is paid when
++    // the Prism stands there before that hold's payout, by each pick's own end of the clear (hub_paid).
++    const ChampionBelief* hub = short_by > 1 && feeder ? prism_collector(world, pathing, end_reserve) : nullptr;
++    if (hub) keep_most = std::max(keep_most, prism_premium(world, *hub, 1));
++    const auto fed_group = [&](int g) __attribute__((always_inline)) {
++        for (int i = 0; i < n_fed; ++i)
++            if (fed_claim[i] == g) return true;
++        return false;
++    };
++    // The most a group's gems carry, for every prune: a collectable group's at the soonest it could be.
+     const auto keep_bonus = [&](const CampGroup& G) __attribute__((always_inline)) {
+         if (!(keep_most > 0) || G.gems <= 0 || G.gems >= short_by || G.has_monolith) return 0.0f;
+         if (keeper) return prism_premium(world, world.me(), G.gems);
+@@ -1034,8 +1049,20 @@
+         float most = 0;
+         for (int i = 0; i < n_fed; ++i)
+             if (fed_claim[i] == g) most = std::max(most, prism_premium(world, *fed_by[i], G.gems));
++        if (hub && !(most > 0) && prism_may_collect(world, pathing, g, end_reserve)) most = prism_premium(world, *hub, G.gems);
+         return most;
+     };
++    // keep_bonus's premium holds for a pick of g whose clear ends `finish` rounds from now: ours, a claim's,
++    // or a Prism there before the payout of the hold we would begin then.
++    const auto hub_paid = [&](int g, float finish, std::uint64_t reserve) __attribute__((always_inline)) {
++        if (keeper || !hub || fed_group(g)) return true;
++        const int eta = prism_collect_eta(world, pathing, g, reserve);
++        const bool paid = eta != unreachable && static_cast<float>(eta) <= finish + static_cast<float>(capture_rounds(world) - 1);
++        debug_block({
++            if (paid && g < 256) hub_finish()[g] = finish;
++        });
++        return paid;
++    };
+     const float bound_tribute = tribute_gold + keep_most;
+     debug_block({
+         static int traced = -1;
+@@ -1086,6 +1113,7 @@
+         char mode = '-';
+         int trips = 0, tank = -1, expected = 0;
+         float output = 0, damage = 0; // damage: ours, after our emblems
++        bool hub = false;              // the Prism's premium paid as its collection (hub_paid), not its claim
+     };
+     Priced best_priced, shared_priced;
+     // An ally in sight clearing its claimed damaging group gets help only if finishing it alone
+@@ -2041,6 +2069,12 @@
+         // Solo, kited and as the crew's proposer the Focus is in the worth (a crew's part of it, as of
+         // the rest); joining, the share is of `plain` and the Focus is added whole.
+         const float plain = gems + gold - toll, worth = plain + carried;
++        // The worth of a pick whose clear takes `clear` rounds from our arrival: the collection's premium only
++        // with the Prism there in time.
++        const bool hub_priced = hub && carried > 0 && !keeper && !fed_group(g);
++        const auto worth_at = [&](float clear) __attribute__((always_inline)) {
++            return hub_priced && !hub_paid(g, static_cast<float>(there) + clear, loop_reserve()) ? plain : worth;
++        };
+         // Health past what we can spare costs trips home, each a recall and the walk back out. By
+         // way of spawn we arrive healed.
+         const float budget = by_spawn ? usable_health : trip_spare;
+@@ -2118,7 +2152,8 @@
+             if (carry > 0 && my_health() - (kite_hit ? kite_hits() : damage) < params::hurt_health_fraction * max_health) carry = 0, hold = 0;
+             // No capture rounds but a keeping Prism's: the claimer holds it, and the crew moves on once it is cleared.
+             // A crew we are in holds us against small pulls: one member leaving shrinks it for the rest.
+-            const float value = rate(world, shared_plain * part + carry, trip + rounds + hold + trips_home(static_cast<float>(trips)))
++            const float paid_plain = fed && worth_at(rounds) == plain ? plain : shared_plain;
++            const float value = rate(world, paid_plain * part + carry, trip + rounds + hold + trips_home(static_cast<float>(trips)))
+                                 * (op && memory.claim == g ? crew_hold(g) : 1.0f);
+             // Only a better share counts, and the final pick takes none a group of our own beats.
+             if (g == memory.mono_group) mono_seen = value;
+@@ -2127,7 +2162,7 @@
+             if (kite_hit && kite_hits() > spare_health) continue;
+             shared = g, shared_value = value, shared_steps = steps;
+             if (may_floor()) floor_value = value;
+-            shared_priced = {'J', trips, plan.tank ? plan.tank->index : -1, plan.n_expected, strength + others, damage};
++            shared_priced = {'J', trips, plan.tank ? plan.tank->index : -1, plan.n_expected, strength + others, damage, hub_priced && paid_plain != plain};
+             continue;
+         }
+         if (known.clearing != clearing || known.clear_version != belief.version) {
+@@ -2162,22 +2197,24 @@
+             const bool cast = kite >= 0 && (damage > spare_health || kite < rounds + heal(g, damage));
+             if (cast) damage = 0, rounds = kite;
+             if (too_late(rounds)) continue;
+-            float value = rate(world, worth, trip + rounds + capture);
++            float kite_worth = worth_at(rounds);
++            float value = rate(world, kite_worth, trip + rounds + capture);
+             if (damage > spare_health && unclaimed_partner_output > 0 && alive) {
+                 float joint_rounds = 0;
+                 const float part = strength / (strength + unclaimed_partner_output);
+                 if (soften * min_camp_damage(world, g, strength + unclaimed_partner_output, &joint_rounds) * part <= spare_health)
+-                    damage = 0, value = rate(world, worth * part, trip + joint_rounds + capture);
++                    damage = 0, kite_worth = worth_at(joint_rounds), value = rate(world, kite_worth * part, trip + joint_rounds + capture);
+             }
+             if (damage > spare_health && !ally_engaged(world, g)) {
+                 if (value > risky_value || (value == risky_value && earlier(g, risky))) risky = g, risky_value = value, risky_steps = steps;
+                 continue;
+             }
+             if (value > best_value || (value == best_value && earlier(g, best)))
+-                best = g, best_value = value, best_steps = steps, best_spell = cast, best_priced = {cast ? 'K' : 'S', 0, -1, 0, strength, damage};
++                best = g, best_value = value, best_steps = steps, best_spell = cast,
++                best_priced = {cast ? 'K' : 'S', 0, -1, 0, strength, damage, hub_priced && kite_worth != plain};
+             if (banks_bag && walk_out != unreachable) {
+                 const float via_altar = belief.state == CampState::respawning ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk_out) - bank_now) : 0.0f;
+-                from_altar_value = std::max(from_altar_value, rate(world, worth, static_cast<float>(walk_out) + cycle_bank + via_altar + rounds + capture));
++                from_altar_value = std::max(from_altar_value, rate(world, worth_at(rounds), static_cast<float>(walk_out) + cycle_bank + via_altar + rounds + capture));
+             }
+             continue;
+         }
+@@ -2204,7 +2241,9 @@
+         // A Monolith is a crew's only: alone, the walk there is often given up for nearer camps on
+         // the way, and a lone chip only softens it for whoever comes next.
+         bool late = too_late(clear_rounds) || (group.has_monolith && belief.state != CampState::cleared);
+-        float value = late ? 0.0f : rate(world, worth, trip + clear_rounds + capture + trips_home(static_cast<float>(trips)));
++        share = worth_at(clear_rounds);
++        priced.hub = hub_priced && share != plain;
++        float value = late ? 0.0f : rate(world, share, trip + clear_rounds + capture + trips_home(static_cast<float>(trips)));
+         // Banking: the cycle from the altar after the tribute (from_altar_value's candidate).
+         const float via_altar = banks_bag && walk_out != unreachable && belief.state == CampState::respawning
+                                     ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk_out) - bank_now) : 0.0f;
+@@ -2255,7 +2294,8 @@
+                 // way gives way to joining it rather than split the free allies.
+                 const float hold = memory.claim == g ? crew_hold(g)
+                                    : plan.claimers == 0 && rival_op() ? params::crew_rival_factor : 1.0f;
+-                const float crew_value = rate(world, worth * part, trip + plan.rounds + capture + trips_home(static_cast<float>(my_trips))) * hold;
++                const float crew_worth = worth_at(plan.rounds);
++                const float crew_value = rate(world, crew_worth * part, trip + plan.rounds + capture + trips_home(static_cast<float>(my_trips))) * hold;
+                 debug_block({
+                     if (group.has_monolith && round % 25 == 0)
+                         std::printf("MONO VALUE %d %u g%d worth %.0f part %.2f trip %.0f rounds %.0f trips %d home %.0f crew %d+%d output %.0f value %.4f best-so-far %.4f\n",
+@@ -2264,8 +2304,8 @@
+                 });
+                 if (crew_value > value) {
+                     value = crew_value, late = false, spell = false;
+-                    clear_rounds = plan.rounds, trips = my_trips, share = worth * part;
+-                    priced = {'C', my_trips, plan.tank ? plan.tank->index : -1, plan.n_expected, plan.output, crew_share(plan, reach)};
++                    clear_rounds = plan.rounds, trips = my_trips, share = crew_worth * part;
++                    priced = {'C', my_trips, plan.tank ? plan.tank->index : -1, plan.n_expected, plan.output, crew_share(plan, reach), hub_priced && crew_worth != plain};
+                 }
+             }
+         }
+@@ -2313,6 +2353,7 @@
+             const int least = steps_to(G, here); // no walk to its tiles is shorter
+             if (G.gems <= 0 || least > reach) return;
+             const bool held = allies_on(world, G.tiles()) > 0;
++            [[maybe_unused]] const auto why = [&](char c) { debug_block({ if (held) std::printf("PG %d g%d %c\n", round, g, c); }); };
+             // Left empty: our carry pick, or our claim that an ally's claim keeps out of the loop.
+             if (!held && (g != memory.claim || world.camps[g].holder == team::enemy || (memo.carry_group != g && !claimed_by_ally(g)))) return;
+             const int gems = std::min(G.gems + (prospector ? prospected(G.cluster_gems, 1) : 0), short_by);
+@@ -2320,13 +2361,13 @@
+             const float worth = static_cast<float>(gems) * (1.0f + keep_bonus(G)) + per_gold * static_cast<float>(gold);
+             // The fewest rounds it can take (a payout comes after our arrival): no better than the best, and not
+             // the best already, it is not picked (a worth's rate falls with its rounds).
+-            if (best != g && worth >= 0 && !(rate(world, worth, static_cast<float>(least + (held ? 1 : capture_rounds(world)))) > best_value)) return;
++            if (best != g && worth >= 0 && !(rate(world, worth, static_cast<float>(least + (held ? 1 : capture_rounds(world)))) > best_value)) return why('B');
+             int timer = 0;
+-            if (held ? !prism_takeover(world, safety, G, timer, goal) : !prism_carries(world, safety, G, goal)) return;
++            if (held ? !prism_takeover(world, safety, G, timer, goal) : !prism_carries(world, safety, G, goal)) return why(enemy_seen(world) ? 'E' : 'T');
+             // The fuel is for the field's search: made already, the read is free (the test dropped ~8% of Prism's gems).
+             if (!pathing.group_ready(g) && !fuel_ok(full_field_cost_estimate() + loop_reserve())) return;
+             int walk = pathing.to_group(g).at(here);
+-            if (walk == unreachable) return;
++            if (walk == unreachable) return why('W');
+             // The field's nearest tile may be one we cannot take: the goal's, a step on at most beside it,
+             // and no nearer than the crow flies.
+             int crow = unreachable;
+@@ -2337,7 +2378,7 @@
+                 else off_goal |= d <= walk;
+             }
+             walk = std::max(walk + (off_goal ? 1 : 0), crow);
+-            if (walk > reach) return;
++            if (walk > reach) return why('W');
+             // A holder whose recall lands before we arrive leaves the tiles empty for a whole hold of ours.
+             const bool in_time = held && walk < timer && holders_stay(world, G, round + walk);
+             // No more than the loop's bound on a cleared group: the walk is at least the crow's.
+@@ -2347,6 +2388,9 @@
+             if (value > best_value || (best == g && !in_time)) {
+                 best = g, best_steps = walk, best_value = std::max(value, best_value), best_spell = false, best_priced = Priced{in_time ? 'G' : 'L'};
+                 copy_into(goal, carry_goal);
++                why(in_time ? 'P' : 'L');
++            } else {
++                why(in_time ? 'V' : 'N');
+             }
+         });
+     }
+@@ -2454,6 +2498,21 @@
+                         chosen.mode, chosen.trips, chosen.tank, chosen.expected, chosen.output, chosen.damage, my_health(), max_health);
+         }
+     });
++    debug_block({
++        if constexpr (!repricing) {
++            static int last_hub = -1;
++            const int hub_group = best >= 0 && chosen.hub ? memory.claim : -1;
++            if (hub_group >= 0 && hub_group != last_hub) {
++                const auto& m = groups[hub_group].members[0].pos;
++                int th = -1, talive = 0, ttask = 0;
++                prism_collector_task(world, pathing, th, talive, ttask);
++                std::printf("HUB %d %u g%d at %d %d mode %c gems %d prem %.2f eta %d task %d alive %d state %d finish %.0f\n", round, my_handle(), hub_group, m.x, m.y,
++                            chosen.mode, groups[hub_group].gems, hub ? prism_premium(world, *hub, groups[hub_group].gems) : 0.0f,
++                            prism_collect_eta(world, pathing, hub_group, end_reserve), ttask, talive, static_cast<int>(world.camps[hub_group].state), hub_group < 256 ? hub_finish()[hub_group] : -1.0f);
++            }
++            last_hub = hub_group;
++        }
++    });
+     if constexpr (!repricing) memo.carry_group = best >= 0 && (chosen.mode == 'G' || chosen.mode == 'L' || chosen.mode == 'Q') ? best : -1, memo.carry_round = round;
+     if (best < 0) {
+         if constexpr (repricing) return true;

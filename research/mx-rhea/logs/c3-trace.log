@@ -1,0 +1,9 @@
+A/B mx-rhea-c3-trace: CAND variants/c3-threat (dir) vs REF variants/chy-ref (dir)
+  c3-study40: running, log replays/ab/mx-rhea-c3-trace/c3-study40.log
+CAND 56.2% of 80 (45-35), 95% CI 45.3-66.6
+  c3-study40  56.2% of 80 (45-35), 95% CI 45.3-66.6
+Failed matches: 0
+Out-of-fuel turns: CAND 5 in 4 games, REF 9 in 8 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 2m17s
+Results: replays/ab/mx-rhea-c3-trace/summary.md

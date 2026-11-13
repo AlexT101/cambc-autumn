@@ -1,0 +1,9 @@
+A/B mx-rhea-c1-hold: CAND variants/c1-presence (dir) vs REF variants/chy-ref (dir)
+  hold: running, log replays/ab/mx-rhea-c1-hold/hold.log
+CAND 50.3% of 10200 (5133-5067), 95% CI 49.4-51.3
+  hold  50.3% of 10200 (5133-5067), 95% CI 49.4-51.3
+Failed matches: 0
+Out-of-fuel turns: CAND 986 in 642 games, REF 735 in 494 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 0m55s
+Results: replays/ab/mx-rhea-c1-hold/summary.md

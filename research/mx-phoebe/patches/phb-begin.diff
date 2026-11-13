@@ -1,0 +1,16 @@
+diff -ruN bots/variants/chy-ref/src/economy/capture.cc bots/variants/phb-begin/src/economy/capture.cc
+--- bots/variants/chy-ref/src/economy/capture.cc	2026-11-13 14:14:03.118143405 +0000
++++ bots/variants/phb-begin/src/economy/capture.cc	2026-11-13 15:25:25.179491051 +0000
+@@ -587,7 +587,11 @@
+             if (eta > remaining) return Leave::no;
+             const int prism_rounds = eta + capture_rounds(a.fast_capture) - 1;
+             if (!held) {
+-                if (left.left || worth_wait(a, prism_rounds - (capture_rounds(world) - 1 + std::max(1, walk_from(my_position()))))) return Leave::near;
++                const int ours = capture_rounds(world) - 1 + std::max(1, walk_from(my_position()));
++                // Due before the payout of a hold we begin, Prism takes it whole when we step off (capture.reward),
++                // and the payout and the respawn come no later than if we left it empty: begun.
++                if (!left.left && eta + slack < ours) return Leave::no;
++                if (left.left || worth_wait(a, prism_rounds - ours)) return Leave::near;
+                 return Leave::no;
+             }
+             const int rounds = c.payout_round() - world.round;

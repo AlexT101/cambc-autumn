@@ -1,0 +1,11 @@
+A/B mx-phoebe-peffn1: CAND variants/p-effn1 (dir) vs REF variants/chy-ref (dir)
+  train: running, log replays/ab/mx-phoebe-peffn1/train.log
+  SPRT: H0 accepted at 800 games (LLR -3.33); stopping train
+CAND 46.5% of 800 (372-428), 95% CI 43.1-50.0
+  train  46.5% of 800 (372-428), 95% CI 43.1-50.0, 800/10200 played
+SPRT H0 0.5 vs H1 0.52 (alpha 0.05, beta 0.05, stops on H0 only, from 200 games): LLR -3.33 in [-2.94, 2.94] from 398 map pairs (796 of 800 finished games): H0 accepted, stopped the run at 800 of 10200 games; the win rates are from that partial, shuffled sample
+Failed matches: 0
+Out-of-fuel turns: CAND 62 in 43 games, REF 65 in 41 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 1m02s
+Results: replays/ab/mx-phoebe-peffn1/summary.md

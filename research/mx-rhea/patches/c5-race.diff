@@ -1,0 +1,125 @@
+diff -ruN -x .cambc bots/variants/chy-ref/src/bot.cc bots/variants/c5-race/src/bot.cc
+--- bots/variants/chy-ref/src/bot.cc	2026-11-13 14:14:02.532195547 +0000
++++ bots/variants/c5-race/src/bot.cc	2026-11-13 16:36:35.113549659 +0000
+@@ -565,6 +565,8 @@
+ // True if shards changed our stats.
+ bool shop(const World& world, const Memory& memory, bool consumables, bool shards) {
+     if (consumables) buy_crystal(memory);
++    // With an enemy bag that wins, a lock is the stop that also bars the retry at its altar (altar_locks.effect): before shards.
++    if (consumables && enemy_race_on(world)) buy_lock();
+     const bool bought = shards && buy_shards(world);
+     if (consumables) buy_lock();
+     return bought;
+@@ -662,8 +664,13 @@
+     if (!world.me().can_act(world.round)) return;
+     fixc_bush_threatened = fixc_bush_threat(world, safety);
+     if (const auto* ender = game_ender(world); ender && holds_hard_stop(world, *ender)) {
+-        stop_game_ender(world, pathing, memory, *ender);
+-        return;
++        // Our winning bag's holder leaves the stop to an ally that makes it in time: a kill in that fight hands over the bag.
++        const bool spared = winning_bag(world) && ally_stops_in_time(world, *ender);
++        debug_block({ std::printf("RACE %d %u ender %u%s\n", world.round, my_handle(), static_cast<unsigned>(ender->handle), spared ? " spared" : ""); });
++        if (!spared) {
++            stop_game_ender(world, pathing, memory, *ender);
++            return;
++        }
+     }
+     const bool willow = support_healer(world.me());
+     const bool prism = support_protected(world, world.me());
+diff -ruN -x .cambc bots/variants/chy-ref/src/bot_parts.h bots/variants/c5-race/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 14:14:02.532399450 +0000
++++ bots/variants/c5-race/src/bot_parts.h	2026-11-13 16:36:35.113311706 +0000
+@@ -423,6 +423,13 @@
+ void drop_carry_claim(Memory& memory);
+ void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool attacked, const Pathing::GuardState& chase_guard);
+ 
++// economy/race.cc: the endgame tribute race.
++// ally_stops, or a visible ally (one not holding a winning bag itself, the ender in its sight) whose ready stun or carried
++// lock arrives within reach before the enemy's channel completes.
++bool ally_stops_in_time(const World& world, const ChampionBelief& e);
++// A living enemy, as last seen, carries the gems the enemy still needs.
++bool enemy_race_on(const World& world);
++
+ // economy/capture.cc
+ int capture_rounds(bool fast);
+ int capture_rounds(const World& world);
+diff -ruN -x .cambc bots/variants/chy-ref/src/economy/bank.cc bots/variants/c5-race/src/economy/bank.cc
+--- bots/variants/chy-ref/src/economy/bank.cc	2026-11-13 14:14:02.534091572 +0000
++++ bots/variants/c5-race/src/economy/bank.cc	2026-11-13 16:36:35.113772472 +0000
+@@ -1461,7 +1461,7 @@
+     // in reach, is the game: ours waits, unless ours wins first or, winning later, an ally stops theirs in time.
+     const auto* ender = game_ender(world);
+     const auto* stop = ender && holds_hard_stop(world, *ender) ? ender : stoppable_winning_tribute(world);
+-    if (stop && !(winning_bag(world) && ally_stops(world, *stop))) {
++    if (stop && !(winning_bag(world) && ally_stops_in_time(world, *stop))) {
+         throw_if_stale();
+         try {
+             self_acted(), me.cancel_submit_gems();
+diff -ruN -x .cambc bots/variants/chy-ref/src/economy/race.cc bots/variants/c5-race/src/economy/race.cc
+--- bots/variants/chy-ref/src/economy/race.cc	1970-01-01 00:00:00.000000000 +0000
++++ bots/variants/c5-race/src/economy/race.cc	2026-11-13 16:36:35.113905314 +0000
+@@ -0,0 +1,53 @@
++// The endgame tribute race: who stops an enemy's winning channel. Only a stun, a lock placed at its altar or a kill stops a
++// tribute; damage does not (rules: gems.tribute, abilities.stun, altar_locks.effect). A kill hands over the victim's whole bag
++// (combat.kill), so our winning bag's holder is the costliest stopper to send.
++#include "../bot_parts.h"
++
++namespace aph {
++
++namespace {
++
++bool ally_stops_in_time(const World& world, const ChampionBelief& e) {
++    if (ally_stops(world, e)) return true;
++    if (e.channel != Channel::tribute || test(world.map().bushes, e.pos)) return false;
++    const int lands = e.channel_end_round, altar = tribute_altar(world, e.pos);
++    // A lock there cancels our own channel at that altar too.
++    const bool lockable = altar >= 0 && tribute_altar(world, my_position()) != altar;
++    const bool stunnable = e.facts().passive != Passive::stun_immune;
++    for (const auto& a : world.allies) {
++        if (a.is_self || !a.alive || !a.visible || held_by_channel(a) || stun_pending(a.handle)) continue;
++        // It goes only for an ender in its own sight (vision.personal): no beacon tells it of one.
++        if (dist(a.pos, e.pos) > vision_radius) continue;
++        // An ally holding a winning bag of its own leaves the stop to others as we do.
++        if (pair_gems(world, a) + world.score.ally >= static_cast<int>(cambc::constants::winning_gems)) continue;
++        const int r0 = a.acted ? world.round + 1 : world.round;
++        if (!a.can_act(r0)) continue;
++        // Its stop lands before the channel's last turn end: by the turn before the completing round.
++        const int turns = lands - 1 - r0;
++        if (turns < 0) continue;
++        // Only a stun ready by next round sends it (holds_hard_stop): one on cooldown does not walk in.
++        if (stunnable)
++            for (int s = 0; s < 2; ++s)
++                if (const int reach = a.facts().stun_reach(s);
++                    reach >= 0 && a.ready_round[s] <= world.round + 1 && dist(a.pos, e.pos) - reach <= turns)
++                    return true;
++        if (lockable && dist(a.pos, world.map().altars[altar].pos) - altar_lock_range <= turns) {
++            std::array<std::uint32_t, 4> counts{};
++            const auto lock = cambc::detail::raw_consumable_ids[static_cast<std::size_t>(cambc::consumable_type::altar_lock)];
++            if (cambc::detail::sdk_champion_consumables(static_cast<std::uint32_t>(a.handle), counts.data()) == 0 && counts[lock] > 0)
++                return true;
++        }
++    }
++    return false;
++}
++
++bool enemy_race_on(const World& world) {
++    const int need = static_cast<int>(cambc::constants::winning_gems) - world.score.enemy;
++    for (const auto& e : world.enemies)
++        if (e.alive && pair_gems(world, e) >= need) return true;
++    return false;
++}
++
++} // namespace
++
++} // namespace aph
+diff -ruN -x .cambc bots/variants/chy-ref/src/unity.cpp bots/variants/c5-race/src/unity.cpp
+--- bots/variants/chy-ref/src/unity.cpp	2026-11-13 14:14:02.536390192 +0000
++++ bots/variants/c5-race/src/unity.cpp	2026-11-13 16:12:43.747193485 +0000
+@@ -10,6 +10,7 @@
+ #include "combat/guard.cc"
+ #include "combat/fight.cc"
+ #include "economy/bank.cc"
++#include "economy/race.cc"
+ #include "economy/capture.cc"
+ #include "economy/crew.cc"
+ #include "economy/farm.cc"

@@ -1,0 +1,9 @@
+A/B mx-crius-b-stage4: CAND variants/b-crew (dir) vs REF variants/chy-ref (dir)
+  train: running, log replays/ab/mx-crius-b-stage4/train.log
+CAND 49.6% of 10200 (5060-5140), 95% CI 48.6-50.6
+  train  49.6% of 10200 (5060-5140), 95% CI 48.6-50.6
+Failed matches: 0
+Out-of-fuel turns: CAND 856 in 574 games, REF 923 in 517 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 2m15s
+Results: replays/ab/mx-crius-b-stage4/summary.md

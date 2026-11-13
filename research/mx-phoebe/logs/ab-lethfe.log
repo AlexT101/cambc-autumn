@@ -1,0 +1,9 @@
+A/B mx-phoebe-lethfe: CAND variants/phb-leth-fe (dir) vs REF variants/chy-ref (dir)
+  study: running, log replays/ab/mx-phoebe-lethfe/study.log
+CAND 49.7% of 2720 (1352-1368), 95% CI 47.8-51.6
+  study  49.7% of 2720 (1352-1368), 95% CI 47.8-51.6
+Failed matches: 0
+Out-of-fuel turns: CAND 495 in 300 games, REF 188 in 118 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 1m45s
+Results: replays/ab/mx-phoebe-lethfe/summary.md

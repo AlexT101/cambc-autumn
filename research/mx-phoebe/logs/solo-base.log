@@ -1,0 +1,39 @@
+Solo mx-phoebe-solo-base: CAND variants/chy-mirror vs REF variants/chy-ref, each against idle
+  study cand: running, log replays/solo/mx-phoebe-solo-base/study-cand.log
+  study ref: running, log replays/solo/mx-phoebe-solo-base/study-ref.log
+  extracting replays
+CAND `bots/variants/chy-mirror`, REF `bots/variants/chy-ref`, each against bots/idle.
+Started 20261113-143243; 1360 paired games; one side; fuel 200000; release builds; wall 4.3 min.
+
+Mean CAND - REF per map, bootstrap 95% CI over maps; the round to 1000 as a % change (negative is faster), a game that never reaches it counting as round 2001.
+
+| Metric | total (1360 maps) | CAND mean | REF mean |
+|---|---|---|---|
+| round to 1000 (log ratio) | +0.0% [+0.0%, +0.0%] | 608.6 | 608.6 |
+| tributed @150 | +0.0 [+0.0, +0.0] | 38.4 | 38.4 |
+| tributed @300 | +0.0 [+0.0, +0.0] | 171.0 | 171.0 |
+| tributed @600 | +0.0 [+0.0, +0.0] | 761.4 | 761.4 |
+| collected @150 | +0.0 [+0.0, +0.0] | 222.7 | 222.7 |
+| collected @300 | +0.0 [+0.0, +0.0] | 526.6 | 526.6 |
+| collected @600 | +0.0 [+0.0, +0.0] | 941.8 | 941.8 |
+| gold earned @300 | +0.0 [+0.0, +0.0] | 2003.3 | 2003.3 |
+| gold earned @600 | +0.0 [+0.0, +0.0] | 3921.3 | 3921.3 |
+
+Maps where CAND reaches 1000 faster / slower / identical: 0 / 0 / 1360
+Games never reaching 1000: CAND 8, REF 8
+Out-of-fuel turns: CAND 35, REF 35
+Games with champion damage or bot errors: 156
+- {'suite': 'study', 'map': 'gen-altar-poor-6142100116000', 'side': 'A', 'role': 'cand', 'champion_damage': 1000}
+- {'suite': 'study', 'map': 'gen-altar-poor-6142100116000', 'side': 'A', 'role': 'ref', 'champion_damage': 1000}
+- {'suite': 'study', 'map': 'gen-classic-6142100001003', 'side': 'B', 'role': 'cand', 'champion_damage': 1000}
+- {'suite': 'study', 'map': 'gen-classic-6142100001003', 'side': 'B', 'role': 'ref', 'champion_damage': 1000}
+- {'suite': 'study', 'map': 'gen-classic-6142100101002', 'side': 'A', 'role': 'cand', 'champion_damage': 2100}
+- {'suite': 'study', 'map': 'gen-classic-6142100101002', 'side': 'A', 'role': 'ref', 'champion_damage': 2100}
+- {'suite': 'study', 'map': 'gen-classic-6142100201014', 'side': 'B', 'role': 'cand', 'champion_damage': 229.5}
+- {'suite': 'study', 'map': 'gen-classic-6142100201014', 'side': 'B', 'role': 'ref', 'champion_damage': 229.5}
+- {'suite': 'study', 'map': 'gen-classic-6142100301015', 'side': 'A', 'role': 'cand', 'champion_damage': 674}
+- {'suite': 'study', 'map': 'gen-classic-6142100301015', 'side': 'A', 'role': 'ref', 'champion_damage': 674}
+- ... 146 more in summary.json
+Failed matches: 0
+
+Results: replays/solo/mx-phoebe-solo-base/summary.json

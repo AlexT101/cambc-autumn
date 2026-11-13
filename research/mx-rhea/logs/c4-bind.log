@@ -1,0 +1,9 @@
+A/B mx-rhea-bind-c4: CAND variants/c4-recall (dir) vs REF variants/chy-ref (dir)
+  study3: running, log replays/ab/mx-rhea-bind-c4/study3.log
+CAND 51.3% of 2040 (1047-993), 95% CI 49.2-53.5
+  study3  51.3% of 2040 (1047-993), 95% CI 49.2-53.5
+Failed matches: 0
+Out-of-fuel turns: CAND 220 in 118 games, REF 150 in 116 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 1m52s
+Results: replays/ab/mx-rhea-bind-c4/summary.md

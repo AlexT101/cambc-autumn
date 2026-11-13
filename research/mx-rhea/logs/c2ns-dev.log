@@ -1,0 +1,9 @@
+A/B mx-rhea-c2ns-dev: CAND variants/c2-duel-ns (dir) vs REF variants/chy-ref (dir)
+  dev: running, log replays/ab/mx-rhea-c2ns-dev/dev.log
+CAND 49.9% of 10200 (5094-5106), 95% CI 49.0-50.9
+  dev  49.9% of 10200 (5094-5106), 95% CI 49.0-50.9
+Failed matches: 0
+Out-of-fuel turns: CAND 861 in 591 games, REF 803 in 570 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 1m25s
+Results: replays/ab/mx-rhea-c2ns-dev/summary.md

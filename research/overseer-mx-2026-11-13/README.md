@@ -37,3 +37,8 @@ Smoke before launch: chy-ref copy vs chy-ref, 256 ladder games at 2x fuel: 50.0%
 ## Merged
 - 18:00 UTC: `ia-prism-v1` merged into main as **charybdis 530** (CHANGES 530, EXPERIMENTS "Macro round mx"), with
   IAPETUS's notes snapshot from its branch at cd3f88583 (`research/mx-iapetus/`). Not yet gated or live; a fuel pass first.
+
+## Standing instructions (user, ~18:15 UTC)
+- Codex fuel pass (`/home/ubuntu/wt/fuel-530`, branch fuel-530-20261113, tmux `codex-fuel530`): if it finds fuel cuts, squash into one commit and merge into main, provided they are behaviour-identical (not necessarily byte-identical; Codex states which).
+- Any orchestrator's new improvement: A/B at normal fuel on a new 40k-game fresh suite against the merged 530 (`variants/chy-530`).
+- Teammate live-test requests may be approved, with the caveat that the work is in progress and may vary on the ladder. Live scheduling stays with the teammate.

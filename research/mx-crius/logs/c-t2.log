@@ -1,0 +1,9 @@
+A/B mx-crius-c-t2: CAND variants/c-balance (dir) vs REF variants/chy-ref (dir)
+  train: running, log replays/ab/mx-crius-c-t2/train.log
+CAND 49.0% of 10200 (4994-5206), 95% CI 48.0-49.9
+  train  49.0% of 10200 (4994-5206), 95% CI 48.0-49.9
+Failed matches: 0
+Out-of-fuel turns: CAND 1057 in 757 games, REF 770 in 502 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 2m03s
+Results: replays/ab/mx-crius-c-t2/summary.md

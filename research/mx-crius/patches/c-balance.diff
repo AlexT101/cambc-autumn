@@ -1,0 +1,361 @@
+diff -ruN bots/variants/chy-ref/src/economy/contact_risk.cc bots/variants/c-balance/src/economy/contact_risk.cc
+--- bots/variants/chy-ref/src/economy/contact_risk.cc	1970-01-01 00:00:00.000000000 +0000
++++ bots/variants/c-balance/src/economy/contact_risk.cc	2026-11-13 16:00:17.499326898 +0000
+@@ -0,0 +1,203 @@
++// The expected loss from enemy contact over a farm job, in the farm's gem units (farm_turn prices it into
++// every job's worth): P(death over the job) x the cost of our death, and the job's own worth lost with us.
++//
++// - Contact: an enemy within Strike::max_reach of the job's centre. Each living tracked enemy is spread
++//   uniformly over a square round where it was last seen, of half-side min(a, k sqrt(a)) a rounds on
++//   (params::enemy_spread: enemies wander, so they spread as a random walk, not a tile a round), within its
++//   `possible` box grown a tile a round. Its chance to be in contact at round t is that square's share inside
++//   the contact square.
++// - Balance at contact: Lanchester's square law, each side's power its summed output times its summed health:
++//   us and the allies expected within contact_radius of the job (a claim's group centre, or a recent tile),
++//   against the enemies expected there given contact. x = their power / both.
++// - Death hazard per contact round lambda0 x / sqrt(1 - x) (params::contact_hazard): the square law's time to
++//   annihilation, sqrt((1 - x) / x) for the weaker side, tempered by the chance a stronger side commits.
++// - Cost of our death: our bag (and its Prism premium), the bag to the killer (with an enemy Prism's premium),
++//   the kill gold, and our respawn's rounds at our farm rate; Cassi and Issac lose both bodies.
++// - The same hazard from each enemy's side, its share 1 - x, prices the kills a job near weaker enemies brings,
++//   at the same terms. farm_turn caps the net at the job's worth, so its prunes' bounds still hold.
++#include "../bot_parts.h"
++
++namespace aph {
++
++namespace {
++
++struct JobRisk {
++    float p = 0;    // chance of dying over the job
++    float loss = 0; // expected cost of that death, gems
++    float gain = 0; // expected worth of the enemy deaths, gems
++};
++
++// Deaths a contact round of a champion whose side's enemies hold share y of the power there.
++inline float contact_deaths(float y) {
++    y = std::clamp(y, 0.0f, 0.99f);
++    return params::contact_hazard * y / std::sqrt(1.0f - y);
++}
++
++// Gems one gem in enemy Prism e's bag grows into beyond itself, as prism_premium prices ours: its Focus per
++// gem's camp output at our team's farm pace (the enemy's own is unseen), compounded to the win or the end.
++float enemy_premium(const World& world, const ChampionBelief& e, const TeamFarm& tf) {
++    if (e.facts().passive != Passive::gem_focus) return 0.0f;
++    const auto& f = e.facts();
++    const float per_gem = cambc::constants::passive_abilities::prism_focus_per_gem;
++    const float rate = (f.raw_output(e.strength, e.focus + per_gem) - f.raw_output(e.strength, e.focus)) * tf.per_output;
++    const auto& map = world.map();
++    const float horizon = std::max(0.0f, std::min(tf.to_win, static_cast<float>(rounds_left(world) - map.width - map.height - endgame_margin)));
++    const float room = static_cast<float>(static_cast<int>(cambc::constants::winning_gems) - world.score.enemy - e.gems);
++    return std::max(0.0f, std::min(std::expm1(rate * horizon), room / static_cast<float>(std::max(1, e.gems))));
++}
++
++class ContactRisk {
++public:
++    // Once per farm turn: beliefs are fixed for it.
++    void begin(const World& world, float per_gold) {
++        const auto& map = world.map();
++        width_ = map.width, height_ = map.height;
++        n_enemies_ = n_allies_ = 0;
++        const auto& tf = team_farm(world);
++        // A death's worth beside the bag: the kill gold, and the respawn's rounds of farming (gems at the team's
++        // pace for the output lost, their gold at the map's gold per gem), for us as for an enemy.
++        static const float gold_per_gem = [&] {
++            float gold = 0, gems = 0;
++            for (const auto& g : map.groups)
++                if (!g.has_monolith || map.monolith_only) gold += static_cast<float>(g.gold), gems += static_cast<float>(g.gems);
++            return gems > 0 ? gold / gems : 0.0f;
++        }();
++        const float farm_scale = tf.per_output * (1.0f + std::max(0.0f, per_gold) * gold_per_gem);
++        const float kill_gold = static_cast<float>(cambc::constants::kill_gold) * std::max(0.0f, prices(world).per_gold);
++        const float respawn = static_cast<float>(cambc::constants::respawn_time);
++        for (const auto& e : world.enemies) {
++            if (!e.alive || n_enemies_ == static_cast<int>(enemies_.size())) continue;
++            Enemy x;
++            if (e.visible && in_bounds(e.pos)) {
++                x.box.set(e.pos), x.at = e.pos, x.age = 0;
++            } else if (e.tracked && e.possible_box.x0 <= e.possible_box.x1) {
++                x.box = e.possible_box;
++                x.at = in_bounds(e.pos) && e.pos_round >= 0 ? e.pos : vec2{(x.box.x0 + x.box.x1) / 2, (x.box.y0 + x.box.y1) / 2};
++                x.age = e.pos_round >= 0 ? std::max(0, world.round - e.pos_round) : world.round;
++            } else {
++                // Past the tracking horizon `possible` is no longer kept: the spread from its last tile alone
++                // (from its spawn if never seen), anywhere on the map.
++                x.box.x0 = x.box.y0 = 0, x.box.x1 = map.width - 1, x.box.y1 = map.height - 1;
++                const bool seen = in_bounds(e.pos) && e.pos_round >= 0;
++                x.at = seen ? e.pos : map.enemy_spawn_centre;
++                x.age = seen ? std::max(0, world.round - e.pos_round) : world.round;
++            }
++            x.out = output(e);
++            // Unseen, it may have healed on its spawn.
++            x.hp = (e.visible ? e.health : e.max_health) + e.shield;
++            x.prem = enemy_premium(world, e, tf);
++            if (!(x.out > 0) || !(x.hp > 0)) continue;
++            // Its death to us, as ours to them: its bag (lost, and ours). A linked pair's body fells its partner too.
++            float bag = static_cast<float>(e.gems), output_lost = camp_output(e);
++            if (const auto* partner = linked_partner(world, e); partner && partner->alive)
++                bag += static_cast<float>(partner->gems), output_lost += camp_output(*partner);
++            x.worth = bag * (2.0f + x.prem) + kill_gold + respawn * farm_scale * output_lost;
++            enemies_[static_cast<std::size_t>(n_enemies_++)] = x;
++        }
++        const auto& me = world.me();
++        out_ = output(me), hp_ = my_health_and_shield(world);
++        for (const auto& a : world.allies) {
++            if (a.is_self || !a.alive || n_allies_ == static_cast<int>(allies_.size())) continue;
++            // Off the map where unknown: then it counts only as a crew plan's joiner.
++            vec2 at{-(1 << 20), -(1 << 20)};
++            int slack = 0;
++            const int claim = comms::claim_of(world, a.index);
++            if (claim >= 0 && claim < static_cast<int>(map.groups.size())) at = map.groups[claim].centre;
++            else if (!recent_tile(world, a, at, slack)) at = {-(1 << 20), -(1 << 20)};
++            allies_[static_cast<std::size_t>(n_allies_++)] = {at, a.index, output(a), (a.health > 0 ? a.health : a.max_health) + a.shield};
++        }
++        // Ours: Cassi and Issac fall together, both bodies' respawns and bags.
++        float output_lost = camp_output(me);
++        bag_ = static_cast<float>(my_gems());
++        if (const auto* partner = linked_partner(world, me); partner && partner->alive) {
++            output_lost += camp_output(*partner);
++            bag_ += static_cast<float>(team_bag(world, *partner));
++        }
++        fixed_ = kill_gold + respawn * farm_scale * output_lost;
++        own_prem_ = me.facts().passive == Passive::gem_focus ? prism_premium(world, me, 1) : 0.0f;
++    }
++
++    bool any() const { return n_enemies_ > 0; }
++
++    // At a job centred on c that we reach in `arrive` rounds and work for `rounds`. `banked`: the bag is
++    // tributed before it (the cycle out from an altar). `joining`: bit i, allies[i] works it with us (a crew
++    // plan's expected allies), wherever it is now.
++    JobRisk at(vec2 c, float arrive, float rounds, bool banked = false, std::uint32_t joining = 0) const {
++        JobRisk r;
++        if (n_enemies_ == 0) return r;
++        constexpr int radius = Strike::max_reach; // one past the farthest one-turn strike
++        const int sx0 = std::max(0, c.x - radius), sx1 = std::min(width_ - 1, c.x + radius);
++        const int sy0 = std::max(0, c.y - radius), sy1 = std::min(height_ - 1, c.y + radius);
++        float out_us = out_, hp_us = hp_;
++        for (int i = 0; i < n_allies_; ++i)
++            if (const auto& a = allies_[static_cast<std::size_t>(i)]; dist(a.at, c) <= radius || (joining >> a.index & 1)) out_us += a.out, hp_us += a.hp;
++        const float ours = out_us * hp_us;
++        rounds = std::max(rounds, 1.0f);
++        // The job's start, middle and end, trapezoid weights.
++        const float times[3] = {arrive, arrive + rounds / 2, arrive + rounds};
++        constexpr float weights[3] = {0.25f, 0.5f, 0.25f};
++        float hazard = 0, prem = 0;
++        std::array<float, 8> kills{}; // by enemy: its deaths a round of the job
++        for (int s = 0; s < 3; ++s) {
++            const int t = static_cast<int>(times[s]);
++            float none = 1, out = 0, hp = 0, prem_out = 0;
++            std::array<float, 8> fs{};
++            for (int i = 0; i < n_enemies_; ++i) {
++                const auto& e = enemies_[static_cast<std::size_t>(i)];
++                const float a = static_cast<float>(e.age + t);
++                const int spread = static_cast<int>(std::min(a, params::enemy_spread * std::sqrt(a)));
++                int bx0 = std::max({0, e.box.x0 - t, e.at.x - spread}), bx1 = std::min({width_ - 1, e.box.x1 + t, e.at.x + spread});
++                int by0 = std::max({0, e.box.y0 - t, e.at.y - spread}), by1 = std::min({height_ - 1, e.box.y1 + t, e.at.y + spread});
++                if (bx0 > bx1 || by0 > by1) { // seen outside where it can be now: its possible box alone
++                    bx0 = std::max(0, e.box.x0 - t), bx1 = std::min(width_ - 1, e.box.x1 + t);
++                    by0 = std::max(0, e.box.y0 - t), by1 = std::min(height_ - 1, e.box.y1 + t);
++                }
++                const int ix = std::min(bx1, sx1) - std::max(bx0, sx0) + 1, iy = std::min(by1, sy1) - std::max(by0, sy0) + 1;
++                if (ix <= 0 || iy <= 0) continue;
++                const float f = static_cast<float>(ix * iy) / static_cast<float>((bx1 - bx0 + 1) * (by1 - by0 + 1));
++                fs[static_cast<std::size_t>(i)] = f;
++                none *= 1.0f - f;
++                out += f * e.out, hp += f * e.hp, prem_out += f * e.out * e.prem;
++            }
++            const float contact = 1.0f - none;
++            if (!(contact > 1e-4f)) continue;
++            // Given contact, the enemies expected there.
++            const float theirs = (out / contact) * (hp / contact);
++            const float x = std::min(theirs / (ours + theirs), 0.99f);
++            const float h = weights[s] * contact * contact_deaths(x);
++            hazard += h;
++            prem += h * (out > 0 ? prem_out / out : 0.0f);
++            const float theirs_die = weights[s] * contact_deaths(1.0f - x);
++            for (int i = 0; i < n_enemies_; ++i) kills[static_cast<std::size_t>(i)] += fs[static_cast<std::size_t>(i)] * theirs_die;
++        }
++        if (!(hazard > 0)) return r;
++        r.p = -std::expm1(-hazard * rounds);
++        const float bag = banked ? 0.0f : bag_;
++        r.loss = r.p * (fixed_ + bag * (1.0f + own_prem_) + bag * (1.0f + prem / hazard));
++        for (int i = 0; i < n_enemies_; ++i)
++            r.gain += -std::expm1(-kills[static_cast<std::size_t>(i)] * rounds) * enemies_[static_cast<std::size_t>(i)].worth;
++        return r;
++    }
++
++private:
++    struct Enemy {
++        GrowBox box;     // where it can be now
++        vec2 at{-1, -1}; // where it was last seen (or its box's centre)
++        int age = 0;     // rounds since
++        float out = 0, hp = 0, prem = 0;
++        float worth = 0; // its death to us
++    };
++    struct Ally {
++        vec2 at;
++        int index;
++        float out, hp;
++    };
++    std::array<Enemy, 8> enemies_{};
++    std::array<Ally, 8> allies_{};
++    int n_enemies_ = 0, n_allies_ = 0, width_ = 0, height_ = 0;
++    float out_ = 0, hp_ = 0, bag_ = 0, fixed_ = 0, own_prem_ = 0;
++};
++
++} // namespace
++
++} // namespace aph
+diff -ruN bots/variants/chy-ref/src/economy/farm.cc bots/variants/c-balance/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 14:14:04.298581404 +0000
++++ bots/variants/c-balance/src/economy/farm.cc	2026-11-13 16:00:17.500348191 +0000
+@@ -1037,6 +1037,19 @@
+         return most;
+     };
+     const float bound_tribute = tribute_gold + keep_most;
++    // Every job's worth net of its expected loss and gain from contact (contact_risk.cc), never above the
++    // worth: the prunes' bounds leave it out and stay bounds, as best_value and the share only fall with it.
++    static ContactRisk risk;
++    risk.begin(world, per_gold);
++    const auto risked = [&](float worth, int g, float arrive, float rounds, bool banked = false, std::uint32_t joining = 0) {
++        if (!(worth > 0) || !risk.any()) return worth;
++        const auto r = risk.at(groups[g].centre, arrive, rounds, banked, joining);
++        return std::min(worth, worth * (1.0f - r.p) - r.loss + r.gain);
++    };
++    // A job reached in `reach` rounds whose group is back at `there`: the wait is stood there too.
++    const auto risked_at = [&](float worth, int g, int reach, int there, float rounds, std::uint32_t joining = 0) {
++        return risked(worth, g, static_cast<float>(reach), rounds + static_cast<float>(std::max(0, there - reach)), false, joining);
++    };
+     debug_block({
+         static int traced = -1;
+         if (keeper && world.round / 25 != traced) {
+@@ -2118,7 +2131,8 @@
+             if (carry > 0 && my_health() - (kite_hit ? kite_hits() : damage) < params::hurt_health_fraction * max_health) carry = 0, hold = 0;
+             // No capture rounds but a keeping Prism's: the claimer holds it, and the crew moves on once it is cleared.
+             // A crew we are in holds us against small pulls: one member leaving shrinks it for the rest.
+-            const float value = rate(world, shared_plain * part + carry, trip + rounds + hold + trips_home(static_cast<float>(trips)))
++            const float value = rate(world, risked_at(shared_plain * part + carry, g, reach, there, rounds + hold),
++                                     trip + rounds + hold + trips_home(static_cast<float>(trips)))
+                                 * (op && memory.claim == g ? crew_hold(g) : 1.0f);
+             // Only a better share counts, and the final pick takes none a group of our own beats.
+             if (g == memory.mono_group) mono_seen = value;
+@@ -2162,12 +2176,12 @@
+             const bool cast = kite >= 0 && (damage > spare_health || kite < rounds + heal(g, damage));
+             if (cast) damage = 0, rounds = kite;
+             if (too_late(rounds)) continue;
+-            float value = rate(world, worth, trip + rounds + capture);
++            float value = rate(world, risked_at(worth, g, reach, there, rounds + cap_rounds), trip + rounds + capture);
+             if (damage > spare_health && unclaimed_partner_output > 0 && alive) {
+                 float joint_rounds = 0;
+                 const float part = strength / (strength + unclaimed_partner_output);
+                 if (soften * min_camp_damage(world, g, strength + unclaimed_partner_output, &joint_rounds) * part <= spare_health)
+-                    damage = 0, value = rate(world, worth * part, trip + joint_rounds + capture);
++                    damage = 0, value = rate(world, risked_at(worth * part, g, reach, there, joint_rounds + cap_rounds), trip + joint_rounds + capture);
+             }
+             if (damage > spare_health && !ally_engaged(world, g)) {
+                 if (value > risky_value || (value == risky_value && earlier(g, risky))) risky = g, risky_value = value, risky_steps = steps;
+@@ -2177,7 +2191,8 @@
+                 best = g, best_value = value, best_steps = steps, best_spell = cast, best_priced = {cast ? 'K' : 'S', 0, -1, 0, strength, damage};
+             if (banks_bag && walk_out != unreachable) {
+                 const float via_altar = belief.state == CampState::respawning ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk_out) - bank_now) : 0.0f;
+-                from_altar_value = std::max(from_altar_value, rate(world, worth, static_cast<float>(walk_out) + cycle_bank + via_altar + rounds + capture));
++                from_altar_value = std::max(from_altar_value, rate(world, risked(worth, g, bank_now + static_cast<float>(bag_tribute + walk_out) + via_altar, rounds + cap_rounds, true),
++                                                                   static_cast<float>(walk_out) + cycle_bank + via_altar + rounds + capture));
+             }
+             continue;
+         }
+@@ -2204,12 +2219,13 @@
+         // A Monolith is a crew's only: alone, the walk there is often given up for nearer camps on
+         // the way, and a lone chip only softens it for whoever comes next.
+         bool late = too_late(clear_rounds) || (group.has_monolith && belief.state != CampState::cleared);
+-        float value = late ? 0.0f : rate(world, worth, trip + clear_rounds + capture + trips_home(static_cast<float>(trips)));
++        float value = late ? 0.0f : rate(world, risked_at(worth, g, reach, there, clear_rounds + cap_rounds), trip + clear_rounds + capture + trips_home(static_cast<float>(trips)));
+         // Banking: the cycle from the altar after the tribute (from_altar_value's candidate).
+         const float via_altar = banks_bag && walk_out != unreachable && belief.state == CampState::respawning
+                                     ? std::max(0.0f, static_cast<float>(belief.respawn_round - round - walk_out) - bank_now) : 0.0f;
+         const auto altar_rate = [&](float part_worth, float rounds, int home_trips) __attribute__((always_inline)) {
+-            return rate(world, part_worth, static_cast<float>(walk_out) + cycle_bank + via_altar + rounds + capture + trips_home(static_cast<float>(home_trips)));
++            return rate(world, risked(part_worth, g, bank_now + static_cast<float>(bag_tribute + walk_out) + via_altar, rounds + cap_rounds, true),
++                        static_cast<float>(walk_out) + cycle_bank + via_altar + rounds + capture + trips_home(static_cast<float>(home_trips)));
+         };
+         if (crewable) {
+             // Allies claiming it and, unless an operation on it failed lately, the available ones a
+@@ -2255,7 +2271,10 @@
+                 // way gives way to joining it rather than split the free allies.
+                 const float hold = memory.claim == g ? crew_hold(g)
+                                    : plan.claimers == 0 && rival_op() ? params::crew_rival_factor : 1.0f;
+-                const float crew_value = rate(world, worth * part, trip + plan.rounds + capture + trips_home(static_cast<float>(my_trips))) * hold;
++                std::uint32_t joining = 0; // the plan's expected allies stand with us
++                for (int k = 0; k < plan.n_expected; ++k) joining |= std::uint32_t{1} << (crew_allies_now().at[static_cast<std::size_t>(plan.expected[k])].a->index & 31);
++                const float crew_value = rate(world, risked_at(worth * part, g, reach, there, plan.rounds + cap_rounds, joining),
++                                              trip + plan.rounds + capture + trips_home(static_cast<float>(my_trips))) * hold;
+                 debug_block({
+                     if (group.has_monolith && round % 25 == 0)
+                         std::printf("MONO VALUE %d %u g%d worth %.0f part %.2f trip %.0f rounds %.0f trips %d home %.0f crew %d+%d output %.0f value %.4f best-so-far %.4f\n",
+@@ -2297,7 +2316,7 @@
+             int hold = 0;
+             const float worth = takeover_worth(gain, timer, walk, work_rate, hold);
+             if (!(worth > 0)) return;
+-            const float value = rate(world, worth, static_cast<float>(walk + hold));
++            const float value = rate(world, risked(worth, g, static_cast<float>(walk), static_cast<float>(hold)), static_cast<float>(walk + hold));
+             if (value > best_value) best = g, best_steps = walk, best_value = value, best_spell = false, best_priced = Priced{'T'};
+         });
+     }
+@@ -2342,7 +2361,7 @@
+             const bool in_time = held && walk < timer && holders_stay(world, G, round + walk);
+             // No more than the loop's bound on a cleared group: the walk is at least the crow's.
+             const int rounds = in_time ? timer : walk + capture_rounds(world);
+-            const float value = rate(world, worth, static_cast<float>(rounds));
++            const float value = rate(world, risked(worth, g, static_cast<float>(walk), static_cast<float>(rounds - walk)), static_cast<float>(rounds));
+             // Our pick already, taken over as the carry for its goal and the carry's stickiness.
+             if (value > best_value || (best == g && !in_time)) {
+                 best = g, best_steps = walk, best_value = std::max(value, best_value), best_spell = false, best_priced = Priced{in_time ? 'G' : 'L'};
+@@ -2397,7 +2416,7 @@
+             if (seen || (!pathing.group_ready(g) && !fuel_ok(full_field_cost_estimate() + loop_reserve()))) continue;
+             const int walk = pathing.to_group(g).at(here);
+             if (walk == unreachable || walk > reach) continue;
+-            const float value = rate(world, worth, rounds_at(walk));
++            const float value = rate(world, risked(worth, g, static_cast<float>(walk), rounds_at(walk) - static_cast<float>(walk)), rounds_at(walk));
+             if (value > best_value && !(static_cast<float>(walk) < clear && !affordable(g)))
+                 best = g, best_steps = walk, best_value = value, best_spell = false, best_priced = Priced{'Q'};
+         }
+@@ -2452,6 +2471,10 @@
+             last_claim = memory.claim, last_mode = chosen.mode, last_trips = chosen.trips;
+             std::printf("CREW PICK %d %u g%d %c trips %d tank %d expected %d output %.0f damage %.0f hp %.0f/%.0f\n", round, my_handle(), memory.claim,
+                         chosen.mode, chosen.trips, chosen.tank, chosen.expected, chosen.output, chosen.damage, my_health(), max_health);
++            if (memory.claim >= 0 && risk.any()) {
++                const auto r = risk.at(groups[memory.claim].centre, static_cast<float>(best_steps), 15.0f);
++                std::printf("RISK %d %u g%d p %.3f loss %.1f gain %.1f bag %u\n", round, my_handle(), memory.claim, r.p, r.loss, r.gain, my_gems());
++            }
+         }
+     });
+     if constexpr (!repricing) memo.carry_group = best >= 0 && (chosen.mode == 'G' || chosen.mode == 'L' || chosen.mode == 'Q') ? best : -1, memo.carry_round = round;
+diff -ruN bots/variants/chy-ref/src/params.h bots/variants/c-balance/src/params.h
+--- bots/variants/chy-ref/src/params.h	2026-11-13 14:14:04.301413351 +0000
++++ bots/variants/c-balance/src/params.h	2026-11-13 15:34:34.615675561 +0000
+@@ -205,6 +205,15 @@
+ inline constexpr float mid_edge = 0.055977345f;
+ inline constexpr float max_exposure = 1.2148346f;
+ 
++// Champion-kill deaths a round of contact (an enemy within Strike::max_reach) per x / sqrt(1 - x), x the
++// enemies' share of the square-law power there (economy/contact_risk.cc): fitted on 835,620 contact rounds
++// and 5,763 kills of the chy-ref mirror (research/mx-crius/scripts/cbal_hazard.py), within ~30% in each tenth of x.
++inline constexpr float contact_hazard = 0.01202f;
++// An enemy's spread from where it was seen, a rounds on: a square of half-side min(a, k sqrt(a)), k fitted to the
++// chy-ref mirror's enemies within 6 of a tile 0-30 rounds on (cbal_motion.py: squared error 0.0024 against 0.0051
++// for a tile a round).
++inline constexpr float enemy_spread = 2.3f;
++
+ // Values in enemy health points: a champion's life over its health, each gem it carries, a stopped
+ // tribute (besides its gems) and a cancelled recall or teleport.
+ inline constexpr float life_value = 276.60016f;
+diff -ruN bots/variants/chy-ref/src/unity.cpp bots/variants/c-balance/src/unity.cpp
+--- bots/variants/chy-ref/src/unity.cpp	2026-11-13 14:14:04.301413351 +0000
++++ bots/variants/c-balance/src/unity.cpp	2026-11-13 15:26:17.844799706 +0000
+@@ -11,6 +11,7 @@
+ #include "combat/fight.cc"
+ #include "economy/bank.cc"
+ #include "economy/capture.cc"
++#include "economy/contact_risk.cc"
+ #include "economy/crew.cc"
+ #include "economy/farm.cc"
+ #include "economy/siege.cc"

@@ -1,0 +1,288 @@
+diff -ruN bots/variants/chy-ref/src/bot.cc bots/variants/a-collect/src/bot.cc
+--- bots/variants/chy-ref/src/bot.cc	2026-11-13 14:14:04.296645368 +0000
++++ bots/variants/a-collect/src/bot.cc	2026-11-13 14:45:30.619424109 +0000
+@@ -1001,6 +1001,7 @@
+     memory.round = world.round;
+     memory.health = world.me().alive ? my_health() : 0;
+     if (world.me().alive) note_income_end(world);
++    debug_block({ trace_near_holds(world); });
+     upkeep.camp_turns += camp_hits() != camp_hits_before;
+     debug_block({ std::printf("D %d %u %c %d %d\n", world.round, static_cast<std::uint32_t>(world.me().handle), static_cast<char>(decision), memory.farm_group, memory.claim); });
+ }
+diff -ruN bots/variants/chy-ref/src/bot_parts.h bots/variants/a-collect/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 14:14:04.296862581 +0000
++++ bots/variants/a-collect/src/bot_parts.h	2026-11-13 15:26:48.846088829 +0000
+@@ -443,6 +443,8 @@
+ bool prism_carries(const World& world, Safety& safety, const CampGroup& G, bitboard& goal);
+ bool prism_takeover(const World& world, Safety& safety, const CampGroup& G, int& timer, bitboard& goal);
+ bool holders_stay(const World& world, const CampGroup& G, int round);
++void trace_near_holds(const World& world);
++char takeover_refusal(const World& world, Safety& safety, const CampGroup& G);
+ int carry_reach();
+ bool left_for_prism(const World& world, Pathing& pathing, int g, bool cleared_now = false);
+ bool yields_to_prism(const World& world, Pathing& pathing);
+diff -ruN bots/variants/chy-ref/src/economy/capture.cc bots/variants/a-collect/src/economy/capture.cc
+--- bots/variants/chy-ref/src/economy/capture.cc	2026-11-13 14:14:04.298581404 +0000
++++ bots/variants/a-collect/src/economy/capture.cc	2026-11-13 15:40:45.924689912 +0000
+@@ -549,7 +549,7 @@
+     if (enemy_seen(world) || c.holder == team::enemy || winning_bag(world)) return Leave::no;
+     const bool held = c.holder == team::ally && c.held_since >= 0;
+     // A hold taken back after a lapse is not left again, claimed or not.
+-    if (held && (left.lapsed || c.payout_round() - world.round < 2 || (g == kept_group && c.held_since == kept_since))) return Leave::no;
++    if (held && (left.lapsed || c.payout_round() - world.round < 2 || (g == kept_group && c.held_since >= kept_since && c.held_since <= kept_since + 1))) return Leave::no;
+     const int winning = static_cast<int>(cambc::constants::winning_gems);
+     // Short of fuel for a walk's field, the crow's steps: no more than the walk.
+     const bool walks = pathing.group_walking_ready(g) || fuel_ok(full_field_cost_estimate() + end_reserve);
+@@ -587,8 +587,12 @@
+             if (eta > remaining) return Leave::no;
+             const int prism_rounds = eta + capture_rounds(a.fast_capture) - 1;
+             if (!held) {
+-                if (left.left || worth_wait(a, prism_rounds - (capture_rounds(world) - 1 + std::max(1, walk_from(my_position()))))) return Leave::near;
+-                return Leave::no;
++                const int ours = capture_rounds(world) - 1 + std::max(1, walk_from(my_position()));
++                if (left.left) return Leave::near;
++                // Due before our hold's payout, it collects the hold (prism_takeover): the gems are its with no wait.
++                // A Prism that has acted this round moves next round, a round later; the hold begun now is kept.
++                if (eta + slack + (a.visible && a.acted ? 1 : 0) < ours) return kept_group = g, kept_since = world.round, Leave::no;
++                return worth_wait(a, prism_rounds - ours) ? Leave::near : Leave::no;
+             }
+             const int rounds = c.payout_round() - world.round;
+             if (eta - slack >= rounds) return left.left || worth_wait(a, prism_rounds - rounds) ? Leave::near : Leave::no;
+@@ -931,11 +935,13 @@
+     return calm;
+ }
+ 
+-// prism_carries an ally's counting gem capture of G: on arrival before the payout we are its sole
+-// holder and the allies step off (yield_capture) with the tiles never empty; after it, they have
+-// left it to us (left_for_prism). In `timer` the rounds to the payout.
++// An ally's counting gem capture of G that Prism keeping its gems collects: on arrival before the payout we are its
++// sole holder and the allies step off (yield_capture) with the tiles never empty. The ally holds it until then, so no
++// enemy can take it empty and one out of sight does not count; one in sight counts as sole_capture_holder's test of
++// us on arrival does: whether it could harm us idle on the tile before the payout (prism_hold_threatened). In `goal`
++// the free tiles no camp hits and no seen enemy reaches in time, in `timer` the rounds to the payout.
+ bool prism_takeover(const World& world, Safety& safety, const CampGroup& G, int& timer, bitboard& goal) {
+-    if (G.gems <= 0 || G.has_monolith || enemy_seen(world) || test(G.tiles(), my_position()) || sole_capture_holder(world, G)) return false;
++    if (G.gems <= 0 || G.has_monolith || test(G.tiles(), my_position()) || sole_capture_holder(world, G)) return false;
+     bool held = false;
+     for (const auto& a : world.allies) {
+         if (a.is_self || !a.alive || !a.visible || !test(G.tiles(), a.pos)) continue;
+@@ -943,9 +949,78 @@
+         if (a.channel == Channel::tribute || held_back(world, a, true)) return false;
+         held = true;
+     }
+-    if (!held || !prism_carries(world, safety, G, goal)) return false;
++    if (!held) return false;
++    const auto& map = world.map();
++    const int bag = static_cast<int>(my_gems());
++    if (my_health() < params::hurt_health_fraction * my_max_health()
++        || world.score.ally + bag + G.gems >= static_cast<int>(cambc::constants::winning_gems)
++        || rounds_left(world) <= tribute_turns(bag + G.gems, world.me().fast_tribute) + map.width + map.height + endgame_margin
++        || enemy_on(world, G.tiles()))
++        return false;
+     timer = fresh_ally_capture(world, G);
+-    return timer >= 2; // a walk is at least a step
++    if (timer < 2) return false; // a walk is at least a step
++    copy_into(free_tiles(G.tiles()), goal);
++    const bool seen = enemy_seen(world);
++    const int window = timer + 1;
++    const float keep = params::hurt_health_fraction * my_max_health();
++    bool calm = false;
++    for (const auto& m : G.members) {
++        if (!test(goal, m.pos)) continue;
++        bool harmed = safety.camp_damage(m.pos) > 0;
++        if (!harmed && seen) {
++            // Short of fuel for the test, the tile is not taken.
++            if (!fuel_ok(safety.fight_cost_estimate() + end_reserve)) harmed = true;
++            else {
++                const int harm = safety.turns_to_harm_idle(world.me(), m.pos, window + 1, keep, false);
++                harmed = harm != 0 && harm <= window;
++            }
++        }
++        if (harmed) goal.set(m.pos, false);
++        else calm = true;
++    }
++    return calm;
++}
++
++// Debug only: why prism_takeover refuses G (a letter), or 0 when it does not.
++char takeover_refusal(const World& world, Safety& safety, const CampGroup& G) {
++    if (test(G.tiles(), my_position())) return 'o';
++    if (sole_capture_holder(world, G)) return 's';
++    bool held = false;
++    for (const auto& a : world.allies) {
++        if (a.is_self || !a.alive || !a.visible || !test(G.tiles(), a.pos)) continue;
++        if (a.channel == Channel::tribute || held_back(world, a, true)) return 'b';
++        held = true;
++    }
++    if (!held) return 'n';
++    const auto& map = world.map();
++    const int bag = static_cast<int>(my_gems());
++    if (my_health() < params::hurt_health_fraction * my_max_health()) return 'h';
++    if (world.score.ally + bag + G.gems >= static_cast<int>(cambc::constants::winning_gems)
++        || rounds_left(world) <= tribute_turns(bag + G.gems, world.me().fast_tribute) + map.width + map.height + endgame_margin) return 'w';
++    if (enemy_on(world, G.tiles())) return 'E';
++    if (fresh_ally_capture(world, G) < 2) return 't';
++    if (free_tiles(G.tiles()).is_empty()) return 'f';
++    return enemy_seen(world) ? 'e' : 'c';
++}
++
++// Debug only, Prism's turn end: each cleared gem group within 8 whose hold our team counts.
++void trace_near_holds(const World& world) {
++    if (world.me().facts().passive != Passive::gem_focus || !world.me().alive) return;
++    const vec2 here = my_position();
++    world.each_cleared([&](int g) {
++        const auto& G = world.map().groups[g];
++        if (G.gems <= 0 || G.has_monolith) return;
++        int least = unreachable;
++        for (const auto& m : G.members) least = std::min(least, dist(here, m.pos));
++        if (least > 8 || test(G.tiles(), here)) return;
++        bool tile_seen = false;
++        for (const auto& m : G.members) tile_seen |= test(world.visible, m.pos);
++        const int timer = tile_seen ? fresh_ally_capture(world, G) : -2;
++        const int on = allies_on(world, G.tiles());
++        if (timer < 0 && on == 0) return;
++        std::printf("NEAR %d %u g%d least %d timer %d on %d gems %d enemy %d hp %.0f\n", world.round, my_handle(), g, least, timer, on, G.gems,
++                    static_cast<int>(enemy_seen(world)), my_health());
++    });
+ }
+ 
+ // No ally on G's tiles is on a kept recall that lands before `round`, leaving them.
+diff -ruN bots/variants/chy-ref/src/economy/farm.cc bots/variants/a-collect/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 14:14:04.298581404 +0000
++++ bots/variants/a-collect/src/economy/farm.cc	2026-11-13 15:40:45.925252130 +0000
+@@ -241,7 +241,9 @@
+         if (!ours) continue;
+         memory.farm_group = memory.claim = g;
+         memory.crew = false;
+-        return pathing.step_towards(G.tiles(), nullptr, steps + max_detour);
++        // Only a free tile takes us onto the hold: one an ally holds would leave us beside it.
++        const auto& free = free_tiles(G.tiles());
++        return pathing.step_towards(free.is_empty() ? G.tiles() : free, nullptr, steps + max_detour);
+     }
+     return false;
+ }
+@@ -320,6 +322,7 @@
+     float last_per_gold = 0, last_tribute_gold = 0;
+     std::uint32_t gold_context = 0;
+     int carry_group = -1, carry_round = -1; // the ally's capture our pick in carry_round takes over (prism_takeover)
++    float work_rate = 0; // the rate our last full pricing's best pick earned a round
+     FarmClearing last_clearing{};
+     std::uint32_t clearing = 0;
+     // By group: from each position of its nearest_groups order on, the most any group there holds.
+@@ -1022,18 +1025,39 @@
+     std::array<int, 4> fed_claim{};
+     int n_fed = 0;
+     if (short_by > 1 && keeper) keep_most = prism_premium(world, world.me(), 1);
++    // A keeping Prism ally whose tile we know (recent_tile) collects a gem hold of ours it can stand on before the
++    // payout (prism_takeover), when collecting pays it more a round than farming: the premium on the gems over a hold,
++    // against the rate our own last pick earned (the team's pace standing in for its). Reachable: its crow's steps
++    // at its nearest no more than ours and a hold, less the round we need to step off. The same premium then.
++    std::array<vec2, 4> reach_at{};
++    std::array<int, 4> reach_slack{};
+     if (short_by > 1 && feeder)
+-        for (const auto& a : world.allies)
+-            if (const int claim = comms::claim_of(world, a.index);
+-                !a.is_self && a.alive && a.facts().passive == Passive::gem_focus && claim >= 0 && n_fed < static_cast<int>(fed_by.size()))
+-                if (const float p = prism_premium(world, a, 1); p > 0) keep_most = std::max(keep_most, p), fed_by[n_fed] = &a, fed_claim[n_fed++] = claim;
++        for (const auto& a : world.allies) {
++            if (a.is_self || !a.alive || a.facts().passive != Passive::gem_focus || n_fed == static_cast<int>(fed_by.size())) continue;
++            const float p = prism_premium(world, a, 1);
++            if (!(p > 0)) continue;
++            const int claim = comms::claim_of(world, a.index);
++            vec2 at{-1, -1};
++            int slack = 0;
++            if (!recent_tile(world, a, at, slack)) at = {-1, -1};
++            if (claim < 0 && at.x < 0) continue;
++            keep_most = std::max(keep_most, p), fed_by[n_fed] = &a, fed_claim[n_fed] = claim, reach_at[n_fed] = at, reach_slack[n_fed++] = slack;
++        }
++    const int hold_rounds = capture_rounds(world);
+     const auto keep_bonus = [&](const CampGroup& G) __attribute__((always_inline)) {
+         if (!(keep_most > 0) || G.gems <= 0 || G.gems >= short_by || G.has_monolith) return 0.0f;
+         if (keeper) return prism_premium(world, world.me(), G.gems);
+         const int g = static_cast<int>(&G - &groups[0]);
+         float most = 0;
+-        for (int i = 0; i < n_fed; ++i)
+-            if (fed_claim[i] == g) most = std::max(most, prism_premium(world, *fed_by[i], G.gems));
++        for (int i = 0; i < n_fed; ++i) {
++            if (fed_claim[i] == g) {
++                most = std::max(most, prism_premium(world, *fed_by[i], G.gems));
++                continue;
++            }
++            if (reach_at[i].x < 0 || steps_to(G, reach_at[i]) - reach_slack[i] > steps_to(G, here) + hold_rounds - 2) continue;
++            const float p = prism_premium(world, *fed_by[i], G.gems);
++            if (rate(world, p * static_cast<float>(G.gems), static_cast<float>(hold_rounds - 1)) > memo.work_rate) most = std::max(most, p);
++        }
+         return most;
+     };
+     const float bound_tribute = tribute_gold + keep_most;
+@@ -2280,8 +2304,12 @@
+     need_zone();
+     // An ally's hold that pays more with us on it: the rounds we then hold free the holder, worth
+     // what our best cycle earns a round, so the walk is what it costs.
++    // What the loop's best earns a round: a holder we free works on at about that.
++    const float work_rate = best_value;
++    // From a whole pricing whose pick carries no premium: the rate the premium is weighed against excludes it.
++    if constexpr (!repricing)
++        if (!banks_bag && !memory.banking && evaluated == n_groups && (best < 0 || !(keep_bonus(groups[best]) > 0))) memo.work_rate = work_rate;
+     if (!banks_bag && !memory.banking && evaluated == n_groups && takes_over(world)) {
+-        const float work_rate = best_value;
+         world.each_cleared([&](int g) {
+             const auto& G = groups[g];
+             // A payout is at most capture_time rounds away, so no longer walk arrives before it (takeover_worth).
+@@ -2304,7 +2332,8 @@
+     // Keeping our gems, as Prism: an ally's gem capture we reach before it pays ('G'), all of it ours once the
+     // ally yields, over the rounds to the payout. One we cannot reach in time, within carry_reach, the
+     // ally leaves to us (left_for_prism), as it does a cleared group we head for ('L'): ours over the
+-    // walk and a whole hold of our own.
++    // walk and a whole hold of our own. Priced whole, as our own groups are: every pick weighs the gems it
++    // brings to our bag, whoever might have taken them otherwise.
+     static bitboard carry_goal{cambc::uninitialized}, goal{cambc::uninitialized};
+     const int reach = carry_reach();
+     if (keeps && !banks_bag && !memory.banking) {
+@@ -2315,14 +2344,23 @@
+             const bool held = allies_on(world, G.tiles()) > 0;
+             // Left empty: our carry pick, or our claim that an ally's claim keeps out of the loop.
+             if (!held && (g != memory.claim || world.camps[g].holder == team::enemy || (memo.carry_group != g && !claimed_by_ally(g)))) return;
++            const auto trace = [&](char why, int walk, int timer, float value) {
++                debug_block({
++                    if (held) std::printf("COLG %d %u g%d least %d why %c walk %d timer %d value %.3f best %.3f bestg %d\n", round, my_handle(), g, least, why, walk, timer, value, best_value, best);
++                });
++            };
+             const int gems = std::min(G.gems + (prospector ? prospected(G.cluster_gems, 1) : 0), short_by);
+             const int gold = G.gold + (prospector ? prospected(G.cluster_gold, 1) : 0);
+             const float worth = static_cast<float>(gems) * (1.0f + keep_bonus(G)) + per_gold * static_cast<float>(gold);
+             // The fewest rounds it can take (a payout comes after our arrival): no better than the best, and not
+             // the best already, it is not picked (a worth's rate falls with its rounds).
+-            if (best != g && worth >= 0 && !(rate(world, worth, static_cast<float>(least + (held ? 1 : capture_rounds(world)))) > best_value)) return;
++            if (best != g && worth >= 0 && !(rate(world, worth, static_cast<float>(least + (held ? 1 : capture_rounds(world)))) > best_value))
++                return trace('v', -1, -1, 0);
+             int timer = 0;
+-            if (held ? !prism_takeover(world, safety, G, timer, goal) : !prism_carries(world, safety, G, goal)) return;
++            if (held ? !prism_takeover(world, safety, G, timer, goal) : !prism_carries(world, safety, G, goal)) {
++                debug_block({ if (held) trace(takeover_refusal(world, safety, G), -1, -1, 0); });
++                return;
++            }
+             // The fuel is for the field's search: made already, the read is free (the test dropped ~8% of Prism's gems).
+             if (!pathing.group_ready(g) && !fuel_ok(full_field_cost_estimate() + loop_reserve())) return;
+             int walk = pathing.to_group(g).at(here);
+@@ -2337,12 +2375,19 @@
+                 else off_goal |= d <= walk;
+             }
+             walk = std::max(walk + (off_goal ? 1 : 0), crow);
+-            if (walk > reach) return;
++            if (walk > reach) return trace('r', walk, timer, 0);
+             // A holder whose recall lands before we arrive leaves the tiles empty for a whole hold of ours.
+             const bool in_time = held && walk < timer && holders_stay(world, G, round + walk);
++            // Too late, the ally leaves the tiles empty for us ('L'): then, as for a group left empty, no enemy may see them.
++            if (held && !in_time) {
++                bool seen = enemy_seen(world);
++                for (const auto& m : G.members) seen = seen || enemy_may_see(world, m.pos);
++                if (seen) return trace('m', walk, timer, 0);
++            }
+             // No more than the loop's bound on a cleared group: the walk is at least the crow's.
+             const int rounds = in_time ? timer : walk + capture_rounds(world);
+             const float value = rate(world, worth, static_cast<float>(rounds));
++            trace(in_time ? (value > best_value ? 'G' : 'V') : (value > best_value ? 'L' : 'l'), walk, timer, value);
+             // Our pick already, taken over as the carry for its goal and the carry's stickiness.
+             if (value > best_value || (best == g && !in_time)) {
+                 best = g, best_steps = walk, best_value = std::max(value, best_value), best_spell = false, best_priced = Priced{in_time ? 'G' : 'L'};

@@ -1,0 +1,331 @@
+diff -ru '--exclude=.cambc' bots/variants/chy-ref/compile_commands.json bots/variants/c8-urgency/compile_commands.json
+--- bots/variants/chy-ref/compile_commands.json	2026-11-13 17:13:04.514871294 +0000
++++ bots/variants/c8-urgency/compile_commands.json	2026-11-13 17:19:44.719088089 +0000
+@@ -1,14 +1,14 @@
+ [
+   {
+-    "command": "/home/ubuntu/.cache/cambc/wasi-sdk-33/bin/clang++ --target=wasm32-wasip1 --sysroot=/home/ubuntu/.cache/cambc/wasi-sdk-33/share/wasi-sysroot -DCAMBC_DEBUG -I/home/ubuntu/wt/mx-rhea/sdk/cpp -isystem /home/ubuntu/.cache/cambc/wasi-sdk-33/share/cmake/../../share/wasi-sysroot/include/wasm32-wasip1/eh/c++/v1 -O3 -DNDEBUG -std=c++20 -msimd128 -mbulk-memory -mbulk-memory-opt -fwasm-exceptions -mllvm -wasm-use-legacy-eh=false -o CMakeFiles/bot.dir/home/ubuntu/wt/mx-rhea/bots/variants/chy-ref/src/sdk_skip.cpp.obj -c /home/ubuntu/wt/mx-rhea/bots/variants/chy-ref/src/sdk_skip.cpp --sysroot=\"/home/ubuntu/.cache/cambc/wasi-sdk-33/share/wasi-sysroot\" -isystem \"/home/ubuntu/.cache/cambc/wasi-sdk-33/share/wasi-sysroot/include/wasm32-wasip1/eh/c++/v1\"",
+-    "directory": "/home/ubuntu/wt/mx-rhea/bots/variants/chy-ref/.cambc/build",
+-    "file": "/home/ubuntu/wt/mx-rhea/bots/variants/chy-ref/src/sdk_skip.cpp",
+-    "output": "CMakeFiles/bot.dir/home/ubuntu/wt/mx-rhea/bots/variants/chy-ref/src/sdk_skip.cpp.obj"
++    "command": "/home/ubuntu/.cache/cambc/wasi-sdk-33/bin/clang++ --target=wasm32-wasip1 --sysroot=/home/ubuntu/.cache/cambc/wasi-sdk-33/share/wasi-sysroot -DCAMBC_DEBUG -I/home/ubuntu/wt/mx-rhea/sdk/cpp -isystem /home/ubuntu/.cache/cambc/wasi-sdk-33/share/cmake/../../share/wasi-sysroot/include/wasm32-wasip1/eh/c++/v1 -O3 -DNDEBUG -std=c++20 -msimd128 -mbulk-memory -mbulk-memory-opt -fwasm-exceptions -mllvm -wasm-use-legacy-eh=false -o CMakeFiles/bot.dir/home/ubuntu/wt/mx-rhea/bots/variants/c8-urgency/src/sdk_skip.cpp.obj -c /home/ubuntu/wt/mx-rhea/bots/variants/c8-urgency/src/sdk_skip.cpp --sysroot=\"/home/ubuntu/.cache/cambc/wasi-sdk-33/share/wasi-sysroot\" -isystem \"/home/ubuntu/.cache/cambc/wasi-sdk-33/share/wasi-sysroot/include/wasm32-wasip1/eh/c++/v1\"",
++    "directory": "/home/ubuntu/wt/mx-rhea/bots/variants/c8-urgency/.cambc/build",
++    "file": "/home/ubuntu/wt/mx-rhea/bots/variants/c8-urgency/src/sdk_skip.cpp",
++    "output": "CMakeFiles/bot.dir/home/ubuntu/wt/mx-rhea/bots/variants/c8-urgency/src/sdk_skip.cpp.obj"
+   },
+   {
+-    "command": "/home/ubuntu/.cache/cambc/wasi-sdk-33/bin/clang++ --target=wasm32-wasip1 --sysroot=/home/ubuntu/.cache/cambc/wasi-sdk-33/share/wasi-sysroot -DCAMBC_DEBUG -I/home/ubuntu/wt/mx-rhea/sdk/cpp -isystem /home/ubuntu/.cache/cambc/wasi-sdk-33/share/cmake/../../share/wasi-sysroot/include/wasm32-wasip1/eh/c++/v1 -O3 -DNDEBUG -std=c++20 -msimd128 -mbulk-memory -mbulk-memory-opt -fwasm-exceptions -mllvm -wasm-use-legacy-eh=false -o CMakeFiles/bot.dir/home/ubuntu/wt/mx-rhea/bots/variants/chy-ref/src/unity.cpp.obj -c /home/ubuntu/wt/mx-rhea/bots/variants/chy-ref/src/unity.cpp --sysroot=\"/home/ubuntu/.cache/cambc/wasi-sdk-33/share/wasi-sysroot\" -isystem \"/home/ubuntu/.cache/cambc/wasi-sdk-33/share/wasi-sysroot/include/wasm32-wasip1/eh/c++/v1\"",
+-    "directory": "/home/ubuntu/wt/mx-rhea/bots/variants/chy-ref/.cambc/build",
+-    "file": "/home/ubuntu/wt/mx-rhea/bots/variants/chy-ref/src/unity.cpp",
+-    "output": "CMakeFiles/bot.dir/home/ubuntu/wt/mx-rhea/bots/variants/chy-ref/src/unity.cpp.obj"
++    "command": "/home/ubuntu/.cache/cambc/wasi-sdk-33/bin/clang++ --target=wasm32-wasip1 --sysroot=/home/ubuntu/.cache/cambc/wasi-sdk-33/share/wasi-sysroot -DCAMBC_DEBUG -I/home/ubuntu/wt/mx-rhea/sdk/cpp -isystem /home/ubuntu/.cache/cambc/wasi-sdk-33/share/cmake/../../share/wasi-sysroot/include/wasm32-wasip1/eh/c++/v1 -O3 -DNDEBUG -std=c++20 -msimd128 -mbulk-memory -mbulk-memory-opt -fwasm-exceptions -mllvm -wasm-use-legacy-eh=false -o CMakeFiles/bot.dir/home/ubuntu/wt/mx-rhea/bots/variants/c8-urgency/src/unity.cpp.obj -c /home/ubuntu/wt/mx-rhea/bots/variants/c8-urgency/src/unity.cpp --sysroot=\"/home/ubuntu/.cache/cambc/wasi-sdk-33/share/wasi-sysroot\" -isystem \"/home/ubuntu/.cache/cambc/wasi-sdk-33/share/wasi-sysroot/include/wasm32-wasip1/eh/c++/v1\"",
++    "directory": "/home/ubuntu/wt/mx-rhea/bots/variants/c8-urgency/.cambc/build",
++    "file": "/home/ubuntu/wt/mx-rhea/bots/variants/c8-urgency/src/unity.cpp",
++    "output": "CMakeFiles/bot.dir/home/ubuntu/wt/mx-rhea/bots/variants/c8-urgency/src/unity.cpp.obj"
+   }
+ ]
+\ No newline at end of file
+diff -ru '--exclude=.cambc' bots/variants/chy-ref/src/bot.cc bots/variants/c8-urgency/src/bot.cc
+--- bots/variants/chy-ref/src/bot.cc	2026-11-13 14:14:02.532195547 +0000
++++ bots/variants/c8-urgency/src/bot.cc	2026-11-13 17:16:56.317096782 +0000
+@@ -661,7 +661,7 @@
+     fixc_bush_threatened = false;
+     if (!world.me().can_act(world.round)) return;
+     fixc_bush_threatened = fixc_bush_threat(world, safety);
+-    if (const auto* ender = game_ender(world); ender && holds_hard_stop(world, *ender)) {
++    if (const auto* ender = urgent_ender(world, pathing, OurTurn::free)) {
+         stop_game_ender(world, pathing, memory, *ender);
+         return;
+     }
+diff -ru '--exclude=.cambc' bots/variants/chy-ref/src/bot_parts.h bots/variants/c8-urgency/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 14:14:02.532399450 +0000
++++ bots/variants/c8-urgency/src/bot_parts.h	2026-11-13 17:16:56.316979301 +0000
+@@ -342,8 +342,7 @@
+ vec2 chase_aim(const World& world, Pathing& pathing, Safety& safety);
+ // A successful chase keeps its guard; a failed one restores the work guard.
+ bool chase_with_guard(const World& world, Pathing& pathing, Safety& safety, const Pathing::GuardState& guard);
+-const ChampionBelief* stoppable_winning_tribute(const World& world);
+-bool ally_stops(const World& world, const ChampionBelief& e);
++bool ally_stops(const World& world, const ChampionBelief& e, bool unthreatened = false);
+ // A champion's turn start in `round`, where its channel completes.
+ Moment turn_start(const World& world, const ChampionBelief& c, int round);
+ // The visible enemy tributes' win: the first landing whose bag and those landing no later reach the
+@@ -355,7 +354,18 @@
+ std::optional<TributeWin> enemy_tributes_win(const World& world);
+ const ChampionBelief* game_ender(const World& world);
+ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e);
+-bool holds_hard_stop(const World& world, const ChampionBelief& e);
++bool holds_stop_in_time(const World& world, const ChampionBelief& e);
++// Where this turn's play may leave us: within `moved` of `from`, acting again from turn `resume` (1 = next), after
++// a crystal's hop if `hop`.
++struct StopWait {
++    vec2 from;
++    int moved, resume;
++    bool hop;
++};
++bool stop_can_wait(const World& world, Pathing& pathing, const ChampionBelief& e, const StopWait& w);
++// This turn: free to act, or keeping our tribute or recall channel.
++enum class OurTurn { free, tribute, recall };
++const ChampionBelief* urgent_ender(const World& world, Pathing& pathing, OurTurn turn);
+ void retreat(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ 
+ // economy/comeback.cc: cooked comebacks.
+diff -ru '--exclude=.cambc' bots/variants/chy-ref/src/combat/fight.cc bots/variants/c8-urgency/src/combat/fight.cc
+--- bots/variants/chy-ref/src/combat/fight.cc	2026-11-13 14:14:02.532676073 +0000
++++ bots/variants/c8-urgency/src/combat/fight.cc	2026-11-13 17:18:46.217399607 +0000
+@@ -638,7 +638,8 @@
+ // The last round we act before e's channel completes, at its turn start in channel_end_round.
+ int last_round_before_channel_ends(const World& world, const ChampionBelief& e) {
+     const int end = e.channel_end_round;
+-    const bool first = end == world.round ? !e.acted : world.slot(world.me(), end) < enemy_earliest_slot(world, e, end);
++    // An unseen one's `acted` is an old reading: its channel is still believed under way only while its turn is to come.
++    const bool first = end == world.round && e.visible ? !e.acted : world.slot(world.me(), end) < enemy_earliest_slot(world, e, end);
+     return first ? end : end - 1;
+ }
+ 
+@@ -1174,29 +1175,11 @@
+     return m;
+ }
+ 
+-// A visible enemy whose tribute wins them the game (enemy_tribute_wins), in reach of a ready stun of
+-// ours, the win landing before our bag's if ours wins; null if none.
+-const ChampionBelief* stoppable_winning_tribute(const World& world) {
+-    if (!enemy_seen(world)) return nullptr;
+-    const auto& self = world.me();
+-    // Cancelling our tribute frees the walk.
+-    const bool walk = my_can_move() || my_state().contains(cambc::champion_state::submitting_gems);
+-    std::optional<Moment> win;
+-    for (const auto& e : world.enemies)
+-        if (enemy_tribute_wins(world, e) && e.facts().passive != Passive::stun_immune
+-            && dist(self.pos, e.pos) <= self.ready_stun_reach(world.round, walk)) {
+-            if (!winning_bag(world)) return &e;
+-            if (!win) win = win_lands(world);
+-            if (enemy_tributes_win(world)->lands < *win) return &e;
+-        }
+-    return nullptr;
+-}
+-
+ // A visible ally out of channels, acting before an enemy's tribute lands, can stop it alone (its
+ // game_ender sees the race as we do): a ready stun in reach (after a walk, if it allows one), or a
+ // carried lock within a walk and 2 of the altar, unless that altar is ours too (its place_lock
+ // spares our winning tribute). An enemy in a bush is seen only from its cluster: not counted.
+-bool ally_stops(const World& world, const ChampionBelief& e) {
++bool ally_stops(const World& world, const ChampionBelief& e, bool unthreatened) {
+     if (test(world.map().bushes, e.pos)) return false;
+     const Moment lands = turn_start(world, e, e.channel_end_round);
+     const int altar = tribute_altar(world, e.pos);
+@@ -1206,6 +1189,15 @@
+         if (a.is_self || !a.alive || !a.visible || held_by_channel(a)) continue;
+         const int r = a.acted ? world.round + 1 : world.round;
+         if (!a.can_act(r) || !(turn_start(world, a, r) < lands) || stun_pending(a.handle)) continue;
++        // `unthreatened`: no visible enemy's stun, ready by next round, could take that turn first.
++        if (unthreatened) {
++            bool threat = false;
++            for (const auto& o : world.enemies)
++                if (o.alive && o.visible && &o != &e && !held_by_channel(o))
++                    if (const int reach = o.ready_stun_reach(world.round + 1, true); reach >= 0)
++                        threat |= dist(o.pos, a.pos) <= reach + (o.facts().has_dash() ? dash_range : 0);
++            if (threat) continue;
++        }
+         if (stunnable && dist(a.pos, e.pos) <= a.ready_stun_reach(r, true)) return true;
+         if (lockable && dist(a.pos, world.map().altars[altar].pos) <= altar_lock_range + 1) {
+             std::array<std::uint32_t, 4> counts{};
+@@ -1255,17 +1247,134 @@
+     return best;
+ }
+ 
+-// A stop that cancels the ender's channel: a stun ready for our next turn, or a lock for its altar, the only
+-// one in its range. Only that stop decides the game before the channel lands; a walking ender, or a channel we
+-// can only damage, is fought as priced.
+-bool holds_hard_stop(const World& world, const ChampionBelief& e) {
++// A stop that cancels the ender's channel: a stun of ours ready by the last round we act before it lands, or a lock
++// for its altar, the only one in its range. Only that stop decides the game before the channel lands; a walking
++// ender, or a channel we can only damage, is fought as priced.
++bool holds_stop_in_time(const World& world, const ChampionBelief& e) {
+     if (e.channel != Channel::tribute) return false;
+-    if (e.facts().passive != Passive::stun_immune && world.me().ready_stun_reach(world.round + 1) >= 0) return true;
++    if (e.facts().passive != Passive::stun_immune && world.me().ready_stun_reach(last_round_before_channel_ends(world, e)) >= 0) return true;
+     return tribute_altar(world, e.pos) >= 0 && carried_locks() > 0;
+ }
+ 
+-// Into reach of the enemy whose bag ends the game, whatever the risk: a stun or a lock if it is
+-// tributing, else attacks, followed until it stops at an altar.
++namespace {
++// By enemy index: the channel end of the tribute we last weighed a stop for while it was in sight.
++std::array<int, 8> weighed_end{-1, -1, -1, -1, -1, -1, -1, -1};
++
++// Where this turn's play may leave us.
++StopWait free_turn(const World& world) {
++    const auto& self = world.me();
++    const auto& f = self.facts();
++    StopWait w{my_position(), my_can_move() ? 1 : 0, 1, false};
++    if (const int s = f.slot_of(AbilityKind::dash); s >= 0 && my_can_cast() && self.ability_ready(s, world.round)) w.moved += dash_range;
++    w.hop = carries_crystal();
++    return w;
++}
++
++StopWait kept_channel(const World& world, bool recall) {
++    // A recall completing at our next turn start leaves us on our spawn.
++    return {recall && my_channel_time() <= 1 ? recall_landing(world) : my_position(), 0, 1, false};
++}
++
++// The most static walking steps on `field` from a tile we may stand on within `moved` of `from`.
++int worst_walk(const World& world, const Field& field, vec2 from, int moved) {
++    int worst = field.at(from);
++    for (int dx = -moved; dx <= moved; ++dx)
++        for (int dy = -moved; dy <= moved; ++dy)
++            if (const vec2 p{from.x + dx, from.y + dy}; (dx || dy) && in_bounds(p) && test(world.map().open_for_us, p))
++                if (const int d = field.at(p); d < unreachable) worst = std::max(worst, d);
++    return worst;
++}
++} // namespace
++
++// Our stop of e's tribute can wait a turn: whatever the turn's play does (`w`: where it may leave us), a stop of
++// ours still comes before the last round we act before the channel lands, a turn to spare (an enemy stun takes a
++// turn of ours; static walks ignore units), or an ally out of the enemies' stuns' reach stops it in time
++// (ally_stops). The worst case spends a stun ready now on another target (back after its cooldown), a lock on
++// another altar in reach, and a crystal's hop (its channel, which cannot be cancelled). Walks are bounded by the
++// static walk to the altar's tribute tiles, each within 2 of the channeller. An ender in a bush, seen only from its
++// cluster, cannot wait. Stopping sooner gains only the turns the channel has run (its owner starts it again whole),
++// so the walk in whatever the risk is kept for the stop's last chances.
++bool stop_can_wait(const World& world, Pathing& pathing, const ChampionBelief& e, const StopWait& w) {
++    if (e.channel != Channel::tribute) return true;
++    if (test(world.map().bushes, e.pos)) return false;
++    const auto& self = world.me();
++    const auto& f = self.facts();
++    const int last = last_round_before_channel_ends(world, e) - world.round; // our last turn before it lands, 0 = this one
++    const int a = tribute_altar(world, e.pos);
++    int moved = w.moved, resume = w.resume;
++    if (w.hop) moved += teleport_crystal_range, resume = std::max(resume, static_cast<int>(cambc::constants::tp_crystal_time));
++    const int walk = a >= 0 ? worst_walk(world, pathing.to_altar(a), w.from, moved) : unreachable;
++    // The turn our stop lands, acting again from turn `resume`: `steps` to its tiles, the last one taken in the
++    // stop's turn when it allows a walk first, and no sooner than `ready`.
++    const auto turn = [&](int steps, bool walk_first, int ready) -> int {
++        if (steps >= unreachable) return unreachable;
++        return std::max({resume, resume + steps - (walk_first ? 1 : 0), ready});
++    };
++    int best = unreachable;
++    if (e.facts().passive != Passive::stun_immune)
++        for (int s = 0; s < 2; ++s) {
++            const int reach = f.stun_reach(s);
++            if (reach < 0) continue;
++            int steps = std::max(0, dist(w.from, e.pos) + moved - reach);
++            if (walk < unreachable) steps = std::max(steps, walk + std::max(0, 2 - reach));
++            // A slot ready now may go to another target this turn.
++            const int ready = self.ability_ready(s, world.round) ? (my_can_cast() ? ability_cooldown : 0) : self.ready_round[s] - world.round;
++            // Out of sight at turn start, the ender may come into sight only with the last step: no cast after it.
++            best = std::min(best, turn(steps, e.visible && f.stun_reach_with_walk(s) > reach, ready));
++        }
++    if (a >= 0 && carried_locks() > 0 && !world.altars[a].ally_lock) {
++        bool spent = false; // place_lock may set it on another altar in reach after this turn's moves, or spare ours
++        for (int b = 0; b < static_cast<int>(world.map().altars.size()); ++b)
++            spent |= b != a && !world.altars[b].ally_lock && dist(w.from, world.map().altars[b].pos) <= altar_lock_range + moved;
++        for (const auto& ally : world.allies)
++            spent |= !ally.is_self && ally.alive && ally.channel == Channel::tribute && tribute_altar(world, ally.pos) == a;
++        if (!spent) best = std::min(best, turn(std::max(walk, std::max(0, dist(w.from, world.map().altars[a].pos) + moved - altar_lock_range)), true, 0));
++    }
++    const bool ally = best >= last && e.visible && ally_stops(world, e, true);
++    debug_block({
++        std::printf("URG %d %u %u left %d ours %d ally %d %s\n", world.round, static_cast<unsigned>(self.handle), static_cast<unsigned>(e.handle),
++                    last, best >= unreachable ? -1 : best, static_cast<int>(ally), best < last || ally ? "wait" : "go");
++    });
++    return best < last || ally;
++}
++
++// The enemy tribute that ends the game (enemy_tribute_wins), landing before our winning bag's if ours wins, that we
++// hold a stop for in time and can stop in time (intercept_steps), and whose stop cannot wait (stop_can_wait); the
++// nearest by intercept_steps, null if none. Out of sight, a tribute its own bag wins with that we last weighed in
++// sight still counts while World believes it under way, unless we see its tile empty: a stop put off keeps its
++// clock out of sight.
++const ChampionBelief* urgent_ender(const World& world, Pathing& pathing, OurTurn turn) {
++    const int need = static_cast<int>(cambc::constants::winning_gems) - world.score.enemy;
++    const ChampionBelief* best = nullptr;
++    int best_steps = unreachable;
++    std::optional<Moment> win;
++    std::optional<StopWait> w;
++    std::optional<vec2> here;
++    for (const auto& e : world.enemies) {
++        if (!e.alive || e.channel != Channel::tribute) continue;
++        auto& weighed = weighed_end[e.index & 7];
++        if (e.visible ? !enemy_tribute_wins(world, e)
++                      : e.gems < need || e.channel_end_round < world.round || weighed != e.channel_end_round
++                            || e.pos_source != Source::seen || test(world.visible, e.pos))
++            continue;
++        if (e.visible) weighed = e.channel_end_round;
++        if (winning_bag(world)) {
++            if (!win) win = win_lands(world);
++            const Moment lands = e.visible ? enemy_tributes_win(world)->lands : turn_start(world, e, e.channel_end_round);
++            if (!(lands < *win)) continue;
++        }
++        if (!holds_stop_in_time(world, e)) continue;
++        if (!here) here = my_position();
++        const int steps = intercept_steps(world, e, *here);
++        if (steps >= best_steps) continue;
++        if (!w) w = turn == OurTurn::free ? free_turn(world) : kept_channel(world, turn == OurTurn::recall);
++        if (!stop_can_wait(world, pathing, e, *w)) best = &e, best_steps = steps;
++    }
++    return best;
++}
++
++// Into reach of the enemy whose bag ends the game, whatever the risk, once its stop cannot wait (urgent_ender):
++// a stun or a lock.
+ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e) {
+     auto& me = cambc::self();
+     decision = Branch::stop_ender;
+@@ -1273,8 +1382,17 @@
+     pathing.set_guard(nullptr);
+     const bool tributing = e.channel == Channel::tribute;
+     const auto act = [&](bool hit) {
++        if (!e.visible && carried_locks() > 0)
++            if (const int a = tribute_altar(world, e.pos); a >= 0 && dist(me.position(), world.map().altars[a].pos) <= altar_lock_range) {
++                throw_if_stale();
++                try {
++                    self_acted(), me.consumables()[cambc::consumable_type::altar_lock].use(world.map().altars[a].pos);
++                } catch (const cambc::error&) {
++                }
++            }
+         place_lock(world);
+-        if (!hit) return;
++        // Out of sight, our casts and attacks would find only other targets.
++        if (!hit || !e.visible) return;
+         // Marcella's stunning reset cancels the channel. It goes before any cast, which would take its one cast.
+         if (tributing && stun_reset_at(world, e)) return;
+         cast_at_enemies(world, !tributing && dist(me.position(), e.pos) > world.me().facts().attack_range() ? escape_step_value : 0.0f);
+@@ -1282,7 +1400,10 @@
+     };
+     const int range = world.me().facts().attack_range();
+     static bitboard goals{cambc::uninitialized};
+-    const int stun = tributing && e.facts().passive != Passive::stun_immune ? world.me().ready_stun_reach(world.round + 1) : -1;
++    // A stun back only by the channel's last chance: its tiles, to be there when it is.
++    const int last = tributing ? last_round_before_channel_ends(world, e) : world.round;
++    int stun = tributing && e.facts().passive != Passive::stun_immune ? world.me().ready_stun_reach(std::min(world.round + 1, last)) : -1;
++    if (tributing && stun < 0 && e.facts().passive != Passive::stun_immune) stun = world.me().ready_stun_reach(last);
+     const int altar = tributing ? tribute_altar(world, e.pos) : -1;
+     const auto aim = [&](bool hard) {
+         goals.clear();
+diff -ru '--exclude=.cambc' bots/variants/chy-ref/src/economy/bank.cc bots/variants/c8-urgency/src/economy/bank.cc
+--- bots/variants/chy-ref/src/economy/bank.cc	2026-11-13 14:14:02.534091572 +0000
++++ bots/variants/c8-urgency/src/economy/bank.cc	2026-11-13 17:16:56.317292165 +0000
+@@ -1457,10 +1457,9 @@
+ bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home) {
+     auto& me = cambc::self();
+     decision = Branch::tribute_kept;
+-    // The enemy's winning tribute, while we hold a hard stop for it (holds_hard_stop) or a ready stun
+-    // in reach, is the game: ours waits, unless ours wins first or, winning later, an ally stops theirs in time.
+-    const auto* ender = game_ender(world);
+-    const auto* stop = ender && holds_hard_stop(world, *ender) ? ender : stoppable_winning_tribute(world);
++    // The enemy's winning tribute, while we hold a stop for it that cannot wait (urgent_ender), is the game: ours
++    // waits, unless ours wins first or, winning later, an ally stops theirs in time.
++    const auto* stop = urgent_ender(world, pathing, OurTurn::tribute);
+     if (stop && !(winning_bag(world) && ally_stops(world, *stop))) {
+         throw_if_stale();
+         try {
+@@ -1493,7 +1492,7 @@
+ bool continue_recall(World& world, Pathing& pathing, Safety& safety, Memory& memory, std::optional<bool>& home, int recall_farm) {
+     auto& me = cambc::self();
+     decision = Branch::recall_kept;
+-    if (const auto* ender = game_ender(world); ender && holds_hard_stop(world, *ender)) {
++    if (urgent_ender(world, pathing, OurTurn::recall)) {
+         throw_if_stale();
+         try {
+             self_acted(), me.cancel_recall();

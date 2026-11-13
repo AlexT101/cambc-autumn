@@ -1,0 +1,214 @@
+diff -ruN bots/variants/chy-ref/src/economy/farm.cc bots/variants/f-thru/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 14:14:04.298581404 +0000
++++ bots/variants/f-thru/src/economy/farm.cc	2026-11-13 17:19:09.141265782 +0000
+@@ -1464,6 +1464,39 @@
+     // pick reads best_value against the cycle from the altar), nor where best_value is read past
+     // that test: kited groups (the risky pick when no best is set) and a takeover in reach (its work
+     // rate is best_value). Ties go to the best, so the floor prunes only what is strictly below it.
++    // Chains (params::farm_chain): later turns not banking keep the best farm_chain_pool solo jobs of
++    // our own (S, K) the loop prices by their value, and our last choice's; after the loop each is
++    // weighed with the best follow-up from where it ends (the chains below). The prunes are the loop's.
++    struct ChainJob {
++        int g = -1, steps = 0;
++        bool spell = false;
++        Priced priced;
++        float value = 0, rounds = 0, damage = 0; // the loop's value and its rounds, our camp damage
++    };
++    const bool chain = params::farm_chain && !opening && !banks_bag && !pull.on && n_groups <= 256;
++    constexpr int chain_pool = params::farm_chain_pool;
++    std::array<ChainJob, chain_pool> pool;
++    int n_pool = 0;
++    float pool_cut = 0; // the least value in a full pool
++    ChainJob kept_job;  // our last choice's
++    const auto pool_full = [&]() __attribute__((always_inline)) { return n_pool == chain_pool; };
++    const auto offer = [&](const ChainJob& job) {
++        if (!chain) return;
++        if (job.g == farm_group) kept_job = job;
++        if (!pool_full()) {
++            pool[n_pool++] = job;
++        } else {
++            if (!(job.value > pool_cut)) return;
++            int least = 0;
++            for (int i = 1; i < n_pool; ++i)
++                if (pool[i].value < pool[least].value) least = i;
++            pool[least] = job;
++        }
++        if (pool_full()) {
++            pool_cut = pool[0].value;
++            for (int i = 1; i < n_pool; ++i) pool_cut = std::min(pool_cut, pool[i].value);
++        }
++    };
+     float floor_value = 0;
+     int floor_ok = -1; // read on the first share
+     const auto may_floor = [&]() {
+@@ -2162,17 +2195,19 @@
+             const bool cast = kite >= 0 && (damage > spare_health || kite < rounds + heal(g, damage));
+             if (cast) damage = 0, rounds = kite;
+             if (too_late(rounds)) continue;
+-            float value = rate(world, worth, trip + rounds + capture);
++            float job_rounds = trip + rounds + capture;
++            float value = rate(world, worth, job_rounds);
+             if (damage > spare_health && unclaimed_partner_output > 0 && alive) {
+                 float joint_rounds = 0;
+                 const float part = strength / (strength + unclaimed_partner_output);
+                 if (soften * min_camp_damage(world, g, strength + unclaimed_partner_output, &joint_rounds) * part <= spare_health)
+-                    damage = 0, value = rate(world, worth * part, trip + joint_rounds + capture);
++                    damage = 0, job_rounds = trip + joint_rounds + capture, value = rate(world, worth * part, job_rounds);
+             }
+             if (damage > spare_health && !ally_engaged(world, g)) {
+                 if (value > risky_value || (value == risky_value && earlier(g, risky))) risky = g, risky_value = value, risky_steps = steps;
+                 continue;
+             }
++            offer({g, steps, cast, {cast ? 'K' : 'S', 0, -1, 0, strength, damage}, value, job_rounds, damage});
+             if (value > best_value || (value == best_value && earlier(g, best)))
+                 best = g, best_value = value, best_steps = steps, best_spell = cast, best_priced = {cast ? 'K' : 'S', 0, -1, 0, strength, damage};
+             if (banks_bag && walk_out != unreachable) {
+@@ -2271,12 +2306,124 @@
+         }
+         if (g == memory.mono_group) mono_seen = value;
+         if (late) continue;
++        if (priced.mode != 'C')
++            offer({g, steps, spell, priced, value, trip + clear_rounds + capture + trips_home(static_cast<float>(trips)), spell ? 0.0f : priced.damage});
+         if (value > best_value || (value == best_value && earlier(g, best)))
+             best = g, best_value = value, best_steps = steps, best_spell = spell, best_priced = priced;
+         if (banks_bag && walk_out != unreachable) from_altar_value = std::max(from_altar_value, altar_rate(share, clear_rounds, trips));
+     }
+     read_g = -1;
+     if (k < evaluated) note_shortcut("farm-partial-evaluation");
++    // Chains: each pooled job (and our last choice's) is weighed with the best follow-up from its
++    // group's centre once it is done, over every group: the walk between centres, a respawn wait
++    // farm would take, its clear alone (or kited, as the loop prices it) on the health the job leaves,
++    // its capture and its trips home. A follow-up is no longer ours to plan once an ally claims it or
++    // is nearer to it (an ally's anchor: its claim's centre, else where it is seen). Rates are worth
++    // over effective rounds, rounds (1 + rounds / horizon). With rho the single best's rate, a job's
++    // relative value is worth - rho x its effective rounds (0 for the single best, below it for the
++    // rest), plus its follow-up's surplus over rho, if any: a job is picked over the single best only
++    // where the work it leaves us beside beats anything we reach now by more than the detour costs.
++    // best_value stays the single job's, which the shares and takeovers compare.
++    const bool solo_pick = best >= 0 && (best_priced.mode == 'S' || best_priced.mode == 'K');
++    if (chain && solo_pick && k == evaluated && n_pool > 0 && help_group < 0) [&]() __attribute__((noinline)) {
++        const auto effective = [&](float rounds) {
++            rounds = std::max(rounds, 1.0f);
++            return rounds * (1.0f + rounds / horizon);
++        };
++        const float rho = best_value;
++        std::array<vec2, 8> anchors;
++        int n_anchors = 0;
++        for (const auto& a : world.allies) {
++            if (a.is_self || !a.alive || n_anchors == static_cast<int>(anchors.size())) continue;
++            const int c = comms::claim_of(world, a.index);
++            if (c >= 0 && c < n_groups) anchors[static_cast<std::size_t>(n_anchors++)] = groups[c].centre;
++            else if (a.visible) anchors[static_cast<std::size_t>(n_anchors++)] = a.pos;
++        }
++        std::array<const ChainJob*, chain_pool + 1> jobs;
++        int n_jobs = 0;
++        bool kept_pooled = false;
++        for (int i = 0; i < n_pool; ++i) jobs[static_cast<std::size_t>(n_jobs++)] = &pool[static_cast<std::size_t>(i)], kept_pooled |= pool[static_cast<std::size_t>(i)].g == kept_job.g;
++        if (kept_job.g >= 0 && !kept_pooled) jobs[static_cast<std::size_t>(n_jobs++)] = &kept_job;
++        // Per job: its worth and effective rounds, and its follow-up's (`next` -1: none).
++        struct Chained {
++            float worth = 0, rounds = 0, next_worth = 0, next_rounds = 0;
++            int next = -1;
++        };
++        std::array<Chained, chain_pool + 1> chained;
++        for (int i = 0; i < n_jobs; ++i) {
++            const auto& e = *jobs[static_cast<std::size_t>(i)];
++            const auto& G = groups[e.g];
++            if (G.gems >= short_by) return; // the win ends the game: no follow-up
++            if (!fuel_ok(loop_reserve() + 150 * static_cast<std::uint64_t>(n_groups) + 3000)) return note_shortcut("farm-chain-unfunded");
++            const Field* from = pathing.from_centre(e.g);
++            if (!from) {
++                if (!fuel_ok(full_field_cost_estimate() + loop_reserve())) return note_shortcut("farm-chain-unfunded");
++                from = pathing.centre_field(e.g);
++                world.throw_if_stale();
++            }
++            auto& c = chained[static_cast<std::size_t>(i)];
++            c.rounds = effective(e.rounds);
++            c.worth = e.value * c.rounds;
++            const int gems_left = short_by - G.gems;
++            // The health the job leaves for the next clear (extra_trips' budget).
++            const float budget_after = std::max(0.0f, trip_spare + static_cast<float>(e.priced.trips) * usable_health - e.damage);
++            float top = 0; // the best surplus so far: only one over rho counts
++            for (int h = 0; h < n_groups; ++h) {
++                const auto& H = groups[h];
++                const auto& hb = camp_data[h];
++                if (h == e.g || H.has_monolith || H.gems + H.gold == 0 || hb.state == CampState::cleared || is_claimed(h)) continue;
++                int walk = from ? from->at(H.centre) : unreachable;
++                if (walk == unreachable)
++                    if (const auto* back = pathing.from_centre(h)) walk = back->at(G.centre);
++                if (walk == unreachable) continue;
++                const int ours = dist(G.centre, H.centre);
++                bool nearer = false;
++                for (int j = 0; j < n_anchors && !nearer; ++j) nearer = dist(anchors[static_cast<std::size_t>(j)], H.centre) < ours;
++                if (nearer) continue;
++                const float arrive = e.rounds + static_cast<float>(walk);
++                const float wait = hb.state == CampState::respawning ? std::max(0.0f, static_cast<float>(hb.respawn_round - round) - arrive) : 0.0f;
++                if (wait > static_cast<float>(params::max_wait)) continue;
++                const float gems = static_cast<float>(std::max(0, std::min(worth_gems[h], gems_left)));
++                const float weight = home_ground(map, h, false) * exposure(h);
++                const float worth = weight * (gems * (1.0f + std::max(0.0f, tribute_gold) + (keeper ? keep_bonus(H) : 0.0f)) + per_gold * worth_gold[h]);
++                if (!(worth > 0)) continue;
++                // No clear is quicker than the fastest: a follow-up that cannot beat the best so far needs no more.
++                const float base = static_cast<float>(walk) + wait + cap_rounds;
++                if (worth - rho * effective(base + fastest_clear(world, h, strength)) <= top) continue;
++                if ((kited_of(h) && kite_owns(world, h)) || siege_declines(world, h)) continue;
++                float rounds = 0;
++                const float damage = soften * min_camp_damage(world, h, strength, &rounds, reflect);
++                int trips = extra_trips(damage, budget_after, usable_health);
++                float trips_rounds = trips > 0 ? static_cast<float>(trips) * home_trip(h, walk) : 0.0f;
++                if (H.strength > 0)
++                    if (const float kite = spell_clear_rounds(world, h, range, spells, basic); kite >= 0 && kite < rounds + heal(h, damage) + trips_rounds)
++                        rounds = kite, trips = 0, trips_rounds = 0;
++                // Kited groups past the health we spare are the loop's risky pick, never a plan.
++                if (kited_of(h) && trips > 0) continue;
++                const float next_rounds = effective(base + rounds + trips_rounds);
++                if (const float v = worth - rho * next_rounds; v > top) top = v, c.next = h, c.next_worth = worth, c.next_rounds = next_rounds;
++            }
++        }
++        const auto relative = [&](const Chained& c) { return c.worth - rho * c.rounds + (c.next >= 0 ? std::max(0.0f, c.next_worth - rho * c.next_rounds) : 0.0f); };
++        int pick = -1;
++        float pick_value = 0;
++        for (int i = 0; i < n_jobs; ++i)
++            if (jobs[static_cast<std::size_t>(i)]->g == best) pick = i, pick_value = relative(chained[static_cast<std::size_t>(i)]);
++        if (pick < 0) return; // the single job's pick is not pooled: no chains
++        const int single = pick;
++        for (int i = 0; i < n_jobs; ++i)
++            if (const float v = relative(chained[static_cast<std::size_t>(i)]); v > pick_value) pick = i, pick_value = v;
++        debug_block({
++            const auto& s = chained[static_cast<std::size_t>(single)];
++            const auto& p = chained[static_cast<std::size_t>(pick)];
++            std::printf("CHAIN %d %u single g%d %.4f then g%d %.4f | pick g%d %.4f then g%d %.4f jobs %d\n", round, my_handle(),
++                        jobs[static_cast<std::size_t>(single)]->g, jobs[static_cast<std::size_t>(single)]->value, s.next, relative(s),
++                        jobs[static_cast<std::size_t>(pick)]->g, jobs[static_cast<std::size_t>(pick)]->value, p.next, pick_value, n_jobs);
++        });
++        if (pick == single) return;
++        const auto& e = *jobs[static_cast<std::size_t>(pick)];
++        best = e.g, best_steps = e.steps, best_spell = e.spell, best_priced = e.priced;
++    }();
+     need_zone();
+     // An ally's hold that pays more with us on it: the rounds we then hold free the holder, worth
+     // what our best cycle earns a round, so the walk is what it costs.
+@@ -2453,6 +2600,9 @@
+             std::printf("CREW PICK %d %u g%d %c trips %d tank %d expected %d output %.0f damage %.0f hp %.0f/%.0f\n", round, my_handle(), memory.claim,
+                         chosen.mode, chosen.trips, chosen.tank, chosen.expected, chosen.output, chosen.damage, my_health(), max_health);
+         }
++        if constexpr (!repricing)
++            std::printf("FT %d %u %d,%d g%d %c v%.4f s%d bag%d bk%d k%d/%d\n", round, my_handle(), here.x, here.y, best, chosen.mode,
++                        best == shared ? shared_value : best_value, best_steps, bag, static_cast<int>(banks_bag), k, evaluated);
+     });
+     if constexpr (!repricing) memo.carry_group = best >= 0 && (chosen.mode == 'G' || chosen.mode == 'L' || chosen.mode == 'Q') ? best : -1, memo.carry_round = round;
+     if (best < 0) {
+diff -ruN bots/variants/chy-ref/src/params.h bots/variants/f-thru/src/params.h
+--- bots/variants/chy-ref/src/params.h	2026-11-13 14:14:04.301413351 +0000
++++ bots/variants/f-thru/src/params.h	2026-11-13 16:57:55.939983189 +0000
+@@ -153,6 +153,10 @@
+ inline constexpr bool finish_no_prism = false;
+ // Most rounds to wait at a camp for it to return. Also bounds the wait after a recall out to farm.
+ inline constexpr int max_wait = 2;
++// Farm prices a solo job with the best job from where it ends (farm_turn's chains): the best farm_chain_pool
++// jobs by their own value, each with its follow-up over every group. The pool bounds the work, not the choice.
++inline constexpr bool farm_chain = true;
++inline constexpr int farm_chain_pool = 4;
+ // The weight on gold in farm choice of Tavi on its gold maps (MapEconomy::tavi_map):
+ // they take the gold-only groups the others pass up.
+ inline constexpr float gold_farmer_weight = 3.8296325f;

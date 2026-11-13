@@ -16,6 +16,8 @@ Six orchestrators (TETHYS, RHEA, PHOEBE, THEIA, CRIUS, IAPETUS) each owned a mac
 worktree, every A/B against a frozen 529 at 2x fuel, own drafts, 10k+ games on their own fresh ladder-v4 suites
 (seeds 614x0000-614x9999). Overseer notes: [overseer-mx-2026-11-13](overseer-mx-2026-11-13/README.md). RHEA, CRIUS
 and PHOEBE were ended early (17:30 UTC, usage); TETHYS, THEIA and IAPETUS were still running at this commit.
+Notes, briefs, patches and scripts: [mx-rhea](mx-rhea/NOTES.md), [mx-crius](mx-crius/NOTES.md),
+[mx-phoebe](mx-phoebe/NOTES.md), [mx-iapetus](mx-iapetus/NOTES.md) (mapgen logs left on the branches).
 
 - **Kept (CHANGES 530):** IAPETUS's stop_due + contest judgement, 53.3 held out at 2x, **52.9 of 40,120 at 100k**.
 - **Level at 100k:** IAPETUS line B (contest judgement) alone, 51.1 held out at 2x but 50.3 (49.8-50.8) of 40,120 at 100k.

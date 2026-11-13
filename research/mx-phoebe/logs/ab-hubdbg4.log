@@ -1,0 +1,9 @@
+A/B mx-phoebe-hubdbg4: CAND variants/phb-hub (dir) vs REF variants/chy-ref (dir)
+  study: running, log replays/ab/mx-phoebe-hubdbg4/study.log
+CAND 51.2% of 2720 (1392-1328), 95% CI 49.3-53.1
+  study  51.2% of 2720 (1392-1328), 95% CI 49.3-53.1
+Failed matches: 0
+Out-of-fuel turns: CAND 335 in 230 games, REF 138 in 105 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 1m36s
+Results: replays/ab/mx-phoebe-hubdbg4/summary.md

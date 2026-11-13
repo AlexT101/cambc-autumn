@@ -1,0 +1,10 @@
+2040 paired games; identical decisions all game: 1497 (73.4%)
+first divergence round p10/p25/p50/p75/p90: [238, 433, 557, 722, 903]
+branch at first divergence (ref -> cand): [(('E', 'F'), 149), (('E', 'R'), 145), (('E', 'B'), 93), (('F', 'F'), 36), (('R', 'E'), 13), (('E', 'C'), 10), (('R', 'F'), 9), (('E', 'U'), 9), (('h', 'F'), 7), (('F', 'R'), 7), (('F', 'E'), 6), (('R', 'R'), 5)]
+results: base win & cand win 986, base win -> cand loss 34, base loss -> cand win 86, both lose 934
+win rate base 50.0% cand 52.5%
+  diverged r0-100: 34 games, cand minus base wins -3 (-8.8%)
+  diverged r100-200: 13 games, cand minus base wins +1 (+7.7%)
+  diverged r200-400: 67 games, cand minus base wins +2 (+3.0%)
+  diverged r400-800: 332 games, cand minus base wins +35 (+10.5%)
+  diverged r800-1000000: 97 games, cand minus base wins +17 (+17.5%)

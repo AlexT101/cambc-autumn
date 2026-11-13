@@ -1,0 +1,9 @@
+A/B mx-phoebe-nolock-x1: CAND variants/p-nolock (dir) vs REF variants/chy-ref (dir)
+  x1: running, log replays/ab/mx-phoebe-nolock-x1/x1.log
+CAND 50.2% of 10200 (5125-5075), 95% CI 49.3-51.2
+  x1  50.2% of 10200 (5125-5075), 95% CI 49.3-51.2
+Failed matches: 0
+Out-of-fuel turns: CAND 888 in 583 games, REF 895 in 563 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 0m32s
+Results: replays/ab/mx-phoebe-nolock-x1/summary.md

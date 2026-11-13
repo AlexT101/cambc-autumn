@@ -1,0 +1,578 @@
+diff -ruN bots/variants/chy-ref/src/bot.cc bots/variants/c2-duel-ns/src/bot.cc
+--- bots/variants/chy-ref/src/bot.cc	2026-11-13 14:14:02.532195547 +0000
++++ bots/variants/c2-duel-ns/src/bot.cc	2026-11-13 15:14:01.640015117 +0000
+@@ -752,6 +752,13 @@
+             if (avoid) copy_into(*avoid, both), both |= *held, avoid = &both;
+             else avoid = held;
+         }
++        // Nor do they walk into a stronger enemy Prism's two-turn reach, or a shadowed game-ender's (duel.h).
++        // Already inside it, it is left out: guard_work drops an avoid we stand in, and it would take the others.
++        if (const bitboard* duel = duel_avoid(world); duel && !test(*duel, my_position())) {
++            static bitboard all{cambc::uninitialized};
++            if (avoid) copy_into(*avoid, all), all |= *duel, avoid = &all;
++            else avoid = duel;
++        }
+         guard_work(world, pathing, safety, memory.damage, avoid);
+     }
+     // A goal step that cannot finish is not started: it would run the turn out, which loses its posts and
+diff -ruN bots/variants/chy-ref/src/bot_parts.h bots/variants/c2-duel-ns/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 14:14:02.532399450 +0000
++++ bots/variants/c2-duel-ns/src/bot_parts.h	2026-11-13 14:58:33.539965269 +0000
+@@ -28,6 +28,7 @@
+ #include "model/turn_order.h"
+ #include "model/world.h"
+ #include "draft/map_economy.h"
++#include "combat/duel.h"
+ 
+ namespace aph {
+ 
+diff -ruN bots/variants/chy-ref/src/combat/duel.cc bots/variants/c2-duel-ns/src/combat/duel.cc
+--- bots/variants/chy-ref/src/combat/duel.cc	1970-01-01 00:00:00.000000000 +0000
++++ bots/variants/c2-duel-ns/src/combat/duel.cc	2026-11-13 15:14:01.639613002 +0000
+@@ -0,0 +1,310 @@
++// The Prism duel model and its uses (duel.h).
++#include "../bot_parts.h"
++
++namespace aph {
++
++namespace {
++
++// One side of a duel: what it can deal and take, and when each slot is next ready (rounds from now).
++struct Duellist {
++    const ChampionFacts* facts;
++    float hp, hit, focus, taken;
++    std::array<int, 2> ready;
++    bool immune;
++    bool cast0 = true, attack0 = true; // turn 0 still has its cast and basic attack (ours: not yet spent this turn)
++};
++
++Duellist duellist(const World& world, const ChampionBelief& c) {
++    Duellist d{&c.facts(), 0, 0, 0, std::max(0.01f, c.taken), {0, 0}, c.facts().passive == Passive::stun_immune};
++    if (c.is_self) {
++        // Our exact reads: the belief's stats date from the turn start, before shards or a kill's gems.
++        const auto& r = my_record();
++        const float scale = damage_scale(c.facts().passive, r.health, r.max_health) * champion_dealt_factor();
++        d.hp = r.health + my_live_shield(world), d.hit = r.strength * scale, d.focus = r.focus * scale;
++        d.cast0 = my_can_cast(), d.attack0 = my_can_attack();
++    } else {
++        // `scale` holds the Skirmish / Collectors factor (dealt) and Heart of Ruin's.
++        d.hp = c.health + c.shield, d.hit = c.strength * c.scale, d.focus = c.focus * c.scale;
++    }
++    // Turn 0 is our turn now, and its next turn for the other: this round if it acts after us, else next
++    // (team order alternates by round), a stun it is under counted apart (the duel's `lost`).
++    const int base = c.is_self ? world.round : next_turn_round(world, c) - (turn_lost(c) ? 1 : 0);
++    for (int s = 0; s < 2; ++s) d.ready[s] = std::max(0, c.ready_round[s] - base);
++    // A slot we cast this turn: our belief's cooldowns are from the turn's start.
++    if (c.is_self)
++        for (int s = 0; s < 2; ++s)
++            if (turn_acts.casts[s]) d.ready[s] = ability_cooldown;
++    return d;
++}
++
++// What side a does on its turn in round t (0: this one): a basic attack, and its one cast, a ready
++// stun first (unless the target is immune), else the most damaging. One attacker a target: a stun
++// cast while the target sits out a turn takes the following one, so none is wasted.
++// Attack resets add a basic attack; heals, shields and dashes are left out.
++struct Blow2 {
++    float damage = 0;
++    bool stuns = false;
++};
++Blow2 duel_turn(Duellist& a, const Duellist& b, int t) {
++    Blow2 out{t > 0 || a.attack0 ? a.hit : 0.0f, false};
++    if (t == 0 && !a.cast0) return out;
++    int pick = -1;
++    float best = 0;
++    bool pick_stuns = false;
++    for (int s = 0; s < 2; ++s) {
++        if (t < a.ready[s]) continue;
++        const auto& ab = a.facts->abilities[s];
++        float dmg = 0;
++        if (ab.kind == AbilityKind::damage) dmg = ab.multiplier * a.focus;
++        else if (ab.kind == AbilityKind::attack_reset) dmg = a.hit;
++        else if (ab.kind != AbilityKind::stun) continue;
++        const bool stuns = ab.stuns && !b.immune;
++        // A useful stun outranks damage: it takes the target's next turn.
++        if (pick < 0 || (stuns && !pick_stuns) || (stuns == pick_stuns && dmg > best)) pick = s, best = dmg, pick_stuns = stuns;
++    }
++    if (pick >= 0 && (best > 0 || pick_stuns)) {
++        out.damage += best, out.stuns = pick_stuns;
++        a.ready[pick] = t + ability_cooldown;
++    }
++    return out;
++}
++
++// Both sides act each round, as if at once: a stun cast in round t takes the target's turn in round
++// t + 1. Who acts first in a round is left out on purpose: once engaged it follows from who stepped
++// into range (an excludes-walking stun cannot follow the step), which the model cannot know; it is
++// what `even` stands for, and it keeps a mirror reading even. Neither side stops when it would fall,
++// so each count is the kill's round from where both stand now, engaged (in range).
++DuelEdge duel_edge(const World& world, const ChampionBelief& ours, const ChampionBelief& theirs) {
++    std::array<Duellist, 2> d{duellist(world, ours), duellist(world, theirs)};
++    std::array<float, 2> hp{d[0].hp, d[1].hp};
++    // A stun already on either takes its turn this round (ours: this turn, if we are the one).
++    std::array<bool, 2> lost{ours.is_self ? stunned_turn : ours.visible && ours.stun_pending, theirs.visible && theirs.stun_pending};
++    std::array<int, 2> kill{0, 0};
++    for (int t = 0; t < duel_horizon && (!kill[0] || !kill[1]); ++t) {
++        std::array<Blow2, 2> blow{};
++        for (int s = 0; s < 2; ++s)
++            if (!lost[s]) blow[s] = duel_turn(d[s], d[1 - s], t);
++        for (int s = 0; s < 2; ++s) {
++            const int o = 1 - s;
++            hp[o] -= blow[s].damage * d[o].taken;
++            if (hp[o] <= 0 && !kill[s]) kill[s] = t + 1;
++        }
++        // Stuns land after the round's turns: each takes the target's next one.
++        lost = {blow[1].stuns, blow[0].stuns};
++    }
++    DuelEdge e;
++    e.ours_kills_in = kill[0] ? kill[0] : duel_horizon + 1;
++    e.theirs_kills_in = kill[1] ? kill[1] : duel_horizon + 1;
++    e.verdict = e.ours_kills_in < e.theirs_kills_in ? DuelVerdict::favoured
++                : e.ours_kills_in > e.theirs_kills_in ? DuelVerdict::disfavoured : DuelVerdict::even;
++    return e;
++}
++
++int net_bodies(const World& world, vec2 p) {
++    int net = 0;
++    for (const auto& a : world.allies) {
++        if (!a.alive) continue;
++        if (a.is_self || a.visible) {
++            if (dist(a.is_self ? my_position() : a.pos, p) <= vision_radius) ++net;
++            continue;
++        }
++        // Out of our sight (vision is personal): where it last posted, aged as unseen enemies are.
++        vec2 at;
++        int round = -1;
++        if (comms::told_ally(a.index, at, round) && world.round - round <= duel_recent && dist(at, p) - (world.round - round) <= vision_radius) ++net;
++    }
++    for (const auto& e : world.enemies) {
++        if (!e.alive) continue;
++        if (e.visible ? dist(e.pos, p) <= vision_radius
++                      : e.tracked && e.turns_since_fixed <= duel_recent && dist(e.pos, p) - e.turns_since_fixed <= vision_radius)
++            --net;
++    }
++    return net;
++}
++
++// An enemy's reach before it could be answered: a walk on its next turn and its strike on the one
++// after (stuns and damage, with the slots ready by then), as a turn-order double move allows before
++// our next turn. Slots only come ready, so this bounds its one-turn strike too.
++int two_turn_reach(const World& world, const ChampionBelief& e) {
++    const int second = next_turn_round(world, e) + 1;
++    return std::min(vision_radius - 1, std::max(0, strike(e, second).reach) + 1);
++}
++
++struct Avoided {
++    vec2 centre;
++    int radius;
++};
++struct AvoidSet {
++    int round = -1;
++    std::uint32_t observations = ~0u;
++    unsigned actions = ~0u;
++    std::array<Avoided, 8> list;
++    int n = 0;
++    bool spacing = false; // the first entry is the enemy Prism's spacing
++    bitboard board{cambc::uninitialized};
++    bool drawn = false;
++};
++AvoidSet avoid_set;
++
++struct Shadowed {
++    int round = -1;
++    std::uint32_t enemies = 0; // bits by index
++};
++Shadowed shadowed;
++
++DuelVerdict last_verdict[16];
++bool verdict_known[16];
++
++void note_shadowed(const World& world, const ChampionBelief& e) {
++    if (shadowed.round != world.round) shadowed = {world.round, 0};
++    if (e.index < 32) shadowed.enemies |= 1u << e.index;
++    avoid_set.round = -1; // drawn again with it
++}
++
++const DuelSight* enemy_prism_sight(const World& world) {
++    static DuelSight sight;
++    static struct {
++        int round = -1;
++        std::uint32_t observations = ~0u;
++        unsigned actions = ~0u; // our casts, kills (gems: Focus) and moves since
++        float health = -1;
++        vec2 at{-1, -1};
++        bool has = false;
++    } key;
++    const auto& self = world.me();
++    if (!self.alive || self.facts().passive != Passive::gem_focus) return nullptr;
++    const vec2 here = my_position();
++    const float health = my_health();
++    if (key.round == world.round && key.observations == world.observations && key.actions == own_actions && key.health == health && key.at == here)
++        return key.has ? &sight : nullptr;
++    key = {world.round, world.observations, own_actions, health, here, false};
++    const ChampionBelief* found = nullptr;
++    for (const auto& e : world.enemies)
++        if (e.alive && e.facts().passive == Passive::gem_focus && (e.visible || (e.tracked && e.turns_since_fixed <= duel_recent))) found = &e;
++    if (!found) return nullptr;
++    const auto& e = *found;
++    sight.enemy = &e;
++    sight.edge = duel_edge(world, self, e);
++    sight.reach = two_turn_reach(world, e);
++    sight.spread = e.visible ? 0 : e.turns_since_fixed;
++    sight.net = net_bodies(world, here);
++    key.has = true;
++    debug_block({
++        const unsigned i = static_cast<unsigned>(e.index) & 15u;
++        if (e.visible && (!verdict_known[i] || last_verdict[i] != sight.edge.verdict)) {
++            verdict_known[i] = true, last_verdict[i] = sight.edge.verdict;
++            std::printf("DUEL %d %u %u %c %d %d %d\n", world.round, my_handle(), static_cast<std::uint32_t>(e.handle),
++                        static_cast<char>(sight.edge.verdict), sight.edge.ours_kills_in, sight.edge.theirs_kills_in, sight.net);
++        }
++    });
++    return &sight;
++}
++
++float hunt_worth(const World& world, const ChampionBelief& e) {
++    const int bag = pair_gems(world, e);
++    const float premium = bag > 0 ? prism_premium(world, world.me(), bag) : 0.0f;
++    const float gold = static_cast<float>(cambc::constants::kill_gold) * gold_paid(world) * prices(world).per_gold;
++    return static_cast<float>(bag) * (1.0f + premium) + std::max(0.0f, gold);
++}
++
++bool hunt_target(const World& world, const ChampionBelief& e) {
++    if (!e.alive || !e.visible || e.facts().passive != Passive::gem_focus) return false;
++    const auto* sight = enemy_prism_sight(world);
++    if (!sight || sight->enemy != &e || sight->edge.verdict != DuelVerdict::favoured) return false;
++    if (test(world.map().near_enemy_spawn, e.pos)) return false;
++    if (my_state().contains(cambc::champion_state::submitting_gems) && winning_bag(world)) return false;
++    if (net_bodies(world, e.pos) < 0) return false;
++    // The farm's gems a turn (farm_step_value is in enemy health points at params::gem_value a gem),
++    // against the kill's over the walk to stun range and the duel itself.
++    const float farm = farm_step_value(world) / params::gem_value;
++    return hunt_worth(world, e) / static_cast<float>(hunt_rounds(world, e) + sight->edge.ours_kills_in) > farm;
++}
++
++// The enemy Prism's spacing applies: disfavoured, or even with fewer of us than of them here.
++bool spaced(const DuelSight& s) {
++    return s.edge.verdict == DuelVerdict::disfavoured || (s.edge.verdict == DuelVerdict::even && s.net < 0);
++}
++
++const AvoidSet& avoids(const World& world) {
++    auto& a = avoid_set;
++    if (a.round == world.round && a.observations == world.observations && a.actions == own_actions) return a;
++    a.round = world.round, a.observations = world.observations, a.actions = own_actions, a.n = 0, a.spacing = false, a.drawn = false;
++    if constexpr (duel_spacing)
++        if (const auto* s = enemy_prism_sight(world); s && spaced(*s)) {
++            // A step beyond its reach (want_home's line), widened by a step a turn since it was seen.
++            a.list[a.n++] = {s->enemy->pos, s->reach + 1 + s->spread};
++            a.spacing = true;
++        }
++    if (shadowed.round == world.round && shadowed.enemies) {
++        for (auto left = shadowed.enemies; left; left &= left - 1) {
++            const auto& c = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
++            if (!c.alive || !c.visible) continue;
++            // The carrier's and its escort's (visible enemies within sight of it) two-turn reach.
++            for (const auto& e : world.enemies) {
++                if (a.n == static_cast<int>(a.list.size()) || !e.alive || !e.visible || dist(e.pos, c.pos) > vision_radius) continue;
++                // Cassi and Issac carrying together note the same escort twice.
++                bool listed = false;
++                for (int i = 0; i < a.n; ++i) listed |= a.list[i].centre == e.pos;
++                if (!listed) a.list[a.n++] = {e.pos, two_turn_reach(world, e)};
++            }
++        }
++    }
++    return a;
++}
++
++const bitboard* duel_avoid(const World& world) {
++    auto& a = avoid_set;
++    avoids(world);
++    if (a.n == 0) return nullptr;
++    if (!a.drawn) {
++        clear_board(a.board);
++        for (int i = 0; i < a.n; ++i) draw_square(a.board, a.list[i].centre, static_cast<float>(a.list[i].radius));
++        a.drawn = true;
++    }
++    return &a.board;
++}
++
++bool spacing_retreat(const World& world) {
++    if constexpr (!duel_spacing) return false;
++    const auto* s = enemy_prism_sight(world);
++    if (!s || !s->enemy->alive || !s->enemy->visible || !spaced(*s)) return false;
++    // Our channel is continue_tribute's to judge (tribute_ok), and spacing never cancels it.
++    if (my_state().contains(cambc::champion_state::submitting_gems)) return false;
++    const int d = dist(my_position(), s->enemy->pos);
++    if (d > s->reach + 1) return false;
++    debug_block({
++        std::printf("SPACE %d %u %u retreat %c %d %d %d %d\n", world.round, my_handle(), static_cast<std::uint32_t>(s->enemy->handle),
++                    static_cast<char>(s->edge.verdict), s->edge.ours_kills_in, s->edge.theirs_kills_in, s->net, d);
++    });
++    return true;
++}
++
++bool group_avoided(const World& world, int g) {
++    const auto& a = avoids(world);
++    if (a.n == 0) return false;
++    const auto& G = world.map().groups[g];
++    const int range = world.camps[g].state == CampState::alive ? world.me().facts().attack_range() : 0;
++    for (int i = 0; i < a.n; ++i) {
++        bool all = true;
++        for (const auto& m : G.members)
++            if (dist(m.pos, a.list[i].centre) + range > a.list[i].radius) {
++                all = false;
++                break;
++            }
++        if (all) {
++            debug_block({
++                static int traced_round = -1, traced_group = -1;
++                if (traced_round != world.round || traced_group != g) {
++                    traced_round = world.round, traced_group = g;
++                    std::printf("SPACE %d %u %d skip %s\n", world.round, my_handle(), g, a.spacing && i == 0 ? "prism" : "shadow");
++                }
++            });
++            return true;
++        }
++    }
++    return false;
++}
++
++} // namespace
++
++} // namespace aph
+diff -ruN bots/variants/chy-ref/src/combat/duel.h bots/variants/c2-duel-ns/src/combat/duel.h
+--- bots/variants/chy-ref/src/combat/duel.h	1970-01-01 00:00:00.000000000 +0000
++++ bots/variants/c2-duel-ns/src/combat/duel.h	2026-11-13 15:19:41.605937054 +0000
+@@ -0,0 +1,74 @@
++// The Prism duel: one matchup model (who kills whom first, each side's stun cycle played out) and
++// its three uses: our Prism hunting a weaker enemy Prism, keeping its distance from a stronger
++// one (spacing), and the game-ender restraint (fight.cc game_ender).
++#pragma once
++#include <cstdint>
++#include "../model/world.h"
++
++namespace aph {
++
++// Piece 3 (spacing): c2-duel-ns, the ablation, sets it false.
++inline constexpr bool duel_spacing = false;
++
++enum class DuelVerdict : char { favoured = 'F', even = 'E', disfavoured = 'D' };
++
++struct DuelEdge {
++    // Own turns each side needs to kill the other, their side acting first (an approacher walks into
++    // the other's ready stun: neither casts a walk-excluding spell after walking); stuns take a turn.
++    int ours_kills_in = 0, theirs_kills_in = 0;
++    DuelVerdict verdict = DuelVerdict::even;
++};
++
++namespace {
++
++// Turns past this read as no kill.
++inline constexpr int duel_horizon = 24;
++
++DuelEdge duel_edge(const World& world, const ChampionBelief& ours, const ChampionBelief& theirs);
++
++// Our living visible allies within vision_radius of p (us included) less the enemies there, visible
++// or tracked and possibly there; Cassi and Issac count one body each.
++int net_bodies(const World& world, vec2 p);
++
++// The enemy Prism as our Prism sees it this turn: visible, or seen within duel_recent turns (its
++// tiles bounded by a step a turn since); null if neither, or if we are no Prism.
++inline constexpr int duel_recent = 3;
++struct DuelSight {
++    const ChampionBelief* enemy = nullptr;
++    DuelEdge edge;
++    int reach = 0;  // its two-turn reach (two_turn_reach)
++    int spread = 0; // turns since its tile was known (0 while visible)
++    int net = 0;    // net_bodies at our tile
++};
++const DuelSight* enemy_prism_sight(const World& world);
++
++// Our Prism hunts e (a visible enemy Prism): favoured, net bodies near it >= 0, off its spawn's edge,
++// we not tributing a winning bag, and the kill's worth over the rounds to close beats the farm.
++bool hunt_target(const World& world, const ChampionBelief& e);
++// The hunt's worth in gems: e's bag x (1 + our Prism premium on it) and the kill gold.
++float hunt_worth(const World& world, const ChampionBelief& e);
++// Rounds to close to stun range.
++inline int hunt_rounds(const World& world, const ChampionBelief& e) {
++    return std::max(1, dist(my_position(), e.pos) - ability_range);
++}
++
++// Spacing (our Prism only): the tiles a disfavoured enemy Prism (or an even one, with net bodies
++// below 0 here) could reach us on within two turns, a step beyond (want_home's line), and a
++// restrained game-ender's reach (fight.cc game_ender) for any of us; null when none.
++const bitboard* duel_avoid(const World& world);
++// want_home's spacing line: such an enemy Prism in sight within its reach + 1, while we are not
++// channelling a tribute.
++bool spacing_retreat(const World& world);
++// A group whose work tiles (camp tiles cleared, else within our attack range of a member) all lie
++// within `zone` of the avoided champions (duel_avoid's), as the farm loop skips it.
++bool group_avoided(const World& world, int g);
++
++// An enemy's reach before we could answer: a walk on its next turn, then its strike (stuns and damage).
++int two_turn_reach(const World& world, const ChampionBelief& e);
++
++// fight.cc's game-ender restraint: a non-channelling carrier set to be shadowed this turn.
++void note_shadowed(const World& world, const ChampionBelief& e);
++
++} // namespace
++
++} // namespace aph
+diff -ruN bots/variants/chy-ref/src/combat/fight.cc bots/variants/c2-duel-ns/src/combat/fight.cc
+--- bots/variants/chy-ref/src/combat/fight.cc	2026-11-13 14:14:02.532676073 +0000
++++ bots/variants/c2-duel-ns/src/combat/fight.cc	2026-11-13 15:14:22.167519880 +0000
+@@ -632,6 +632,9 @@
+     if (world.me().facts().heals() && !holding_capture(world, pathing) && !contesting(world) && exposure_here(world, safety).enemy
+         && !willow_stands(world))
+         return true;
++    // Our Prism leaves on sight of a stronger enemy Prism near enough to open the duel (duel.h), not once it
++    // has; a hold that pays before anything reaches us keeps us, as it does the other lines.
++    if (spacing_retreat(world) && !hold.keeps_us(safety)) return true;
+     return finish_heal(world, pathing, safety) || stand_lost_at(world, safety, hold);
+ }
+ 
+@@ -777,7 +780,7 @@
+     const int g = world.map().group_at(e.pos);
+     held = g >= 0 && world.camps[g].state == CampState::cleared ? world.map().groups[g].gems : 0;
+     if (!(comeback::cooked(world) && pair_gems(world, e) >= params::comeback::bar_bag) && dist(here, e.pos) > range && !own_ground(world, e.pos) && e.health >= params::hurt_health_fraction * e.max_health && held == 0
+-        && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable))
++        && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable) && !hunt_target(world, e))
+         return false;
+     // Every tile in reach of it would make us retreat at once.
+     return !pack_covers(world, safety, e.pos, range);
+@@ -965,8 +968,10 @@
+         if (!preyable(world, safety, e, here, range, held)) continue;
+         if (!strength) strength = std::max(1.0f, my_strength() * world.me().damage_scale());
+         const float turns = static_cast<float>(std::max(0, dist(here, e.pos) - range)) + effective_hp(e) / *strength;
+-        // Turns per gem a kill is worth: the life (abilities' life_value, in gems) and the bag.
+-        const float cost = turns / (params::life_value / params::gem_value + static_cast<float>(pair_gems(world, e) + held));
++        // Turns per gem a kill is worth: the life (abilities' life_value, in gems) and the bag; a hunted
++        // Prism's bag at our Prism's premium on it, and the kill gold.
++        const float bag = hunt_target(world, e) ? hunt_worth(world, e) : static_cast<float>(pair_gems(world, e));
++        const float cost = turns / (params::life_value / params::gem_value + bag + static_cast<float>(held));
+         int i = n++;
+         for (; i > 0 && order[i - 1].first > cost; --i) order[i] = order[i - 1];
+         order[i] = {cost, &e};
+@@ -1074,9 +1079,19 @@
+         }
+         if ((!t.lost && !(linked && t.self_falls)) || (!linked && comeback::accept_lost(world, t, target))) {
+             if (u < n_unasked) unasked[u] = unasked[--n_unasked];
+-            if (escapes(world, pathing, target)) continue;
++            if (escapes(world, pathing, target)) {
++                debug_block({
++                    if (hunt_target(world, target)) std::printf("HUNTX %d %u %u escapes %d\n", world.round, my_handle(), static_cast<std::uint32_t>(target.handle), dist(here, target.pos));
++                });
++                continue;
++            }
+             return &target;
+         }
++        debug_block({
++            if (hunt_target(world, target))
++                std::printf("HUNTX %d %u %u lost %d %d %d\n", world.round, my_handle(), static_cast<std::uint32_t>(target.handle), dist(here, target.pos),
++                            t.turns_to_kill_us, t.turns_to_kill_them);
++        });
+         if (u < n_unasked) unasked[u].target = &target;
+         else unasked[n_unasked++] = {fight, &target, t};
+     }
+@@ -1090,6 +1105,13 @@
+     const auto* target = prey(world, pathing, safety);
+     if (!target) return false;
+     trace_verdict(world, pathing, *target, 'P');
++    debug_block({
++        if (hunt_target(world, *target)) {
++            const auto* s = enemy_prism_sight(world);
++            std::printf("HUNT %d %u %u %d %d %d %.1f %d\n", world.round, my_handle(), static_cast<std::uint32_t>(target->handle), dist(my_position(), target->pos),
++                        s->edge.ours_kills_in, s->edge.theirs_kills_in, hunt_worth(world, *target), net_bodies(world, target->pos));
++        }
++    });
+     note_engaged(static_cast<std::uint32_t>(target->handle));
+     decision = Branch::chase;
+     if constexpr (debug_fights) log_fight("FC", world, safety, target->pos, safety.fight(target->pos), static_cast<int>(target->handle));
+@@ -1217,6 +1239,31 @@
+     return false;
+ }
+ 
++// A carrier of a game-ending bag, not channelling, is ours to run at only when (a) our bag at stake is
++// small beside its (a kill of us hands it over), (b) we win the fight there (our Prism favoured against a
++// Prism, else net bodies there >= 0), or (c) its walk to the nearest altar and tribute there could land
++// before we stop it from where a shadow keeps us. Else we shadow it (duel_avoid): our bag is not the price
++// of a chase.
++bool ender_restrained(const World& world, const ChampionBelief& e, vec2 here) {
++    const int bag = pair_gems(world, e);
++    if (bag_at_stake(world) <= std::max(40, bag / 3)) return false;
++    if (e.facts().passive == Passive::gem_focus) {
++        const auto* s = enemy_prism_sight(world);
++        if (s && s->enemy == &e && s->edge.verdict == DuelVerdict::favoured) return false;
++    } else if (net_bodies(world, e.pos) >= 0) {
++        return false;
++    }
++    if (const auto t = carrier_tribute(world, e, carrier_walk(world, e)); t.altar) {
++        // Damage cancels no tribute: a stun does (a kill too, at attack range, slower); its reach counts the
++        // walk it allows, and the turn it is cast in counts too.
++        int reach = world.me().facts().attack_range();
++        if (e.facts().passive != Passive::stun_immune) reach = std::max(reach, world.me().ready_stun_reach(world.round, true));
++        const int from = std::max(dist(here, e.pos), two_turn_reach(world, e) + 1);
++        if (std::max(0, from - reach) + 1 >= t.turns) return false;
++    }
++    return true;
++}
++
+ // A visible enemy whose bag (both, for a walking Cassi and Issac) ends the game once tributed, or whose
+ // tribute wins it (enemy_tribute_wins), and that we can stop: nothing we gain meanwhile counts unless our
+ // own bag wins first. The nearest; null if none.
+@@ -1240,6 +1287,18 @@
+             here = my_position();
+             if (winning_bag(world)) win = win_lands(world);
+         }
++        if (!tributing && ender_restrained(world, e, *here)) {
++            note_shadowed(world, e);
++            debug_block({
++                static int traced = -1;
++                if (traced != world.round) {
++                    traced = world.round;
++                    std::printf("ENDR %d %u %u %d %d %d %d\n", world.round, my_handle(), static_cast<std::uint32_t>(e.handle), bag_at_stake(world),
++                                pair_gems(world, e), dist(*here, e.pos), net_bodies(world, e.pos));
++                }
++            });
++            continue;
++        }
+         // Our winning bag wins unless their tribute lands first: under way, or at the end of a walk.
+         if (win) {
+             if (tributing) {
+@@ -1269,6 +1328,13 @@
+ void stop_game_ender(const World& world, Pathing& pathing, Memory& memory, const ChampionBelief& e) {
+     auto& me = cambc::self();
+     decision = Branch::stop_ender;
++    // Trace: a channelling ender (unrestrained by design) that the restraint's tests would have shadowed.
++    debug_block({
++        if (e.channel == Channel::tribute)
++            std::printf("ENDC %d %u %u %d %d %d %d %d\n", world.round, my_handle(), static_cast<std::uint32_t>(e.handle),
++                        ender_restrained(world, e, my_position()) ? 1 : 0, e.channel_end_round - world.round, bag_at_stake(world), pair_gems(world, e),
++                        dist(my_position(), e.pos));
++    });
+     memory.claim = -1;
+     pathing.set_guard(nullptr);
+     const bool tributing = e.channel == Channel::tribute;
+diff -ruN bots/variants/chy-ref/src/economy/farm.cc bots/variants/c2-duel-ns/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 14:14:02.534390166 +0000
++++ bots/variants/c2-duel-ns/src/economy/farm.cc	2026-11-13 14:59:30.337199669 +0000
+@@ -1795,7 +1795,7 @@
+         if ((group.has_monolith && map.monolith_only) || group.gems + group.gold == 0
+             || (belief.state == CampState::cleared && (ally_holding(g) || belief.holder == team::enemy))
+             || (belief.state != CampState::cleared && kited(g) && kite_owns(world, g)) || siege_declines(world, g)
+-            || (belief.state == CampState::cleared && left_for_prism(world, pathing, g)))
++            || (belief.state == CampState::cleared && left_for_prism(world, pathing, g)) || group_avoided(world, g))
+             continue;
+         // A Monolith with an enemy in sight near it is not taken up: our crew would clear it for
+         // them. Unless the enemy already stands in its reach, taking the hits.
+diff -ruN bots/variants/chy-ref/src/unity.cpp bots/variants/c2-duel-ns/src/unity.cpp
+--- bots/variants/chy-ref/src/unity.cpp	2026-11-13 14:14:02.536390192 +0000
++++ bots/variants/c2-duel-ns/src/unity.cpp	2026-11-13 14:58:33.540085331 +0000
+@@ -8,6 +8,7 @@
+ #include "economy/camps.cc"
+ #include "economy/home.cc"
+ #include "combat/guard.cc"
++#include "combat/duel.cc"
+ #include "combat/fight.cc"
+ #include "economy/bank.cc"
+ #include "economy/capture.cc"

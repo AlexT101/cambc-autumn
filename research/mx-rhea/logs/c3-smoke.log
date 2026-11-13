@@ -1,0 +1,10 @@
+note: --suites not given, so only the 256 ladder games: a quick check, not a judgement (pass --suites maps/suites/... for 20k+ games, or use tools/fgate.py)
+A/B mx-rhea-c3-smoke: CAND variants/c3-threat (dir) vs REF variants/chy-ref (dir)
+  ladder: running, log replays/ab/mx-rhea-c3-smoke/ladder.log
+CAND 48.0% of 256 (123-133), 95% CI 42.0-54.2
+  ladder  48.0% of 256 (123-133), 95% CI 42.0-54.2
+Failed matches: 0
+Out-of-fuel turns: CAND 31 in 22 games, REF 16 in 14 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 1m11s
+Results: replays/ab/mx-rhea-c3-smoke/summary.md

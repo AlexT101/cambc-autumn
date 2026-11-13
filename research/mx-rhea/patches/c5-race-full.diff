@@ -1,0 +1,435 @@
+diff -ruN -x .cambc bots/variants/chy-ref/src/bot.cc bots/variants/c5-race/src/bot.cc
+--- bots/variants/chy-ref/src/bot.cc	2026-11-13 14:14:02.532195547 +0000
++++ bots/variants/c5-race/src/bot.cc	2026-11-13 16:13:59.339373589 +0000
+@@ -565,6 +565,8 @@
+ // True if shards changed our stats.
+ bool shop(const World& world, const Memory& memory, bool consumables, bool shards) {
+     if (consumables) buy_crystal(memory);
++    // With an enemy bag that wins, a lock is the stop that also bars the retry at its altar (altar_locks.effect): before shards.
++    if (consumables && enemy_race_on(world)) buy_lock();
+     const bool bought = shards && buy_shards(world);
+     if (consumables) buy_lock();
+     return bought;
+@@ -662,8 +664,13 @@
+     if (!world.me().can_act(world.round)) return;
+     fixc_bush_threatened = fixc_bush_threat(world, safety);
+     if (const auto* ender = game_ender(world); ender && holds_hard_stop(world, *ender)) {
+-        stop_game_ender(world, pathing, memory, *ender);
+-        return;
++        // Our winning bag's holder leaves the stop to an ally that makes it in time: a kill in that fight hands over the bag.
++        const bool spared = winning_bag(world) && ally_stops_in_time(world, *ender);
++        debug_block({ std::printf("RACE %d %u ender %u%s\n", world.round, my_handle(), static_cast<unsigned>(ender->handle), spared ? " spared" : ""); });
++        if (!spared) {
++            stop_game_ender(world, pathing, memory, *ender);
++            return;
++        }
+     }
+     const bool willow = support_healer(world.me());
+     const bool prism = support_protected(world, world.me());
+@@ -870,6 +877,7 @@
+         switch (decision) {
+         case Branch::retreat: case Branch::bank: case Branch::wait_altar: case Branch::guard_altar: case Branch::tribute_kept:
+         case Branch::recall_kept: case Branch::capture_recall: case Branch::mend: case Branch::shop: case Branch::prism_recovery:
++        case Branch::race_wait:
+             drop_carry_claim(memory);
+             break;
+         default: break;
+diff -ruN -x .cambc bots/variants/chy-ref/src/bot_parts.h bots/variants/c5-race/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 14:14:02.532399450 +0000
++++ bots/variants/c5-race/src/bot_parts.h	2026-11-13 16:31:54.773274594 +0000
+@@ -59,6 +59,7 @@
+     stop_ender = 'E',     // stopping a game-ending bag
+     willow_support = 'h', // Willow's heal or formation
+     prism_recovery = 'r', // Prism's recovery beside Willow
++    race_wait = 'w',      // a winning bag kept out of reach: no altar's channel would complete (economy/race.cc)
+ };
+ Branch decision = Branch::none;
+ bool sieged = false;       // siege() or its heal trip ran this turn: act() keeps the siege
+@@ -423,6 +424,24 @@
+ void drop_carry_claim(Memory& memory);
+ void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool attacked, const Pathing::GuardState& chase_guard);
+ 
++// economy/race.cc: the endgame tribute race.
++// Rounds from our channel's completion (after `delay` turns, `turns` long, at `at`; `near`: anywhere within 1 of the altar)
++// to the first round an enemy could stop it by a stun or a lock, negative when one lands first in turn order; large if
++// none can. Stops counting once below `floor`.
++int race_margin(const World& world, vec2 at, int altar, bool near, int delay, int turns, int floor);
++// Our bag wins, its channel is too long to take at any risk, and the round limit leaves time to wait for one that completes.
++bool long_winning(const World& world, Pathing& pathing, int turns);
++// A long winning channel started here at `altar` would be stopped before it completes.
++bool race_refuses(const World& world, Pathing& pathing, int altar);
++// For a long winning bag, the altar whose channel (walked to, then channelled) has the best margin; -1 with `hold` if none
++// completes, -1 without it if no altar is reachable or the bag is no long winner.
++int race_aim(const World& world, Pathing& pathing, bool& hold);
++// ally_stops, or a visible ally (one not holding a winning bag itself) whose ready stun or carried lock arrives within reach
++// before the enemy's channel completes.
++bool ally_stops_in_time(const World& world, const ChampionBelief& e);
++// A living enemy, as last seen, carries the gems the enemy still needs.
++bool enemy_race_on(const World& world);
++
+ // economy/capture.cc
+ int capture_rounds(bool fast);
+ int capture_rounds(const World& world);
+diff -ruN -x .cambc bots/variants/chy-ref/src/economy/bank.cc bots/variants/c5-race/src/economy/bank.cc
+--- bots/variants/chy-ref/src/economy/bank.cc	2026-11-13 14:14:02.534091572 +0000
++++ bots/variants/c5-race/src/economy/bank.cc	2026-11-13 16:32:03.029087990 +0000
+@@ -940,7 +940,7 @@
+ 
+ // At an unlocked altar in reach. The caller judged the turn's start tile safe; anywhere else, at an
+ // altar carry_bag gave up waiting at, or at one believed locked (the caller skipped it), is judged again.
+-bool submit_here(const World& world, Safety& safety, Memory& memory) {
++bool submit_here(const World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     if (stunned_turn) return false; // the engine refuses it, and the thrown error costs ~3.9k fuel
+     auto& me = cambc::self();
+     const vec2 here = my_position();
+@@ -952,6 +952,8 @@
+         if ((avoided || world.altars[a].enemy_lock || here != world.turn_start)
+             && !tribute_ok(world, safety, memory, tribute_turns(world, my_gems())))
+             return false;
++        // A long winning channel only where it completes: one stopped first only shows the enemy our bag.
++        if (race_refuses(world, pathing, a)) return false;
+         place_lock(world); // first: it cancels every tribute at its altar
+         place_ward(world, memory); // first: no ward goes down while channelling
+         throw_if_stale();
+@@ -1237,10 +1239,13 @@
+     return false;
+ }
+ 
++// The altar carry_bag's race_aim chose for a long winning bag this turn, else -1.
++int race_target = -1;
++
+ [[gnu::flatten]] void bank_gems(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool heal_step) {
+     if (retaining_gems(world, pathing)) return;
+     world.throw_if_stale();
+-    if (submit_here(world, safety, memory)) return;
++    if (submit_here(world, pathing, safety, memory)) return;
+     const vec2 here = my_position();
+     const auto& altars = world.map().altars;
+     // One we gave up waiting at (carry_bag) counts as locked until we could reach another.
+@@ -1263,18 +1268,21 @@
+         if (best < 0 && world.round < memory.avoid_until && (!carries_crystal() || hop_route(world, pathing, memory).hop < 0))
+             memory.avoid_until = world.round;
+     }
++    if (race_target >= 0)
++        if (const int steps = altar_steps(world, pathing, here, race_target); steps != unreachable)
++            best = race_target, best_steps = steps + lock_turns(world.altars[race_target], world.me().facts(), steps);
+     // A hit on the aimed altar's lock; it ends the turn of a champion whose attack spends the walk,
+     // with a tribute if that hit broke it within reach.
+     const auto lock_hit_ends_turn = [&] {
+         if (best < 0 || !world.altars[best].enemy_lock || !break_lock(world, best) || world.me().facts().walk_and_attack_independent())
+             return false;
+-        submit_here(world, safety, memory);
++        submit_here(world, pathing, safety, memory);
+         return true;
+     };
+     // A melee champion's hit on the lock it stepped beside, then the tribute if that broke it.
+     const auto hit_and_submit = [&] {
+         if (best >= 0 && world.altars[best].enemy_lock && world.me().facts().walk_and_attack_independent()) break_lock(world, best);
+-        submit_here(world, safety, memory);
++        submit_here(world, pathing, safety, memory);
+     };
+     // A pack we would retreat from stands in the way: around it within the usual detour, else
+     // wait outside it until it leaves or a recall (recall_to_bank) takes the bag home.
+@@ -1284,7 +1292,9 @@
+         return;
+     }
+     const int walk_steps = best >= 0 ? best_steps : altar_steps(world, pathing, here, -1);
+-    if (auto hop = hop_route(world, pathing, memory); hop.hop >= 0 && hop.steps < walk_steps) {
++    // A race_aim altar is the only one priced: no hop elsewhere.
++    if (auto hop = hop_route(world, pathing, memory);
++        hop.hop >= 0 && hop.steps < walk_steps && (race_target < 0 || world.map().hops()[hop.hop].altar == race_target)) {
+         memory.wants_crystal = true;
+         if (carries_crystal()) {
+             const int a = world.map().hops()[hop.hop].altar;
+@@ -1320,7 +1330,7 @@
+     const Field& field = best >= 0 ? pathing.to_altar(best) : pathing.to_any_altar();
+     if (lock_hit_ends_turn()) return;
+     if (heal_step && willow_bank_heal_step(world, pathing, safety, field)) {
+-        submit_here(world, safety, memory);
++        submit_here(world, pathing, safety, memory);
+         return;
+     }
+     step_safely(world, pathing, field, safety);
+@@ -1357,6 +1367,7 @@
+     if (a < 0 || enemy_lock_live(world.map().altars[a].pos) || retaining_gems(world, pathing)) return false;
+     if (tribute_turns(world, my_gems()) > rounds_left(world)) return false;
+     if (want_home(world, pathing, safety, memory)) return false;
++    if (race_refuses(world, pathing, a)) return false;
+     throw_if_stale();
+     try {
+         self_acted(), cambc::self().submit_gems(world.map().altars[a].pos);
+@@ -1461,7 +1472,7 @@
+     // in reach, is the game: ours waits, unless ours wins first or, winning later, an ally stops theirs in time.
+     const auto* ender = game_ender(world);
+     const auto* stop = ender && holds_hard_stop(world, *ender) ? ender : stoppable_winning_tribute(world);
+-    if (stop && !(winning_bag(world) && ally_stops(world, *stop))) {
++    if (stop && !(winning_bag(world) && ally_stops_in_time(world, *stop))) {
+         throw_if_stale();
+         try {
+             self_acted(), me.cancel_submit_gems();
+@@ -1566,6 +1577,19 @@
+ void carry_bag(World& world, Pathing& pathing, Safety& safety, Memory& memory, bool attacked, const Pathing::GuardState& chase_guard) {
+     // A capture Prism carries is no longer held empty for it (left_for_prism) while it banks.
+     drop_carry_claim(memory);
++    // A long winning bag walks only to an altar whose channel completes before any stop arrives; with none, it waits out of
++    // reach, at home, rather than at a guarded altar.
++    bool hold = false;
++    race_target = race_aim(world, pathing, hold);
++    if (hold) {
++        decision = Branch::race_wait;
++        memory.banking = false;
++        if (!test(world.map().ally_spawn, my_position())) step_safely(world, pathing, pathing.to_ally_spawn(), safety);
++        return;
++    }
++    struct Reset {
++        ~Reset() { race_target = -1; }
++    } reset;
+     const bool safe = can_tribute_safely(world, pathing, safety, memory);
+     const bool close = closing(world, pathing);
+     if (!safe && !close && !winning_bag(world) && chase_with_guard(world, pathing, safety, chase_guard)) return;
+diff -ruN -x .cambc bots/variants/chy-ref/src/economy/race.cc bots/variants/c5-race/src/economy/race.cc
+--- bots/variants/chy-ref/src/economy/race.cc	1970-01-01 00:00:00.000000000 +0000
++++ bots/variants/c5-race/src/economy/race.cc	2026-11-13 16:32:03.028840887 +0000
+@@ -0,0 +1,231 @@
++// The endgame tribute race. A winning bag's channel lasts ceil(bag / 10) turn ends, and only a stun, a lock placed at its
++// altar or a kill stops it; damage does not (rules: gems.tribute, abilities.stun, altar_locks.effect). With both sides
++// holding one, it is won by the channel that starts where no enemy able to stop it arrives before it completes, not by
++// standing in one: in the chy-ref mirror, 61 of the 64 winning channels started with that margin (by the replays' exact
++// positions) completed, and 27 of the 1,551 started 40+ turns short (research/mx-rhea NOTES, c5_margin.py).
++#include "../bot_parts.h"
++
++namespace aph {
++
++namespace {
++
++namespace {
++
++constexpr int no_stop = 1 << 20;
++
++// The fewest turns in which e covers d tiles: a step a turn, and a dasher's 2-step dash, which does not exclude the walk,
++// in its turn `ready` (from the first) and every 8 rounds after (abilities.dash, abilities.cooldown).
++int travel_turns(const ChampionFacts& f, int d, int ready) {
++    if (d <= 0) return 0;
++    if (!f.has_dash()) return d;
++    constexpr int cycle = 8, dash = 2;
++    ready = std::max(0, ready);
++    for (int t = (d + dash) / (dash + 1);; ++t)
++        if (t + dash * (t > ready ? 1 + (t - 1 - ready) / cycle : 0) >= d) return t;
++}
++
++// What an enemy's stops start from, read once per call of race_margin or race_aim for all altars.
++struct Stopper {
++    bool counted = false;
++    int r0 = 0;          // the first round it takes a turn in from now
++    int dash_ready = 0;  // its dash's first turn, counted from r0
++    bool lock = false;   // it may carry a lock
++    int restock = 0;     // turns before a seen lockless one can carry one: home, by recall or walk, and its buy
++};
++
++// The first round e takes a turn in from now: this one unless it acted in it already; a dead one the round after its
++// respawn turn, which cannot act (death.respawn_turn). An unseen one may not have acted yet.
++Stopper stopper(const World& world, const ChampionBelief& e) {
++    Stopper s;
++    s.counted = true;
++    if (!e.alive) {
++        s.r0 = std::max(world.round, e.respawn_earliest) + 1;
++        s.lock = true; // the dead shop (economy.shop)
++        return s;
++    }
++    s.r0 = world.round + (e.visible && (e.acted || e.stun_pending) ? 1 : 0);
++    if (const int d = e.facts().slot_of(AbilityKind::dash); d >= 0) s.dash_ready = std::max(0, e.ready_round[d] - s.r0);
++    s.lock = true;
++    if (e.visible && !test(world.map().enemy_spawn, e.pos)) {
++        std::array<std::uint32_t, 4> counts{};
++        const auto lock = cambc::detail::raw_consumable_ids[static_cast<std::size_t>(cambc::consumable_type::altar_lock)];
++        if (cambc::detail::sdk_champion_consumables(static_cast<std::uint32_t>(e.handle), counts.data()) == 0 && counts[lock] == 0) {
++            // A lock is bought only on its spawn or dead (economy.shop): home, then out again.
++            s.lock = false;
++            const int home = world.map().enemy_spawn_steps(e.pos);
++            s.restock = std::min(e.recall_turns(), home == unreachable ? e.recall_turns() : travel_turns(e.facts(), home, s.dash_ready)) + 1;
++        }
++    }
++    return s;
++}
++
++// A lower bound on e's distance to p now, in tiles: its tile in sight; out of sight the box holding every tile it may be on
++// while tracked, else its last tile less what it could walk since (from its spawn if never seen); dead, its spawn's walk.
++// Every enemy counts: one out of sight for long may still walk in over a long channel.
++int reach_distance(const World& world, const ChampionBelief& e, vec2 p) {
++    if (!e.alive) return world.map().enemy_spawn_steps(p);
++    if (e.visible) return dist(enemy_reach::origin(e), p);
++    if (e.tracked && e.possible_box.x0 <= e.possible_box.x1) {
++        const auto& b = e.possible_box;
++        return std::max({0, b.x0 - p.x, p.x - b.x1, b.y0 - p.y, p.y - b.y1});
++    }
++    if (e.pos.x < 0) return std::max(0, world.map().enemy_spawn_steps(p) - (world.round - 1));
++    // Its walk since then, its dashes included, as tiles.
++    const int since = world.round - std::max(0, e.pos_round);
++    return std::max(0, dist(e.pos, p) - since - (e.facts().has_dash() ? 2 * (since + 7) / 8 : 0));
++}
++
++// The first round in whose turn e could stop a channel at `at` beside the altar at `altar` (`near`: `at` is any tile within
++// 1 of it, so 1 more reach), or `no_stop` within `horizon` turns: a ready stun within its reach of us, a lock within
++// altar_lock_range of the altar (placing one spends no walk, so a walk that turn brings it a step nearer).
++int stop_round(const World& world, const ChampionBelief& e, const Stopper& s, vec2 at, vec2 altar, bool near, int horizon) {
++    const int span = horizon - (s.r0 - world.round);
++    if (span < 0) return no_stop;
++    int best = no_stop;
++    const auto& f = e.facts();
++    const auto turns_to = [&](vec2 p, int r) {
++        const int d = reach_distance(world, e, p);
++        return d == unreachable ? no_stop : travel_turns(f, d - r, s.dash_ready);
++    };
++    if (world.me().facts().passive != Passive::stun_immune)
++        for (int k = 0; k < 2; ++k) {
++            // A stun that may follow a walk in its turn reaches a step farther.
++            const int reach = f.stun_reach_with_walk(k);
++            if (reach < 0) continue;
++            const int walk = turns_to(at, reach + (near ? 1 : 0));
++            if (walk > span) continue;
++            // A respawn readies both slots (death.respawn); through fog ready_round assumes no unseen cast.
++            const int ready = e.alive ? std::max(0, e.ready_round[k] - s.r0) : 0;
++            best = std::min(best, s.r0 + std::max(walk, ready));
++        }
++    int lock = turns_to(altar, altar_lock_range + 1);
++    if (!s.lock && lock != no_stop) {
++        const int out = world.map().enemy_spawn_steps(altar);
++        lock = out == unreachable ? no_stop : s.restock + travel_turns(f, out - altar_lock_range - 1, 0);
++    }
++    if (lock <= span) best = std::min(best, s.r0 + lock);
++    return best;
++}
++
++std::array<Stopper, 16> stoppers;
++
++void read_stoppers(const World& world) {
++    for (std::size_t i = 0; i < world.enemies.size() && i < stoppers.size(); ++i) stoppers[i] = stopper(world, world.enemies[i]);
++}
++
++int margin_of(const World& world, vec2 at, int altar, bool near, int delay, int turns, int floor) {
++    const int done = world.round + delay + turns;
++    const vec2 p = world.map().altars[altar].pos;
++    std::optional<Moment> lands;
++    int margin = no_stop;
++    for (std::size_t i = 0; i < world.enemies.size() && i < stoppers.size(); ++i) {
++        const auto& e = world.enemies[i];
++        const int r = stop_round(world, e, stoppers[i], at, p, near, delay + turns);
++        if (r == no_stop) continue;
++        int m = r - done;
++        // In the round the channel completes, a stop lands first only from a turn before ours.
++        if (m == 0) {
++            if (!lands) lands = turn_start(world, world.me(), done);
++            if (turn_start(world, e, r) < *lands) m = -1;
++        }
++        margin = std::min(margin, m);
++        if (margin < floor) break;
++    }
++    return margin;
++}
++
++// The race's tests cost a host call an enemy and arithmetic: this much leaves decide's goal step (goal_least, 4,000) its fuel.
++constexpr std::uint64_t race_least = 8000;
++
++} // namespace
++
++int race_margin(const World& world, vec2 at, int altar, bool near, int delay, int turns, int floor) {
++    read_stoppers(world);
++    return margin_of(world, at, altar, near, delay, turns, floor);
++}
++
++// A winning bag's channel too long to take at any risk (any_risk), while the round limit leaves time to wait for one that
++// completes: the walk from home to the nearest altar, the channel and the last trip's margin.
++bool long_winning(const World& world, Pathing& pathing, int turns) {
++    if (!winning_bag(world) || any_risk(world, turns)) return false;
++    const int out = pathing.to_any_altar().at(recall_landing(world));
++    return out != unreachable && rounds_left(world) > out + turns + endgame_margin;
++}
++
++bool race_refuses(const World& world, Pathing& pathing, int altar) {
++    const int turns = tribute_turns(world, static_cast<int>(my_gems()));
++    if (!long_winning(world, pathing, turns) || !fuel_ok(race_least)) return false;
++    const int m = race_margin(world, my_position(), altar, false, 0, turns, 0);
++    debug_block({ std::printf("RACE %d %u start %d altar %d turns %d margin %d\n", world.round, my_handle(), m >= 0, altar, turns, m); });
++    return m < 0;
++}
++
++int race_aim(const World& world, Pathing& pathing, bool& hold) {
++    hold = false;
++    const int turns = tribute_turns(world, static_cast<int>(my_gems()));
++    if (!long_winning(world, pathing, turns) || !fuel_ok(race_least)) return -1;
++    read_stoppers(world);
++    const vec2 here = my_position();
++    const auto& altars = world.map().altars;
++    int best = -1, best_margin = -no_stop, best_steps = unreachable;
++    for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
++        if (world.altars[a].enemy_lock) continue;
++        const int steps = altar_steps(world, pathing, here, a);
++        if (steps == unreachable) continue;
++        // bank_gems steps and submits in one turn; at the altar our tile is known.
++        const bool there = steps == 0 && dist(here, altars[a].pos) <= static_cast<int>(cambc::constants::submit_gems_range);
++        const int m = margin_of(world, there ? here : altars[a].pos, a, !there, std::max(0, steps - 1), turns, best_margin);
++        // A better margin, then the nearer.
++        if (m > best_margin || (m == best_margin && steps < best_steps)) best = a, best_margin = m, best_steps = steps;
++    }
++    // While the enemy holds a winning bag too, waiting concedes its clock: the best altar then, whatever its margin.
++    hold = best >= 0 && best_margin < 0 && !enemy_race_on(world);
++    debug_block({ std::printf("RACE %d %u aim %d margin %d steps %d turns %d%s\n", world.round, my_handle(), best, best_margin, best_steps,
++                              turns, hold ? " hold" : ""); });
++    return hold ? -1 : best;
++}
++
++bool ally_stops_in_time(const World& world, const ChampionBelief& e) {
++    if (ally_stops(world, e)) return true;
++    if (e.channel != Channel::tribute || test(world.map().bushes, e.pos)) return false;
++    const int lands = e.channel_end_round, altar = tribute_altar(world, e.pos);
++    // A lock there cancels our own channel at that altar too.
++    const bool lockable = altar >= 0 && tribute_altar(world, my_position()) != altar;
++    const bool stunnable = e.facts().passive != Passive::stun_immune;
++    for (const auto& a : world.allies) {
++        if (a.is_self || !a.alive || !a.visible || held_by_channel(a) || stun_pending(a.handle)) continue;
++        // It goes only for an ender in its own sight (vision.personal): no beacon tells it of one.
++        if (dist(a.pos, e.pos) > vision_radius) continue;
++        // An ally holding a winning bag of its own leaves the stop to others as we do.
++        if (pair_gems(world, a) + world.score.ally >= static_cast<int>(cambc::constants::winning_gems)) continue;
++        const int r0 = a.acted ? world.round + 1 : world.round;
++        if (!a.can_act(r0)) continue;
++        // Its stop lands before the channel's last turn end: by the turn before the completing round.
++        const int turns = lands - 1 - r0;
++        if (turns < 0) continue;
++        // Only a stun ready by next round sends it (holds_hard_stop): one on cooldown does not walk in.
++        if (stunnable)
++            for (int s = 0; s < 2; ++s)
++                if (const int reach = a.facts().stun_reach(s);
++                    reach >= 0 && a.ready_round[s] <= world.round + 1 && dist(a.pos, e.pos) - reach <= turns)
++                    return true;
++        if (lockable && dist(a.pos, world.map().altars[altar].pos) - altar_lock_range <= turns) {
++            std::array<std::uint32_t, 4> counts{};
++            const auto lock = cambc::detail::raw_consumable_ids[static_cast<std::size_t>(cambc::consumable_type::altar_lock)];
++            if (cambc::detail::sdk_champion_consumables(static_cast<std::uint32_t>(a.handle), counts.data()) == 0 && counts[lock] > 0)
++                return true;
++        }
++    }
++    return false;
++}
++
++bool enemy_race_on(const World& world) {
++    const int need = static_cast<int>(cambc::constants::winning_gems) - world.score.enemy;
++    for (const auto& e : world.enemies)
++        if (e.alive && pair_gems(world, e) >= need) return true;
++    return false;
++}
++
++} // namespace
++
++} // namespace aph
+diff -ruN -x .cambc bots/variants/chy-ref/src/unity.cpp bots/variants/c5-race/src/unity.cpp
+--- bots/variants/chy-ref/src/unity.cpp	2026-11-13 14:14:02.536390192 +0000
++++ bots/variants/c5-race/src/unity.cpp	2026-11-13 16:12:43.747193485 +0000
+@@ -10,6 +10,7 @@
+ #include "combat/guard.cc"
+ #include "combat/fight.cc"
+ #include "economy/bank.cc"
++#include "economy/race.cc"
+ #include "economy/capture.cc"
+ #include "economy/crew.cc"
+ #include "economy/farm.cc"

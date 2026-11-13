@@ -1,0 +1,112 @@
+diff -ruN bots/variants/chy-ref/src/bot.h bots/variants/b-crew/src/bot.h
+--- bots/variants/chy-ref/src/bot.h	2026-11-13 14:14:04.296862581 +0000
++++ bots/variants/b-crew/src/bot.h	2026-11-13 15:11:44.551201791 +0000
+@@ -43,6 +43,10 @@
+     // work it and the damage taken since.
+     int mono_group = -1, mono_staged = -1, mono_since = -1;
+     float mono_output = 0, mono_taken = 0;
++    // A sleeping strong group we stage out of reach of for its later claimers (farm's stage_wait), and the
++    // last round of that wait (-1: none); the wait for a group is not extended while it stays our choice.
++    int stage_group = -1, stage_until = -1;
++    std::array<std::uint64_t, 4> stage_used{}; // bit g: a wait for g begun during its present sleep
+     vec2 ward{-1, -1};    // our latest ward
+     vec2 bushes_watched{-1, -1}; // a tile whose bushes in ward reach are all in our cluster or our ward's
+ };
+diff -ruN bots/variants/chy-ref/src/economy/farm.cc bots/variants/b-crew/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 14:14:04.298581404 +0000
++++ bots/variants/b-crew/src/economy/farm.cc	2026-11-13 15:11:44.550909827 +0000
+@@ -768,6 +768,8 @@
+     // ally clears it or, melee, once every striker is awake anyway. Allies merely walking past
+     // its reach clear nothing.
+     const auto passing = [&](int g) __attribute__((always_inline)) {
++        // Staged for its crew (stage_wait): the first hit waits for them.
++        if (g == memory.stage_group && world.round <= memory.stage_until && world.camps[g].awake == Awake::asleep) return false;
+         if (g == memory.farm_group) return true;
+         // The clear's price last: the other tests are cheap reads.
+         if (taken(g)) return false;
+@@ -2553,6 +2555,85 @@
+             memory.mono_staged = -2;
+         }
+     }
++    // A sleeping strong group's first hit wakes it, and until the next claimer is in reach its strikers' fire
++    // (F) falls on those already there. Waiting out of reach the L rounds until the next claimers arrive saves
++    // F L Sc / (S + Sc) of health (S the output of us and the claimers arriving with us, Sc theirs) and ends
++    // the clear L S / (S + Sc) rounds later for each of the crew's k members. Health is priced as the trips
++    // home price it, a trip's rounds per usable_health. L cancels while we would still be clearing alone when
++    // they come (L under our solo clear's rounds): the wait pays iff F Sc trip / usable > k S. It lasts no
++    // longer than their arrival said when it began, ends once it stops paying, and is begun once a sleep of
++    // the group (stage_used, cleared once it is seen awake or not alive).
++    const auto stage_wait = [&]() {
++        for (int w = 0; w < 4; ++w)
++            for (std::uint64_t b = memory.stage_used[w]; b; b &= b - 1) {
++                const int h = w * 64 + std::countr_zero(b);
++                if (h >= n_groups || world.camps[h].state != CampState::alive || world.camps[h].awake == Awake::awake)
++                    memory.stage_used[w] &= ~(std::uint64_t{1} << (h & 63));
++            }
++        if (memory.stage_group != best) memory.stage_group = best, memory.stage_until = -1;
++        const auto stop = [&] {
++            if (memory.stage_until >= round) memory.stage_until = round - 1;
++            return false;
++        };
++        const auto& G = groups[best];
++        const auto& c = world.camps[best];
++        if (best >= 256 || memory.siege || memory.claim != best || G.has_monolith || !strong(best) || c.state != CampState::alive
++            || c.awake != Awake::asleep)
++            return stop();
++        float fire = 0;
++        for (std::size_t i = 0; i < G.members.size(); ++i)
++            if (c.health[i] > 0 && G.members[i].strength > 0) fire += G.members[i].strength;
++        if (!(fire > 0) || !(usable_health > 0)) return stop();
++        const auto me = work_arrival(world.me(), best);
++        if (me.anchor_round < 0) return stop();
++        const int mine = me.delay(round);
++        float solo_rounds = 0;
++        min_camp_damage(world, best, strength, &solo_rounds, reflect);
++        // The claimers' arrivals after ours, the next of them (`next`) within our solo clear.
++        std::array<std::pair<int, float>, 16> coming;
++        int n_coming = 0, crew = 1, next = unreachable;
++        float with_us = strength;
++        for (const auto& a : world.allies) {
++            if (a.is_self || !a.alive || comms::claim_of(world, a.index) != best) continue;
++            ++crew;
++            const auto arrival = work_arrival(a, best);
++            if (arrival.anchor_round < 0) continue; // unseen: not waited for
++            const int d = arrival.delay(round);
++            if (d <= mine) with_us += camp_output(a);
++            else if (n_coming < static_cast<int>(coming.size())) coming[n_coming++] = {d, camp_output(a)}, next = std::min(next, d);
++        }
++        if (next == unreachable || static_cast<float>(next - mine) > solo_rounds) return stop();
++        float later = 0;
++        for (int i = 0; i < n_coming; ++i)
++            if (coming[i].first == next) later += coming[i].second;
++        const float per_health = home_trip(best, best_steps) / usable_health;
++        if (!(soften * fire * later * per_health > static_cast<float>(crew) * with_us)) return stop();
++        const int until = round + next;
++        auto& used = memory.stage_used[best >> 6];
++        const std::uint64_t bit = std::uint64_t{1} << (best & 63);
++        if (memory.stage_until < 0) {
++            if (used & bit) return false;
++            used |= bit, memory.stage_until = until;
++            debug_block({ std::printf("CREW STAGE %d %u g%d mine %d next %d crew %d with %.0f later %.0f fire %.0f per-health %.4f until %d\n", round,
++                                      my_handle(), best, mine, next, crew, with_us, later, fire, per_health, until); });
++        } else memory.stage_until = std::min(memory.stage_until, until);
++        return round <= memory.stage_until ? true : stop();
++    };
++    if (stage_wait()) {
++        const auto& G = groups[best];
++        const auto& c = world.camps[best];
++        static bitboard ring{cambc::uninitialized};
++        clear_board(ring);
++        for (std::size_t i = 0; i < G.members.size(); ++i)
++            if (c.health[i] > 0 && G.members[i].strength > 0) draw_square(ring, G.members[i].pos, static_cast<float>(G.reach + 1));
++        ring &= map.standable;
++        drop(ring, G.threat());
++        if (zone) drop(ring, *zone);
++        if (test(ring, here)) return true;
++        if (!fuel_ok(search_cost_estimate(best_steps + max_detour) + end_reserve) || !pathing.step_towards(ring, zone, best_steps + max_detour, G.centre))
++            walk_on(best);
++        return true;
++    }
+     const int cap = best_steps + max_detour;
+     const bool search = fuel_ok(search_cost_estimate(cap) + end_reserve);
+     // In a scratch board, valid until the next call.
