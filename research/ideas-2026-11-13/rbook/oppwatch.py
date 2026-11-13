@@ -3,11 +3,13 @@ opponent) and compares each game's replay byte for byte with (a) our pinned game
 (--refset) in the same cell by the same version of ours, and (b) the previous check with the same version of ours.
 Games are deterministic, so any difference means the opponent changed (or the engine did).
 
-    py oppwatch.py [--opp Mite] [--refset r8] [--since 2026-11-12T12] [--json] [--book-version N --book WORK]
+    py oppwatch.py [--opp Mite] [--refset r8] [--since 2026-11-12T12] [--json] [--book-version N --book WORK [--book-cells F]]
 Last line: CURRENT == REFSET | CHANGED at <time> | UNKNOWN (no comparable game).
 --book-version/--book: games of the book bot (version N) on the book's cells (WORK/book_cells.json) must replay the
 recorded game (WORK/raw/KEY.repl26a) round for round while the opponent is unchanged; each check group's book games are
-compared with cmp.mjs ("book same/diverged"), which works from the first check of a new book version."""
+compared with cmp.mjs ("book same/diverged"), which works from the first check of a new book version.
+--book-cells: the version's own cells instead of WORK/book_cells.json (which follows the latest rebuild): any file
+naming the entry keys, such as the uploaded bot's src/book/book_data.h or its verify manifest."""
 import argparse, collections, hashlib, json, subprocess, tempfile, zipfile
 from pathlib import Path
 
@@ -53,11 +55,24 @@ def main():
     ap.add_argument('--json', action='store_true')
     ap.add_argument('--book-version', type=int)
     ap.add_argument('--book', help='rbuild work dir of the book the version plays')
+    ap.add_argument('--book-cells', help="a file naming the version's entry keys (its book_data.h or verify manifest)")
     a = ap.parse_args()
     book = {}
     if a.book_version and a.book:
         w = Path(a.book).expanduser()
-        book = {(c['map'], c['side']): w / 'raw' / f"{c['key']}.repl26a" for c in json.loads((w / 'book_cells.json').read_text())}
+        if a.book_cells:
+            import re
+            keys = sorted(set(re.findall(r'([0-9A-Za-z_]+(?:-[0-9A-Za-z_]+)*?-[ab]-v\d+-[0-9a-f]{12})', Path(a.book_cells).expanduser().read_text())))
+            cells = []
+            for k in keys:
+                m = re.match(r'^(.+)-([ab])-v\d+-', k)
+                cells.append(dict(key=k, map=m.group(1), side=m.group(2)))
+        else:
+            cells = json.loads((w / 'book_cells.json').read_text())
+        book = {(c['map'], c['side']): w / 'raw' / f"{c['key']}.repl26a" for c in cells}
+        missing = [str(p) for p in book.values() if not p.exists()]
+        if missing:
+            print(f'warning: {len(missing)} recorded replays missing, e.g. {missing[0]}')
     ref, cur = {}, collections.defaultdict(list)
     for line in open(GAMES):
         g = json.loads(line)
