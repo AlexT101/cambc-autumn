@@ -303,7 +303,9 @@ py tools/version_record.py 50                        # our version 50's record p
   `status`, `report --by side,map` and `pair OLD NEW` (paired flips between our versions) read the jsonl data.
   During a live batch the runner checks activation every `--pace` seconds. If queued work remains and quota will
   return within three minutes, the scheduler keeps the candidate active to avoid two unnecessary activations;
-  longer quota gaps and fully submitted campaigns restore the latest book.
+  longer quota gaps and fully submitted campaigns restore the latest book. A campaign's `refill_grace`
+  may extend that wait in seconds when finishing its live test takes priority; a fully submitted campaign
+  still restores the book immediately.
   A scheduler campaign can supply `parts` as `[set, part, priority]` triples to cover a custom map set
   continuously, and `baseline_version` to compare with a completed candidate instead of the legacy control.
   `set-full170.json` covers all 170 ladder maps in five-map chunks, interleaving both opponents and both sides.

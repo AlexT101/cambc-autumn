@@ -1,0 +1,214 @@
+{
+  "at": "2026-11-13T23:09:53Z",
+  "intent": {
+    "at": "2026-11-13T23:08:20Z",
+    "baseline_task": "v137-loss-v132-r9-mite-r15-fish-r9-r9-fish-01",
+    "baseline_group": "01a1d720-9e50-7380-89e8-e1f47ebe0316",
+    "baseline_source": "01a1d67e-e307-7f33-9412-90716c3b4ad9",
+    "current_task": "fish-r9-live-recheck-v137-20261113-2307",
+    "own_version": 137,
+    "purpose": "User-requested live Fish pin recheck, one current group using existing pinned evidence",
+    "task": {
+      "id": "fish-r9-live-recheck-v137-20261113-2307",
+      "version": 137,
+      "set": "cells",
+      "part": "loss-v132-r9-mite-r15-fish-r9",
+      "purpose": "oppcheck",
+      "opp_id": "1890540d-1ffc-4847-adbf-d0d08772f268",
+      "opp_name": "Intercontinental Fish",
+      "pin": "none",
+      "refset": null,
+      "games": [
+        {
+          "map": "02cuts",
+          "map_id": "1e9d8ad4-4634-4f55-81f6-4e9a0e0f09b4",
+          "side": "b"
+        },
+        {
+          "map": "00ambush",
+          "map_id": "1efbe907-7c38-4e98-9d3b-0df7d68d2861",
+          "side": "a",
+          "filler": true
+        },
+        {
+          "map": "00anvil",
+          "map_id": "001efcd1-42cd-4fe6-b8d1-b906b4713009",
+          "side": "a",
+          "filler": true
+        },
+        {
+          "map": "00breadcrumbs",
+          "map_id": "120b6b71-e52e-4ad8-b14a-46240b2f557e",
+          "side": "a",
+          "filler": true
+        },
+        {
+          "map": "00collision",
+          "map_id": "c39e56f1-605d-4759-9bc5-22dfad5546a9",
+          "side": "a",
+          "filler": true
+        }
+      ],
+      "priority": 105,
+      "order": 1,
+      "planned": "2026-11-13T23:08:20Z",
+      "campaign": "batches",
+      "is_ref": false,
+      "note": "User requested current Fish recheck; compare completed same-v137 pinned group"
+    }
+  },
+  "changed_cells": [
+    "00ambush/a",
+    "00anvil/a",
+    "00breadcrumbs/a",
+    "00collision/a",
+    "02cuts/b"
+  ],
+  "baseline_fingerprint": "83c7f7fb1f01cfec04a645bfaa38ae60742cb2cef3802f9fd128a618c77f9d4f",
+  "current_fingerprint": "96880f1e11460e1e63253841f79c061a26a5c169d0591fe2279bcef181b8555d",
+  "current_group": "01a1d72b-5e78-7f7b-a488-5ca882a5bee1",
+  "comparisons": [
+    {
+      "map": "02cuts",
+      "side": "b",
+      "changes": {
+        "rounds": [
+          639,
+          716
+        ],
+        "our_gems": [
+          1061.0,
+          1027.0
+        ],
+        "opp_gems": [
+          707.0,
+          898.0
+        ],
+        "our_kills": [
+          0.0,
+          4.0
+        ],
+        "opp_kills": [
+          0.0,
+          6.0
+        ]
+      }
+    },
+    {
+      "map": "00ambush",
+      "side": "a",
+      "changes": {
+        "result": [
+          "loss",
+          "win"
+        ],
+        "rounds": [
+          893,
+          888
+        ],
+        "our_gems": [
+          521.0,
+          1013.0
+        ],
+        "opp_gems": [
+          1021.0,
+          219.0
+        ],
+        "our_kills": [
+          1.0,
+          3.0
+        ],
+        "opp_kills": [
+          2.0,
+          3.0
+        ]
+      }
+    },
+    {
+      "map": "00anvil",
+      "side": "a",
+      "changes": {
+        "rounds": [
+          1266,
+          949
+        ],
+        "our_gems": [
+          501.0,
+          313.0
+        ],
+        "opp_gems": [
+          1103.0,
+          1077.0
+        ],
+        "our_kills": [
+          5.0,
+          3.0
+        ],
+        "opp_kills": [
+          13.0,
+          10.0
+        ]
+      }
+    },
+    {
+      "map": "00breadcrumbs",
+      "side": "a",
+      "changes": {
+        "result": [
+          "loss",
+          "win"
+        ],
+        "rounds": [
+          1238,
+          612
+        ],
+        "our_gems": [
+          516.0,
+          1063.0
+        ],
+        "opp_gems": [
+          1030.0,
+          190.0
+        ],
+        "our_kills": [
+          1.0,
+          5.0
+        ],
+        "opp_kills": [
+          13.0,
+          1.0
+        ]
+      }
+    },
+    {
+      "map": "00collision",
+      "side": "a",
+      "changes": {
+        "result": [
+          "win",
+          "loss"
+        ],
+        "rounds": [
+          1660,
+          711
+        ],
+        "our_gems": [
+          1010.0,
+          187.0
+        ],
+        "opp_gems": [
+          851.0,
+          1103.0
+        ],
+        "our_kills": [
+          5.0,
+          2.0
+        ],
+        "opp_kills": [
+          8.0,
+          5.0
+        ]
+      }
+    }
+  ]
+}

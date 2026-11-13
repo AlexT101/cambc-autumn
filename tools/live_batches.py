@@ -598,7 +598,7 @@ class Batches:
                 until_refill = datetime.datetime.fromisoformat(q['resetsAt']).timestamp() - time.time()
             except (KeyError, TypeError, ValueError):
                 until_refill = None
-            if RESERVE == 0 and until_refill is not None and 0 <= until_refill <= REFILL_GRACE:
+            if RESERVE == 0 and until_refill is not None and 0 <= until_refill <= cur.get('refill_grace', REFILL_GRACE):
                 self.note(B, 'batch', f"batches: v{cur['version']} stays active for imminent quota refill "
                           f"at {q['resetsAt']}")
                 return

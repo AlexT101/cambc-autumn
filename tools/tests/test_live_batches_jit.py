@@ -265,6 +265,20 @@ class SchedPhases(unittest.TestCase):
             self.assertFalse(again)
             self.assertEqual(len(pending),7)
 
+    def test_campaign_can_wait_longer_for_quota_without_delaying_completion(self):
+        t=ctask(0);ls.append_jsonl(ls.DATA/'tasks.jsonl',t)
+        self.cur.update(phase='batch',task_ids=[t['id']],refill_grace=900,batches=[dict(start=ls.now())])
+        reset=lb.datetime.datetime.fromtimestamp(time.time()+600,lb.datetime.timezone.utc).isoformat()
+        with mock.patch.object(ls,'quota',return_value={'quota':dict(used=100,limit=100,resetsAt=reset)}):
+            self.b.phase_batch({},self.B,self.cur,117,117)
+        self.assertEqual(self.cur['phase'],'batch')
+        self.assertFalse(self.activated)
+        self.create(t,117)
+        with mock.patch.object(ls,'quota') as quota:
+            self.b.phase_batch({},self.B,self.cur,117,117)
+        quota.assert_not_called()
+        self.assertEqual(self.cur['phase'],'activate_rest')
+
     def test_campaign_report_uses_explicit_baseline_not_legacy_control(self):
         c=dict(self.cur,version=132,baseline_version=129)
         self.B['done']=[c]
