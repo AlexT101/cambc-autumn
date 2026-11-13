@@ -183,7 +183,10 @@ class SchedPhases(unittest.TestCase):
             self.create(t, 118)
         self.b.phase_rest({}, self.B, self.cur, 118, 118)
         self.assertEqual(self.activated, [])   # no quota room yet
-        self.used = 96
+        self.used = 100 - lb.RESERVE
+        self.b.phase_rest({}, self.B, self.cur, 118, 118)
+        self.assertEqual(self.activated, [])   # teammate reserve is not candidate quota
+        self.used -= 4
         self.b.phase_rest({}, self.B, self.cur, 118, 118)
         self.assertEqual(self.cur["phase"], "activate_batch")
         self.assertEqual(self.activated, [("submissions", "activate", "117")])
@@ -196,7 +199,7 @@ class SchedPhases(unittest.TestCase):
         self.assertEqual(self.cur["phase"], "batch")
         for i in range(4):   # the runner fills the room; none has played
             self.create(ctask(i), 117)
-        self.used = 100
+        self.used = 100 - lb.RESERVE
         self.b.phase_batch({}, self.B, self.cur, 117, 117)
         self.assertEqual(self.cur["phase"], "activate_rest")
         self.assertEqual(self.activated[-1], ("submissions", "activate", "118"))

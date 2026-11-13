@@ -298,7 +298,7 @@ py tools/version_record.py 50                        # our version 50's record p
   `plan --version N --sets core,ext --opps fish,mite` appends five-game tasks of the frozen set (`--maps a,b,c,d,e`
   an ad-hoc map list instead, `--groups K` a cap), `run` (setsid nohup) creates every pending task of the live
   version back to back as far as the rolling 100-groups-an-hour quota allows (keeping `--reserve` free;
-  `live_restart_runner.sh` restarts it with reserve 10) and the rest as quota frees up, pins each opponent to its
+  the runner default and `live_restart_runner.sh` reserve 50 groups, or 250 games, for teammate bursts) and the rest as quota frees up, pins each opponent to its
   first group's bot (`--source-group`, usable once that group has played), and downloads every game's bundle and summary;
   `status`, `report --by side,map` and `pair OLD NEW` (paired flips between our versions) read the jsonl data.
   - **Outcome-only baselines:** `data/OUTCOME-ONLY-VERSIONS.json` optionally lists versions whose pinned `set`
