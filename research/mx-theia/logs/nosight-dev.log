@@ -1,0 +1,11 @@
+A/B mx-theia-nosight-dev: CAND variants/front-a-nosight (dir) vs REF variants/chy-ref (dir)
+  dev: running, log replays/ab/mx-theia-nosight-dev/dev.log
+  SPRT: H0 accepted at 406 games (LLR -6.17); stopping dev
+CAND 49.5% of 406 (201-205), 95% CI 44.7-54.4
+  dev  49.5% of 406 (201-205), 95% CI 44.7-54.4, 406/10200 played
+SPRT H0 0.5 vs H1 0.52 (alpha 0.05, beta 0.05, stops on H0 only, from 200 games): LLR -6.17 in [-2.94, 2.94] from 203 map pairs (406 of 406 finished games): H0 accepted, stopped the run at 406 of 10200 games; the win rates are from that partial, shuffled sample
+Failed matches: 0
+Out-of-fuel turns: CAND 23 in 17 games, REF 23 in 17 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 0m04s
+Results: replays/ab/mx-theia-nosight-dev/summary.md

@@ -1,0 +1,11 @@
+A/B mx-theia-orbitb-dev: CAND variants/orbit-b (dir) vs REF variants/chy-ref (dir)
+  dev: running, log replays/ab/mx-theia-orbitb-dev/dev.log
+  SPRT: H0 accepted at 1236 games (LLR -3.19); stopping dev
+CAND 48.7% of 1236 (602-634), 95% CI 45.9-51.5
+  dev  48.7% of 1236 (602-634), 95% CI 45.9-51.5, 1236/10200 played
+SPRT H0 0.5 vs H1 0.52 (alpha 0.05, beta 0.05, stops on H0 only, from 200 games): LLR -3.19 in [-2.94, 2.94] from 606 map pairs (1212 of 1236 finished games): H0 accepted, stopped the run at 1236 of 10200 games; the win rates are from that partial, shuffled sample
+Failed matches: 0
+Out-of-fuel turns: CAND 117 in 83 games, REF 112 in 79 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 0m09s
+Results: replays/ab/mx-theia-orbitb-dev/summary.md

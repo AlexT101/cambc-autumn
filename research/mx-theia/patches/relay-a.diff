@@ -1,0 +1,542 @@
+diff -ru bots/variants/chy-ref/src/bot.cc bots/variants/relay-a/src/bot.cc
+--- bots/variants/chy-ref/src/bot.cc	2026-11-13 14:14:03.709638336 +0000
++++ bots/variants/relay-a/src/bot.cc	2026-11-13 17:03:25.237483116 +0000
+@@ -735,6 +735,7 @@
+     if (my_position() != world.turn_start && (my_can_move() || my_can_cast())) guard_steps(world, pathing, safety);
+     if (holding) {
+         hold_capture(world, memory, attacked);
++        if (world.me().facts().passive == Passive::gem_focus) relay_hold(world, pathing, safety, memory, !struck && fuel_ok(farm_least));
+         return;
+     }
+     // The work's steps keep off the tiles want_home would send us back from (guard_work). A chase
+@@ -871,6 +872,7 @@
+         case Branch::retreat: case Branch::bank: case Branch::wait_altar: case Branch::guard_altar: case Branch::tribute_kept:
+         case Branch::recall_kept: case Branch::capture_recall: case Branch::mend: case Branch::shop: case Branch::prism_recovery:
+             drop_carry_claim(memory);
++            drop_relay();
+             break;
+         default: break;
+         }
+@@ -994,6 +996,7 @@
+         && ((!support_owned && camp_hits() != camp_hits_before) || my_cooldown(world.me().facts().slot_of(AbilityKind::heal)) >= ability_cooldown))
+         memory.formation_start = -1, memory.formation_turns = 0;
+     comms::claim(memory.claim);
++    comms::next(relay_post(world, memory));
+     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);
+     comms::chasing(world.round, world.me().alive && decision == Branch::chase);
+     if (!world.is_stale()) publish_turn_order(world, comms::priority_payload(world));
+diff -ru bots/variants/chy-ref/src/bot_parts.h bots/variants/relay-a/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 14:14:03.709856819 +0000
++++ bots/variants/relay-a/src/bot_parts.h	2026-11-13 17:03:25.237394825 +0000
+@@ -543,6 +543,9 @@
+ int walk_to(const World& world, Pathing& pathing, int g, vec2 p);
+ int team_walk_to(const World& world, Pathing& pathing, int g, vec2 p);
+ bool farm(World& world, Pathing& pathing, Safety& safety, Memory& memory);
++void relay_hold(World& world, Pathing& pathing, Safety& safety, const Memory& memory, bool funded);
++int relay_post(const World& world, const Memory& memory);
++void drop_relay();
+ float farm_step_value(const World& world);
+ 
+ // economy/siege.cc
+diff -ru bots/variants/chy-ref/src/economy/capture.cc bots/variants/relay-a/src/economy/capture.cc
+--- bots/variants/chy-ref/src/economy/capture.cc	2026-11-13 14:14:03.711578572 +0000
++++ bots/variants/relay-a/src/economy/capture.cc	2026-11-13 17:03:25.235472530 +0000
+@@ -483,8 +483,8 @@
+ // payout (after its walk there), else its walk to h and a whole hold; then the walk on from h. A live or
+ // respawning h, whose clear or return we cannot time, is past `bound`. Past it, bound + 1 as soon as the
+ // crow's steps show it; -1 short of fuel for a field still to make. Once per group and round: every cleared group of
+-// farm's loop asks.
+-int prism_eta(const World& world, Pathing& pathing, int g, const ChampionBelief& a, vec2 at, int bound) {
++// farm's loop asks. `relayed`: a announced g as its next (comms::next_of), so it holds h now, whatever we last saw of h.
++int prism_eta(const World& world, Pathing& pathing, int g, const ChampionBelief& a, vec2 at, int bound, bool relayed = false) {
+     struct Eta {
+         int round = -1, bound = -1, eta = -1;
+     };
+@@ -507,9 +507,11 @@
+     }
+     const auto& H = map.groups[h];
+     const auto& ch = world.camps[h];
+-    if (ch.state != CampState::cleared) return e.eta = bound + 1;
+-    const bool counting = ch.holder == team::ally && ch.held_since >= 0;
+-    const int hold = counting ? ch.payout_round() - world.round : capture_rounds(a.fast_capture) - 1;
++    if (ch.state != CampState::cleared && !relayed) return e.eta = bound + 1;
++    const bool counting = ch.state == CampState::cleared && ch.holder == team::ally && ch.held_since >= 0;
++    // Announced from h's hold, h seen respawning has paid: the Prism is free.
++    const int hold = counting ? ch.payout_round() - world.round
++                     : relayed && ch.state == CampState::respawning ? 0 : capture_rounds(a.fast_capture) - 1;
+     const auto task = [&](int to_h) { return counting ? std::max(to_h, hold) : to_h + hold; };
+     int on = unreachable;
+     for (const auto& m : H.members) on = std::min(on, steps_to(G, m.pos));
+@@ -522,6 +524,50 @@
+     return e.eta = task(team_walk_to(world, pathing, h, at)) + on;
+ }
+ 
++// Waiting for Prism ally a pays when its premium on G's gems (prism_premium) beats a payout `late` rounds after
++// ours: each later return of the group comes that much later, at most one capture a respawn and a hold.
++float wait_room(const World& world, const ChampionBelief& a, const CampGroup& G) {
++    return prism_premium(world, a, G.gems) * static_cast<float>(G.respawn + capture_rounds(false));
++}
++bool worth_waiting(const World& world, const ChampionBelief& a, const CampGroup& G, int late) {
++    return wait_room(world, a, G) > static_cast<float>(std::max(0, late));
++}
++
++// Where Prism ally a, which announced g as its next (comms::next_of), is: as recent_tile reads it, else on the
++// group it holds (its claim, any other group: it announces only while holding one or walking to g), else where
++// we last knew it, `slack` the rounds since.
++bool relay_tile(const World& world, const ChampionBelief& a, int g, vec2& at, int& slack) {
++    if (recent_tile(world, a, at, slack)) return true;
++    const auto& map = world.map();
++    if (const int h = comms::claim_of(world, a.index); h >= 0 && h != g && h < static_cast<int>(map.groups.size()))
++        return at = map.groups[h].members.front().pos, slack = 0, true;
++    if (a.pos_round < 0 || !in_bounds(a.pos)) return false;
++    return at = a.pos, slack = world.round - a.pos_round, true;
++}
++
++// Rounds until Prism ally a, which announced g as its next, can stand on g's tiles: the rest of its hold, then
++// its walk (prism_eta), past `bound` as prism_eta's; the crow's steps from its tile short of fuel for a field;
++// -1 when it cannot be located. In `slack`, relay_tile's.
++int relay_eta(const World& world, Pathing& pathing, int g, const ChampionBelief& a, int bound, int& slack) {
++    vec2 at;
++    if (!relay_tile(world, a, g, at, slack)) return -1;
++    const int eta = prism_eta(world, pathing, g, a, at, bound, true);
++    return eta >= 0 ? eta : steps_to(world.map().groups[g], at);
++}
++
++// Whether our team's capture of g, cleared now, would be left to Prism ally a, which announced g as its next:
++// its premium on the gems covers how late it comes (worth_waiting) after our soonest payout there, a hold and a
++// step. The farm prices a's premium on g (keep_bonus) only then.
++bool relay_waits(const World& world, Pathing& pathing, const ChampionBelief& a, int g) {
++    const auto& G = world.map().groups[g];
++    if (G.gems <= 0 || G.has_monolith || world.camps[g].holder == team::enemy) return false;
++    const int ours = capture_rounds(world), lag = capture_rounds(a.fast_capture) - 1 - ours;
++    const float room = wait_room(world, a, G);
++    int slack = 0;
++    const int eta = relay_eta(world, pathing, g, a, static_cast<int>(std::ceil(room)) - lag, slack);
++    return eta >= 0 && worth_waiting(world, a, G, eta + lag);
++}
++
+ enum class Leave { no, claimed, near };
+ 
+ // A group's cleared episode (its geometry_version): the round we first asked of it, whether we left
+@@ -554,17 +600,15 @@
+     // Short of fuel for a walk's field, the crow's steps: no more than the walk.
+     const bool walks = pathing.group_walking_ready(g) || fuel_ok(full_field_cost_estimate() + end_reserve);
+     const auto walk_from = [&](vec2 p) { return walks ? team_walk_to(world, pathing, g, p) : steps_to(G, p); };
+-    // Leaving pays when a's premium on the gems (prism_premium) beats the payout `late` rounds later than ours:
+-    // each later return of the group comes that much later, at most one capture a respawn and a hold.
+-    const float cycle = static_cast<float>(G.respawn + capture_rounds(false));
+-    const auto worth_wait = [&](const ChampionBelief& a, int late) {
+-        return prism_premium(world, a, G.gems) * cycle > static_cast<float>(std::max(0, late));
+-    };
++    const auto worth_wait = [&](const ChampionBelief& a, int late) { return worth_waiting(world, a, G, late); };
+     for (const auto& a : world.allies) {
+         if (a.is_self || !a.alive || a.facts().passive != Passive::gem_focus) continue;
+         const bool claimed = comms::claim_of(world, a.index) == g;
++        // Announced as its next (comms::next_of), during its hold or on its way: a claim whose walk starts after
++        // the hold's rest, and whose wait is bounded by its premium alone (worth_wait), not by carry_reach.
++        const bool relayed = comms::next_of(world, a.index) == g;
+         // Unclaimed, the wait runs from our first sight of it cleared; only a hold just begun is left.
+-        if (!claimed && (left.lapsed || world.round - left.first >= cambc::constants::capture_time || (held && c.held_since < world.round - 1)
++        if (!claimed && !relayed && (left.lapsed || world.round - left.first >= cambc::constants::capture_time || (held && c.held_since < world.round - 1)
+                          || prism_dominant(world, a)))
+             return Leave::no;
+         if (a.visible && test(G.tiles(), a.pos)) return Leave::no; // there: sole_capture_holder's
+@@ -574,8 +618,21 @@
+         int slack = 0;
+         if (world.score.ally + bag + G.gems >= winning
+             || rounds_left(world) <= tribute_turns(bag + G.gems, a.fast_tribute) + map.width + map.height + endgame_margin
+-            || !recent_tile(world, a, at, slack))
++            || (!relayed && !recent_tile(world, a, at, slack)))
+             continue;
++        // A relayed leave is recorded as `near`'s is: once the Prism walks out of our sight, its stale tile would
++        // hand the group back; the leave lapses once the Prism withdraws both its next and its claim.
++        if (relayed) {
++            if (!held && left.left && !left.lapsed) return Leave::near;
++            const int rounds = held ? c.payout_round() - world.round : capture_rounds(world) - 1 + std::max(1, walk_from(my_position()));
++            // Past the premium's room no eta is worth the wait: the bound prunes the fields' search.
++            const int lag = capture_rounds(a.fast_capture) - 1 - rounds;
++            const int eta = relay_eta(world, pathing, g, a, static_cast<int>(std::ceil(wait_room(world, a, G))) - lag, slack);
++            if (eta < 0) continue;
++            if (eta - slack >= rounds) return worth_wait(a, eta + lag) ? Leave::near : Leave::no;
++            if (held && eta + slack < rounds && test(G.tiles(), my_position())) kept_group = g, kept_since = c.held_since;
++            return Leave::no;
++        }
+         if (!claimed) {
+             // Left only for a Prism due on it before the lapse would hand it back (prism_eta), from the
+             // posted tile itself: its drift may go either way. A Prism that has acted this round moves
+@@ -986,9 +1043,16 @@
+ bool prism_coming(const World& world, Pathing& pathing, const CampGroup& G, const CampBelief& c, int g) {
+     if (world.me().facts().passive == Passive::gem_focus || G.gems <= 0 || c.holder != team::ally || c.held_since < 0) return false;
+     for (const auto& a : world.allies) {
+-        if (a.is_self || !a.alive || a.facts().passive != Passive::gem_focus || comms::claim_of(world, a.index) != g) continue;
++        if (a.is_self || !a.alive || a.facts().passive != Passive::gem_focus) continue;
++        const bool claimed = comms::claim_of(world, a.index) == g;
++        if (!claimed && comms::next_of(world, a.index) != g) continue;
+         if (a.visible && test(G.tiles(), a.pos)) return false; // there: sole_capture_holder's
+-        return team_walk_to(world, pathing, g, a.pos) < c.payout_round() - world.round;
++        const int rounds = c.payout_round() - world.round;
++        if (claimed) return team_walk_to(world, pathing, g, a.pos) < rounds;
++        // Announced as its next: after the rest of its hold (relay_eta).
++        int slack = 0;
++        const int eta = relay_eta(world, pathing, g, a, rounds, slack);
++        return eta >= 0 && eta + slack < rounds;
+     }
+     return false;
+ }
+diff -ru bots/variants/chy-ref/src/economy/farm.cc bots/variants/relay-a/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 14:14:03.711578572 +0000
++++ bots/variants/relay-a/src/economy/farm.cc	2026-11-13 17:03:25.237211412 +0000
+@@ -616,7 +616,8 @@
+ // The first turn has its own instance: its extra prunes would make every later call dearer. So
+ // do later turns' banking calls, out of line, past pick_up.
+ // `repricing`: only the pick, during our recall's channel, which may then go on to its
+-// choice (Memory::recall_farm); nothing acts.
++// choice (Memory::recall_farm); nothing acts. `planning`: only the pick from where we hold a capture, the
++// held group left out (ally_holding), for the relay (relay_hold); nothing acts.
+ constexpr bool banks_bag_of(bool banking, bool banking_now, bool opening) { return opening ? banking_now : banking; }
+ 
+ // The draft's opening plan (draft/open_plan.h): within its horizon, our next planned group while it has a live
+@@ -646,12 +647,40 @@
+     memo.carry_group = -1;
+ }
+ 
+-template <bool opening, bool banking = false, bool repricing = false> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory);
++// The Prism's relay: the group it takes on after the capture it holds, announced (comms::next) during the hold and
++// the walk there, so the feeders price its premium on it (keep_bonus) and clear it meanwhile, and leave it to the
++// Prism once cleared (leave_for_prism). Chosen once a hold (`held`, `held_since`), again only once the choice
++// fails (relay_valid). `state`: the group's as chosen.
++struct Relay {
++    int group = -1, held = -1, held_since = -1;
++    CampState state = CampState::alive;
++};
++Relay relay;
++
++// The relay's group still awaits us: not captured since we chose it (respawning only if it was), not the enemy's
++// hold, no enemy in sight on it.
++bool relay_valid(const World& world, int g) {
++    if (g < 0 || g >= static_cast<int>(world.camps.size())) return false;
++    const auto& G = world.map().groups[g];
++    const auto& c = world.camps[g];
++    if (G.gems <= 0 || G.has_monolith || c.holder == team::enemy || enemy_on(world, G.tiles())) return false;
++    return c.state != CampState::respawning || relay.state == CampState::respawning;
++}
++
++template <bool opening, bool banking = false, bool repricing = false, bool planning = false>
++[[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+ [[gnu::noinline]] bool farm_banking(World& world, Pathing& pathing, Safety& safety, Memory& memory);
+-template <bool opening, bool banking, bool repricing> [[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
++template <bool opening, bool banking, bool repricing, bool planning>
++[[gnu::flatten]] bool farm_turn(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     world.throw_if_stale();
+     auto& memo = farm_memo();
+-    if (!banking && !repricing && pick_up(world, pathing, memory)) return true;
++    constexpr bool quiet = repricing || planning;
++    // Off the hold the relay was chosen on, its pick is our last choice, as if made on the hold's last turn: the
++    // stickiness that keeps near ties from turning us back and forth keeps us on the group the feeders clear.
++    if constexpr (!quiet)
++        if (relay.group >= 0 && memory.farm_group == relay.held && relay_valid(world, relay.group) && !holding_capture(world, pathing))
++            memory.farm_group = relay.group;
++    if (!banking && !quiet && pick_up(world, pathing, memory)) return true;
+     const auto& map = world.map();
+     const auto& groups = map.groups;
+     // Before our own facts below: a turn handed to farm_banking reads them there.
+@@ -661,7 +690,9 @@
+     // does it, again and again on a contested altar), so it is priced as if they will be.
+     const int short_by = gems_short(world, params::tribute_window);
+     if (world.is_stale()) return true;
+-    if constexpr (!opening && !banking)
++    if constexpr (planning)
++        if (banking_now) return false;
++    if constexpr (!opening && !banking && !planning)
+         if (banking_now) return memo.banked_bag = bag, farm_banking(world, pathing, safety, memory);
+     // The opening plan's group for us now; with a weight, it is the choice the loop starts from, weighted.
+     const int planned_now = !banking && !repricing && !banks_bag_of(banking, banking_now, opening) && params::open_plan::weight > 0
+@@ -857,7 +888,7 @@
+     const int carried = memo.carry_group;
+     const bool taking_over = keeps && carried >= 0 && memo.carry_round == world.round - 1 && carried == memory.farm_group && world.camps[carried].state == CampState::cleared
+                              && !test(groups[carried].tiles(), my_position());
+-    if (!repricing && !banks_bag && !taking_over && attack_in_range()) return true;
++    if (!quiet && !banks_bag && !taking_over && attack_in_range()) return true;
+     if (world.is_stale()) return true;
+ 
+     // Holders keep a capture going, and more only split the reward.
+@@ -866,7 +897,7 @@
+     };
+ 
+     const vec2 here = my_position();
+-    if (holding_capture(world, pathing)) return true;
++    if (!planning && holding_capture(world, pathing)) return true;
+     MirrorPull pull;
+     if constexpr (!opening) pull = mirror_pull(world);
+     // steps less the pull's cut, from `mirror_steps` (a lower bound of them keeps the result one).
+@@ -988,7 +1019,7 @@
+     // The loop below would weigh no group, so none of its setup is read (~5-7k, on turns the
+     // search has left short). The memo contexts above still advance: some kept facts read more
+     // than their context holds, and skipping a turn's context changed later choices.
+-    if (struck && memory.farm_group >= 0) {
++    if (!planning && struck && memory.farm_group >= 0) {
+         if (banks_bag) return false;
+         if (world.is_stale()) return true;
+         need_zone();
+@@ -1016,24 +1047,32 @@
+     // Applied past the kept facts, which hold none of it. Not on a Monolith or a capture that wins.
+     // prism_premium only falls with the gems, so `keep_most`, a gem's at 1 (the most of any Prism ally's
+     // off Prism), bounds every group's: the prunes add it to the gems' price as tribute_gold is.
++    // So is the group a Prism ally announced as its next (comms::next_of), while our capture of it would be left
++    // to it (relay_waits): the relay has us clear it during the Prism's hold and walk.
+     const bool keeper = keeps, feeder = world.me().facts().passive != Passive::gem_focus;
+     float keep_most = 0;
+     std::array<const ChampionBelief*, 4> fed_by{}; // the claiming Prism allies, off Prism
+-    std::array<int, 4> fed_claim{};
++    std::array<int, 4> fed_claim{}, fed_next{};
+     int n_fed = 0;
+     if (short_by > 1 && keeper) keep_most = prism_premium(world, world.me(), 1);
+     if (short_by > 1 && feeder)
+         for (const auto& a : world.allies)
+-            if (const int claim = comms::claim_of(world, a.index);
+-                !a.is_self && a.alive && a.facts().passive == Passive::gem_focus && claim >= 0 && n_fed < static_cast<int>(fed_by.size()))
+-                if (const float p = prism_premium(world, a, 1); p > 0) keep_most = std::max(keep_most, p), fed_by[n_fed] = &a, fed_claim[n_fed++] = claim;
++            if (const int claim = comms::claim_of(world, a.index), next = comms::next_of(world, a.index);
++                !a.is_self && a.alive && a.facts().passive == Passive::gem_focus && (claim >= 0 || next >= 0) && n_fed < static_cast<int>(fed_by.size()))
++                if (const float p = prism_premium(world, a, 1); p > 0) {
++                    // Not for Willow: her work is the Prism's claim, beside it (willow_follow).
++                    const int priced = next >= 0 && next != claim && next < n_groups && !world.me().facts().heals()
++                                               && relay_waits(world, pathing, a, next) ? next : -1;
++                    if (claim < 0 && priced < 0) continue;
++                    keep_most = std::max(keep_most, p), fed_by[n_fed] = &a, fed_claim[n_fed] = claim, fed_next[n_fed++] = priced;
++                }
+     const auto keep_bonus = [&](const CampGroup& G) __attribute__((always_inline)) {
+         if (!(keep_most > 0) || G.gems <= 0 || G.gems >= short_by || G.has_monolith) return 0.0f;
+         if (keeper) return prism_premium(world, world.me(), G.gems);
+         const int g = static_cast<int>(&G - &groups[0]);
+         float most = 0;
+         for (int i = 0; i < n_fed; ++i)
+-            if (fed_claim[i] == g) most = std::max(most, prism_premium(world, *fed_by[i], G.gems));
++            if (fed_claim[i] == g || fed_next[i] == g) most = std::max(most, prism_premium(world, *fed_by[i], G.gems));
+         return most;
+     };
+     const float bound_tribute = tribute_gold + keep_most;
+@@ -2415,7 +2454,7 @@
+     if (chosen.mode == 'Q') memory.crew = true; // the claim an ally's leave_for_prism reads; the clear's crew if we come in time
+     if (shared >= 0 && (best < 0 || shared_value > best_value)) {
+         best = shared, best_steps = shared_steps, memory.claim = shared, memory.crew = true, spell = false, chosen = shared_priced;
+-        if (prev_claim != shared || !prev_crew) {
++        if (!planning && (prev_claim != shared || !prev_crew)) {
+             debug_block({ std::printf("CREW JOIN %d %u g%d tank %d trips %d output %.0f value %.4f\n", round, my_handle(), shared,
+                                       chosen.tank, chosen.trips, chosen.output, shared_value); });
+         }
+@@ -2429,9 +2468,12 @@
+             const int s = steps_data[planned];
+             best = planned, best_steps = s >= 0 && s != unreachable ? s : dist(here, groups[planned].centre);
+             memory.claim = planned, memory.crew = claimed_by_ally(planned), spell = false, chosen = Priced{'P'};
+-            debug_block({ std::printf("OPENPLAN step %d %u g%d k %d\n", round, my_handle(), planned, memory.open_step); });
++            if (!planning) {
++                debug_block({ std::printf("OPENPLAN step %d %u g%d k %d\n", round, my_handle(), planned, memory.open_step); });
++            }
+         }
+     }
++    if constexpr (planning) return true;
+     // Valued with allies we expect to join: our proposal, which their crew branch sees as our claim.
+     if (best >= 0 && !memory.crew && chosen.mode == 'C' && chosen.expected > 0 && memory.crew_proposed != best) {
+         memory.crew_proposed = best, memory.crew_reached = -1;
+@@ -2454,9 +2496,19 @@
+                         chosen.mode, chosen.trips, chosen.tank, chosen.expected, chosen.output, chosen.damage, my_health(), max_health);
+         }
+     });
+-    if constexpr (!repricing) memo.carry_group = best >= 0 && (chosen.mode == 'G' || chosen.mode == 'L' || chosen.mode == 'Q') ? best : -1, memo.carry_round = round;
++    if constexpr (!quiet) memo.carry_group = best >= 0 && (chosen.mode == 'G' || chosen.mode == 'L' || chosen.mode == 'Q') ? best : -1, memo.carry_round = round;
++    debug_block({
++        if constexpr (!quiet) {
++            static int last_relayed = -1;
++            int relayed = -1;
++            for (int i = 0; i < n_fed; ++i)
++                if (fed_next[i] >= 0 && memory.claim == fed_next[i]) relayed = fed_next[i];
++            if (relayed >= 0 && relayed != last_relayed) std::printf("RELAYC %d %u %d\n", round, my_handle(), relayed);
++            last_relayed = relayed;
++        }
++    });
+     if (best < 0) {
+-        if constexpr (repricing) return true;
++        if constexpr (quiet) return true;
+         // Cut short before weighing even last turn's choice: walk on towards it, as its crew if we were.
+         if (k == 0 && memory.farm_group >= 0)
+             memory.claim = memory.farm_group, memory.crew = crew_of_choice, walk_on(memory.farm_group);
+@@ -2486,7 +2538,7 @@
+         debug_block({ std::printf("RFCHOOSE %d %u %d %d %d %d gems %u bank %d\n", round, my_handle(), best, best_steps, spawn_steps(best),
+                                   static_cast<int>(via_recall.value), my_gems(), static_cast<int>(banks_bag)); });
+     }
+-    if constexpr (repricing) return true;
++    if constexpr (quiet) return true;
+     if (map.any_group_hop() && beyond_walk(world, pathing, best) && (in_pocket || cross(best))) return true;
+     const auto heal_before_waking = [&]() {
+         if (!(memory.crew || chosen.expected > 0) || world.camps[best].state != CampState::alive
+@@ -2683,6 +2735,48 @@
+     return world.round == world.first_round ? farm_turn<true>(world, pathing, safety, memory) : farm_turn<false>(world, pathing, safety, memory);
+ }
+ 
++// On a counting hold of ours as a Prism keeping its gems: farm's pick from this tile, the held group left out.
++// Not `funded` (after a fight's search, or short of the farm's least), the choice waits for a later turn of the hold.
++void relay_hold(World& world, Pathing& pathing, Safety& safety, const Memory& memory, bool funded) {
++    const int held = world.map().group_at(my_position());
++    const auto* c = held >= 0 ? &world.camps[held] : nullptr;
++    if (!c || c->state != CampState::cleared || c->holder != team::ally || c->held_since < 0 || !keeps_gems(world, pathing)) {
++        relay.group = relay.held = -1;
++        return;
++    }
++    const bool fresh = relay.held != held || relay.held_since != c->held_since;
++    if (!fresh && (relay.group < 0 || relay_valid(world, relay.group))) return;
++    if (!funded) {
++        if (fresh) relay.group = relay.held = -1;
++        return;
++    }
++    relay.held = held, relay.held_since = c->held_since, relay.group = -1;
++    Memory scratch = memory;
++    const int siege = siege_group();
++    farm_turn<false, false, false, true>(world, pathing, safety, scratch);
++    siege_group() = siege;
++    const int g = scratch.claim;
++    relay.state = g >= 0 && g < static_cast<int>(world.camps.size()) ? world.camps[g].state : CampState::alive;
++    if (g == held || !relay_valid(world, g)) return;
++    relay.group = g;
++    debug_block({
++        const auto& G = world.map().groups[g];
++        const int walk = pathing.group_walking_ready(g) ? team_walk_to(world, pathing, g, my_position()) : steps_to(G, my_position());
++        std::printf("RELAY %d %u %d %d\n", world.round, my_handle(), g, std::max(0, c->payout_round() - world.round) + walk);
++    });
++}
++
++// The relay's group to post this turn: kept while we hold the capture it was chosen on, or walk to it as our claim.
++void drop_relay() { relay.group = -1; }
++int relay_post(const World& world, const Memory& memory) {
++    if (world.me().facts().passive != Passive::gem_focus || relay.group < 0) return -1;
++    if (!world.me().alive) return relay.group = -1;
++    // On the hold, an invalid choice is relay_hold's to make again next turn.
++    if (decision == Branch::hold && world.map().group_at(my_position()) == relay.held) return relay_valid(world, relay.group) ? relay.group : -1;
++    if (memory.claim != relay.group || !relay_valid(world, relay.group)) relay.group = -1;
++    return relay.group;
++}
++
+ // A farming turn's output lands on camps: in enemy health points, the gems it earns at the map's
+ // gems per camp health point.
+ float farm_step_value(const World& world) {
+diff -ru bots/variants/chy-ref/src/model/comms.cc bots/variants/relay-a/src/model/comms.cc
+--- bots/variants/chy-ref/src/model/comms.cc	2026-11-13 14:14:03.712405622 +0000
++++ bots/variants/relay-a/src/model/comms.cc	2026-11-13 17:03:25.235195666 +0000
+@@ -18,9 +18,12 @@
+ //   bag       bag in fours, rounded up, * team + carrying ally's index
+ //   camp      0 = none, else 1 + offset[captured group] + its respawn round mod period[group];
+ //             left out (never posted) when it does not fit
++//   next      the team's Prism's next group + 1 (comms::next), 0 for none; without a Prism on the team, or
++//             when it does not fit, left out; before the ally record while that keeps its cell after it
+ //   ally      0 = none, else 1 + cell * 4 team + 4 ally index + round mod 4 (params::comms_ally): a
+ //             c x c square (c odd: 1, 3 or 5, the narrowest that fits) centred on the record's tile;
+-//             left out when it does not fit
++//             left out when it does not fit, and without a healer on the team (only then is it posted); the
++//             next record after it when the next record does not fit before it
+ //   then free bits
+ // Each ally's priority payload (turn_order.h) also carries its claim + 1 in its low 8 bits, and
+ // support_mailbox.h's intents above them.
+@@ -46,8 +49,8 @@
+     BitField bag, camp;
+     std::vector<int> camp_offset; // by group, then the total
+     std::uint64_t bag_bits = 0, camp_bits = 0;
+-    bool ally_on = false;
+-    BitField ally;
++    bool ally_on = false, next_on = false;
++    BitField ally, next;
+     std::uint64_t ally_bits = 0;
+     int cell = 1, cells_y = 1;
+     int period(int g) const { return camp_offset[g + 1] - camp_offset[g]; }
+@@ -80,16 +83,29 @@
+     const int camp_width = static_cast<int>(std::bit_width(static_cast<std::uint64_t>(L.camp_offset.back())));
+     L.camp_on = shift + camp_width <= 64;
+     if (L.camp_on) L.camp = field(camp_width);
+-    if (params::comms_ally && L.camp_on)
++    bool healer = false, prism = false;
++    for (const auto& a : world.allies) healer |= a.facts().heals(), prism |= a.facts().passive == Passive::gem_focus;
++    // The narrowest ally cell whose record fits from `at`: its cell and width, or a width of 0.
++    const auto ally_fit = [&](int at) {
+         for (const int c : {1, 3, 5}) {
+             const auto cells = static_cast<std::uint64_t>((map.width + c - 1) / c) * static_cast<std::uint64_t>((map.height + c - 1) / c);
+-            const int width = width_of(cells * 4 * static_cast<std::uint64_t>(L.team) + 1);
+-            if (shift + width > 64) continue;
++            if (const int width = width_of(cells * 4 * static_cast<std::uint64_t>(L.team) + 1); at + width <= 64) return std::pair{c, width};
++        }
++        return std::pair{1, 0};
++    };
++    const bool ally_wanted = params::comms_ally && L.camp_on && healer;
++    // The next record goes first while the ally record still fits after it at its own cell; else after it, if it fits.
++    const bool next_first = prism && shift + claim_width <= 64
++                            && (!ally_wanted || ally_fit(shift).second == 0
++                                || (ally_fit(shift + claim_width).second > 0 && ally_fit(shift + claim_width).first == ally_fit(shift).first));
++    if (next_first) L.next = field(claim_width), L.next_on = true;
++    if (ally_wanted)
++        if (const auto [c, width] = ally_fit(shift); width > 0) {
+             L.cell = c, L.cells_y = (map.height + c - 1) / c;
+             L.ally = field(width);
+             L.ally_on = true;
+-            break;
+         }
++    if (prism && !next_first && shift + claim_width <= 64) L.next = field(claim_width), L.next_on = true;
+     L.ally_bits = L.ally.mask;
+     L.bag_bits = L.bag.mask;
+     L.camp_bits = L.camp.mask;
+@@ -192,6 +208,8 @@
+         const auto p = payload_of(world, a);
+         detail::posts.claims[a.index] = p >= 0 ? static_cast<int>(p & 0xff) - 1 : static_cast<int>(L.claim[static_cast<std::size_t>(a.index)].get(bits)) - 1;
+     }
++    // Rewritten every turn by the Prism, like a claim.
++    detail::posts.next = L.next_on ? static_cast<int>(L.next.get(bits)) - 1 : -1;
+     if (const auto v = L.ally.get(bits); L.ally_on && (state.fresh & L.ally_bits) && v != 0) {
+         const auto code = v - 1, kinds = 4 * static_cast<std::uint64_t>(L.team);
+         const int kind = static_cast<int>(code % kinds), cell = static_cast<int>(code / kinds), ally = kind >> 2, h = L.cell / 2;
+@@ -249,6 +267,12 @@
+         if (field.get(bits) != claim) field.set(bits, claim), dirty = true;
+     }
+ 
++    if (L.next_on && world.me().facts().passive == Passive::gem_focus) {
++        const int next = detail::posts.my_next;
++        const auto v = static_cast<std::uint64_t>(world.me().alive && next >= 0 && next < L.claim_cap ? next + 1 : 0);
++        if (L.next.get(bits) != v) L.next.set(bits, v), dirty = true;
++    }
++
+     // One poster a round, by index among the allies that are not healers, while a healer lives.
+     if (L.ally_on && world.me().alive && !world.me().facts().heals()) {
+         int rank = -1, posters = 0;
+@@ -296,6 +320,8 @@
+ 
+ void claim(int group) { detail::posts.mine = group < max_group ? group : -1; }
+ 
++void next(int group) { detail::posts.my_next = group < max_group ? group : -1; }
++
+ bool support_request(const World& world) {
+     return support.valid(support_mailbox::protected_mate, world.round);
+ }
+diff -ru bots/variants/chy-ref/src/model/comms.h bots/variants/relay-a/src/model/comms.h
+--- bots/variants/chy-ref/src/model/comms.h	2026-11-13 14:14:03.712874269 +0000
++++ bots/variants/relay-a/src/model/comms.h	2026-11-13 16:32:15.845555833 +0000
+@@ -13,6 +13,7 @@
+     std::array<int, 8> bags{};
+     std::array<int, 8> claims{-1, -1, -1, -1, -1, -1, -1, -1};
+     int my_bag = 0, mine = -1;
++    int next = -1, my_next = -1; // the team's Prism's next group: as posted, and ours if we are it
+ };
+ inline Posts posts;
+ } // namespace detail
+@@ -47,6 +48,16 @@
+ bool ally_chasing(const World& world, const ChampionBelief& a);
+ // Our priority payload: the claim, support intents and chase bit posted this turn.
+ std::uint32_t priority_payload(const World& world);
++// The group our Prism takes on after its current hold (-1 for none), posted every turn; only a Prism posts it.
++void next(int group);
++// The next group Prism ally a (by index) announced, -1 for none, while it is dead, from any other ally, or where the
++// shared bytes have no room for it.
++inline int next_of(const World& world, int ally) {
++    const auto& a = world.allies[ally];
++    if (a.facts().passive != Passive::gem_focus) return -1;
++    if (a.is_self) return detail::posts.my_next;
++    return a.alive ? detail::posts.next : -1;
++}
+ // The group an ally (by index) claims, -1 for none or while it is dead.
+ inline int claim_of(const World& world, int ally) {
+     const auto& a = world.allies[ally];

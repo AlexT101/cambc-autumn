@@ -1,0 +1,9 @@
+A/B mx-theia-c531-hold: CAND variants/chy-531 (dir) vs REF variants/chy-ref (dir)
+  hold: running, log replays/ab/mx-theia-c531-hold/hold.log
+CAND 53.6% of 10200 (5466-4734), 95% CI 52.6-54.6
+  hold  53.6% of 10200 (5466-4734), 95% CI 52.6-54.6
+Failed matches: 0
+Out-of-fuel turns: CAND 1037 in 642 games, REF 998 in 577 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 0m26s
+Results: replays/ab/mx-theia-c531-hold/summary.md

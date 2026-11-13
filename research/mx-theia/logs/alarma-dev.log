@@ -1,0 +1,9 @@
+A/B mx-theia-alarma-dev: CAND variants/alarm-a (dir) vs REF variants/chy-ref (dir)
+  dev: running, log replays/ab/mx-theia-alarma-dev/dev.log
+CAND 52.7% of 10200 (5373-4827), 95% CI 51.7-53.6
+  dev  52.7% of 10200 (5373-4827), 95% CI 51.7-53.6
+Failed matches: 0
+Out-of-fuel turns: CAND 919 in 617 games, REF 1001 in 613 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 0m27s
+Results: replays/ab/mx-theia-alarma-dev/summary.md

@@ -1,0 +1,573 @@
+diff -ru bots/variants/dnw-min/src/bot.cc bots/variants/escort-a/src/bot.cc
+--- bots/variants/dnw-min/src/bot.cc	2026-11-13 17:30:44.951989639 +0000
++++ bots/variants/escort-a/src/bot.cc	2026-11-13 18:27:19.442334636 +0000
+@@ -1021,7 +1021,7 @@
+     // A turn that takes Prism off its way withdraws the capture it carries (left_for_prism).
+     if (world.me().facts().passive == Passive::gem_focus) {
+         switch (decision) {
+-        case Branch::retreat: case Branch::bank: case Branch::wait_altar: case Branch::guard_altar: case Branch::tribute_kept:
++        case Branch::retreat: case Branch::bank: case Branch::wait_altar: case Branch::guard_altar: case Branch::escort: case Branch::tribute_kept:
+         case Branch::recall_kept: case Branch::capture_recall: case Branch::mend: case Branch::shop: case Branch::prism_recovery:
+             drop_carry_claim(memory);
+             break;
+@@ -1148,6 +1148,7 @@
+         memory.formation_start = -1, memory.formation_turns = 0;
+     comms::claim(memory.claim);
+     if (!world.is_stale()) post_alarm(world);
++    if (!world.is_stale()) post_escort(world, pathing);
+     comms::bag(world.me().alive ? static_cast<int>(my_gems()) : 0);
+     comms::chasing(world.round, world.me().alive && decision == Branch::chase);
+     if (!world.is_stale()) publish_turn_order(world, comms::priority_payload(world));
+diff -ru bots/variants/dnw-min/src/bot_parts.h bots/variants/escort-a/src/bot_parts.h
+--- bots/variants/dnw-min/src/bot_parts.h	2026-11-13 17:30:44.952061520 +0000
++++ bots/variants/escort-a/src/bot_parts.h	2026-11-13 18:27:19.440876806 +0000
+@@ -46,6 +46,7 @@
+     bank = 'B',
+     wait_altar = 'W',
+     guard_altar = 'U',    // holding the altar against enemy tributes (economy/altar_guard.cc)
++    escort = 'Y',         // screening our winning tribute's altar (economy/altar_guard.cc)
+     tribute_kept = 'T',
+     tribute_cancelled = 't',
+     recall_kept = 'K',
+@@ -380,6 +381,22 @@
+ 
+ // economy/altar_guard.cc
+ bool keep_guard_lock(const World& world, int a);
++// Our winning tribute pending (params::escort): a body of ours carries a bag that wins, channelling it at `altar` or
++// headed there. `end_round`: the last round its channel may end in (exact for a channel in sight or ours).
++struct EscortSite {
++    int altar = -1, end_round = -1, gems = 0;
++    int carrier = -1;                           // its ally index
++    const ChampionBelief* channeller = nullptr; // the carrier, when it is us or in sight
++    bool channelling = false;                   // seen channelling (or ours)
++    bool immune = false;                        // the carrier is immune to stuns (Marcella)
++    explicit operator bool() const { return altar >= 0; }
++};
++const EscortSite& escort_site(const World& world);
++// What a kill (or, with `stun`, a stun) of `e` saves our winning tribute: the channel's progress and restart, when e's
++// next turn could stop it (a stun in reach of the channeller, a carried lock in reach of its altar); else 0.
++float escort_worth(const World& world, const ChampionBelief& e, bool stun);
++// Our carrier's escort record, and the withdrawal of a stale one, at the turn's end.
++void post_escort(const World& world, Pathing& pathing);
+ bool guard_turn(const World& world, Pathing& pathing, Safety& safety, Memory& memory, const Pathing::GuardState& strike_guard);
+ 
+ // economy/bank.cc
+diff -ru bots/variants/dnw-min/src/combat/abilities.cc bots/variants/escort-a/src/combat/abilities.cc
+--- bots/variants/dnw-min/src/combat/abilities.cc	2026-11-13 14:14:03.709856819 +0000
++++ bots/variants/escort-a/src/combat/abilities.cc	2026-11-13 18:27:19.442161203 +0000
+@@ -146,9 +146,11 @@
+ }
+ 
+ float kill_stops(const World& world, const ChampionBelief& e) {
+-    if (e.channel != Channel::tribute) return 0;
++    // A kill also takes the turn in which it would stop our winning tribute.
++    const float escort = escort_worth(world, e, false);
++    if (e.channel != Channel::tribute) return escort;
+     // A tribute that ends the game is worth every gem of it.
+-    return params::tribute_value
++    return escort + params::tribute_value
+            + (enemy_tribute_wins(world, e) ? params::gem_value * static_cast<float>(cambc::constants::winning_gems) : 0.0f);
+ }
+ 
+@@ -164,6 +166,8 @@
+             if (!a.is_self && a.alive && a.visible) d = std::min(d, dist(e.pos, a.pos));
+         v = strike(e, next_turn_round(world, e)).at(d);
+     }
++    // The turn it loses is one in which it could stop our winning tribute (for a tributer, in kill_stops' below).
++    if (e.channel != Channel::tribute) v += escort_worth(world, e, true);
+     if (e.channel == Channel::tribute) {
+         const int restart = next_turn_round(world, e) + 1;
+         const int delay = std::max(1, restart + tribute_turns(e.gems, e.fast_tribute) - e.channel_end_round);
+diff -ru bots/variants/dnw-min/src/economy/altar_guard.cc bots/variants/escort-a/src/economy/altar_guard.cc
+--- bots/variants/dnw-min/src/economy/altar_guard.cc	2026-11-13 14:14:03.711172046 +0000
++++ bots/variants/escort-a/src/economy/altar_guard.cc	2026-11-13 18:27:19.439296685 +0000
+@@ -1,6 +1,8 @@
+ // Altar control (research/ideas-2026-11-05/altar.md): on a one-altar map, when the enemy is near the
+ // win and well ahead, or while one of us carries a winning bag, our strongest bodies hold the altar,
+-// where a kill takes the bag, while the rest farm and bank there.
++// where a kill takes the bag, while the rest farm and bank there. On any map, while one of us carries a
++// winning bag to an altar or channels it there (the escort), every ally that can reach that altar before the
++// channel ends screens it.
+ #include "../bot_parts.h"
+ 
+ namespace aph {
+@@ -144,7 +146,10 @@
+ 
+ // A guard's turn after the bag and the shop: fight an enemy by the altar (chase prices it), else hold
+ // our stand tile. False for a non-guard or when not guarding.
++bool escort_turn(const World& world, Pathing& pathing, Safety& safety, Memory& memory, const Pathing::GuardState& strike_guard);
++
+ bool guard_turn(const World& world, Pathing& pathing, Safety& safety, Memory& memory, const Pathing::GuardState& strike_guard) {
++    if (escort_turn(world, pathing, safety, memory, strike_guard)) return true;
+     if (!guarding(world)) return false;
+     const int rank = guard_rank(world);
+     if (rank < 0) return false;
+@@ -176,6 +181,294 @@
+     return true;
+ }
+ 
++// A field to one tile, kept for the last few asked: the escort's stand moves with the threat and the site.
++const Field& field_to(const Pathing& pathing, vec2 t) {
++    struct Kept {
++        vec2 at{-1, -1};
++        std::optional<Field> field;
++    };
++    static std::array<Kept, 6> kept;
++    static std::size_t next = 0;
++    for (auto& k : kept)
++        if (k.at == t && k.field) return *k.field;
++    auto& k = kept[next];
++    next = (next + 1) % kept.size();
++    static bitboard goal{cambc::uninitialized};
++    clear_board(goal);
++    set_tile(goal, t);
++    k.at = t;
++    k.field.emplace(make_field(pathing.static_walls(), goal));
++    return *k.field;
++}
++
++// Where the channel is stopped from: the channeller's tile while seen channelling, else its altar (a carrier on
++// its way is where it will channel only once there).
++vec2 channel_tile(const World& world, const EscortSite& site) {
++    if (site.channeller && site.channelling) return site.channeller->is_self ? my_position() : site.channeller->pos;
++    return world.map().altars[static_cast<std::size_t>(site.altar)].pos;
++}
++
++// The enemy that comes at the channel first: the nearest to it of those in sight, and of the unseen, the nearest
++// tile of their `possible` within our sight's radius of the altar; with neither, the enemy spawn they come from.
++vec2 threat_tile(const World& world, const EscortSite& site) {
++    const vec2 c = channel_tile(world, site), alt = world.map().altars[static_cast<std::size_t>(site.altar)].pos;
++    vec2 best{-1, -1};
++    int best_d = unreachable;
++    for (const auto& e : world.enemies) {
++        if (!e.alive) continue;
++        if (e.visible) {
++            if (dist(e.pos, c) < best_d) best = e.pos, best_d = dist(e.pos, c);
++            continue;
++        }
++        if (!e.tracked) continue;
++        for (const int r : {2, 4, 8}) {
++            if (!possible_within(e, alt, r)) continue;
++            for (const vec2 t : positions_within(e.possible, alt, r))
++                if (dist(t, c) < best_d) best = t, best_d = dist(t, c);
++            break;
++        }
++    }
++    return best.x >= 0 ? best : world.map().enemy_spawn_centre;
++}
++
++// Our place among the escorts, by guard_power (ties by index): every ally alive but the carrier.
++int escort_rank(const World& world, int carrier) {
++    const auto& me = world.me();
++    const float mine = guard_power(me);
++    int rank = 0;
++    for (const auto& a : world.allies) {
++        if (a.is_self || !a.alive || a.index == carrier) continue;
++        const float p = guard_power(a);
++        rank += p > mine || (p == mine && a.index < me.index);
++    }
++    return rank;
++}
++
++void trace_escort(const World& world, const EscortSite& site, const char* role) {
++    debug_block({
++        const vec2 at = world.map().altars[static_cast<std::size_t>(site.altar)].pos;
++        std::printf("ESCORT %d %u %d %d %d %s\n", world.round, my_handle(), at.x, at.y, site.end_round - world.round, role);
++    });
++}
++
++// Our turn in the escort, after the bag and the shop: an enemy lock on the site's altar is hit (five hits remove it),
++// enemies by the site are fought (the strike search has priced the stops of the channel: escort_worth), else we
++// stand between the channel and the enemy that comes at it first, within a stun's reach of the channeller.
++// Only while the walk there takes no longer than the channel has left; never for the carrier.
++bool escort_turn(const World& world, Pathing& pathing, Safety& safety, Memory& memory, const Pathing::GuardState& strike_guard) {
++    // A copy: the strike search in chase_with_guard reads the site again after a move.
++    const EscortSite site = escort_site(world);
++    if (!site || (site.channeller && site.channeller->is_self)) return false;
++    if (world.score.ally + static_cast<int>(my_gems()) >= static_cast<int>(cambc::constants::winning_gems)) return false;
++    const int a = site.altar, left = site.end_round - world.round;
++    const vec2 here = my_position(), alt = world.map().altars[static_cast<std::size_t>(a)].pos;
++    if (here.x < 0 || left < 0) return false;
++    // A field not built yet costs a search: not at the end of a turn.
++    const std::uint64_t field_fuel = end_reserve + static_field_cost_estimate(max_field_layers());
++    if (!fuel_ok(field_fuel)) return false;
++    const int steps = pathing.to_altar(a).at(here);
++    if (steps == unreachable || steps > left) return false;
++    const auto commit = [&] {
++        memory.claim = -1;
++        memory.farm_group = -1;
++        decision = Branch::escort;
++    };
++    const auto& f = world.me().facts();
++    if (world.altars[a].enemy_lock) {
++        if (break_lock(world, a)) {
++            commit();
++            trace_escort(world, site, "lock");
++            if (!f.walk_and_attack_independent()) return true;
++        } else if (my_can_move() && dist(here, alt) > f.attack_range()) {
++            commit();
++            // The tribute tiles are in every attack's range of the altar.
++            step_safely(world, pathing, pathing.to_altar(a), safety);
++            trace_escort(world, site, break_lock(world, a) ? "lock" : "to-lock");
++            return true;
++        }
++    }
++    const vec2 c = channel_tile(world, site);
++    bool near = false;
++    for (const auto& e : world.enemies) near |= e.alive && e.visible && (dist(e.pos, alt) <= params::altar_leash || dist(e.pos, c) <= params::altar_leash);
++    if (near && chase_with_guard(world, pathing, safety, strike_guard)) {
++        memory.claim = -1, memory.farm_group = -1;
++        trace_escort(world, site, "fight");
++        return true;
++    }
++    const auto& tiles = stands(world, a);
++    // Between: the fewest steps a walk from the threat to the channel would lose by our tile; then nearer the threat
++    // (in front), then stands()'s order.
++    const vec2 q = threat_tile(world, site);
++    struct Scored {
++        int excess, front;
++        std::size_t order;
++    };
++    static std::vector<Scored> scored;
++    scored.clear();
++    for (std::size_t i = 0; i < tiles.size(); ++i) {
++        const vec2 t = tiles[i];
++        // Within a unit stun's range of the channel's tile; off the tribute tiles until the channel starts, which a
++        // cramped altar could leave the carrier none of; not a tile an ally in sight holds (the channeller's).
++        if (dist(t, c) > ability_range) continue;
++        if (!site.channelling && dist(t, alt) <= static_cast<int>(cambc::constants::submit_gems_range)) continue;
++        bool held = false;
++        for (const auto& o : world.allies) held |= !o.is_self && o.alive && o.visible && o.pos == t;
++        if (held) continue;
++        scored.push_back({dist(c, t) + dist(t, q) - dist(c, q), dist(t, q), i});
++    }
++    if (scored.empty()) return false;
++    std::sort(scored.begin(), scored.end(), [](const Scored& x, const Scored& y) {
++        return x.excess != y.excess ? x.excess < y.excess : x.front != y.front ? x.front < y.front : x.order < y.order;
++    });
++    commit();
++    const int rank = escort_rank(world, site.carrier);
++    const vec2 stand = tiles[scored[static_cast<std::size_t>(rank) % scored.size()].order];
++    trace_escort(world, site, here == stand ? "screen" : "to-screen");
++    if (!my_can_move() || here == stand || !fuel_ok(field_fuel)) return true;
++    step_safely(world, pathing, field_to(pathing, stand), safety);
++    return true;
++}
++
++// The site, read once a turn per sighting: a carrier of ours in sight (or us) that channels gives its altar and end
++// exactly; one that walks, the altar it posted (comms::escort), else the nearest; an unseen one, its post alone,
++// while an unseen ally alive posts a bag that wins.
++const EscortSite& escort_site(const World& world) {
++    static EscortSite site;
++    static struct {
++        int round = -1;
++        std::uint32_t observations = 0, gems = 0;
++        vec2 here{-1, -1};
++    } key;
++    const vec2 here = world.me().alive ? my_position() : vec2{-1, -1};
++    const std::uint32_t gems = world.me().alive ? my_gems() : 0;
++    if (key.round == world.round && key.observations == world.observations && key.here == here && key.gems == gems) return site;
++    key = {world.round, world.observations, gems, here};
++    site = {};
++    const int need = static_cast<int>(cambc::constants::winning_gems) - world.score.ally;
++    if (!params::escort || need <= 0) return site;
++    const auto heard = comms::escort(world);
++    const auto& altars = world.map().altars;
++    for (const auto& a : world.allies) {
++        if (!a.alive || !(a.is_self || a.visible)) continue;
++        if (a.is_self && here.x < 0) continue;
++        const int bag = a.is_self ? static_cast<int>(gems) : a.gems;
++        if (bag < need) continue;
++        EscortSite s;
++        s.gems = bag, s.channeller = &a, s.carrier = a.index, s.immune = a.facts().passive == Passive::stun_immune;
++        const vec2 p = a.is_self ? here : a.pos;
++        s.channelling = a.is_self ? my_state().contains(cambc::champion_state::submitting_gems) : a.channel == Channel::tribute;
++        if (s.channelling) {
++            s.altar = tribute_altar(world, p);
++            s.end_round = a.is_self ? world.round + my_channel_time() : a.channel_end_round;
++        } else if (heard.altar >= 0) {
++            s.altar = heard.altar, s.end_round = heard.latest;
++        } else {
++            int d = unreachable;
++            for (int i = 0; i < static_cast<int>(altars.size()); ++i)
++                if (dist(p, altars[static_cast<std::size_t>(i)].pos) < d) d = dist(p, altars[static_cast<std::size_t>(i)].pos), s.altar = i;
++            s.end_round = world.round + d + tribute_turns(bag, a.fast_tribute);
++        }
++        if (s.altar < 0) continue;
++        if (!site || (s.channelling && !site.channelling) || (s.channelling == site.channelling && s.end_round < site.end_round)) site = s;
++    }
++    if (!site && heard.altar >= 0) {
++        // A posted bag is rounded up to fours and capped at 508.
++        const int posted_need = std::min(need, 508);
++        for (const auto& a : world.allies)
++            if (!a.is_self && a.alive && !a.visible && comms::bag_of(world, a.index) >= posted_need && comms::bag_of(world, a.index) > site.gems)
++                site.gems = comms::bag_of(world, a.index), site.carrier = a.index, site.immune = a.facts().passive == Passive::stun_immune;
++        if (site.carrier >= 0) site.altar = heard.altar, site.end_round = heard.latest;
++    }
++    return site;
++}
++
++float escort_worth(const World& world, const ChampionBelief& e, bool stun) {
++    if (!params::escort || !e.alive || !e.visible) return 0;
++    const auto& site = escort_site(world);
++    // The carrier's own strikes are left as they were: its way to the altar is not ours to change.
++    if (!site || (site.channeller && site.channeller->is_self)) return 0;
++    const int next = next_turn_round(world, e);
++    // Its turn comes after the channel's last turn end: the tribute has landed.
++    if (next > site.end_round) return 0;
++    const vec2 alt = world.map().altars[static_cast<std::size_t>(site.altar)].pos;
++    bool stops = false;
++    if (!site.immune) {
++        const int reach = e.ready_stun_reach(next, true);
++        // An unseen channeller is on a tribute tile, within 1 of the altar.
++        stops = reach >= 0 && dist(e.pos, channel_tile(world, site)) <= reach + (site.channelling && site.channeller ? 0 : 1);
++    }
++    // A lock goes down within 2 of the altar, after a walk and (a dasher) its dash.
++    if (!stops && dist(e.pos, alt) <= altar_lock_range + 1 + (e.facts().has_dash() ? 2 : 0)) {
++        // The strike search asks this many times a turn: one read a round per enemy (nothing we do changes it).
++        static std::array<std::pair<int, bool>, 8> carries{};
++        auto& known = carries[static_cast<std::size_t>(e.index) % carries.size()];
++        if (known.first != world.round) {
++            std::array<std::uint32_t, 4> counts{};
++            const auto lock = cambc::detail::raw_consumable_ids[static_cast<std::size_t>(cambc::consumable_type::altar_lock)];
++            known = {world.round, cambc::detail::sdk_champion_consumables(static_cast<std::uint32_t>(e.handle), counts.data()) == 0 && counts[lock] > 0};
++        }
++        stops = known.second;
++    }
++    if (!stops) return 0;
++    // As stun_worth prices an enemy's channel: the turns a stop would cost it, its progress and the restart; at most
++    // what the game is worth (kill_stops' winning tribute).
++    const bool fast = site.channeller && site.channeller->fast_tribute;
++    const int delay = std::max(1, next + 1 + tribute_turns(site.gems, fast) - site.end_round);
++    const float saved = std::min(params::tribute_value + params::gem_value * static_cast<float>(site.gems) * static_cast<float>(delay) / params::stun_tribute_horizon,
++                                 params::tribute_value + params::gem_value * static_cast<float>(cambc::constants::winning_gems));
++    // A stun only puts the stop off a turn: it saves the channel alone if it lands by then, else it is one of the
++    // turns of cover the rest of the channel needs. A kill takes every one of them.
++    return stun ? saved / static_cast<float>(std::max(1, site.end_round - next)) : saved;
++}
++
++void post_escort(const World& world, Pathing& pathing) {
++    if (!params::escort) return;
++    static bool posted = false;
++    static int last_altar = -1, last_end = -1;
++    (void)comms::escort(world); // marks a record past its window expired
++    const int need = static_cast<int>(cambc::constants::winning_gems) - world.score.ally;
++    const vec2 here = world.me().alive ? my_position() : vec2{-1, -1};
++    if (here.x >= 0 && need > 0 && static_cast<int>(my_gems()) >= need) {
++        int altar = -1, end = -1;
++        const bool channel = my_state().contains(cambc::champion_state::submitting_gems);
++        if (channel) {
++            altar = tribute_altar(world, here), end = world.round + my_channel_time();
++        } else if (fuel_ok(end_reserve) && banks_bag(world, pathing)) {
++            // The altar bank_gems walks to: the nearest by walk, an enemy lock's hits added. Short of fuel for a
++            // field not built yet, our last post stands.
++            int best = unreachable;
++            bool whole = true;
++            const auto& altars = world.map().altars;
++            for (int a = 0; a < static_cast<int>(altars.size()); ++a) {
++                if (!fuel_ok(end_reserve + static_field_cost_estimate(max_field_layers()))) {
++                    whole = false;
++                    break;
++                }
++                const int steps = pathing.to_altar(a).at(here);
++                if (steps == unreachable) continue;
++                if (const int total = steps + lock_turns(world.altars[a], world.me().facts(), steps); total < best) best = total, altar = a;
++            }
++            // The channel starts the turn after the walk's last step.
++            if (altar >= 0) end = world.round + best + 1 + tribute_turns(world, static_cast<int>(my_gems()));
++            if (!whole && posted) altar = last_altar, end = last_end;
++        } else if (posted) {
++            altar = last_altar, end = last_end;
++        }
++        if (altar >= 0) {
++            comms::post_escort(altar, end, false);
++            posted = true, last_altar = altar, last_end = end;
++            debug_block({
++                const vec2 at = world.map().altars[static_cast<std::size_t>(altar)].pos;
++                std::printf("ESCORT %d %u %d %d %d %s\n", world.round, my_handle(), at.x, at.y, end - world.round, channel ? "channel" : "carry");
++            });
++            return;
++        }
++    }
++    // Our record outlives our winning bag (killed, or banked short of the win): withdrawn.
++    comms::post_escort(-1, -1, std::exchange(posted, false));
++    last_altar = last_end = -1;
++}
++
+ } // namespace
+ 
+ } // namespace aph
+diff -ru bots/variants/dnw-min/src/economy/bank.cc bots/variants/escort-a/src/economy/bank.cc
+--- bots/variants/dnw-min/src/economy/bank.cc	2026-11-13 16:59:47.523054178 +0000
++++ bots/variants/escort-a/src/economy/bank.cc	2026-11-13 18:10:24.414834230 +0000
+@@ -101,6 +101,11 @@
+                     ours_wins |= world.score.ally + ally.gems >= static_cast<int>(cambc::constants::winning_gems)
+                                  && (!ally.visible || !enemy_win || turn_start(world, ally, ally.channel_end_round) < *enemy_win);
+             if (tributing && (!winning || ours_wins)) continue;
++            // Nor at our winning tribute's altar while it may be channelling unseen (a bush hides it from outside).
++            if (!winning && params::escort) {
++                const auto& site = escort_site(world);
++                if (site.altar == a && (site.channelling || !site.channeller)) continue;
++            }
+             const auto note_own_lock = [&] {
+                 if (own_lock_round.size() < map.altars.size()) own_lock_round.resize(map.altars.size(), -1);
+                 own_lock_round[a] = world.round;
+diff -ru bots/variants/dnw-min/src/model/comms.cc bots/variants/escort-a/src/model/comms.cc
+--- bots/variants/dnw-min/src/model/comms.cc	2026-11-13 17:10:09.117820110 +0000
++++ bots/variants/escort-a/src/model/comms.cc	2026-11-13 18:27:19.445691950 +0000
+@@ -20,7 +20,8 @@
+ //             left out (never posted) when it does not fit
+ //   alarm     here with no healer drafted (the ally record then goes unposted), else after the ally record:
+ //             0 = none, else 1 + 2 (altar * alarm_slots + (its tribute's end round / alarm_step) mod alarm_slots)
+-//             + whether it wins the game (params::deny_alarm); left out when it does not fit
++//             + whether it wins the game (params::deny_alarm); left out when it does not fit. Codes past those
++//             (params::escort): 1 + 2 altars * alarm_slots + altar * alarm_slots + our winning tribute's end step
+ //   ally      0 = none, else 1 + cell * 4 team + 4 ally index + round mod 4 (params::comms_ally): a
+ //             c x c square (c odd: 1, 3 or 5, the narrowest that fits) centred on the record's tile;
+ //             left out when it does not fit
+@@ -51,6 +52,8 @@
+     std::array<BitField, 8> claim{}; // by ally index
+     BitField bag, camp, alarm;
+     bool alarm_on = false;
++    std::uint64_t alarm_enemy = 0; // the alarm's enemy codes are 1..alarm_enemy; our escort's follow
++    bool escort_on = false;
+     std::vector<int> camp_offset; // by group, then the total
+     std::uint64_t bag_bits = 0, camp_bits = 0;
+     bool ally_on = false;
+@@ -88,8 +91,11 @@
+     const auto alarm_field = [&] {
+         const auto altars = static_cast<std::uint64_t>(map.altars.size());
+         if (!params::deny_alarm || altars == 0 || L.alarm_on) return;
+-        const int width = width_of(altars * alarm_slots * 2 + 1);
+-        if (shift + width <= 64) L.alarm = field(width), L.alarm_on = true;
++        L.alarm_enemy = altars * alarm_slots * 2;
++        // The escort's codes only where they leave the alarm room.
++        const int width = width_of(L.alarm_enemy + altars * alarm_slots + 1), narrow = width_of(L.alarm_enemy + 1);
++        if (params::escort && shift + width <= 64) L.alarm = field(width), L.alarm_on = L.escort_on = true;
++        else if (shift + narrow <= 64) L.alarm = field(narrow), L.alarm_on = true;
+     };
+     L.camp_on = shift + camp_width <= 64;
+     if (L.camp_on) L.camp = field(camp_width);
+@@ -149,6 +155,22 @@
+     std::uint64_t value = 0, expired = 0;
+     int until = -1;
+ } alarm_heard;
++struct EscortPost {
++    int altar = -1, end_round = -1;
++    bool withdraw = false;
++};
++EscortPost escort_post;
++// As alarm_heard, for our escort record.
++struct {
++    std::uint64_t value = 0, expired = 0;
++    int until = -1;
++} escort_heard;
++
++// The first round from `round` on of the alarm_step-long window whose index has residue `slot` mod alarm_slots.
++int window_start(int round, int slot) {
++    const int step = round / alarm_step;
++    return (step + ((slot - step) % alarm_slots + alarm_slots) % alarm_slots) * alarm_step;
++}
+ 
+ support_mailbox::State support;
+ int support_intent_round = -1;
+@@ -299,15 +321,24 @@
+         }
+     }
+ 
++    const auto ours = std::exchange(escort_post, {});
+     if (const auto p = std::exchange(alarm_post, {}); L.alarm_on) {
+         const auto up = L.alarm.get(bits);
+-        const int up_altar = up == 0 ? -1 : static_cast<int>(up - 1) / (2 * alarm_slots);
++        const bool up_ours = up > L.alarm_enemy;
++        const int up_altar = up == 0 || up_ours ? -1 : static_cast<int>(up - 1) / (2 * alarm_slots);
+         auto v = up;
+-        // A winning tribute's alarm is not replaced by a hoard's at another altar.
++        // A winning tribute's alarm is not replaced by a hoard's at another altar, nor our escort by a hoard's.
+         if (p.altar >= 0 && p.end_round >= 0) {
+-            if (p.wins || up == 0 || up_altar == p.altar || !((up - 1) & 1))
++            if (p.wins || up == 0 || (!up_ours && (up_altar == p.altar || !((up - 1) & 1))))
+                 v = 1 + static_cast<std::uint64_t>(2 * (p.altar * alarm_slots + p.end_round / alarm_step % alarm_slots) + p.wins);
+-        } else if ((p.altar >= 0 && up_altar == p.altar) || (up != 0 && up == alarm_heard.expired)) v = 0;
++        } else if (!up_ours && ((p.altar >= 0 && up_altar == p.altar) || (up != 0 && up == alarm_heard.expired))) v = 0;
++        // Our winning tribute's record yields only to an enemy's winning one.
++        const bool enemy_wins = v != 0 && v <= L.alarm_enemy && ((v - 1) & 1);
++        if (ours.altar >= 0 && ours.end_round >= 0 && L.escort_on) {
++            // The end steps wrap past alarm_slots of them: a later end is posted as the last step the record holds.
++            const int end = std::min(ours.end_round, round + (alarm_slots - 1) * alarm_step);
++            if (!enemy_wins) v = L.alarm_enemy + 1 + static_cast<std::uint64_t>(ours.altar * alarm_slots + end / alarm_step % alarm_slots);
++        } else if (v > L.alarm_enemy && v == escort_heard.expired) v = 0;
+         if (v != up) L.alarm.set(bits, v), dirty = true;
+     }
+ 
+@@ -336,8 +367,9 @@
+     const auto v = L.alarm.get(state.now);
+     if (v != alarm_heard.value) alarm_heard = {v, 0, -1};
+     if (v == 0) return {};
+-    const int code = static_cast<int>(v - 1) / 2, step = world.round / alarm_step;
+-    const int first = (step + ((code % alarm_slots - step) % alarm_slots + alarm_slots) % alarm_slots) * alarm_step;
++    if (v > L.alarm_enemy) return {};
++    const int code = static_cast<int>(v - 1) / 2;
++    const int first = window_start(world.round, code % alarm_slots);
+     if (alarm_heard.until < 0) alarm_heard.until = first + alarm_step - 1;
+     if (world.round > alarm_heard.until) return alarm_heard.expired = v, Alarm{};
+     return {code / alarm_slots, std::max(world.round, first), first + alarm_step - 1, ((v - 1) & 1) != 0};
+@@ -345,6 +377,26 @@
+ 
+ void post_alarm(int altar, int end_round, bool wins) { alarm_post = {altar, end_round, wins}; }
+ 
++Escort escort(const World& world) {
++    const auto& L = layout(world);
++    if (!L.escort_on || state.now_round != world.round) return {};
++    const auto v = L.alarm.get(state.now);
++    if (v != escort_heard.value) escort_heard = {v, 0, -1};
++    if (v <= L.alarm_enemy) return {};
++    const int code = static_cast<int>(v - L.alarm_enemy - 1), altar = code / alarm_slots;
++    if (altar >= static_cast<int>(world.map().altars.size())) return {};
++    const int first = window_start(world.round, code % alarm_slots);
++    if (escort_heard.until < 0) escort_heard.until = first + alarm_step - 1;
++    if (world.round > escort_heard.until) return escort_heard.expired = v, Escort{};
++    return {altar, std::max(world.round, first), first + alarm_step - 1};
++}
++
++// A record past its window (escort()), or the poster's own once its bag no longer wins, is cleared at send.
++void post_escort(int altar, int end_round, bool withdraw) {
++    if (withdraw && escort_heard.value != 0) escort_heard.expired = escort_heard.value;
++    escort_post = {altar, end_round, withdraw};
++}
++
+ bool told_ally(int ally, vec2& at, int& round) {
+     if (ally < 0 || ally >= 8 || told_allies[static_cast<std::size_t>(ally)].round < 0) return false;
+     at = told_allies[static_cast<std::size_t>(ally)].at;
+diff -ru bots/variants/dnw-min/src/model/comms.h bots/variants/escort-a/src/model/comms.h
+--- bots/variants/dnw-min/src/model/comms.h	2026-11-13 16:52:46.865116941 +0000
++++ bots/variants/escort-a/src/model/comms.h	2026-11-13 18:07:01.948095924 +0000
+@@ -44,6 +44,14 @@
+ // Posted at this turn's end: the tribute we see at `altar`, its channel ending in `end_round`; with
+ // end_round < 0, that altar's alarm withdrawn; altar < 0 for nothing.
+ void post_alarm(int altar, int end_round, bool wins);
++// Our own winning tribute (params::escort), in the alarm's bits above its codes: the altar our carrier channels at or
++// walks to, and the rounds its channel may end in, as the alarm's. An enemy's winning alarm displaces it.
++struct Escort {
++    int altar = -1, earliest = 0, latest = 0;
++};
++Escort escort(const World& world);
++// Posted at this turn's end by the carrier; altar < 0 with `withdraw` clears a record its reader found stale.
++void post_escort(int altar, int end_round, bool withdraw);
+ // The other support endpoint's intent (the protected mate's request, the healer's offer), posted in
+ // its priority within the last two rounds and read while we saw it. Both endpoints must be alive;
+ // the caller still checks the other's position.
+diff -ru bots/variants/dnw-min/src/params.h bots/variants/escort-a/src/params.h
+--- bots/variants/dnw-min/src/params.h	2026-11-13 18:04:43.158310843 +0000
++++ bots/variants/escort-a/src/params.h	2026-11-13 18:11:06.968454078 +0000
+@@ -244,6 +244,10 @@
+ inline constexpr int altar_stand_radius = 2;
+ inline constexpr int altar_leash = 6;
+ inline constexpr int altar_farmers_min = 1;
++// The escort (economy/altar_guard.cc): while one of us carries a winning bag to an altar or channels it there, the
++// allies that can reach that altar before the channel ends screen it, and the strike search prices a stun or kill of
++// an enemy that could stop the channel on its next turn as the channel it saves (comms: the alarm's escort codes).
++inline constexpr bool escort = true;
+ 
+ // An emblem's fight value (shop.cc current_emblem): this weight x the share of the damage we take that comes
+ // from champions, with fight_camp_prior camp damage as a prior, x the fight power it adds (output x effective health).

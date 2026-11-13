@@ -32,9 +32,9 @@ episodes start in the goal branch, 12% in retreat; no dominant new 530 check.
 Six orchestrators (TETHYS, RHEA, PHOEBE, THEIA, CRIUS, IAPETUS) each owned a macro refactor of 529 in their own
 worktree, every A/B against a frozen 529 at 2x fuel, own drafts, 10k+ games on their own fresh ladder-v4 suites
 (seeds 614x0000-614x9999). Overseer notes: [overseer-mx-2026-11-13](overseer-mx-2026-11-13/README.md). RHEA, CRIUS
-and PHOEBE were ended early (17:30 UTC, usage); TETHYS, THEIA and IAPETUS were still running at this commit.
+and PHOEBE were ended early (17:30 UTC, usage); TETHYS, THEIA and IAPETUS ran until 19:25-19:46 UTC.
 Notes, briefs, patches and scripts: [mx-rhea](mx-rhea/NOTES.md), [mx-crius](mx-crius/NOTES.md),
-[mx-phoebe](mx-phoebe/NOTES.md), [mx-tethys](mx-tethys/NOTES.md), [mx-iapetus](mx-iapetus/NOTES.md) (mapgen logs left on the branches).
+[mx-phoebe](mx-phoebe/NOTES.md), [mx-tethys](mx-tethys/NOTES.md), [mx-theia](mx-theia/NOTES.md), [mx-iapetus](mx-iapetus/NOTES.md) (mapgen logs left on the branches).
 
 - **Kept (CHANGES 530):** IAPETUS's stop_due + contest judgement, 53.3 held out at 2x, **52.9 of 40,120 at 100k**.
 - **Level at 100k:** IAPETUS line B (contest judgement) alone, 51.1 held out at 2x but 50.3 (49.8-50.8) of 40,120 at 100k.
@@ -45,6 +45,13 @@ Notes, briefs, patches and scripts: [mx-rhea](mx-rhea/NOTES.md), [mx-crius](mx-c
   at 100k (unused seeds 61490400-61490458), OOF 357,693 / 343,175 (+4%): not merged. IAPETUS's other lines
   (finish window, live territory, relay/altar watch, death audit, Prism threat model v4, stop execution) were level;
   the threat-model fixes cut Prism deaths 20% but read 52.4 (a more cautious Prism).
+- **Level against 531 at 100k:** THEIA `denyfix-531` (branch mx-theia-20261113 @b1e18da2d): 531 + `deny_alarm` (a seen
+  winning tribute posted in comms and read through `ender_to_stop`/`stop_due`), stun slots kept for the channeller,
+  path-based `stop_within` timing, unseen-ender forgetting, no end-of-turn lock on a not-yet-due altar, negative stun
+  value on a not-yet-due channel. **50.1 (49.7-50.6) of 40,120** (unused seeds 61490600-61490658), OOF 361,751 /
+  351,030 (+3%): not merged. THEIA's other lines (orbit, front, chase, premium consistency, relay, conceal, escort,
+  chip) were level against 529; the full scylla denial port 50.8, its late-stop subset 52.1 ([mx-theia](mx-theia/NOTES.md)).
+  Open: `stop_due` reads "due" when no stop can land in time, so bodies still run at channels they cannot stop.
 - **Cautious Prism against a Prism-less opponent (scylla), 100k:** does caution pay against a non-mirror field?
   `variants/cautious-531` = 531 + IAPETUS's full G v4 threat model (lurker tracking, escape straddle for ranged
   pursuers, `pick_second`; against 529 it cut Prism deaths 20% but read 52.4 vs v1's 53.3). Same 40,120 games

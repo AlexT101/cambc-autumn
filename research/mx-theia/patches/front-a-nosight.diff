@@ -1,0 +1,229 @@
+diff -ruN bots/variants/chy-ref/src/bot_parts.h bots/variants/front-a-nosight/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 14:14:03.709856819 +0000
++++ bots/variants/front-a-nosight/src/bot_parts.h	2026-11-13 14:41:58.231437324 +0000
+@@ -297,6 +297,17 @@
+ float home_free(const World& world, int g, int range, float survivable);
+ float shielded_clear(float damage, float rounds, float shield, float ready_in = 0);
+ float home_ground(const StaticMap& map, int g, bool first_turn);
++// home_ground with the enemy's live presence for its spawn walk, once a round (economy/camps.cc).
++struct FrontWeights {
++    int round = -1;
++    bool on = false; // some group's live weight differs from its home_ground
++    int changed = 0; // groups whose does
++    // By group, padded to 4 lanes: the live weight where `live`, else home_ground's as read by the
++    // round's start (1 before): an upper bound on the weight farm reads this round.
++    std::vector<float> weight;
++    std::vector<std::uint8_t> live; // by group
++};
++const FrontWeights& front_weights(const World& world, bool first_turn);
+ float home_side(const StaticMap& map, int g, bool first_turn);
+ float spell_output(const ChampionBelief& c);
+ float basic_output(const ChampionBelief& c);
+diff -ruN bots/variants/chy-ref/src/economy/camps.cc bots/variants/front-a-nosight/src/economy/camps.cc
+--- bots/variants/chy-ref/src/economy/camps.cc	2026-11-13 14:14:03.711578572 +0000
++++ bots/variants/front-a-nosight/src/economy/camps.cc	2026-11-13 15:00:35.188356182 +0000
+@@ -659,6 +659,26 @@
+     return weights;
+ }
+ 
++namespace {
++// home_ground's walks to group g from our spawn and the enemy's: beyond our walk (a crystal's
++// region), both as the crow flies, else the enemy's doorstep counts in full.
++void ground_steps(const StaticMap& map, int g, bool first_turn, int& from_us, int& from_them) {
++    from_us = map.ally_steps(g);
++    from_them = first_turn ? map.enemy_steps_of(g) : map.enemy_steps(g);
++    if (from_us == unreachable) {
++        from_us = dist(map.ally_spawn_centre, map.groups[g].centre);
++        from_them = dist(map.enemy_spawn_centre, map.groups[g].centre);
++    }
++}
++// min(1, 2 from_them / (from_us + from_them))^home_power; 1 when either is unreachable, or both 0
++// (a live arrival can be 0).
++float ground_weight(int from_us, int from_them) {
++    if (from_us == unreachable || from_them == unreachable || from_us + from_them == 0) return 1.0f;
++    const float share = std::min(1.0f, 2.0f * static_cast<float>(from_them) / static_cast<float>(from_us + from_them));
++    return std::pow(share, params::home_power);
++}
++} // namespace
++
+ // A group's weight by its side of the map: 1 in our half, falling towards the enemy spawn. Kept
+ // per group. The first turn reads one group's enemy steps; the turn end then decodes them all,
+ // since a play turn's farm weighs nearly every group.
+@@ -670,23 +690,93 @@
+     float uncached = -1;
+     auto& weight = static_cast<std::size_t>(g) < cache.size() ? cache[g].weight : uncached;
+     if (weight < 0) {
+-        int from_us = map.ally_steps(g);
+-        int from_them = first_turn ? map.enemy_steps_of(g) : map.enemy_steps(g);
+-        // Beyond our walk (a crystal's region), both as the crow flies: else the enemy's doorstep counts in full.
+-        if (from_us == unreachable) {
+-            from_us = dist(map.ally_spawn_centre, map.groups[g].centre);
+-            from_them = dist(map.enemy_spawn_centre, map.groups[g].centre);
+-        }
+-        weight = 1.0f;
+-        if (from_us != unreachable && from_them != unreachable) {
+-            const float share = std::min(1.0f, 2.0f * static_cast<float>(from_them) / static_cast<float>(from_us + from_them));
+-            weight = std::pow(share, params::home_power);
+-        }
++        int from_us, from_them;
++        ground_steps(map, g, first_turn, from_us, from_them);
++        weight = ground_weight(from_us, from_them);
+         if (static_cast<std::size_t>(g) < 256) home_weights()[static_cast<std::size_t>(g)] = weight;
+     }
+     return weight;
+ }
+ 
++// home_ground with the enemy's live arrival in place of its spawn walk. An enemy's arrival at a
++// group: its spawn walk after its respawn while dead; while a sighting (seen or posted, not
++// inferred) is within vision_radius rounds old (the rounds it needs to walk out of our sight), at
++// most a lower bound on its walk from there less the rounds since; its spawn walk otherwise. The
++// front is the least of them: any enemy kills a lone farmer. Only the whole team dead pushes it
++// back; a sighting only brings it closer. Once a round; off on the first turn (every enemy on its
++// spawn).
++const FrontWeights& front_weights(const World& world, bool first_turn) {
++    static FrontWeights f;
++    if (f.round == world.round) return f;
++    f.round = world.round, f.on = false, f.changed = 0;
++    if (first_turn) return f;
++    const auto& map = world.map();
++    const int round = world.round;
++    bool alive = false;
++    int dead_delay = std::numeric_limits<int>::max();
++    struct Sighting {
++        vec2 pos;
++        int age, spawn_steps; // spawn_steps: its walk from its spawn, unreachable if unknown
++    };
++    std::array<Sighting, 8> seen;
++    int n_seen = 0;
++    for (const auto& e : world.enemies) {
++        if (!e.alive) {
++            dead_delay = std::min(dead_delay, e.respawn_earliest >= 0 ? std::max(0, e.respawn_earliest - round) : 0);
++            continue;
++        }
++        alive = true;
++        const int age = round - e.pos_round;
++        if (false && (e.pos_source == Source::seen || e.pos_source == Source::comms) && e.pos_round >= 0 && age <= vision_radius && in_bounds(e.pos)
++            && n_seen < static_cast<int>(seen.size()))
++            seen[static_cast<std::size_t>(n_seen++)] = {e.pos, std::max(0, age), map.from_ally_spawn_ready() ? map.enemy_spawn_steps(e.pos) : unreachable};
++    }
++    // No enemies (cannot happen) or a dead team respawning now: the prior holds.
++    const int delay = alive || dead_delay == std::numeric_limits<int>::max() ? 0 : dead_delay;
++    if (delay == 0 && n_seen == 0) return f;
++    const int n = static_cast<int>(map.groups.size());
++    // home_ground's walks, static: read once a game.
++    static std::vector<std::array<int, 2>> steps;
++    if (static_cast<int>(steps.size()) != n) {
++        steps.resize(n);
++        for (int g = 0; g < n; ++g) ground_steps(map, g, false, steps[static_cast<std::size_t>(g)][0], steps[static_cast<std::size_t>(g)][1]);
++    }
++    if (static_cast<int>(f.weight.size()) < n + 3) f.weight.resize(n + 3), f.live.resize(n);
++    // Static weights as read so far (1 before) are bounds where nothing changes.
++    const auto& kept = home_weights();
++    for (int g = 0; g < n + 3; ++g) f.weight[static_cast<std::size_t>(g)] = g < 256 ? kept[static_cast<std::size_t>(g)] : 1.0f;
++    for (int g = 0; g < n; ++g) {
++        const auto [from_us, from_them] = steps[static_cast<std::size_t>(g)];
++        int live = from_them == unreachable ? from_them : from_them + delay;
++        const vec2 c = map.groups[g].centre;
++        for (int i = 0; i < n_seen; ++i) {
++            const auto& s = seen[static_cast<std::size_t>(i)];
++            // Its walk to the centre is at least the Chebyshev distance, and at least the spawn's
++            // walk less its own from the spawn (so one seen on its spawn arrives as the prior).
++            int walk = dist(s.pos, c);
++            if (from_them != unreachable && s.spawn_steps != unreachable) walk = std::max(walk, from_them - s.spawn_steps);
++            live = std::min(live, std::max(0, walk - s.age));
++        }
++        // Both at least our walk: both weigh 1.
++        const bool changed = live != from_them && (live < from_us || from_them < from_us);
++        f.live[static_cast<std::size_t>(g)] = changed;
++        if (!changed) continue;
++        f.weight[static_cast<std::size_t>(g)] = ground_weight(from_us, live);
++        ++f.changed;
++    }
++    f.on = f.changed > 0;
++    debug_block({
++        if (f.on) {
++            float max_ratio = 0; // the most a live weight is of its static one
++            for (int g = 0; g < n; ++g)
++                if (f.live[static_cast<std::size_t>(g)])
++                    max_ratio = std::max(max_ratio, f.weight[static_cast<std::size_t>(g)] / std::max(1e-6f, ground_weight(steps[static_cast<std::size_t>(g)][0], steps[static_cast<std::size_t>(g)][1])));
++            std::printf("FRONT %d %u %d %.3f delay %d seen %d\n", round, my_handle(), f.changed, max_ratio, delay, n_seen);
++        }
++    });
++    return f;
++}
++
+ // Damage spells a turn on camps, spread over their cooldown.
+ float spell_output(const ChampionBelief& c) {
+     float damage = 0;
+diff -ruN bots/variants/chy-ref/src/economy/farm.cc bots/variants/front-a-nosight/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 14:14:03.711578572 +0000
++++ bots/variants/front-a-nosight/src/economy/farm.cc	2026-11-13 14:56:01.904862739 +0000
+@@ -287,6 +287,7 @@
+     int to_spawn = -1;
+     int gap = -1, gap_range = -1; // home_gap, for range gap_range
+     float home = -1;
++    bool live_home = false; // `home` is a front's live weight (front_weights), not home_ground's
+     int to_altar = -1;
+     std::uint32_t context = 0, gold_context = 0, version = ~0u;
+     bool sticky = false, planned = false;
+@@ -1010,6 +1011,14 @@
+         walk_on(g);
+         return true;
+     }
++    // The farm's side weights this round: home_ground's, or the front's where it moved a group. Not
++    // read after a fight's search (above).
++    const FrontWeights& front = front_weights(world, opening);
++    const auto front_live = [&](int g) __attribute__((always_inline)) { return front.on && front.live[static_cast<std::size_t>(g)]; };
++    // Whether kept facts were weighed at another weight than this round's.
++    const auto home_stale = [&](const GroupFacts& k, int g) __attribute__((always_inline)) {
++        return front_live(g) ? !k.live_home || k.home != front.weight[static_cast<std::size_t>(g)] : k.live_home;
++    };
+     // A Prism keeping its gems (keeps_gems) gains prism_premium on each gem of a capture it takes part in:
+     // every pick type, the carries' 'G' and 'L' too. Off Prism, the gems of a group a keeping Prism ally
+     // claims go to its bag (sole_capture_holder, left_for_prism): our part of them carries its premium.
+@@ -1673,7 +1682,7 @@
+         // Shaved for fastest_clear's sum taken member by member.
+         p.health = pre_health = world.clear_health.data(), p.clear_scale = 0.9999f / strength, p.reflects = reflect > 0;
+         p.crew_most = 1.0f / team_scale(), p.other_part = unclaimed_partner_output > 0 ? partner_part : 1.0f;
+-        p.weight = known_weights(n_groups);
++        p.weight = front.on ? front.weight.data() : known_weights(n_groups);
+         p.out = pre_upper.data(), p.alt = pre_alt.data(), p.test = pre_test.data(), p.test_alt = pre_test_alt.data();
+         p.old = pre_old.data(), p.old_alt = pre_old_alt.data();
+         if (pre_valued) p.value = pre_value.data();
+@@ -1742,7 +1751,7 @@
+         if (banks_bag) trip = std::max(0.0f, trip - bank_now);
+         const float gems = static_cast<float>(std::min(worth_gems[g], short_by));
+         const float worth = std::max(0.0f, gems + std::max(0.0f, per_gold) * worth_gold[g] + std::max(0.0f, tribute_gold) * gems);
+-        const float weight = g < 256 ? home_weights()[static_cast<std::size_t>(g)] : 1.0f;
++        const float weight = front.on ? front.weight[static_cast<std::size_t>(g)] : g < 256 ? home_weights()[static_cast<std::size_t>(g)] : 1.0f;
+         // The join's Focus is no share: at most its rate over the trip and the hold (rate is linear in worth).
+         // Off Prism, the premium is a part of the share, as the gems are (the claimed path's `fed`).
+         const float bonus = gems * keep_bonus(G), carry = keeper ? bonus * exposure_most * weight : 0.0f;
+@@ -1812,7 +1821,7 @@
+                 if (const int near = dist(here, group.centre); !may_help(group, belief, near)) {
+                     auto& kf = group_facts[g];
+                     float worth;
+-                    if (kf.context == context && !kf.sticky && kf.gold_context == gold_context) {
++                    if (kf.context == context && !kf.sticky && kf.gold_context == gold_context && !home_stale(kf, g)) {
+                         worth = kf.gems + kf.gold + kf.gems * keep_most;
+                     } else {
+                         const float gems = static_cast<float>(std::min(worth_gems[g], short_by));
+@@ -1835,7 +1844,7 @@
+                 continue;
+         }
+         auto& known = group_facts[g];
+-        if (known.context != context || known.sticky != (g == farm_group) || known.planned != (g == planned_now)) {
++        if (known.context != context || known.sticky != (g == farm_group) || known.planned != (g == planned_now) || home_stale(known, g)) {
+             if (known.tribute == 0 || known.emblems != emblems) {
+                 known.emblems = emblems;
+                 known.tribute = tribute_turns(world, group.gems);
+@@ -1853,7 +1862,8 @@
+             known.walked_bank = banks ? static_cast<float>(known.walk) + static_cast<float>(known.chained_tribute) : 0.0f;
+             known.walked_cycle = banks ? static_cast<float>(known.walk) + static_cast<float>(known.tribute) : 0.0f;
+             // From the draft's spawn steps; without a plan, two spawn floods once a game.
+-            if (known.home < 0) known.home = home_ground(map, g, opening);
++            if (front_live(g)) known.home = front.weight[static_cast<std::size_t>(g)], known.live_home = true;
++            else if (known.home < 0 || known.live_home) known.home = home_ground(map, g, opening), known.live_home = false;
+             float weight = known.home;
+             // Staying with last turn's choice keeps near ties from turning us back and forth.
+             if (g == farm_group) weight *= stickiness;

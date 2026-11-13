@@ -1,0 +1,10 @@
+note: --suites not given, so only the 256 ladder games: a quick check, not a judgement (pass --suites maps/suites/... for 20k+ games, or use tools/fgate.py)
+A/B mx-theia-t3-dbg: CAND variants/orbit-b (dir) vs REF variants/chy-ref (dir)
+  ladder: running, log replays/ab/mx-theia-t3-dbg/ladder.log
+CAND 50.8% of 256 (130-126), 95% CI 44.7-56.8
+  ladder  50.8% of 256 (130-126), 95% CI 44.7-56.8
+Failed matches: 0
+Out-of-fuel turns: CAND 24 in 20 games, REF 21 in 16 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 1m36s
+Results: replays/ab/mx-theia-t3-dbg/summary.md

@@ -1,0 +1,311 @@
+diff -ru bots/variants/orbit-a/src/bot.cc bots/variants/orbit-b/src/bot.cc
+--- bots/variants/orbit-a/src/bot.cc	2026-11-13 14:14:03.709638336 +0000
++++ bots/variants/orbit-b/src/bot.cc	2026-11-13 15:02:43.827264216 +0000
+@@ -941,7 +941,10 @@
+     // Home is reached on our spawn even where camp fire there keeps us below the health we fled at.
+     if (!record || health > memory.camp_fled || (memory.camp_fled >= 0 && test(world.map().ally_spawn, world.me().pos))) memory.camp_fled = -1;
+     decision = Branch::none;
+-    debug_block({ print_aim_counts(world); }); // the previous turn's
++    debug_block({
++        print_aim_counts(world); // the previous turn's
++        trace_funnel_take(world);
++    });
+     sieged = false;
+     search.chose = false;
+     struck = searched = false;
+diff -ru bots/variants/orbit-a/src/economy/capture.cc bots/variants/orbit-b/src/economy/capture.cc
+--- bots/variants/orbit-a/src/economy/capture.cc	2026-11-13 14:14:03.711578572 +0000
++++ bots/variants/orbit-b/src/economy/capture.cc	2026-11-13 15:15:01.850329899 +0000
+@@ -480,13 +480,15 @@
+ 
+ // Rounds until Prism ally a, at `at`, can stand on cleared group g's tiles: free, its walk; busy with
+ // another group h (standing on its hold, else its claim), first what is left of that: a counting hold's
+-// payout (after its walk there), else its walk to h and a whole hold; then the walk on from h. A live or
+-// respawning h, whose clear or return we cannot time, is past `bound`. Past it, bound + 1 as soon as the
+-// crow's steps show it; -1 short of fuel for a field still to make. Once per group and round: every cleared group of
+-// farm's loop asks.
+-int prism_eta(const World& world, Pathing& pathing, int g, const ChampionBelief& a, vec2 at, int bound) {
++// payout (after its walk there), else its walk to h and a whole hold; a live h, its clear at its
++// claimers' summed camp output, then a whole hold; then the walk on from h. A respawning h, whose
++// return we cannot time, is past `bound`. Past it, bound + 1 as soon as the crow's steps show it; -1
++// short of fuel for a field still to make. In `live` whether the time ran through a live clear. Once
++// per group and round: every cleared group of farm's loop asks.
++int prism_eta(const World& world, Pathing& pathing, int g, const ChampionBelief& a, vec2 at, int bound, bool* live = nullptr) {
+     struct Eta {
+         int round = -1, bound = -1, eta = -1;
++        bool live = false;
+     };
+     static std::vector<Eta> etas;
+     const auto& map = world.map();
+@@ -494,32 +496,76 @@
+     if (static_cast<int>(etas.size()) != n) etas.assign(map.groups.size(), Eta{});
+     auto& e = etas[static_cast<std::size_t>(g)];
+     // A pruned bound + 1 is only a floor: a larger bound asks again.
+-    if (e.round == world.round && (e.eta <= e.bound || bound <= e.bound)) return e.eta;
+-    e.round = world.round, e.bound = bound;
++    if (e.round == world.round && (e.eta <= e.bound || bound <= e.bound)) {
++        if (live) *live = e.live;
++        return e.eta;
++    }
++    e.round = world.round, e.bound = bound, e.live = false;
++    const auto done = [&](int eta) {
++        if (live) *live = e.live;
++        return e.eta = eta;
++    };
+     const auto& G = map.groups[g];
+     int h = a.visible ? map.group_at(a.pos) : -1;
+     if (h < 0 || h == g || world.camps[h].state != CampState::cleared || world.camps[h].holder != team::ally) h = comms::claim_of(world, a.index);
+     if (h == g || h >= n) h = -1;
+     if (h < 0) {
+-        if (steps_to(G, at) > bound) return e.eta = bound + 1;
+-        if (!pathing.group_walking_ready(g) && !fuel_ok(full_field_cost_estimate() + end_reserve)) return e.eta = -1;
+-        return e.eta = team_walk_to(world, pathing, g, at);
++        if (steps_to(G, at) > bound) return done(bound + 1);
++        if (!pathing.group_walking_ready(g) && !fuel_ok(full_field_cost_estimate() + end_reserve)) return done(-1);
++        return done(team_walk_to(world, pathing, g, at));
+     }
+     const auto& H = map.groups[h];
+     const auto& ch = world.camps[h];
+-    if (ch.state != CampState::cleared) return e.eta = bound + 1;
++    if (ch.state == CampState::respawning) return done(bound + 1);
++    int on = unreachable;
++    for (const auto& m : H.members) on = std::min(on, steps_to(G, m.pos));
++    if (ch.state == CampState::alive) {
++        // Its health left as last seen (all of it with a member unread), over its claimers' output a
++        // round, a's own counted: each is at least 1. The clear runs from a's arrival in range (the
++        // others' hits before it uncounted), and its hold from its walk onto the tiles.
++        float health = world.clear_health[static_cast<std::size_t>(h)];
++        if (!(health > 0)) health = H.health;
++        float output = 0;
++        bool own = false;
++        for (const auto& b : world.allies)
++            if (b.alive && comms::claim_of(world, b.index) == h) output += camp_output(b), own |= &b == &a;
++        if (!own) output += camp_output(a);
++        e.live = true;
++        const int clear = static_cast<int>(std::ceil(health / output)), range = a.facts().attack_range();
++        const auto rest = [&](int to_h) { return std::max(to_h, std::max(0, to_h - range) + clear) + capture_rounds(a.fast_capture) - 1; };
++        if (rest(steps_to(H, at)) + on > bound) return done(bound + 1);
++        const int unmade = !pathing.group_walking_ready(g) + !pathing.group_walking_ready(h);
++        if (unmade > 0 && !fuel_ok(static_cast<std::uint64_t>(unmade) * full_field_cost_estimate() + end_reserve)) return done(-1);
++        on = unreachable;
++        for (const auto& m : H.members) on = std::min(on, team_walk_to(world, pathing, g, m.pos));
++        return done(rest(team_walk_to(world, pathing, h, at)) + on);
++    }
+     const bool counting = ch.holder == team::ally && ch.held_since >= 0;
+     const int hold = counting ? ch.payout_round() - world.round : capture_rounds(a.fast_capture) - 1;
+     const auto task = [&](int to_h) { return counting ? std::max(to_h, hold) : to_h + hold; };
+-    int on = unreachable;
+-    for (const auto& m : H.members) on = std::min(on, steps_to(G, m.pos));
+-    if (task(steps_to(H, at)) + on > bound) return e.eta = bound + 1;
++    if (task(steps_to(H, at)) + on > bound) return done(bound + 1);
+     // Fuel for the fields still to make: one made already costs no search.
+     const int unmade = !pathing.group_walking_ready(g) + !pathing.group_walking_ready(h);
+-    if (unmade > 0 && !fuel_ok(static_cast<std::uint64_t>(unmade) * full_field_cost_estimate() + end_reserve)) return e.eta = -1;
++    if (unmade > 0 && !fuel_ok(static_cast<std::uint64_t>(unmade) * full_field_cost_estimate() + end_reserve)) return done(-1);
+     on = unreachable;
+     for (const auto& m : H.members) on = std::min(on, team_walk_to(world, pathing, g, m.pos));
+-    return e.eta = task(team_walk_to(world, pathing, h, at)) + on;
++    return done(task(team_walk_to(world, pathing, h, at)) + on);
++}
++
++// The longest wait for Prism ally a on cleared gem group G that leaving pays (worth_wait): each round
++// it stands empty delays its next return a round, against a's premium on its gems over a cycle; at
++// most one return, and never shorter than a hold's countdown. Only a's own sight shows it the clear:
++// past the countdown only while G is within it of a's tile `at` or of the group it claims, where its
++// task ends.
++int funnel_wait(const World& world, const ChampionBelief& a, const CampGroup& G, vec2 at) {
++    const int countdown = static_cast<int>(cambc::constants::capture_time);
++    bool sees = steps_to(G, at) <= vision_radius;
++    if (const int h = comms::claim_of(world, a.index); !sees && h >= 0 && h < static_cast<int>(world.map().groups.size()))
++        for (const auto& m : world.map().groups[h].members) sees |= steps_to(G, m.pos) <= vision_radius;
++    if (!sees) return countdown;
++    const float paid = prism_premium(world, a, G.gems) * static_cast<float>(G.respawn + capture_rounds(false));
++    const int capped = static_cast<int>(std::floor(std::min(paid, static_cast<float>(G.respawn))));
++    return std::max(countdown, capped);
+ }
+ 
+ enum class Leave { no, claimed, near };
+@@ -537,8 +583,9 @@
+ // (`claimed`) when even at Prism's nearest it misses the payout of our hold on it (2 rounds or more off, as
+ // prism_takeover asks), or of one we would begin on arrival (prism_coming's complement). Unclaimed, it
+ // is left (`near`) when empty or held from this round or last and Prism is due on it before the lapse
+-// (prism_eta), unless Prism is dominant, or reaches our hold before its payout (prism_takeover's), or
+-// the leave has lapsed. Left empty, Prism holds it whole. A hold we stayed on for
++// (prism_eta), the longest wait its premium pays for (funnel_wait) from our first sight of it cleared,
++// unless Prism is dominant, or reaches our hold before its payout (prism_takeover's), or the leave has
++// lapsed. Left empty, Prism holds it whole. A hold we stayed on for
+ // Prism sure to come in time we keep: Prism held up on the way would otherwise have us leave it as it is
+ // about to pay.
+ Leave leave_for_prism(const World& world, Pathing& pathing, int g, const LeftRecord& left) {
+@@ -563,10 +610,8 @@
+     for (const auto& a : world.allies) {
+         if (a.is_self || !a.alive || a.facts().passive != Passive::gem_focus) continue;
+         const bool claimed = comms::claim_of(world, a.index) == g;
+-        // Unclaimed, the wait runs from our first sight of it cleared; only a hold just begun is left.
+-        if (!claimed && (left.lapsed || world.round - left.first >= cambc::constants::capture_time || (held && c.held_since < world.round - 1)
+-                         || prism_dominant(world, a)))
+-            return Leave::no;
++        // Unclaimed, only a hold just begun is left.
++        if (!claimed && (left.lapsed || (held && c.held_since < world.round - 1) || prism_dominant(world, a))) return Leave::no;
+         if (a.visible && test(G.tiles(), a.pos)) return Leave::no; // there: sole_capture_holder's
+         if (a.visible && (held_back(world, a, false) || a.health < params::hurt_health_fraction * a.max_health)) continue;
+         const int bag = a.visible ? a.gems : comms::bag_of(world, a.index);
+@@ -576,24 +621,58 @@
+             || rounds_left(world) <= tribute_turns(bag + G.gems, a.fast_tribute) + map.width + map.height + endgame_margin
+             || !recent_tile(world, a, at, slack))
+             continue;
++        // The wait runs from our first sight of it cleared.
++        const int wait = left.left || !claimed ? funnel_wait(world, a, G, at) : 0;
++        if (!claimed && world.round - left.first >= wait) {
++            debug_block({
++                if (left.left) std::printf("FUNNEL %d %u %d %d -1 lapse\n", world.round, my_handle(), g, wait);
++            });
++            return Leave::no;
++        }
+         if (!claimed) {
+             // Left only for a Prism due on it before the lapse would hand it back (prism_eta), from the
+             // posted tile itself: its drift may go either way. A Prism that has acted this round moves
+             // next round, a round later than one still to act.
+-            const int remaining = cambc::constants::capture_time - (world.round - left.first) - (a.visible && a.acted ? 1 : 0);
+-            const int eta = prism_eta(world, pathing, g, a, at, remaining);
++            const int remaining = wait - (world.round - left.first) - (a.visible && a.acted ? 1 : 0);
++            bool live = false;
++            const int eta = prism_eta(world, pathing, g, a, at, remaining, &live);
++            const auto decided = [&](Leave leave) {
++                debug_block({
++                    // Once a round per group: every caller of the turn asks.
++                    static std::vector<int> traced;
++                    if (traced.size() != map.groups.size()) traced.assign(map.groups.size(), -1);
++                    if ((live || wait > static_cast<int>(cambc::constants::capture_time)) && traced[static_cast<std::size_t>(g)] != world.round) {
++                        traced[static_cast<std::size_t>(g)] = world.round;
++                        std::printf("FUNNEL %d %u %d %d %d %s%s\n", world.round, my_handle(), g, wait, eta, leave == Leave::near ? "leave" : "no",
++                                    live ? "-live" : "");
++                    }
++                });
++                return leave;
++            };
+             // Short of fuel for the field, a leave under way stands: lapsing it would hand the group back for good.
+-            if (eta < 0) return left.left && !held ? Leave::near : Leave::no;
+-            if (eta > remaining) return Leave::no;
++            if (eta < 0) return decided(left.left && !held ? Leave::near : Leave::no);
++            if (eta > remaining) return decided(Leave::no);
+             const int prism_rounds = eta + capture_rounds(a.fast_capture) - 1;
+             if (!held) {
+-                if (left.left || worth_wait(a, prism_rounds - (capture_rounds(world) - 1 + std::max(1, walk_from(my_position()))))) return Leave::near;
+-                return Leave::no;
++                if (left.left || worth_wait(a, prism_rounds - (capture_rounds(world) - 1 + std::max(1, walk_from(my_position()))))) return decided(Leave::near);
++                return decided(Leave::no);
+             }
+             const int rounds = c.payout_round() - world.round;
+-            if (eta - slack >= rounds) return left.left || worth_wait(a, prism_rounds - rounds) ? Leave::near : Leave::no;
++            if (eta - slack >= rounds) return decided(left.left || worth_wait(a, prism_rounds - rounds) ? Leave::near : Leave::no);
+             if (eta + slack < rounds && test(G.tiles(), my_position())) kept_group = g, kept_since = c.held_since;
+-            return Leave::no;
++            return decided(Leave::no);
++        }
++        // Left already, claimed now from past carry_reach: still left while its walk ends within the wait.
++        if (!held && left.left && !left.lapsed && world.round - left.first + std::max(0, walk_from(at) - slack) <= wait) {
++            debug_block({
++                static std::vector<int> traced;
++                if (traced.size() != map.groups.size()) traced.assign(map.groups.size(), -1);
++                if (wait > static_cast<int>(cambc::constants::capture_time) && traced[static_cast<std::size_t>(g)] != world.round) {
++                    traced[static_cast<std::size_t>(g)] = world.round;
++                    std::printf("FUNNEL %d %u %d %d %d claimed\n", world.round, my_handle(), g, wait, walk_from(at));
++                }
++            });
++            return Leave::claimed;
+         }
+         // No walk is shorter than the crow's: most groups are out of reach before a field is read.
+         if (steps_to(G, at) - slack > carry_reach()) return Leave::no;
+@@ -610,7 +689,7 @@
+ }
+ 
+ // leave_for_prism, with each cleared episode's record. A Prism that has not claimed a group we left
+-// within capture_time rounds is not coming: it is ours to capture as usual, or it could stand empty
++// within the wait its premium pays for (funnel_wait) is not coming: it is ours to capture as usual, or it could stand empty
+ // for good. A leave cut short (an enemy in sight, Prism lost or hurt) is not resumed either: leaving
+ // again would have us step on and off it by turns.
+ bool left_for_prism(const World& world, Pathing& pathing, int g, bool cleared_now) {
+@@ -1183,6 +1262,37 @@
+         if (cast_at_camp(world, near[k].second)) return;
+ }
+ 
++// Debug builds, Prism: a capture paid to us alone on a group we did not see alive within 3 rounds of
++// our hold's start (so not one we cleared and stepped onto), with no ally on its tiles at our turns
++// during the hold: most likely one an ally left to us (left_for_prism).
++void trace_funnel_take(const World& world) {
++    if (world.me().facts().passive != Passive::gem_focus || !world.me().alive) return;
++    const auto& map = world.map();
++    static std::vector<int> seen_alive;
++    static int on = -1, since = -1;
++    static std::uint32_t gems = 0;
++    static bool shared = false;
++    if (seen_alive.size() != map.groups.size()) seen_alive.assign(map.groups.size(), -1);
++    for (std::size_t g = 0; g < map.groups.size(); ++g)
++        if (world.camps[g].state == CampState::alive && world.camps[g].state_round == world.round) seen_alive[g] = world.round;
++    if (on >= 0) {
++        const auto& c = world.camps[static_cast<std::size_t>(on)];
++        if (c.state == CampState::respawning && c.state_round == world.round && my_gems() > gems && !shared
++            && since - seen_alive[static_cast<std::size_t>(on)] > 3)
++            std::printf("FUNNEL-TAKE %d %u %d\n", world.round, my_handle(), on);
++    }
++    const int g = map.group_at(my_position());
++    const auto* c = g >= 0 ? &world.camps[static_cast<std::size_t>(g)] : nullptr;
++    if (c && c->state == CampState::cleared && c->holder == team::ally && c->held_since >= 0) {
++        if (g != on || c->held_since != since) shared = false;
++        on = g, since = c->held_since;
++        shared |= (c->occupants & 0xFFFFu & ~(1u << world.me().index)) != 0;
++    } else {
++        on = -1;
++    }
++    gems = my_gems();
++}
++
+ } // namespace
+ 
+ } // namespace aph
+diff -ru bots/variants/orbit-a/src/economy/farm.cc bots/variants/orbit-b/src/economy/farm.cc
+--- bots/variants/orbit-a/src/economy/farm.cc	2026-11-13 14:54:24.722392127 +0000
++++ bots/variants/orbit-b/src/economy/farm.cc	2026-11-13 15:02:58.268671934 +0000
+@@ -1014,8 +1014,9 @@
+     // every pick type, the carries' 'G' and 'L' too. Off Prism, the gems of a group a keeping Prism ally
+     // collects go to its bag (sole_capture_holder, left_for_prism): our part of them carries its premium,
+     // x how likely it is to collect them (`orbit`): its claim surely, a group within carry_reach of where it
+-    // is (its claim, else its recent tile) as the funnel hands them over, none past twice that, and none but
+-    // its claim while it is dominant (the funnel leaves it nothing then) or recalling or teleporting away.
++    // is (its recent tile, the funnel's prism_eta's start, else its claim) as the funnel hands them over, none
++    // past twice that, and none but its claim while it is dominant or an enemy is in sight (the funnel leaves
++    // it nothing then) or it is recalling or teleporting away.
+     // Gems the Prism collects pay Marcella no tribute gold: off Prism, the premium less it. Applied past the
+     // kept facts, which hold none of it. Not on a Monolith or a capture that wins.
+     // prism_premium only falls with the gems and the orbit is at most 1, so `keep_most`, a gem's at 1 (the
+@@ -1027,7 +1028,7 @@
+         const ChampionBelief* a;
+         int claim;
+         vec2 anchor;
+-        bool orbits; // a valid anchor and not dominant
++        bool orbits; // a valid anchor, not dominant and no enemy in sight
+         // Its premium by gem count this turn: groups share few counts, and each call reads its bag and tributes.
+         int n_kept = 0;
+         std::array<int, 4> kept_gems{};
+@@ -1036,16 +1037,17 @@
+     std::array<Fed, 4> fed{}; // the Prism allies that collect a group, off Prism
+     int n_fed = 0;
+     const int orbit_reach = carry_reach();
++    const bool funnels = feeder && short_by > 1 && !enemy_seen(world);
+     if (short_by > 1 && keeper) keep_most = prism_premium(world, world.me(), 1);
+     if (short_by > 1 && feeder)
+         for (const auto& a : world.allies) {
+             if (a.is_self || !a.alive || a.facts().passive != Passive::gem_focus || n_fed == static_cast<int>(fed.size())) continue;
+             const int posted = comms::claim_of(world, a.index);
+             Fed f{&a, posted < n_groups ? posted : -1, {}, false};
+-            if (!prism_dominant(world, a)) {
++            if (funnels && !prism_dominant(world, a)) {
+                 int slack = 0;
+-                if (f.claim >= 0) f.anchor = groups[f.claim].centre, f.orbits = true;
+-                else f.orbits = recent_tile(world, a, f.anchor, slack) && in_bounds(f.anchor);
++                f.orbits = recent_tile(world, a, f.anchor, slack) && in_bounds(f.anchor);
++                if (!f.orbits && f.claim >= 0) f.anchor = groups[f.claim].centre, f.orbits = true;
+                 // About to leave for spawn: sole_capture_holder hands it nothing.
+                 if (a.visible && (a.channel == Channel::recall || a.channel == Channel::teleport)) f.orbits = false;
+             }

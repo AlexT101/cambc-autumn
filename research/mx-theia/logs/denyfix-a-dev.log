@@ -1,0 +1,9 @@
+A/B mx-theia-denyfix-a-dev: CAND variants/denyfix-a (dir) vs REF variants/chy-ref (dir)
+  dev: running, log replays/ab/mx-theia-denyfix-a-dev/dev.log
+CAND 52.4% of 10200 (5347-4853), 95% CI 51.5-53.4
+  dev  52.4% of 10200 (5347-4853), 95% CI 51.5-53.4
+Failed matches: 0
+Out-of-fuel turns: CAND 903 in 612 games, REF 961 in 614 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 2m16s
+Results: replays/ab/mx-theia-denyfix-a-dev/summary.md

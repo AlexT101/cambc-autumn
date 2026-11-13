@@ -1,0 +1,9 @@
+A/B mx-theia-dnw-alarm-dev: CAND variants/dnw-alarm (dir) vs REF variants/chy-ref (dir)
+  dev: running, log replays/ab/mx-theia-dnw-alarm-dev/dev.log
+CAND 49.8% of 10200 (5075-5125), 95% CI 48.8-50.7
+  dev  49.8% of 10200 (5075-5125), 95% CI 48.8-50.7
+Failed matches: 0
+Out-of-fuel turns: CAND 822 in 581 games, REF 833 in 589 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 1m44s
+Results: replays/ab/mx-theia-dnw-alarm-dev/summary.md

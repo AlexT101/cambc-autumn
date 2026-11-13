@@ -1,0 +1,9 @@
+A/B mx-theia-escort-dev: CAND variants/escort-a (dir) vs REF variants/chy-ref (dir)
+  dev: running, log replays/ab/mx-theia-escort-dev/dev.log
+CAND 51.3% of 10200 (5230-4970), 95% CI 50.3-52.2
+  dev  51.3% of 10200 (5230-4970), 95% CI 50.3-52.2
+Failed matches: 0
+Out-of-fuel turns: CAND 995 in 642 games, REF 997 in 624 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 0m47s
+Results: replays/ab/mx-theia-escort-dev/summary.md

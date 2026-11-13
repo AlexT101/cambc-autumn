@@ -26,6 +26,7 @@ Smoke before launch: chy-ref copy vs chy-ref, 256 ladder games at 2x fuel: 50.0%
 | IAPETUS `ia-prism-v1` (line D v1: the Prism's bag, stop_due; branch mx-iapetus-20261113 @3bf1525b5) | `bots/variants/ia-prism-3bf1525` | pooled held-out 53.3 (52.8-53.8) of 40,800 | **52.9 (52.4-53.4) of 40,120** (`overseer-mx-iaprism-100k`, suite `maps/suites/overseer-mx/iap100k` = seeds 61490100-61490158, ladder-v4, 20,060 maps) | 318,049 / 309,008 (+3%) |
 | THEIA `dnw-min` (deny_late + deny_alarm on 529; branch mx-theia-20261113 @ba7a6c500) | `bots/variants/theia-dnwmin-ba7a6c500` | pooled held-out 52.1 of 30,600 (vs 529) | **49.0 (48.5-49.5) of 40,120 against chy-530** (`overseer-mx-dnwmin-vs530-100k`, seeds 61490200-61490258) | 335,594 / 346,804 (-3%) |
 | IAPETUS `ia-final` rebased onto 531 (branch @f32ce0a89) | `bots/variants/ia-final-531` | pooled held-out 53.2 (52.8-53.7) of 51,000 (vs 529) | **49.3 (48.8-49.7) of 40,120 against chy-531** (`overseer-mx-iafinal-vs531-100k`, seeds 61490400-61490458) | 357,693 / 343,175 (+4%) |
+| THEIA `denyfix-531` (branch @b1e18da2d) | `bots/variants/denyfix-531-b1e18da` | smoke only (reads skipped at the user's request) | **50.1 (49.7-50.6) of 40,120 against chy-531** (`overseer-mx-denyfix531-vs531-100k`, seeds 61490600-61490658) | 361,751 / 351,030 (+3%) |
 
 ## Process notes
 - 16:00 UTC: subagents are handed back after ~100 min of runtime (RHEA twice). Each hand-back is resumed by SendMessage.
@@ -44,3 +45,6 @@ Smoke before launch: chy-ref copy vs chy-ref, 256 ladder games at 2x fuel: 50.0%
 - Codex fuel pass (`/home/ubuntu/wt/fuel-530`, branch fuel-530-20261113, tmux `codex-fuel530`): if it finds fuel cuts, squash into one commit and merge into main, provided they are behaviour-identical (not necessarily byte-identical; Codex states which).
 - Any orchestrator's new improvement: A/B at normal fuel on a new 40k-game fresh suite against the merged 530 (`variants/chy-530`).
 - Teammate live-test requests may be approved, with the caveat that the work is in progress and may vary on the ladder. Live scheduling stays with the teammate.
+
+## Round closed (19:50 UTC)
+All six orchestrators exited; their notes are under `research/mx-*/`. Main ships 530 (IAPETUS's stop_due + contest judgement) and 531 (Codex fuel pass). Every later candidate read level or below against 531 at 100k.

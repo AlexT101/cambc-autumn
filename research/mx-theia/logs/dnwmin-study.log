@@ -1,0 +1,9 @@
+A/B mx-theia-dnwmin-study: CAND variants/dnw-min (dir) vs REF variants/chy-ref (dir)
+  study: running, log replays/ab/mx-theia-dnwmin-study/study.log
+CAND 51.7% of 2040 (1055-985), 95% CI 49.5-53.9
+  study  51.7% of 2040 (1055-985), 95% CI 49.5-53.9
+Failed matches: 0
+Out-of-fuel turns: CAND 168 in 124 games, REF 173 in 128 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 0m23s
+Results: replays/ab/mx-theia-dnwmin-study/summary.md

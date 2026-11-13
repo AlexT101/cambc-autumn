@@ -1,0 +1,11 @@
+A/B mx-theia-premm-dev: CAND variants/prem-m (dir) vs REF variants/chy-ref (dir)
+  dev: running, log replays/ab/mx-theia-premm-dev/dev.log
+  SPRT: H0 accepted at 217 games (LLR -9.16); stopping dev
+CAND 49.3% of 217 (107-110), 95% CI 42.7-55.9
+  dev  49.3% of 217 (107-110), 95% CI 42.7-55.9, 217/10200 played
+SPRT H0 0.5 vs H1 0.52 (alpha 0.05, beta 0.05, stops on H0 only, from 200 games): LLR -9.16 in [-2.94, 2.94] from 108 map pairs (216 of 217 finished games): H0 accepted, stopped the run at 217 of 10200 games; the win rates are from that partial, shuffled sample
+Failed matches: 0
+Out-of-fuel turns: CAND 15 in 12 games, REF 14 in 11 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 0m04s
+Results: replays/ab/mx-theia-premm-dev/summary.md

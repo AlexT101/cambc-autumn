@@ -1,0 +1,305 @@
+diff -ru bots/variants/chy-ref/src/bot_parts.h bots/variants/prem-a/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 14:14:03.709856819 +0000
++++ bots/variants/prem-a/src/bot_parts.h	2026-11-13 15:54:20.378363983 +0000
+@@ -435,6 +435,9 @@
+ const ChampionBelief* value_holder(const World& world, const CampGroup& G);
+ bool keeps_bag(const World& world, const ChampionBelief& a, int gems);
+ float prism_premium(const World& world, const ChampionBelief& a, int gems);
++int prism_paid_gems(const World& world, const ChampionBelief& a, const CampGroup& G);
++float premium_health(float health, float max_health);
++float premium_health(const ChampionBelief& a);
+ bool outvalues_holders(const World& world, const CampGroup& G);
+ bool takes_over(const World& world);
+ bool may_take_over(const World& world, const CampGroup& G);
+diff -ru bots/variants/chy-ref/src/economy/capture.cc bots/variants/prem-a/src/economy/capture.cc
+--- bots/variants/chy-ref/src/economy/capture.cc	2026-11-13 14:14:03.711578572 +0000
++++ bots/variants/prem-a/src/economy/capture.cc	2026-11-13 16:12:10.438725852 +0000
+@@ -155,18 +155,26 @@
+     return a.visible ? a.gems : comms::bag_of(world, a.index);
+ }
+ 
+-// A healthy Prism keeps its bag for Focus with `gems` more in it: short of the win, and early enough to bank
+-// it later. Else the bag goes to an altar, and a hurt one leaves a hold. Read from a's bag (team_bag), its
+-// health only while in sight, and the team's score, so allies agree.
++// A Prism keeps its bag for Focus with `gems` more in it: short of the win, and early enough to bank it
++// later. Else the bag goes to an altar. Read from a's bag (team_bag) and the team's score, so allies agree.
+ bool keeps_bag(const World& world, const ChampionBelief& a, int gems) {
+     if (a.facts().passive != Passive::gem_focus) return false;
+     const auto& map = world.map();
+     const int bag = team_bag(world, a);
+-    return a.facts().passive == Passive::gem_focus && (!(a.is_self || a.visible) || a.health >= params::hurt_health_fraction * a.max_health)
+-           && world.score.ally + bag + gems < static_cast<int>(cambc::constants::winning_gems)
++    return world.score.ally + bag + gems < static_cast<int>(cambc::constants::winning_gems)
+            && rounds_left(world) > tribute_turns(bag + gems, a.fast_tribute) + map.width + map.height + endgame_margin;
+ }
+ 
++// The share of Prism ally a's premium its bag is sure to live for: the Focus counts at any health, but a hurt
++// carrier is likelier to die, bag and all, before its next heal. Whole down to the hurt line, where we count
++// ourselves fit; none at the safe recall line, where it goes home; linear between. Read only while in sight.
++float premium_health(float health, float max_health) {
++    if (!(max_health > 0)) return 1.0f;
++    const float lo = params::safe_recall_health_fraction, hi = params::hurt_health_fraction;
++    return std::clamp((health / max_health - lo) / (hi - lo), 0.0f, 1.0f);
++}
++float premium_health(const ChampionBelief& a) { return a.is_self || a.visible ? premium_health(a.health, a.max_health) : 1.0f; }
++
+ // The team's farm as every ally reads it (score, bags, stats in sight or last seen), once a round:
+ // `per_output`, the gems a round it collects per point of camp output a round (its collected gems
+ // since round 1, score and living bags, over the rounds, against the summed camp_output, with
+@@ -197,9 +205,11 @@
+ // farms k x rho gems a round, rho the team's gems per output (team_farm); those gems join the bag and
+ // compound, so over the H rounds it stays kept one gem becomes exp(k rho H) gems. H runs to the win at the
+ // team's pace, or to the last round that still leaves the bag's tribute. Gems past the win are worth
+-// nothing. Read from what every ally reads alike, so all agree.
++// nothing. Read from what every ally reads alike, so all agree. Times the bag's survival (premium_health).
+ float prism_premium(const World& world, const ChampionBelief& a, int gems) {
+     if (gems <= 0 || !keeps_bag(world, a, gems)) return 0.0f;
++    const float survival = premium_health(a);
++    if (!(survival > 0)) return 0.0f;
+     // The gem-independent part, kept per ally while its inputs hold; the bag's tribute is read per call, so the
+     // result never depends on which `gems` was asked first and only falls with them.
+     struct Kept {
+@@ -228,7 +238,7 @@
+     if (horizon != k.horizon) k.horizon = horizon, k.growth = std::expm1(k.rate * horizon);
+     const float growth = k.growth;
+     const int room = static_cast<int>(cambc::constants::winning_gems) - world.score.ally - bag - gems;
+-    return std::max(0.0f, std::min(growth, static_cast<float>(room) / static_cast<float>(gems)));
++    return survival * std::max(0.0f, std::min(growth, static_cast<float>(room) / static_cast<float>(gems)));
+ }
+ 
+ // What a's lone hold of G pays the team, in gems at `price` a gold: its share with a Prospector
+@@ -446,6 +456,19 @@
+     return nullptr;
+ }
+ 
++// The gems of G's payout Prism ally a is paid on its tiles: all of them as its sole holder (sole_capture_holder;
++// off them, its tests of a that read no tile or enemy), none when another is, else a holders() split's floor
++// share, of no more holders than tiles.
++int prism_paid_gems(const World& world, const ChampionBelief& a, const CampGroup& G) {
++    if ((a.is_self || a.visible) && test(G.tiles(), position_of(a))) {
++        if (const auto* s = sole_capture_holder(world, G)) return s->index == a.index ? G.gems : 0;
++    } else if (a.channel != Channel::tribute && a.channel != Channel::teleport
++               && (!(a.is_self || a.visible) || a.health >= params::hurt_health_fraction * a.max_health)) {
++        return G.gems;
++    }
++    return G.gems / std::max(1, std::min(holders(G), static_cast<int>(G.members.size())));
++}
++
+ // The farthest walk Prism carries a capture from (farm's 'L' picks): two holds. The farther, the
+ // longer the group stands empty for an enemy to take, and each candidate builds a field.
+ int carry_reach() { return 2 * cambc::constants::capture_time; }
+@@ -463,21 +486,6 @@
+     return false;
+ }
+ 
+-// Prism ally a's Focus is at least twice that of every living enemy Prism we have seen, where its hits
+-// already kill in duels about half the time: a gem's Focus more there is worth less than an ally's
+-// capture now. No enemy Prism, or none seen: not.
+-bool prism_dominant(const World& world, const ChampionBelief& a) {
+-    float enemy = 0;
+-    for (const auto& e : world.enemies)
+-        if (e.alive && e.facts().passive == Passive::gem_focus && e.stats_round >= 0) enemy = std::max(enemy, e.focus);
+-    if (!(enemy > 0)) return false;
+-    // Unseen, its Focus moves with the bag it posts.
+-    const float focus = a.visible ? a.focus
+-                                  : a.focus + cambc::constants::passive_abilities::prism_focus_per_gem
+-                                                  * static_cast<float>(comms::bag_of(world, a.index) - a.gems);
+-    return focus >= 2 * enemy;
+-}
+-
+ // Rounds until Prism ally a, at `at`, can stand on cleared group g's tiles: free, its walk; busy with
+ // another group h (standing on its hold, else its claim), first what is left of that: a counting hold's
+ // payout (after its walk there), else its walk to h and a whole hold; then the walk on from h. A live or
+@@ -532,15 +540,14 @@
+     bool left = false, lapsed = false;
+ };
+ 
+-// Off Prism, no enemy in sight: a Prism ally keeping its gems (as far as the team's tests show), healthy
+-// and free to walk, near cleared gem group g. Claimed by it, within carry_reach, the group is left
+-// (`claimed`) when even at Prism's nearest it misses the payout of our hold on it (2 rounds or more off, as
+-// prism_takeover asks), or of one we would begin on arrival (prism_coming's complement). Unclaimed, it
+-// is left (`near`) when empty or held from this round or last and Prism is due on it before the lapse
+-// (prism_eta), unless Prism is dominant, or reaches our hold before its payout (prism_takeover's), or
+-// the leave has lapsed. Left empty, Prism holds it whole. A hold we stayed on for
+-// Prism sure to come in time we keep: Prism held up on the way would otherwise have us leave it as it is
+-// about to pay.
++// Off Prism, no enemy in sight: a Prism ally keeping its gems (as far as the team's tests show), free to
++// walk, near cleared gem group g; its health is in its premium (premium_health). Claimed by it, within
++// carry_reach, the group is left (`claimed`) when even at Prism's nearest it misses the payout of our hold
++// on it (2 rounds or more off, as prism_takeover asks), or of one we would begin on arrival (prism_coming's
++// complement). Unclaimed, it is left (`near`) when empty or held from this round or last and Prism is due
++// on it before the lapse (prism_eta), unless Prism reaches our hold before its payout (prism_takeover's),
++// or the leave has lapsed. Left empty, Prism holds it whole. A hold we stayed on for Prism sure to come in
++// time we keep: Prism held up on the way would otherwise have us leave it as it is about to pay.
+ Leave leave_for_prism(const World& world, Pathing& pathing, int g, const LeftRecord& left) {
+     static int kept_group = -1, kept_since = -1;
+     const auto& map = world.map();
+@@ -560,15 +567,17 @@
+     const auto worth_wait = [&](const ChampionBelief& a, int late) {
+         return prism_premium(world, a, G.gems) * cycle > static_cast<float>(std::max(0, late));
+     };
++    // A one-tile Monolith takes no second body: a Prism there before our payout cannot take our hold over
++    // (prism_takeover needs a free tile), so only the wait decides.
++    const bool in_place = !G.has_monolith || G.members.size() > 1;
+     for (const auto& a : world.allies) {
+         if (a.is_self || !a.alive || a.facts().passive != Passive::gem_focus) continue;
+         const bool claimed = comms::claim_of(world, a.index) == g;
+         // Unclaimed, the wait runs from our first sight of it cleared; only a hold just begun is left.
+-        if (!claimed && (left.lapsed || world.round - left.first >= cambc::constants::capture_time || (held && c.held_since < world.round - 1)
+-                         || prism_dominant(world, a)))
++        if (!claimed && (left.lapsed || world.round - left.first >= cambc::constants::capture_time || (held && c.held_since < world.round - 1)))
+             return Leave::no;
+         if (a.visible && test(G.tiles(), a.pos)) return Leave::no; // there: sole_capture_holder's
+-        if (a.visible && (held_back(world, a, false) || a.health < params::hurt_health_fraction * a.max_health)) continue;
++        if ((a.visible && held_back(world, a, false)) || !(prism_premium(world, a, G.gems) > 0)) continue;
+         const int bag = a.visible ? a.gems : comms::bag_of(world, a.index);
+         vec2 at;
+         int slack = 0;
+@@ -591,7 +600,7 @@
+                 return Leave::no;
+             }
+             const int rounds = c.payout_round() - world.round;
+-            if (eta - slack >= rounds) return left.left || worth_wait(a, prism_rounds - rounds) ? Leave::near : Leave::no;
++            if (eta - slack >= rounds || !in_place) return left.left || worth_wait(a, prism_rounds - rounds) ? Leave::near : Leave::no;
+             if (eta + slack < rounds && test(G.tiles(), my_position())) kept_group = g, kept_since = c.held_since;
+             return Leave::no;
+         }
+@@ -602,7 +611,7 @@
+         // Left already, claimed now: a Prism nearer than our hold's payout would call us back to begin it.
+         if (!held && left.left && !left.lapsed) return Leave::claimed;
+         const int rounds = held ? c.payout_round() - world.round : capture_rounds(world) - 1 + std::max(1, walk_from(my_position()));
+-        if (walk - slack >= rounds) return worth_wait(a, walk + capture_rounds(a.fast_capture) - 1 - rounds) ? Leave::claimed : Leave::no;
++        if (walk - slack >= rounds || !in_place) return worth_wait(a, walk + capture_rounds(a.fast_capture) - 1 - rounds) ? Leave::claimed : Leave::no;
+         if (held && walk + slack < rounds && test(G.tiles(), my_position())) kept_group = g, kept_since = c.held_since;
+         return Leave::no;
+     }
+@@ -617,7 +626,7 @@
+     if (g < 0 || world.me().facts().passive == Passive::gem_focus) return false;
+     const auto& G = world.map().groups[g];
+     const auto& c = world.camps[g];
+-    if (G.gems <= 0 || G.has_monolith || (c.state != CampState::cleared && !cleared_now)) return false;
++    if (G.gems <= 0 || (c.state != CampState::cleared && !cleared_now)) return false;
+     static std::vector<LeftRecord> records;
+     if (records.size() != world.map().groups.size()) records.assign(world.map().groups.size(), LeftRecord{});
+     auto& left = records[static_cast<std::size_t>(g)];
+@@ -910,13 +919,13 @@
+ }
+ 
+ // Prism keeping its gems (keeps_gems) may hold G's capture from off its tiles: sole_capture_holder's
+-// tests of us, read before we get there. In `goal` the free tiles no camp hits.
++// tests of us, read before we get there, but its health: hurt, we are no sole holder, but hold it whole
++// while no ally joins. In `goal` the free tiles no camp hits.
+ bool prism_carries(const World& world, Safety& safety, const CampGroup& G, bitboard& goal) {
+-    if (G.gems <= 0 || G.has_monolith || enemy_seen(world) || test(G.tiles(), my_position())) return false;
++    if (G.gems <= 0 || enemy_seen(world) || test(G.tiles(), my_position())) return false;
+     const auto& map = world.map();
+     const int bag = static_cast<int>(my_gems());
+-    if (my_health() < params::hurt_health_fraction * my_max_health()
+-        || world.score.ally + bag + G.gems >= static_cast<int>(cambc::constants::winning_gems)
++    if (world.score.ally + bag + G.gems >= static_cast<int>(cambc::constants::winning_gems)
+         || rounds_left(world) <= tribute_turns(bag + G.gems, world.me().fast_tribute) + map.width + map.height + endgame_margin
+         || enemy_on(world, G.tiles()))
+         return false;
+@@ -933,9 +942,12 @@
+ 
+ // prism_carries an ally's counting gem capture of G: on arrival before the payout we are its sole
+ // holder and the allies step off (yield_capture) with the tiles never empty; after it, they have
+-// left it to us (left_for_prism). In `timer` the rounds to the payout.
++// left it to us (left_for_prism). In `timer` the rounds to the payout. Hurt, we would not be its sole
++// holder (fit_on), only split it.
+ bool prism_takeover(const World& world, Safety& safety, const CampGroup& G, int& timer, bitboard& goal) {
+-    if (G.gems <= 0 || G.has_monolith || enemy_seen(world) || test(G.tiles(), my_position()) || sole_capture_holder(world, G)) return false;
++    if (G.gems <= 0 || enemy_seen(world) || test(G.tiles(), my_position()) || sole_capture_holder(world, G)
++        || my_health() < params::hurt_health_fraction * my_max_health())
++        return false;
+     bool held = false;
+     for (const auto& a : world.allies) {
+         if (a.is_self || !a.alive || !a.visible || !test(G.tiles(), a.pos)) continue;
+@@ -1084,6 +1096,8 @@
+     const int mine = team_walk_to(world, pathing, g, here);
+     const auto& c = world.camps[g];
+     const int payout = c.held_since >= 0 ? c.payout_round() : world.round + capture_rounds(false);
++    // A keeping Prism's: allies off the tiles leave it to us (left_for_prism) or yield it on our arrival.
++    const bool keeper = world.me().facts().passive == Passive::gem_focus && prism_premium(world, world.me(), G.gems) > 0;
+     int ahead = 0;
+     for (const auto& a : world.allies) {
+         if (a.is_self || !a.alive || !a.visible) continue;
+@@ -1094,6 +1108,7 @@
+             ahead += !leaves;
+             continue;
+         }
++        if (keeper) continue;
+         const int theirs = team_walk_to(world, pathing, g, a.pos);
+         ahead += (theirs < mine || (theirs == mine && a.index < world.me().index)) && !bound_elsewhere(world, a, g);
+     }
+diff -ru bots/variants/chy-ref/src/economy/farm.cc bots/variants/prem-a/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 14:14:03.711578572 +0000
++++ bots/variants/prem-a/src/economy/farm.cc	2026-11-13 16:12:10.438426409 +0000
+@@ -1013,7 +1013,8 @@
+     // A Prism keeping its gems (keeps_gems) gains prism_premium on each gem of a capture it takes part in:
+     // every pick type, the carries' 'G' and 'L' too. Off Prism, the gems of a group a keeping Prism ally
+     // claims go to its bag (sole_capture_holder, left_for_prism): our part of them carries its premium.
+-    // Applied past the kept facts, which hold none of it. Not on a Monolith or a capture that wins.
++    // Applied past the kept facts, which hold none of it. Not on a capture that wins. On a Monolith, the
++    // premium is on the gems the Prism is paid there (prism_paid_gems), spread over the group's.
+     // prism_premium only falls with the gems, so `keep_most`, a gem's at 1 (the most of any Prism ally's
+     // off Prism), bounds every group's: the prunes add it to the gems' price as tribute_gold is.
+     const bool keeper = keeps, feeder = world.me().facts().passive != Passive::gem_focus;
+@@ -1022,18 +1023,35 @@
+     std::array<int, 4> fed_claim{};
+     int n_fed = 0;
+     if (short_by > 1 && keeper) keep_most = prism_premium(world, world.me(), 1);
++    debug_block({
++        if (const float f = premium_health(world.me()); keeper && f < 1.0f) std::printf("PREMH %d %u %.3f\n", world.round, my_handle(), f);
++    });
+     if (short_by > 1 && feeder)
+         for (const auto& a : world.allies)
+             if (const int claim = comms::claim_of(world, a.index);
+                 !a.is_self && a.alive && a.facts().passive == Passive::gem_focus && claim >= 0 && n_fed < static_cast<int>(fed_by.size()))
+                 if (const float p = prism_premium(world, a, 1); p > 0) keep_most = std::max(keep_most, p), fed_by[n_fed] = &a, fed_claim[n_fed++] = claim;
++    const auto premium_on = [&](const ChampionBelief& a, const CampGroup& G, int g) {
++        if (!G.has_monolith) return prism_premium(world, a, G.gems);
++        const int paid = prism_paid_gems(world, a, G);
++        const float share = static_cast<float>(paid) / static_cast<float>(G.gems);
++        const float premium = paid > 0 ? share * prism_premium(world, a, paid) : 0.0f;
++        debug_block({
++            static int traced_round = -1, traced_group = -1;
++            if (premium > 0 && (traced_round != world.round || traced_group != g)) {
++                traced_round = world.round, traced_group = g;
++                std::printf("PREMM %d %u %d %.4f %.3f\n", world.round, my_handle(), g, premium, share);
++            }
++        });
++        return premium;
++    };
+     const auto keep_bonus = [&](const CampGroup& G) __attribute__((always_inline)) {
+-        if (!(keep_most > 0) || G.gems <= 0 || G.gems >= short_by || G.has_monolith) return 0.0f;
+-        if (keeper) return prism_premium(world, world.me(), G.gems);
++        if (!(keep_most > 0) || G.gems <= 0 || G.gems >= short_by) return 0.0f;
+         const int g = static_cast<int>(&G - &groups[0]);
++        if (keeper) return premium_on(world.me(), G, g);
+         float most = 0;
+         for (int i = 0; i < n_fed; ++i)
+-            if (fed_claim[i] == g) most = std::max(most, prism_premium(world, *fed_by[i], G.gems));
++            if (fed_claim[i] == g) most = std::max(most, premium_on(*fed_by[i], G, g));
+         return most;
+     };
+     const float bound_tribute = tribute_gold + keep_most;
+@@ -2114,7 +2132,7 @@
+                 }
+                 return hits;
+             };
+-            // The Focus is ours only if the clear leaves us fit to keep the bag (keeps_bag's health).
++            // The Focus is ours only as the claimed group's sole holder: the clear must leave us fit (fit_on).
+             if (carry > 0 && my_health() - (kite_hit ? kite_hits() : damage) < params::hurt_health_fraction * max_health) carry = 0, hold = 0;
+             // No capture rounds but a keeping Prism's: the claimer holds it, and the crew moves on once it is cleared.
+             // A crew we are in holds us against small pulls: one member leaving shrinks it for the rest.
+@@ -2355,7 +2373,8 @@
+     // clear ends we join it as crew, if we can afford its fire; after, a free tile beside the claimers'
+     // makes us its sole holder (sole_capture_holder) at their payout, else it is left to us once cleared
+     // (left_for_prism) for a whole hold of ours. A group the claimers fill is not taken: its hold can't be
+-    // handed over. Posted as the carry ('G', 'L'), so a turn off the way withdraws it.
++    // handed over. Posted as the carry ('G', 'L'), so a turn off the way withdraws it. Hurt, we would not
++    // be its sole holder (fit_on).
+     if (keeps && !banks_bag && !memory.banking && !enemy_seen(world) && my_health() >= params::hurt_health_fraction * max_health) {
+         const int bag = static_cast<int>(my_gems()), winning = static_cast<int>(cambc::constants::winning_gems);
+         std::array<int, 8> asked;
