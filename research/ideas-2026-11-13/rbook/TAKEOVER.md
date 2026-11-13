@@ -533,3 +533,39 @@ were screened; four proven Fish lines await new-Mite collateral outcomes. Builde
 has no uploader; reconcile later baseline coverage before any release. Metadata,
 candidate/defer ledger and captured pins are in the new work. No release cycle
 started, and no change to the published134 artifact/digest.
+
+## 2026-11-13 21:59 UTC: v135 r14 qualification 4/8; sixteen-candidate successor
+
+The initial8-entry builder was stopped before fingerprints completed. Its successor
+`loss-v132-r9-mite-r14-expanded` waited for336 known Mite cells and all6Fish collateral
+outcomes; the final4 host cells were natural wins and did not change selection.
+All cached same-cell alternatives were screened:85cells comprised52natural wins,
+25loss cells without a reachable cached line, and8reachable Mite candidates. No
+alternative rescued a discarded primary. Full132/r14 baseline:224/340 wins.
+
+The14-entry successor passed14/14 combined exact,13fallback games/74handovers with
+invalid0,52/52 wide identity,131/300 normal-fuel fresh identity,3forced cells0bad.
+Bundle815808bytes. Uploaded once as135 at21:46:20; live/REST21:50:23, scheduler666537,
+runner2787885. All64 uploaded source files match the unmasked verified variant.
+Eight essential r14 target checks collected21:56; clean provenance and all ZIP CRCs.
+Four wins:04fault_lines/a,04two_kingdoms/a,05crop_circle/a,05burger/a, after divergence
+indices38,2,24,12 respectively. Four failures:00crater/b,00the_line/b,02geodes/a,
+05border/a. Release cycle563720 held on the expected required-win failure; REST135
+remains latest. Tracked receipt and all8rows: `r14-release.json`.
+
+One100-row Mite ranked page yielded29nonself losses:23natural host wins,2already
+covered,4new candidates. Only those4 were downloaded/extracted:02treasure_box/b,
+05harmonica/b,05ring/b,02cuts/b. Two earlier Fish candidates also downloaded:
+00swirl/b and05bento/a. All6 ZIP CRCs, extracted drafts and winners match metadata;
+no extraction problems. None has target-pin proof. Current baseline mandates three
+collateral wins:Fishr9 on02cuts/b; Miter14 on00swirl/b and05bento/a. Original metadata,
+raw/ent and audits remain in `rbook-foreign/{mite-r14-bounded,fish-r9-bounded}`.
+
+Local successor815282, unit`rbook-host132-r14-foreign6-build`, work
+`loss-v132-r9-r14-qualified-v135-foreign6`:6provenFish,4actual135target wins,6foreign
+candidates. Source133 selects the six Fish; the four135wins are an explicit extra
+allowlist with original r14 source-pin proof, preventing filler adoption. Foreign
+entries remain unverified until local gates and actual target/collateral wins. All
+four failed135Mite lines are excluded. No generic sweep, extra agent, or main-bot edit.
+Release after gates is authorized through the existing helper boundary; upload
+cutoff23:00UTC leaves cleanup margin before the23:59 deadline.

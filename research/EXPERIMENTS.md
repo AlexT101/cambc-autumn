@@ -10,6 +10,20 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## (charybdis 531 book, 2026-11-13) Old Mite lines win four of eight new-pin checks
+
+After a fresh book-free132/Miter14 baseline (224/340 wins), v135 retained six proven
+Fishr9 lines and tried eight old-Mite handover lines only on confirmed new-host
+losses with known collateral. Unreachable draft keys were screened before building.
+Local combined replay14/14 and wide100M identity52/52 passed; all64 uploaded source
+files matched the verified variant. Eight clean pinnedr14 target checks returned
+4wins/4losses. Wins on04fault_lines/a,04two_kingdoms/a,05crop_circle/a,05burger/a
+followed replay divergence at indices38,2,24,12. Thus handover can preserve a win
+after an opponent update, but these selected cells do not establish a general
+success rate. The four failed provisional lines are excluded from the next book;
+only actual current-pin winning recordings are retained. [Full provenance and
+CRC audit](ideas-2026-11-13/rbook/r14-release.json).
+
 ## (charybdis 531 book, 2026-11-13) Corrected v134 restores three collateral wins
 
 The 30-entry book retains six live-qualified Fish r9 lines and 24 proven Mite r13
