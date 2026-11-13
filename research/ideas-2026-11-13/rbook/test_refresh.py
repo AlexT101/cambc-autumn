@@ -70,6 +70,27 @@ class RefreshGates(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError,'suspect'):
                     loss_refresh.ready(128,pins,['wins'])
 
+    def test_resume_preserves_frozen_selection_and_does_not_copy_host(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);work=root/'work';work.mkdir()
+            host=root/'bots/variants/rbook-loss-v128';host.mkdir(parents=True)
+            frozen=dict(host_version=128,pins=dict(mite='r13'),forced_keys=['forced'],candidates=[])
+            (work/'selection.json').write_text(json.dumps(frozen))
+            (work/'build-started.json').write_text(json.dumps(dict(bot=str(host))))
+            with mock.patch.object(loss_refresh,'ROOT',root), \
+                 mock.patch.object(loss_refresh.sched,'load',return_value={'history':[dict(version=128,label='chy-525f',masked=False)]}), \
+                 mock.patch.object(loss_refresh,'baseline_rows',return_value=[]), \
+                 mock.patch.object(loss_refresh.rbuild,'select') as select, \
+                 mock.patch.object(loss_refresh,'run',side_effect=RuntimeError('sizing reached')) as run:
+                with self.assertRaisesRegex(RuntimeError,'sizing reached'):
+                    loss_refresh.build(work,128,dict(mite='r13'),resume=True)
+                select.assert_not_called()
+                self.assertEqual(run.call_count,1)
+                self.assertIn('--selection',run.call_args.args[0])
+                self.assertEqual(json.loads((work/'selection.json').read_text()),frozen)
+                with self.assertRaisesRegex(RuntimeError,'artifacts do not match'):
+                    loss_refresh.build(work,128,dict(mite='r14'),resume=True)
+
     def test_partial_sources_still_require_complete_host_baseline(self):
         pins=dict(mite='r13')
         tasks=[dict(id='base',version=128,purpose='set',opp_name='Mite',refset='r13',

@@ -1,3 +1,11 @@
+## 2026-11-13 16:18 UTC: first partial book building
+
+Frozen first selection:168 candidates (106 Fish,62 Mite),32 forced draft keys. Full clean v128 baseline remains340cells per opponent. The70% source threshold was met16:16; build failed before compilation because systemd PATH lacked cambc. Reconciled clone/selection unchanged, added explicit --resume preserving pins/host/selection, corrected unit PATH to include /home/ubuntu/venv/bin. Builder PID3268605 running after restart16:17.17offline book tests pass, including resume identity/selection preservation.
+
+User explicitly requested removing our local API limiter. Commit02e0929a7 removes tokenbucket/callgap/collector reserve/priority waits, retains server retry-after handling.13runner/JITtests pass. Runner3211816 and scheduler3211839 active; canonical data/run.log restored. Winning-source task filter remains. Source26/28 groups collected16:17, group27created16:17:13; group28 waitsquota16:26:53.
+
+Foreign recent unranked search capped at600rows/6pages:26foreign wins,8confirmed host-loss cells,7pass prospective Fish draft compatibility. Saved /home/ubuntu/tmp-offload/rbook-foreign/mite-r13-current/unranked-loss-candidates.json for a later increment; no delay to first build, no claims of opponentversion identity for unranked games.
+
 ## 2026-11-13 16:08 UTC: incremental first release
 
 User explicitly accepts a partial book and wants incremental improvements, and now authorizes delegation. One worker (Hilbert, 01a1d5a9-f826-7e32-9a88-be2271ac138c) investigates slow source collection and opt-in winning-recording-only downloads; no descendants. Parent retains scheduler and book publication ownership.

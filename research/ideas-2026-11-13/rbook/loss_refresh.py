@@ -63,13 +63,13 @@ def ready(version, pins, steps, minimum_source_fraction=1.0):
     return True
 
 
-def build(work, version, pins):
+def build(work, version, pins, resume=False):
     submitted = next((h for h in sched.load()['history'] if h['version'] == version), None)
     if not submitted or submitted.get('label') != 'chy-525f' or submitted.get('masked') is not False:
         raise RuntimeError('This builder requires the matching unmasked chy-525f baseline')
     name = f'rbook-loss-v{version}'
     host = ROOT/'bots/variants'/name
-    if host.exists() or (work/'build-started.json').exists():
+    if not resume and (host.exists() or (work/'build-started.json').exists()):
         raise RuntimeError('Build already started; reconcile artifacts instead of overwriting')
     baseline = {(r['opp_name'].split()[-1].lower(),r['map'],r['side']):r
                 for r in baseline_rows(version,pins)}
@@ -77,29 +77,37 @@ def build(work, version, pins):
     selection = types.SimpleNamespace(versions='117,118,119,125,126', host_version=version,
                                       host_losses_only=True, extra_uncovered_only=True,
                                       extra=extra if extra.exists() else None)
-    chosen = []
-    for opp, pin in pins.items():
-        chosen += rbuild.select(selection,ls.TEAMS[opp][1],pin,opp)
-    if not chosen:
-        raise RuntimeError('No target-pin wins on host losses yet')
-    # select() names an exact recording; a per-cell deduplicated view can hide that match.
-    from loss_live_plan import source_rows
-    rows = source_rows(work,pins)
-    forced = []
-    for cell in chosen:
-        source = rows[cell['key'].rsplit('-',1)[1]]
-        base = baseline[(cell['opp'],cell['map'],cell['side'])]
-        if source['our_picks'] != base['our_picks']:
-            forced.append(cell['key'])
-    write(work/'selection.json',dict(host_version=version,pins=pins,policy='confirmed host losses only',
-          baseline={opp:dict(cells=sum(k[0]==opp for k in baseline),
-                             losses=sum(k[0]==opp and r['result']=='loss' for k,r in baseline.items()))
-                    for opp in pins},candidates=chosen,forced_keys=forced))
-    (work/'forced-candidates.txt').write_text(''.join(k+'\n' for k in forced))
-    write(work/'build-started.json',dict(at=ls.now(),bot=str(host)))
-    write(work/'build-state.json',dict(phase='building',at=ls.now(),bot=str(host)))
-    # This frozen copy includes the verified stale-round handover guard; main bots stay untouched.
-    run(['./copybot','variants/rbook-refresh-r11',f'variants/{name}'],work/'copy.log')
+    if resume:
+        started = json.loads((work/'build-started.json').read_text())
+        frozen = json.loads((work/'selection.json').read_text())
+        if (not host.is_dir() or started.get('bot') != str(host)
+                or frozen['host_version'] != version or frozen['pins'] != pins):
+            raise RuntimeError('Resume artifacts do not match this host and pins')
+        (work/'forced-candidates.txt').write_text(''.join(k+'\n' for k in frozen['forced_keys']))
+    else:
+        chosen = []
+        for opp, pin in pins.items():
+            chosen += rbuild.select(selection,ls.TEAMS[opp][1],pin,opp)
+        if not chosen:
+            raise RuntimeError('No target-pin wins on host losses yet')
+        # select() names an exact recording; a per-cell deduplicated view can hide that match.
+        from loss_live_plan import source_rows
+        rows = source_rows(work,pins)
+        forced = []
+        for cell in chosen:
+            source = rows[cell['key'].rsplit('-',1)[1]]
+            base = baseline[(cell['opp'],cell['map'],cell['side'])]
+            if source['our_picks'] != base['our_picks']:
+                forced.append(cell['key'])
+        write(work/'selection.json',dict(host_version=version,pins=pins,policy='confirmed host losses only',
+              baseline={opp:dict(cells=sum(k[0]==opp for k in baseline),
+                                 losses=sum(k[0]==opp and r['result']=='loss' for k,r in baseline.items()))
+                        for opp in pins},candidates=chosen,forced_keys=forced))
+        (work/'forced-candidates.txt').write_text(''.join(k+'\n' for k in forced))
+        write(work/'build-started.json',dict(at=ls.now(),bot=str(host)))
+        # This frozen copy includes the verified stale-round handover guard; main bots stay untouched.
+        run(['./copybot','variants/rbook-refresh-r11',f'variants/{name}'],work/'copy.log')
+    write(work/'build-state.json',dict(phase='building',at=ls.now(),bot=str(host),resumed=resume))
     args = ['--versions',selection.versions,'--host-version',str(version),'--host-losses-only',
             '--selection',work/'selection.json','--extra-uncovered-only',
             '--force-keys',work/'forced-candidates.txt','--jobs','8']
@@ -159,23 +167,24 @@ def main():
     ap.add_argument('--mite-pin',required=True)
     ap.add_argument('--fish-pin',default='r8')
     ap.add_argument('--after-step',action='append',required=True)
+    ap.add_argument('--resume',action='store_true',help='resume reconciled local artifacts using their frozen selection')
     ap.add_argument('--minimum-source-fraction',type=float,default=1.0,
                     help='allow a partial source sweep; the host baseline must still be complete')
     a=ap.parse_args();a.work.mkdir(parents=True,exist_ok=True)
     pins=dict(fish=a.fish_pin,mite=a.mite_pin)
     with (a.work/'build.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-        if (a.work/'build-started.json').exists():
+        if (a.work/'build-started.json').exists() and not a.resume:
             raise RuntimeError('Existing build requires reconciliation')
         write(a.work/'build-state.json',dict(phase='waiting_for_sweeps',at=ls.now(),host_version=a.host_version,pins=pins))
         try:
-            while not ready(a.host_version,pins,a.after_step,a.minimum_source_fraction):
+            while not a.resume and not ready(a.host_version,pins,a.after_step,a.minimum_source_fraction):
                 if (a.work/'STOP').exists():
                     return
                 time.sleep(30)
             if (a.work/'STOP').exists():
                 return
-            build(a.work,a.host_version,pins)
+            build(a.work,a.host_version,pins,resume=a.resume)
         except Exception as error:
             write(a.work/'build-state.json',dict(phase='held',at=ls.now(),error=repr(error)))
             raise
