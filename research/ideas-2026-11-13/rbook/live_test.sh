@@ -34,13 +34,22 @@ if ready and c is not None and sys.argv[2] == '--rest':
 print('yes' if ready else 'no')
 EOF
 }
-start_sched() { rm -f $S/STOP; setsid nohup /home/ubuntu/venv/bin/python tools/live_sched.py >> $S/sched.out 2>&1 < /dev/null & sleep 5; }
+start_sched() {
+  rm -f "$S/STOP"
+  # nohup/setsid stays in the uploader's cgroup and dies when that service exits.
+  systemd-run --user --collect --unit="cambc-live-scheduler-$$-${RANDOM}" \
+    --property=Type=exec --property="WorkingDirectory=$R" \
+    --property="StandardOutput=append:$S/sched.out" --property="StandardError=append:$S/sched.out" \
+    --setenv="PATH=$PATH" /home/ubuntu/venv/bin/python tools/live_sched.py || return 1
+  sleep 5
+  kill -0 "$(cat "$S/sched.lock")" 2>/dev/null
+}
 for try in $(seq 40); do
   until [ "$(ready_to_upload)" = yes ]; do sleep 10; done
   PID=$(cat $S/sched.lock); touch $S/STOP
   while kill -0 $PID 2>/dev/null; do sleep 2; done
   [ "$(ready_to_upload)" = yes ] && break
-  echo "$(date -u +%T) a batch started before the stop; retrying"; start_sched; sleep 60
+  echo "$(date -u +%T) a batch started before the stop; retrying"; start_sched || exit 1; sleep 60
 done
 [ "$(ready_to_upload)" = yes ] || { echo "no idle upload boundary"; start_sched; exit 1; }
 echo "$(date -u +%T) scheduler stopped between batches"
@@ -70,6 +79,6 @@ f.write_text(json.dumps(steps, indent=1) + '\n')
 print('queued steps', [s['id'] for s in new], 'for v%d' % v, 'at position', i, [s['id'] for s in steps])
 EOF
 fi
-start_sched; sleep 60
+start_sched || exit 1; sleep 60
 echo "$(date -u +%T) submit rc=$rc"; pgrep -af "live_sched.py|ladder_scrims.py run" | grep -v bash | cut -c1-70
 tail -6 $S/sched.log | cut -c1-260

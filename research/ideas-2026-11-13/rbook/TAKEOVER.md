@@ -241,3 +241,24 @@ runner PID494561, scheduler PID494583, live_batches.RESERVE=0. Fish currently re
 NO burst and will ask after its 530 fuel pass. The helper reads limit-RESERVE dynamically;
 it therefore requires full quota exhaustion before interrupting an active campaign now.
 The earlier fixed50 policy and PID458161/458183 note above are superseded.
+
+### v131 release, 2026-11-13 17:47 UTC
+
+Increment2 uploaded exactly once as v131 and became live/REST at17:47:04, before live
+qualification as instructed. Helper stopped/restarted the scheduler only at a full-quota
+resting boundary; new scheduler PID746536, runner494561 unchanged. Release service
+rbook-increment2-release completed successfully; state waiting_for_live_checks. Its39
+requested check cells are queued after the active129campaign, whose126task_ids and pins
+were preserved exactly. Six uncreated v130hourly opponent checks were retired under the
+live lock; detector snapshots remain unchanged. 529 now waits only for quota (48groups
+remaining at17:47). All69protected first-book hashes remain unchanged. The worker owns
+following checks through validation/fixes; no repeat upload should be launched.
+
+### Scheduler lifetime correction after v131 upload
+
+The release service exited17:48:11 and its cgroup cleaned up scheduler746536 despite
+nohup/setsid. Parent recovered it outside the worker unit; current lock PID803582.
+The worker did NOT launch a competing restart. Future live_test.sh restarts use their
+own systemd user service (unique unit, --collect), with explicit working directory,
+PATH and append logs; startup failure propagates. Mocked launch/failure cases plus
+quota-boundary tests pass (18 release-driver tests). Current529campaign remains parent-owned.

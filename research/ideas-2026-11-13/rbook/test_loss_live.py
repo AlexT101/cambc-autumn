@@ -2,7 +2,9 @@
 import copy
 import io
 import json
+import os
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import types
@@ -13,6 +15,30 @@ import loss_live as live
 
 
 class LossLiveTests(unittest.TestCase):
+    def test_helper_restarts_scheduler_in_independent_user_service(self):
+        script=live.HELPER.read_text()
+        function='start_sched() {'+script.split('start_sched() {',1)[1].split('\n}',1)[0]+'\n}'
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);bin_dir=root/'bin';bin_dir.mkdir()
+            (root/'sched.lock').write_text(str(os.getpid()))
+            (root/'STOP').touch()
+            launcher=bin_dir/'systemd-run'
+            launcher.write_text('#!/bin/sh\nprintf "%s\\n" "$@" > "$TRACE"\nexit "${LAUNCH_RC:-0}"\n')
+            launcher.chmod(0o755)
+            (bin_dir/'sleep').write_text('#!/bin/sh\nexit 0\n');(bin_dir/'sleep').chmod(0o755)
+            env=dict(os.environ,S=str(root),R=str(root),TRACE=str(root/'trace'),PATH=str(bin_dir)+os.pathsep+os.environ['PATH'])
+            result=subprocess.run(['bash','-c',function+'\nstart_sched'],env=env,capture_output=True,text=True)
+            self.assertEqual(result.returncode,0,result.stderr)
+            args=(root/'trace').read_text().splitlines()
+            self.assertIn('--user',args);self.assertIn('--collect',args)
+            self.assertIn('--property=Type=exec',args)
+            self.assertIn('--property=StandardOutput=append:'+str(root/'sched.out'),args)
+            self.assertEqual(args[-2:],['/home/ubuntu/venv/bin/python','tools/live_sched.py'])
+            self.assertFalse((root/'STOP').exists())
+            env['LAUNCH_RC']='1'
+            result=subprocess.run(['bash','-c',function+'\nstart_sched'],env=env,capture_output=True,text=True)
+            self.assertNotEqual(result.returncode,0)
+
     def test_prepare_is_local_and_preserves_an_active_campaign(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)
