@@ -20,6 +20,7 @@ find $V/$DST $V/$DST-base -name '*.rej' -o -name '*.orig' | grep . && { echo "pa
 [ -n "$NOBENCH" ] || python3 tools/fuel/bench.py run variants/$DST-base --set wide --jobs 32 --out $B/$DST-base-100M.json > $B/$DST-base-100M.log 2>&1
 [ -n "$NOBENCH" ] || python3 tools/fuel/bench.py run variants/$DST-base --maps $(cat ~/tmp-offload/rbook/fresh_bench.txt) --fuel 0 --jobs 32 \
         --out $B/$DST-base-fresh-0.json > $B/$DST-base-fresh-0.log 2>&1
-echo "ready. Next (new WORK dir: symlink raw, ent; copy fp.json bad.json extra.tsv drop.txt keys.txt from x1):"
-echo "  REF=$DST-base PRIO=seeded $R/stage.sh $DST WORK WORK/keys.txt --opp 'Intercontinental Fish:r8' --opp Mite:r9 --extra WORK/extra.tsv --force-versions 901"
+echo "ready. Next (new WORK dir: symlink raw, ent; copy fp.json bad.json extra.tsv drop.txt keys.txt from x2):"
+echo "  REF=$DST-base PRIO=seeded $R/stage.sh $DST WORK WORK/keys.txt --opp 'Intercontinental Fish:r8' --opp Mite:r9 --extra WORK/extra.tsv --force-versions 901,123"
+echo "  (cd $R && python3 forcecheck.py --host variants/$DST --opp variants/$DST-base --work WORK)"
 echo "Verify fails on entries whose picks the new draft no longer makes: drop them (pick_entries --drop) or force them."
