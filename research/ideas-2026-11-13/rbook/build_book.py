@@ -175,6 +175,17 @@ def main():
         if cells is not None and cell_of(r) not in cells:
             continue
         chosen.append(r)
+    # One entry per map, side and picks: two opponents that pick alike on a cell keep the first input's entry, which
+    # the other then leaves at its first difference.
+    seen, kept = {}, []
+    for r in chosen:
+        k = (r['map_id'], r['side'], tuple(r['ours']['picks']), tuple(r['opp']['picks']))
+        if k in seen:
+            print(f'dropped {r["key"]}: same map, side and picks as {seen[k]}', file=sys.stderr)
+            continue
+        seen[k] = r['key']
+        kept.append(r)
+    chosen = kept
     if a.cap is not None:
         size = {r['key']: sum(len(enc_body(b['turns'])) for b in r[a.team]['bodies']) for r in chosen}
         chosen = sorted(sorted(chosen, key=lambda r: (size[r['key']], r['key']))[:a.cap], key=lambda r: r['key'])
@@ -203,11 +214,6 @@ def main():
         rows.append(dict(map=int(r['map_id'], 16), side=0 if side == 'a' else 1, w=r['width'], h=r['height'], counts=r['counts'], layout=int(r['layout'], 16),
                          ours=me['picks'], opp=other['picks'], last=len(me['bodies'][0]['turns']), offs=offs, lens=lens, fps=fpo, key=r['key']))
     rows.sort(key=lambda r: (r['side'], r['w'], r['h'], r['map']))  # book.cc finds a map's size by binary search
-    seen = {}
-    for r in rows:
-        k = (r['map'], r['side'])
-        assert k not in seen, f'two entries for one map and side: {seen[k]} {r["key"]}'
-        seen[k] = r['key']
     b64 = base64.b64encode(bytes(blob)).decode()
     mode = {'play': 0, 'record': 1, 'puppet': 2}[a.mode]
     with open(a.out, 'w') as f:

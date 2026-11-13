@@ -1,8 +1,12 @@
 """Builds a replay book into a bot copy from our live wins (games.jsonl), re-running each game locally to prove it
 reproduces and to record the fingerprints the book checks.
 
-    py rbuild.py --host variants/rbook-525 --opp "Intercontinental Fish" --refset r8 [--versions 117,118,119]
+    py rbuild.py --host variants/rbook-525 [--opp "Intercontinental Fish:r8" --opp Mite:r9] [--versions 117,118,119]
                  [--host-version 119] [--extra EXTRA.tsv] [--work ~/tmp-offload/rbook/fish] [--jobs 32] [--cells CELLS] [--cap N]
+    py rbuild.py --host DIR --work WORK --verify-only     (another build of a book made in WORK, e.g. a masked copy)
+
+--opp NAME:REFSET, repeatable: one book over several opponents; each is selected, recorded and verified against its
+own puppet, and the bot holds them all (where two opponents pick alike on a cell, the first --opp's entry is kept).
 
 Steps (each cached under --work by game key, so a rerun after new games only does the new ones):
   1. select: per (map, side), one winning game of ours (the shortest), from --versions against --opp/--refset;
@@ -39,13 +43,22 @@ def map_path(name):
     raise FileNotFoundError(name)
 
 
-def select(a):
+def opponents(a):
+    """[(name prefix, refset, tag)] from --opp NAME:REFSET (NAME alone takes --refset)."""
+    out = []
+    for o in a.opp or ['Intercontinental Fish']:
+        name, _, ref = o.partition(':')
+        out.append((name, ref or a.refset, name.split()[-1].lower()))
+    return out
+
+
+def select(a, opp, refset, tag):
     versions = {int(v) for v in a.versions.split(',')}
     cells = collections.defaultdict(list)
     host_won = set()
     for line in open(GAMES):
         g = json.loads(line)
-        if g.get('status') != 'finished' or not g['opp_name'].startswith(a.opp) or g.get('refset') != a.refset:
+        if g.get('status') != 'finished' or not g['opp_name'].startswith(opp) or g.get('refset') != refset:
             continue
         cell = (g['map'], g['side'])
         if a.host_version and g['version'] == a.host_version and g['result'] == 'win':
@@ -58,14 +71,14 @@ def select(a):
             continue
         g = min(gs, key=lambda x: (x['rounds'], -x['version']))
         chosen.append(dict(key=f"{g['map']}-{g['side']}-v{g['version']}-{g['match'][-12:]}", replay=str(ROOT / g['replay']), side=g['side'],
-                           map=g['map'], version=g['version'], rounds=g['rounds']))
-    if a.extra:
+                           map=g['map'], version=g['version'], rounds=g['rounds'], opp=tag))
+    if a.extra and tag == opponents(a)[0][2]:
         for line in open(a.extra):
             if line.strip() and not line.startswith('#'):
                 rep, side, key, mp = line.split()[:4]
                 if (mp, side) not in {(c['map'], c['side']) for c in chosen} and (mp, side) not in host_won:
-                    chosen.append(dict(key=key, replay=rep, side=side, map=mp, version=None, rounds=None))
-    log(f'select: {len(chosen)} cells ({len(host_won)} left to the host: its own live wins)')
+                    chosen.append(dict(key=key, replay=rep, side=side, map=mp, version=None, rounds=None, opp=tag))
+    log(f'select {tag} {refset}: {len(chosen)} cells ({len(host_won)} left to the host: its own live wins)')
     return chosen
 
 
@@ -124,7 +137,7 @@ def build(bot):
         raise RuntimeError(f'build {bot} failed:\n{r.stdout[-3000:]}\n{r.stderr[-3000:]}')
 
 
-def record(cs, a, work, host):
+def record(cs, a, work, host, tag):
     """Plays the games not yet recorded; returns key -> fingerprints (list of hex strings per body) for exact ones."""
     fpfile = work / 'fp.json'
     fps = json.loads(fpfile.read_text()) if fpfile.exists() else {}
@@ -134,7 +147,7 @@ def record(cs, a, work, host):
     log(f'record: {len(todo)} games to play ({len(fps)} recorded, {len(bad)} failed before)')
     if todo:
         ents = write_entries(todo, work, 'todo.jsonl')
-        rec, pup = ROOT / 'bots/variants' / f'{host.name}-rec', ROOT / 'bots/variants' / f'{host.name}-pup'
+        rec, pup = ROOT / 'bots/variants' / f'{host.name}-rec-{tag}', ROOT / 'bots/variants' / f'{host.name}-pup-{tag}'
         copy_bot(host, rec), copy_bot(host, pup)
         for bot, team, mode in ((rec, 'ours', 'record'), (pup, 'opp', 'puppet')):
             subprocess.run([sys.executable, str(HERE / 'build_book.py'), str(ents), str(bot / 'src/book/book_data.h'), '--team', team, '--mode', mode], check=True)
@@ -149,12 +162,12 @@ def record(cs, a, work, host):
                 out.unlink()
             A, B = (rec, pup) if c['side'] == 'a' else (pup, rec)
             lines.append(f"{A} {B} {map_path(c['map'])} {out}")
-        man = work / 'manifest.txt'
+        man = work / f'manifest-{tag}.txt'
         man.write_text('\n'.join(lines) + '\n')
         env = dict(os.environ, CAMBC_BIN=str(FAST), FASTRUNNER_MODE='native')
         r = subprocess.run([str(FAST), 'run-batch', str(man), '--jobs', str(a.jobs), '--slot-dir', str(cpu_slots.DIR), '--slots', str(cpu_slots.SIZE),
                             '--release', '--color', 'never'], capture_output=True, text=True, env=env, cwd=ROOT)
-        (work / 'run.log').write_text(r.stdout + r.stderr)
+        (work / f'run-{tag}.log').write_text(r.stdout + r.stderr)
 
         def check(c):
             out = runs / f"{c['key']}.repl26a"
@@ -199,25 +212,36 @@ def record(cs, a, work, host):
 
 def verify(cs, a, work, host):
     """The shipped bot (play mode: fingerprints checked, hand-over armed) against a puppet of the opponent in every
-    entry: each must reproduce its live game round for round."""
-    ents = write_entries(cs, work, 'verify.jsonl')
-    pup = ROOT / 'bots/variants' / f'{host.name}-pup'
+    entry: each must reproduce its live game round for round. One puppet an opponent (its blind pick is the entry's)."""
+    res = []
+    for tag in sorted({c.get('opp', 'fish') for c in cs}):
+        res += verify_one([c for c in cs if c.get('opp', 'fish') == tag], a, work, host, tag)
+    bad = [(k, w) for k, w in res if w]
+    for k, w in bad:
+        log('  VERIFY FAILED:', k, w)
+    log(f'verify: {len(cs) - len(bad)}/{len(cs)} live games reproduced by the shipped bot against the opponent puppet')
+    (work / 'verify.json').write_text(json.dumps(dict(res)))
+
+
+def verify_one(cs, a, work, host, tag):
+    ents = write_entries(cs, work, f'verify-{tag}.jsonl')
+    pup = ROOT / 'bots/variants' / f'{host.name}-pup-{tag}'
     copy_bot(host, pup)
     subprocess.run([sys.executable, str(HERE / 'build_book.py'), str(ents), str(pup / 'src/book/book_data.h'), '--team', 'opp', '--mode', 'puppet'], check=True)
     build(pup)
-    runs = work / 'verify'
+    runs = work / f'verify-{tag}'
     shutil.rmtree(runs, ignore_errors=True)
     runs.mkdir()
     lines = []
     for c in cs:
         A, B = (host, pup) if c['side'] == 'a' else (pup, host)
         lines.append(f"{A} {B} {map_path(c['map'])} {runs / (c['key'] + '.repl26a')}")
-    man = work / 'verify.txt'
+    man = work / f'verify-{tag}.txt'
     man.write_text('\n'.join(lines) + '\n')
     env = dict(os.environ, CAMBC_BIN=str(FAST), FASTRUNNER_MODE='native')
     r = subprocess.run([str(FAST), 'run-batch', str(man), '--jobs', str(a.jobs), '--slot-dir', str(cpu_slots.DIR), '--slots', str(cpu_slots.SIZE),
                         '--release', '--color', 'never'], capture_output=True, text=True, env=env, cwd=ROOT)
-    (work / 'verify.log').write_text(r.stdout + r.stderr)
+    (work / f'verify-{tag}.log').write_text(r.stdout + r.stderr)
 
     def check(c):
         out = runs / f"{c['key']}.repl26a"
@@ -231,18 +255,13 @@ def verify(cs, a, work, host):
         return c['key'], None if v['firstDiff'] == -1 and v['finalSame'] else f"differs from round index {v['firstDiff']}"
 
     with cf.ThreadPoolExecutor(min(a.jobs, 24)) as ex:
-        res = list(ex.map(check, cs))
-    bad = [(k, w) for k, w in res if w]
-    for k, w in bad:
-        log('  VERIFY FAILED:', k, w)
-    log(f'verify: {len(cs) - len(bad)}/{len(cs)} live games reproduced by the shipped bot against the opponent puppet')
-    (work / 'verify.json').write_text(json.dumps(dict(res)))
+        return list(ex.map(check, cs))
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--host', required=True, help='bot dir under bots/ that gets the book (its src/ is the host)')
-    ap.add_argument('--opp', default='Intercontinental Fish')
+    ap.add_argument('--opp', action='append', help='NAME:REFSET, repeatable (default "Intercontinental Fish" with --refset)')
     ap.add_argument('--refset', default='r8')
     ap.add_argument('--versions', default='117,118,119')
     ap.add_argument('--host-version', type=int)
@@ -263,11 +282,12 @@ def main():
         # and its entries are the keys in that header's row comments.
         import re
         keys = re.findall(r'^  \{0x.*// (\S+)$', (host / 'src/book/book_data.h').read_text(), re.M)
+        tags = {c['key']: c.get('opp', 'fish') for c in json.loads((work / 'book_cells.json').read_text())} if (work / 'book_cells.json').exists() else {}
         cs = []
         for k in keys:
             m = re.match(r'^(.+)-([ab])-v(\d+)-', k)
             cs.append(dict(key=k, map=m.group(1), side=m.group(2), version=int(m.group(3)), rounds=None,
-                           replay=str(work / 'raw' / f'{k}.repl26a')))
+                           replay=str(work / 'raw' / f'{k}.repl26a'), opp=tags.get(k, 'fish')))
         missing = [c['key'] for c in cs if not Path(c['replay']).exists()]
         if missing:
             raise SystemExit(f'{len(missing)} live replays missing from {work}/raw: {missing[:3]}')
@@ -276,14 +296,18 @@ def main():
         build(host)
         verify(cs, a, work, host)
         return
-    chosen = select(a)
-    cs = extract_all(chosen, work, min(a.jobs, 16))
-    log(f'extract: {len(cs)} entries')
-    fps = record(cs, a, work, host)
+    chosen, cs, fps = [], [], {}
+    for opp, refset, tag in opponents(a):
+        ch = select(a, opp, refset, tag)
+        c = extract_all(ch, work, min(a.jobs, 16))
+        log(f'extract {tag}: {len(c)} entries')
+        fps.update(record(c, a, work, host, tag))
+        chosen += ch
+        cs += c
     final = [c for c in cs if c['key'] in fps]
     ents = write_entries(final, work, 'book.jsonl')
     (work / 'fp_book.json').write_text(json.dumps({c['key']: fps[c['key']] for c in final}))
-    (work / 'book_cells.json').write_text(json.dumps([{k: c[k] for k in ('key', 'map', 'side', 'version', 'rounds')} for c in final], indent=0))
+    (work / 'book_cells.json').write_text(json.dumps([{k: c[k] for k in ('key', 'map', 'side', 'version', 'rounds', 'opp')} for c in final], indent=0))
     dial = (['--cells', a.cells] if a.cells else []) + (['--cap', str(a.cap)] if a.cap is not None else [])
     r = subprocess.run([sys.executable, str(HERE / 'build_book.py'), str(ents), str(host / 'src/book/book_data.h'), '--team', 'ours', '--mode', 'play',
                         '--fp', str(work / 'fp_book.json')] + dial, capture_output=True, text=True)
@@ -292,7 +316,7 @@ def main():
         raise SystemExit('build_book failed')
     kept = {l.split()[3] for l in r.stderr.splitlines() if l.startswith('cell ')}
     final = [c for c in final if c['key'] in kept]
-    (work / 'book_cells.json').write_text(json.dumps([{k: c[k] for k in ('key', 'map', 'side', 'version', 'rounds')} for c in final], indent=0))
+    (work / 'book_cells.json').write_text(json.dumps([{k: c[k] for k in ('key', 'map', 'side', 'version', 'rounds', 'opp')} for c in final], indent=0))
     log(f'book: {len(final)} entries of {len(chosen)} cells selected')
     if not a.no_build:
         build(host)
