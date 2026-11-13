@@ -852,3 +852,11 @@ sources, without waiting for a new source campaign. Matching baseline thresholds
 unknown-collateral deferral remain enforced. Cycle plans opt in with
 `existing_sources_only: true`. Partial books with fewer than24 long entries must test
 all available long fallback cases; no handovers or invalid reads still fail.
+
+A per-work `validation-policy.json` with `pinned_only: true` and an explicit reason
+opts out of additional current-opponent samples, while preserving every provisional
+target and forced/shared-draft collateral check. The policy is frozen in build state
+and the release digest. An original r8 source remains r8 evidence even when its
+provisional target is r9. `loss_cycle.py --resume-local` only resumes a reconciled
+held cycle with ready local artifacts and no release state; it never retries an
+upload attempt.

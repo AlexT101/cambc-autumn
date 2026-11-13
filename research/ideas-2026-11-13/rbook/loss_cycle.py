@@ -50,10 +50,16 @@ def source_opportunity(work, plan):
           note='Read-only proposal; parent owns source queue. Unknown collateral excluded from actionable list.'))
 
 
-def run(work):
+def run(work, resume_local=False):
     plan=release.read(work/'refresh-plan.json')
     state_path=work/'cycle-state.json'
-    if state_path.exists() or any((work/n).exists() for n in ('build-started.json',release.STATE)):
+    if resume_local:
+        if (not state_path.exists() or release.read(state_path)['phase'] != 'held'
+                or release.read(work/'build-state.json')['phase'] != 'ready_for_live_checks'
+                or (work/release.STATE).exists()):
+            raise RuntimeError('Local resume requires reconciled ready artifacts and no upload attempt')
+        release.artifacts(work)
+    elif state_path.exists() or any((work/n).exists() for n in ('build-started.json',release.STATE)):
         raise RuntimeError('Existing cycle requires explicit artifact reconciliation before restart')
     def status(phase,**extra):
         value=dict(at=ls.now(),phase=phase,**extra)
@@ -78,29 +84,30 @@ def run(work):
     upload_pending=True
     deadline=datetime.datetime.fromisoformat(plan['upload_deadline']).timestamp() if plan.get('upload_deadline') else None
     try:
-        status('waiting_for_matching_host_and_sources',host_version=plan['host_version'],pins=plan['pins'],
-               partial_baseline=plan['partial_baseline'])
-        def ready():
-            source_opportunity(work,plan)
-            return refresh.ready(plan['host_version'],plan['pins'],
-                                 [] if plan.get('existing_sources_only') else [plan['source_step']],
-                                 plan['minimum_source_fraction'],plan['partial_baseline'],
-                                 plan.get('minimum_baseline_fraction',0))
-        wait(ready)
-        status('waiting_for_reference_bench')
-        wait(lambda:(work/'reference-bench.DONE').exists())
-        protected()
-        status('building',host_version=plan['host_version'])
-        cmd=[sys.executable,str(HERE/'loss_refresh.py'),'--work',str(work),
-             '--host-version',str(plan['host_version']),'--host-profile',str(work/'host-profile.json'),
-             '--bot-name',plan['bot_name'],'--fish-pin',plan['pins']['fish'],'--mite-pin',plan['pins']['mite'],
-             '--source-versions',plan['source_versions'],'--minimum-source-fraction',str(plan['minimum_source_fraction']),
-             '--minimum-baseline-fraction',str(plan.get('minimum_baseline_fraction',0))]
-        if plan.get('existing_sources_only'):cmd+=['--existing-sources-only']
-        else:cmd+=['--after-step',plan['source_step']]
-        for opp in plan['partial_baseline']:cmd+=['--partial-baseline',opp]
-        with (work/'build.out').open('w') as out:
-            subprocess.run(cmd,cwd=ROOT,stdout=out,stderr=subprocess.STDOUT,check=True)
+        if not resume_local:
+            status('waiting_for_matching_host_and_sources',host_version=plan['host_version'],pins=plan['pins'],
+                   partial_baseline=plan['partial_baseline'])
+            def ready():
+                source_opportunity(work,plan)
+                return refresh.ready(plan['host_version'],plan['pins'],
+                                     [] if plan.get('existing_sources_only') else [plan['source_step']],
+                                     plan['minimum_source_fraction'],plan['partial_baseline'],
+                                     plan.get('minimum_baseline_fraction',0))
+            wait(ready)
+            status('waiting_for_reference_bench')
+            wait(lambda:(work/'reference-bench.DONE').exists())
+            protected()
+            status('building',host_version=plan['host_version'])
+            cmd=[sys.executable,str(HERE/'loss_refresh.py'),'--work',str(work),
+                 '--host-version',str(plan['host_version']),'--host-profile',str(work/'host-profile.json'),
+                 '--bot-name',plan['bot_name'],'--fish-pin',plan['pins']['fish'],'--mite-pin',plan['pins']['mite'],
+                 '--source-versions',plan['source_versions'],'--minimum-source-fraction',str(plan['minimum_source_fraction']),
+                 '--minimum-baseline-fraction',str(plan.get('minimum_baseline_fraction',0))]
+            if plan.get('existing_sources_only'):cmd+=['--existing-sources-only']
+            else:cmd+=['--after-step',plan['source_step']]
+            for opp in plan['partial_baseline']:cmd+=['--partial-baseline',opp]
+            with (work/'build.out').open('w') as out:
+                subprocess.run(cmd,cwd=ROOT,stdout=out,stderr=subprocess.STDOUT,check=True)
         protected()
         late=late_coverage(work,plan)
         status('locally_ready_waiting_for_release_boundary',late_source_coverage=late)
@@ -151,7 +158,8 @@ def run(work):
 if __name__=='__main__':
     ap=argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--work',type=Path,required=True)
+    ap.add_argument('--resume-local',action='store_true',help='explicitly resume a reconciled locally-ready held cycle before any upload attempt')
     a=ap.parse_args();os.chdir(ROOT)
     with (a.work/'cycle.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-        run(a.work)
+        run(a.work,resume_local=a.resume_local)

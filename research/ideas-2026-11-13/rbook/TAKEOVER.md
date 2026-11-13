@@ -409,3 +409,22 @@ toggles. Do not independently run the old131source campaign.
 case above450rounds, up to24; zero cases/zerohandovers/invalidreads still fail. Full
 populated exact replay,352benchmarks,forced checks and coordinated upload remain
 mandatory. Final unknown-map activation policy is unchanged.
+
+20:17 clarification: the oldFish fallback strategy is **coordinator-proposed**, in
+support of the user's531book goal, not a literal user request. Parent approved the
+single51-entry starter. Its essential validation is37pinned cells (31Fishr9 target,
+6Miter13 collateral), with explicit `validation-policy.json`; redundant current
+samples are omitted for this work only. Full winning qualification replays supply
+the next increment; no generic119-loss source sweep. Parent deferred old131source
+and Mite probe behind hold-control. Latest upload becomes REST immediately.
+
+All51 source lines recorded exactly on531, bad0; combined verification in progress.
+A temporary work HOLD-PUBLISH allows the completed local artifacts to be reconciled
+under the new pinned-only validator before upload; it does not stop local gates.
+Worker will replan locally and use explicit `loss_cycle.py --resume-local` only
+from held+ready with **no** release-state/upload attempt. Existing upload attempts
+cannot be resumed this way. New-host release digests additionally freeze selection,
+profile, foreign provenance and validation policy; oldv131digest remains unchanged.
+56offline tests pass, including originalr8 provenance retained with r9target check,
+small-partial fallback completeness, source-provenance digest drift and no retry
+of any prior upload attempt.

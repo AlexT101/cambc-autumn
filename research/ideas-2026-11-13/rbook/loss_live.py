@@ -94,7 +94,11 @@ def artifacts(work):
             ensure(source.get('group') not in suspect
                    and (source.get('source_group') or source.get('group')) == pin_groups[entry['opp']],
                    'Source win lacks clean target-pin provenance')
-    for opp in pins:
+    if build.get('current_opponent_checks') is False:
+        policy=build.get('validation_policy',{})
+        ensure(policy.get('pinned_only') is True and policy.get('reason'), 'Missing pinned-only validation policy')
+        ensure(all(e['pin']=='ref' for e in expected), 'Pinned-only plan contains current checks')
+    for opp in (pins if build.get('current_opponent_checks',True) else []):
         candidates = sorted((c for c in entries if c['opp']==opp),
                             key=lambda c:(c['key'] not in forced,c['map'],c['side']))
         required = {(opp,c['map'],c['side']) for c in candidates[:20 if opp=='mite' else 10]}
@@ -102,6 +106,10 @@ def artifacts(work):
         ensure(required <= current, 'Missing current-opponent sample')
     files = [work/n for n in ('build-state.json','book_cells.json','verify.json','force.txt','stage.out',
                               'stage.DONE','bundle.zip','live-steps.json','live-expectations.json')]
+    if build.get('host_profile') is not None:
+        # New-host releases freeze the original source provenance, including provisional old-pin lines.
+        files += [work/n for n in ('host-profile.json','selection.json','foreign-metadata.json',
+                                   'foreign-extra.tsv','validation-policy.json') if (work/n).exists()]
     if forced:
         files.append(work/'forcecheck.out')
     files += [Path(s[0]) for s in steps]

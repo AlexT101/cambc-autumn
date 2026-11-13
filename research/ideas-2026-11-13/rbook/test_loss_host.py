@@ -124,6 +124,19 @@ class OutcomeOnlyHost(unittest.TestCase):
             self.assertEqual(json.loads((work/'first-source-fish-known-losses.json').read_text()),[['safe','a'],['unknown','a']])
             self.assertEqual(json.loads((work/'first-source-fish-actionable-losses.json').read_text()),[['safe','a']])
 
+    def test_local_resume_refuses_any_prior_upload_attempt(self):
+        import loss_cycle
+        with tempfile.TemporaryDirectory() as tmp:
+            work=Path(tmp)
+            (work/'refresh-plan.json').write_text('{}')
+            (work/'cycle-state.json').write_text('{"phase":"held"}')
+            (work/'build-state.json').write_text('{"phase":"ready_for_live_checks"}')
+            (work/loss_cycle.release.STATE).write_text('{"phase":"upload_attempt"}')
+            with mock.patch.object(loss_cycle.release,'upload') as upload:
+                with self.assertRaisesRegex(RuntimeError,'no upload attempt'):
+                    loss_cycle.run(work,resume_local=True)
+                upload.assert_not_called()
+
     def test_existing_cycle_never_restarts_upload(self):
         import loss_cycle
         with tempfile.TemporaryDirectory() as tmp:

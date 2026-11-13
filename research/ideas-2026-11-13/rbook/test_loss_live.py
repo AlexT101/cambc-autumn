@@ -250,6 +250,12 @@ class LossLiveTests(unittest.TestCase):
                      {('r13',live.ls.TEAMS['mite'][0]):'pin-group'})), \
                  mock.patch.object(live.ls,'suspect_groups',return_value=set()):
                 self.assertEqual(len(live.artifacts(work)['entries']),1)
+                files['build-state.json']['host_profile']={'version':128}
+                (work/'build-state.json').write_text(json.dumps(files['build-state.json']))
+                (work/'foreign-metadata.json').write_text('{"original_pin":"r8"}')
+                before=live.artifacts(work)['digest']
+                (work/'foreign-metadata.json').write_text('{"original_pin":"r9"}')
+                self.assertNotEqual(live.artifacts(work)['digest'],before)
                 source['source_group']='old-pin'
                 with self.assertRaisesRegex(RuntimeError,'clean target-pin'): live.artifacts(work)
                 source['source_group']='pin-group'

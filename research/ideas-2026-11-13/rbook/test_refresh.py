@@ -43,6 +43,26 @@ class RefreshGates(unittest.TestCase):
             self.assertEqual({e['step'] for e in expected},ids)
             self.assertEqual({e['pin'] for e in expected},{'ref','none'})
 
+    def test_explicit_pinned_only_policy_keeps_old_pin_target_qualification(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            work=Path(tmp)
+            state=dict(phase='ready_for_live_checks',host_version=132,pins=dict(fish='r9'),bot='/repo/bots/variants/rbook-loss-v132-starter')
+            (work/'build-state.json').write_text(json.dumps(state))
+            (work/'book_cells.json').write_text(json.dumps([dict(key='map-a-v126-src',opp='fish',map='map',side='a')]))
+            (work/'force.txt').write_text('')
+            (work/'validation-policy.json').write_text(json.dumps(dict(pinned_only=True,reason='Qualify each provisional once; reuse wins')))
+            base=dict(opp_name='Fish',map='map',side='a',purpose='set',pin='ref',refset='r9',result='loss',opp_id='fish-id',our_picks=[],opp_picks=[])
+            source=dict(base,result='win',refset='r8')
+            with mock.patch.object(loss_live_plan.ls,'games',return_value=[base]),mock.patch.object(loss_live_plan,'source_rows',return_value={'src':source}):
+                loss_live_plan.plan(work)
+            expected=json.loads((work/'live-expectations.json').read_text())
+            self.assertEqual(len(expected),1)
+            self.assertEqual(expected[0]['pin'],'ref')
+            self.assertEqual(expected[0]['refset'],'r9')
+            self.assertTrue(expected[0]['require_win'])
+            self.assertEqual(source['refset'],'r8')
+            self.assertFalse(json.loads((work/'build-state.json').read_text())['current_opponent_checks'])
+
     def test_variant_name_defaults_and_rejects_paths(self):
         self.assertEqual(loss_refresh.variant_name(128),'rbook-loss-v128')
         self.assertEqual(loss_refresh.variant_name(128,'rbook-loss-v128-r13-increment2'),

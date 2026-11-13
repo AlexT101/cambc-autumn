@@ -60,6 +60,14 @@ def plan(work):
     state = json.loads((work/'build-state.json').read_text())
     if state['phase'] != 'ready_for_live_checks':
         raise RuntimeError('Local verification must finish before planning live checks')
+    policy_path=work/'validation-policy.json'
+    policy=json.loads(policy_path.read_text()) if policy_path.exists() else {}
+    if policy:
+        if policy.get('pinned_only') is not True or not policy.get('reason'):
+            raise RuntimeError('Invalid explicit live validation policy')
+        state['current_opponent_checks']=False
+        state['validation_policy']=policy
+        write(work/'build-state.json',state)
     version,pins = state['host_version'],state['pins']
     prefix = step_prefix(state)
     entries = json.loads((work/'book_cells.json').read_text())
@@ -79,8 +87,8 @@ def plan(work):
         steps.append([str(path),sid,opp,pin,version,'ref'])
         expected += [dict(step=sid,opponent=opp,map=m,side=s,pin='ref',refset=pin,
                          **checks[(opp,m,s)]) for m,s in cells]
-    # Latest-opponent checks are coverage checks, not a book-free strength comparison.
-    for opp,pin in pins.items():
+    # Latest-opponent samples are optional only under an explicit essential-pinned-only policy.
+    for opp,pin in (pins.items() if state.get('current_opponent_checks',True) else []):
         candidates = sorted((c for c in entries if c['opp'] == opp),
                             key=lambda c:(c['key'] not in forced,c['map'],c['side']))
         cells = sorted({(c['map'],c['side']) for c in candidates[:20 if opp=='mite' else 10]})
