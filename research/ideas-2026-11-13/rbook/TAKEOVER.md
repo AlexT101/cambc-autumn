@@ -19,7 +19,15 @@ the existing runner/waiters. No new agent was launched.
 rbuild.py now fails on bad exact verification or missing bundles; stage.sh propagates pipeline failures and
 does not write DONE on failure; hostswap.sh refuses existing destinations. No main bot source changed.
 
-## Current policy and queue (14:51 UTC)
+## Current policy and queue (updated 15:44 UTC)
+
+At 15:38 the 15:32 current-Mite check changed on all five cells (same picks; 3/5 wins versus 4/5 before).
+The refreshed baseline now targets **Mite r13**, not r12. At 15:43, 41 uncreated r12 v128 tasks were dropped
+with explicit reasons; all completed evidence is retained. `loss-book-r13-baseline` reuses v128 without an
+upload, 69 groups on Mite only; `loss-book-r13-mite-rest` follows on host losses. Fish r8 work is preserved.
+The r13 pin will be captured by its first group when quota frees. `r12-superseded.json` records the transition.
+The existing loss-v128 waiter now runs --mite-pin r13 --after-step loss-book-r13-mite-rest. Its Fish cache
+(100 exact fingerprints) and six provisional foreign candidates survive unchanged. No book publication yet.
 
 This section supersedes the older active-refresh notes below. User requires entries only for confirmed
 losses of the matching book-free host, separately by map, side, opponent and pin. Unknown cells and host

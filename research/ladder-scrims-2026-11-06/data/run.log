@@ -15556,3 +15556,365 @@
 2026-11-13T13:53:04Z finished v118-book-refresh-r11-mite-v118-r11-mite-02 01a1d505: WLLLL
 2026-11-13T13:53:46Z finished v118-book-refresh-r11-mite-v118-r11-mite-01 01a1d505: LLLWW
 2026-11-13T13:59:35Z STOP file present: exiting
+2026-11-13T13:59:36Z run: pid 753946, reserve 0, inflight no cap, pace 20s, poll 30s
+2026-11-13T13:59:37Z nothing runnable: live v126, selected v126, pending versions [115]
+2026-11-13T14:01:41Z live/selected changed v126/v126 -> v126/v127 (before create): 0 groups created since the last read marked suspect
+2026-11-13T14:01:41Z nothing runnable: live v126, selected v127, pending versions [115]
+2026-11-13T14:07:51Z live/selected changed v126/v127 -> v127/v126 (before create): 0 groups created since the last read marked suspect
+2026-11-13T14:07:51Z nothing runnable: live v127, selected v126, pending versions [115]
+2026-11-13T14:08:13Z live/selected changed v127/v126 -> v126/v127 (before create): 0 groups created since the last read marked suspect
+2026-11-13T14:08:13Z nothing runnable: live v126, selected v127, pending versions [115, 127]
+2026-11-13T14:10:17Z live/selected changed v126/v127 -> v127/v127 (before create): 0 groups created since the last read marked suspect
+2026-11-13T14:10:18Z created v127-foreign-mite-r11-r11-mite-01 -> 01a1d53e (v127, quota 28/100, pinned 01a1d4bf)
+2026-11-13T14:10:41Z nothing runnable: live v127, selected v127, pending versions [115]
+2026-11-13T14:12:42Z live/selected changed v127/v127 -> v127/v126 (before create): 0 groups created since the last read marked suspect
+2026-11-13T14:12:42Z nothing runnable: live v127, selected v126, pending versions [115]
+2026-11-13T14:15:21Z played v127-foreign-mite-r11-r11-mite-01 01a1d53e: WWWLW
+2026-11-13T14:15:32Z finished v127-foreign-mite-r11-r11-mite-01 01a1d53e: WWWLW
+2026-11-13T14:16:29Z live/selected changed v127/v126 -> v126/v127 (before create): 0 groups created since the last read marked suspect
+2026-11-13T14:16:29Z nothing runnable: live v126, selected v127, pending versions [115, 127]
+2026-11-13T14:20:38Z live/selected changed v126/v127 -> v127/v127 (before create): 0 groups created since the last read marked suspect
+2026-11-13T14:20:39Z created v127-foreign-mite-current-r11-mite-01 -> 01a1d548 (v127, quota 7/100)
+2026-11-13T14:21:02Z nothing runnable: live v127, selected v127, pending versions [115]
+2026-11-13T14:23:04Z live/selected changed v127/v127 -> v127/v126 (before create): 0 groups created since the last read marked suspect
+2026-11-13T14:23:04Z nothing runnable: live v127, selected v126, pending versions [115]
+2026-11-13T14:27:09Z live/selected changed v127/v126 -> v126/v126 (before create): 0 groups created since the last read marked suspect
+2026-11-13T14:27:09Z nothing runnable: live v126, selected v126, pending versions [115]
+2026-11-13T14:27:58Z played v127-foreign-mite-current-r11-mite-01 01a1d548: LLLLW
+2026-11-13T14:28:14Z finished v127-foreign-mite-current-r11-mite-01 01a1d548: LLLLW
+2026-11-13T14:30:26Z STOP file present: exiting
+2026-11-13T14:30:27Z run: pid 1320730, reserve 0, inflight no cap, pace 20s, poll 30s
+2026-11-13T14:30:28Z nothing runnable: live v126, selected v126, pending versions [115]
+2026-11-13T14:32:03Z created batches-hour30-v126-fish-cur -> 01a1d552 (v126, quota 3/100)
+2026-11-13T14:32:04Z created batches-hour30-v126-mite-cur -> 01a1d552 (v126, quota 4/100)
+2026-11-13T14:32:05Z created batches-hour30-v126-cats-cur -> 01a1d552 (v126, quota 5/100)
+2026-11-13T14:32:24Z nothing runnable: live v126, selected v126, pending versions [115]
+2026-11-13T14:35:17Z played batches-hour30-v126-fish-cur 01a1d552: LWWWW
+2026-11-13T14:35:28Z finished batches-hour30-v126-fish-cur 01a1d552: LWWWW
+2026-11-13T14:35:49Z played batches-hour30-v126-mite-cur 01a1d552: WWWWL
+2026-11-13T14:35:49Z played batches-hour30-v126-cats-cur 01a1d552: WWLLW
+2026-11-13T14:36:10Z finished batches-hour30-v126-cats-cur 01a1d552: WWLLW
+2026-11-13T14:36:38Z finished batches-hour30-v126-mite-cur 01a1d552: WWWWL
+2026-11-13T14:41:54Z live/selected changed v126/v126 -> v126/v128 (before create): 0 groups created since the last read marked suspect
+2026-11-13T14:41:54Z nothing runnable: live v126, selected v128, pending versions [115, 118]
+2026-11-13T14:48:04Z live/selected changed v126/v128 -> v128/v128 (before create): 0 groups created since the last read marked suspect
+2026-11-13T14:48:04Z nothing runnable: live v128, selected v128, pending versions [115, 118]
+2026-11-13T14:48:27Z created v128-v1core-r8-fish-01 -> 01a1d561 (v128, quota 6/100, pinned 01a1d01f)
+2026-11-13T14:48:28Z created v128-v1core-r12-mite-01 -> 01a1d561 (v128, quota 7/100, ref)
+2026-11-13T14:48:29Z created v128-v1core-r8-fish-02 -> 01a1d561 (v128, quota 8/100, pinned 01a1d01f)
+2026-11-13T14:48:30Z created v128-v1core-r8-fish-03 -> 01a1d561 (v128, quota 9/100, pinned 01a1d01f)
+2026-11-13T14:48:31Z created v128-v1core-r8-fish-04 -> 01a1d561 (v128, quota 10/100, pinned 01a1d01f)
+2026-11-13T14:48:32Z created v128-v1core-r8-fish-05 -> 01a1d561 (v128, quota 11/100, pinned 01a1d01f)
+2026-11-13T14:48:33Z created v128-v1core-r8-fish-06 -> 01a1d561 (v128, quota 12/100, pinned 01a1d01f)
+2026-11-13T14:48:34Z created v128-v1core-r8-fish-07 -> 01a1d561 (v128, quota 13/100, pinned 01a1d01f)
+2026-11-13T14:48:35Z created v128-v1core-r8-fish-08 -> 01a1d561 (v128, quota 14/100, pinned 01a1d01f)
+2026-11-13T14:48:36Z created v128-v1core-r8-fish-09 -> 01a1d561 (v128, quota 15/100, pinned 01a1d01f)
+2026-11-13T14:48:37Z created v128-v1core-r8-fish-10 -> 01a1d561 (v128, quota 16/100, pinned 01a1d01f)
+2026-11-13T14:48:38Z created v128-v1core-r8-fish-11 -> 01a1d561 (v128, quota 17/100, pinned 01a1d01f)
+2026-11-13T14:48:40Z created v128-v1core-r8-fish-12 -> 01a1d561 (v128, quota 18/100, pinned 01a1d01f)
+2026-11-13T14:48:41Z created v128-v1core-r8-fish-13 -> 01a1d561 (v128, quota 19/100, pinned 01a1d01f)
+2026-11-13T14:48:42Z created v128-v1core-r8-fish-14 -> 01a1d561 (v128, quota 20/100, pinned 01a1d01f)
+2026-11-13T14:48:45Z created v128-v1core-r8-fish-15 -> 01a1d561 (v128, quota 21/100, pinned 01a1d01f)
+2026-11-13T14:48:46Z created v128-v1core-r8-fish-16 -> 01a1d561 (v128, quota 22/100, pinned 01a1d01f)
+2026-11-13T14:48:47Z created v128-v1ext-r8-fish-01 -> 01a1d561 (v128, quota 23/100, pinned 01a1d01f)
+2026-11-13T14:48:48Z created v128-v1ext-r8-fish-02 -> 01a1d561 (v128, quota 24/100, pinned 01a1d01f)
+2026-11-13T14:48:49Z created v128-v1ext-r8-fish-03 -> 01a1d561 (v128, quota 25/100, pinned 01a1d01f)
+2026-11-13T14:48:50Z created v128-v1ext-r8-fish-04 -> 01a1d561 (v128, quota 26/100, pinned 01a1d01f)
+2026-11-13T14:48:51Z created v128-v1ext-r8-fish-05 -> 01a1d561 (v128, quota 27/100, pinned 01a1d01f)
+2026-11-13T14:48:52Z created v128-v1ext-r8-fish-06 -> 01a1d562 (v128, quota 28/100, pinned 01a1d01f)
+2026-11-13T14:48:53Z created v128-v1ext-r8-fish-07 -> 01a1d562 (v128, quota 29/100, pinned 01a1d01f)
+2026-11-13T14:48:54Z created v128-v1ext-r8-fish-08 -> 01a1d562 (v128, quota 30/100, pinned 01a1d01f)
+2026-11-13T14:48:55Z created v128-v1ext-r8-fish-09 -> 01a1d562 (v128, quota 31/100, pinned 01a1d01f)
+2026-11-13T14:48:56Z created v128-v1ext-r8-fish-10 -> 01a1d562 (v128, quota 32/100, pinned 01a1d01f)
+2026-11-13T14:48:57Z created v128-v1ext-r8-fish-11 -> 01a1d562 (v128, quota 33/100, pinned 01a1d01f)
+2026-11-13T14:49:00Z created v128-v1ext-r8-fish-12 -> 01a1d562 (v128, quota 34/100, pinned 01a1d01f)
+2026-11-13T14:49:04Z created v128-v1ext-r8-fish-13 -> 01a1d562 (v128, quota 35/100, pinned 01a1d01f)
+2026-11-13T14:49:17Z created v128-v1ext-r8-fish-14 -> 01a1d562 (v128, quota 36/100, pinned 01a1d01f)
+2026-11-13T14:49:21Z created v128-v1ext-r8-fish-15 -> 01a1d562 (v128, quota 37/100, pinned 01a1d01f)
+2026-11-13T14:49:24Z created v128-v1ext-r8-fish-16 -> 01a1d562 (v128, quota 38/100, pinned 01a1d01f)
+2026-11-13T14:49:28Z created v128-v1ext-r8-fish-17 -> 01a1d562 (v128, quota 39/100, pinned 01a1d01f)
+2026-11-13T14:49:31Z created v128-v1ext-r8-fish-18 -> 01a1d562 (v128, quota 40/100, pinned 01a1d01f)
+2026-11-13T14:49:35Z created v128-v1ext-r8-fish-19 -> 01a1d562 (v128, quota 41/100, pinned 01a1d01f)
+2026-11-13T14:49:38Z created v128-v1ext-r8-fish-20 -> 01a1d562 (v128, quota 42/100, pinned 01a1d01f)
+2026-11-13T14:49:42Z created v128-v1ext-r8-fish-21 -> 01a1d562 (v128, quota 43/100, pinned 01a1d01f)
+2026-11-13T14:49:45Z created v128-v1ext-r8-fish-22 -> 01a1d562 (v128, quota 44/100, pinned 01a1d01f)
+2026-11-13T14:49:49Z created v128-v1ext-r8-fish-23 -> 01a1d562 (v128, quota 45/100, pinned 01a1d01f)
+2026-11-13T14:49:52Z created v128-v1ext-r8-fish-24 -> 01a1d562 (v128, quota 46/100, pinned 01a1d01f)
+2026-11-13T14:49:56Z created v128-v1ext-r8-fish-25 -> 01a1d562 (v128, quota 47/100, pinned 01a1d01f)
+2026-11-13T14:49:59Z created v128-v1ext-r8-fish-26 -> 01a1d563 (v128, quota 48/100, pinned 01a1d01f)
+2026-11-13T14:50:03Z created v128-v1ext-r8-fish-27 -> 01a1d563 (v128, quota 49/100, pinned 01a1d01f)
+2026-11-13T14:50:06Z created v128-v1ext-r8-fish-28 -> 01a1d563 (v128, quota 50/100, pinned 01a1d01f)
+2026-11-13T14:50:17Z created v128-v1ext-r8-fish-29 -> 01a1d563 (v128, quota 51/100, pinned 01a1d01f)
+2026-11-13T14:50:20Z created v128-v1ext-r8-fish-30 -> 01a1d563 (v128, quota 52/100, pinned 01a1d01f)
+2026-11-13T14:50:24Z created v128-v1ext-r8-fish-31 -> 01a1d563 (v128, quota 53/100, pinned 01a1d01f)
+2026-11-13T14:50:27Z created v128-v1ext-r8-fish-32 -> 01a1d563 (v128, quota 54/100, pinned 01a1d01f)
+2026-11-13T14:50:31Z created v128-v1ext-r8-fish-33 -> 01a1d563 (v128, quota 55/100, pinned 01a1d01f)
+2026-11-13T14:50:34Z created v128-v1ext-r8-fish-34 -> 01a1d563 (v128, quota 56/100, pinned 01a1d01f)
+2026-11-13T14:50:38Z created v128-v1ext-r8-fish-35 -> 01a1d563 (v128, quota 57/100, pinned 01a1d01f)
+2026-11-13T14:50:41Z created v128-v1ext-r8-fish-36 -> 01a1d563 (v128, quota 58/100, pinned 01a1d01f)
+2026-11-13T14:50:45Z created v128-p170new-r8-fish-01 -> 01a1d563 (v128, quota 59/100, pinned 01a1d01f)
+2026-11-13T14:50:49Z created v128-p170new-r8-fish-02 -> 01a1d563 (v128, quota 60/100, pinned 01a1d01f)
+2026-11-13T14:50:52Z created v128-p170new-r8-fish-03 -> 01a1d563 (v128, quota 61/100, pinned 01a1d01f)
+2026-11-13T14:50:56Z created v128-p170new-r8-fish-04 -> 01a1d563 (v128, quota 62/100, pinned 01a1d01f)
+2026-11-13T14:50:59Z created v128-p170new-r8-fish-05 -> 01a1d563 (v128, quota 63/100, pinned 01a1d01f)
+2026-11-13T14:51:02Z created v128-p170new-r8-fish-06 -> 01a1d563 (v128, quota 64/100, pinned 01a1d01f)
+2026-11-13T14:51:06Z created v128-p170new-r8-fish-07 -> 01a1d564 (v128, quota 65/100, pinned 01a1d01f)
+2026-11-13T14:51:16Z created v128-p170new-r8-fish-08 -> 01a1d564 (v128, quota 66/100, pinned 01a1d01f)
+2026-11-13T14:51:20Z created v128-p170new-r8-fish-09 -> 01a1d564 (v128, quota 67/100, pinned 01a1d01f)
+2026-11-13T14:51:23Z created v128-p170new-r8-fish-10 -> 01a1d564 (v128, quota 68/100, pinned 01a1d01f)
+2026-11-13T14:51:27Z created v128-p170new-r8-fish-11 -> 01a1d564 (v128, quota 69/100, pinned 01a1d01f)
+2026-11-13T14:51:30Z created v128-p170new-r8-fish-12 -> 01a1d564 (v128, quota 70/100, pinned 01a1d01f)
+2026-11-13T14:51:34Z created v128-p170new-r8-fish-13 -> 01a1d564 (v128, quota 71/100, pinned 01a1d01f)
+2026-11-13T14:51:37Z created v128-p170new-r8-fish-14 -> 01a1d564 (v128, quota 72/100, pinned 01a1d01f)
+2026-11-13T14:51:41Z created v128-p170new-r8-fish-15 -> 01a1d564 (v128, quota 73/100, pinned 01a1d01f)
+2026-11-13T14:51:44Z created v128-p170new-r8-fish-16 -> 01a1d564 (v128, quota 74/100, pinned 01a1d01f)
+2026-11-13T14:51:48Z created v128-p170new-r8-fish-17 -> 01a1d564 (v128, quota 75/100, pinned 01a1d01f)
+2026-11-13T14:52:09Z played v128-v1core-r8-fish-01 01a1d561: LWWWL
+2026-11-13T14:52:09Z played v128-v1core-r12-mite-01 01a1d561: WWWLL
+2026-11-13T14:52:09Z played v128-v1core-r8-fish-02 01a1d561: WWWLW
+2026-11-13T14:52:09Z played v128-v1core-r8-fish-03 01a1d561: LLWLW
+2026-11-13T14:52:09Z played v128-v1core-r8-fish-04 01a1d561: LWWLW
+2026-11-13T14:52:09Z played v128-v1core-r8-fish-05 01a1d561: WLLWW
+2026-11-13T14:52:09Z played v128-v1core-r8-fish-06 01a1d561: LLLWL
+2026-11-13T14:52:09Z played v128-v1core-r8-fish-07 01a1d561: WWWWW
+2026-11-13T14:52:09Z played v128-v1core-r8-fish-08 01a1d561: WLLLW
+2026-11-13T14:52:09Z played v128-v1core-r8-fish-09 01a1d561: WLWLL
+2026-11-13T14:52:09Z played v128-v1core-r8-fish-10 01a1d561: LLWLL
+2026-11-13T14:52:09Z played v128-v1core-r8-fish-11 01a1d561: LWWWW
+2026-11-13T14:52:09Z played v128-v1core-r8-fish-12 01a1d561: LWWWW
+2026-11-13T14:52:09Z played v128-v1core-r8-fish-13 01a1d561: WLLWW
+2026-11-13T14:52:09Z played v128-v1core-r8-fish-14 01a1d561: LWLWW
+2026-11-13T14:52:09Z played v128-v1core-r8-fish-15 01a1d561: LLLLW
+2026-11-13T14:52:09Z played v128-v1core-r8-fish-16 01a1d561: LLWLW
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-01 01a1d561: WWLWL
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-02 01a1d561: WWLWW
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-03 01a1d561: LWWWL
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-04 01a1d561: LWLLL
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-05 01a1d561: LLWWL
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-06 01a1d562: LWWWL
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-07 01a1d562: LWWWL
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-08 01a1d562: LWWLL
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-09 01a1d562: WLLLL
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-10 01a1d562: WWLWL
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-11 01a1d562: LLLWW
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-12 01a1d562: LWLLW
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-13 01a1d562: WLLLW
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-14 01a1d562: WWWLL
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-15 01a1d562: WWWLW
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-16 01a1d562: LLLWL
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-17 01a1d562: WLLLW
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-18 01a1d562: WWLLL
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-19 01a1d562: LWWWW
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-20 01a1d562: LWWWW
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-21 01a1d562: WWWWL
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-22 01a1d562: WWWWL
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-23 01a1d562: WLWLL
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-24 01a1d562: WWWWL
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-25 01a1d562: LWWWW
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-26 01a1d563: LWWWW
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-27 01a1d563: WWLLW
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-28 01a1d563: WLWWW
+2026-11-13T14:52:09Z played v128-v1ext-r8-fish-29 01a1d563: WLWWL
+2026-11-13T14:52:20Z created v128-v1core-r12-mite-02 -> 01a1d565 (v128, quota 76/100, pinned 01a1d561)
+2026-11-13T14:52:23Z created v128-v1core-r12-mite-03 -> 01a1d565 (v128, quota 77/100, pinned 01a1d561)
+2026-11-13T14:52:26Z created v128-v1core-r12-mite-04 -> 01a1d565 (v128, quota 78/100, pinned 01a1d561)
+2026-11-13T14:52:30Z created v128-v1core-r12-mite-05 -> 01a1d565 (v128, quota 79/100, pinned 01a1d561)
+2026-11-13T14:52:34Z created v128-v1core-r12-mite-06 -> 01a1d565 (v128, quota 80/100, pinned 01a1d561)
+2026-11-13T14:52:37Z created v128-v1core-r12-mite-07 -> 01a1d565 (v128, quota 81/100, pinned 01a1d561)
+2026-11-13T14:52:44Z created v128-v1core-r12-mite-08 -> 01a1d565 (v128, quota 82/100, pinned 01a1d561)
+2026-11-13T14:52:47Z created v128-v1core-r12-mite-09 -> 01a1d565 (v128, quota 83/100, pinned 01a1d561)
+2026-11-13T14:52:51Z created v128-v1core-r12-mite-10 -> 01a1d565 (v128, quota 84/100, pinned 01a1d561)
+2026-11-13T14:52:54Z created v128-v1core-r12-mite-11 -> 01a1d565 (v128, quota 85/100, pinned 01a1d561)
+2026-11-13T14:52:58Z created v128-v1core-r12-mite-12 -> 01a1d565 (v128, quota 86/100, pinned 01a1d561)
+2026-11-13T14:53:02Z created v128-v1core-r12-mite-13 -> 01a1d565 (v128, quota 87/100, pinned 01a1d561)
+2026-11-13T14:53:05Z created v128-v1core-r12-mite-14 -> 01a1d565 (v128, quota 88/100, pinned 01a1d561)
+2026-11-13T14:53:08Z created v128-v1core-r12-mite-15 -> 01a1d565 (v128, quota 89/100, pinned 01a1d561)
+2026-11-13T14:53:12Z created v128-v1core-r12-mite-16 -> 01a1d565 (v128, quota 90/100, pinned 01a1d561)
+2026-11-13T14:53:22Z created v128-v1ext-r12-mite-01 -> 01a1d566 (v128, quota 91/100, pinned 01a1d561)
+2026-11-13T14:53:26Z created v128-v1ext-r12-mite-02 -> 01a1d566 (v128, quota 92/100, pinned 01a1d561)
+2026-11-13T14:53:29Z created v128-v1ext-r12-mite-03 -> 01a1d566 (v128, quota 93/100, pinned 01a1d561)
+2026-11-13T14:53:33Z created v128-v1ext-r12-mite-04 -> 01a1d566 (v128, quota 94/100, pinned 01a1d561)
+2026-11-13T14:53:36Z created v128-v1ext-r12-mite-05 -> 01a1d566 (v128, quota 95/100, pinned 01a1d561)
+2026-11-13T14:53:40Z created v128-v1ext-r12-mite-06 -> 01a1d566 (v128, quota 96/100, pinned 01a1d561)
+2026-11-13T14:53:43Z created v128-v1ext-r12-mite-07 -> 01a1d566 (v128, quota 97/100, pinned 01a1d561)
+2026-11-13T14:53:47Z created v128-v1ext-r12-mite-08 -> 01a1d566 (v128, quota 98/100, pinned 01a1d561)
+2026-11-13T14:53:50Z created v128-v1ext-r12-mite-09 -> 01a1d566 (v128, quota 99/100, pinned 01a1d561)
+2026-11-13T14:53:54Z created v128-v1ext-r12-mite-10 -> 01a1d566 (v128, quota 100/100, pinned 01a1d561)
+2026-11-13T14:54:15Z played v128-v1ext-r8-fish-30 01a1d563: WLWWL
+2026-11-13T14:54:15Z played v128-v1ext-r8-fish-31 01a1d563: WWLWW
+2026-11-13T14:54:15Z played v128-v1ext-r8-fish-32 01a1d563: WLLLL
+2026-11-13T14:54:15Z played v128-v1ext-r8-fish-33 01a1d563: LWLLW
+2026-11-13T14:54:15Z played v128-v1ext-r8-fish-34 01a1d563: LWWWW
+2026-11-13T14:54:15Z played v128-v1ext-r8-fish-35 01a1d563: WWLWW
+2026-11-13T14:54:15Z played v128-v1ext-r8-fish-36 01a1d563: LWLLW
+2026-11-13T14:54:15Z played v128-p170new-r8-fish-01 01a1d563: WWWWW
+2026-11-13T14:54:15Z played v128-p170new-r8-fish-02 01a1d563: LLLLW
+2026-11-13T14:54:15Z played v128-p170new-r8-fish-03 01a1d563: WWLWW
+2026-11-13T14:54:15Z played v128-p170new-r8-fish-04 01a1d563: LLLWW
+2026-11-13T14:54:15Z played v128-p170new-r8-fish-05 01a1d563: LLWLW
+2026-11-13T14:54:15Z played v128-p170new-r8-fish-06 01a1d563: WLLWL
+2026-11-13T14:54:15Z played v128-p170new-r8-fish-07 01a1d564: LWLWL
+2026-11-13T14:54:15Z played v128-p170new-r8-fish-08 01a1d564: LWWWW
+2026-11-13T14:54:15Z played v128-p170new-r8-fish-09 01a1d564: WWWWW
+2026-11-13T14:54:15Z played v128-p170new-r8-fish-10 01a1d564: WWLWL
+2026-11-13T14:54:15Z played v128-p170new-r8-fish-11 01a1d564: LWWWL
+2026-11-13T14:54:15Z played v128-p170new-r8-fish-12 01a1d564: WWWWL
+2026-11-13T14:54:15Z played v128-p170new-r8-fish-13 01a1d564: WWWLW
+2026-11-13T14:54:15Z played v128-p170new-r8-fish-14 01a1d564: LWWWL
+2026-11-13T14:54:15Z played v128-p170new-r8-fish-15 01a1d564: WLLWW
+2026-11-13T14:54:15Z played v128-p170new-r8-fish-16 01a1d564: WLLWW
+2026-11-13T14:54:15Z played v128-p170new-r8-fish-17 01a1d564: WWWWW
+2026-11-13T14:54:15Z played v128-v1core-r12-mite-02 01a1d565: WWLWW
+2026-11-13T14:54:15Z played v128-v1core-r12-mite-03 01a1d565: LWLWW
+2026-11-13T14:54:15Z played v128-v1core-r12-mite-04 01a1d565: LWWWW
+2026-11-13T14:54:15Z played v128-v1core-r12-mite-05 01a1d565: LWLWW
+2026-11-13T14:54:15Z played v128-v1core-r12-mite-06 01a1d565: LLWWL
+2026-11-13T14:54:15Z played v128-v1core-r12-mite-07 01a1d565: WWLWL
+2026-11-13T14:54:15Z played v128-v1core-r12-mite-08 01a1d565: LLWWW
+2026-11-13T14:54:15Z played v128-v1core-r12-mite-09 01a1d565: LWWLL
+2026-11-13T14:54:15Z played v128-v1core-r12-mite-10 01a1d565: WWWLL
+2026-11-13T14:54:15Z played v128-v1core-r12-mite-11 01a1d565: LWLWW
+2026-11-13T14:54:15Z played v128-v1core-r12-mite-12 01a1d565: WWWLW
+2026-11-13T14:54:15Z played v128-v1core-r12-mite-13 01a1d565: LLWLW
+2026-11-13T14:54:15Z played v128-v1core-r12-mite-14 01a1d565: LLLLW
+2026-11-13T14:54:15Z played v128-v1core-r12-mite-15 01a1d565: LWWWW
+2026-11-13T14:54:15Z played v128-v1core-r12-mite-16 01a1d565: LLWWW
+2026-11-13T14:54:15Z played v128-v1ext-r12-mite-01 01a1d566: WWLLW
+2026-11-13T14:54:15Z played v128-v1ext-r12-mite-02 01a1d566: LWLWW
+2026-11-13T14:54:15Z played v128-v1ext-r12-mite-03 01a1d566: LWLWW
+2026-11-13T14:54:15Z played v128-v1ext-r12-mite-04 01a1d566: LLLLW
+2026-11-13T14:54:15Z played v128-v1ext-r12-mite-05 01a1d566: WLWLL
+2026-11-13T14:54:15Z played v128-v1ext-r12-mite-06 01a1d566: WLWWL
+2026-11-13T14:54:15Z played v128-v1ext-r12-mite-07 01a1d566: WWWWW
+2026-11-13T14:54:15Z played v128-v1ext-r12-mite-09 01a1d566: WLWWW
+2026-11-13T14:54:20Z quota 100/100, reserve 0: waiting (resets 2026-11-13T15:10:18.719Z)
+2026-11-13T14:54:31Z played v128-v1ext-r12-mite-08 01a1d566: WWWWW
+2026-11-13T14:54:31Z played v128-v1ext-r12-mite-10 01a1d566: LWWLW
+2026-11-13T14:55:53Z finished v128-p170new-r8-fish-17 01a1d564: WWWWW
+2026-11-13T14:56:48Z finished v128-v1ext-r12-mite-10 01a1d566: LWWLW
+2026-11-13T14:57:38Z finished v128-v1ext-r12-mite-09 01a1d566: WLWWW
+2026-11-13T14:58:33Z finished v128-v1ext-r12-mite-08 01a1d566: WWWWW
+2026-11-13T14:59:27Z finished v128-v1ext-r12-mite-07 01a1d566: WWWWW
+2026-11-13T14:59:49Z STOP file present: exiting
+2026-11-13T14:59:49Z run: pid 1908511, reserve 0, inflight no cap, pace 20s, poll 30s
+another `ladder_scrims.py run` holds the lock
+2026-11-13T14:59:50Z quota 100/100, reserve 0: waiting (resets 2026-11-13T15:10:18.719Z)
+2026-11-13T14:59:54Z finished v128-v1ext-r12-mite-06 01a1d566: WLWWL
+2026-11-13T15:00:05Z finished v128-v1ext-r12-mite-05 01a1d566: WLWLL
+2026-11-13T15:00:08Z finished v128-v1ext-r12-mite-04 01a1d566: LLLLW
+2026-11-13T15:00:15Z finished v128-v1ext-r12-mite-03 01a1d566: LWLWW
+2026-11-13T15:00:19Z finished v128-v1ext-r12-mite-02 01a1d566: LWLWW
+2026-11-13T15:00:22Z finished v128-v1ext-r12-mite-01 01a1d566: WWLLW
+2026-11-13T15:00:26Z finished v128-v1core-r12-mite-16 01a1d565: LLWWW
+another `ladder_scrims.py run` holds the lock
+2026-11-13T15:00:29Z finished v128-v1core-r12-mite-15 01a1d565: LWWWW
+2026-11-13T15:00:43Z finished v128-v1core-r12-mite-14 01a1d565: LLLLW
+2026-11-13T15:00:47Z finished v128-v1core-r12-mite-13 01a1d565: LLWLW
+2026-11-13T15:00:50Z finished v128-v1core-r12-mite-12 01a1d565: WWWLW
+2026-11-13T15:00:57Z finished v128-v1core-r12-mite-11 01a1d565: LWLWW
+2026-11-13T15:01:01Z finished v128-v1core-r12-mite-10 01a1d565: WWWLL
+2026-11-13T15:01:11Z finished v128-v1core-r12-mite-09 01a1d565: LWWLL
+2026-11-13T15:01:18Z finished v128-v1core-r12-mite-08 01a1d565: LLWWW
+2026-11-13T15:01:22Z finished v128-v1core-r12-mite-07 01a1d565: WWLWL
+2026-11-13T15:01:25Z finished v128-v1core-r12-mite-06 01a1d565: LLWWL
+2026-11-13T15:01:29Z finished v128-v1core-r12-mite-05 01a1d565: LWLWW
+2026-11-13T15:01:32Z finished v128-v1core-r12-mite-04 01a1d565: LWWWW
+2026-11-13T15:01:46Z finished v128-v1core-r12-mite-03 01a1d565: LWLWW
+2026-11-13T15:01:50Z finished v128-v1core-r12-mite-02 01a1d565: WWLWW
+2026-11-13T15:01:53Z finished v128-p170new-r8-fish-16 01a1d564: WLLWW
+2026-11-13T15:02:00Z finished v128-p170new-r8-fish-15 01a1d564: WLLWW
+2026-11-13T15:02:04Z finished v128-p170new-r8-fish-14 01a1d564: LWWWL
+2026-11-13T15:02:14Z finished v128-p170new-r8-fish-13 01a1d564: WWWLW
+2026-11-13T15:02:21Z finished v128-p170new-r8-fish-12 01a1d564: WWWWL
+2026-11-13T15:02:25Z finished v128-p170new-r8-fish-11 01a1d564: LWWWL
+2026-11-13T15:02:28Z finished v128-p170new-r8-fish-10 01a1d564: WWLWL
+2026-11-13T15:02:32Z finished v128-p170new-r8-fish-09 01a1d564: WWWWW
+2026-11-13T15:02:35Z finished v128-p170new-r8-fish-08 01a1d564: LWWWW
+2026-11-13T15:02:49Z finished v128-p170new-r8-fish-07 01a1d564: LWLWL
+2026-11-13T15:02:53Z finished v128-p170new-r8-fish-06 01a1d563: WLLWL
+2026-11-13T15:02:56Z finished v128-p170new-r8-fish-05 01a1d563: LLWLW
+2026-11-13T15:03:03Z finished v128-p170new-r8-fish-04 01a1d563: LLLWW
+2026-11-13T15:03:07Z finished v128-p170new-r8-fish-03 01a1d563: WWLWW
+2026-11-13T15:03:17Z finished v128-p170new-r8-fish-02 01a1d563: LLLLW
+2026-11-13T15:03:24Z finished v128-p170new-r8-fish-01 01a1d563: WWWWW
+2026-11-13T15:03:28Z finished v128-v1ext-r8-fish-36 01a1d563: LWLLW
+2026-11-13T15:03:31Z finished v128-v1ext-r8-fish-35 01a1d563: WWLWW
+2026-11-13T15:03:35Z finished v128-v1ext-r8-fish-34 01a1d563: LWWWW
+2026-11-13T15:03:38Z finished v128-v1ext-r8-fish-33 01a1d563: LWLLW
+2026-11-13T15:03:52Z finished v128-v1ext-r8-fish-32 01a1d563: WLLLL
+2026-11-13T15:03:56Z finished v128-v1ext-r8-fish-31 01a1d563: WWLWW
+2026-11-13T15:03:59Z finished v128-v1ext-r8-fish-30 01a1d563: WLWWL
+2026-11-13T15:04:06Z finished v128-v1ext-r8-fish-29 01a1d563: WLWWL
+2026-11-13T15:04:10Z finished v128-v1ext-r8-fish-28 01a1d563: WLWWW
+2026-11-13T15:04:13Z finished v128-v1ext-r8-fish-27 01a1d563: WWLLW
+2026-11-13T15:04:27Z finished v128-v1ext-r8-fish-26 01a1d563: LWWWW
+2026-11-13T15:04:31Z finished v128-v1ext-r8-fish-25 01a1d562: LWWWW
+2026-11-13T15:04:34Z finished v128-v1ext-r8-fish-24 01a1d562: WWWWL
+2026-11-13T15:04:38Z finished v128-v1ext-r8-fish-23 01a1d562: WLWLL
+2026-11-13T15:04:41Z finished v128-v1ext-r8-fish-22 01a1d562: WWWWL
+2026-11-13T15:04:55Z finished v128-v1ext-r8-fish-21 01a1d562: WWWWL
+2026-11-13T15:04:59Z finished v128-v1ext-r8-fish-20 01a1d562: LWWWW
+2026-11-13T15:05:02Z finished v128-v1ext-r8-fish-19 01a1d562: LWWWW
+2026-11-13T15:05:09Z finished v128-v1ext-r8-fish-18 01a1d562: WWLLL
+2026-11-13T15:05:13Z finished v128-v1ext-r8-fish-17 01a1d562: WLLLW
+2026-11-13T15:05:16Z finished v128-v1ext-r8-fish-16 01a1d562: LLLWL
+2026-11-13T15:05:30Z finished v128-v1ext-r8-fish-15 01a1d562: WWWLW
+2026-11-13T15:05:34Z finished v128-v1ext-r8-fish-14 01a1d562: WWWLL
+2026-11-13T15:05:37Z finished v128-v1ext-r8-fish-13 01a1d562: WLLLW
+2026-11-13T15:05:41Z finished v128-v1ext-r8-fish-12 01a1d562: LWLLW
+2026-11-13T15:05:44Z finished v128-v1ext-r8-fish-11 01a1d562: LLLWW
+2026-11-13T15:05:58Z finished v128-v1ext-r8-fish-10 01a1d562: WWLWL
+2026-11-13T15:06:02Z finished v128-v1ext-r8-fish-09 01a1d562: WLLLL
+2026-11-13T15:06:05Z finished v128-v1ext-r8-fish-08 01a1d562: LWWLL
+2026-11-13T15:06:12Z finished v128-v1ext-r8-fish-07 01a1d562: LWWWL
+2026-11-13T15:06:16Z finished v128-v1ext-r8-fish-06 01a1d562: LWWWL
+2026-11-13T15:06:19Z finished v128-v1ext-r8-fish-05 01a1d561: LLWWL
+2026-11-13T15:06:33Z finished v128-v1ext-r8-fish-04 01a1d561: LWLLL
+2026-11-13T15:06:37Z finished v128-v1ext-r8-fish-03 01a1d561: LWWWL
+2026-11-13T15:06:40Z finished v128-v1ext-r8-fish-02 01a1d561: WWLWW
+2026-11-13T15:06:44Z finished v128-v1ext-r8-fish-01 01a1d561: WWLWL
+2026-11-13T15:06:47Z finished v128-v1core-r8-fish-16 01a1d561: LLWLW
+2026-11-13T15:07:01Z finished v128-v1core-r8-fish-15 01a1d561: LLLLW
+2026-11-13T15:07:05Z finished v128-v1core-r8-fish-14 01a1d561: LWLWW
+2026-11-13T15:07:08Z finished v128-v1core-r8-fish-13 01a1d561: WLLWW
+2026-11-13T15:07:15Z finished v128-v1core-r8-fish-12 01a1d561: LWWWW
+2026-11-13T15:07:19Z finished v128-v1core-r8-fish-11 01a1d561: LWWWW
+2026-11-13T15:07:22Z finished v128-v1core-r8-fish-10 01a1d561: LLWLL
+2026-11-13T15:07:33Z finished v128-v1core-r8-fish-09 01a1d561: WLWLL
+2026-11-13T15:07:40Z finished v128-v1core-r8-fish-08 01a1d561: WLLLW
+2026-11-13T15:07:43Z finished v128-v1core-r8-fish-07 01a1d561: WWWWW
+2026-11-13T15:07:47Z finished v128-v1core-r8-fish-06 01a1d561: LLLWL
+2026-11-13T15:07:50Z finished v128-v1core-r8-fish-05 01a1d561: WLLWW
+2026-11-13T15:07:54Z finished v128-v1core-r8-fish-04 01a1d561: LWWLW
+2026-11-13T15:08:08Z finished v128-v1core-r8-fish-03 01a1d561: LLWLW
+2026-11-13T15:08:11Z finished v128-v1core-r8-fish-02 01a1d561: WWWLW
+2026-11-13T15:08:15Z finished v128-v1core-r12-mite-01 01a1d561: WWWLL
+2026-11-13T15:08:22Z finished v128-v1core-r8-fish-01 01a1d561: LWWWL
+2026-11-13T15:10:25Z nothing runnable: live v126, selected v126, pending versions [115, 128]
+2026-11-13T15:12:26Z live/selected changed v126/v126 -> v126/v128 (before create): 0 groups created since the last read marked suspect
+2026-11-13T15:12:26Z nothing runnable: live v126, selected v128, pending versions [115, 128]
+2026-11-13T15:16:28Z live/selected changed v126/v128 -> v128/v128 (before create): 0 groups created since the last read marked suspect
+2026-11-13T15:16:29Z created v128-v1ext-r12-mite-11 -> 01a1d57b (v128, quota 100/100, pinned 01a1d561)
+2026-11-13T15:16:53Z quota 100/100, reserve 0: waiting (resets 2026-11-13T15:20:39.279Z)
+2026-11-13T15:17:20Z played v128-v1ext-r12-mite-11 01a1d57b: WWWLW
+2026-11-13T15:17:20Z finished v128-v1ext-r12-mite-11 01a1d57b: WWWLW
+2026-11-13T15:20:47Z live/selected changed v128/v128 -> v126/v126 (before create): 0 groups created since the last read marked suspect
+2026-11-13T15:20:47Z nothing runnable: live v126, selected v126, pending versions [115, 128]
+2026-11-13T15:22:49Z live/selected changed v126/v126 -> v126/v128 (before create): 0 groups created since the last read marked suspect
+2026-11-13T15:22:49Z nothing runnable: live v126, selected v128, pending versions [115, 128]
+2026-11-13T15:26:52Z live/selected changed v126/v128 -> v128/v128 (before create): 0 groups created since the last read marked suspect
+2026-11-13T15:26:53Z created v128-v1ext-r12-mite-12 -> 01a1d584 (v128, quota 100/100, pinned 01a1d561)
+2026-11-13T15:27:18Z quota 100/100, reserve 0: waiting (resets 2026-11-13T15:32:03.696Z)
+2026-11-13T15:27:28Z played v128-v1ext-r12-mite-12 01a1d584: LWWLL
+2026-11-13T15:27:29Z finished v128-v1ext-r12-mite-12 01a1d584: LWWLL
+2026-11-13T15:32:15Z live/selected changed v128/v128 -> v126/v126 (before create): 0 groups created since the last read marked suspect
+2026-11-13T15:32:16Z created batches-hour31-v126-fish-cur -> 01a1d589 (v126, quota 98/100)
+2026-11-13T15:32:17Z created batches-hour31-v126-mite-cur -> 01a1d589 (v126, quota 99/100)
+2026-11-13T15:32:18Z created batches-hour31-v126-cats-cur -> 01a1d589 (v126, quota 100/100)
+2026-11-13T15:32:36Z quota 100/100, reserve 0: waiting (resets 2026-11-13T15:48:27.243Z)
+2026-11-13T15:35:02Z played batches-hour31-v126-fish-cur 01a1d589: LWWWW
+2026-11-13T15:35:15Z finished batches-hour31-v126-fish-cur 01a1d589: LWWWW
+2026-11-13T15:35:35Z played batches-hour31-v126-cats-cur 01a1d589: WWWLW
+2026-11-13T15:36:01Z finished batches-hour31-v126-cats-cur 01a1d589: WWWLW
+2026-11-13T15:37:50Z played batches-hour31-v126-mite-cur 01a1d589: WWWLL
+2026-11-13T15:38:05Z finished batches-hour31-v126-mite-cur 01a1d589: WWWLL
