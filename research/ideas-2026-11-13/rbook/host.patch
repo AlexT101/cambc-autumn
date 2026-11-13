@@ -1,7 +1,7 @@
 diff -ruN -x book_data.h -x .cambc chy-525/src/book/book.cc rbook-525/src/book/book.cc
 --- chy-525/src/book/book.cc	1970-01-01 00:00:00.000000000 +0000
-+++ rbook-525/src/book/book.cc	2026-11-13 01:19:09.960849780 +0000
-@@ -0,0 +1,531 @@
++++ rbook-525/src/book/book.cc	2026-11-13 01:38:30.875424143 +0000
+@@ -0,0 +1,535 @@
 +#include "book.h"
 +#include <array>
 +#include <cstdio>
@@ -497,21 +497,25 @@ diff -ruN -x book_data.h -x .cambc chy-525/src/book/book.cc rbook-525/src/book/b
 +    static std::vector<cambc::champion_draft> order;
 +    static int team = 0;
 +    if (!init) {
++        // The first draft turn (10M): the entries that force their picks, by the start's tests short of the picks.
 +        init = true;
 +        team = my_team();
-+        if (!size_listed(team, cambc::map::width(), cambc::map::height())) return nullptr;
++        const int W = cambc::map::width(), H = cambc::map::height();
++        if (!size_listed(team, W, H)) return nullptr;
 +        std::uint8_t rounds = 0;
 +        (void)d::sdk_draft_num_rounds(&rounds);
-+        const int W = cambc::map::width(), H = cambc::map::height();
-+        bool any = false;
-+        for (int i = 0; i < book_data::entry_count && !any; ++i) {
++        const unsigned key = static_cast<unsigned>(team) * 65536u + static_cast<unsigned>(W) * 256u + static_cast<unsigned>(H);
++        for (int i = first_of_size(key); i < book_data::entry_count && size_key(book_data::entries[i]) == key; ++i) {
 +            const auto& e = book_data::entries[i];
-+            any = e.side == team && e.n_ours == rounds && e.w == W && e.h == H;
++            if ((e.force || book_data::mode != 0) && e.n_ours == rounds) cands.push_back(i);
 +        }
-+        if (!any) return nullptr;
-+        const auto id = map_id();
-+        for (int i = 0; i < book_data::entry_count; ++i)
-+            if (book_data::entries[i].map == id && book_data::entries[i].side == team && book_data::entries[i].n_ours == rounds) cands.push_back(i);
++        for (int kind = 0; kind < 4 && !cands.empty(); ++kind) {
++            const auto count = mask(kind).count();
++            std::erase_if(cands, [&](int i) { return book_data::entries[i].counts[kind] != count; });
++        }
++        if (cands.empty()) return nullptr;
++        const auto id = map_id(), layout = layout_hash();
++        std::erase_if(cands, [&](int i) { return book_data::entries[i].map != id || book_data::entries[i].layout != layout; });
 +        if constexpr (book_data::mode != 0) std::printf("BKDRAFT %016llx %zu\n", static_cast<unsigned long long>(id), cands.size());
 +    }
 +    if (cands.empty()) return nullptr;

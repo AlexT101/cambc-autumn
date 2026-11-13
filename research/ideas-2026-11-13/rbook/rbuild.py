@@ -19,7 +19,7 @@ Steps (each cached under --work by game key, so a rerun after new games only doe
   4. book: write HOST/src/book/book_data.h (play mode) with the reproduced games (--cells/--cap: the strength dial, see
      build_book.py), build it, verify the shipped bot reproduces each kept game, and report the bundle size.
 """
-import argparse, collections, concurrent.futures as cf, json, os, shutil, subprocess, sys, zipfile
+import argparse, collections, concurrent.futures as cf, json, os, re, shutil, subprocess, sys, zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -77,7 +77,8 @@ def select(a, opp, refset, tag):
             if line.strip() and not line.startswith('#'):
                 rep, side, key, mp = line.split()[:4]
                 if (mp, side) not in {(c['map'], c['side']) for c in chosen} and (mp, side) not in host_won:
-                    chosen.append(dict(key=key, replay=rep, side=side, map=mp, version=None, rounds=None, opp=tag))
+                    v = re.match(r'^.+-[ab]-v(\d+)-', key)
+                    chosen.append(dict(key=key, replay=rep, side=side, map=mp, version=int(v.group(1)) if v else None, rounds=None, opp=tag))
     log(f'select {tag} {refset}: {len(chosen)} cells ({len(host_won)} left to the host: its own live wins)')
     return chosen
 
@@ -273,6 +274,8 @@ def main():
                     "(book_cells.json): for another build of the same book, such as a masked upload copy")
     ap.add_argument('--cells', help="the strength dial: only these cells (build_book.py's --cells)")
     ap.add_argument('--cap', type=int, help="the strength dial: at most N entries, smallest first (build_book.py's --cap)")
+    ap.add_argument('--force-versions', help="versions of ours whose draft is not the host's: their entries' picks are forced "
+                    "(the draft plays them while the opponent's picks match); 117-119 draft as 525 does")
     a = ap.parse_args()
     work = Path(a.work).expanduser()
     work.mkdir(parents=True, exist_ok=True)
@@ -309,6 +312,12 @@ def main():
     (work / 'fp_book.json').write_text(json.dumps({c['key']: fps[c['key']] for c in final}))
     (work / 'book_cells.json').write_text(json.dumps([{k: c[k] for k in ('key', 'map', 'side', 'version', 'rounds', 'opp')} for c in final], indent=0))
     dial = (['--cells', a.cells] if a.cells else []) + (['--cap', str(a.cap)] if a.cap is not None else [])
+    if a.force_versions:
+        fv = {int(v) for v in a.force_versions.split(',')}
+        forced = [c['key'] for c in final if c.get('version') in fv]
+        (work / 'force.txt').write_text(''.join(k + '\n' for k in forced))
+        dial += ['--force', str(work / 'force.txt')]
+        log(f'force: {len(forced)} entries play their own picks (versions {sorted(fv)})')
     r = subprocess.run([sys.executable, str(HERE / 'build_book.py'), str(ents), str(host / 'src/book/book_data.h'), '--team', 'ours', '--mode', 'play',
                         '--fp', str(work / 'fp_book.json')] + dial, capture_output=True, text=True)
     sys.stderr.write(r.stderr)
