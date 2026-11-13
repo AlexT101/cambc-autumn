@@ -19175,6 +19175,14 @@ ablation tasks remain parked. The planned23-cell r13 eligibility check was cance
 before submission because its opponent pin is stale. Old r13 winning lines may be
 considered as explicitly unverified r14 handover candidates, never relabeled proof.
 
+Completed21:40 UTC: book-free531/v132 won **224/340 (65.9%)** against captured
+Mite r14 (`01a1d6cd-2c33-7999-a960-ab7bd32a52c1`), with116 losses. All69 groups
+and345 outcome records collected, five fillers excluded. Complete170-map/both-side
+coverage and fixed-pin/own-version provenance passed the final audit. This is an
+outcome-only baseline for book eligibility, not an archived source campaign or a
+same-pin comparison with older Mite results.
+Evidence: [r14 results](ideas-2026-11-13/chy531-live/mite-r14-results.json).
+
 v133 qualification completed: Fish 6/31, Mite collateral 3/6; all 37 source-pin
 proofs and ZIP CRCs passed. All six Fish wins came after replay divergence. Forced
 Fish lines on 00galaxy/b, 00rows/b and 04two_kingdoms/a regressed natural Mite wins.
@@ -19182,3 +19190,25 @@ The corrected book keeps the six proven r9 wins and 24 proven r13 lines, droppin
 all 25 failed Fish provisionals. Local gates passed:30/30 exact,52/52 wide identity,
 24 fallback games/131 handovers/zero invalid reads,4 forced checks passed,1.08 MB.
 Its release is pending, followed by three mandatory regression-recovery checks.
+
+## (charybdis, 2026-11-13) All-in escort of a winning bag at the safest altar, with a Tribute emblem from 900: 47.5% against v132
+
+From the r9 replays against Fish (our Prism dies with winning bags, 14-15 times in 225 games, mostly to the Vesper alone),
+`bots/variants/chy-winbag` (uncommitted) adds three things to charybdis 525 / v132:
+- A Tribute emblem is the next emblem once the bag is 100+ and score + bag reaches 900, with a trip home when the channel cut pays for it.
+- Every other living ally gathers at the safest altar once one carries a winning bag. The safest altar has the largest enemy-spawn minus own-spawn steps. Allies stand off the tribute tiles, toward the enemy side, keep no farmers and don't shop. A 508 bag post tells unseen allies the bag wins.
+- The carrier tributes only there and waits there without a timeout. It falls back to any altar when the channel no longer fits, or the enemy's win may come first.
+
+A read-only audit fixed five bugs before the run.
+**Result:** 47.5% of 20,480 games (CI 46.8-48.2) against `baselines/v132` on 40 fresh `--mix ladder-v2` suites (`maps/suites/winbag/wb-9113001..040`), own drafts, fast runner. The fresh-map bodies don't hunt carriers as Fish r9 does, so this measures the cost on the ladder, not the gain against Fish.
+
+**Ablation** (`params::winbag_*` switches; same suites and reference, 20,480 games each):
+
+| Variant | Tribute | Escort | Carrier held to the altar | Win % (95% CI) |
+|---|---|---|---|---|
+| chy-winbag | on | on | on | 47.5 (46.8-48.2) |
+| wb-trib | on | off (v132's one-site escort) | off | 49.9 (49.3-50.6) |
+| wb-escort | off | on | on | 47.3 (46.7-48.0) |
+| wb-escort-free | off | on | off | 47.0 (46.4-47.7) |
+
+The all-in escort carries the whole loss of about 2.7 points, and holding the carrier to the altar changes nothing. The Tribute emblem from 900 is level.

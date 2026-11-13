@@ -44,6 +44,21 @@ Completed at20:37 UTC: **159/340 wins (46.8%)**, 181 losses. All69 groups and345
 outcome records collected; five filler records excluded. The final audit passed
 with clean provenance and complete map/side coverage (`fish-r9-results.json`).
 
+## New Mite r14 baseline
+
+After the same-v134 direct comparison proved r13 stale, v132/531 played all170
+ladder maps from both sides against fresh Mite source
+`01a1d6cd-2c33-7999-a960-ab7bd32a52c1`, captured at21:25:32 UTC.
+Completed at21:40 UTC: **224/340 wins (65.9%)**, 116 losses. All69 groups and345
+outcome records are collected; five fillers are excluded. Source provenance,
+own version at creation, and complete map/side coverage passed the final audit.
+This baseline is outcome-only, with no replay archive claim.
+
+Reproduce with `python research/ideas-2026-11-13/chy531-live/audit_fish_r9.py
+--opponent mite --refset r14 --pin 01a1d6cd-2c33-7999-a960-ab7bd32a52c1
+--require-complete`. Results are in `mite-r14-results.json`. Runtime handoff and
+task IDs are in `/home/ubuntu/tmp-offload/live-chy531/mite-r14/`.
+
 Runtime evidence and completion auditors are in
 `/home/ubuntu/tmp-offload/live-chy531/`: `intent.json`, `played_progress.py`,
 `final_audit.py`, and `audit_archives.py`. The final audit requires all680 collected
