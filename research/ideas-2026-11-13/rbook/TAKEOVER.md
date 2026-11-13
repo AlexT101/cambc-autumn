@@ -54,6 +54,10 @@ required. Masked v119 remains useful source data but differs in production fuel 
   beyond the initial source list. Source recording lookup must use exact match IDs, not per-cell deduplication.
 - `ladder_scrims.games()` now excludes fillers before deduplication, so a filler cannot hide a requested cell.
   The earlier 335-cell Fish summary was a reporting artifact; corrected coverage is 340.
+- 15:27 UTC: all 100 Fish loss-cell candidates have exact recorded fingerprints in loss-v128/fp.json
+  (15 reused, 85 freshly recorded with four workers), bad.json empty. These are recording checks, not yet
+  combined-book verification. Prime log/state: prime-fish.log / prime-fish-state.json. The build waiter resumed.
+  Its service definition is now ~/.config/systemd/user/rbook-loss-v128.service (not enabled at boot).
 - Fish teammate was notified of live/book ownership and the host policy. Their six local macro jobs
   remain under their control. No agent was launched by this coordinator.
 
