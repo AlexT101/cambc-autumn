@@ -334,3 +334,53 @@ loss_refresh.py now accepts --source-versions, default unchanged117,118,119,125,
 next cycle adds131. Selection freezes this list and rejects resume drift.22 refresh
 tests pass; four offline comparator checks preserve reordered-cell identity and reject
 seed/own-version mismatches. The old frozen selections remain valid with defaults.
+
+## 2026-11-13 20:05 UTC: latest531 host, partial Fish r9 + Mite r13
+
+This supersedes the old v128/Fishr9 cycle. User requires latest book-free host132
+(Charybdis531, c451e3387), with Fish priority and useful partial coverage before the
+00:00UTC14Nov submission deadline. Final tournament maps are unseen; the book is
+for seeding. This clarification does **not** authorize stripping/activating a separate
+final bot. The exact book-free531 artifact remains preserved.
+
+- Parent owns queue/API activation: runner2787885, scheduler2788186, REST131,
+  reserve0 (all quota available; teammate priority as slots return). Original500
+  v132 games are fully collected/CRC audited; unfinished old ablation90Mite cells
+  remain parked, without duplicates. No old128/r9 game was created.
+- Fishr9 captured as `01a1d67e-e307-7f33-9412-90716c3b4ad9`. New work
+  `/home/ubuntu/tmp-offload/rbook/loss-v132-fish-r9`. Worker cycle
+  `rbook-host132-partial-cycle-final.service`, PID3046811, waits on matching baseline and
+  sources. Prior cycles2708154,2932446 and2983787 stopped at prebuild checkpoints and archived.
+- Both opponents may be partial, with explicit minimum60% known cells **each**;
+  70% of planned source groups suffices. Only confirmed132 losses are candidates.
+  Unknown collateral cells are deferred. FullFish340 and missingMite90 do not gate
+  first release. Cycle refreshes `first-source-fish-known-losses.json` and
+  `first-source-fish-actionable-losses.json` every30s; parent owns source scheduling.
+  Source step remains `loss-book-fish-r9-rest-v131`, lost_by132.
+- Outcome-only132 enabled only after original500 archive audit passed. Existing
+  archives untouched. Future pinned132 host rows retain outcomes/drafts/provenance;
+  source131 full winning recordings remain full. Recording versions117,118,119,125,
+  126,131 only. No old foreignr8 entries or old exclusions copied into r9.
+- `loss_host.py` prepared variants/rbook-host531-base and -template from all61
+  source files identical to actual132 upload and bots/charybdis at c451e3387.
+  Only the template receives replay integration plus stale-round handover guard;
+  no extra fuel patches. Main bot untouched. Profile freezes source hashes and is
+  checked on build/resume. Raw/ent181 caches copied; fingerprint/bad caches fresh.
+- Reference-only benchmarks completed52wide100M and300fresh normalfuel, native
+  runner/jobs8. These are **not yet populated-book comparison results**. Populated
+  build still requires exact recordings, fallback24, wide identity except forced
+  cells, fresh comparison, forcecheck, bundle limit and live collateral/source
+  checks. New upload name identifies531; generation IDs are unique.
+- Book lookup on no-match returns to normal531 play; it has startup filtering and
+  comms guards, not zero overhead. Old131 evidence:186/300fresh realfuel replays
+  identical, +0.08% fuel on identical games; do not extrapolate to531. New populated
+  book measurements pending. Generated fresh-map corpus can reproduce ladder
+  terrain/layout (old131 matched6/25,600); filename novelty alone is not a no-match proof.
+- First partial releases as soon as gates finish; helper remains coordinated at
+  quota-exhausted REST boundary. Optional23:00UTC upload cutoff preserves an hour
+  for essential qualification; no automatic final activation scheduled. Latest
+  uploaded book becomes REST while checks run. Repeated/ambiguous uploads require
+  reconciliation. Stop via this work's STOP marker; do not blindly restart a cycle.
+
+Validation:53 offline book tests passed; shell syntax clean. Full populated-book
+validation is pending source collection, not claimed complete. Big-arm stays paused.

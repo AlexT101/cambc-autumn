@@ -820,3 +820,28 @@ Cancelled component-study launchers: `reserve-tools/run_gate.py`, `skirmish-tool
 `gate_compile_ahead.py --plan PLAN [--check]` implements the owner-bound helper and a gate-phase scope. Exact process identity, source/tool seals, a stop marker, and draining outstanding compiles bound its lifetime. Queued conditional, draft, and tuning final gates use this scope; training and mandatory mirror phases do not. The historical research gate stays unchanged for active sealed experiments. Lightweight checks: `tools/tests/test_{gate_compile_ahead,fgate_entrypoint}.py` and conditional lifecycle tests.
 
 `experiment_config.py` validates optional per-map REF-only native opponent inputs for `ab.py` / `run_batched.py --experiment-config FILE`. The runner accepts the resulting per-game `--runtime-config` manifest fields; only explicitly configured synthetic Fish/Mite replicas use unmetered native code. Ocean candidate/reference and mirrors stay metered. Configured preparation uses one-slot C++ builds and a `run-batch --prepare-only` cache preparation holding up to 16 slots (what fair share grants) before ordinary shared-pool games. `--game-timeout SECONDS` provides an opt-in owned-worker timeout (run-batch only), retaining errors without retry. See [runtime opponent API and validation](../research/ideas-2026-11-11/runtime-opponents/README.md) for schema, cache/PGO semantics and isolated-library evidence.
+
+### Latest-host partial loss books
+
+`research/ideas-2026-11-13/rbook/loss_host.py --work WORK --host-version 132
+--name rbook-host531 --commit-bot charybdis` verifies source identity against the
+actual unmasked upload and its commit, then prepares an immutable reference and
+an isolated replay template. It refuses existing destinations and applies no extra
+fuel patches. `loss_refresh.py --host-profile WORK/host-profile.json` uses that
+reference for benchmarks/forced fallback and freezes the profile on selection/resume.
+Use fresh fingerprint caches after changing host; raw/extracted replay caches can be copied.
+
+`--partial-baseline fish --partial-baseline mite --minimum-baseline-fraction .6`
+requires at least60% known cells per opponent. Unknown target cells and natural wins
+never qualify; entries with unknown collateral are deferred in `deferred-candidates.json`.
+`--minimum-source-fraction .7` permits a partial winning-source sweep independently.
+Default old-host/full-baseline behavior stays unchanged. `BOOK_JOBS` bounds stage
+bench/fallback parallelism (the loss builder uses8).
+
+`loss_cycle.py --work WORK` reads `refresh-plan.json`, exports eligible Fish source
+cell lists, waits for baseline/source thresholds and reference-bench.DONE, builds,
+then invokes the existing coordinated release transaction once. No repins or queue
+changes before that transaction. Existing cycle state refuses blind restarts.
+Optional plan `upload_deadline` passes `BOOK_UPLOAD_DEADLINE_EPOCH` to live_test.sh;
+late uploads stop, restarting a scheduler already stopped for the transaction.
+Checks continue after upload, and the latest book is REST under current user policy.

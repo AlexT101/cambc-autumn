@@ -9,11 +9,11 @@ R=research/ideas-2026-11-13/rbook; B=~/tmp-offload/rbook/bench
 rm -f $W/stage.DONE
 {
   python3 $R/rbuild.py --host variants/$BOT --work $W --prio ${PRIO:-plain} --keys $KEYS "$@" 2>&1 | grep -v '^cell \|^dropped '
-  echo "== fallback"; (cd $R && python3 fallbacktest.py --host variants/$BOT --work $W --plain) 2>&1 | tail -8
+  echo "== fallback"; (cd $R && python3 fallbacktest.py --host variants/$BOT --work $W --plain --jobs ${BOOK_JOBS:-24}) 2>&1 | tail -8
   echo "== fresh maps"; python3 $R/freshcheck.py $W/book.jsonl ~/tmp-offload/rbook/freshids/part??.json 2>&1 | grep -v "^  SAME"
-  python3 tools/fuel/bench.py run variants/$BOT --set wide --jobs 32 --out $B/$BOT-100M.json > $B/$BOT-100M.log 2>&1
+  python3 tools/fuel/bench.py run variants/$BOT --set wide --jobs ${BOOK_JOBS:-32} --out $B/$BOT-100M.json > $B/$BOT-100M.log 2>&1
   echo "== 100M"; python3 tools/fuel/bench.py compare $B/${REF:-chy-525f}-100M.json $B/$BOT-100M.json 2>&1 | grep -v "^round1\|^turns\|^  "
-  python3 tools/fuel/bench.py run variants/$BOT --maps $(cat ~/tmp-offload/rbook/fresh_bench.txt) --fuel 0 --jobs 32 --out $B/$BOT-fresh-0.json > $B/$BOT-fresh-0.log 2>&1
+  python3 tools/fuel/bench.py run variants/$BOT --maps $(cat ~/tmp-offload/rbook/fresh_bench.txt) --fuel 0 --jobs ${BOOK_JOBS:-32} --out $B/$BOT-fresh-0.json > $B/$BOT-fresh-0.log 2>&1
   echo "== fresh real fuel"; python3 tools/fuel/bench.py compare $B/${REF:-chy-525f}-fresh-0.json $B/$BOT-fresh-0.json 2>&1 | grep -v "^round1\|^turns\|^  " | cut -c1-200
 } > $W/stage.out 2>&1
 touch $W/stage.DONE

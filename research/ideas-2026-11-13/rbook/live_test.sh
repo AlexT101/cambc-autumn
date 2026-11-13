@@ -8,12 +8,16 @@ set -u
 DIR=$1; NOTE=$2; WAITG=$3; STEPS=$4
 BOOK_REST=${5:-}
 case "$BOOK_REST" in ""|--rest) ;; *) echo "expected optional --rest"; exit 1;; esac
+before_deadline() {
+  [ -z "${BOOK_UPLOAD_DEADLINE_EPOCH:-}" ] || [ "$(date -u +%s)" -lt "$BOOK_UPLOAD_DEADLINE_EPOCH" ]
+}
+before_deadline || { echo "book upload deadline passed"; exit 1; }
 SUBMIT_ARGS=()
 if [ "$BOOK_REST" = --rest ]; then SUBMIT_ARGS+=(--rest); fi
 R=/home/ubuntu/cambc-autumn; S=~/tmp-offload/handoff/sched; W=~/tmp-offload/rbook-mask
 cd $R
 [ ${#NOTE} -le 80 ] || { echo "note over 80 characters"; exit 1; }
-[ -z "$WAITG" ] || until grep -qE "$WAITG" $S/sched.log; do sleep 15; done
+[ -z "$WAITG" ] || until grep -qE "$WAITG" $S/sched.log; do before_deadline || exit 1; sleep 15; done
 python3 $W/upload_rest.py build "$DIR" "$NOTE" || exit 1
 WS=$(python3 -c "import json;c=json.load(open('$W/prepared.json'));assert not c['masked'];print(c['workspace'])") || { echo "build is masked"; exit 1; }
 (cd $WS && rm -f $W/multi-bundle.zip && cambc bundle ocean --output $W/multi-bundle.zip > /dev/null 2>&1)
@@ -45,13 +49,15 @@ start_sched() {
   kill -0 "$(cat "$S/sched.lock")" 2>/dev/null
 }
 for try in $(seq 40); do
-  until [ "$(ready_to_upload)" = yes ]; do sleep 10; done
+  until [ "$(ready_to_upload)" = yes ]; do before_deadline || { echo "book upload deadline passed"; exit 1; }; sleep 10; done
+  before_deadline || { echo "book upload deadline passed"; exit 1; }
   PID=$(cat $S/sched.lock); touch $S/STOP
   while kill -0 $PID 2>/dev/null; do sleep 2; done
   [ "$(ready_to_upload)" = yes ] && break
   echo "$(date -u +%T) a batch started before the stop; retrying"; start_sched || exit 1; sleep 60
 done
 [ "$(ready_to_upload)" = yes ] || { echo "no idle upload boundary"; start_sched; exit 1; }
+before_deadline || { echo "book upload deadline passed after scheduler stop"; start_sched; exit 1; }
 echo "$(date -u +%T) scheduler stopped between batches"
 python3 $W/upload_rest.py submit "${SUBMIT_ARGS[@]}"; rc=$?
 if [ $rc -eq 0 ]; then

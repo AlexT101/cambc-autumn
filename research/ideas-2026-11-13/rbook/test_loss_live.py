@@ -15,6 +15,15 @@ import loss_live as live
 
 
 class LossLiveTests(unittest.TestCase):
+    def test_optional_upload_deadline_refuses_late_helper(self):
+        function='before_deadline() {'+live.HELPER.read_text().split('before_deadline() {',1)[1].split('\n}',1)[0]+'\n}'
+        import time
+        for deadline,ok in (('',True),('1',False),(str(int(time.time())+3600),True)):
+            with self.subTest(deadline=deadline):
+                result=subprocess.run(['bash','-c',function+'\nbefore_deadline'],
+                                      env=dict(os.environ,BOOK_UPLOAD_DEADLINE_EPOCH=deadline))
+                self.assertEqual(result.returncode==0,ok)
+
     def test_helper_restarts_scheduler_in_independent_user_service(self):
         script=live.HELPER.read_text()
         function='start_sched() {'+script.split('start_sched() {',1)[1].split('\n}',1)[0]+'\n}'
@@ -182,7 +191,7 @@ class LossLiveTests(unittest.TestCase):
 
     def test_crash_during_helper_persists_nonretryable_upload_intent(self):
         state=dict(phase='prepared',expected_rest=126,history_before=[126],bot='/bot')
-        a=dict(specs={},entries=[{}],build=dict(pins=dict(fish='r8',mite='r13')))
+        a=dict(specs={},entries=[{}],build=dict(pins=dict(fish='r9',mite='r13'),host_name='Charybdis 531 (c451e33)'))
         with tempfile.TemporaryDirectory() as tmp, mock.patch.object(live,'unchanged',return_value=a), \
              mock.patch.object(live,'guards',return_value={'history':[{'version':126}]}), \
              mock.patch.object(live,'read',return_value=[]),mock.patch.object(live.sched,'MASK_UPLOADS',False), \
@@ -192,6 +201,7 @@ class LossLiveTests(unittest.TestCase):
             saved=json.loads((work/live.STATE).read_text())
             self.assertEqual(saved['phase'],'upload_attempt')
             self.assertTrue(saved['rest_on_upload'])
+            self.assertTrue(saved['note'].startswith('Charybdis 531 (c451e33) + Fish r9/Mite r13'))
             self.assertEqual(run.call_args.args[0][-1],'--rest')
             with self.assertRaisesRegex(RuntimeError,'already attempted'): live.upload(work,saved)
             self.assertEqual(run.call_count,1)

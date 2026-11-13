@@ -189,7 +189,8 @@ def upload(work,state):
     ensure(not any(s['id'] in a['specs'] for s in read(sched.H/'after-queue.json')), 'Steps already queued')
     ensure(sched.MASK_UPLOADS is False, 'Upload masking enabled')
     pins = a['build']['pins']
-    note = f"Charybdis 525 + fuel 01-02 + Fish {pins['fish']}/Mite {pins['mite']} loss book ({len(a['entries'])})"
+    host_name = a['build'].get('host_name','Charybdis 525 + fuel 01-02')
+    note = f"{host_name} + Fish {pins['fish']}/Mite {pins['mite']} loss book ({len(a['entries'])})"
     ensure(len(note)<=80, 'Upload note too long')
     state.update(phase='upload_attempt',at=ls.now(),note=note,rest_on_upload=True)
     write(work/STATE,state)
