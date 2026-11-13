@@ -22,6 +22,10 @@ The user prioritized the new Fish pin and book over completing this comparison.
 the scheduler's `parked_task_ids`, with the original campaign archived locally.
 Fishr9's book-free host baseline and loss-only book refresh run first. The collected
 comparison retains its original Fishr8/Miter13 pins. See `partial-results.json`.
+The new Fish baseline uses **v132/531**, and the replacement book will use the same host.
+The briefly prepared v128 baseline submitted zero games and is held.
+All500 submitted comparison replays passed ZIP CRC checks, with binary summaries present
+(`partial-archive-audit.json`).
 REST remains latest book131 between quota windows, with no fixed quota reserve.
 
 Runtime evidence and completion auditors are in

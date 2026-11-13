@@ -1,9 +1,9 @@
 {
-  "at": "2026-11-13T19:47:32Z",
+  "at": "2026-11-13T19:54:28Z",
   "candidate": 132,
   "baseline": 129,
-  "source": "played events; replay downloads still in progress",
-  "checked_against_collected_cells": 435,
+  "source": "All500 completed outcomes cross-checked against collected game records",
+  "checked_against_collected_cells": 500,
   "paired": {
     "Intercontinental Fish": {
       "cells": 250,
@@ -28,5 +28,6 @@
   "pins": {
     "fish": "r8",
     "mite": "r13"
-  }
+  },
+  "archive_audit": "partial-archive-audit.json"
 }
