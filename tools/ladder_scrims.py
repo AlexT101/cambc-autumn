@@ -741,7 +741,7 @@ def main():
     pl.add_argument("--purpose", help="label (default set, calib with --one-side)")
     pl.add_argument("--priority", type=int, help="higher first; >= 100 may use the reserve (default core 50, ext 30)")
     ru = sub.add_parser("run", help="queue and collect groups until stopped (touch data/STOP to stop)")
-    ru.add_argument("--reserve", type=int, default=50, help="quota groups kept free for priority >= 100 tasks")
+    ru.add_argument("--reserve", type=int, default=0, help="quota groups kept free for priority >= 100 tasks")
     ru.add_argument("--inflight", type=int, default=0, help="most groups playing at once (0: no cap, the quota decides)")
     ru.add_argument("--batch-inflight", type=int, default=0, help="unused (kept for old command lines)")
     ru.add_argument("--pace", type=int, default=20, help="seconds between create passes (one quota read each)")

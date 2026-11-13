@@ -47,7 +47,7 @@ from pathlib import Path
 from ladder_opp_check import Evidence, InvalidComparison
 
 REST = 115
-RESERVE = 50          # matches runner --reserve: keep 250 games of burst capacity for teammates
+RESERVE = 0           # no idle reserve; yield quota to a teammate when they request a burst
 PARTS = (('v1', 'core', 99), ('v1', 'ext', 90))
 # 2026-11-12: the pool grew to 170 (42 '05' maps). Their cells play only once the platform has accepted a group on them:
 # PROBE, the rest version's first new-map control group, is created ahead of the held control to find out.
