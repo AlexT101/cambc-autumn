@@ -10,6 +10,36 @@ used 1094-1164 (fewer ladder maps), before 2026-10-21 390-582, and recent ones 2
 Noise is about ±2.1 points on 582 games; "level" means within noise. Don't retry a lost or level
 idea as is: it needs a new mechanism or ladder evidence. Results on older bots are hints, not rules.
 
+## (charybdis 532, 2026-11-13) Draft20: draft18's F92 model refit on charybdis 531 with a 2-day prior; 50.4% of 54,400 head-to-head, gain not established
+
+- **Lab** `replays/draftlab/draft20`: player `variants/charybdis-c451e33` (531); draft18's config otherwise (F92,
+  its starting penalties, no team lock, mix and 2 explore batches); pool 100 fresh `--mix ladder-v4` suites
+  7740000-7740099 (33,891 maps after duplicates), no holdout; opponents self .2, ocean (`variants/ocean-d20` =
+  bots/ocean) .2, Fish `spar-dvn951-Flp4` .3, Mite `spar-dvn951-Mt3q` .3. Prior: top 10 other teams' ranked drafts
+  since 2026-11-11T21:57 (2 days), 1,807 groups, 2,324 / 2,876 / 9,031 team-games at 3 / 4 / 5 picks.
+- **Run:** 1,000,004 games in 14 batches, 22:04-23:15 (71 min; 90-min user budget including fetch, mapgen and init);
+  0 errors, 25 draft mismatches, 153 games over by round 5 (the bodies' unfinished drafts). No searches (config
+  `search_batches` [] and the new `final_search` false): the final fit is a plain fit at the starting penalties,
+  999,979 games. Teams against draft18-start's: same on 64.0% (3 picks), 41.9% (4), 35.8% (5) of the lab's maps,
+  as draft19's refit (62.5%, ~41%).
+- **Candidate** `variants/chy531-draft20` (531 with only `draft_model.h`): native parity on fresh-7740000 (508
+  maps): 0 key, team or C++ mismatches (99 maps with last-digit feature differences). The first-turn check and the
+  body fgate (`--pool v4`) were started and stopped before any batch finished (finals wrap, 23:40 UTC); neither has
+  been run. draft19's comparable refit lost to the bodies (49.48%).
+- **Teams** on the lab's maps, draft18-start -> draft20: Prism 80 -> 90% (3 picks), 87 -> 94% (4), 89 -> 95% (5);
+  Vesper Vale 31 -> 21% (3), 45 -> 36% (4); Ryth 43 -> 63% and Heart of Ruin 39 -> 24% (5); Stellar 5-6 -> 11% (4, 5).
+- **Head-to-head** (`ab.py`, own drafts, release, real fuel, fast runner native), chy531-draft20 against 531
+  (`variants/charybdis-c451e33`), fresh `--mix ladder-v4` suites no lab or A/B had used:
+
+| Suites | Games | Win % (95% CI) | Out-of-fuel turns CAND / REF | Broken / capped / lost by round 5 |
+|---|---|---|---|---|
+| 7740100-7740139 | 27,200 | 50.7% (50.1-51.3) | 223,511 / 228,046 | 0 / 0 / 0 |
+| 7740140-7740179 (confirm) | 27,200 | 50.1% (49.5-50.7) | 224,203 / 226,242 | 0 / 0 / 0 |
+| pooled | 54,400 | 50.4% (~50.0-50.8) | -1.5% | 0 / 0 / 0 |
+
+The confirmation did not reproduce the first set's gain: the draft is not worse head-to-head, a gain is not
+established, and it has not been read against the bodies. Merged as CHANGES 532 on the user's decision (2026-11-13).
+
 ## (charybdis 531 book, 2026-11-13) Old Mite lines win four of eight new-pin checks
 
 After a fresh book-free132/Miter14 baseline (224/340 wins), v135 retained six proven

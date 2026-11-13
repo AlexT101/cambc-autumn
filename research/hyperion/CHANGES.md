@@ -5075,3 +5075,18 @@ calculation changes. All champions covered, Willow forced; conditional probes ve
 Details, intervals, rejected ideas and source hashes: [fuel-530](../fuel-530/README.md).
 
 Frozen as `variants/f530-final` (= bots/charybdis).
+
+## 532: Draft20: draft18's model refit on charybdis 531 with a 2-day ladder prior (charybdis, 2026-11-13)
+
+`src/draft/draft_model.h` regenerated from lab `replays/draftlab/draft20` (tools/draftlab): 1,000,004 games with
+charybdis 531 as the player against itself, ocean, and the Fish and Mite bodies, on 100 fresh `ladder-v4` suites;
+draft18's F92 features and starting penalties, a plain fit (no penalty search) on 999,979 games; opponent prior: the
+top 10 other teams' ranked drafts of the last 2 days. Nothing else changes. Teams draft Prism more (80 -> 90% of
+3-pick maps, 87 -> 94% of 4, 89 -> 95% of 5), Vesper Vale less, and Ryth over Heart of Ruin at 5 picks.
+
+Head-to-head against 531 on fresh ladder-v4 suites: 50.7% (50.1-51.3) of 27,200, then 50.1% (49.5-50.7) of 27,200 on
+the confirmation; pooled 50.4% of 54,400, a gain not established. Out-of-fuel turns -1.5%; no broken, capped or
+early-lost drafts. Native parity exact on 508 maps (teams). Not read against the bodies, and the first draft turn was
+not re-measured. Merged on the user's decision.
+
+Evidence: EXPERIMENTS "Draft20". Frozen as `variants/chy531-draft20` (= bots/charybdis).

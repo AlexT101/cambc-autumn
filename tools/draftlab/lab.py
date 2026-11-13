@@ -49,6 +49,8 @@ DEFAULTS = {
     # the other side of each game ("self": the source on both sides, every game before draft6); opponent_bots
     # {NAME: bot dir} are frozen bots whose vehicles draft from the plan's oppVehicles tables. max_games caps the run.
     "opponents": None, "opponent_bots": {}, "max_games": None,
+    # final_search false: the run ends on a plain fit at the last penalties (a search at ~1M games outlasts a short run).
+    "final_search": True,
     # Batches prepared (planned, built, compiled) while one plays (run's pipeline); 1 before draft18's follow-up.
     "ahead": 2,
 }
@@ -714,8 +716,9 @@ def run(args):
         finish_batch(lab, b - 1, last, cfg, cfg["threads"])
     if state["fitting"]:
         state["fitting"].wait()
-    log(lab, "deadline reached; final fit with search")
-    fit_async(lab, True, cfg["fit_threads"]).wait()
+    final_search = cfg.get("final_search", True)
+    log(lab, f"deadline reached; final fit{' with search' if final_search else ' (no search: final_search off)'}")
+    fit_async(lab, final_search, cfg["fit_threads"]).wait()
     FitJob.wait_report()
 
 
