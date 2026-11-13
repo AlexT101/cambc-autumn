@@ -129,7 +129,9 @@ def guards(work, rest, idle=True):
            and not (ls.DATA/'STOP').exists(), 'Scheduler/runner control marker present')
     st = sched.load()
     ensure(st['batches']['rest'] == rest and not sched.queue_lines(), 'REST or queue ownership changed')
-    ensure(not idle or st['batches']['cur'] is None, 'Batch in progress; retry at an idle boundary')
+    current = st['batches']['cur']
+    ensure(not idle or current is None or current['phase']=='rest',
+           'Batch in progress; retry at a resting boundary')
     rest_file = sched.H/'REST'
     ensure(not rest_file.exists() or int(rest_file.read_text()) == rest, 'Another REST request is pending')
     return st

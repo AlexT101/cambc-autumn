@@ -10,6 +10,21 @@ import loss_live as live
 
 
 class LossLiveTests(unittest.TestCase):
+    def test_guards_allow_waiting_candidate_but_not_activation_or_creation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            state=dict(batches=dict(rest=126,cur=None))
+            with mock.patch.object(live.sched,'H',root),mock.patch.object(live.ls,'DATA',root), \
+                 mock.patch.object(live.sched,'queue_lines',return_value=[]), \
+                 mock.patch.object(live.sched,'load',return_value=state):
+                self.assertIs(live.guards(root,126),state)
+                state['batches']['cur']=dict(version=129,phase='rest')
+                self.assertIs(live.guards(root,126),state)
+                for phase in ('activate_batch','batch'):
+                    state['batches']['cur']['phase']=phase
+                    with self.assertRaisesRegex(RuntimeError,'Batch in progress'):
+                        live.guards(root,126)
+
     def fixture(self):
         spec=dict(id='check',opp='mite',pin='ref',refset='r13',cells=[['map','a']])
         task=dict(id='task',part='check',version=130,purpose='set',opp_id=live.ls.TEAMS['mite'][0],
