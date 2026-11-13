@@ -391,6 +391,13 @@ def groups_over(want, pages=12):
             if len(ms) >= 5 and all(st in DONE for _, st, _ in ms.values())}
 
 
+def activation_pending():
+    try:
+        return time.time() - (DATA / 'BATCH').stat().st_mtime < 90
+    except FileNotFoundError:
+        return False
+
+
 def cmd_run(args):
     lock = open(DATA / "run.lock", "a+")
     try:
@@ -576,8 +583,9 @@ def cmd_run(args):
                     cand = runnable(pend, refs, over)
                     key = sorted(c[0]["id"] for c in cand)
                     # A pass that finds no task for the live version costs two calls: repeat it only every two
-                    # minutes, or at once when the runnable tasks change (a plan, a released hold, a played pin).
-                    if cand and (key != no_task or time.monotonic() - last_pass >= max(120, args.pace)):
+                    # minutes, except during a scheduler batch where activation can finish at any time.
+                    retry_delay = args.pace if activation_pending() else max(120, args.pace)
+                    if cand and (key != no_task or time.monotonic() - last_pass >= retry_delay):
                         last_pass = time.monotonic()
                         made = create_pass(cand, playing)
                         no_task = key if made is None else None

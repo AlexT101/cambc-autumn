@@ -148,6 +148,17 @@ class RunTest(unittest.TestCase):
             sleep.assert_not_called()
         self.assertFalse((ls.DATA/'api.lock').exists())
 
+    def test_batch_activation_rechecks_unchanged_tasks_promptly(self):
+        api = FakeApi(live=117)
+        self.start(api, [task(0, pin='none')], pace=0.05, exit_when_done=False)
+        self.wait(lambda: any(a == 'submissions' for _, a, _, _ in api.calls))
+        time.sleep(0.15)
+        api.live = 118
+        # The plan is unchanged; the scheduler's fresh batch marker wakes activation polling.
+        (ls.DATA/'BATCH').touch()
+        self.wait(lambda: len(self.created()) == 1, secs=2)
+        self.assertEqual(self.created()[0]['live'], 118)
+
     def test_server_rate_limit_is_retried(self):
         self.th = threading.current_thread()
         limited=types.SimpleNamespace(returncode=1,stdout='',stderr='HTTP 429; retry after 2 seconds')
