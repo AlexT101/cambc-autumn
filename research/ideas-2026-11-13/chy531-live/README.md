@@ -81,3 +81,21 @@ The original 529-to-531 comparison remains parked at500/680 games. Its runtime
 auditors in `/home/ubuntu/tmp-offload/live-chy531/` (`final_audit.py` and
 `audit_archives.py`) require680 records and do not audit these completed
 opponent-pin baselines. Its500 collected replay archives remain preserved.
+
+## New Fish r10 baseline
+
+The matched v137 probes found Fish r9 stale on all five cells at23:09 UTC;
+see `../rbook/fish-r9-stale-v137.json`. Book-free v132/531 captured r10 at
+23:15:52 UTC, source `01a1d732-2d11-7f85-85fa-f4953aad836c`.
+
+Completed and audited at23:36 UTC: **142/340 wins (41.8%)**, 198 losses.
+All170 maps and both sides are covered by69 collected groups and345 records;
+five fillers are excluded. Own-version, fixed-pin, suspect-group, coverage,
+and outcome provenance checks passed. This is outcome-only collection.
+The rate measures531 without a book against Fish r10, not the newly merged
+532 draft or a book-enabled bot. The earlier159/340 result was against r9.
+
+Reproduce with `python research/ideas-2026-11-13/chy531-live/audit_fish_r9.py
+--opponent fish --refset r10 --pin 01a1d732-2d11-7f85-85fa-f4953aad836c
+--require-complete`. Results are in `fish-r10-results.json`; runtime handoff
+is in `/home/ubuntu/tmp-offload/live-chy531/fish-r10/`.
