@@ -1,0 +1,72 @@
+{
+ "params": {
+  "events": 200000,
+  "nu": 4,
+  "s_top": 0.45,
+  "s_rest": 0.4,
+  "us_fish": 0.57,
+  "us_mite": 0.65,
+  "fish_mite": 0.56,
+  "no_reset": false,
+  "orders": "rep",
+  "sanity": false,
+  "seed": 1,
+  "out": "out/br_stop045.json"
+ },
+ "event_win": {
+  "US-FISH-MITE-CATS": {
+   "US": 0.702085,
+   "FISH": 0.228695,
+   "MITE": 0.0655,
+   "CATS": 0.003655,
+   "Claudus Maximus": 3e-05,
+   "NEETCoders": 5e-06,
+   "test4": 5e-06,
+   "Trzy Kwaterki": 2.5e-05,
+   "Sponge": 0.0,
+   "Nyx": 0.0,
+   "bentheboss": 0.0,
+   "QS2isLaw": 0.0,
+   "Team Kungarna": 0.0,
+   "Rogue Lock Pickers": 0.0,
+   "VeryGood": 0.0,
+   "smurphy": 0.0
+  },
+  "MITE-US-FISH-CATS": {
+   "US": 0.63172,
+   "FISH": 0.23176,
+   "MITE": 0.1305,
+   "CATS": 0.00593,
+   "Claudus Maximus": 6e-05,
+   "NEETCoders": 1e-05,
+   "test4": 0.0,
+   "Trzy Kwaterki": 2e-05,
+   "Sponge": 0.0,
+   "Nyx": 0.0,
+   "bentheboss": 0.0,
+   "QS2isLaw": 0.0,
+   "Team Kungarna": 0.0,
+   "Rogue Lock Pickers": 0.0,
+   "VeryGood": 0.0,
+   "smurphy": 0.0
+  },
+  "FISH-US-MITE-CATS": {
+   "US": 0.634375,
+   "FISH": 0.29134,
+   "MITE": 0.069635,
+   "CATS": 0.0046,
+   "Claudus Maximus": 2.5e-05,
+   "NEETCoders": 0.0,
+   "test4": 1e-05,
+   "Trzy Kwaterki": 1.5e-05,
+   "Sponge": 0.0,
+   "Nyx": 0.0,
+   "bentheboss": 0.0,
+   "QS2isLaw": 0.0,
+   "Team Kungarna": 0.0,
+   "Rogue Lock Pickers": 0.0,
+   "VeryGood": 0.0,
+   "smurphy": 0.0
+  }
+ }
+}
