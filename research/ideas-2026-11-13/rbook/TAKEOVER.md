@@ -1,3 +1,11 @@
+## 2026-11-13 16:41 UTC: combined partial book passes exact replay
+
+After excluding the3conflicting forcedFish entries,164/164combinedbookentries reproduceexactly.103Fish+61Mite,29forcedkeys; bundle3296250bytes. Builder3528047 continuingfallback/fuel/forcechecks; do not upload untilready_for_live_checks. Fullr13v126sourcepass finished136hostlosscells:74wins62losses.13winningcells arrived afterfrozenfirstselection; saved loss-v128/late-source-wins.json fornextincrement.
+
+All3additionalunranked foreignMite candidates reproducedlocally:04gem_cavernsa(TrzyKwaterki),03one_gemb(ClaudusMaximus),01islandsa(Fish). State/entries in /home/ubuntu/tmp-offload/rbook-foreign/mite-r13-current/unranked-qualification-state.json, failed[]. Targetpinstillunproven; neverinsertintofrozenfirstbuild.
+
+Hour32checks(created16:32) complete:Fishunchanged16:36:11,Miteunchanged16:38:17 onfivecells;Catschanged(notbookfocus).No repinrequired.529v129full680queued/verified,firstFish50campaignphase restwaitingquota16:48:50. Helpercompleted; sharedpreparedworkspace free for book uploadoncechecksready. Driverguardsnowallowcurrentphase rest, matchinghelper'ssafeinter-batchboundary;14tests pass(commit4bad249ff).
+
 ## 2026-11-13 16:33 UTC: v129 full strength test + first book conflict repair
 
 User explicitly requested Charybdis529 real strength test on ALL170laddermaps, BOTHsides, Fish ANDMite (680games). Frozen bots/variants/chy-529-live frombbc7cddb6, test_draftfalse, no book files or priority mask. Uploaded asv129 (601159bytes), smoke passed round1459. Helper completed and REST126restored. Exactly14 interleaved cells steps chy529-full-{fish,mite}-{1..7} queued,50cells each(last40); exact340unique/opponent,170eachsideverified againstv128. No200cap. Full replaycollection; neither outcome-only nor wins-only applies. Intended strength comparator is unmasked book-freev128, not schedulerdefault118. Work/intent/steps:/home/ubuntu/tmp-offload/live-chy529. Shared prepared.json belongs to529 until upload helper processfullyexits; no duplicateupload.
