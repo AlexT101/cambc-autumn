@@ -1,0 +1,2401 @@
+{
+  "at": "2026-11-13T22:36:07Z",
+  "version": 132,
+  "code": "531 c451e3387",
+  "opponent": "Mite",
+  "refset": "r15",
+  "pin_source_group": "01a1d706-59a1-78b3-9db5-8109569b1865",
+  "complete": true,
+  "planned_groups": 69,
+  "created_groups": 69,
+  "collected_groups": 69,
+  "expected_unique_cells": 340,
+  "unique_cells": 340,
+  "wins": 228,
+  "losses": 112,
+  "filler_records": 5,
+  "provenance": "clean",
+  "collection": "outcome_only; no replay archive claim",
+  "cells": [
+    {
+      "map": "00ambush",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-62c7-737d-8a8c-192d172e5711",
+      "group": "01a1d707-62c4-7915-b730-3e750a21b2a3"
+    },
+    {
+      "map": "00ambush",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-5cc5-77f0-a1cc-3323b1d4af25",
+      "group": "01a1d707-5cc2-72a7-919d-0472ab7ca7c4"
+    },
+    {
+      "map": "00anvil",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-5625-7aad-9b0d-e7f376b5bd1d",
+      "group": "01a1d708-5623-7be3-b162-cb060a8718fa"
+    },
+    {
+      "map": "00anvil",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d708-5f6e-79df-a717-0eae2a07e143",
+      "group": "01a1d708-5f67-771c-bfa3-19b7a09781ec"
+    },
+    {
+      "map": "00breadcrumbs",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-6a48-72df-aa1e-9dc84d4157cd",
+      "group": "01a1d707-6a46-7632-a232-130884fab564"
+    },
+    {
+      "map": "00breadcrumbs",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-6b01-77a5-9b14-67587dcf6c2d",
+      "group": "01a1d707-6aff-765f-bd69-210f3303a7b8"
+    },
+    {
+      "map": "00collision",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-6b01-7417-ae6d-2ad579ad8fa7",
+      "group": "01a1d707-6aff-765f-bd69-210f3303a7b8"
+    },
+    {
+      "map": "00collision",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-6a48-7623-b32e-cb8dd6e1f1c8",
+      "group": "01a1d707-6a46-7632-a232-130884fab564"
+    },
+    {
+      "map": "00contest",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-4855-74da-ba1f-0f6db183ea9c",
+      "group": "01a1d708-4853-7e6b-9edc-7d12f2f3db51"
+    },
+    {
+      "map": "00contest",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d708-5136-7301-9dcd-e6f803b859d5",
+      "group": "01a1d708-5134-79cd-9c17-a6d8613cb16f"
+    },
+    {
+      "map": "00corners",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d706-59a4-7bc5-9856-e13312c8b80b",
+      "group": "01a1d706-59a1-78b3-9db5-8109569b1865"
+    },
+    {
+      "map": "00corners",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-6baf-782a-84b5-5d595e6f185c",
+      "group": "01a1d707-6bad-792a-a95b-d227d361a7b9"
+    },
+    {
+      "map": "00crater",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-5136-7122-8370-ee544b8d5fbf",
+      "group": "01a1d708-5134-79cd-9c17-a6d8613cb16f"
+    },
+    {
+      "map": "00crater",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-4855-761b-804d-2fc9a371f8bd",
+      "group": "01a1d708-4853-7e6b-9edc-7d12f2f3db51"
+    },
+    {
+      "map": "00dunes",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-f88b-749c-990b-3e5c5d47e0e3",
+      "group": "01a1d707-f851-76ba-bd83-21fc89cba219"
+    },
+    {
+      "map": "00dunes",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-f301-775b-8e3a-579c5516ddc2",
+      "group": "01a1d707-f2ff-7ac5-9de9-32c7cbf90f76"
+    },
+    {
+      "map": "00eight",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-67ac-7558-b848-4be3a8df7351",
+      "group": "01a1d707-67a7-786f-9ccc-a3bf6449db66"
+    },
+    {
+      "map": "00eight",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-685e-7054-9816-182e031bd9cd",
+      "group": "01a1d707-685b-7422-9a59-e80e08b4f8ec"
+    },
+    {
+      "map": "00elkring",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-db62-749b-882d-63d5792b4f22",
+      "group": "01a1d707-db60-7c74-a4b6-42a238a39bd8"
+    },
+    {
+      "map": "00elkring",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-dc07-718d-9e00-c2717036d2b3",
+      "group": "01a1d707-dc05-7d88-b3a6-8ba859a3adf9"
+    },
+    {
+      "map": "00expanse",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-6d6a-7d3a-99fe-d72bd13686c3",
+      "group": "01a1d708-6d68-73d5-a0a4-939744e3b769"
+    },
+    {
+      "map": "00expanse",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d708-6888-717d-9208-abe87ed078f6",
+      "group": "01a1d708-6885-7928-80d4-3c6efaf6f54f"
+    },
+    {
+      "map": "00fragment",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-7e2d-7a7b-afe2-7da724480807",
+      "group": "01a1d707-7e2b-73d8-9dd9-1be3bb227605"
+    },
+    {
+      "map": "00fragment",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-94e3-7bdc-840f-ad32f7501cfa",
+      "group": "01a1d707-94e1-7184-a9b0-e017bde9676f"
+    },
+    {
+      "map": "00galaxy",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-5a32-73ee-bd88-bdf3affd7847",
+      "group": "01a1d707-5a30-772c-a3bb-ff10f99f7dae"
+    },
+    {
+      "map": "00galaxy",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-752d-762c-a742-09b36526a505",
+      "group": "01a1d707-752a-740f-b91c-cfdab35213c9"
+    },
+    {
+      "map": "00gem_fields",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-66fc-77d6-b9e3-6a50b3eb12d7",
+      "group": "01a1d707-66f9-7b4e-a786-25329b9cbd36"
+    },
+    {
+      "map": "00gem_fields",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-6667-7777-86bf-f18a3e48adc2",
+      "group": "01a1d707-6664-7042-bd8f-ebdf12638ff4"
+    },
+    {
+      "map": "00gemfight",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-2a10-725e-814a-58b2f8b59ee7",
+      "group": "01a1d708-2a0b-7361-8c71-8edf4b940376"
+    },
+    {
+      "map": "00gemfight",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-2135-7c78-957a-2ddcd328f160",
+      "group": "01a1d708-2133-7f42-a269-21a3a1c96b9c"
+    },
+    {
+      "map": "00great_wall",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-62c7-703d-a145-929dbeff0e9b",
+      "group": "01a1d707-62c4-7915-b730-3e750a21b2a3"
+    },
+    {
+      "map": "00great_wall",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-5cc5-7961-9f1b-ea973bb8f836",
+      "group": "01a1d707-5cc2-72a7-919d-0472ab7ca7c4"
+    },
+    {
+      "map": "00happy_halloween",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-db62-7050-8faa-6f40220561d9",
+      "group": "01a1d707-db60-7c74-a4b6-42a238a39bd8"
+    },
+    {
+      "map": "00happy_halloween",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-dc07-7437-825f-afca8a3ef704",
+      "group": "01a1d707-dc05-7d88-b3a6-8ba859a3adf9"
+    },
+    {
+      "map": "00interlock",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-6888-7311-bab4-6f9b50481aeb",
+      "group": "01a1d708-6885-7928-80d4-3c6efaf6f54f"
+    },
+    {
+      "map": "00interlock",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-6d6a-74b2-a8b1-85679d7b7e2e",
+      "group": "01a1d708-6d68-73d5-a0a4-939744e3b769"
+    },
+    {
+      "map": "00lanes",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-6229-7627-8daa-e049dd618f06",
+      "group": "01a1d707-6228-7a51-ac09-22930a2de310"
+    },
+    {
+      "map": "00lanes",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-6184-72c6-a86a-cdd6dd4a41ad",
+      "group": "01a1d707-6182-72dd-ace8-46364a4b0e19"
+    },
+    {
+      "map": "00lost_world",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-f301-72c5-bee6-6ca7b719b163",
+      "group": "01a1d707-f2ff-7ac5-9de9-32c7cbf90f76"
+    },
+    {
+      "map": "00lost_world",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-f88b-7e1c-8522-b053864b8bb3",
+      "group": "01a1d707-f851-76ba-bd83-21fc89cba219"
+    },
+    {
+      "map": "00monolith",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-c264-734d-ba7b-4b0934272d00",
+      "group": "01a1d707-c262-7951-8206-faace5f8f3d3"
+    },
+    {
+      "map": "00monolith",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-b92f-7ce7-9282-61cdd30e9dbd",
+      "group": "01a1d707-b92b-703f-860a-69b003c6c2a7"
+    },
+    {
+      "map": "00oasis",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d708-4855-7a11-880c-23c7004643c9",
+      "group": "01a1d708-4853-7e6b-9edc-7d12f2f3db51"
+    },
+    {
+      "map": "00oasis",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d708-5136-7c7e-a700-da29759ec4f0",
+      "group": "01a1d708-5134-79cd-9c17-a6d8613cb16f"
+    },
+    {
+      "map": "00packs",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-7e2d-7676-a018-f66b49e1c701",
+      "group": "01a1d707-7e2b-73d8-9dd9-1be3bb227605"
+    },
+    {
+      "map": "00packs",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-94e3-76fe-8f2c-71750e388d3e",
+      "group": "01a1d707-94e1-7184-a9b0-e017bde9676f"
+    },
+    {
+      "map": "00pilgrimage",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d706-59a4-7c2c-baf3-7338f9a46603",
+      "group": "01a1d706-59a1-78b3-9db5-8109569b1865"
+    },
+    {
+      "map": "00pilgrimage",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-6baf-7a0f-9be5-8810b7f5279b",
+      "group": "01a1d707-6bad-792a-a95b-d227d361a7b9"
+    },
+    {
+      "map": "00quadrants",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-5625-7a53-acc4-097cb3c3ec90",
+      "group": "01a1d708-5623-7be3-b162-cb060a8718fa"
+    },
+    {
+      "map": "00quadrants",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-5f6e-7d5a-a2de-2dbfe45e6a9d",
+      "group": "01a1d708-5f67-771c-bfa3-19b7a09781ec"
+    },
+    {
+      "map": "00quarry",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-67ac-7836-9b3a-e9d77d27c611",
+      "group": "01a1d707-67a7-786f-9ccc-a3bf6449db66"
+    },
+    {
+      "map": "00quarry",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-685e-78f1-83c7-af85de577910",
+      "group": "01a1d707-685b-7422-9a59-e80e08b4f8ec"
+    },
+    {
+      "map": "00reverse_spiral",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5cc5-71b0-b6de-d62ff3c7b3e0",
+      "group": "01a1d707-5cc2-72a7-919d-0472ab7ca7c4"
+    },
+    {
+      "map": "00reverse_spiral",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-62c7-7a71-bc39-04bf8f81ae29",
+      "group": "01a1d707-62c4-7915-b730-3e750a21b2a3"
+    },
+    {
+      "map": "00ribs",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-db62-7881-a9a8-b73a585b9034",
+      "group": "01a1d707-db60-7c74-a4b6-42a238a39bd8"
+    },
+    {
+      "map": "00ribs",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-dc07-7898-a6f9-45745bfe4c79",
+      "group": "01a1d707-dc05-7d88-b3a6-8ba859a3adf9"
+    },
+    {
+      "map": "00road_of_riches",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-ab75-7927-9433-c3d82e56b1c0",
+      "group": "01a1d707-ab73-783b-ab5a-a1badc9b4699"
+    },
+    {
+      "map": "00road_of_riches",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-5acc-7594-b49f-bdb43ff4d402",
+      "group": "01a1d707-5acb-7e2e-b75d-b99a9c52afed"
+    },
+    {
+      "map": "00rows",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-69a1-70f7-b4a8-3383ca3f52b5",
+      "group": "01a1d707-69a0-742e-a814-ccb1b759b3f7"
+    },
+    {
+      "map": "00rows",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-690c-790c-873d-d90162f23ef2",
+      "group": "01a1d707-6909-7971-bb5e-3b70a026f02e"
+    },
+    {
+      "map": "00rushbait_v2",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-69a1-7325-b787-dd3592d4008b",
+      "group": "01a1d707-69a0-742e-a814-ccb1b759b3f7"
+    },
+    {
+      "map": "00rushbait_v2",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-690c-730c-a6a3-20aa7bfda3e1",
+      "group": "01a1d707-6909-7971-bb5e-3b70a026f02e"
+    },
+    {
+      "map": "00split",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-b43f-7bd3-86ba-fff92bd832d6",
+      "group": "01a1d707-b43e-75b3-9e2d-5a4b5444ef19"
+    },
+    {
+      "map": "00split",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-5b84-743d-b5e4-1fa2f07696bd",
+      "group": "01a1d707-5b82-70e2-b69d-eacb172ace92"
+    },
+    {
+      "map": "00stampede",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d708-3f69-78c7-a85a-89f6fd081430",
+      "group": "01a1d708-3f63-794f-964d-08682d5b1dad"
+    },
+    {
+      "map": "00stampede",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d708-3954-792c-88b5-dc2045d7c639",
+      "group": "01a1d708-3952-7dff-9e7f-5a1dd23255c0"
+    },
+    {
+      "map": "00swirl",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-ab75-7584-8e0f-882ef9b11e5b",
+      "group": "01a1d707-ab73-783b-ab5a-a1badc9b4699"
+    },
+    {
+      "map": "00swirl",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-5acc-74a3-861e-ec124adab1c4",
+      "group": "01a1d707-5acb-7e2e-b75d-b99a9c52afed"
+    },
+    {
+      "map": "00the_line",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-f301-7ab8-961e-512e05693b55",
+      "group": "01a1d707-f2ff-7ac5-9de9-32c7cbf90f76"
+    },
+    {
+      "map": "00the_line",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-f88b-76df-8547-d0febb49634d",
+      "group": "01a1d707-f851-76ba-bd83-21fc89cba219"
+    },
+    {
+      "map": "00vault",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-6c4b-7c65-881f-e7d32a95980c",
+      "group": "01a1d707-6c49-79ba-a50d-c150c05aa1f6"
+    },
+    {
+      "map": "00vault",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-598d-7869-95a9-3c862a3089a0",
+      "group": "01a1d707-598b-7c42-ba22-efb5ca6c32c6"
+    },
+    {
+      "map": "01big_world",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-c264-7244-b6c1-0f9dffa94973",
+      "group": "01a1d707-c262-7951-8206-faace5f8f3d3"
+    },
+    {
+      "map": "01big_world",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-b92f-7c18-80cf-74e986facec8",
+      "group": "01a1d707-b92b-703f-860a-69b003c6c2a7"
+    },
+    {
+      "map": "01boss_battle",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-5cc5-7b66-82c8-ec44cd6575a0",
+      "group": "01a1d707-5cc2-72a7-919d-0472ab7ca7c4"
+    },
+    {
+      "map": "01boss_battle",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-62c7-7228-aa4e-53d112efb1f6",
+      "group": "01a1d707-62c4-7915-b730-3e750a21b2a3"
+    },
+    {
+      "map": "01broken_curve",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-ea2c-7e92-9151-e25cb1a52b66",
+      "group": "01a1d707-ea2a-7c10-a5c7-28fcd46de119"
+    },
+    {
+      "map": "01broken_curve",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-e14a-7f75-9941-3c619ae23ee2",
+      "group": "01a1d707-e149-7596-8c1f-7a395d5e44f3"
+    },
+    {
+      "map": "01concentrated_wealth",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-3954-77b6-93f1-022ce0de46dc",
+      "group": "01a1d708-3952-7dff-9e7f-5a1dd23255c0"
+    },
+    {
+      "map": "01concentrated_wealth",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-3f69-7ba8-9db8-47b2ac74f509",
+      "group": "01a1d708-3f63-794f-964d-08682d5b1dad"
+    },
+    {
+      "map": "01corridors",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-b92f-702b-9fc1-4ae35aed78f5",
+      "group": "01a1d707-b92b-703f-860a-69b003c6c2a7"
+    },
+    {
+      "map": "01corridors",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-c264-79a7-b2b8-acb3411d773b",
+      "group": "01a1d707-c262-7951-8206-faace5f8f3d3"
+    },
+    {
+      "map": "01elk_arena",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-6c4b-7e02-a210-334ed628c738",
+      "group": "01a1d707-6c49-79ba-a50d-c150c05aa1f6"
+    },
+    {
+      "map": "01elk_arena",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-598d-7661-9640-5aa463cbde12",
+      "group": "01a1d707-598b-7c42-ba22-efb5ca6c32c6"
+    },
+    {
+      "map": "01fracture",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-5f6e-7a7d-b12e-64e7ba124828",
+      "group": "01a1d708-5f67-771c-bfa3-19b7a09781ec"
+    },
+    {
+      "map": "01fracture",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-5625-79fe-adcb-2964ffec3e7a",
+      "group": "01a1d708-5623-7be3-b162-cb060a8718fa"
+    },
+    {
+      "map": "01gold_rush",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-7e2d-7510-8153-aee366a69ce1",
+      "group": "01a1d707-7e2b-73d8-9dd9-1be3bb227605"
+    },
+    {
+      "map": "01gold_rush",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-94e3-7392-9cf6-6b363a73adc4",
+      "group": "01a1d707-94e1-7184-a9b0-e017bde9676f"
+    },
+    {
+      "map": "01hooks",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-2135-7abd-83e4-782bab9a9725",
+      "group": "01a1d708-2133-7f42-a269-21a3a1c96b9c"
+    },
+    {
+      "map": "01hooks",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-2a0f-75b9-bcb2-aca4b37f50f5",
+      "group": "01a1d708-2a0b-7361-8c71-8edf4b940376"
+    },
+    {
+      "map": "01islands",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-0169-739d-9784-1874f0bca08d",
+      "group": "01a1d708-0168-7d2b-9b32-1302354cb45f"
+    },
+    {
+      "map": "01islands",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d708-0a49-7dd4-8bde-2072725d0aba",
+      "group": "01a1d708-0a48-7eb7-9d3b-1f4b3f3e066d"
+    },
+    {
+      "map": "01shortcut",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-3f69-7805-b3cb-b946cf3c464c",
+      "group": "01a1d708-3f63-794f-964d-08682d5b1dad"
+    },
+    {
+      "map": "01shortcut",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-3954-7cb5-bbf6-ed0b6142074c",
+      "group": "01a1d708-3952-7dff-9e7f-5a1dd23255c0"
+    },
+    {
+      "map": "01starfish",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-5136-7c8a-8c75-25f24d0756a0",
+      "group": "01a1d708-5134-79cd-9c17-a6d8613cb16f"
+    },
+    {
+      "map": "01starfish",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-4855-7dc5-ae26-d202e1870081",
+      "group": "01a1d708-4853-7e6b-9edc-7d12f2f3db51"
+    },
+    {
+      "map": "01starvation",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5d75-775e-a180-c959be2f3d35",
+      "group": "01a1d707-5d6c-76dd-83e1-8c3998eab096"
+    },
+    {
+      "map": "01starvation",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-65b8-7044-894d-8def3bf0714c",
+      "group": "01a1d707-65b7-7803-9a60-4b64b49672cc"
+    },
+    {
+      "map": "01the_farm",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d708-2135-7ce2-9597-8b494b02b2a4",
+      "group": "01a1d708-2133-7f42-a269-21a3a1c96b9c"
+    },
+    {
+      "map": "01the_farm",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-2a0f-7340-ab16-5ff5ff3c5f91",
+      "group": "01a1d708-2a0b-7361-8c71-8edf4b940376"
+    },
+    {
+      "map": "01yellow_brick_road",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-598d-76ea-83b4-b103e3f245c6",
+      "group": "01a1d707-598b-7c42-ba22-efb5ca6c32c6"
+    },
+    {
+      "map": "01yellow_brick_road",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-6c4b-7376-a286-0e8bb8100961",
+      "group": "01a1d707-6c49-79ba-a50d-c150c05aa1f6"
+    },
+    {
+      "map": "02arena",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5a32-7559-90fd-0ef76fc865bb",
+      "group": "01a1d707-5a30-772c-a3bb-ff10f99f7dae"
+    },
+    {
+      "map": "02arena",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-752d-703a-b540-cb283de757e2",
+      "group": "01a1d707-752a-740f-b91c-cfdab35213c9"
+    },
+    {
+      "map": "02crossing",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-3954-70dd-ace6-3b2212ad8f06",
+      "group": "01a1d708-3952-7dff-9e7f-5a1dd23255c0"
+    },
+    {
+      "map": "02crossing",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d708-3f69-7d94-8e9a-0e701aab4786",
+      "group": "01a1d708-3f63-794f-964d-08682d5b1dad"
+    },
+    {
+      "map": "02cuts",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-6baf-77e3-ab7d-437342bc3405",
+      "group": "01a1d707-6bad-792a-a95b-d227d361a7b9"
+    },
+    {
+      "map": "02cuts",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d706-59a4-7dbf-80b4-6f810d5a3b04",
+      "group": "01a1d706-59a1-78b3-9db5-8109569b1865"
+    },
+    {
+      "map": "02famine",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d708-5625-75d9-864a-448f608369ed",
+      "group": "01a1d708-5623-7be3-b162-cb060a8718fa"
+    },
+    {
+      "map": "02famine",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d708-5f6e-7e47-9e71-db1e213300d0",
+      "group": "01a1d708-5f67-771c-bfa3-19b7a09781ec"
+    },
+    {
+      "map": "02fields",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-6c4b-78a5-8ede-1fee4d5a68f3",
+      "group": "01a1d707-6c49-79ba-a50d-c150c05aa1f6"
+    },
+    {
+      "map": "02fields",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-598d-75a8-8174-4049fff63b4f",
+      "group": "01a1d707-598b-7c42-ba22-efb5ca6c32c6"
+    },
+    {
+      "map": "02geodes",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d708-3039-7a0a-afac-cd9b70e78776",
+      "group": "01a1d708-3037-78bd-8579-cac4f7ec607f"
+    },
+    {
+      "map": "02geodes",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-5c2c-735a-9344-e97a479e0574",
+      "group": "01a1d707-5c2a-757c-8c0d-76596f0429b6"
+    },
+    {
+      "map": "02gift_wrapping",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-f88b-7e75-879a-61ba5105d728",
+      "group": "01a1d707-f851-76ba-bd83-21fc89cba219"
+    },
+    {
+      "map": "02gift_wrapping",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-f301-7bde-bcaa-5cf8f2c4f8c0",
+      "group": "01a1d707-f2ff-7ac5-9de9-32c7cbf90f76"
+    },
+    {
+      "map": "02guardians",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-6473-738d-9cdc-c9c238614605",
+      "group": "01a1d707-6471-7329-8ab6-841a9e553ffa"
+    },
+    {
+      "map": "02guardians",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-651d-7f28-a255-43bfb97ba968",
+      "group": "01a1d707-651b-7dcc-aa74-ac74bc43567a"
+    },
+    {
+      "map": "02harvest",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-65b8-735a-9e0f-08319bae4cc3",
+      "group": "01a1d707-65b7-7803-9a60-4b64b49672cc"
+    },
+    {
+      "map": "02harvest",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-5d75-7715-a91a-e3cf175c60bd",
+      "group": "01a1d707-5d6c-76dd-83e1-8c3998eab096"
+    },
+    {
+      "map": "02stalactites",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-e14a-7f5d-9d99-eb7a9df5207c",
+      "group": "01a1d707-e149-7596-8c1f-7a395d5e44f3"
+    },
+    {
+      "map": "02stalactites",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-ea2c-74ea-a9f8-bd781e0fa2a2",
+      "group": "01a1d707-ea2a-7c10-a5c7-28fcd46de119"
+    },
+    {
+      "map": "02tangle",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-0a49-713c-9a9f-cf281f998ccd",
+      "group": "01a1d708-0a48-7eb7-9d3b-1f4b3f3e066d"
+    },
+    {
+      "map": "02tangle",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-0169-75ee-be3c-2615decef49f",
+      "group": "01a1d708-0168-7d2b-9b32-1302354cb45f"
+    },
+    {
+      "map": "02the_pack",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-6a48-7086-be1e-96b66da3d64b",
+      "group": "01a1d707-6a46-7632-a232-130884fab564"
+    },
+    {
+      "map": "02the_pack",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-6b01-7098-b723-09267c9af9eb",
+      "group": "01a1d707-6aff-765f-bd69-210f3303a7b8"
+    },
+    {
+      "map": "02the_pond",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-651d-705c-82b9-33b358f1fa52",
+      "group": "01a1d707-651b-7dcc-aa74-ac74bc43567a"
+    },
+    {
+      "map": "02the_pond",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-6473-7511-a578-5258f142f3ef",
+      "group": "01a1d707-6471-7329-8ab6-841a9e553ffa"
+    },
+    {
+      "map": "02treasure_box",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-62c7-7116-bbec-013895237bde",
+      "group": "01a1d707-62c4-7915-b730-3e750a21b2a3"
+    },
+    {
+      "map": "02treasure_box",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-5cc5-7984-95d6-a3ffe2126732",
+      "group": "01a1d707-5cc2-72a7-919d-0472ab7ca7c4"
+    },
+    {
+      "map": "02uncharted_lands",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-5acc-7e86-bb88-705c8098b553",
+      "group": "01a1d707-5acb-7e2e-b75d-b99a9c52afed"
+    },
+    {
+      "map": "02uncharted_lands",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-ab75-791f-b060-b2d9563843b6",
+      "group": "01a1d707-ab73-783b-ab5a-a1badc9b4699"
+    },
+    {
+      "map": "03ambush_field",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-685e-7ea3-b558-4acba0b16ed5",
+      "group": "01a1d707-685b-7422-9a59-e80e08b4f8ec"
+    },
+    {
+      "map": "03ambush_field",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-67ac-7835-b559-997315b5362c",
+      "group": "01a1d707-67a7-786f-9ccc-a3bf6449db66"
+    },
+    {
+      "map": "03colosseum",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-6667-7773-acd0-f7d7a6f18a25",
+      "group": "01a1d707-6664-7042-bd8f-ebdf12638ff4"
+    },
+    {
+      "map": "03colosseum",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-66fc-7457-a828-de65149402d4",
+      "group": "01a1d707-66f9-7b4e-a786-25329b9cbd36"
+    },
+    {
+      "map": "03contours",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-dc07-7be8-84ab-117f14e6b0df",
+      "group": "01a1d707-dc05-7d88-b3a6-8ba859a3adf9"
+    },
+    {
+      "map": "03contours",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-db62-719f-9858-061695bd4958",
+      "group": "01a1d707-db60-7c74-a4b6-42a238a39bd8"
+    },
+    {
+      "map": "03fan",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-a2a9-7394-9914-3d1fe5a49712",
+      "group": "01a1d707-a2a6-7918-b80b-0862662ee416"
+    },
+    {
+      "map": "03fan",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-9db3-76d2-9460-cf30dd7ecf49",
+      "group": "01a1d707-9db1-7428-b448-5b41c6b4670f"
+    },
+    {
+      "map": "03homonoliths",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-6229-728c-bb84-8599f4c8042d",
+      "group": "01a1d707-6228-7a51-ac09-22930a2de310"
+    },
+    {
+      "map": "03homonoliths",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-6184-7f41-9498-719206daedc8",
+      "group": "01a1d707-6182-72dd-ace8-46364a4b0e19"
+    },
+    {
+      "map": "03honeycomb",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-0a49-7ff0-9dc3-bba214fb0762",
+      "group": "01a1d708-0a48-7eb7-9d3b-1f4b3f3e066d"
+    },
+    {
+      "map": "03honeycomb",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-0169-71bf-9796-a2dea09306b8",
+      "group": "01a1d708-0168-7d2b-9b32-1302354cb45f"
+    },
+    {
+      "map": "03membrane",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-4855-7b57-b6d8-3c0016b6b161",
+      "group": "01a1d708-4853-7e6b-9edc-7d12f2f3db51"
+    },
+    {
+      "map": "03membrane",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-5136-77fd-b51c-a738c024a9a9",
+      "group": "01a1d708-5134-79cd-9c17-a6d8613cb16f"
+    },
+    {
+      "map": "03one_gem",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-6184-7ddc-88b3-113cb4070664",
+      "group": "01a1d707-6182-72dd-ace8-46364a4b0e19"
+    },
+    {
+      "map": "03one_gem",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-6229-70ee-aca8-bb3840361299",
+      "group": "01a1d707-6228-7a51-ac09-22930a2de310"
+    },
+    {
+      "map": "03reef",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-6baf-75d4-9b6c-266f9c1c512d",
+      "group": "01a1d707-6bad-792a-a95b-d227d361a7b9"
+    },
+    {
+      "map": "03reef",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d706-59a4-7f0d-8979-288f038411db",
+      "group": "01a1d706-59a1-78b3-9db5-8109569b1865"
+    },
+    {
+      "map": "03riverbed",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-0169-7bd6-85d9-606493ee265f",
+      "group": "01a1d708-0168-7d2b-9b32-1302354cb45f"
+    },
+    {
+      "map": "03riverbed",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-0a49-7f8e-8fc5-580f5d0250f8",
+      "group": "01a1d708-0a48-7eb7-9d3b-1f4b3f3e066d"
+    },
+    {
+      "map": "03showdown",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-651d-7f5c-8343-e77cf5ef34bb",
+      "group": "01a1d707-651b-7dcc-aa74-ac74bc43567a"
+    },
+    {
+      "map": "03showdown",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-6473-733c-be68-31a2e5b72f25",
+      "group": "01a1d707-6471-7329-8ab6-841a9e553ffa"
+    },
+    {
+      "map": "03shrines",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-690c-7f11-ab33-079e4e2ce62d",
+      "group": "01a1d707-6909-7971-bb5e-3b70a026f02e"
+    },
+    {
+      "map": "03shrines",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-69a1-7736-a952-4ed1c3e01883",
+      "group": "01a1d707-69a0-742e-a814-ccb1b759b3f7"
+    },
+    {
+      "map": "03the_front",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-6184-7527-9e59-a4be1fc85f21",
+      "group": "01a1d707-6182-72dd-ace8-46364a4b0e19"
+    },
+    {
+      "map": "03the_front",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-6229-7029-8405-dacafbf0b755",
+      "group": "01a1d707-6228-7a51-ac09-22930a2de310"
+    },
+    {
+      "map": "03twisty",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-65b8-7cd3-ba76-02dac51266ab",
+      "group": "01a1d707-65b7-7803-9a60-4b64b49672cc"
+    },
+    {
+      "map": "03twisty",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-5d75-7f46-a121-63dfe9d2aea0",
+      "group": "01a1d707-5d6c-76dd-83e1-8c3998eab096"
+    },
+    {
+      "map": "03ultrastarvation",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-6473-7124-96c4-8b6c354e08ec",
+      "group": "01a1d707-6471-7329-8ab6-841a9e553ffa"
+    },
+    {
+      "map": "03ultrastarvation",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-651d-7a62-874c-19a63aae7efd",
+      "group": "01a1d707-651b-7dcc-aa74-ac74bc43567a"
+    },
+    {
+      "map": "04atoll",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5b84-7641-88c9-b2ab41d3d136",
+      "group": "01a1d707-5b82-70e2-b69d-eacb172ace92"
+    },
+    {
+      "map": "04atoll",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-b43f-72a9-ad60-b15aaf48db7b",
+      "group": "01a1d707-b43e-75b3-9e2d-5a4b5444ef19"
+    },
+    {
+      "map": "04barbell",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-9db3-7866-9032-54da1eedeff5",
+      "group": "01a1d707-9db1-7428-b448-5b41c6b4670f"
+    },
+    {
+      "map": "04barbell",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-a2a9-75a5-9c48-e58e9a62360b",
+      "group": "01a1d707-a2a6-7918-b80b-0862662ee416"
+    },
+    {
+      "map": "04bowls",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-690c-7c2f-839f-b1a4beabbe78",
+      "group": "01a1d707-6909-7971-bb5e-3b70a026f02e"
+    },
+    {
+      "map": "04bowls",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-69a1-7cf2-9e15-09c7ded24218",
+      "group": "01a1d707-69a0-742e-a814-ccb1b759b3f7"
+    },
+    {
+      "map": "04braided_river",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d706-59a4-71a1-8f2b-4d92cb76fb8e",
+      "group": "01a1d706-59a1-78b3-9db5-8109569b1865"
+    },
+    {
+      "map": "04braided_river",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-6baf-7e25-996b-4a9cb857506b",
+      "group": "01a1d707-6bad-792a-a95b-d227d361a7b9"
+    },
+    {
+      "map": "04bridges",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5acc-7951-9c86-b8146573ed8a",
+      "group": "01a1d707-5acb-7e2e-b75d-b99a9c52afed"
+    },
+    {
+      "map": "04bridges",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-ab75-721a-a77e-061848e80898",
+      "group": "01a1d707-ab73-783b-ab5a-a1badc9b4699"
+    },
+    {
+      "map": "04bullseye",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d708-2a0f-77f2-8bee-359d3f957cec",
+      "group": "01a1d708-2a0b-7361-8c71-8edf4b940376"
+    },
+    {
+      "map": "04bullseye",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d708-2135-7394-8054-19a2b5868443",
+      "group": "01a1d708-2133-7f42-a269-21a3a1c96b9c"
+    },
+    {
+      "map": "04butterfly",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-598d-753d-b7bc-f15a490bb1c3",
+      "group": "01a1d707-598b-7c42-ba22-efb5ca6c32c6"
+    },
+    {
+      "map": "04butterfly",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-6c4b-7bb2-a3e8-95a2fd48445b",
+      "group": "01a1d707-6c49-79ba-a50d-c150c05aa1f6"
+    },
+    {
+      "map": "04canyons",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-6667-706b-b0d6-a3af46b461f1",
+      "group": "01a1d707-6664-7042-bd8f-ebdf12638ff4"
+    },
+    {
+      "map": "04canyons",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-66fc-7869-abd7-49546753f4f3",
+      "group": "01a1d707-66f9-7b4e-a786-25329b9cbd36"
+    },
+    {
+      "map": "04comb",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-94e3-7499-880b-9a7e63c4696d",
+      "group": "01a1d707-94e1-7184-a9b0-e017bde9676f"
+    },
+    {
+      "map": "04comb",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-7e2d-7a11-8717-248dca6c47a7",
+      "group": "01a1d707-7e2b-73d8-9dd9-1be3bb227605"
+    },
+    {
+      "map": "04compass",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-6b01-7d1f-9927-e84172e9702e",
+      "group": "01a1d707-6aff-765f-bd69-210f3303a7b8"
+    },
+    {
+      "map": "04compass",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-6a48-7152-8d84-b104a35b8082",
+      "group": "01a1d707-6a46-7632-a232-130884fab564"
+    },
+    {
+      "map": "04courtyard",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-690c-7d9d-bb3e-d4490681c8d9",
+      "group": "01a1d707-6909-7971-bb5e-3b70a026f02e"
+    },
+    {
+      "map": "04courtyard",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-69a1-7cdc-87e3-e461c87845a6",
+      "group": "01a1d707-69a0-742e-a814-ccb1b759b3f7"
+    },
+    {
+      "map": "04crossroads",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-b92f-7041-a142-6a8c04d0ec3c",
+      "group": "01a1d707-b92b-703f-860a-69b003c6c2a7"
+    },
+    {
+      "map": "04crossroads",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-c264-7505-81fc-566b1dd2523e",
+      "group": "01a1d707-c262-7951-8206-faace5f8f3d3"
+    },
+    {
+      "map": "04duel_ring",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-dc07-7523-a61d-136c27c480eb",
+      "group": "01a1d707-dc05-7d88-b3a6-8ba859a3adf9"
+    },
+    {
+      "map": "04duel_ring",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-db62-7600-bcf3-6e3a7bd62955",
+      "group": "01a1d707-db60-7c74-a4b6-42a238a39bd8"
+    },
+    {
+      "map": "04dunes",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-94e3-7b24-a2c6-c5d2064b15ab",
+      "group": "01a1d707-94e1-7184-a9b0-e017bde9676f"
+    },
+    {
+      "map": "04dunes",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-7e2d-7d5e-91e9-c23785923c99",
+      "group": "01a1d707-7e2b-73d8-9dd9-1be3bb227605"
+    },
+    {
+      "map": "04fault_lines",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5c2c-79a9-823d-a10dc6af379d",
+      "group": "01a1d707-5c2a-757c-8c0d-76596f0429b6"
+    },
+    {
+      "map": "04fault_lines",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-3039-7202-88f1-5294637b824a",
+      "group": "01a1d708-3037-78bd-8579-cac4f7ec607f"
+    },
+    {
+      "map": "04gap",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-752d-7886-be75-19731a529240",
+      "group": "01a1d707-752a-740f-b91c-cfdab35213c9"
+    },
+    {
+      "map": "04gap",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-5a32-705d-80a0-bb51a0c8495f",
+      "group": "01a1d707-5a30-772c-a3bb-ff10f99f7dae"
+    },
+    {
+      "map": "04gem_caverns",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-0169-7819-b1e1-155bc10714f5",
+      "group": "01a1d708-0168-7d2b-9b32-1302354cb45f"
+    },
+    {
+      "map": "04gem_caverns",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-0a49-77b8-9996-2d984b708816",
+      "group": "01a1d708-0a48-7eb7-9d3b-1f4b3f3e066d"
+    },
+    {
+      "map": "04gem_rush",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-2135-7c49-bfee-ea1d49d34300",
+      "group": "01a1d708-2133-7f42-a269-21a3a1c96b9c"
+    },
+    {
+      "map": "04gem_rush",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-2a10-7baf-bc5c-335ea511093b",
+      "group": "01a1d708-2a0b-7361-8c71-8edf4b940376"
+    },
+    {
+      "map": "04hollows",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-67ac-77d6-8910-972b56d55083",
+      "group": "01a1d707-67a7-786f-9ccc-a3bf6449db66"
+    },
+    {
+      "map": "04hollows",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-685e-7054-aacd-1b6546308a20",
+      "group": "01a1d707-685b-7422-9a59-e80e08b4f8ec"
+    },
+    {
+      "map": "04horseshoes",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-752d-7bcb-b321-99617885a346",
+      "group": "01a1d707-752a-740f-b91c-cfdab35213c9"
+    },
+    {
+      "map": "04horseshoes",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-5a32-7b8c-927d-9762efee10a3",
+      "group": "01a1d707-5a30-772c-a3bb-ff10f99f7dae"
+    },
+    {
+      "map": "04hourglass",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5acc-70a2-8bd0-33906781c192",
+      "group": "01a1d707-5acb-7e2e-b75d-b99a9c52afed"
+    },
+    {
+      "map": "04hourglass",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-ab75-7dd0-b8be-3dd963071a43",
+      "group": "01a1d707-ab73-783b-ab5a-a1badc9b4699"
+    },
+    {
+      "map": "04keyhole",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-a2a9-7a80-8a3c-006a05a7f9b5",
+      "group": "01a1d707-a2a6-7918-b80b-0862662ee416"
+    },
+    {
+      "map": "04keyhole",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-9db3-7c78-a49e-28be4d152f66",
+      "group": "01a1d707-9db1-7428-b448-5b41c6b4670f"
+    },
+    {
+      "map": "04lines",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-9db3-7147-841b-0fbd6c565f3d",
+      "group": "01a1d707-9db1-7428-b448-5b41c6b4670f"
+    },
+    {
+      "map": "04lines",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-a2a9-7249-bee9-572424e1bcf8",
+      "group": "01a1d707-a2a6-7918-b80b-0862662ee416"
+    },
+    {
+      "map": "04meander",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5c2c-7596-ab55-57cc608c69d6",
+      "group": "01a1d707-5c2a-757c-8c0d-76596f0429b6"
+    },
+    {
+      "map": "04meander",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-3039-792b-947e-dbc5f783b7c2",
+      "group": "01a1d708-3037-78bd-8579-cac4f7ec607f"
+    },
+    {
+      "map": "04mesas",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-e14a-766c-969b-7d2d9a98965b",
+      "group": "01a1d707-e149-7596-8c1f-7a395d5e44f3"
+    },
+    {
+      "map": "04mesas",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-ea2c-7e49-be2a-8d7b1316ccc7",
+      "group": "01a1d707-ea2a-7c10-a5c7-28fcd46de119"
+    },
+    {
+      "map": "04mountain_pass",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-ea2c-7f53-b676-5a10aa424a19",
+      "group": "01a1d707-ea2a-7c10-a5c7-28fcd46de119"
+    },
+    {
+      "map": "04mountain_pass",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-e14a-75a8-90f9-8b531b6727ba",
+      "group": "01a1d707-e149-7596-8c1f-7a395d5e44f3"
+    },
+    {
+      "map": "04orchard",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-f301-7125-8040-904f7f426935",
+      "group": "01a1d707-f2ff-7ac5-9de9-32c7cbf90f76"
+    },
+    {
+      "map": "04orchard",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-f88b-7ecc-a8ae-5276999d5bb7",
+      "group": "01a1d707-f851-76ba-bd83-21fc89cba219"
+    },
+    {
+      "map": "04passageway",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-685e-778f-b3f0-9da5a16f77a7",
+      "group": "01a1d707-685b-7422-9a59-e80e08b4f8ec"
+    },
+    {
+      "map": "04passageway",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-67ac-7e81-8394-d8c9175cabca",
+      "group": "01a1d707-67a7-786f-9ccc-a3bf6449db66"
+    },
+    {
+      "map": "04pinwheel",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5b84-729c-b34b-36d89a761f04",
+      "group": "01a1d707-5b82-70e2-b69d-eacb172ace92"
+    },
+    {
+      "map": "04pinwheel",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-b43f-71d9-ab69-e814010bcc8f",
+      "group": "01a1d707-b43e-75b3-9e2d-5a4b5444ef19"
+    },
+    {
+      "map": "04plaza",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-6a48-7252-b404-7b8f95b13021",
+      "group": "01a1d707-6a46-7632-a232-130884fab564"
+    },
+    {
+      "map": "04plaza",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-6b01-737b-b1a5-3b95676b8544",
+      "group": "01a1d707-6aff-765f-bd69-210f3303a7b8"
+    },
+    {
+      "map": "04restricted_area",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5b84-7ce1-aa41-caff0ef32166",
+      "group": "01a1d707-5b82-70e2-b69d-eacb172ace92"
+    },
+    {
+      "map": "04restricted_area",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-b43f-7777-a8b8-5c5f6b1fa593",
+      "group": "01a1d707-b43e-75b3-9e2d-5a4b5444ef19"
+    },
+    {
+      "map": "04sanctum",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5a32-7ef6-9b7b-09aa297d6c5e",
+      "group": "01a1d707-5a30-772c-a3bb-ff10f99f7dae"
+    },
+    {
+      "map": "04sanctum",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-752d-702f-be72-91b3a9f25dae",
+      "group": "01a1d707-752a-740f-b91c-cfdab35213c9"
+    },
+    {
+      "map": "04spiral_moat",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-6473-70a1-8b06-3536da5f73a2",
+      "group": "01a1d707-6471-7329-8ab6-841a9e553ffa"
+    },
+    {
+      "map": "04spiral_moat",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-651d-79cc-a7bf-560d00a0c6b1",
+      "group": "01a1d707-651b-7dcc-aa74-ac74bc43567a"
+    },
+    {
+      "map": "04standing_stones",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-5f6e-7c2b-bf3a-08ca73d2f133",
+      "group": "01a1d708-5f67-771c-bfa3-19b7a09781ec"
+    },
+    {
+      "map": "04standing_stones",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d708-5625-7af9-9ac3-8d2d1646bfed",
+      "group": "01a1d708-5623-7be3-b162-cb060a8718fa"
+    },
+    {
+      "map": "04sunburst",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-6184-765e-9127-e57d3e7a9095",
+      "group": "01a1d707-6182-72dd-ace8-46364a4b0e19"
+    },
+    {
+      "map": "04sunburst",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-6229-7b15-becb-fccbcb8ec0a9",
+      "group": "01a1d707-6228-7a51-ac09-22930a2de310"
+    },
+    {
+      "map": "04terraces",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-6667-7cca-9d71-f63ce9caf744",
+      "group": "01a1d707-6664-7042-bd8f-ebdf12638ff4"
+    },
+    {
+      "map": "04terraces",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-66fc-7f61-90b0-aaff8aabcebe",
+      "group": "01a1d707-66f9-7b4e-a786-25329b9cbd36"
+    },
+    {
+      "map": "04tidepools",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-b43f-7fd0-b91c-56ebc0767378",
+      "group": "01a1d707-b43e-75b3-9e2d-5a4b5444ef19"
+    },
+    {
+      "map": "04tidepools",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-5b84-783b-97a4-ae40c3c8bb8e",
+      "group": "01a1d707-5b82-70e2-b69d-eacb172ace92"
+    },
+    {
+      "map": "04two_kingdoms",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5d75-7900-83a9-60b5ef069602",
+      "group": "01a1d707-5d6c-76dd-83e1-8c3998eab096"
+    },
+    {
+      "map": "04two_kingdoms",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-65b8-736a-86af-bbd53fe1da09",
+      "group": "01a1d707-65b7-7803-9a60-4b64b49672cc"
+    },
+    {
+      "map": "04waves",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-e14a-70f5-ab15-57205bb812cb",
+      "group": "01a1d707-e149-7596-8c1f-7a395d5e44f3"
+    },
+    {
+      "map": "04waves",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-ea2c-7579-82de-08be88c1d4c6",
+      "group": "01a1d707-ea2a-7c10-a5c7-28fcd46de119"
+    },
+    {
+      "map": "04wheel",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-66fc-7f30-be91-71180bfd383c",
+      "group": "01a1d707-66f9-7b4e-a786-25329b9cbd36"
+    },
+    {
+      "map": "04wheel",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-6667-7a1b-b357-38df57d7122d",
+      "group": "01a1d707-6664-7042-bd8f-ebdf12638ff4"
+    },
+    {
+      "map": "04wilds",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5c2c-7c94-8163-75f18787c107",
+      "group": "01a1d707-5c2a-757c-8c0d-76596f0429b6"
+    },
+    {
+      "map": "04wilds",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-3039-7239-b347-3da0d53c1698",
+      "group": "01a1d708-3037-78bd-8579-cac4f7ec607f"
+    },
+    {
+      "map": "04yin_yang",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d708-6888-7825-b362-4cc8fa4b75d2",
+      "group": "01a1d708-6885-7928-80d4-3c6efaf6f54f"
+    },
+    {
+      "map": "04yin_yang",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-6d6a-70a2-9a8a-b5aa51c59def",
+      "group": "01a1d708-6d68-73d5-a0a4-939744e3b769"
+    },
+    {
+      "map": "05abacus",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5e23-7b3c-9fe9-fa19a619b3e0",
+      "group": "01a1d707-5e1f-7a81-8f5e-fef54975c910"
+    },
+    {
+      "map": "05abacus",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-aef1-7c2f-84a0-5cf9025f8415",
+      "group": "01a1d708-aeee-79d3-b3be-fa483f042d5d"
+    },
+    {
+      "map": "05abandoned_buildings",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5e23-7f15-a80b-007952a577c2",
+      "group": "01a1d707-5e1f-7a81-8f5e-fef54975c910"
+    },
+    {
+      "map": "05abandoned_buildings",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-aef1-7a6c-a41e-185d6960c418",
+      "group": "01a1d708-aeee-79d3-b3be-fa483f042d5d"
+    },
+    {
+      "map": "05ant_farm",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5e23-7839-9aac-8849d3dbad9c",
+      "group": "01a1d707-5e1f-7a81-8f5e-fef54975c910"
+    },
+    {
+      "map": "05ant_farm",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-aef1-7ccc-b080-f6b6dca298d5",
+      "group": "01a1d708-aeee-79d3-b3be-fa483f042d5d"
+    },
+    {
+      "map": "05bazaar",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5e23-785b-9359-2d3940eadb17",
+      "group": "01a1d707-5e1f-7a81-8f5e-fef54975c910"
+    },
+    {
+      "map": "05bazaar",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d708-b3eb-7aa5-8532-ba448db311fd",
+      "group": "01a1d708-b3e9-70f7-8775-1d6160d23307"
+    },
+    {
+      "map": "05bento",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5e23-7011-90e3-7b8a904c04ab",
+      "group": "01a1d707-5e1f-7a81-8f5e-fef54975c910"
+    },
+    {
+      "map": "05bento",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-b3eb-7540-b608-7d1f86c382f5",
+      "group": "01a1d708-b3e9-70f7-8775-1d6160d23307"
+    },
+    {
+      "map": "05birthday_cake",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5ee3-786e-ab7d-ab94de20e41d",
+      "group": "01a1d707-5edf-7b6b-bfe1-5b18e323a2b2"
+    },
+    {
+      "map": "05birthday_cake",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-b3eb-7e21-9109-1736669eadf2",
+      "group": "01a1d708-b3e9-70f7-8775-1d6160d23307"
+    },
+    {
+      "map": "05bookends",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5ee3-71bd-a52b-729c00381443",
+      "group": "01a1d707-5edf-7b6b-bfe1-5b18e323a2b2"
+    },
+    {
+      "map": "05bookends",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-b3eb-7318-a8b0-1685d0b49cb8",
+      "group": "01a1d708-b3e9-70f7-8775-1d6160d23307"
+    },
+    {
+      "map": "05border",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-5ee3-7989-ad3b-302dc1423468",
+      "group": "01a1d707-5edf-7b6b-bfe1-5b18e323a2b2"
+    },
+    {
+      "map": "05border",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d708-b3eb-7955-927c-693fa632629a",
+      "group": "01a1d708-b3e9-70f7-8775-1d6160d23307"
+    },
+    {
+      "map": "05burger",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5ee3-7c7a-bd9d-b633a7fe1a2a",
+      "group": "01a1d707-5edf-7b6b-bfe1-5b18e323a2b2"
+    },
+    {
+      "map": "05burger",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-e0a7-7680-9193-0fc7a1494809",
+      "group": "01a1d708-e0a1-7063-b4e6-a89289a46d5a"
+    },
+    {
+      "map": "05cascade",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5ee3-7314-9dfb-418c69f915d0",
+      "group": "01a1d707-5edf-7b6b-bfe1-5b18e323a2b2"
+    },
+    {
+      "map": "05cascade",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-e0a7-781d-9752-1ed555ecfdf9",
+      "group": "01a1d708-e0a1-7063-b4e6-a89289a46d5a"
+    },
+    {
+      "map": "05cassette",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-7650-7cb0-89af-e0442e61db18",
+      "group": "01a1d708-764f-7ad5-8c76-6f91c7d5ada8"
+    },
+    {
+      "map": "05cassette",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-e0a7-738e-8312-e5a49bf282d1",
+      "group": "01a1d708-e0a1-7063-b4e6-a89289a46d5a"
+    },
+    {
+      "map": "05chasm",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-7650-72f0-8319-81dc54bf2679",
+      "group": "01a1d708-764f-7ad5-8c76-6f91c7d5ada8"
+    },
+    {
+      "map": "05chasm",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d708-e0a7-7f9b-98e6-16458c392bf9",
+      "group": "01a1d708-e0a1-7063-b4e6-a89289a46d5a"
+    },
+    {
+      "map": "05chiseled_brick",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-7650-7db8-990a-c183b1fa88d4",
+      "group": "01a1d708-764f-7ad5-8c76-6f91c7d5ada8"
+    },
+    {
+      "map": "05chiseled_brick",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-e0a7-7d34-a8ce-9262a30d09f0",
+      "group": "01a1d708-e0a1-7063-b4e6-a89289a46d5a"
+    },
+    {
+      "map": "05clouds",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-7650-7857-9cdd-cbf555528dc6",
+      "group": "01a1d708-764f-7ad5-8c76-6f91c7d5ada8"
+    },
+    {
+      "map": "05clouds",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-603c-7c4f-b2f1-1437e2fe45c9",
+      "group": "01a1d707-6039-75be-9aee-99954ac64df4"
+    },
+    {
+      "map": "05concrete_jungle",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-7650-7093-9897-59f5c4b50103",
+      "group": "01a1d708-764f-7ad5-8c76-6f91c7d5ada8"
+    },
+    {
+      "map": "05concrete_jungle",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-603c-7e94-8134-9e3b1fdcd8ce",
+      "group": "01a1d707-6039-75be-9aee-99954ac64df4"
+    },
+    {
+      "map": "05coves",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5f7f-7645-aae7-91e39be13867",
+      "group": "01a1d707-5f7c-7748-b9ba-7632ce9f3738"
+    },
+    {
+      "map": "05coves",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-603c-743e-abb9-aefbb951a1ab",
+      "group": "01a1d707-6039-75be-9aee-99954ac64df4"
+    },
+    {
+      "map": "05crop_circle",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5f7f-75f6-b9b4-a8126b421c8f",
+      "group": "01a1d707-5f7c-7748-b9ba-7632ce9f3738"
+    },
+    {
+      "map": "05crop_circle",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-603c-70e6-b7b3-8b035c855510",
+      "group": "01a1d707-6039-75be-9aee-99954ac64df4"
+    },
+    {
+      "map": "05harmonica",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-5f7f-7c6f-9a15-04ce0936b358",
+      "group": "01a1d707-5f7c-7748-b9ba-7632ce9f3738"
+    },
+    {
+      "map": "05harmonica",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-603c-766b-8492-e8f7fa6af287",
+      "group": "01a1d707-6039-75be-9aee-99954ac64df4"
+    },
+    {
+      "map": "05hoard",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-5f7f-7c02-858d-3e5b018de75e",
+      "group": "01a1d707-5f7c-7748-b9ba-7632ce9f3738"
+    },
+    {
+      "map": "05hoard",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d708-e5ad-74dd-b4b0-1214134199ed",
+      "group": "01a1d708-e5a8-7b7b-ad27-cd81eea73d2b"
+    },
+    {
+      "map": "05jigsaw",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-5f7f-7eb0-b583-09c62ff4583b",
+      "group": "01a1d707-5f7c-7748-b9ba-7632ce9f3738"
+    },
+    {
+      "map": "05jigsaw",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-e5ad-7f64-b3cb-eb8457f72554",
+      "group": "01a1d708-e5a8-7b7b-ad27-cd81eea73d2b"
+    },
+    {
+      "map": "05kayak",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d708-7f40-724d-a3fc-e038ba42754a",
+      "group": "01a1d708-7f39-7ec0-ae9e-57384bc49453"
+    },
+    {
+      "map": "05kayak",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-e5ad-7b33-acb2-e8c491fcbb4d",
+      "group": "01a1d708-e5a8-7b7b-ad27-cd81eea73d2b"
+    },
+    {
+      "map": "05mineshaft",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d708-7f40-7590-88cc-dd0ebc48858d",
+      "group": "01a1d708-7f39-7ec0-ae9e-57384bc49453"
+    },
+    {
+      "map": "05mineshaft",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d708-e5ad-75e7-882d-5ce3caf52937",
+      "group": "01a1d708-e5a8-7b7b-ad27-cd81eea73d2b"
+    },
+    {
+      "map": "05mosaic",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d708-7f40-78fd-9acf-e61eb68cc7e7",
+      "group": "01a1d708-7f39-7ec0-ae9e-57384bc49453"
+    },
+    {
+      "map": "05mosaic",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d708-e5ad-70ad-b7e1-07eaa5977374",
+      "group": "01a1d708-e5a8-7b7b-ad27-cd81eea73d2b"
+    },
+    {
+      "map": "05nest",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-7f40-7aad-95a1-6f75c905af96",
+      "group": "01a1d708-7f39-7ec0-ae9e-57384bc49453"
+    },
+    {
+      "map": "05nest",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d708-eaa9-7d5a-83b3-59d35a7756cc",
+      "group": "01a1d708-eaa7-74ff-a72d-5e4972b9dae4"
+    },
+    {
+      "map": "05petri_dish",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-7f40-7d6a-b85c-49c67e7403ed",
+      "group": "01a1d708-7f39-7ec0-ae9e-57384bc49453"
+    },
+    {
+      "map": "05petri_dish",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-eaa9-7216-845b-8dd88ce4e9b8",
+      "group": "01a1d708-eaa7-74ff-a72d-5e4972b9dae4"
+    },
+    {
+      "map": "05picnic",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-88db-7936-a52e-2257cfdecb7c",
+      "group": "01a1d708-88d9-724f-ac6a-cf7e6fbe595b"
+    },
+    {
+      "map": "05picnic",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-eaa9-77f7-af8b-6efe44396b43",
+      "group": "01a1d708-eaa7-74ff-a72d-5e4972b9dae4"
+    },
+    {
+      "map": "05pods",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d708-88db-7113-bff1-61b8a00724b6",
+      "group": "01a1d708-88d9-724f-ac6a-cf7e6fbe595b"
+    },
+    {
+      "map": "05pods",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-eaa9-7ca7-b4de-5ec0b2605fe5",
+      "group": "01a1d708-eaa7-74ff-a72d-5e4972b9dae4"
+    },
+    {
+      "map": "05poker_chip",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-88db-7d2d-8a44-8ea15152e111",
+      "group": "01a1d708-88d9-724f-ac6a-cf7e6fbe595b"
+    },
+    {
+      "map": "05poker_chip",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d708-eaa9-743d-bdeb-f051f4eed168",
+      "group": "01a1d708-eaa7-74ff-a72d-5e4972b9dae4"
+    },
+    {
+      "map": "05quilt",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-88db-74fe-a6b8-34f96b893d95",
+      "group": "01a1d708-88d9-724f-ac6a-cf7e6fbe595b"
+    },
+    {
+      "map": "05quilt",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-60e6-7055-b609-7c4a0c4dfef4",
+      "group": "01a1d707-60e4-722a-8e19-26f818c6cea3"
+    },
+    {
+      "map": "05railyard",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-88db-7a02-88c3-58bdb8b240e8",
+      "group": "01a1d708-88d9-724f-ac6a-cf7e6fbe595b"
+    },
+    {
+      "map": "05railyard",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-60e6-7093-a8af-6d15f277bad7",
+      "group": "01a1d707-60e4-722a-8e19-26f818c6cea3"
+    },
+    {
+      "map": "05ring",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d708-8e3c-709e-a044-e52c05cc215a",
+      "group": "01a1d708-8e2d-7296-ba27-9b57da0ac407"
+    },
+    {
+      "map": "05ring",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-60e6-779f-a8c6-2280d1bcd898",
+      "group": "01a1d707-60e4-722a-8e19-26f818c6cea3"
+    },
+    {
+      "map": "05rocket",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-8e3c-7a54-8402-6c700b7916f1",
+      "group": "01a1d708-8e2d-7296-ba27-9b57da0ac407"
+    },
+    {
+      "map": "05rocket",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-60e6-7673-97d2-03e21fbe62b4",
+      "group": "01a1d707-60e4-722a-8e19-26f818c6cea3"
+    },
+    {
+      "map": "05runway",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d708-8e3c-7ba7-ab97-0d60b1f6fe35",
+      "group": "01a1d708-8e2d-7296-ba27-9b57da0ac407"
+    },
+    {
+      "map": "05runway",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-60e6-7bd6-822f-de932d4065c1",
+      "group": "01a1d707-60e4-722a-8e19-26f818c6cea3"
+    },
+    {
+      "map": "05savanna",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-8e3c-76a5-adb2-219f9339bf3c",
+      "group": "01a1d708-8e2d-7296-ba27-9b57da0ac407"
+    },
+    {
+      "map": "05savanna",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-f376-7049-912a-3d7b11c28e5e",
+      "group": "01a1d708-f374-7248-a737-316f3cce4c41"
+    },
+    {
+      "map": "05slant",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-8e3c-76e9-bf67-e1f39d0a1e1b",
+      "group": "01a1d708-8e2d-7296-ba27-9b57da0ac407"
+    },
+    {
+      "map": "05slant",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-f376-76a7-9877-64da6cc9c3f8",
+      "group": "01a1d708-f374-7248-a737-316f3cce4c41"
+    },
+    {
+      "map": "05space_station",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d708-a53a-72cd-81c2-234d3cc75610",
+      "group": "01a1d708-a538-7c75-899e-6c39f6f5899a"
+    },
+    {
+      "map": "05space_station",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d708-f376-715a-b4d1-57cfeee0633a",
+      "group": "01a1d708-f374-7248-a737-316f3cce4c41"
+    },
+    {
+      "map": "05spectacles",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-a53a-70b1-8c3b-e4e4361f304f",
+      "group": "01a1d708-a538-7c75-899e-6c39f6f5899a"
+    },
+    {
+      "map": "05spectacles",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-f376-7f6e-b9ce-0ac946c5776f",
+      "group": "01a1d708-f374-7248-a737-316f3cce4c41"
+    },
+    {
+      "map": "05stables",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-a53a-7f5c-99f1-d2c2f9185469",
+      "group": "01a1d708-a538-7c75-899e-6c39f6f5899a"
+    },
+    {
+      "map": "05stables",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d708-f376-7fe9-9cda-bf5d2ecc5adc",
+      "group": "01a1d708-f374-7248-a737-316f3cce4c41"
+    },
+    {
+      "map": "05stadium",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-a53a-72a7-b3ca-194578f2eb68",
+      "group": "01a1d708-a538-7c75-899e-6c39f6f5899a"
+    },
+    {
+      "map": "05stadium",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-fc3e-7d17-9ae5-5a934dde8293",
+      "group": "01a1d708-fc3c-77f5-afbe-3bf2e0e4dd53"
+    },
+    {
+      "map": "05sweet_shop",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d708-a53a-708c-93dc-20ca9c14bd80",
+      "group": "01a1d708-a538-7c75-899e-6c39f6f5899a"
+    },
+    {
+      "map": "05sweet_shop",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d708-fc3e-743e-8743-4126c588d301",
+      "group": "01a1d708-fc3c-77f5-afbe-3bf2e0e4dd53"
+    },
+    {
+      "map": "05tug_of_war",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-aef1-71ed-b811-b71870d56192",
+      "group": "01a1d708-aeee-79d3-b3be-fa483f042d5d"
+    },
+    {
+      "map": "05tug_of_war",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d708-fc3e-7d99-abe2-ee21a28a0013",
+      "group": "01a1d708-fc3c-77f5-afbe-3bf2e0e4dd53"
+    },
+    {
+      "map": "05waffle",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-aef1-7c7d-b5d1-b416cd204513",
+      "group": "01a1d708-aeee-79d3-b3be-fa483f042d5d"
+    },
+    {
+      "map": "05waffle",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d708-fc3e-77d1-8074-adf975bd71d9",
+      "group": "01a1d708-fc3c-77f5-afbe-3bf2e0e4dd53"
+    },
+    {
+      "map": "adgato_gemcombat1",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-3954-7fd3-8985-382ac8be83fe",
+      "group": "01a1d708-3952-7dff-9e7f-5a1dd23255c0"
+    },
+    {
+      "map": "adgato_gemcombat1",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d708-3f69-7604-8061-866c10d8d010",
+      "group": "01a1d708-3f63-794f-964d-08682d5b1dad"
+    },
+    {
+      "map": "adgato_gemcombat2",
+      "side": "a",
+      "result": "loss",
+      "match": "01a1d707-b92f-712a-b411-db0e47f4e2ca",
+      "group": "01a1d707-b92b-703f-860a-69b003c6c2a7"
+    },
+    {
+      "map": "adgato_gemcombat2",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-c264-73e8-840b-c32deba2bb3d",
+      "group": "01a1d707-c262-7951-8206-faace5f8f3d3"
+    },
+    {
+      "map": "adgato_gemcombat3",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-9db3-702f-b7f5-48ec84680d73",
+      "group": "01a1d707-9db1-7428-b448-5b41c6b4670f"
+    },
+    {
+      "map": "adgato_gemcombat3",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-a2a9-7a36-a09d-42739768b297",
+      "group": "01a1d707-a2a6-7918-b80b-0862662ee416"
+    },
+    {
+      "map": "adgato_gemcombat4",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d708-3039-717f-a627-bc0b302e8d27",
+      "group": "01a1d708-3037-78bd-8579-cac4f7ec607f"
+    },
+    {
+      "map": "adgato_gemcombat4",
+      "side": "b",
+      "result": "loss",
+      "match": "01a1d707-5c2c-77c4-91ea-07d9ba54a235",
+      "group": "01a1d707-5c2a-757c-8c0d-76596f0429b6"
+    },
+    {
+      "map": "adgato_gemcombat5",
+      "side": "a",
+      "result": "win",
+      "match": "01a1d707-65b8-7d82-b372-fb75f54f7dcb",
+      "group": "01a1d707-65b7-7803-9a60-4b64b49672cc"
+    },
+    {
+      "map": "adgato_gemcombat5",
+      "side": "b",
+      "result": "win",
+      "match": "01a1d707-5d75-72bc-be2f-676698f879d6",
+      "group": "01a1d707-5d6c-76dd-83e1-8c3998eab096"
+    }
+  ]
+}

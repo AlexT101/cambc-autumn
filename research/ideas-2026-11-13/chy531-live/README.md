@@ -59,9 +59,25 @@ Reproduce with `python research/ideas-2026-11-13/chy531-live/audit_fish_r9.py
 --require-complete`. Results are in `mite-r14-results.json`. Runtime handoff and
 task IDs are in `/home/ubuntu/tmp-offload/live-chy531/mite-r14/`.
 
-Runtime evidence and completion auditors are in
-`/home/ubuntu/tmp-offload/live-chy531/`: `intent.json`, `played_progress.py`,
-`final_audit.py`, and `audit_archives.py`. The final audit requires all680 collected
-records, matching pin provenance and frozen uploaded source. Archive verification
-checks every ZIP's CRC and the presence of its replay and binary summary.
-Final results and archive audit will be retained here once complete.
+## New Mite r15 baseline
+
+The matched v136 probes showed r14 stale on all five cells, including changed
+ordered drafts. The evidence is in `../rbook/mite-r14-stale-v136.json`.
+Book-free v132 captured r15 at22:28:00 UTC, source
+`01a1d706-59a1-78b3-9db5-8109569b1865`.
+
+Completed and audited at22:36 UTC: **228/340 wins (67.1%)**, 112 losses.
+All170 maps and both sides are covered by69 collected groups; five filler
+records are excluded. The audit passed own-version, pin, and result provenance
+checks. This is outcome-only collection, with no replay archive claim. The r14
+and r15 rates concern different opponent pins and are not a bot-change A/B.
+
+Reproduce with `python research/ideas-2026-11-13/chy531-live/audit_fish_r9.py
+--opponent mite --refset r15 --pin 01a1d706-59a1-78b3-9db5-8109569b1865
+--require-complete`. Results are in `mite-r15-results.json`; runtime handoff is
+in `/home/ubuntu/tmp-offload/live-chy531/mite-r15/`.
+
+The original 529-to-531 comparison remains parked at500/680 games. Its runtime
+auditors in `/home/ubuntu/tmp-offload/live-chy531/` (`final_audit.py` and
+`audit_archives.py`) require680 records and do not audit these completed
+opponent-pin baselines. Its500 collected replay archives remain preserved.
