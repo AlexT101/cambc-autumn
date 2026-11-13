@@ -297,10 +297,13 @@ MASK = R / 'tools/livemask'
 MASK_PATCH, MASK_HEADER = 'stream_patch.py', 'prio_stream.h'
 MASK_FILES = (MASK_HEADER, MASK_PATCH)
 UNMASKED = {R / 'bots/variants/oc-base23'}   # the v86 control, already prepared: submitted uncoded
+# 2026-11-13 (user: "no encryption. remember we're removing that"): uploads go up without the priority mask, equal to
+# the local build. The key and patch stay as they are, only not applied; True masks again.
+MASK_UPLOADS = False
 
 
 def unmasked(c):
-    return Path(c['dir']).resolve() in UNMASKED
+    return not MASK_UPLOADS or Path(c['dir']).resolve() in UNMASKED
 
 
 def mask_rev():

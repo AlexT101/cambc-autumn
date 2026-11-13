@@ -352,6 +352,9 @@ class Batches:
         rows = [r for r in ls.games(src) if r['opp_id'] == oid and r.get('refset') == rs and r['purpose'] == 'set']
         pool = sorted({(r['map'], r['map_id'], r['side']) for r in rows})
         lost = sorted({(r['map'], r['map_id'], r['side']) for r in rows if r['result'] == 'loss'})
+        if step.get('cells'):   # an explicit [map, side] list, of the cells lost_by played there (a short test)
+            want = {tuple(c) for c in step['cells']}
+            lost = [c for c in pool if (c[0], c[2]) in want]
         groups = []
         for cell in lost:
             g = next((g for g in groups if len(g) < 5 and cell[0] not in {x[0] for x in g}), None)
