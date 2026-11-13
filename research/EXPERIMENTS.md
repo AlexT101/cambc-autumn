@@ -52,6 +52,14 @@ Patches (diffs against `variants/chy-525`, `patch -p1` in the bot dir) and scrip
   - Rounds 1-5 hold 0.65 out-of-fuel turns a game: first-turn World init on big maps (97k in the world scope on
     first turns that run out), carried into round 2 by finish_late.
   - No other spike stands out in fight turns.
+  - Expensive make_field calls by call site (debug trace, `MKF`/`MKC` lines, same 1,280 games):
+    - Most are the turn-end queue's elastic warm-ups.
+    - First in-play builds of cached static fields (to_group, to_altar, about 15k each) fall in rounds that run out
+      about 0.2 times a game, in farm_loop, contest_capture and the guard's stand field.
+    - Warming those earlier changes what fuel-gated code reads at 100k (group_ready), so it is a behaviour change
+      that needs an A/B, not an exact cut.
+  - After both cuts, the shop is 1.8 points of excess fuel in out-of-fuel episodes. Most is Prism's emblem path and
+    affordable_prefix's per-step best_emblem calls, whose inputs change between calls.
 
 ## (charybdis = 525, 2026-11-13) Cassi's one-turn kill zone against Fish r8's Vesper: the pair already retreats and Cassi dies in the chase; leaving earlier is level (49.87% at 200k) and leaves her deaths unchanged
 
