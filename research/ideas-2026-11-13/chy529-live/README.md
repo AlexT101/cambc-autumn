@@ -17,4 +17,4 @@ All **170 ladder maps, both sides, both opponents** were covered exactly once: 6
 
 The Mite baseline's capture group is itself the pin; its absent source_group is expected and was checked against the reference group ID. This is not the scheduler's default v118 comparison.
 
-[results.json](results.json) contains every paired cell, baseline match ID, candidate group/position, source pin, and source digest. Outcomes come from all completed-match records; downloaded rows were cross-checked where available. Full replay collection remains enabled for all v129 games and continues independently after outcomes finish. The JSON records collection progress at audit time rather than claiming every replay was already downloaded.
+[results.json](results.json) contains every paired cell, baseline match ID, candidate group/position, source pin, and source digest. Outcomes from all completed-match records were cross-checked against all 680 collected game rows. All 680 replay archives and binary summaries are retained. Every ZIP passed a full CRC check; see [archive-audit.json](archive-audit.json).

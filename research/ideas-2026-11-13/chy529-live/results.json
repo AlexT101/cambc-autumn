@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-13T18:28:04Z",
+  "at": "2026-11-13T18:39:37Z",
   "candidate_version": 129,
   "candidate_changes": 529,
   "candidate_commit": "bbc7cddb6",
@@ -31,8 +31,8 @@
       "flips_against": 43
     }
   },
-  "replay_groups_collected": 115,
-  "outcome_evidence": "All completed-match outcomes; replay collection continues separately",
+  "replay_groups_collected": 136,
+  "outcome_evidence": "All completed-match outcomes, cross-checked against all 680 collected game rows",
   "rows": [
     {
       "opponent": "fish",
@@ -8874,5 +8874,6 @@
       "position": 5,
       "baseline_match": "01a1d599-cd68-7f0f-8da3-7bda5cb4e420"
     }
-  ]
+  ],
+  "archive_audit": "archive-audit.json"
 }
