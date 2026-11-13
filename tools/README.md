@@ -305,6 +305,14 @@ py tools/version_record.py 50                        # our version 50's record p
     games need only outcomes and drafts from group detail. These rows explicitly say `collection: outcome_only`
     and have no replay/summary metrics. Use only for book-free host-loss selection; other versions and all
     opponent checks still download full evidence. Remove the version to restore full collection for future games.
+  - **Winning book sources:** `data/WINS-ONLY-TASKS.json` optionally lists exact task IDs whose pinned `set`
+    games need full downloads only for possible winning sources. Explicit losses retain outcomes, drafts and
+    provenance, with `collection: loss_outcome_only`; their replay/summary downloads are skipped (an already cached
+    replay remains linked). Wins and unknown results still download both files. The live version must match the
+    task; other tasks and opponent checks remain unchanged. Use only for source-mining tasks, never strength tests
+    or replay comparisons. The file is read per collected group; removing an ID restores future full collection,
+    but does not backfill previously skipped files. Prefer this task policy over an outcome-only version rule for
+    source versions: an existing outcome-only version rule still takes precedence and suppresses winning downloads.
   - **API pacing:** every call goes through a token bucket shared by our processes (`data/api.lock`: 24 calls of
     burst, one more every 3.5 s, at least 1 s apart; the limit measured 2026-11-12 was ~30 calls at one a second, then
     one every 3-4 s). Creates go first, the match-list sweep for played groups second (100 matches a call), and the

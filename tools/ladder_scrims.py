@@ -336,6 +336,13 @@ def collect(task, ev, detail):
     outcome_only = (isinstance(outcome_versions, list) and task['version'] in outcome_versions
                     and ev['live'] == task['version'] and task.get('purpose') == 'set'
                     and task.get('pin') == 'ref')
+    try:
+        wins_only_tasks = json.loads((DATA / 'WINS-ONLY-TASKS.json').read_text())
+    except (OSError, ValueError):
+        wins_only_tasks = []
+    wins_only = (isinstance(wins_only_tasks, list) and task['id'] in wins_only_tasks
+                 and ev['live'] == task['version'] and task.get('purpose') == 'set'
+                 and task.get('pin') == 'ref')
     folder = REPLAYS / ev["group"]
     folder.mkdir(parents=True, exist_ok=True)
     rows = []
@@ -356,6 +363,11 @@ def collect(task, ev, detail):
         if m["status"] == "finished" and outcome_only:
             # Host-loss selection needs outcomes and drafts; these are not replay-source or detector records.
             row.update(collection='outcome_only', replay=None)
+        elif m["status"] == "finished" and wins_only and row['result'] == 'loss':
+            # Only explicit losses may be omitted: unknown outcomes can still be winning book sources.
+            bundle = folder / f"{m['position']}-{m['map']}.zip"
+            row.update(collection='loss_outcome_only',
+                       replay=str(bundle.relative_to(ROOT)) if bundle.exists() else None)
         elif m["status"] == "finished":
             stem = f"{m['position']}-{m['map']}"
             bundle, raw = folder / f"{stem}.zip", folder / f"{stem}.summary.bin"
