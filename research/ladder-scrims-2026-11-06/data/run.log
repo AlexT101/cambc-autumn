@@ -15382,3 +15382,177 @@
 2026-11-13T12:55:30Z finished v119-v1core-r11-mite-05 01a1d4c3: LWWWW
 2026-11-13T12:56:12Z finished v119-v1core-r11-mite-04 01a1d4c3: WLWWW
 2026-11-13T12:57:05Z finished v119-v1core-r11-mite-03 01a1d4c3: LLLWL
+2026-11-13T12:57:47Z finished v119-v1core-r11-mite-02 01a1d4c3: WWWWW
+2026-11-13T12:57:57Z live/selected changed v126/v126 -> v126/v118 (before create): 0 groups created since the last read marked suspect
+2026-11-13T12:57:57Z nothing runnable: live v126, selected v118, pending versions [115, 118]
+2026-11-13T12:59:58Z live/selected changed v126/v118 -> v118/v126 (before create): 0 groups created since the last read marked suspect
+2026-11-13T12:59:58Z nothing runnable: live v118, selected v126, pending versions [115, 118]
+2026-11-13T13:01:59Z live/selected changed v118/v126 -> v126/v118 (before create): 0 groups created since the last read marked suspect
+2026-11-13T13:01:59Z nothing runnable: live v126, selected v118, pending versions [115, 118]
+2026-11-13T13:08:00Z live/selected changed v126/v118 -> v118/v118 (before create): 0 groups created since the last read marked suspect
+2026-11-13T13:08:01Z created v118-book-refresh-r11-mite-v118-r11-mite-01 -> 01a1d505 (v118, quota 4/100, pinned 01a1d4bf)
+2026-11-13T13:08:03Z created v118-book-refresh-r11-mite-v118-r11-mite-02 -> 01a1d505 (v118, quota 5/100, pinned 01a1d4bf)
+2026-11-13T13:08:03Z created v118-book-refresh-r11-mite-v118-r11-mite-03 -> 01a1d505 (v118, quota 6/100, pinned 01a1d4bf)
+2026-11-13T13:08:04Z created v118-book-refresh-r11-mite-v118-r11-mite-04 -> 01a1d505 (v118, quota 7/100, pinned 01a1d4bf)
+2026-11-13T13:08:05Z created v118-book-refresh-r11-mite-v118-r11-mite-05 -> 01a1d505 (v118, quota 8/100, pinned 01a1d4bf)
+2026-11-13T13:08:06Z created v118-book-refresh-r11-mite-v118-r11-mite-06 -> 01a1d505 (v118, quota 9/100, pinned 01a1d4bf)
+2026-11-13T13:08:07Z created v118-book-refresh-r11-mite-v118-r11-mite-07 -> 01a1d505 (v118, quota 10/100, pinned 01a1d4bf)
+2026-11-13T13:08:08Z created v118-book-refresh-r11-mite-v118-r11-mite-08 -> 01a1d505 (v118, quota 11/100, pinned 01a1d4bf)
+2026-11-13T13:08:09Z created v118-book-refresh-r11-mite-v118-r11-mite-09 -> 01a1d505 (v118, quota 12/100, pinned 01a1d4bf)
+2026-11-13T13:08:10Z created v118-book-refresh-r11-mite-v118-r11-mite-10 -> 01a1d505 (v118, quota 13/100, pinned 01a1d4bf)
+2026-11-13T13:08:11Z created v118-book-refresh-r11-mite-v118-r11-mite-11 -> 01a1d505 (v118, quota 14/100, pinned 01a1d4bf)
+2026-11-13T13:08:12Z created v118-book-refresh-r11-mite-v118-r11-mite-12 -> 01a1d505 (v118, quota 15/100, pinned 01a1d4bf)
+2026-11-13T13:08:13Z created v118-book-refresh-r11-mite-v118-r11-mite-13 -> 01a1d505 (v118, quota 16/100, pinned 01a1d4bf)
+2026-11-13T13:08:14Z created v118-book-refresh-r11-mite-v118-r11-mite-14 -> 01a1d505 (v118, quota 17/100, pinned 01a1d4bf)
+2026-11-13T13:08:15Z created v118-book-refresh-r11-mite-v118-r11-mite-15 -> 01a1d505 (v118, quota 18/100, pinned 01a1d4bf)
+2026-11-13T13:08:19Z created v118-book-refresh-r11-mite-v118-r11-mite-16 -> 01a1d505 (v118, quota 19/100, pinned 01a1d4bf)
+2026-11-13T13:08:19Z created v118-book-refresh-r11-mite-v118-r11-mite-17 -> 01a1d505 (v118, quota 20/100, pinned 01a1d4bf)
+2026-11-13T13:08:20Z created v118-book-refresh-r11-mite-v118-r11-mite-18 -> 01a1d505 (v118, quota 21/100, pinned 01a1d4bf)
+2026-11-13T13:08:21Z created v118-book-refresh-r11-mite-v118-r11-mite-19 -> 01a1d505 (v118, quota 22/100, pinned 01a1d4bf)
+2026-11-13T13:08:22Z created v118-book-refresh-r11-mite-v118-r11-mite-20 -> 01a1d506 (v118, quota 23/100, pinned 01a1d4bf)
+2026-11-13T13:08:23Z created v118-book-refresh-r11-mite-v118-r11-mite-21 -> 01a1d506 (v118, quota 24/100, pinned 01a1d4bf)
+2026-11-13T13:08:25Z created v118-book-refresh-r11-mite-v118-r11-mite-22 -> 01a1d506 (v118, quota 25/100, pinned 01a1d4bf)
+2026-11-13T13:08:26Z created v118-book-refresh-r11-mite-v118-r11-mite-23 -> 01a1d506 (v118, quota 26/100, pinned 01a1d4bf)
+2026-11-13T13:08:27Z created v118-book-refresh-r11-mite-v118-r11-mite-24 -> 01a1d506 (v118, quota 27/100, pinned 01a1d4bf)
+2026-11-13T13:08:31Z played v118-book-refresh-r11-mite-v118-r11-mite-01 01a1d505: LLLWW
+2026-11-13T13:08:31Z played v118-book-refresh-r11-mite-v118-r11-mite-02 01a1d505: WLLLL
+2026-11-13T13:08:31Z played v118-book-refresh-r11-mite-v118-r11-mite-03 01a1d505: LLLWL
+2026-11-13T13:08:31Z played v118-book-refresh-r11-mite-v118-r11-mite-04 01a1d505: WLLLL
+2026-11-13T13:08:31Z played v118-book-refresh-r11-mite-v118-r11-mite-05 01a1d505: LLLWL
+2026-11-13T13:08:31Z played v118-book-refresh-r11-mite-v118-r11-mite-06 01a1d505: LWLLL
+2026-11-13T13:08:31Z played v118-book-refresh-r11-mite-v118-r11-mite-07 01a1d505: LLLWL
+2026-11-13T13:08:31Z played v118-book-refresh-r11-mite-v118-r11-mite-08 01a1d505: LLLLW
+2026-11-13T13:08:31Z played v118-book-refresh-r11-mite-v118-r11-mite-09 01a1d505: LLLLW
+2026-11-13T13:08:31Z played v118-book-refresh-r11-mite-v118-r11-mite-10 01a1d505: WLWLW
+2026-11-13T13:08:31Z played v118-book-refresh-r11-mite-v118-r11-mite-11 01a1d505: WLLWW
+2026-11-13T13:08:31Z played v118-book-refresh-r11-mite-v118-r11-mite-12 01a1d505: LLLLW
+2026-11-13T13:08:31Z played v118-book-refresh-r11-mite-v118-r11-mite-13 01a1d505: WWLLW
+2026-11-13T13:08:31Z played v118-book-refresh-r11-mite-v118-r11-mite-14 01a1d505: LLLWL
+2026-11-13T13:08:31Z played v118-book-refresh-r11-mite-v118-r11-mite-15 01a1d505: LLLWW
+2026-11-13T13:08:31Z played v118-book-refresh-r11-mite-v118-r11-mite-17 01a1d505: LLLLL
+2026-11-13T13:08:31Z played v118-book-refresh-r11-mite-v118-r11-mite-18 01a1d505: LLLWW
+2026-11-13T13:08:31Z played v118-book-refresh-r11-mite-v118-r11-mite-20 01a1d506: LLLLL
+2026-11-13T13:08:31Z played v118-book-refresh-r11-mite-v118-r11-mite-21 01a1d506: LLLLL
+2026-11-13T13:08:31Z played v118-book-refresh-r11-mite-v118-r11-mite-22 01a1d506: LLLLL
+2026-11-13T13:08:38Z live/selected changed v118/v118 -> v118/v126 (before create): 0 groups created since the last read marked suspect
+2026-11-13T13:08:38Z nothing runnable: live v118, selected v126, pending versions [115]
+2026-11-13T13:08:59Z played v118-book-refresh-r11-mite-v118-r11-mite-16 01a1d505: WLLLL
+2026-11-13T13:08:59Z played v118-book-refresh-r11-mite-v118-r11-mite-19 01a1d505: LLLLL
+2026-11-13T13:08:59Z played v118-book-refresh-r11-mite-v118-r11-mite-23 01a1d506: LLLLL
+2026-11-13T13:08:59Z played v118-book-refresh-r11-mite-v118-r11-mite-24 01a1d506: LLLWW
+2026-11-13T13:09:55Z finished v118-book-refresh-r11-mite-v118-r11-mite-24 01a1d506: LLLWW
+2026-11-13T13:10:40Z live/selected changed v118/v126 -> v126/v126 (before create): 0 groups created since the last read marked suspect
+2026-11-13T13:10:40Z nothing runnable: live v126, selected v126, pending versions [115]
+2026-11-13T13:10:48Z finished v118-book-refresh-r11-mite-v118-r11-mite-23 01a1d506: LLLLL
+2026-11-13T13:11:12Z live/selected changed v126/v126 -> v126/v117 (before create): 0 groups created since the last read marked suspect
+2026-11-13T13:11:12Z nothing runnable: live v126, selected v117, pending versions [115, 117]
+2026-11-13T13:11:47Z finished v118-book-refresh-r11-mite-v118-r11-mite-22 01a1d506: LLLLL
+2026-11-13T13:12:29Z finished v118-book-refresh-r11-mite-v118-r11-mite-21 01a1d506: LLLLL
+2026-11-13T13:13:11Z finished v118-book-refresh-r11-mite-v118-r11-mite-20 01a1d506: LLLLL
+2026-11-13T13:14:04Z finished v118-book-refresh-r11-mite-v118-r11-mite-19 01a1d505: LLLLL
+2026-11-13T13:14:46Z finished v118-book-refresh-r11-mite-v118-r11-mite-18 01a1d505: LLLWW
+2026-11-13T13:15:38Z finished v118-book-refresh-r11-mite-v118-r11-mite-17 01a1d505: LLLLL
+2026-11-13T13:16:24Z finished v118-book-refresh-r11-mite-v118-r11-mite-16 01a1d505: WLLLL
+2026-11-13T13:17:06Z finished v118-book-refresh-r11-mite-v118-r11-mite-15 01a1d505: LLLWW
+2026-11-13T13:17:58Z finished v118-book-refresh-r11-mite-v118-r11-mite-14 01a1d505: LLLWL
+2026-11-13T13:18:44Z finished v118-book-refresh-r11-mite-v118-r11-mite-13 01a1d505: WWLLW
+2026-11-13T13:19:18Z live/selected changed v126/v117 -> v117/v117 (before create): 0 groups created since the last read marked suspect
+2026-11-13T13:19:19Z created v117-book-refresh-r11-mite-v117-r11-mite-01 -> 01a1d510 (v117, quota 28/100, pinned 01a1d4bf)
+2026-11-13T13:19:20Z created v117-book-refresh-r11-mite-v117-r11-mite-02 -> 01a1d510 (v117, quota 29/100, pinned 01a1d4bf)
+2026-11-13T13:19:21Z created v117-book-refresh-r11-mite-v117-r11-mite-03 -> 01a1d510 (v117, quota 30/100, pinned 01a1d4bf)
+2026-11-13T13:19:22Z created v117-book-refresh-r11-mite-v117-r11-mite-04 -> 01a1d510 (v117, quota 31/100, pinned 01a1d4bf)
+2026-11-13T13:19:24Z created v117-book-refresh-r11-mite-v117-r11-mite-05 -> 01a1d510 (v117, quota 32/100, pinned 01a1d4bf)
+2026-11-13T13:19:28Z created v117-book-refresh-r11-mite-v117-r11-mite-06 -> 01a1d510 (v117, quota 33/100, pinned 01a1d4bf)
+2026-11-13T13:19:35Z created v117-book-refresh-r11-mite-v117-r11-mite-07 -> 01a1d510 (v117, quota 34/100, pinned 01a1d4bf)
+2026-11-13T13:19:38Z created v117-book-refresh-r11-mite-v117-r11-mite-08 -> 01a1d510 (v117, quota 35/100, pinned 01a1d4bf)
+2026-11-13T13:19:42Z created v117-book-refresh-r11-mite-v117-r11-mite-09 -> 01a1d510 (v117, quota 36/100, pinned 01a1d4bf)
+2026-11-13T13:19:45Z created v117-book-refresh-r11-mite-v117-r11-mite-10 -> 01a1d510 (v117, quota 37/100, pinned 01a1d4bf)
+2026-11-13T13:19:49Z created v117-book-refresh-r11-mite-v117-r11-mite-11 -> 01a1d510 (v117, quota 38/100, pinned 01a1d4bf)
+2026-11-13T13:19:52Z created v117-book-refresh-r11-mite-v117-r11-mite-12 -> 01a1d510 (v117, quota 39/100, pinned 01a1d4bf)
+2026-11-13T13:19:56Z created v117-book-refresh-r11-mite-v117-r11-mite-13 -> 01a1d510 (v117, quota 40/100, pinned 01a1d4bf)
+2026-11-13T13:19:59Z created v117-book-refresh-r11-mite-v117-r11-mite-14 -> 01a1d510 (v117, quota 41/100, pinned 01a1d4bf)
+2026-11-13T13:20:03Z created v117-book-refresh-r11-mite-v117-r11-mite-15 -> 01a1d510 (v117, quota 42/100, pinned 01a1d4bf)
+2026-11-13T13:20:13Z created v117-book-refresh-r11-mite-v117-r11-mite-16 -> 01a1d510 (v117, quota 43/100, pinned 01a1d4bf)
+2026-11-13T13:20:17Z created v117-book-refresh-r11-mite-v117-r11-mite-17 -> 01a1d510 (v117, quota 44/100, pinned 01a1d4bf)
+2026-11-13T13:20:20Z created v117-book-refresh-r11-mite-v117-r11-mite-18 -> 01a1d510 (v117, quota 45/100, pinned 01a1d4bf)
+2026-11-13T13:20:24Z created v117-book-refresh-r11-mite-v117-r11-mite-19 -> 01a1d511 (v117, quota 46/100, pinned 01a1d4bf)
+2026-11-13T13:20:28Z created v117-book-refresh-r11-mite-v117-r11-mite-20 -> 01a1d511 (v117, quota 47/100, pinned 01a1d4bf)
+2026-11-13T13:20:31Z created v117-book-refresh-r11-mite-v117-r11-mite-21 -> 01a1d511 (v117, quota 48/100, pinned 01a1d4bf)
+2026-11-13T13:20:34Z created v117-book-refresh-r11-mite-v117-r11-mite-22 -> 01a1d511 (v117, quota 49/100, pinned 01a1d4bf)
+2026-11-13T13:20:38Z created v117-book-refresh-r11-mite-v117-r11-mite-23 -> 01a1d511 (v117, quota 50/100, pinned 01a1d4bf)
+2026-11-13T13:20:41Z created v117-book-refresh-r11-mite-v117-r11-mite-24 -> 01a1d511 (v117, quota 51/100, pinned 01a1d4bf)
+2026-11-13T13:20:45Z live/selected changed v117/v117 -> v117/v126 (after create): 9 groups created since the last read marked suspect
+2026-11-13T13:20:56Z played v117-book-refresh-r11-mite-v117-r11-mite-01 01a1d510: LLLLW
+2026-11-13T13:20:56Z played v117-book-refresh-r11-mite-v117-r11-mite-02 01a1d510: LLLLL
+2026-11-13T13:20:56Z played v117-book-refresh-r11-mite-v117-r11-mite-03 01a1d510: LLLWL
+2026-11-13T13:20:56Z played v117-book-refresh-r11-mite-v117-r11-mite-04 01a1d510: LLLLL
+2026-11-13T13:20:56Z played v117-book-refresh-r11-mite-v117-r11-mite-05 01a1d510: LLLWL
+2026-11-13T13:20:56Z played v117-book-refresh-r11-mite-v117-r11-mite-06 01a1d510: LWLLL
+2026-11-13T13:20:56Z played v117-book-refresh-r11-mite-v117-r11-mite-07 01a1d510: LLWWL
+2026-11-13T13:20:56Z played v117-book-refresh-r11-mite-v117-r11-mite-08 01a1d510: LWLWL
+2026-11-13T13:20:56Z played v117-book-refresh-r11-mite-v117-r11-mite-09 01a1d510: LLLWL
+2026-11-13T13:20:56Z played v117-book-refresh-r11-mite-v117-r11-mite-10 01a1d510: LLLLW
+2026-11-13T13:20:56Z played v117-book-refresh-r11-mite-v117-r11-mite-11 01a1d510: WLLLL
+2026-11-13T13:20:56Z played v117-book-refresh-r11-mite-v117-r11-mite-12 01a1d510: LLWWW
+2026-11-13T13:20:56Z played v117-book-refresh-r11-mite-v117-r11-mite-13 01a1d510: WLLLW
+2026-11-13T13:20:56Z played v117-book-refresh-r11-mite-v117-r11-mite-14 01a1d510: LLWWL
+2026-11-13T13:20:56Z played v117-book-refresh-r11-mite-v117-r11-mite-15 01a1d510: LWWWL
+2026-11-13T13:21:02Z nothing runnable: live v117, selected v126, pending versions [115]
+2026-11-13T13:22:13Z finished v118-book-refresh-r11-mite-v118-r11-mite-12 01a1d505: LLLLW
+2026-11-13T13:23:12Z finished v117-book-refresh-r11-mite-v117-r11-mite-15 01a1d510: LWWWL
+2026-11-13T13:24:05Z finished v117-book-refresh-r11-mite-v117-r11-mite-14 01a1d510: LLWWL
+2026-11-13T13:24:50Z finished v117-book-refresh-r11-mite-v117-r11-mite-13 01a1d510: WLLLW
+2026-11-13T13:25:32Z played v117-book-refresh-r11-mite-v117-r11-mite-16 01a1d510: LLWLL
+2026-11-13T13:25:32Z played v117-book-refresh-r11-mite-v117-r11-mite-17 01a1d510: LLLWW
+2026-11-13T13:25:32Z played v117-book-refresh-r11-mite-v117-r11-mite-18 01a1d510: LLWLW
+2026-11-13T13:25:32Z played v117-book-refresh-r11-mite-v117-r11-mite-19 01a1d511: LLLWL
+2026-11-13T13:25:32Z played v117-book-refresh-r11-mite-v117-r11-mite-20 01a1d511: LWLLL
+2026-11-13T13:25:32Z played v117-book-refresh-r11-mite-v117-r11-mite-21 01a1d511: LLWLL
+2026-11-13T13:25:32Z played v117-book-refresh-r11-mite-v117-r11-mite-22 01a1d511: WLLWW
+2026-11-13T13:25:32Z played v117-book-refresh-r11-mite-v117-r11-mite-23 01a1d511: LLLWW
+2026-11-13T13:25:32Z played v117-book-refresh-r11-mite-v117-r11-mite-24 01a1d511: LLWWW
+2026-11-13T13:25:53Z finished v117-book-refresh-r11-mite-v117-r11-mite-12 01a1d510: LLWWW
+2026-11-13T13:26:39Z finished v117-book-refresh-r11-mite-v117-r11-mite-24 01a1d511: LLWWW
+2026-11-13T13:27:07Z live/selected changed v117/v126 -> v126/v126 (before create): 0 groups created since the last read marked suspect
+2026-11-13T13:27:07Z nothing runnable: live v126, selected v126, pending versions [115]
+2026-11-13T13:27:28Z finished v117-book-refresh-r11-mite-v117-r11-mite-23 01a1d511: LLLWW
+2026-11-13T13:28:13Z finished v117-book-refresh-r11-mite-v117-r11-mite-22 01a1d511: WLLWW
+2026-11-13T13:29:39Z finished v117-book-refresh-r11-mite-v117-r11-mite-21 01a1d511: LLWLL
+2026-11-13T13:30:23Z finished v117-book-refresh-r11-mite-v117-r11-mite-20 01a1d511: LWLLL
+2026-11-13T13:31:05Z finished v117-book-refresh-r11-mite-v117-r11-mite-19 01a1d511: LLLWL
+2026-11-13T13:31:53Z created batches-hour29-v126-fish-cur -> 01a1d51b (v126, quota 49/100)
+2026-11-13T13:31:54Z created batches-hour29-v126-mite-cur -> 01a1d51b (v126, quota 50/100)
+2026-11-13T13:31:55Z created batches-hour29-v126-cats-cur -> 01a1d51b (v126, quota 51/100)
+2026-11-13T13:32:14Z nothing runnable: live v126, selected v126, pending versions [115]
+2026-11-13T13:32:36Z finished v117-book-refresh-r11-mite-v117-r11-mite-18 01a1d510: LLWLW
+2026-11-13T13:33:25Z finished v117-book-refresh-r11-mite-v117-r11-mite-17 01a1d510: LLLWW
+2026-11-13T13:34:14Z finished v117-book-refresh-r11-mite-v117-r11-mite-16 01a1d510: LLWLL
+2026-11-13T13:35:10Z finished v117-book-refresh-r11-mite-v117-r11-mite-11 01a1d510: WLLLL
+2026-11-13T13:35:11Z played batches-hour29-v126-fish-cur 01a1d51b: LWWWW
+2026-11-13T13:35:11Z played batches-hour29-v126-cats-cur 01a1d51b: WWWLL
+2026-11-13T13:35:42Z played batches-hour29-v126-mite-cur 01a1d51b: WWWWL
+2026-11-13T13:36:02Z finished v117-book-refresh-r11-mite-v117-r11-mite-10 01a1d510: LLLLW
+2026-11-13T13:36:54Z finished batches-hour29-v126-mite-cur 01a1d51b: WWWWL
+2026-11-13T13:37:37Z finished batches-hour29-v126-cats-cur 01a1d51b: WWWLL
+2026-11-13T13:38:19Z finished batches-hour29-v126-fish-cur 01a1d51b: LWWWW
+2026-11-13T13:39:11Z finished v117-book-refresh-r11-mite-v117-r11-mite-09 01a1d510: LLLWL
+2026-11-13T13:39:56Z finished v117-book-refresh-r11-mite-v117-r11-mite-08 01a1d510: LWLWL
+2026-11-13T13:40:46Z finished v117-book-refresh-r11-mite-v117-r11-mite-07 01a1d510: LLWWL
+2026-11-13T13:41:28Z finished v117-book-refresh-r11-mite-v117-r11-mite-06 01a1d510: LWLLL
+2026-11-13T13:42:10Z finished v117-book-refresh-r11-mite-v117-r11-mite-05 01a1d510: LLLWL
+2026-11-13T13:43:02Z finished v117-book-refresh-r11-mite-v117-r11-mite-04 01a1d510: LLLLL
+2026-11-13T13:43:44Z finished v117-book-refresh-r11-mite-v117-r11-mite-03 01a1d510: LLLWL
+2026-11-13T13:44:30Z finished v117-book-refresh-r11-mite-v117-r11-mite-02 01a1d510: LLLLL
+2026-11-13T13:45:19Z finished v117-book-refresh-r11-mite-v117-r11-mite-01 01a1d510: LLLLW
+2026-11-13T13:46:04Z finished v118-book-refresh-r11-mite-v118-r11-mite-11 01a1d505: WLLWW
+2026-11-13T13:46:53Z finished v118-book-refresh-r11-mite-v118-r11-mite-10 01a1d505: WLWLW
+2026-11-13T13:47:39Z finished v118-book-refresh-r11-mite-v118-r11-mite-09 01a1d505: LLLLW
+2026-11-13T13:48:21Z finished v118-book-refresh-r11-mite-v118-r11-mite-08 01a1d505: LLLLW
+2026-11-13T13:49:13Z finished v118-book-refresh-r11-mite-v118-r11-mite-07 01a1d505: LLLWL
+2026-11-13T13:49:55Z finished v118-book-refresh-r11-mite-v118-r11-mite-06 01a1d505: LWLLL
+2026-11-13T13:50:37Z finished v118-book-refresh-r11-mite-v118-r11-mite-05 01a1d505: LLLWL
+2026-11-13T13:51:30Z finished v118-book-refresh-r11-mite-v118-r11-mite-04 01a1d505: WLLLL
+2026-11-13T13:52:12Z finished v118-book-refresh-r11-mite-v118-r11-mite-03 01a1d505: LLLWL
+2026-11-13T13:53:04Z finished v118-book-refresh-r11-mite-v118-r11-mite-02 01a1d505: WLLLL
+2026-11-13T13:53:46Z finished v118-book-refresh-r11-mite-v118-r11-mite-01 01a1d505: LLLWW
+2026-11-13T13:59:35Z STOP file present: exiting

@@ -5,10 +5,12 @@ against the entry's recorded replay (oppwatch.py reads only the unpinned hourly 
 --book: the rbuild work dir (raw/KEY.repl26a; book_cells.json unless --bot names the uploaded bot, whose
 book_data.h then gives the keys). --plain: a plain-priority book (cmp2.mjs: our priority values left out).
 Prints counts by (same | diverged | unreadable, result) and each diverged game with its first differing round."""
-import argparse, collections, concurrent.futures as cf, json, re
+import argparse, collections, concurrent.futures as cf, json, re, sys
 from pathlib import Path
 
 import oppwatch as o
+sys.path.insert(0, str(o.ROOT / 'tools'))
+import ladder_scrims as ls
 
 ap = argparse.ArgumentParser()
 ap.add_argument('--version', type=int, required=True)
@@ -30,13 +32,17 @@ for k in keys:
     book[(m.group(1), m.group(2))].append(k)
 cells = json.loads(Path(a.cells).expanduser().read_text()) if a.cells else None
 games = []
+suspect, seen = ls.suspect_groups(), set()
 for line in open(o.GAMES):
     g = json.loads(line)
+    if g.get('group') in suspect or g.get('match') in seen:
+        continue
     if g.get('version') == a.version and g.get('status') == 'finished' and g['opp_name'].startswith(a.opp) and (g['map'], g['side']) in book:
         if a.cells and [g['map'], g['side']] not in cells:
             continue
         if a.refset and (g.get('refset') or 'none') != a.refset:
             continue
+        seen.add(g['match'])
         games.append(g)
 
 

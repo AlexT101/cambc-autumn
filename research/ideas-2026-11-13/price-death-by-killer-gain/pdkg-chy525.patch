@@ -1,0 +1,190 @@
+diff -ru chy-525/src/bot_parts.h price-death-by-killer-gain/src/bot_parts.h
+--- chy-525/src/bot_parts.h	2026-11-12 13:28:45.818322409 +0000
++++ price-death-by-killer-gain/src/bot_parts.h	2026-11-13 00:56:18.706907029 +0000
+@@ -336,6 +336,12 @@
+ bool paying_soon(const World& world, Safety& safety, vec2 p, int turns);
+ bool want_home(const World& world, Pathing& pathing, Safety& safety, const Memory& memory);
+ bool finish_heal(const World& world, Pathing& pathing, Safety& safety);
++// What a champion kill pays e (combat.kill): the base gold, a Hunter emblem's extra, times its gold bonuses.
++float kill_gold(const ChampionBelief& e);
++// What our fall hands over beyond a plain life (params::life_value), in its units: the bag at stake when
++// `bag`, and the gold the likely killer (of `enemies`, bits by index: the largest strike) gains over the
++// base kill gold, at our farm's price of gold.
++float fall_extra(const World& world, Safety& safety, std::uint32_t enemies, bool bag);
+ // want_home's recall line and pack zone (drawn_home) at p, as if we stood there with last round's loss `damage`.
+ bool drawn_home_at(const World& world, Pathing& pathing, Safety& safety, vec2 p, float damage);
+ const ChampionBelief* prey(const World& world, Pathing& pathing, Safety& safety);
+diff -ru chy-525/src/combat/fight.cc price-death-by-killer-gain/src/combat/fight.cc
+--- chy-525/src/combat/fight.cc	2026-11-12 22:24:17.864543095 +0000
++++ price-death-by-killer-gain/src/combat/fight.cc	2026-11-13 00:57:53.234245565 +0000
+@@ -507,6 +507,34 @@
+     return outmatched(world, safety, hold) && !hold.keeps_us(safety);
+ }
+ 
++} // namespace
++
++float kill_gold(const ChampionBelief& e) {
++    float rate = e.treasure ? 1.0f + treasure_gold : 1.0f;
++    if (e.facts().passive == Passive::bonus_gold)
++        rate += static_cast<float>(cambc::constants::passive_abilities::vesper_vale_bonus_gold_percent) / 100.0f;
++    return (kill_gold_base + (e.hunter ? kill_gold_hunter : 0.0f)) * rate;
++}
++
++// The gold a kill pays is the killer's stats from its next purchase on: a fed carry's kills feed it
++// (Fish r8's Vesper, Hunter and Treasure, gets 2.1x the base). life_value prices a kill at the base gold.
++float fall_extra(const World& world, Safety& safety, std::uint32_t enemies, bool bag) {
++    float most = -1, gold = 0;
++    for (; enemies; enemies &= enemies - 1) {
++        const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(enemies))];
++        if (!e.alive) continue;
++        const auto& s = safety.strike_of(e);
++        float top = 0;
++        for (int d = 0; d <= s.reach && d <= Strike::max_reach; ++d) top = std::max(top, s.damage[static_cast<std::size_t>(d)]);
++        if (top > most) most = top, gold = kill_gold(e);
++    }
++    const float bag_gems = bag ? static_cast<float>(bag_at_stake(world)) : 0.0f;
++    const float extra = gold - kill_gold_base;
++    return params::gem_value * (bag_gems + (extra > 0 ? std::max(0.0f, prices(world).per_gold) * extra : 0.0f));
++}
++
++namespace {
++
+ // A stand at p we lose, or, linked or lethal there, one we fall in. Healthy on our own ground, they
+ // have no reason to come for us, unless we carry a bag: a kill takes it. Every input is read at p.
+ bool stand_lost_at(const World& world, Safety& safety, HoldAt& hold) {
+@@ -539,9 +567,21 @@
+     const auto roster = safety.stand_roster(p, reach, pursued ? params::pursuit_steps : 0, unseen);
+     if (roster.key == Safety::no_fight) return false;
+     // Prism leaves a stand it falls in even where the team wins it: its death hands over the bag the team's gems ride in.
+-    // So does any carrier of a bag worth a life or more (params::gem_value a gem against params::life_value).
++    // So does any champion whose fall hands over a life or more beyond its own: the bag and the killer's extra gold.
+     const bool falls = partner(world) != nullptr || world.me().facts().passive == Passive::gem_focus
+-                       || params::gem_value * static_cast<float>(bag_at_stake(world)) >= params::life_value || lethal();
++                       || fall_extra(world, safety, roster.key >> 16 | roster.walking, true) >= params::life_value || lethal();
++    debug_block({
++        static int traced = 0;
++        if (traced < 400 && !(partner(world) != nullptr || world.me().facts().passive == Passive::gem_focus
++                              || params::gem_value * static_cast<float>(bag_at_stake(world)) >= params::life_value || lethal())) {
++            const float x = fall_extra(world, safety, roster.key >> 16 | roster.walking, true);
++            if (x > params::gem_value * static_cast<float>(bag_at_stake(world))) {
++                ++traced;
++                std::printf("PDKG-STAND %d %u extra %.0f per_gold %.3f bag %d falls %d\n", world.round, my_handle(), x, prices(world).per_gold,
++                            bag_at_stake(world), static_cast<int>(falls));
++            }
++        }
++    });
+     const auto t = safety.stand_trade(roster, falls);
+     return t.lost || (falls && t.self_falls);
+ }
+@@ -933,6 +973,13 @@
+     std::optional<float> strength; // read once a candidate needs it
+     // Cassi or Issac falling takes the other body and both bags: a won fight that costs us is lost.
+     const bool linked = partner(world) != nullptr;
++    // Our fall in a won chase loses it too when it hands the likely killer gold worth a life or more beyond a plain kill.
++    const auto feeds = [&](std::uint32_t key, std::uint32_t late) {
++        if (key == Safety::no_fight) return false;
++        std::uint32_t enemies = key >> 16;
++        for (; late; late &= late - 1) enemies |= 1u << (std::countr_zero(late) / 2);
++        return fall_extra(world, safety, enemies, false) >= params::life_value;
++    };
+     // Best first (ties in index order), so fights are simulated only up to the first won.
+     Unwritten<std::pair<float, const ChampionBelief*>, 8> candidates;
+     auto& order = candidates.a;
+@@ -1041,7 +1088,7 @@
+                 note_shortcut("prey-cut-short");
+                 break;
+             }
+-            t = safety.chase_trade(key, delayed, cooldowns, cast_available, linked, late);
++            t = safety.chase_trade(key, delayed, cooldowns, cast_available, linked || feeds(key, late), late);
+             debug_block({
+                 static int traced = 0;
+                 if (delayed && traced < 64) {
+@@ -1051,7 +1098,7 @@
+                 }
+             });
+         }
+-        if ((!t.lost && !(linked && t.self_falls)) || (!linked && comeback::accept_lost(world, t, target))) {
++        if ((!t.lost && !((linked || feeds(key, late)) && t.self_falls)) || (!linked && comeback::accept_lost(world, t, target))) {
+             if (u < n_unasked) unasked[u] = unasked[--n_unasked];
+             if (escapes(world, pathing, target)) continue;
+             return &target;
+diff -ru chy-525/src/combat/guard.cc price-death-by-killer-gain/src/combat/guard.cc
+--- chy-525/src/combat/guard.cc	2026-11-12 22:24:17.866042315 +0000
++++ price-death-by-killer-gain/src/combat/guard.cc	2026-11-13 00:57:40.543895464 +0000
+@@ -527,9 +527,10 @@
+         if (const auto now = fuel(); now <= placing) costliest = std::max(placing - now, costliest - costliest / 8);
+     };
+     if (!shared) g.expose_here(here);
+-    // Prism too keeps off every tile where it would fall (stand_lost_at).
+-    const bool linked = partner(world) != nullptr || world.me().facts().passive == Passive::gem_focus
+-                        || params::gem_value * static_cast<float>(bag_at_stake(world)) >= params::life_value;
++    // Prism too keeps off every tile where it would fall (stand_lost_at), as does a champion whose fall there hands
++    // over a life or more beyond its own (fall_extra, by who fights there).
++    const bool linked = partner(world) != nullptr || world.me().facts().passive == Passive::gem_focus;
++    const auto falls_count = [&](std::uint32_t key) { return linked || fall_extra(world, safety, key >> 16, true) >= params::life_value; };
+     // Unless the list filled up, the foes hold every visible threat that could hit a tile this near.
+     const bool all_listed = n < static_cast<int>(g.foes.size());
+     // The tiles more exposed than ours by `bound`, and who would fight on each by it.
+@@ -670,10 +671,10 @@
+         const auto [q, key] = exposed[i];
+         const int k = settle(key);
+         // Not lost settles q unless a fall there counts.
+-        if (k == 2 && !linked && !safety.lethal(q)) continue;
++        if (k == 2 && !falls_count(key) && !safety.lethal(q)) continue;
+         if (k == 0 || k == 1) lost = falls = k == 1;
+         else if (!simulate(key, lost, falls)) return any ? &guard : nullptr;
+-        if (lost || (falls && (linked || safety.lethal(q)))) {
++        if (lost || (falls && (falls_count(key) || safety.lethal(q)))) {
+             if (!any) clear_board(guard), any = true;
+             set_tile(guard, q);
+         }
+diff -ru chy-525/src/model/world.cc price-death-by-killer-gain/src/model/world.cc
+--- chy-525/src/model/world.cc	2026-11-12 13:28:45.822053260 +0000
++++ price-death-by-killer-gain/src/model/world.cc	2026-11-13 00:55:37.243515790 +0000
+@@ -83,7 +83,7 @@
+ 
+ // Summing every item count costs ~350 fuel; only the emblems below matter.
+ struct Emblems {
+-    bool home, durability, tribute, capture, prospector, jungle;
++    bool home, durability, tribute, capture, prospector, jungle, hunter, treasure;
+     float dealt, camp_dealt; // ChampionBelief::dealt, ::camp_dealt
+ };
+ Emblems emblems(std::uint32_t h) {
+@@ -98,7 +98,8 @@
+     };
+     const auto dealt = has(F::collectors) ? dealt_with(counts)
+                                           : Dealt{has(F::skirmish) ? skirmish_dealt : 1.0f, has(F::monster) ? monster_camp_dealt : 1.0f};
+-    return {has(F::home), has(F::durability), has(F::tribute), has(F::capture), has(F::prospector), has(F::jungle), dealt.champion, dealt.camp};
++    return {has(F::home), has(F::durability), has(F::tribute), has(F::capture), has(F::prospector), has(F::jungle), has(F::hunter),
++            has(F::treasure), dealt.champion, dealt.camp};
+ }
+ 
+ // Static camp data in one batched raw call: map::camp_groups() builds an SDK object graph that
+@@ -1985,6 +1986,7 @@
+             b.fast_tribute = e.tribute;
+             b.fast_capture = e.capture;
+             b.prospector = e.prospector;
++            b.hunter = e.hunter, b.treasure = e.treasure;
+             b.dealt = e.dealt;
+             b.camp_dealt = e.camp_dealt;
+             b.scale = damage_scale(passive, b.health, b.max_health) * b.dealt; // as above, with this `dealt`
+diff -ru chy-525/src/model/world.h price-death-by-killer-gain/src/model/world.h
+--- chy-525/src/model/world.h	2026-11-12 13:28:45.822884981 +0000
++++ price-death-by-killer-gain/src/model/world.h	2026-11-13 00:55:33.082544023 +0000
+@@ -422,6 +422,8 @@
+ inline constexpr float durability_taken = 0.9f; // damage a Durability emblem's owner takes
+ inline constexpr float jungle_camp_taken = 0.7f; // camp damage a Jungle emblem's owner takes
+ inline constexpr float treasure_gold = 0.1f;      // gold bonus of a Treasure emblem
++inline constexpr float kill_gold_base = 100;      // combat.kill: a champion kill's gold, before gold bonuses
++inline constexpr float kill_gold_hunter = 50;     // a Hunter emblem's extra
+ inline constexpr int capture_emblem_time = 3;     // capture_time's cap when a Capture emblem's owner holds
+ inline constexpr int tribute_emblem_cut = 33;     // percent of a tribute's turn ends a Tribute emblem cuts, rounded down
+ inline constexpr int prospector_part = 4;         // a Prospector emblem's owner gets 1 / this of its share of cluster rewards
+@@ -502,6 +504,7 @@
+     bool fast_tribute = false; // a Tribute emblem, when last seen: tribute_emblem_cut off its tributes
+     bool fast_capture = false; // a Capture emblem, when last seen: its holds pay after capture_emblem_time
+     bool prospector = false;   // a Prospector emblem, when last seen
++    bool hunter = false, treasure = false; // Hunter and Treasure emblems, when last seen: what its kills pay (kill_gold)
+     std::array<float, 4> items_key{-1, -1, -1, -1}; // max health, Strength, Focus and (Prism) gems at the last emblem read
+     bool acted = false; // had completed its turn when last read this round
+     // A stun that will take its next turn, read when first seen this round: nothing but our own
