@@ -1,0 +1,9 @@
+A/B mx-tethys-fin100k: CAND variants/mx-midx17 (dir) vs REF variants/chy-ref (dir)
+  fin: running, log replays/ab/mx-tethys-fin100k/fin.log
+CAND 49.3% of 10200 (5026-5174), 95% CI 48.3-50.2
+  fin  49.3% of 10200 (5026-5174), 95% CI 48.3-50.2
+Failed matches: 0
+Out-of-fuel turns: CAND 71933 in 7356 games, REF 72893 in 7429 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 0m45s
+Results: replays/ab/mx-tethys-fin100k/summary.md

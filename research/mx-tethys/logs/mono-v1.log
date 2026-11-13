@@ -1,0 +1,9 @@
+A/B mx-tethys-mono-v1: CAND variants/mx-mono (dir) vs REF variants/chy-ref (dir)
+  train-mono: running, log replays/ab/mx-tethys-mono-v1/train-mono.log
+CAND 5.1% of 3106 (158-2948), 95% CI 4.4-5.9
+  train-mono  5.1% of 3106 (158-2948), 95% CI 4.4-5.9
+Failed matches: 0
+Out-of-fuel turns: CAND 262 in 153 games, REF 181 in 141 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 1m21s
+Results: replays/ab/mx-tethys-mono-v1/summary.md

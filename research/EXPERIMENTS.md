@@ -34,7 +34,7 @@ worktree, every A/B against a frozen 529 at 2x fuel, own drafts, 10k+ games on t
 (seeds 614x0000-614x9999). Overseer notes: [overseer-mx-2026-11-13](overseer-mx-2026-11-13/README.md). RHEA, CRIUS
 and PHOEBE were ended early (17:30 UTC, usage); TETHYS, THEIA and IAPETUS were still running at this commit.
 Notes, briefs, patches and scripts: [mx-rhea](mx-rhea/NOTES.md), [mx-crius](mx-crius/NOTES.md),
-[mx-phoebe](mx-phoebe/NOTES.md), [mx-iapetus](mx-iapetus/NOTES.md) (mapgen logs left on the branches).
+[mx-phoebe](mx-phoebe/NOTES.md), [mx-tethys](mx-tethys/NOTES.md), [mx-iapetus](mx-iapetus/NOTES.md) (mapgen logs left on the branches).
 
 - **Kept (CHANGES 530):** IAPETUS's stop_due + contest judgement, 53.3 held out at 2x, **52.9 of 40,120 at 100k**.
 - **Level at 100k:** IAPETUS line B (contest judgement) alone, 51.1 held out at 2x but 50.3 (49.8-50.8) of 40,120 at 100k.
@@ -51,6 +51,13 @@ Notes, briefs, patches and scripts: [mx-rhea](mx-rhea/NOTES.md), [mx-crius](mx-c
     bugs), crew caps 49.1-49.4, gold-efficiency power 0/-1 46.5-47.6; never buying locks 50.35 of 20,400 held out.
   - CRIUS: Prism collector 49.6, Elk/Golem crews 49.6, contact-loss hazard in farm pricing 49.9 (deaths -4-10%, no
     wins), state-priced fight stakes 50.3, denial-valued middle groups -3 (whoever wakes a middle group takes it 88%).
+  - TETHYS (ended 19:25): team control map in farm pricing 28.7-50.3 (charging risk by stake starves the Prism),
+    Prism muster 42.3-50.3 (Prism deaths -5-10%, no wins), duel read in farm pricing 49.1-49.9, enemy-premium denial
+    50.0, committed Monolith operation 48.6 (never farming Monoliths 48.3; Monoliths pay about half the farm rate a
+    body-round), won-stand escape 49.6-50.1, pursue-only-the-uncatchable 49.9-50.4, derived Monolith wake rule
+    49.6-49.8; mid_exposure 1.70 pooled 50.2 at 2x and 49.3 of 10,200 at 100k (1.0 / 1.7 / 2.2: 46.4 / 50.6 / 47.8).
+    Untested lead: route the last hit on a carrying enemy to our Prism (the killer takes the bag, +1.5 Focus a gem);
+    `combat/` has no kill-to-Prism routing ([mx-tethys](mx-tethys/NOTES.md), `scripts/kill_bags.py`).
 - **Shared lessons:** the first Prism death decides most games (survivor's team wins 92-94%); every cautious rule
   around the Prism or a winning tribute lost, since farm time given up outweighs deaths avoided; single-mechanism
   changes bind widely but read level (RHEA's `bind.py`: once a game diverges its result flips ~24% each way, so a

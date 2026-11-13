@@ -1,0 +1,512 @@
+diff -ruN bots/variants/chy-ref/src/bot.cc bots/variants/mx-mono/src/bot.cc
+--- bots/variants/chy-ref/src/bot.cc	2026-11-13 14:14:01.523864187 +0000
++++ bots/variants/mx-mono/src/bot.cc	2026-11-13 17:41:46.435306999 +0000
+@@ -616,6 +616,7 @@
+ inline constexpr std::uint64_t goal_least = 4000, farm_least = 6000;
+ void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
+     comeback::cooked(world); // every turn: the cook's hysteresis reads each round's scores
++    mono_op_check(world, safety, memory);
+     // Last turn's, for continue_recall: kept only while that recall is, else farm sets it again.
+     const int recall_farm = std::exchange(memory.recall_farm, -1);
+     if (!world.me().alive || !banks_bag(world, pathing)) memory.banking = false;
+diff -ruN bots/variants/chy-ref/src/bot.h bots/variants/mx-mono/src/bot.h
+--- bots/variants/chy-ref/src/bot.h	2026-11-13 14:14:01.524078010 +0000
++++ bots/variants/mx-mono/src/bot.h	2026-11-13 18:14:40.588810186 +0000
+@@ -43,6 +43,10 @@
+     // work it and the damage taken since.
+     int mono_group = -1, mono_staged = -1, mono_since = -1;
+     float mono_output = 0, mono_taken = 0;
++    // The team's Monolith operation (comms::mono_op) and its epoch at our previous turn, its crew
++    // then (bit by index, mono_committed), since when we see it, and since when we see it called off.
++    int mono_op = -1, mono_op_since = -1, mono_epoch = -1, mono_block_since = -1;
++    std::uint32_t mono_alive = 0;
+     vec2 ward{-1, -1};    // our latest ward
+     vec2 bushes_watched{-1, -1}; // a tile whose bushes in ward reach are all in our cluster or our ward's
+ };
+diff -ruN bots/variants/chy-ref/src/bot_parts.h bots/variants/mx-mono/src/bot_parts.h
+--- bots/variants/chy-ref/src/bot_parts.h	2026-11-13 14:14:01.524078010 +0000
++++ bots/variants/mx-mono/src/bot_parts.h	2026-11-13 18:14:49.927320433 +0000
+@@ -534,6 +534,18 @@
+ // step out of reach far enough it is nearer and takes the hits. Then whether we are trapped
+ // (camp_trapped's role): while the hits until then, and one more, would take us to 0. -1 otherwise.
+ int mono_trapped(const World& world, Pathing& pathing, Safety& safety, const Memory& memory, float health);
++// A member of the team's Monolith operation on g (comms::mono_op).
++bool mono_crew(const World& world, const ChampionBelief& a, int g);
++// The operation's crew (mono_crew), each from its arrival at its camp output. `rounds` from now to
++// the kill; `damage` the hits on whoever is nearest while it is awake, less the attacks stuns skip;
++// `trips` home for health over the crew (share_damage).
++struct MonoPlan {
++    float output = 0, rounds = 0, damage = 0;
++    int trips = 0, crew = 0;
++};
++MonoPlan plan_mono(const World& world, const CrewAllies& allies, int g);
++// The mono_crew members (by index) claiming g: ours `my_claim`, the others' as posted.
++std::uint32_t mono_committed(const World& world, int g, int my_claim);
+ 
+ // economy/farm.cc
+ int walk_range(const World& world, int g);
+@@ -547,6 +559,8 @@
+ 
+ // economy/siege.cc
+ bool siege(const World& world, Pathing& pathing, Safety& safety, Memory& memory);
++// Every turn: ends the team's Monolith operation on a real change (siege.cc).
++void mono_op_check(const World& world, Safety& safety, Memory& memory);
+ const bitboard* home_reach_avoid(const World& world, const Memory& memory);
+ bool home_monolith_map(const World& world);
+ bool kite(const World& world, Pathing& pathing, Memory& memory);
+diff -ruN bots/variants/chy-ref/src/economy/capture.cc bots/variants/mx-mono/src/economy/capture.cc
+--- bots/variants/chy-ref/src/economy/capture.cc	2026-11-13 14:14:01.525792402 +0000
++++ bots/variants/mx-mono/src/economy/capture.cc	2026-11-13 17:29:31.417020138 +0000
+@@ -617,7 +617,7 @@
+     if (g < 0 || world.me().facts().passive == Passive::gem_focus) return false;
+     const auto& G = world.map().groups[g];
+     const auto& c = world.camps[g];
+-    if (G.gems <= 0 || G.has_monolith || (c.state != CampState::cleared && !cleared_now)) return false;
++    if (G.gems <= 0 || (c.state != CampState::cleared && !cleared_now)) return false;
+     static std::vector<LeftRecord> records;
+     if (records.size() != world.map().groups.size()) records.assign(world.map().groups.size(), LeftRecord{});
+     auto& left = records[static_cast<std::size_t>(g)];
+@@ -912,7 +912,7 @@
+ // Prism keeping its gems (keeps_gems) may hold G's capture from off its tiles: sole_capture_holder's
+ // tests of us, read before we get there. In `goal` the free tiles no camp hits.
+ bool prism_carries(const World& world, Safety& safety, const CampGroup& G, bitboard& goal) {
+-    if (G.gems <= 0 || G.has_monolith || enemy_seen(world) || test(G.tiles(), my_position())) return false;
++    if (G.gems <= 0 || enemy_seen(world) || test(G.tiles(), my_position())) return false;
+     const auto& map = world.map();
+     const int bag = static_cast<int>(my_gems());
+     if (my_health() < params::hurt_health_fraction * my_max_health()
+@@ -935,7 +935,7 @@
+ // holder and the allies step off (yield_capture) with the tiles never empty; after it, they have
+ // left it to us (left_for_prism). In `timer` the rounds to the payout.
+ bool prism_takeover(const World& world, Safety& safety, const CampGroup& G, int& timer, bitboard& goal) {
+-    if (G.gems <= 0 || G.has_monolith || enemy_seen(world) || test(G.tiles(), my_position()) || sole_capture_holder(world, G)) return false;
++    if (G.gems <= 0 || enemy_seen(world) || test(G.tiles(), my_position()) || sole_capture_holder(world, G)) return false;
+     bool held = false;
+     for (const auto& a : world.allies) {
+         if (a.is_self || !a.alive || !a.visible || !test(G.tiles(), a.pos)) continue;
+diff -ruN bots/variants/chy-ref/src/economy/crew.cc bots/variants/mx-mono/src/economy/crew.cc
+--- bots/variants/chy-ref/src/economy/crew.cc	2026-11-13 14:14:01.525792402 +0000
++++ bots/variants/mx-mono/src/economy/crew.cc	2026-11-13 18:14:49.927203272 +0000
+@@ -350,6 +350,77 @@
+     return health + my_live_shield(world) <= dps * static_cast<float>(phases);
+ }
+ 
++// A member of the team's Monolith operation: living, no gold farmer (farms_gold), and no Prism
++// keeping its bag, whose own farm compounds (prism_premium) and which comes only to hold the
++// capture alone (left_for_prism).
++bool mono_crew(const World& world, const ChampionBelief& a, int g) {
++    if (!a.alive || farms_gold(world, a)) return false;
++    return a.facts().passive != Passive::gem_focus || !keeps_bag(world, a, world.map().groups[g].gems);
++}
++
++std::uint32_t mono_committed(const World& world, int g, int my_claim) {
++    std::uint32_t kept = 0;
++    for (const auto& a : world.allies)
++        if (mono_crew(world, a, g) && (a.is_self ? my_claim : comms::claim_of(world, a.index)) == g) kept |= 1u << (a.index & 31);
++    return kept;
++}
++
++MonoPlan plan_mono(const World& world, const CrewAllies& allies, int g) {
++    MonoPlan plan;
++    const auto& G = world.map().groups[g];
++    const auto& c = world.camps[g];
++    float health = 0;
++    for (std::size_t i = 0; i < G.members.size(); ++i)
++        health += c.state == CampState::respawning ? G.members[i].max_health : std::max(0.0f, c.health[i]);
++    if (!(health > 0)) return plan;
++    std::array<std::pair<int, float>, 16> work{}; // arrival, output
++    std::array<const CrewAllies::Ally*, 16> pool;
++    int n = 0, stuns = 0;
++    float survivable = home_survivable(world.me());
++    for (int i = 0; i < allies.n; ++i) {
++        const auto& x = allies.at[static_cast<std::size_t>(i)];
++        const auto& a = *x.a;
++        if (!mono_crew(world, a, g)) continue;
++        // Out of sight and never seen on the map, its walk is the one from our spawn.
++        const vec2 p = a.is_self ? allies.here : a.pos;
++        const int arrive = a.is_self || in_bounds(p) ? crew_arrival(world, a, g, p)
++                                                     : std::max(0, world.map().ally_steps(g) - a.facts().attack_range());
++        work[static_cast<std::size_t>(n)] = {arrive, crew_output(x)};
++        if (!x.has_pool) read_pool(allies, x);
++        pool[static_cast<std::size_t>(n++)] = &x;
++        plan.output += crew_output(x);
++        survivable = std::min(survivable, home_survivable(a));
++        for (const auto& ab : a.facts().abilities) stuns += ab.stuns;
++    }
++    plan.crew = n;
++    if (n == 0) return plan;
++    // Each works from its arrival: the kill comes at the t where the outputs since then sum to the health.
++    std::sort(work.begin(), work.begin() + n);
++    float rate = 0, done = 0, t = static_cast<float>(work[0].first);
++    for (int k = 0; k < n; ++k) {
++        rate += work[static_cast<std::size_t>(k)].second;
++        const float next = k + 1 < n ? static_cast<float>(work[static_cast<std::size_t>(k + 1)].first) : std::numeric_limits<float>::infinity();
++        if (done + rate * (next - t) >= health) {
++            t += (health - done) / rate;
++            break;
++        }
++        done += rate * (next - t), t = next;
++    }
++    plan.rounds = t;
++    // The hits at the whole crew's output, over the rounds it is awake from the first arrival; a stun
++    // skips an attack, and each stunning slot is back every ability_cooldown rounds.
++    float clear = 0;
++    const float damage = min_camp_damage(world, g, plan.output, &clear, 0, -1, survivable);
++    const float awake = std::max(clear, t - static_cast<float>(work[0].first));
++    const float skipped = std::min(1.0f, static_cast<float>(stuns) / static_cast<float>(ability_cooldown));
++    CrewPlan p;
++    p.damage = plan.damage = damage * (clear > 0 ? awake / clear : 1.0f) * (1.0f - skipped);
++    std::sort(pool.begin(), pool.begin() + n, [](const CrewAllies::Ally* x, const CrewAllies::Ally* y) { return x->a->index < y->a->index; });
++    share_damage(pool.data(), n, p);
++    plan.trips = p.trips;
++    return plan;
++}
++
+ } // namespace
+ 
+ } // namespace aph
+diff -ruN bots/variants/chy-ref/src/economy/farm.cc bots/variants/mx-mono/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 14:14:01.525792402 +0000
++++ bots/variants/mx-mono/src/economy/farm.cc	2026-11-13 18:15:15.405673548 +0000
+@@ -219,7 +219,7 @@
+         if (g < 0 || g >= static_cast<int>(map.groups.size())) continue;
+         const auto& G = map.groups[g];
+         const auto& c = world.camps[g];
+-        if (c.state != CampState::cleared || c.state_round != world.round || G.has_monolith || G.gems + G.gold == 0
++        if (c.state != CampState::cleared || c.state_round != world.round || G.gems + G.gold == 0
+             || test(G.tiles(), here) || sole_capture_holder(world, G) || enemy_on(world, G.tiles()) || left_for_prism(world, pathing, g))
+             continue;
+         // A holder already there yields to us if our hold pays more (value_holder).
+@@ -1013,7 +1013,7 @@
+     // A Prism keeping its gems (keeps_gems) gains prism_premium on each gem of a capture it takes part in:
+     // every pick type, the carries' 'G' and 'L' too. Off Prism, the gems of a group a keeping Prism ally
+     // claims go to its bag (sole_capture_holder, left_for_prism): our part of them carries its premium.
+-    // Applied past the kept facts, which hold none of it. Not on a Monolith or a capture that wins.
++    // Applied past the kept facts, which hold none of it. Not on a capture that wins.
+     // prism_premium only falls with the gems, so `keep_most`, a gem's at 1 (the most of any Prism ally's
+     // off Prism), bounds every group's: the prunes add it to the gems' price as tribute_gold is.
+     const bool keeper = keeps, feeder = world.me().facts().passive != Passive::gem_focus;
+@@ -1028,7 +1028,7 @@
+                 !a.is_self && a.alive && a.facts().passive == Passive::gem_focus && claim >= 0 && n_fed < static_cast<int>(fed_by.size()))
+                 if (const float p = prism_premium(world, a, 1); p > 0) keep_most = std::max(keep_most, p), fed_by[n_fed] = &a, fed_claim[n_fed++] = claim;
+     const auto keep_bonus = [&](const CampGroup& G) __attribute__((always_inline)) {
+-        if (!(keep_most > 0) || G.gems <= 0 || G.gems >= short_by || G.has_monolith) return 0.0f;
++        if (!(keep_most > 0) || G.gems <= 0 || G.gems >= short_by) return 0.0f;
+         if (keeper) return prism_premium(world, world.me(), G.gems);
+         const int g = static_cast<int>(&G - &groups[0]);
+         float most = 0;
+@@ -1258,10 +1258,10 @@
+             if (e.alive && e.visible && dist(e.pos, groups[g].centre) <= params::crew_enemy_radius) return false;
+         return true;
+     };
+-    // A Monolith operation is long: one member leaving it shrinks the crew for the rest for longer.
+-    const auto crew_hold = [&](int g) { return groups[g].has_monolith ? params::mono_stickiness : params::crew_stickiness; };
+-    // A Monolith takes the whole team.
+-    const auto crew_cap = [&](int g) { return groups[g].has_monolith ? static_cast<int>(world.allies.size()) : params::crew_cap; };
++    // Without the operation's record (comms::mono_available) a Monolith is priced as chy-ref did.
++    const bool mono_ops = comms::mono_available();
++    const auto crew_hold = [&](int g) { return groups[g].has_monolith && !mono_ops ? params::mono_stickiness : params::crew_stickiness; };
++    const auto crew_cap = [&](int g) { return groups[g].has_monolith && !mono_ops ? static_cast<int>(world.allies.size()) : params::crew_cap; };
+     // Read on first need. Static: its vec2s would be zeroed on every call.
+     static CrewAllies crew_table;
+     bool crew_read = false;
+@@ -1647,6 +1647,9 @@
+         return left >= ample + decode_bound || left >= loop_reserve();
+     };
+     float mono_seen = -1; // for the traces: our Monolith operation's value this turn, -1 if not reached
++    // The live Monolith whose operation rates best for the team, and its rate (our part): declared below.
++    int mono_best = -1;
++    float mono_value = 0;
+     // The pre-facts prunes below, bounded before each group's facts (PreLanes): a group whose
+     // upper bound is below best_value, which only rises, is pruned there, with nothing read or kept
+     // in between. Not for Ren (reflected clears skip the prunes of strong groups) or with crystal
+@@ -2051,6 +2054,33 @@
+             if (trip_home_rounds < 0) trip_home_rounds = home_trip(g, steps);
+             return n * trip_home_rounds;
+         };
++        // A live Monolith is the team's operation (comms::mono_op), never one body's pick: here it is only
++        // priced for the team to take up. The crew's rate over the operation's rounds against the crew's
++        // outside rate, read as ours scaled by output: our part of the output against our best. A Prism
++        // keeping its bag, out of the crew, holds the capture alone and carries its premium on the gems.
++        if (mono_ops && farm_monolith(world, g) && belief.state != CampState::cleared) {
++            if (belief.state == CampState::alive && !banks_bag && comms::mono_op() < 0 && comms::mono_blocked() < 0
++                && mono_crew(world, world.me(), g)) {
++                const MonoPlan plan = plan_mono(world, crew_allies_now(), g);
++                // Only a clear the crew's health absorbs without a trip home: past that, a crew whose
++                // nearest takes every hit loses bodies rather than rotating them home.
++                if (plan.crew > 0 && plan.output > 0 && plan.trips == 0 && !too_late(plan.rounds)) {
++                    float bonus_team = 0;
++                    for (const auto& a : world.allies)
++                        if (a.alive && a.facts().passive == Passive::gem_focus && group.gems < short_by)
++                            bonus_team = std::max(bonus_team, prism_premium(world, a, group.gems));
++                    const float rounds = plan.rounds + cap_rounds + trips_home(static_cast<float>(plan.trips)) / static_cast<float>(plan.crew);
++                    const float value = rate(world, (plain + gems * bonus_team) * strength / plan.output, rounds);
++                    debug_block({
++                        if (round % 25 == 0)
++                            std::printf("MONO VALUE %d %u g%d worth %.0f rounds %.0f trips %d crew %d output %.0f damage %.0f value %.4f\n", round, my_handle(), g,
++                                        plain + gems * bonus_team, plan.rounds, plan.trips, plan.crew, plan.output, plan.damage, value);
++                    });
++                    if (value > mono_value) mono_value = value, mono_best = g;
++                }
++            }
++            continue;
++        }
+         // A cleared Monolith's capture is split over its holders: each member weighs taking it.
+         if (claimed && !(group.has_monolith && belief.state == CampState::cleared)) {
+             if (belief.state == CampState::cleared) continue;
+@@ -2402,6 +2432,13 @@
+                 best = g, best_steps = walk, best_value = value, best_spell = false, best_priced = Priced{'Q'};
+         }
+     }
++    // The team takes up the Monolith when our part beats our best; from then on its crew works it
++    // (below) until a real change ends it (mono_op_check).
++    if (!repricing && !banks_bag && k >= evaluated && mono_best >= 0 && mono_value > std::max(best_value, shared_value) && comms::mono_op() < 0
++        && comms::mono_blocked() < 0) {
++        comms::post_mono_op(mono_best);
++        debug_block({ std::printf("MONO DECLARE %d %u g%d value %.4f best %.4f\n", round, my_handle(), mono_best, mono_value, std::max(best_value, shared_value)); });
++    }
+     if (banks_bag && (best < 0 || best_value <= from_altar_value)) return false;
+     if (banks_bag && attack_in_range()) return true;
+     if (world.is_stale()) return true;
+@@ -2420,12 +2457,25 @@
+                                       chosen.tank, chosen.trips, chosen.output, shared_value); });
+         }
+     }
++    // The team's operation is our pick, not weighed against our others: a member works it.
++    const int op = comms::mono_op();
++    // A capture that pays the tribute (its gems at least short_by) is kept.
++    const bool paying = best >= 0 && world.camps[best].state == CampState::cleared && groups[best].gems >= short_by;
++    const bool on_op = !banks_bag && !paying && farm_monolith(world, op) && world.camps[op].state == CampState::alive && mono_crew(world, world.me(), op);
++    if (on_op) {
++        float output = 0;
++        for (const auto& a : world.allies)
++            if (mono_crew(world, a, op)) output += camp_output(a);
++        const int steps = steps_data[op];
++        best = op, best_steps = steps >= 0 && steps != unreachable ? steps : dist(here, groups[op].centre);
++        memory.claim = op, memory.crew = true, spell = false, chosen = Priced{'C', 0, -1, 0, output, 0};
++    }
+     // Help does not pull a member off a Monolith operation.
+     if (help_group >= 0 && !(farm_monolith(world, best) && memory.claim == best))
+         best = help_group, best_steps = help_steps, memory.claim = help_group, memory.crew = true, spell = false, chosen = Priced{'H'};
+     if constexpr (!banking && !repricing && params::open_plan::weight <= 0) {
+         // A help call (an ally struggling at its group) keeps its pull.
+-        if (const int planned = banks_bag || help_group >= 0 ? -1 : open_plan_choice(world, memory); planned >= 0 && planned != best) {
++        if (const int planned = banks_bag || help_group >= 0 || on_op ? -1 : open_plan_choice(world, memory); planned >= 0 && planned != best) {
+             const int s = steps_data[planned];
+             best = planned, best_steps = s >= 0 && s != unreachable ? s : dist(here, groups[planned].centre);
+             memory.claim = planned, memory.crew = claimed_by_ally(planned), spell = false, chosen = Priced{'P'};
+diff -ruN bots/variants/chy-ref/src/economy/siege.cc bots/variants/mx-mono/src/economy/siege.cc
+--- bots/variants/chy-ref/src/economy/siege.cc	2026-11-13 14:14:01.526376940 +0000
++++ bots/variants/mx-mono/src/economy/siege.cc	2026-11-13 18:14:40.588642434 +0000
+@@ -517,6 +517,68 @@
+     return true;
+ }
+ 
++// The team's Monolith operation ends on a real change, never on one body's pick: the Monolith no
++// longer alive (its capture is then the holders'), an enemy near it whose force beats ours there
++// (mono_contested and the fight read: our clear would be theirs to take; the record then holds it
++// called off), a death in the crew under this operation (the team re-decides: farm may declare it
++// again on what is left to do), or too few rounds left to clear and capture it. A call-off lifts
++// when one of us near it has seen no enemy near it lately, when it is no longer alive, or after
++// crew_ban_rounds (a crew's ban on a group it was driven from).
++void mono_op_check(const World& world, Safety& safety, Memory& memory) {
++    const int b = comms::mono_blocked();
++    if (b < 0) memory.mono_block_since = -1;
++    else if (memory.mono_block_since < 0) memory.mono_block_since = world.round;
++    if (b >= 0 && world.me().alive) {
++        const auto& G = world.map().groups[b];
++        // Clear: no enemy seen near it lately (crew_seen_rounds), as one of us near it reads.
++        bool clear = world.camps[b].state != CampState::alive || world.round - memory.mono_block_since >= params::crew_ban_rounds;
++        if (!clear) {
++            clear = dist(my_position(), G.centre) <= vision_radius;
++            for (const auto& e : world.enemies)
++                clear = clear && !(e.alive && e.pos_round >= world.round - params::crew_seen_rounds && in_bounds(e.pos) && dist(e.pos, G.centre) <= params::crew_enemy_radius);
++        }
++        if (clear) {
++            comms::post_mono_op(-1);
++            memory.mono_block_since = -1;
++            debug_block({ std::printf("MONO UNBLOCK %d %u g%d\n", world.round, my_handle(), b); });
++        }
++    }
++    const int g = comms::mono_op();
++    const int epoch = comms::mono_epoch();
++    float power = 0;
++    bool died = false;
++    // A death among the members claiming it at our previous turn, under the same declaration; one
++    // leaving the crew (a Prism now keeping its bag) is no death. Read by the living only.
++    const bool same = memory.mono_op == g && memory.mono_epoch == epoch && world.me().alive;
++    for (const auto& a : world.allies) {
++        if (g >= 0 && mono_crew(world, a, g)) power += camp_output(a);
++        died |= same && (memory.mono_alive >> (a.index & 31) & 1) && !a.alive;
++    }
++    if (memory.mono_op != g || memory.mono_epoch != epoch) memory.mono_op_since = world.round;
++    memory.mono_op = g, memory.mono_epoch = epoch;
++    memory.mono_alive = g >= 0 ? mono_committed(world, g, memory.claim) : 0;
++    if (g < 0 || !world.me().alive) return;
++    const auto& c = world.camps[g];
++    const auto load = siege_load(world, g);
++    const auto& G = world.map().groups[g];
++    // Its state as seen since the operation began: an older belief out of sight is no change.
++    const bool gone = c.state != CampState::alive && c.state_round >= memory.mono_op_since;
++    // An enemy near it ends it only where the fight read there loses, read by one of us near it
++    // (short of fuel for the read, not read).
++    const bool contested = !gone && c.state == CampState::alive && mono_contested(world, g) && dist(my_position(), G.centre) <= params::crew_enemy_radius
++                           && fuel_ok(safety.fight_cost_estimate() + end_reserve) && safety.fight(my_position()).lost;
++    const char* why = gone        ? "state"
++                      : contested ? "contested"
++                      : died      ? "death"
++                      : c.state == CampState::alive && (!(power > 0) || static_cast<float>(rounds_left(world)) < load.health / power + static_cast<float>(capture_rounds(false)))
++                          ? "late"
++                          : nullptr;
++    if (!why) return;
++    debug_block({ std::printf("MONO OPEND %d %u g%d %s for %d hp %.0f\n", world.round, my_handle(), g, why, world.round - memory.mono_op_since, load.health); });
++    comms::post_mono_op(contested ? g : -1, contested);
++    memory.mono_op = -1;
++}
++
+ // Off Monolith-only maps, a Monolith group with a member within ranged reach of our spawn's box
+ // (home_siege's static prefilter): only then can home_reach_avoid return a board.
+ bool home_monolith_map(const World& world) {
+diff -ruN bots/variants/chy-ref/src/model/comms.cc bots/variants/mx-mono/src/model/comms.cc
+--- bots/variants/chy-ref/src/model/comms.cc	2026-11-13 14:14:01.526376940 +0000
++++ bots/variants/mx-mono/src/model/comms.cc	2026-11-13 18:14:17.662632705 +0000
+@@ -21,6 +21,9 @@
+ //   ally      0 = none, else 1 + cell * 4 team + 4 ally index + round mod 4 (params::comms_ally): a
+ //             c x c square (c odd: 1, 3 or 5, the narrowest that fits) centred on the record's tile;
+ //             left out when it does not fit
++//   mono      0 = none, else 1 + the operation's index among the Monolith groups, + their count if
++//             called off (mono_blocked), then a bit each declaration flips; only on maps with one off
++//             Monolith-only maps, in the bits the records above leave free
+ //   then free bits
+ // Each ally's priority payload (turn_order.h) also carries its claim + 1 in its low 8 bits, and
+ // support_mailbox.h's intents above them.
+@@ -43,7 +46,9 @@
+     int team = 1;
+     int claim_cap = 0; // claims of groups from here on post as none
+     std::array<BitField, 8> claim{}; // by ally index
+-    BitField bag, camp;
++    BitField bag, camp, mono, mono_epoch;
++    bool mono_on = false;
++    std::vector<int> monos; // the Monolith groups the mono record names, in group order
+     std::vector<int> camp_offset; // by group, then the total
+     std::uint64_t bag_bits = 0, camp_bits = 0;
+     bool ally_on = false;
+@@ -78,6 +83,9 @@
+     for (int i = 0; i < L.team; ++i) L.claim[static_cast<std::size_t>(i)] = field(claim_width);
+     L.bag = field(bag_width);
+     const int camp_width = static_cast<int>(std::bit_width(static_cast<std::uint64_t>(L.camp_offset.back())));
++    if (!map.monolith_only)
++        for (int g = 0; g < groups; ++g)
++            if (map.groups[static_cast<std::size_t>(g)].has_monolith) L.monos.push_back(g);
+     L.camp_on = shift + camp_width <= 64;
+     if (L.camp_on) L.camp = field(camp_width);
+     if (params::comms_ally && L.camp_on)
+@@ -90,6 +98,11 @@
+             L.ally_on = true;
+             break;
+         }
++    if (!L.monos.empty()) {
++        const int width = width_of(2 * L.monos.size() + 1);
++        L.mono_on = shift + width + 1 <= 64;
++        if (L.mono_on) L.mono = field(width), L.mono_epoch = field(1);
++    }
+     L.ally_bits = L.ally.mask;
+     L.bag_bits = L.bag.mask;
+     L.camp_bits = L.camp.mask;
+@@ -192,6 +205,17 @@
+         const auto p = payload_of(world, a);
+         detail::posts.claims[a.index] = p >= 0 ? static_cast<int>(p & 0xff) - 1 : static_cast<int>(L.claim[static_cast<std::size_t>(a.index)].get(bits)) - 1;
+     }
++    // A post that missed its turn's end (stale) is dropped: the bits are the team's now.
++    detail::posts.mono_post = false;
++    if (L.mono_on) {
++        const std::uint64_t v = L.mono.get(bits), n = L.monos.size();
++        detail::posts.mono_block = v > n;
++        detail::posts.mono = v == 0 || v > 2 * n ? -1 : L.monos[static_cast<std::size_t>((v - 1) % n)];
++        detail::posts.mono_epoch = static_cast<int>(L.mono_epoch.get(bits));
++    } else {
++        detail::posts.mono = -1, detail::posts.mono_block = false;
++    }
++    detail::posts.mono_on = L.mono_on;
+     if (const auto v = L.ally.get(bits); L.ally_on && (state.fresh & L.ally_bits) && v != 0) {
+         const auto code = v - 1, kinds = 4 * static_cast<std::uint64_t>(L.team);
+         const int kind = static_cast<int>(code % kinds), cell = static_cast<int>(code / kinds), ally = kind >> 2, h = L.cell / 2;
+@@ -240,6 +264,15 @@
+         });
+     }
+ 
++    if (L.mono_on && detail::posts.mono_post) {
++        const auto at = std::find(L.monos.begin(), L.monos.end(), detail::posts.mono);
++        const auto v = at == L.monos.end() ? std::uint64_t{0}
++                                           : static_cast<std::uint64_t>(at - L.monos.begin() + 1) + (detail::posts.mono_block ? L.monos.size() : 0);
++        if (L.mono.get(bits) != v) L.mono.set(bits, v), dirty = true;
++        if (L.mono_epoch.get(bits) != static_cast<std::uint64_t>(detail::posts.mono_epoch)) L.mono_epoch.set(bits, detail::posts.mono_epoch & 1), dirty = true;
++        detail::posts.mono_post = false;
++    }
++
+     // Only we write our field, so it holds what we last posted.
+     const int me = world.me().index;
+     const int mine = detail::posts.mine;
+@@ -287,6 +320,12 @@
+ 
+ void bag(int gems) { detail::posts.my_bag = gems; }
+ 
++void post_mono_op(int group, bool blocked) {
++    // A new operation flips the epoch: a death a body saw under the one before ends only that.
++    if (group >= 0 && !blocked) detail::posts.mono_epoch ^= 1;
++    detail::posts.mono = group, detail::posts.mono_block = group >= 0 && blocked, detail::posts.mono_post = true;
++}
++
+ bool told_ally(int ally, vec2& at, int& round) {
+     if (ally < 0 || ally >= 8 || told_allies[static_cast<std::size_t>(ally)].round < 0) return false;
+     at = told_allies[static_cast<std::size_t>(ally)].at;
+diff -ruN bots/variants/chy-ref/src/model/comms.h bots/variants/mx-mono/src/model/comms.h
+--- bots/variants/chy-ref/src/model/comms.h	2026-11-13 14:14:01.527090089 +0000
++++ bots/variants/mx-mono/src/model/comms.h	2026-11-13 18:14:17.662733246 +0000
+@@ -13,6 +13,11 @@
+     std::array<int, 8> bags{};
+     std::array<int, 8> claims{-1, -1, -1, -1, -1, -1, -1, -1};
+     int my_bag = 0, mine = -1;
++    int mono = -1;          // the team's Monolith operation (mono_op), as last read or posted
++    bool mono_block = false; // `mono` is an operation called off on an enemy near it (mono_blocked)
++    bool mono_post = false; // ours to write at our turn's end
++    int mono_epoch = 0;     // flipped by each declaration (post_mono_op)
++    bool mono_on = false;   // the layout has the field: else no operation is ever declared
+ };
+ inline Posts posts;
+ } // namespace detail
+@@ -32,6 +37,15 @@
+     if (a.is_self) return detail::posts.my_bag;
+     return a.alive ? detail::posts.bags[ally] : 0;
+ }
++// The team's Monolith operation: the Monolith group it works, declared once by any of us and held by
++// all until one ends it (-1 for none). Posted at our turn's end; ours reads at once.
++inline int mono_op() { return detail::posts.mono_block ? -1 : detail::posts.mono; }
++// The Monolith whose operation was called off on an enemy near it: none is declared until one of us
++// sees it clear again (-1 for none). It holds the record, as an operation does.
++inline int mono_blocked() { return detail::posts.mono_block ? detail::posts.mono : -1; }
++void post_mono_op(int group, bool blocked = false);
++inline bool mono_available() { return detail::posts.mono_on; }
++inline int mono_epoch() { return detail::posts.mono_epoch; }
+ // The group we work towards (-1 for none), posted every turn.
+ void claim(int group);
+ // The other support endpoint's intent (the protected mate's request, the healer's offer), posted in
+diff -ruN bots/variants/chy-ref/src/params.h bots/variants/mx-mono/src/params.h
+--- bots/variants/chy-ref/src/params.h	2026-11-13 14:14:01.528376966 +0000
++++ bots/variants/mx-mono/src/params.h	2026-11-13 18:15:20.295392906 +0000
+@@ -100,11 +100,12 @@
+ // No allies are expected on a group with an enemy in sight this near its centre.
+ inline constexpr int crew_enemy_radius = 12;
+ inline constexpr int crew_ban_rounds = 26;
+-// Monoliths off Monolith-only maps are farm's crew operations (farm.cc, crew.cc). Members wait just
+-// out of reach of a sleeping one until this share of the crew's output has come, at most this long.
++// Monoliths off Monolith-only maps are the team's operations (comms::mono_op), worked through farm.
++// Members wait just out of reach of a sleeping one until this share of the crew's output has come, at
++// most this long.
+ inline constexpr float mono_gather_share = 0.62638295f;
+ inline constexpr int mono_max_wait = 12;
+-// crew_stickiness for a Monolith operation.
++// crew_stickiness for a Monolith crew on maps without room for the operation record.
+ inline constexpr float mono_stickiness = 1.6830473f;
+ // Help a struggling teammate clear its damaging group within this many steps.
+ inline constexpr int help_radius = 6;

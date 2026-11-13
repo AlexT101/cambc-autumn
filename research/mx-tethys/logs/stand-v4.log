@@ -1,0 +1,9 @@
+A/B mx-tethys-stand-v4: CAND variants/mx-stand-v4 (dir) vs REF variants/chy-ref (dir)
+  train: running, log replays/ab/mx-tethys-stand-v4/train.log
+CAND 50.1% of 10200 (5110-5090), 95% CI 49.1-51.1
+  train  50.1% of 10200 (5110-5090), 95% CI 49.1-51.1
+Failed matches: 0
+Out-of-fuel turns: CAND 905 in 663 games, REF 743 in 543 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 2m29s
+Results: replays/ab/mx-tethys-stand-v4/summary.md

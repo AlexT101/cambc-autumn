@@ -1,0 +1,39 @@
+Solo mx-tethys-solo0: CAND variants/chy-mirror vs REF variants/chy-ref, each against idle
+  study cand: running, log replays/solo/mx-tethys-solo0/study-cand.log
+  study ref: running, log replays/solo/mx-tethys-solo0/study-ref.log
+  extracting replays
+CAND `bots/variants/chy-mirror`, REF `bots/variants/chy-ref`, each against bots/idle.
+Started 20261113-142527; 2720 paired games; one side; fuel 200000; debug builds; wall 7.9 min.
+
+Mean CAND - REF per map, bootstrap 95% CI over maps; the round to 1000 as a % change (negative is faster), a game that never reaches it counting as round 2001.
+
+| Metric | total (2720 maps) | CAND mean | REF mean |
+|---|---|---|---|
+| round to 1000 (log ratio) | +0.0% [+0.0%, +0.0%] | 628.3 | 628.3 |
+| tributed @150 | +0.0 [+0.0, +0.0] | 37.7 | 37.7 |
+| tributed @300 | +0.0 [+0.0, +0.0] | 168.6 | 168.6 |
+| tributed @600 | +0.0 [+0.0, +0.0] | 735.3 | 735.3 |
+| collected @150 | +0.0 [+0.0, +0.0] | 215.0 | 215.0 |
+| collected @300 | +0.0 [+0.0, +0.0] | 509.6 | 509.6 |
+| collected @600 | +0.0 [+0.0, +0.0] | 924.8 | 924.8 |
+| gold earned @300 | +0.0 [+0.0, +0.0] | 1981.6 | 1981.6 |
+| gold earned @600 | +0.0 [+0.0, +0.0] | 3924.6 | 3924.6 |
+
+Maps where CAND reaches 1000 faster / slower / identical: 0 / 0 / 2720
+Games never reaching 1000: CAND 21, REF 21
+Out-of-fuel turns: CAND 198, REF 198
+Games with champion damage or bot errors: 338
+- {'suite': 'study', 'map': 'gen-altar-poor-6140100116000', 'side': 'A', 'role': 'cand', 'champion_damage': 100}
+- {'suite': 'study', 'map': 'gen-altar-poor-6140100116000', 'side': 'A', 'role': 'ref', 'champion_damage': 100}
+- {'suite': 'study', 'map': 'gen-classic-6140100001004', 'side': 'A', 'role': 'cand', 'champion_damage': 1464.1}
+- {'suite': 'study', 'map': 'gen-classic-6140100001004', 'side': 'A', 'role': 'ref', 'champion_damage': 1464.1}
+- {'suite': 'study', 'map': 'gen-classic-6140100101007', 'side': 'A', 'role': 'cand', 'champion_damage': 1800}
+- {'suite': 'study', 'map': 'gen-classic-6140100101007', 'side': 'A', 'role': 'ref', 'champion_damage': 1800}
+- {'suite': 'study', 'map': 'gen-classic-6140100101011', 'side': 'B', 'role': 'cand', 'champion_damage': 900}
+- {'suite': 'study', 'map': 'gen-classic-6140100101011', 'side': 'B', 'role': 'ref', 'champion_damage': 900}
+- {'suite': 'study', 'map': 'gen-classic-6140100101021', 'side': 'B', 'role': 'cand', 'champion_damage': 1687.5}
+- {'suite': 'study', 'map': 'gen-classic-6140100101021', 'side': 'B', 'role': 'ref', 'champion_damage': 1687.5}
+- ... 328 more in summary.json
+Failed matches: 0
+
+Results: replays/solo/mx-tethys-solo0/summary.json

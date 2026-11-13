@@ -1,0 +1,13 @@
+diff --git a/bots/charybdis/src/params.h b/bots/charybdis/src/params.h
+index d8ae6e752..1a517a1c8 100644
+--- a/bots/charybdis/src/params.h
++++ b/bots/charybdis/src/params.h
+@@ -201,7 +201,7 @@ inline constexpr int siege_stickiness = 20;
+ // tuned apart and below mid_exposure (farm.cc exposure_most bounds exposure() for the exact bounds).
+ inline constexpr float own_ground_share = 0.6832753f;
+ inline constexpr float mid_low_share = 0.25452974f;
+-inline constexpr float mid_exposure = 1.3611484f;
++inline constexpr float mid_exposure = 1.70f;
+ inline constexpr float mid_edge = 0.055977345f;
+ inline constexpr float max_exposure = 1.2148346f;
+ 

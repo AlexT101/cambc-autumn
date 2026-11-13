@@ -1,0 +1,9 @@
+A/B mx-tethys-midx22-dev: CAND variants/mx-midx22 (dir) vs REF variants/chy-ref (dir)
+  dev: running, log replays/ab/mx-tethys-midx22-dev/dev.log
+CAND 47.8% of 10200 (4872-5328), 95% CI 46.8-48.7
+  dev  47.8% of 10200 (4872-5328), 95% CI 46.8-48.7
+Failed matches: 0
+Out-of-fuel turns: CAND 1036 in 581 games, REF 882 in 595 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 2m15s
+Results: replays/ab/mx-tethys-midx22-dev/summary.md

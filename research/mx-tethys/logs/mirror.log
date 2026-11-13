@@ -1,0 +1,9 @@
+A/B mx-tethys-mirror: CAND variants/chy-mirror (dir) vs REF variants/chy-ref (dir)
+  study: running, log replays/ab/mx-tethys-mirror/study.log
+CAND 50.0% of 5440 (2720-2720), 95% CI 48.7-51.3
+  study  50.0% of 5440 (2720-2720), 95% CI 48.7-51.3
+Failed matches: 0
+Out-of-fuel turns: CAND 436 in 294 games, REF 436 in 294 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 2m53s
+Results: replays/ab/mx-tethys-mirror/summary.md

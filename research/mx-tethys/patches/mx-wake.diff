@@ -1,0 +1,117 @@
+diff -ruN bots/variants/chy-ref/src/economy/farm.cc bots/variants/mx-wake/src/economy/farm.cc
+--- bots/variants/chy-ref/src/economy/farm.cc	2026-11-13 14:14:01.525792402 +0000
++++ bots/variants/mx-wake/src/economy/farm.cc	2026-11-13 19:11:41.304195126 +0000
+@@ -712,25 +712,56 @@
+     const auto strong = [&](int g) __attribute__((always_inline)) { return g == read_g ? read_strong : strong_of(g); };
+     // Farm's Monolith operation (farm_monolith): bookkeeping for the gather and the traces.
+     if (memory.mono_group >= 0) memory.mono_taken += memory.damage;
+-    // A sleeping Monolith is woken only once mono_gather_share of the crew's output stands within a
+-    // step of the staging ring (us counted, coming or not), or after mono_max_wait there; an awake
+-    // one is worked at once. `output`: the crew's as priced.
+-    const auto mono_engage = [&](int g, float output) {
++    // A sleeping Monolith is woken only if the crew within a step of the staging ring (us counted,
++    // coming or not) can kill its strikers before their hits send every body home (camps never
++    // regenerate, so a wake we cannot finish only softens it for the enemy). Each phase's hits land
++    // on the nearest body, so the crew holds for the sum of each body's whole hits above `line`; or
++    // for good when the others' hits from full health cover each body's trip home and back (a turn
++    // end on spawn heals it to full). Stunners' casts go out when ready, so their stuns land together
++    // and do not stack: one skipped attack a cooldown. An awake one is worked at once.
++    const auto mono_finishable = [&](int g) {
+         const auto& c = world.camps[g];
+-        if (c.state != CampState::alive || c.awake == Awake::awake) return true;
+         const auto& G = groups[g];
++        float left = 0, fire = 0;
++        for (std::size_t i = 0; i < G.members.size(); ++i)
++            if (c.health[i] > 0 && G.members[i].strength > 0) left += c.health[i], fire += G.members[i].strength;
++        if (fire <= 0) return true;
+         const auto near = [&](vec2 p) {
+             for (std::size_t i = 0; i < G.members.size(); ++i)
+                 if (c.health[i] > 0 && G.members[i].strength > 0 && dist(p, G.members[i].pos) <= G.reach + 2) return true;
+             return false;
+         };
+-        float staged = strength;
++        const int back = pathing.centre_to_spawn(g);
++        float output = 0, hold = 0, refill = 0;
++        bool stuns = false;
++        int n = 0;
++        std::array<float, 8> full{}, trip{};
++        const auto add = [&](const ChampionBelief& a, float health, float max, float taken) {
++            const float hit = fire * std::max(0.01f, taken);
++            output += camp_output(a), hold += std::floor(std::max(0.0f, health - line * max) / hit);
++            stuns |= a.facts().stun_range[0] >= 0 || a.facts().stun_range[1] >= 0;
++            if (n < static_cast<int>(full.size())) {
++                full[n] = std::floor(max * (1.0f - line) / hit), refill += full[n];
++                trip[n++] = back == unreachable ? 1e9f : static_cast<float>(a.recall_turns() + std::max(0, back - G.reach));
++            }
++        };
++        add(world.me(), my_health(), max_health, camp_hit_factor());
+         for (const auto& a : world.allies)
+-            if (!a.is_self && a.alive && a.visible && comms::claim_of(world, a.index) == g && near(a.pos)) staged += camp_output(a);
+-        if (staged >= params::mono_gather_share * output) return true;
+-        return memory.mono_group == g && memory.mono_staged >= 0 && world.round - memory.mono_staged >= params::mono_max_wait;
++            if (!a.is_self && a.alive && a.visible && a.health > line * a.max_health && comms::claim_of(world, a.index) == g && near(a.pos))
++                add(a, a.health, a.max_health, a.camp_taken);
++        bool rotates = n > 1;
++        for (int i = 0; i < n; ++i) rotates = rotates && refill - full[i] >= trip[i];
++        if (rotates) return true;
++        // Our first hit wakes it: no camp phase falls in that round.
++        const float kill = std::ceil(left / output) - 1;
++        const float skipped = stuns ? std::ceil(kill / static_cast<float>(ability_cooldown)) : 0.0f;
++        return hold >= kill - skipped;
++    };
++    const auto mono_engage = [&](int g) {
++        const auto& c = world.camps[g];
++        return c.state != CampState::alive || c.awake == Awake::awake || mono_finishable(g);
+     };
+-    if (farm_monolith(world, memory.farm_group) && memory.claim == memory.farm_group && mono_engage(memory.farm_group, memory.mono_output))
++    if (farm_monolith(world, memory.farm_group) && memory.claim == memory.farm_group && mono_engage(memory.farm_group))
+         siege_group() = memory.farm_group;
+     const bool banks_bag = opening ? banking_now : banking;
+     // Groups in passing pay too (gold clusters are never chosen below), but not one whose clear
+@@ -2432,6 +2463,22 @@
+             debug_block({ std::printf("OPENPLAN step %d %u g%d k %d\n", round, my_handle(), planned, memory.open_step); });
+         }
+     }
++    // A Monolith we woke keeps us while the crew there can still finish it: work done on it is
++    // never lost (camps never regenerate), but it is the enemy's to finish once we leave.
++    if (const int g = memory.mono_group; !repricing && g >= 0 && g != best && memory.mono_staged == -2 && help_group < 0 && !banks_bag) {
++        const auto& c = world.camps[g];
++        const auto& G = groups[g];
++        bool damaged = false, near = false;
++        for (std::size_t i = 0; i < G.members.size(); ++i)
++            if (c.health[i] > 0 && G.members[i].strength > 0)
++                damaged |= c.health[i] < G.members[i].max_health, near |= dist(here, G.members[i].pos) <= G.reach + 2;
++        if (c.state == CampState::alive && c.awake == Awake::awake && damaged && near && my_health() > line * max_health && mono_finishable(g)) {
++            const int s = steps_data[g];
++            best = g, best_steps = s >= 0 && s != unreachable ? s : dist(here, G.centre);
++            memory.claim = g, memory.crew = prev_claim == g ? prev_crew : claimed_by_ally(g), spell = false, chosen = Priced{'W'};
++            debug_block({ std::printf("MONO KEEP %d %u g%d hp %.0f\n", round, my_handle(), g, my_health()); });
++        }
++    }
+     // Valued with allies we expect to join: our proposal, which their crew branch sees as our claim.
+     if (best >= 0 && !memory.crew && chosen.mode == 'C' && chosen.expected > 0 && memory.crew_proposed != best) {
+         memory.crew_proposed = best, memory.crew_reached = -1;
+@@ -2522,7 +2569,7 @@
+     if (heal_before_waking()) return true;
+     // A sleeping Monolith: wait just out of its reach for the crew (mono_engage).
+     if (memory.mono_group == best && world.camps[best].state == CampState::alive) {
+-        if (!mono_engage(best, memory.mono_output)) {
++        if (!mono_engage(best)) {
+             siege_group() = -1;
+             const auto& G = groups[best];
+             const auto& c = world.camps[best];
+diff -ruN bots/variants/chy-ref/src/params.h bots/variants/mx-wake/src/params.h
+--- bots/variants/chy-ref/src/params.h	2026-11-13 14:14:01.528376966 +0000
++++ bots/variants/mx-wake/src/params.h	2026-11-13 18:57:31.056398524 +0000
+@@ -100,10 +100,7 @@
+ // No allies are expected on a group with an enemy in sight this near its centre.
+ inline constexpr int crew_enemy_radius = 12;
+ inline constexpr int crew_ban_rounds = 26;
+-// Monoliths off Monolith-only maps are farm's crew operations (farm.cc, crew.cc). Members wait just
+-// out of reach of a sleeping one until this share of the crew's output has come, at most this long.
+-inline constexpr float mono_gather_share = 0.62638295f;
+-inline constexpr int mono_max_wait = 12;
++// Monoliths off Monolith-only maps are farm's crew operations (farm.cc, crew.cc).
+ // crew_stickiness for a Monolith operation.
+ inline constexpr float mono_stickiness = 1.6830473f;
+ // Help a struggling teammate clear its damaging group within this many steps.

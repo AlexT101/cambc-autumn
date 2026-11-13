@@ -1,0 +1,441 @@
+diff -ruN bots/variants/chy-ref/src/combat/fight.cc bots/variants/mx-pursue/src/combat/fight.cc
+--- bots/variants/chy-ref/src/combat/fight.cc	2026-11-13 14:14:01.524352643 +0000
++++ bots/variants/mx-pursue/src/combat/fight.cc	2026-11-13 18:54:18.083324911 +0000
+@@ -764,8 +764,9 @@
+ }
+ 
+ // prey's tests before the fight: e is worth chasing from `here` if that fight is won. `held`: the
+-// gems of a cleared group it stands on.
+-bool preyable(const World& world, Safety& safety, const ChampionBelief& e, vec2 here, int range, int& held) {
++// gems of a cleared group it stands on. With `catch_only`, an enemy refused only for being out of
++// reach, healthy and bagless passes with it set: prey then takes it only if it cannot escape (caught).
++bool preyable(const World& world, Safety& safety, const ChampionBelief& e, vec2 here, int range, int& held, bool* catch_only = nullptr) {
+     if (dist(here, e.pos) > vision_radius || test(world.map().near_enemy_spawn, e.pos)) return false;
+     // A teleport under way cannot fight back, but leaves unless we reach it before it lands.
+     if (e.teleport_pending() && std::max(0, dist(here, e.pos) - range) > last_round_before_channel_ends(world, e) - world.round)
+@@ -777,8 +778,10 @@
+     const int g = world.map().group_at(e.pos);
+     held = g >= 0 && world.camps[g].state == CampState::cleared ? world.map().groups[g].gems : 0;
+     if (!(comeback::cooked(world) && pair_gems(world, e) >= params::comeback::bar_bag) && dist(here, e.pos) > range && !own_ground(world, e.pos) && e.health >= params::hurt_health_fraction * e.max_health && held == 0
+-        && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable))
+-        return false;
++        && (pair_gems(world, e) == 0 || intercept_steps(world, e, here) == unreachable)) {
++        if (!catch_only || !e.visible) return false;
++        *catch_only = true;
++    }
+     // Every tile in reach of it would make us retreat at once.
+     return !pack_covers(world, safety, e.pos, range);
+ }
+@@ -850,6 +853,65 @@
+     return escape_hits(world, pathing, target, need) == 0;
+ }
+ 
++// A healthy enemy walking off is still killed if, on its best way home, the turns it ends in reach of
++// each of us who would fight there (the fight's allies) land at least its health: a retreat opens no
++// distance from a pursuer that walks as fast. Its next turn lost to a stun holds it in reach a turn more.
++struct Catch {
++    std::uint32_t joiners = 0;
++    bool stun = false;
++};
++// `allies`: Safety::fight_allies at its tile, us included.
++Catch catch_of(const World& world, const ChampionBelief& target, std::uint32_t allies) {
++    Catch c;
++    c.joiners = allies | 1u << world.me().index;
++    // An ally posting a chase pursues too, from wherever it is: the plan times its walk in.
++    for (std::size_t i = 0; i < world.allies.size(); ++i)
++        if (const auto& a = world.allies[i]; a.visible && comms::ally_chasing(world, a)) c.joiners |= 1u << i;
++    // A stun already landed: chase() walks to an out-of-reach target first, which bars an exclusive cast.
++    c.stun = target.stun_pending;
++    return c;
++}
++
++// Before the fight and the plan, a bound on what caught() can find: its walk home by the field, each of
++// us (walls ignored) in reach on every turn it could be, a ranged one only without walking that turn.
++bool may_catch(const World& world, const ChampionBelief& target, const Catch& c) {
++    std::array<vec2, escape::horizon> walk;
++    walk[0] = target.pos;
++    const auto& map = world.map();
++    for (int k = 1; k < escape::horizon; ++k) {
++        vec2 best = walk[k - 1];
++        int steps = map.enemy_spawn_steps(best);
++        for (const vec2 d : directions) {
++            const vec2 q{walk[k - 1].x + d.x, walk[k - 1].y + d.y};
++            if (!in_bounds(q)) continue;
++            if (const int s = map.enemy_spawn_steps(q); s < steps) best = q, steps = s;
++        }
++        walk[k] = best;
++    }
++    float bound = 0;
++    for (auto left = c.joiners; left; left &= left - 1) {
++        const auto& a = world.allies[static_cast<std::size_t>(std::countr_zero(left))];
++        if (!a.alive || (!a.is_self && !a.visible)) continue;
++        const auto& f = a.facts();
++        const vec2 from = a.is_self ? world.turn_start : a.pos;
++        const int dash = f.has_dash() ? dash_range : 0;
++        int hits = 0;
++        for (int k = 1; k <= escape::horizon; ++k)
++            if (dist(from, walk[k - 1]) - dash <= f.basic_reach() + (f.ranged ? k - 1 : k)) ++hits;
++        bound += static_cast<float>(hits + (c.stun ? 1 : 0)) * (a.is_self ? my_strength() * a.damage_scale() : a.strength * a.damage_scale());
++    }
++    return bound >= effective_hp(target);
++}
++
++bool caught(const World& world, Pathing& pathing, const ChampionBelief& target, const Catch& c, std::uint64_t need = params::escape::min_fuel) {
++    auto* plan = escape::chase_plan(world, pathing, target, need, true);
++    // A pass a pursuer: the least_hits counts cost a few thousand each.
++    if (!plan || !plan->has_pursuers() || !fuel_ok(need)) return false;
++    const float hp = effective_hp(target);
++    const float dealt = plan->runner_damage(c.joiners, c.stun, world.me().index, my_can_attack(), hp);
++    return dealt >= 0 && dealt >= hp;
++}
++
+ // Debug trace: the verdict on a chase we take (built in the block if the rule did not ask, its fuel paused).
+ void trace_verdict(const World& world, Pathing& pathing, const ChampionBelief& target, char tag) {
+     debug_block({
+@@ -958,11 +1020,17 @@
+     Unwritten<std::pair<float, const ChampionBelief*>, 8> candidates;
+     auto& order = candidates.a;
+     int n = 0;
++    std::uint32_t catch_only = 0; // by enemy index: preyable's catch_only
+     for (auto left = safety.seen_enemies() | lost_sight; left; left &= left - 1) {
+         const auto& e = world.enemies[static_cast<std::size_t>(std::countr_zero(left))];
+         if (n == static_cast<int>(order.size())) continue;
+         int held = 0;
+-        if (!preyable(world, safety, e, here, range, held)) continue;
++        bool only = false;
++        if (!preyable(world, safety, e, here, range, held, &only)) continue;
++        if (only) {
++            if (!may_catch(world, e, catch_of(world, e, safety.fight_allies(e.pos)))) continue;
++            catch_only |= 1u << e.index;
++        }
+         if (!strength) strength = std::max(1.0f, my_strength() * world.me().damage_scale());
+         const float turns = static_cast<float>(std::max(0, dist(here, e.pos) - range)) + effective_hp(e) / *strength;
+         // Turns per gem a kill is worth: the life (abilities' life_value, in gems) and the bag.
+@@ -1049,7 +1117,11 @@
+         if (std::find(lost.begin(), lost.begin() + n_lost, fight) != lost.begin() + n_lost) continue;
+         int u = 0;
+         while (u < n_unasked && unasked[u].fight != fight) ++u;
+-        if (u < n_unasked && !escapes(world, pathing, *unasked[u].target)) {
++        // A catch is never an escape: its plan's hits are at least each pursuer's.
++        const auto taken = [&](const ChampionBelief& x) {
++            return catch_only >> x.index & 1 ? caught(world, pathing, x, catch_of(world, x, safety.fight_allies(x.pos))) : !escapes(world, pathing, x);
++        };
++        if (u < n_unasked && taken(*unasked[u].target)) {
+             lost[n_lost++] = fight;
+             unasked[u] = unasked[--n_unasked];
+             continue;
+@@ -1074,7 +1146,12 @@
+         }
+         if ((!t.lost && !(linked && t.self_falls)) || (!linked && comeback::accept_lost(world, t, target))) {
+             if (u < n_unasked) unasked[u] = unasked[--n_unasked];
+-            if (escapes(world, pathing, target)) continue;
++            if (!taken(target)) continue;
++            debug_block({
++                if (catch_only >> target.index & 1)
++                    std::printf("PURSUE %d %u %u %d %.0f %d\n", world.round, my_handle(), static_cast<std::uint32_t>(target.handle),
++                                dist(here, target.pos), effective_hp(target), pair_gems(world, target));
++            });
+             return &target;
+         }
+         if (u < n_unasked) unasked[u].target = &target;
+diff -ruN bots/variants/chy-ref/src/model/escape.cc bots/variants/mx-pursue/src/model/escape.cc
+--- bots/variants/chy-ref/src/model/escape.cc	2026-11-13 14:14:01.527090089 +0000
++++ bots/variants/mx-pursue/src/model/escape.cc	2026-11-13 18:53:00.229896305 +0000
+@@ -202,17 +202,20 @@
+     bool blind = false; // the burst ignores bushes
+     int delay = 0;      // its turns before it stands on `start`: one beyond the window enters at its edge
+     Rows start{};
++    int ally = -1;      // unmerged kinds (chase plans): its World::allies index and basic hit
++    float blow = 0;
+ };
+ 
+ struct Kinds {
+     std::array<Pursuers, 8> of;
+     int n = 0;
++    bool merge = true; // chase plans keep one champion a kind, for Plan::runner_damage
+ 
+     // The class of a champion whose k-th turn of the plan falls in round `round` + k - `offset` (offset 1: it
+     // has yet to act this round), `out` steps beyond the window; null if it is past the plan. With `resets`, a
+     // ranged champion's attack reset is a burst too: walk, reset, shoot.
+     [[gnu::always_inline]] Rows* add(const ChampionFacts& f, const std::array<int, 2>& ready_round, int round, int offset, int out,
+-                                     bool resets = false) {
++                                     bool resets = false, int ally = -1, float blow = 0) {
+         const auto ready_turn = [&](int slot) {
+             const int k = std::max(1, ready_round[static_cast<std::size_t>(slot)] - round + offset);
+             return k > horizon ? 0 : k;
+@@ -231,7 +234,8 @@
+         if (const int slot = resets && f.ranged ? f.slot_of(AbilityKind::attack_reset) : -1; slot >= 0)
+             if (const int k = ready_turn(slot); k > 0 && f.basic_reach() + 1 > kind.burst)
+                 kind.burst = f.basic_reach() + 1, kind.burst_turn = k, kind.blind = false;
+-        for (int i = 0; i < n; ++i) {
++        kind.ally = ally, kind.blow = blow;
++        for (int i = 0; merge && i < n; ++i) {
+             const auto& o = of[i];
+             if (o.ranged == kind.ranged && o.reach == kind.reach && o.dash_turn == kind.dash_turn && o.burst == kind.burst
+                 && o.burst_turn == kind.burst_turn && o.blind == kind.blind && o.delay == kind.delay)
+@@ -243,9 +247,10 @@
+     }
+     // A champion seen on `tile`: its class's start, at the window's edge if beyond it.
+     [[gnu::always_inline]] void add_at(const ChampionFacts& f, const std::array<int, 2>& ready_round, int round, int offset, vec2 tile, vec2 origin,
+-                                       bool resets = false) {
++                                       bool resets = false, int ally = -1, float blow = 0) {
+         const int x = std::clamp(tile.x - origin.x, 0, side - 1), y = std::clamp(tile.y - origin.y, 0, side - 1);
+-        if (auto* rows = add(f, ready_round, round, offset, std::max(std::abs(tile.x - origin.x - x), std::abs(tile.y - origin.y - y)), resets))
++        if (auto* rows = add(f, ready_round, round, offset, std::max(std::abs(tile.x - origin.x - x), std::abs(tile.y - origin.y - y)), resets, ally,
++                             blow))
+             put(*rows, y, std::uint32_t{1} << x);
+     }
+ };
+@@ -273,7 +278,7 @@
+ 
+ void Plan::build(const World& world, Pathing& pathing, Safety& safety) {
+     const Field& home = pathing.to_ally_spawn();
+-    active_ = dash_ = dash_now_ = false;
++    active_ = dash_ = dash_now_ = want_pursuers_ = false;
+     pass_[0].ready = pass_[1].ready = false;
+     const auto& self = world.me();
+     if (!self.alive || fuel() < params::escape::min_fuel || !ready_statics(world)) return;
+@@ -327,8 +332,9 @@
+     });
+ }
+ 
+-void Plan::build_chase(const World& world, Pathing& pathing, const ChampionBelief& target, bool measured) {
++void Plan::build_chase(const World& world, Pathing& pathing, const ChampionBelief& target, bool measured, bool pursuers) {
+     active_ = dash_ = dash_now_ = false;
++    want_pursuers_ = pursuers;
+     pass_[0].ready = pass_[1].ready = false;
+     const auto& self = world.me();
+     if (!self.alive || !target.alive || !target.visible || !ready_statics(world)) return;
+@@ -356,9 +362,14 @@
+     // We pursue from the turn's start with all of this turn's moves, whatever the turn has spent, and an
+     // ally's next turn counts as coming before the target's whenever it acts: both only add pursuit. Our
+     // walk-reset-shoot counts too (a pessimism our own plan keeps out, here on the safe side).
+-    race.kinds.add_at(self.facts(), self.ready_round, world.round, 1, world.turn_start, origin_, true);
+-    for (const auto& a : world.allies)
+-        if (!a.is_self && a.alive && a.visible) race.kinds.add_at(a.facts(), a.ready_round, world.round, a.acted ? 0 : 1, a.pos, origin_, true);
++    race.kinds.merge = !pursuers;
++    for (std::size_t i = 0; i < world.allies.size(); ++i)
++        if (const auto& a = world.allies[i]; a.is_self)
++            race.kinds.add_at(self.facts(), self.ready_round, world.round, 1, world.turn_start, origin_, true, static_cast<int>(i),
++                              my_strength() * self.damage_scale());
++        else if (a.alive && a.visible)
++            race.kinds.add_at(a.facts(), a.ready_round, world.round, a.acted ? 0 : 1, a.pos, origin_, true, static_cast<int>(i),
++                              a.strength * a.damage_scale());
+ 
+     // Its dash: plan turn k >= 2 is its turn in round `next` + k - 2.
+     if (const int slot = target.facts().slot_of(AbilityKind::dash); slot >= 0) {
+@@ -372,7 +383,8 @@
+     race.flip_y = map.symmetry != cambc::symmetry::horizontal;
+     finish(pathing, race);
+     // A build that ran out resumed on a new round's budget: its fuel reads nothing.
+-    if (measured && active_ && round_now() == static_cast<std::uint32_t>(world.round)) {
++    // Pursuer builds cost more than the verdict's that the estimate gates.
++    if (measured && !pursuers && active_ && round_now() == static_cast<std::uint32_t>(world.round)) {
+         const std::uint64_t used = start_fuel - fuel();
+         chase_cost = chase_cost ? chase_cost - chase_cost / 8 + used / 8 : used;
+     }
+@@ -471,18 +483,31 @@
+     // Where each turn ends hit.
+     for (auto& h : hit_) h = Rows{};
+     const Rows open = ~bush;
++    pursuers_ = chase_ && want_pursuers_ ? std::min(race.kinds.n, max_pursuers) : 0;
+     for (int c = 0; c < race.kinds.n; ++c) {
+         const auto& kind = race.kinds.of[c];
++        auto* own = c < pursuers_ ? &pursuer_hit_[c] : nullptr;
++        if (own) {
++            for (auto& h : *own) h = Rows{};
++            pursuer_ally_[c] = kind.ally, pursuer_blow_[c] = kind.blow;
++        }
++        // A burst is one cast (or reset) at most in the plan and may deal nothing (Cassi's stun): the
++        // pursuer's own layers, a lower bound of its damage, keep its basic hits alone.
++        bool basic = true;
++        const auto mark = [&](int k, const Rows& r) {
++            hit_[k] |= r;
++            if (own && basic) (*own)[k] |= r;
++        };
+         // `near`: grow(from), which the walk reuses.
+         const auto strike = [&](int k, const Rows& from, const Rows& near, int reach, bool blind) {
+             const Rows reached = reach == 1 ? near : widen(near, reach);
+             if (!bushes || blind) {
+-                hit_[k] |= reached;
++                mark(k, reached);
+                 return;
+             }
+             // Off bushes from anywhere it stands; a bush tile only from a bush tile.
+-            hit_[k] |= reached & open;
+-            if (const Rows hidden = from & bush; !none_set(hidden)) hit_[k] |= grow_by(hidden, reach) & bush;
++            mark(k, reached & open);
++            if (const Rows hidden = from & bush; !none_set(hidden)) mark(k, grow_by(hidden, reach) & bush);
+         };
+         // `moved`: where it may stand, dash spent or not; `walked`: dash unspent. They are equal until its
+         // first dash turn, and from then on its dash landings hold `walked`, so a ranged pursuer's dash
+@@ -496,7 +521,11 @@
+             if (!known) near_moved = grow(moved);
+             if (!split) near_walked = near_moved;
+             // A spell is cast once, but on whichever turn suits it: its first two ready turns count.
+-            if (kind.burst > 0 && (k == kind.burst_turn || k == kind.burst_turn + 1)) strike(k, moved, near_moved, kind.burst, kind.blind);
++            if (kind.burst > 0 && (k == kind.burst_turn || k == kind.burst_turn + 1)) {
++                basic = false;
++                strike(k, moved, near_moved, kind.burst, kind.blind);
++                basic = true;
++            }
+             // A ranged pursuer shoots from where it stood, or after a dash from an undashed tile.
+             if (kind.ranged) {
+                 if (dash && !split) {
+@@ -519,6 +548,8 @@
+         }
+     }
+     for (int k = 1; k <= horizon; ++k) hit_[k] &= ~spawn;
++    for (int c = 0; c < pursuers_; ++c)
++        for (int k = 1; k <= horizon; ++k) pursuer_hit_[c][k] &= ~spawn;
+ 
+     // The goals.
+     const int near = std::max(0, race.steps - race.moves), slack = near + params::escape::slack_steps;
+@@ -527,6 +558,7 @@
+     else if (!race.flip_y) goal_rows<true, false>(race.field, walk_, origin_, near, slack, goal, slack_goal_);
+     else if (!race.flip_x) goal_rows<false, true>(race.field, walk_, origin_, near, slack, goal, slack_goal_);
+     else goal_rows<true, true>(race.field, walk_, origin_, near, slack, goal, slack_goal_);
++    goal_ = goal;
+     run(goal, pass_[0]);
+     active_ = true;
+ }
+@@ -612,20 +644,78 @@
+ 
+ int Plan::runner_hits(bool slack) const { return std::min(many, (runner_hit_now() ? 1 : 0) + after_walk(at, slack)); }
+ 
++// run_pass's walk-only and dash-kept sets, by every hit count the plan's turns 2..horizon can hold.
++int Plan::least_hits(const std::array<Rows, horizon + 1>& hits, const Rows& goal) const {
++    constexpr int J = horizon; // at most horizon - 1 hits on turns 2..horizon: s[J - 1] is every tile with a way
++    std::array<Rows, J> s0, s1, t0, t1;
++    s0.fill(goal), s1.fill(goal);
++    for (int k = horizon; k >= 2; --k) {
++        const Rows hit = hits[k], clear = ~hit;
++        for (int j = 0; j < J; ++j) {
++            t0[j] = s0[j] & clear;
++            if (j > 0) t0[j] |= s0[j - 1] & hit;
++            if (dash_) {
++                t1[j] = s1[j] & clear;
++                if (j > 0) t1[j] |= s1[j - 1] & hit;
++            }
++        }
++        for (int j = 0; j < J; ++j) {
++            const Rows g0 = grow(t0[j]);
++            if (dash_) {
++                Rows k1 = t1[j];
++                if (k >= dash_turn_) k1 |= dash_landings(g0, path_, walk_);
++                s1[j] = grow(k1) & walk_;
++            }
++            s0[j] = g0 & walk_;
++        }
++    }
++    const auto& s = dash_ ? s1 : s0;
++    const int now = get(hits[1], at.y - origin_.y) >> (at.x - origin_.x) & 1;
++    for (int j = 0; j < J; ++j)
++        if (value(s[j], s[j], at) == 0) return now + j;
++    return -1;
++}
++
++float Plan::runner_damage(std::uint32_t joiners, bool stunned, int self, bool self_now, float need) const {
++    if (!has_pursuers()) return -1;
++    float out = 0;
++    for (int c = 0; c < pursuers_ && out < need; ++c) {
++        if (pursuer_ally_[c] < 0 || !(joiners >> pursuer_ally_[c] & 1)) continue;
++        const auto& hits = pursuer_hit_[c];
++        const int now = get(hits[1], at.y - origin_.y) >> (at.x - origin_.x) & 1;
++        int n = least_hits(hits, goal_);
++        // The slack goal holds the full one: a way to the full goal is one to it.
++        if (n != now)
++            if (const int m = least_hits(hits, slack_goal_); m >= 0 && (n < 0 || m < n)) n = m;
++        if (n < 0) return -1;
++        // Our attack already spent this turn lands no turn-1 hit.
++        if (pursuer_ally_[c] == self && !self_now) n -= now;
++        // Stunned, it ends its next turn where it stands.
++        else if (stunned && now) ++n;
++        out += static_cast<float>(n) * pursuer_blow_[c];
++    }
++    return out;
++}
++
+ std::uint64_t chase_cost_estimate() { return chase_cost; }
+ 
+-Plan* chase_plan(const World& world, Pathing& pathing, const ChampionBelief& target, std::uint64_t need) {
++Plan* chase_plan(const World& world, Pathing& pathing, const ChampionBelief& target, std::uint64_t need, bool pursuers) {
+     // A turn chases one target or two (its aim, then prey's pick), a few at most.
+     static std::array<Plan, 4> plans;
+     static std::size_t next = 0;
+     const auto h = static_cast<std::uint32_t>(target.handle);
++    Plan* slot = nullptr;
+     for (auto& p : plans)
+-        if (p.round == world.round && p.handle == h && p.at == target.pos) return &p;
++        if (p.round == world.round && p.handle == h && p.at == target.pos) {
++            // An inactive plan reads the same either way.
++            if (!pursuers || !p.active() || p.has_pursuers()) return &p;
++            slot = &p;
++        }
+     if (!fuel_ok(need)) return nullptr;
+-    auto& p = plans[next];
+-    next = (next + 1) % plans.size();
++    if (!slot) slot = &plans[next], next = (next + 1) % plans.size();
++    auto& p = *slot;
+     p.round = world.round, p.handle = h, p.at = target.pos, p.observations = world.observations;
+-    p.build_chase(world, pathing, target, need > 0); // need 0: a debug trace's build, its fuel paused
++    p.build_chase(world, pathing, target, need > 0, pursuers); // need 0: a debug trace's build, its fuel paused
+     return &p;
+ }
+ 
+diff -ruN bots/variants/chy-ref/src/model/escape.h bots/variants/mx-pursue/src/model/escape.h
+--- bots/variants/chy-ref/src/model/escape.h	2026-11-13 14:14:01.527090089 +0000
++++ bots/variants/mx-pursue/src/model/escape.h	2026-11-13 18:52:47.420438707 +0000
+@@ -74,10 +74,20 @@
+     // The chase race: `target` (visible) runs home from its tile; we pursue from this turn's start tile with
+     // the turn's moves still ours, as do the visible allies. Turn 1 is the target's last, now ended, so its
+     // pursuers' first turns (ours this one) hit it where it stands. Inactive on its spawn or with it cut off.
+-    void build_chase(const World& world, Pathing& pathing, const ChampionBelief& target, bool measured);
++    // With `pursuers`, it also keeps each pursuer's hits, for runner_damage.
++    void build_chase(const World& world, Pathing& pathing, const ChampionBelief& target, bool measured, bool pursuers = false);
++    bool has_pursuers() const { return active_ && chase_ && want_pursuers_; }
+     // A chase plan's runner: its hits, turns 1..horizon, on its best way to the goal (`many` past one).
+     int runner_hits(bool slack) const;
+     bool runner_hit_now() const; // its tile in reach of our pursuers' first turns
++    // A chase plan's runner: the least damage our pursuers among `joiners` (World::allies bits) land on it,
++    // turns 1..horizon, on its best way to either goal, each pursuer's basic hit for each turn it ends in that
++    // pursuer's reach, plus one more from each that reaches it now when it loses its next turn (`stunned`).
++    // Each pursuer is counted on the runner's best way from it alone, so the sum is a lower bound within the
++    // race's model (generous to pursuers on turn order: an ally's next turn counts before the runner's). -1: no way.
++    // Our own pursuer (World::allies index `self`) lands its turn-1 hit only with `self_now`; the sum stops
++    // once it reaches `need`. Built with `pursuers`.
++    float runner_damage(std::uint32_t joiners, bool stunned, int self, bool self_now, float need) const;
+ 
+     // The cache key: rebuilt when any of these change.
+     int round = -1;
+@@ -103,11 +113,19 @@
+     int value(const Rows& none, const Rows& one, vec2 p) const;
+     const Pass& pass(bool slack) const { return pass_[slack && pass_[1].ready ? 1 : 0]; }
+ 
+-    bool active_ = false, dash_ = false, dash_now_ = false, chase_ = false;
++    bool active_ = false, dash_ = false, dash_now_ = false, chase_ = false, want_pursuers_ = false;
+     int dash_turn_ = 0; // our first turn (2..horizon) a planned dash may fall in
+     vec2 origin_{0, 0}; // the window's tile (0, 0)
+     Rows walk_{}, path_{}, slack_goal_{}; // our walk and landing tiles, the tiles a dash path of ours crosses
++    Rows goal_{};
+     std::array<Rows, horizon + 1> hit_{}; // [k]: tiles where a turn k ending there is hit
++    // Chase plans: hit_ by pursuer (one champion each), its World::allies index and basic hit.
++    static constexpr int max_pursuers = 8;
++    int pursuers_ = 0;
++    std::array<std::array<Rows, horizon + 1>, max_pursuers> pursuer_hit_;
++    std::array<int, max_pursuers> pursuer_ally_{};
++    std::array<float, max_pursuers> pursuer_blow_{};
++    int least_hits(const std::array<Rows, horizon + 1>& hits, const Rows& goal) const;
+     Pass pass_[2];
+ };
+ 
+@@ -119,7 +137,8 @@
+ 
+ // The chase plan against a visible enemy this round, built on first ask (null if the fuel left is under
+ // `need` then) and kept for the round: nothing it reads moves during our turn.
+-Plan* chase_plan(const World& world, Pathing& pathing, const ChampionBelief& target, std::uint64_t need);
++// With `pursuers`, one built with them (Plan::runner_damage).
++Plan* chase_plan(const World& world, Pathing& pathing, const ChampionBelief& target, std::uint64_t need, bool pursuers = false);
+ // A chase build's cost: the running mean (1/8) of this instance's fuel-gated builds, 0 before the first.
+ std::uint64_t chase_cost_estimate();
+ 

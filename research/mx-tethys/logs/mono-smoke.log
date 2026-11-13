@@ -1,0 +1,10 @@
+note: --suites not given, so only the 256 ladder games: a quick check, not a judgement (pass --suites maps/suites/... for 20k+ games, or use tools/fgate.py)
+A/B mx-tethys-mono-smoke: CAND variants/mx-mono (dir) vs REF variants/chy-ref (dir)
+  ladder: running, log replays/ab/mx-tethys-mono-smoke/ladder.log
+CAND 45.3% of 256 (116-140), 95% CI 39.3-51.4
+  ladder  45.3% of 256 (116-140), 95% CI 39.3-51.4
+Failed matches: 0
+Out-of-fuel turns: CAND 20 in 15 games, REF 19 in 15 games
+Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
+Wall time: 0m01s
+Results: replays/ab/mx-tethys-mono-smoke/summary.md
