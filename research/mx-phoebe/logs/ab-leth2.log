@@ -1,9 +1,0 @@
-A/B mx-phoebe-leth2: CAND variants/phb-lethal (dir) vs REF variants/chy-ref (dir)
-  train: running, log replays/ab/mx-phoebe-leth2/train.log
-CAND 49.7% of 10200 (5067-5133), 95% CI 48.7-50.6
-  train  49.7% of 10200 (5067-5133), 95% CI 48.7-50.6
-Failed matches: 0
-Out-of-fuel turns: CAND 1651 in 969 games, REF 865 in 584 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 0m35s
-Results: replays/ab/mx-phoebe-leth2/summary.md

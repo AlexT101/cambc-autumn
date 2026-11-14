@@ -1,9 +1,0 @@
-A/B mac13-argo-pb-crew-more-p2: CAND variants/pb-crew-more (dir) vs REF variants/chy-ref (dir)
-  probe2: running, log replays/ab/mac13-argo-pb-crew-more-p2/probe2.log
-CAND 49.4% of 5120 (2531-2589), 95% CI 48.1-50.8
-  probe2  49.4% of 5120 (2531-2589), 95% CI 48.1-50.8
-Failed matches: 0
-Out-of-fuel turns: CAND 326 in 207 games, REF 335 in 203 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 7m42s
-Results: replays/ab/mac13-argo-pb-crew-more-p2/summary.md

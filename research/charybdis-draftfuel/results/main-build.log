@@ -1,9 +1,0 @@
--- Configuring done (0.0s)
--- Generating done (0.0s)
--- Build files have been written to: /home/ubuntu/cambc-autumn/bots/charybdis/.cambc/build-release
-[0/2] Re-checking globbed directories...
-[1/3] Building CXX object CMakeFiles/bot.dir/home/ubuntu/cambc-autumn/bots/charybdis/src/unity.cpp.obj
-[2/3] Linking CXX executable bot.wasm
-injected 10 checks into 5 functions
-stripped stale debug sections (.debug_loc, .debug_abbrev, .debug_info, .debug_str, .debug_line, .debug_ranges); pass --keep-debug to retain them
-built /home/ubuntu/cambc-autumn/bots/charybdis/.cambc/build-release/bot-injected.wasm

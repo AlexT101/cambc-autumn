@@ -1,9 +1,0 @@
-A/B mx-phoebe-stkfuel: CAND variants/phb-stk-fuel (dir) vs REF variants/chy-ref (dir)
-  study: running, log replays/ab/mx-phoebe-stkfuel/study.log
-CAND 49.7% of 2720 (1351-1369), 95% CI 47.8-51.5
-  study  49.7% of 2720 (1351-1369), 95% CI 47.8-51.5
-Failed matches: 0
-Out-of-fuel turns: CAND 228 in 166 games, REF 165 in 118 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 1m30s
-Results: replays/ab/mx-phoebe-stkfuel/summary.md

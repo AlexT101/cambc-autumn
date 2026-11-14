@@ -1,6 +1,0 @@
-fork 100: 1660 pairs (415 games): base 63.1%, cand 62.9%, cand - base -0.18 +- 1.36 points; flips 449
-fork 200: 1660 pairs (415 games): base 60.8%, cand 60.4%, cand - base -0.36 +- 1.26 points; flips 382
-fork 300: 1648 pairs (412 games): base 58.1%, cand 58.7%, cand - base +0.67 +- 1.14 points; flips 327
-fork 450: 1516 pairs (379 games): base 54.3%, cand 53.2%, cand - base -1.06 +- 0.93 points; flips 206
-fork 600: 1168 pairs (292 games): base 47.7%, cand 47.5%, cand - base -0.17 +- 1.03 points; flips 122
-fork all: 7652 pairs (415 games): base 57.4%, cand 57.2%, cand - base -0.21 +- 0.55 points; flips 1486

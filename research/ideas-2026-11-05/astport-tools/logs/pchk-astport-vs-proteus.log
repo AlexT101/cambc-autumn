@@ -1,8 +1,0 @@
-A/B pchk-astport-vs-proteus: CAND variants/oc-astport (dir) vs REF variants/panel-proteus (dir)
-  panel-check-514510: running, log replays/ab/pchk-astport-vs-proteus/panel-check-514510.log
-CAND 63.6% of 5120 (3255-1865), 95% CI 62.2-64.9
-  panel-check-514510  63.6% of 5120 (3255-1865), 95% CI 62.2-64.9
-Failed matches: 0
-Out-of-fuel turns: CAND 37616 in 3704 games, REF 54252 in 4054 games
-Wall time: 0m18s
-Results: replays/ab/pchk-astport-vs-proteus/summary.md

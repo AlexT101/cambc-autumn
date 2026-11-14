@@ -1,9 +1,0 @@
-A/B mac13-argo-pb10-shop-lo-dev: CAND variants/pb10-shop-lo (dir) vs REF variants/chy-ref (dir)
-  dev: running, log replays/ab/mac13-argo-pb10-shop-lo-dev/dev.log
-CAND 49.9% of 10240 (5111-5129), 95% CI 48.9-50.9
-  dev  49.9% of 10240 (5111-5129), 95% CI 48.9-50.9
-Failed matches: 0
-Out-of-fuel turns: CAND 642 in 415 games, REF 614 in 403 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 12m36s
-Results: replays/ab/mac13-argo-pb10-shop-lo-dev/summary.md

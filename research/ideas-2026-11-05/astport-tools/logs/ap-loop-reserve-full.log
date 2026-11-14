@@ -1,8 +1,0 @@
-A/B ap-loop-reserve-full: CAND variants/oc-ap-loop-reserve (dir) vs REF variants/oc-retest-clean (dir)
-  ap-dev: running, log replays/ab/ap-loop-reserve-full/ap-dev.log
-CAND 51.0% of 20480 (10451-10029), 95% CI 50.3-51.7
-  ap-dev  51.0% of 20480 (10451-10029), 95% CI 50.3-51.7
-Failed matches: 0
-Out-of-fuel turns: CAND 151343 in 14736 games, REF 154312 in 15044 games
-Wall time: 2m17s
-Results: replays/ab/ap-loop-reserve-full/summary.md

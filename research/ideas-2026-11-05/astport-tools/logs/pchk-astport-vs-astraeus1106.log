@@ -1,8 +1,0 @@
-A/B pchk-astport-vs-astraeus1106: CAND variants/oc-astport (dir) vs REF variants/astraeus-now-1106 (dir)
-  panel-check-514510: running, log replays/ab/pchk-astport-vs-astraeus1106/panel-check-514510.log
-CAND 53.9% of 5120 (2760-2360), 95% CI 52.5-55.3
-  panel-check-514510  53.9% of 5120 (2760-2360), 95% CI 52.5-55.3
-Failed matches: 0
-Out-of-fuel turns: CAND 37195 in 3677 games, REF 35233 in 3593 games
-Wall time: 0m27s
-Results: replays/ab/pchk-astport-vs-astraeus1106/summary.md

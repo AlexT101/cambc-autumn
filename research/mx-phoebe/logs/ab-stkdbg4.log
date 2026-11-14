@@ -1,9 +1,0 @@
-A/B mx-phoebe-stkdbg4: CAND variants/phb-stakes (dir) vs REF variants/chy-ref (dir)
-  study: running, log replays/ab/mx-phoebe-stkdbg4/study.log
-CAND 49.3% of 2720 (1342-1378), 95% CI 47.5-51.2
-  study  49.3% of 2720 (1342-1378), 95% CI 47.5-51.2
-Failed matches: 0
-Out-of-fuel turns: CAND 226 in 145 games, REF 164 in 120 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 2m07s
-Results: replays/ab/mx-phoebe-stkdbg4/summary.md

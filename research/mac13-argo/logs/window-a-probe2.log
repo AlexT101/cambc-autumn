@@ -1,9 +1,0 @@
-A/B mac13-argo-window-a-probe2: CAND variants/window-a (dir) vs REF variants/chy-ref (dir)
-  probe2: running, log replays/ab/mac13-argo-window-a-probe2/probe2.log
-CAND 45.6% of 5120 (2336-2784), 95% CI 44.3-47.0
-  probe2  45.6% of 5120 (2336-2784), 95% CI 44.3-47.0
-Failed matches: 0
-Out-of-fuel turns: CAND 455 in 222 games, REF 310 in 197 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 2m56s
-Results: replays/ab/mac13-argo-window-a-probe2/summary.md

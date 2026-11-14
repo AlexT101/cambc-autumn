@@ -1,9 +1,0 @@
-A/B mac13-argo-pb11-siege-seal-p3: CAND variants/pb11-siege-seal (dir) vs REF variants/chy-ref (dir)
-  probe3: running, log replays/ab/mac13-argo-pb11-siege-seal-p3/probe3.log
-CAND 50.0% of 5120 (2560-2560), 95% CI 48.6-51.4
-  probe3  50.0% of 5120 (2560-2560), 95% CI 48.6-51.4
-Failed matches: 0
-Out-of-fuel turns: CAND 345 in 194 games, REF 358 in 201 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 6m44s
-Results: replays/ab/mac13-argo-pb11-siege-seal-p3/summary.md

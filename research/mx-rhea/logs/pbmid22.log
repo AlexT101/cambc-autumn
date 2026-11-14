@@ -1,9 +1,0 @@
-A/B mx-rhea-pbmid22: CAND variants/pb-mid22 (dir) vs REF variants/chy-ref (dir)
-  dev: running, log replays/ab/mx-rhea-pbmid22/dev.log
-CAND 47.3% of 10200 (4822-5378), 95% CI 46.3-48.2
-  dev  47.3% of 10200 (4822-5378), 95% CI 46.3-48.2
-Failed matches: 0
-Out-of-fuel turns: CAND 869 in 581 games, REF 958 in 599 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 2m51s
-Results: replays/ab/mx-rhea-pbmid22/summary.md

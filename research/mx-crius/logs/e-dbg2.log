@@ -1,9 +1,0 @@
-A/B mx-crius-e-dbg2: CAND variants/e-denial (dir) vs REF variants/chy-ref (dir)
-  study: running, log replays/ab/mx-crius-e-dbg2/study.log
-CAND 47.4% of 3400 (1610-1790), 95% CI 45.7-49.0
-  study  47.4% of 3400 (1610-1790), 95% CI 45.7-49.0
-Failed matches: 0
-Out-of-fuel turns: CAND 550 in 333 games, REF 324 in 213 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 2m11s
-Results: replays/ab/mx-crius-e-dbg2/summary.md

@@ -1,9 +1,0 @@
-A/B mac13-argo-pb-gold-lo: CAND variants/pb-gold-lo (dir) vs REF variants/chy-ref (dir)
-  probe: running, log replays/ab/mac13-argo-pb-gold-lo/probe.log
-CAND 46.9% of 5120 (2402-2718), 95% CI 45.5-48.3
-  probe  46.9% of 5120 (2402-2718), 95% CI 45.5-48.3
-Failed matches: 0
-Out-of-fuel turns: CAND 269 in 186 games, REF 247 in 183 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 2m28s
-Results: replays/ab/mac13-argo-pb-gold-lo/summary.md

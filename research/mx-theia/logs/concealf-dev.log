@@ -1,9 +1,0 @@
-A/B mx-theia-concealf-dev: CAND variants/conceal-a (dir) vs REF variants/chy-ref (dir)
-  dev: running, log replays/ab/mx-theia-concealf-dev/dev.log
-CAND 49.9% of 10200 (5086-5114), 95% CI 48.9-50.8
-  dev  49.9% of 10200 (5086-5114), 95% CI 48.9-50.8
-Failed matches: 0
-Out-of-fuel turns: CAND 885 in 616 games, REF 823 in 585 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 0m36s
-Results: replays/ab/mx-theia-concealf-dev/summary.md

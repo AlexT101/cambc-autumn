@@ -1,6 +1,0 @@
-106 identical games; turns over 100k 22389 -> 20991 (-6.2%); over 95k 27788 -> 24685 (-11.2%)
-  all     turns  554699  saving     479/turn   0.99%
-  >=70k   turns  101280  saving    1817/turn   1.87%
-  >=85k   turns   55987  saving    2698/turn   2.39%
-  >=95k   turns   27788  saving    4511/turn   3.27%
-  >=100k  turns   22389  saving    5033/turn   3.40%

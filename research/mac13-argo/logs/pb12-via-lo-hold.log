@@ -1,9 +1,0 @@
-A/B mac13-argo-pb12-via-lo-hold: CAND variants/pb12-via-lo (dir) vs REF variants/chy-ref (dir)
-  hold: running, log replays/ab/mac13-argo-pb12-via-lo-hold/hold.log
-CAND 50.8% of 5120 (2602-2518), 95% CI 49.5-52.2
-  hold  50.8% of 5120 (2602-2518), 95% CI 49.5-52.2
-Failed matches: 0
-Out-of-fuel turns: CAND 337 in 228 games, REF 315 in 219 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 1m58s
-Results: replays/ab/mac13-argo-pb12-via-lo-hold/summary.md

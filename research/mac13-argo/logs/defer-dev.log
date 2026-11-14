@@ -1,9 +1,0 @@
-A/B mac13-argo-defer-dev: CAND variants/defer (dir) vs REF variants/chy-ref (dir)
-  dev: running, log replays/ab/mac13-argo-defer-dev/dev.log
-CAND 50.9% of 10240 (5212-5028), 95% CI 49.9-51.9
-  dev  50.9% of 10240 (5212-5028), 95% CI 49.9-51.9
-Failed matches: 0
-Out-of-fuel turns: CAND 829 in 446 games, REF 960 in 401 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 7m08s
-Results: replays/ab/mac13-argo-defer-dev/summary.md

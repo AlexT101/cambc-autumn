@@ -1,9 +1,0 @@
-A/B mx-iapetus-G-r5: CAND variants/ia-duel-v5 (dir) vs REF variants/chy-ref (dir)
-  train: running, log replays/ab/mx-iapetus-G-r5/train.log
-CAND 53.1% of 10200 (5415-4785), 95% CI 52.1-54.1
-  train  53.1% of 10200 (5415-4785), 95% CI 52.1-54.1
-Failed matches: 0
-Out-of-fuel turns: CAND 1107 in 695 games, REF 1219 in 607 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 1m46s
-Results: replays/ab/mx-iapetus-G-r5/summary.md

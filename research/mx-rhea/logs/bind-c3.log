@@ -1,9 +1,0 @@
-A/B mx-rhea-bind-c3: CAND variants/c3-threat (dir) vs REF variants/chy-ref (dir)
-  study3: running, log replays/ab/mx-rhea-bind-c3/study3.log
-CAND 46.5% of 2040 (949-1091), 95% CI 44.4-48.7
-  study3  46.5% of 2040 (949-1091), 95% CI 44.4-48.7
-Failed matches: 0
-Out-of-fuel turns: CAND 191 in 131 games, REF 138 in 102 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 2m24s
-Results: replays/ab/mx-rhea-bind-c3/summary.md

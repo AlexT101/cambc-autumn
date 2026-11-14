@@ -1,9 +1,0 @@
-A/B mx-theia-denyfix-f100: CAND variants/denyfix-a (dir) vs REF variants/chy-ref (dir)
-  f100: running, log replays/ab/mx-theia-denyfix-f100/f100.log
-CAND 52.2% of 10200 (5323-4877), 95% CI 51.2-53.2
-  f100  52.2% of 10200 (5323-4877), 95% CI 51.2-53.2
-Failed matches: 0
-Out-of-fuel turns: CAND 77704 in 7541 games, REF 78827 in 7494 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 1m11s
-Results: replays/ab/mx-theia-denyfix-f100/summary.md

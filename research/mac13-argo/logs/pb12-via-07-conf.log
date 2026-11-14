@@ -1,9 +1,0 @@
-A/B mac13-argo-pb12-via-07-conf: CAND variants/pb12-via-07 (dir) vs REF variants/chy-ref (dir)
-  conf: running, log replays/ab/mac13-argo-pb12-via-07-conf/conf.log
-CAND 49.5% of 10240 (5068-5172), 95% CI 48.5-50.5
-  conf  49.5% of 10240 (5068-5172), 95% CI 48.5-50.5
-Failed matches: 0
-Out-of-fuel turns: CAND 579 in 410 games, REF 617 in 400 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 4m23s
-Results: replays/ab/mac13-argo-pb12-via-07-conf/summary.md

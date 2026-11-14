@@ -1,9 +1,0 @@
-A/B mac13-argo-defer-hold: CAND variants/defer (dir) vs REF variants/chy-ref (dir)
-  hold: running, log replays/ab/mac13-argo-defer-hold/hold.log
-CAND 49.6% of 5120 (2538-2582), 95% CI 48.2-50.9
-  hold  49.6% of 5120 (2538-2582), 95% CI 48.2-50.9
-Failed matches: 0
-Out-of-fuel turns: CAND 328 in 224 games, REF 309 in 218 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 3m07s
-Results: replays/ab/mac13-argo-defer-hold/summary.md

@@ -1,9 +1,0 @@
-A/B mx-tethys-gv2-dev: CAND variants/mx-gv2 (dir) vs REF variants/chy-ref (dir)
-  dev: running, log replays/ab/mx-tethys-gv2-dev/dev.log
-CAND 50.5% of 10200 (5152-5048), 95% CI 49.5-51.5
-  dev  50.5% of 10200 (5152-5048), 95% CI 49.5-51.5
-Failed matches: 0
-Out-of-fuel turns: CAND 871 in 554 games, REF 877 in 533 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 1m56s
-Results: replays/ab/mx-tethys-gv2-dev/summary.md

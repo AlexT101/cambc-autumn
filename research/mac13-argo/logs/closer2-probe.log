@@ -1,9 +1,0 @@
-A/B mac13-argo-closer2-probe: CAND variants/closer (dir) vs REF variants/chy-ref (dir)
-  probe: running, log replays/ab/mac13-argo-closer2-probe/probe.log
-CAND 48.9% of 5120 (2502-2618), 95% CI 47.5-50.2
-  probe  48.9% of 5120 (2502-2618), 95% CI 47.5-50.2
-Failed matches: 0
-Out-of-fuel turns: CAND 449 in 264 games, REF 249 in 200 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 3m51s
-Results: replays/ab/mac13-argo-closer2-probe/summary.md

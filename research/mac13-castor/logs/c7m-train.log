@@ -1,9 +1,0 @@
-A/B mac13-castor-c7m-train: CAND variants/c7m-medic (dir) vs REF variants/chy-ref (dir)
-  train: running, log replays/ab/mac13-castor-c7m-train/train.log
-CAND 53.8% of 10240 (5505-4735), 95% CI 52.8-54.7
-  train  53.8% of 10240 (5505-4735), 95% CI 52.8-54.7
-Failed matches: 0
-Out-of-fuel turns: CAND 736 in 505 games, REF 712 in 409 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 5m10s
-Results: replays/ab/mac13-castor-c7m-train/summary.md

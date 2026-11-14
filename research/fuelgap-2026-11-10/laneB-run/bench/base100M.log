@@ -1,2 +1,0 @@
-runner: /home/ubuntu/cambc-autumn/tools/fastengine/runner/fastrunner (native)
-96/96 games; play turns after round 1 {'turns': 488594, 'mean': 50316, 'p50': 46935, 'p90': 85800, 'p99': 133731, 'max': 419308, 'over_100k': 19456, 'over_100k_pct': 3.982}; round 1 {'turns': 536, 'mean': 220476, 'p50': 199031, 'p90': 284999, 'p99': 435162, 'max': 541596, 'over_100k': 536, 'over_100k_pct': 100.0}

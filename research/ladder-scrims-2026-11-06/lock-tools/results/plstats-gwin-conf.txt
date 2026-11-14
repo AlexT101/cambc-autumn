@@ -1,6 +1,0 @@
-all: 20480 games, gate fired in 6403 (31%); per game: hold_rounds 23.0, gate_rounds 151.8, land 4.9, land_gems 168.5, land_unlocked 3.8, put 0.9, put_holder 0.3, put_cancel 0.2, cancelled 137.5, wait_rounds 0.0, PLSEEK 0.4, PLRESTOCK 0.0, PLSTUN 0.0, PLSELL 0.0, PLVISX 0.6
-hold gate fired: CAND 13.5% of 3491 (+-1.7)
-hold gate never fired: CAND 57.3% of 16989 (+-0.8)
-won: 10214 games, gate fired in 3188 (31%); per game: hold_rounds 5.3, gate_rounds 190.3, land 4.1, land_gems 120.5, land_unlocked 3.2, put 1.0, put_holder 0.3, put_cancel 0.1, cancelled 28.2, wait_rounds 0.0, PLSEEK 0.0, PLRESTOCK 0.0, PLSTUN 0.0, PLSELL 0.0, PLVISX 0.6
-lost: 10266 games, gate fired in 3215 (31%); per game: hold_rounds 40.6, gate_rounds 113.5, land 5.7, land_gems 216.3, land_unlocked 4.4, put 0.9, put_holder 0.3, put_cancel 0.3, cancelled 246.1, wait_rounds 0.0, PLSEEK 0.7, PLRESTOCK 0.0, PLSTUN 0.0, PLSELL 0.0, PLVISX 0.5
-gate first fires: round median 104 | lead median 18 | max enemy bag median 8 | enemy tributed median 7

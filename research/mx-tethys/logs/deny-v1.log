@@ -1,9 +1,0 @@
-A/B mx-tethys-deny-v1: CAND variants/mx-deny-v1 (dir) vs REF variants/chy-ref (dir)
-  train: running, log replays/ab/mx-tethys-deny-v1/train.log
-CAND 50.2% of 10200 (5119-5081), 95% CI 49.2-51.2
-  train  50.2% of 10200 (5119-5081), 95% CI 49.2-51.2
-Failed matches: 0
-Out-of-fuel turns: CAND 872 in 607 games, REF 816 in 588 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 1m29s
-Results: replays/ab/mx-tethys-deny-v1/summary.md

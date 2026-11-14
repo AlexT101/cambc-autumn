@@ -1,9 +1,0 @@
-A/B mx-theia-denya-x2: CAND variants/deny-a (dir) vs REF variants/chy-ref (dir)
-  x2: running, log replays/ab/mx-theia-denya-x2/x2.log
-CAND 50.3% of 10200 (5134-5066), 95% CI 49.4-51.3
-  x2  50.3% of 10200 (5134-5066), 95% CI 49.4-51.3
-Failed matches: 0
-Out-of-fuel turns: CAND 993 in 549 games, REF 895 in 568 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 1m21s
-Results: replays/ab/mx-theia-denya-x2/summary.md

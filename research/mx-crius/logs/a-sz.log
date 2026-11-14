@@ -1,9 +1,0 @@
-A/B mx-crius-a-sz: CAND variants/a-collect-z (dir) vs REF variants/chy-ref (dir)
-  study: running, log replays/ab/mx-crius-a-sz/study.log
-CAND 49.8% of 3400 (1694-1706), 95% CI 48.1-51.5
-  study  49.8% of 3400 (1694-1706), 95% CI 48.1-51.5
-Failed matches: 0
-Out-of-fuel turns: CAND 289 in 190 games, REF 319 in 209 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 2m02s
-Results: replays/ab/mx-crius-a-sz/summary.md

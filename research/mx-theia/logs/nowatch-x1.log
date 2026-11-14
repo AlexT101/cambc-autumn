@@ -1,9 +1,0 @@
-A/B mx-theia-nowatch-x1: CAND variants/deny-nowatch (dir) vs REF variants/chy-ref (dir)
-  x1: running, log replays/ab/mx-theia-nowatch-x1/x1.log
-CAND 50.7% of 10200 (5168-5032), 95% CI 49.7-51.6
-  x1  50.7% of 10200 (5168-5032), 95% CI 49.7-51.6
-Failed matches: 0
-Out-of-fuel turns: CAND 942 in 594 games, REF 1040 in 624 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 1m43s
-Results: replays/ab/mx-theia-nowatch-x1/summary.md

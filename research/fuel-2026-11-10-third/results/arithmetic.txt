@@ -1,5 +1,0 @@
-2080000 bit-identical strikes, all 13 bodies, four slot masks, both movement modes
-2080000 bit-identical strikes, all 13 bodies, four slot masks, both movement modes
-All derived metadata exact for all 13 bodies
-1700000 exact ranking checks, sizes 0..16 including ties and int32 extremes
-3380000 exact Reach recipes, all 13 bodies and every valid readiness combination

@@ -1,4 +1,0 @@
-identical replays: 94/108; differ: [('00monolith', 'a'), ('00monolith', 'b'), ('03membrane', 'a'), ('03membrane', 'b'), ('04horseshoes', 'b'), ('gen-classic-144000001005', 'a'), ('gen-moated-altars-144001008100', 'b'), ('gen-monolith-only-144000013002', 'b'), ('gen-shared-gems-144000014002', 'b'), ('groups-40-3', 'b'), ('groups-40-5', 'a'), ('groups-40-5', 'b'), ('mut-concentrated-wealth-144000017014', 'a'), ('mut-pilgrimage-144000017006', 'b')]
-all     mean 51919 -> 51389 (-1.0%)  p50 45398 -> 45227 (-0.4%)  p90 86294 -> 86062 (-0.3%)  p99 183566 -> 178834 (-2.6%)  max 619233 -> 619114 (-0.0%)
-round1  mean 266841 -> 266197 (-0.2%)  p50 199924 -> 199659 (-0.1%)  p90 354547 -> 352885 (-0.5%)  p99 1455614 -> 1454715 (-0.1%)  max 1556746 -> 1555803 (-0.1%)
-identical games, total fuel 24322310019 -> 24062574444 (-1.07%); turns cheaper 344952, dearer 30954

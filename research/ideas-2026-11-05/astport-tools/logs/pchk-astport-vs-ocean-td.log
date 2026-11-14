@@ -1,8 +1,0 @@
-A/B pchk-astport-vs-ocean-td: CAND variants/oc-astport (dir) vs REF variants/panel-ocean-td (dir)
-  panel-check-514510: running, log replays/ab/pchk-astport-vs-ocean-td/panel-check-514510.log
-CAND 81.5% of 5120 (4175-945), 95% CI 80.5-82.6
-  panel-check-514510  81.5% of 5120 (4175-945), 95% CI 80.5-82.6
-Failed matches: 0
-Out-of-fuel turns: CAND 34537 in 3604 games, REF 49347 in 4107 games
-Wall time: 0m17s
-Results: replays/ab/pchk-astport-vs-ocean-td/summary.md

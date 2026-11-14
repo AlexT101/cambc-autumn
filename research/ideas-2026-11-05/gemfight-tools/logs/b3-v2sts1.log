@@ -1,8 +1,0 @@
-A/B gf-b3-v2sts1: CAND variants/oc-gf3-v2sts1 (dir) vs REF variants/oc-base3 (dir)
-  gf-dev: running, log replays/ab/gf-b3-v2sts1/gf-dev.log
-CAND 49.8% of 20480 (10190-10290), 95% CI 49.1-50.4
-  gf-dev  49.8% of 20480 (10190-10290), 95% CI 49.1-50.4
-Failed matches: 0
-Out-of-fuel turns: CAND 213604 in 16722 games, REF 200568 in 16314 games
-Wall time: 2m51s
-Results: replays/ab/gf-b3-v2sts1/summary.md

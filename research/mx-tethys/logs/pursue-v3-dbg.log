@@ -1,9 +1,0 @@
-A/B mx-tethys-pursue-v3-dbg: CAND variants/mx-pursue-v3 (dir) vs REF variants/chy-ref (dir)
-  mx-pursue-probe: running, log replays/ab/mx-tethys-pursue-v3-dbg/mx-pursue-probe.log
-CAND 53.5% of 256 (137-119), 95% CI 47.4-59.5
-  mx-pursue-probe  53.5% of 256 (137-119), 95% CI 47.4-59.5
-Failed matches: 0
-Out-of-fuel turns: CAND 36 in 21 games, REF 23 in 15 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 1m18s
-Results: replays/ab/mx-tethys-pursue-v3-dbg/summary.md

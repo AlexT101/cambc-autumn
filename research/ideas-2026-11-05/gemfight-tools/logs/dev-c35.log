@@ -1,8 +1,0 @@
-A/B gf-dev-c35: CAND variants/oc-gemfight-c35 (dir) vs REF variants/oc-combo2 (dir)
-  gf-dev: running, log replays/ab/gf-dev-c35/gf-dev.log
-CAND 50.0% of 20480 (10248-10232), 95% CI 49.4-50.7
-  gf-dev  50.0% of 20480 (10248-10232), 95% CI 49.4-50.7
-Failed matches: 0
-Out-of-fuel turns: CAND 187156 in 16100 games, REF 183265 in 15959 games
-Wall time: 3m49s
-Results: replays/ab/gf-dev-c35/summary.md

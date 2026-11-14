@@ -1,9 +1,0 @@
-A/B mac13-argo-pb2-deny-wide: CAND variants/pb2-deny-wide (dir) vs REF variants/chy-ref (dir)
-  probe: running, log replays/ab/mac13-argo-pb2-deny-wide/probe.log
-CAND 47.5% of 5120 (2432-2688), 95% CI 46.1-48.9
-  probe  47.5% of 5120 (2432-2688), 95% CI 46.1-48.9
-Failed matches: 0
-Out-of-fuel turns: CAND 230 in 176 games, REF 210 in 178 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 1m05s
-Results: replays/ab/mac13-argo-pb2-deny-wide/summary.md

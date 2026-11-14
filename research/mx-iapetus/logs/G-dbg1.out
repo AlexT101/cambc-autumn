@@ -1,9 +1,0 @@
-A/B mx-iapetus-G-dbg1: CAND variants/ia-duel (dir) vs REF variants/chy-ref (dir)
-  study: running, log replays/ab/mx-iapetus-G-dbg1/study.log
-CAND 51.8% of 2040 (1057-983), 95% CI 49.6-54.0
-  study  51.8% of 2040 (1057-983), 95% CI 49.6-54.0
-Failed matches: 0
-Out-of-fuel turns: CAND 194 in 128 games, REF 187 in 123 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 1m35s
-Results: replays/ab/mx-iapetus-G-dbg1/summary.md

@@ -1,9 +1,0 @@
-A/B mx-theia-denyfix-v-hold: CAND variants/denyfix-v (dir) vs REF variants/chy-ref (dir)
-  hold: running, log replays/ab/mx-theia-denyfix-v-hold/hold.log
-CAND 52.4% of 10200 (5342-4858), 95% CI 51.4-53.3
-  hold  52.4% of 10200 (5342-4858), 95% CI 51.4-53.3
-Failed matches: 0
-Out-of-fuel turns: CAND 1003 in 627 games, REF 1096 in 626 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 4m13s
-Results: replays/ab/mx-theia-denyfix-v-hold/summary.md

@@ -1,8 +1,0 @@
-A/B ap-final-conf2: CAND variants/oc-astport (dir) vs REF variants/oc-retest-clean (dir)
-  ap-conf2: running, log replays/ab/ap-final-conf2/ap-conf2.log
-CAND 50.0% of 20480 (10236-10244), 95% CI 49.3-50.7
-  ap-conf2  50.0% of 20480 (10236-10244), 95% CI 49.3-50.7
-Failed matches: 0
-Out-of-fuel turns: CAND 156906 in 14829 games, REF 160607 in 15107 games
-Wall time: 1m14s
-Results: replays/ab/ap-final-conf2/summary.md

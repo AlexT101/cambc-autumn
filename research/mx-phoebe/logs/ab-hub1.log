@@ -1,9 +1,0 @@
-A/B mx-phoebe-hub1: CAND variants/phb-hub1 (dir) vs REF variants/chy-ref (dir)
-  train: running, log replays/ab/mx-phoebe-hub1/train.log
-CAND 50.1% of 10200 (5112-5088), 95% CI 49.1-51.1
-  train  50.1% of 10200 (5112-5088), 95% CI 49.1-51.1
-Failed matches: 0
-Out-of-fuel turns: CAND 1458 in 839 games, REF 950 in 593 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 2m11s
-Results: replays/ab/mx-phoebe-hub1/summary.md

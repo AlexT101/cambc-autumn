@@ -1,9 +1,0 @@
-A/B mac13-argo-pb-bank-small: CAND variants/pb-bank-small (dir) vs REF variants/chy-ref (dir)
-  probe: running, log replays/ab/mac13-argo-pb-bank-small/probe.log
-CAND 48.7% of 5120 (2492-2628), 95% CI 47.3-50.0
-  probe  48.7% of 5120 (2492-2628), 95% CI 47.3-50.0
-Failed matches: 0
-Out-of-fuel turns: CAND 248 in 192 games, REF 242 in 189 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 5m13s
-Results: replays/ab/mac13-argo-pb-bank-small/summary.md

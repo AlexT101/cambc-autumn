@@ -1,8 +1,0 @@
-A/B ap-loop-reserve-conf: CAND variants/oc-ap-loop-reserve (dir) vs REF variants/oc-retest-clean (dir)
-  ap-conf: running, log replays/ab/ap-loop-reserve-conf/ap-conf.log
-CAND 50.7% of 20480 (10377-10103), 95% CI 50.0-51.4
-  ap-conf  50.7% of 20480 (10377-10103), 95% CI 50.0-51.4
-Failed matches: 0
-Out-of-fuel turns: CAND 151905 in 14665 games, REF 155591 in 14937 games
-Wall time: 2m58s
-Results: replays/ab/ap-loop-reserve-conf/summary.md

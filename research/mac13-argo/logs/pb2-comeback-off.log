@@ -1,9 +1,0 @@
-A/B mac13-argo-pb2-comeback-off: CAND variants/pb2-comeback-off (dir) vs REF variants/chy-ref (dir)
-  probe: running, log replays/ab/mac13-argo-pb2-comeback-off/probe.log
-CAND 49.5% of 5120 (2534-2586), 95% CI 48.1-50.9
-  probe  49.5% of 5120 (2534-2586), 95% CI 48.1-50.9
-Failed matches: 0
-Out-of-fuel turns: CAND 231 in 188 games, REF 231 in 185 games
-Broken draft handoffs (DRAFT-UNFINISHED/PLAN-CHECK): CAND 0 games, REF 0; lost by round 5: CAND 0, REF 0; capped drafts (DRAFT-CAPPED): CAND 0 games, REF 0
-Wall time: 1m05s
-Results: replays/ab/mac13-argo-pb2-comeback-off/summary.md
