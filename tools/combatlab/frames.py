@@ -1,4 +1,4 @@
-"""Frame bank for the combat lab: fight starts from local games as scenario specs (research/notes/combat-lab.md).
+"""Frame bank for the combat lab: fight starts from local games as scenario specs (research/notes/COMBAT-LAB.md).
 
 py tools/combatlab/frames.py replays/batch-X [more batch dirs...] --name NAME [--games N] [--copy] [--threads 16]
 

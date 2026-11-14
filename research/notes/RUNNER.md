@@ -486,7 +486,7 @@ snapshotted and restored with a memcpy. Unset (or `native`), the runner is exact
 
 ## The scenario layer (`fastrunner scenario`, 2026-11-07)
 
-The combat lab's runner ([PLAN.md](combat-lab.md)), on the wasm backend; code in
+The combat lab's runner ([COMBAT-LAB.md](COMBAT-LAB.md)), on the wasm backend; code in
 [src/scenario.rs](../../tools/fastengine/runner/src/scenario.rs).
 
 ```
@@ -746,7 +746,7 @@ Left, with estimates:
 `forkgame` plays whole local games on the wasm engine and, at chosen rounds, forks the full state and plays
 alternatives from it. The state includes every bot's memory, the shared and capture state, and the channels.
 Source: `src/forkgame.rs`. Lab plan: PLAN2.md Phase 1. Usage and results:
-[lab2-notes.md](combat-lab-forks.md).
+lab2-notes.md.
 
 ```
 FASTRUNNER_LIB=$PWD/tools/fastengine/runner/target-lab2/release/libfastrunner.so FASTRUNNER_ENGINE=wasm FASTRUNNER_MODE=native \

@@ -3891,7 +3891,7 @@ What each port is (the idea's own diff, read against its frozen base):
 
 ## Combat lab experiments 1-2 (ocean v83, 2026-11-07; lab only, nothing shipped)
 
-The combat lab (`research/notes/combat-lab.md`, `fastrunner scenario`): lab copies of v83 (`variants/lab-v83`) and
+The combat lab (`research/notes/COMBAT-LAB.md`, `fastrunner scenario`): lab copies of v83 (`variants/lab-v83`) and
 astraeus (`variants/lab-astraeus-8c0343f`) replay bank2 fight frames for 30 rounds. Reward from the deciding
 team's side: hp/max hp of each live fighter, -1 a death, +0.01 a gem, ours minus theirs. Each experiment ran
 ocean vs ocean, ocean vs astraeus and astraeus vs ocean on the same 20k frames; frames are split by hashed id, and a
@@ -4377,7 +4377,7 @@ research/notes/ladder-scrims-2026-11-06/fix-kill.md; scripts in `obese2-tools/`.
 ## Draft-side map facts and a first turn that always finishes, draftcond and draftfin (ocean, 2026-11-06)
 
 `variants/oc-draftcond` and `variants/oc-draftfin`, both from oc-base10. The design, byte budget and fuel tables are in
-[notes/draft-features.md](notes/draft-features.md).
+[notes/DRAFT-FEATURES.md](notes/DRAFT-FEATURES.md).
 
 **draftcond** moves `condition_on_map`'s features from the champion's first turn into the draft memory (`PlanFacts`).
 It also gives the draft memory an outputs block for a draft-side model's constants.
@@ -4432,7 +4432,7 @@ group only. Knobs: `comeback::ambush`, `hop`, `precomputed`, `check_gambits`. Ar
   - all drafts: p50 +245k, p99 +2.5M, max +4.8M;
   - ladder: p50 +212k, max +2.07M (whole first turn max 9.44M).
   - At the real budget, 238 drafts cap only the gambit slot. 4 of those are ladder drafts (01big-world, 04comb,
-    both sides), so the slot does not fit there yet. A merge would need a size bound first (see notes/draft-features.md).
+    both sides), so the slot does not fit there yet. A merge would need a size bound first (see notes/DRAFT-FEATURES.md).
 - **Trigger rate 46%** of games (CAND cooked and hunting; s670100-39, 2x), so an SPRT screen:
   - SPRT H0 for every arm (seeds 670001-670005): amb 46.7% of 345, hop 49.0% of 896, amb-ip 49.8%, hop-ip 46.1%,
     both-ip 48.7%.

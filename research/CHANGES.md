@@ -3294,7 +3294,7 @@ Evidence: [teacher audit](astraeus-teacher-2026-11-06/AUDIT.md).
 ## 449: draft-side map facts, a draft that always finishes in its first turn, and a loud local guard (ocean, 2026-11-06)
 
 `variants/oc-draftcond`, then `variants/oc-draftfin`, on `variants/oc-base10`; frozen as `bots/variants/oc-base11`.
-Design, byte budget and fuel tables: [notes/draft-features.md](notes/draft-features.md).
+Design, byte budget and fuel tables: [notes/DRAFT-FEATURES.md](notes/DRAFT-FEATURES.md).
 - **Draft-memory channel** (`PlanFacts`, after `PlanHeader`): the map facts `condition_on_map` reads (spawn distance,
   altars, gems, big gems) are measured in the draft and read on the champion's first turn, which measures them
   itself without a plan. An outputs block carries up to 31 16-bit constants for a draft-side model, and a done bit
