@@ -18229,3 +18229,29 @@ another `ladder_scrims.py run` holds the lock
 2026-11-13T23:50:45Z finished v138-chy532-book40-fish-r10-r10-fish-04 01a1d751: WLLLW
 2026-11-13T23:51:09Z finished v138-chy532-book40-fish-r10-r10-fish-03 01a1d751: LWLLL
 2026-11-13T23:51:33Z finished v138-chy532-book40-fish-r10-r10-fish-02 01a1d751: LLLWL
+2026-11-13T23:51:55Z finished v138-chy532-book40-fish-r10-r10-fish-01 01a1d751: LWWWL
+2026-11-13T23:52:03Z created v138-chy532-book40-mite-r15-r15-mite-01 -> 01a1d753 (v138, quota 93/100, pinned 01a1d706)
+2026-11-13T23:52:04Z created v138-chy532-book40-mite-r15-r15-mite-02 -> 01a1d753 (v138, quota 94/100, pinned 01a1d706)
+2026-11-13T23:52:07Z created v138-chy532-book40-mite-r15-r15-mite-03 -> 01a1d753 (v138, quota 95/100, pinned 01a1d706)
+2026-11-13T23:52:09Z created v138-chy532-book40-mite-r15-r15-mite-04 -> 01a1d753 (v138, quota 96/100, pinned 01a1d706)
+2026-11-13T23:52:10Z created v138-chy532-book40-mite-r15-r15-mite-05 -> 01a1d753 (v138, quota 97/100, pinned 01a1d706)
+2026-11-13T23:52:12Z created v138-chy532-book40-mite-r15-r15-mite-06 -> 01a1d753 (v138, quota 98/100, pinned 01a1d706)
+2026-11-13T23:52:26Z nothing runnable: live v138, selected v138, pending versions [115]
+2026-11-13T23:54:39Z created v138-chy532-v138-full-fish-r10-r10-fish-01 -> 01a1d755 (v138, quota 99/100, pinned 01a1d732)
+2026-11-13T23:54:39Z created v138-chy532-v138-full-fish-r10-r10-fish-02 -> 01a1d755 (v138, quota 100/100, pinned 01a1d732)
+2026-11-13T23:55:00Z quota 100/100, reserve 0: waiting (resets 2026-11-13T23:56:41.554Z)
+2026-11-13T23:55:27Z played v138-chy532-book40-mite-r15-r15-mite-01 01a1d753: LWWWW
+2026-11-13T23:55:27Z played v138-chy532-book40-mite-r15-r15-mite-02 01a1d753: WWLLW
+2026-11-13T23:55:27Z played v138-chy532-book40-mite-r15-r15-mite-03 01a1d753: WLLWW
+2026-11-13T23:55:27Z played v138-chy532-book40-mite-r15-r15-mite-04 01a1d753: WWWWW
+2026-11-13T23:55:27Z played v138-chy532-book40-mite-r15-r15-mite-05 01a1d753: LWWWW
+2026-11-13T23:55:27Z played v138-chy532-v138-full-fish-r10-r10-fish-01 01a1d755: WLWLL
+2026-11-13T23:55:27Z played v138-chy532-v138-full-fish-r10-r10-fish-02 01a1d755: LLWLL
+2026-11-13T23:55:32Z finished v138-chy532-v138-full-fish-r10-r10-fish-02 01a1d755: LLWLL
+2026-11-13T23:55:43Z finished v138-chy532-v138-full-fish-r10-r10-fish-01 01a1d755: WLWLL
+2026-11-13T23:55:53Z finished v138-chy532-book40-mite-r15-r15-mite-05 01a1d753: LWWWW
+2026-11-13T23:55:59Z played v138-chy532-book40-mite-r15-r15-mite-06 01a1d753: LWWWL
+2026-11-13T23:56:12Z finished v138-chy532-book40-mite-r15-r15-mite-04 01a1d753: WWWWW
+2026-11-13T23:56:25Z match-groups quota: HTTP 429 before creates; switch lock released, retry in 1s
+2026-11-13T23:56:34Z finished v138-chy532-book40-mite-r15-r15-mite-06 01a1d753: LWWWL
+2026-11-13T23:56:41Z STOP file present: exiting
