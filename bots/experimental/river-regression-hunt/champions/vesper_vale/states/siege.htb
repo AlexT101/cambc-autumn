@@ -1,0 +1,6 @@
+// A Monolith or a group sealing the altars, by the team; a big shared group, kited.
+namespace vesper_vale::states::siege {
+inline constexpr int max_score = 2;
+inline int score(aph::Turn& t) { return aph::steps::wants::any(t) ? max_score : 0; }
+inline bool run(aph::Turn& t) { return aph::steps::siege(t); }
+} // namespace vesper_vale::states::siege

@@ -1,0 +1,6 @@
+// The respawn turn: no walking, attacking or casting.
+namespace cassi::states::idle {
+inline constexpr int max_score = 17;
+inline int score(aph::Turn& t) { return aph::steps::wants::idle(t) ? max_score : 0; }
+inline bool run(aph::Turn& t) { return aph::steps::idle(t); }
+} // namespace cassi::states::idle

@@ -1,0 +1,6 @@
+// Prism and Willow together.
+namespace willow::states::support {
+inline constexpr int max_score = 15;
+inline int score(aph::Turn& t) { return aph::steps::wants::any(t) ? max_score : 0; }
+inline bool run(aph::Turn& t) { return aph::steps::support(t); }
+} // namespace willow::states::support

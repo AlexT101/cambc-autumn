@@ -1,0 +1,24 @@
+// Inline functions and templates, defined after every class: src/unity.cpp includes this after
+// every header (the declarations are in them).
+#pragma once
+
+namespace aph {
+namespace {
+// The first landings in increasing `score`, ties in board order, keeping only those `keep` accepts.
+template <class Score, class Keep> Landings ranked(const bitboard& landings, Score score, Keep keep)
+{
+    Landings out;
+    std::array<int, Landings::tries> scores{};
+    for (auto p : Tiles<5 * 5>{landings}) {
+        const int s = score(p);
+        if (!keep(p, s)) continue;
+        int i = out.count < Landings::tries ? out.count++ : Landings::tries;
+        for (; i > 0 && scores[i - 1] > s; --i)
+            if (i < Landings::tries) out.tiles[i] = out.tiles[i - 1], scores[i] = scores[i - 1];
+        if (i < Landings::tries) out.tiles[i] = p, scores[i] = s;
+    }
+    return out;
+}
+
+}
+}

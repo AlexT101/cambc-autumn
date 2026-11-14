@@ -1,0 +1,460 @@
+#include "params.h"
+#include <algorithm>
+#include <array>
+#include <bit>
+#include <cmath>
+#include <limits>
+#include <memory>
+#include <optional>
+#include <span>
+#include <vector>
+
+namespace aph {
+
+namespace {
+
+enum Family { monster, power, durability, treasure, jungle, home, bruiser };
+
+enum StatKind { strength_stat, focus_stat, health_stat };
+
+cambc::item_type shard_of(int family, int stat) {
+    return cambc::item_type{static_cast<std::uint32_t>(family * 6 + stat * 2)};
+}
+
+cambc::item_type emblem_of(int family, int stat) {
+    return cambc::item_type{static_cast<std::uint32_t>(family * 6 + stat * 2 + 1)};
+}
+
+// Focus when a shard's Focus, over our damaging casts so far (landings too, as raw_output counts
+// them), beats its Strength over our basic attacks; until both have happened, over the damage
+// spells' multipliers against the basic attacks in one cooldown (one a round, plus the reset's).
+// Ren's retaliation also scales with Focus, and where big groups fall to spells from out of reach
+// (kite), every spell's Focus counts.
+int main_stat(const World& world) {
+    const auto& f = world.me().facts();
+    float spells = 0, cast = 0;
+    for (int s = 0; s < 2; ++s) {
+        const auto& a = f.abilities[s];
+        if (a.kind == AbilityKind::damage) spells += a.multiplier;
+        if (a.kind == AbilityKind::damage || a.lands()) cast += a.multiplier * static_cast<float>(use.casts[s]);
+    }
+    if ((world.map().shared_gems && spells > 0) || f.passive == Passive::retaliation) return focus_stat;
+    float attacks = static_cast<float>(use.attacks);
+    if (use.attacks == 0 || cast <= 0) cast = spells, attacks = static_cast<float>(ability_cooldown + (f.has_attack_reset() ? 1 : 0));
+    return f.focus.growth * cast > attacks * f.strength.growth ? focus_stat : strength_stat;
+}
+
+bool buy(cambc::item_type shard, unsigned count) {
+    auto& me = cambc::self();
+    if (!count || !me.can_buy(shard, count)) return false;
+    throw_if_stale();
+    try {
+        me.buy(shard, count);
+        return true;
+    } catch (const cambc::error&) {
+        return false;
+    }
+}
+
+// Locks on our own and middle altars keep the enemy's bags from scoring there until broken.
+void buy_lock() {
+    auto& me = cambc::self();
+    try {
+        if (me.can_buy(cambc::consumable_type::altar_lock)) throw_if_stale(), me.buy(cambc::consumable_type::altar_lock);
+    } catch (const cambc::error&) {
+    }
+}
+
+bool carries_crystal() { return cambc::self().consumables()[cambc::consumable_type::tp_crystal].count() > 0; }
+bool can_buy_crystal() { return my_gold() >= cambc::consumable_type::tp_crystal.cost(); }
+
+// When a hop to an altar only a crystal reaches (StaticMap::hops) beats walking from our spawn to
+// the nearest altar: a fact of the map, worked out once.
+void buy_crystal(const World& world, Pathing& pathing) {
+    static int pays = -1;
+    if (pays < 0) {
+        const auto& map = world.map();
+        if (map.hops().empty()) pays = 0;
+        else {
+            const vec2 from = map.ally_spawn_centre;
+            const int walk = pathing.to_any_altar().at(from);
+            int best = unreachable;
+            for (int h = 0; h < static_cast<int>(map.hops().size()); ++h) {
+                const int to = pathing.to_hop(h).at(from), inner = pathing.hop_landing_steps(h);
+                if (to != unreachable && inner != unreachable) best = std::min<int>(best, to + cambc::constants::tp_crystal_time + inner);
+            }
+            pays = best < walk ? 1 : 0;
+        }
+    }
+    if (!pays) return;
+    auto& me = cambc::self();
+    try {
+        if (me.can_buy(cambc::consumable_type::tp_crystal)) throw_if_stale(), me.buy(cambc::consumable_type::tp_crystal);
+    } catch (const cambc::error&) {
+    }
+}
+
+bool has_family(const cambc::enum_map<cambc::item_type>& owned, int family) {
+    return owned[emblem_of(family, strength_stat)] + owned[emblem_of(family, focus_stat)] + owned[emblem_of(family, health_stat)] > 0;
+}
+
+// Our share of the gems still to farm takes about rounds_per_gem each.
+constexpr float rounds_per_gem = 2.3f;
+
+// Our share of the gems still to farm before either team reaches the win or the game ends, at the
+// team's tribute rate and at our own pace.
+float gems_share(const World& world) {
+    int alive = 0;
+    for (const auto& a : world.allies) alive += a.alive;
+    const int rounds = bag_rounds_left(world);
+    int left = std::min(gems_short(world), static_cast<int>(cambc::constants::winning_gems) - world.score.enemy);
+    if (const float rate = world.ally_rate(); rate > 0) left = std::min(left, static_cast<int>(rate * static_cast<float>(rounds)));
+    return std::min(static_cast<float>(std::max(0, left)) / static_cast<float>(std::max(1, alive)),
+                    static_cast<float>(rounds) / rounds_per_gem);
+}
+
+// Our upkeep so far, over the turns we were alive: turns spent damaging camps, damage taken from
+// camps and from champions, and steps from spawn (the walk back out after a heal).
+struct Upkeep {
+    int turns = 0, camp_turns = 0, spawn_turns = 0;
+    float camp_taken = 0, champ_taken = 0, spawn_steps = 0;
+};
+
+Upkeep upkeep;
+
+// At the turn's start: camps hit in the camp phase, from where we ended last turn.
+void note_upkeep(const World& world, Safety& safety, float damage) {
+    const auto& map = world.map();
+    const vec2 here = world.me().pos;
+    ++upkeep.turns;
+    if (damage > 0) {
+        const float camp = std::min(damage, safety.camp_damage(here));
+        upkeep.camp_taken += camp;
+        upkeep.champ_taken += damage - camp;
+    }
+    if (map.from_ally_spawn_ready())
+        if (const int s = map.from_ally_spawn().at(here); s != unreachable) upkeep.spawn_steps += static_cast<float>(s), ++upkeep.spawn_turns;
+}
+
+// A Treasure, Jungle, Power, Durability or Bruiser shard short of its emblem (Vendetta's Monster too).
+bool emblem_begun(const World& world) {
+    const auto& owned = my_items();
+    for (const int family : {treasure, jungle, power, durability, bruiser})
+        for (int stat = strength_stat; stat <= health_stat; ++stat)
+            if (owned[shard_of(family, stat)] > 0) return true;
+    if (world.me().facts().passive == Passive::reset_on_kill && owned[shard_of(monster, strength_stat)] > 0) return true;
+    return world.me().facts().passive == Passive::gem_focus
+        && (owned[shard_of(home, health_stat)] > 0 || owned[shard_of(monster, health_stat)] > 0
+            || owned[shard_of(monster, focus_stat)] > 0);
+}
+
+// Our stats, damage taken (Jungle and Durability), and camp damage dealt (Monster).
+struct Build {
+    float strength = 0, focus = 0, max_health = 0, camp_taken = 1, taken = 1, camp_dealt = 1;
+    int recall = static_cast<int>(cambc::constants::recall_time);
+};
+
+void add_shards(Build& b, const ChampionFacts& f, int stat, float shards) {
+    if (stat == strength_stat) b.strength += shards * f.strength.growth;
+    if (stat == focus_stat) b.focus += shards * f.focus.growth;
+    if (stat == health_stat) {
+        b.max_health += shards * f.health.growth;
+        if (f.passive == Passive::health_strength) b.strength += 0.01f * shards * f.health.growth;
+    }
+}
+
+// What completing an emblem adds beyond its shards: Power a sixth shard, Bruiser one of each other stat.
+void add_completion(Build& b, const ChampionFacts& f, int family, int stat) {
+    if (family == power) add_shards(b, f, stat, 1);
+    if (family == bruiser)
+        for (int s = strength_stat; s <= health_stat; ++s)
+            if (s != stat) add_shards(b, f, s, 1);
+}
+
+// Where every gem is behind a siege, our upkeep before a camp has hit us: every turn on the nearest
+// Monolith, alongside the others' output (`others`), its hits on the nearest of us (the melee while
+// any lives) split by max health, the walk out its distance from spawn.
+Upkeep siege_upkeep(const World& world, float& others) {
+    const auto& map = world.map();
+    Upkeep u;
+    others = 0;
+    int g = -1, steps = unreachable;
+    for (int h = 0; h < static_cast<int>(map.groups.size()); ++h)
+        if (map.groups[h].has_monolith && map.ally_steps(h) < steps) g = h, steps = map.ally_steps(h);
+    if (g < 0) return upkeep;
+    bool melee = false;
+    for (const auto& a : world.allies) melee |= (a.alive || a.is_self) && !a.facts().ranged;
+    float pool = 0;
+    for (const auto& a : world.allies) {
+        if (!a.alive && !a.is_self) continue;
+        if (!a.is_self) others += floored_output(a);
+        if (!melee || !a.facts().ranged) pool += a.max_health;
+    }
+    const auto& self = world.me();
+    u.turns = u.camp_turns = u.spawn_turns = std::max(1, upkeep.turns);
+    u.spawn_steps = static_cast<float>(steps * u.turns);
+    u.champ_taken = upkeep.champ_taken;
+    if (!melee || !self.facts().ranged)
+        u.camp_taken = map.groups[g].strength * params::siege_hit_share * camp_hit_factor() * self.max_health / pool * static_cast<float>(u.turns);
+    return u;
+}
+
+// Rounds a turn of ours costs in clearing and heal trips at upkeep u, with build b: the clearing
+// share shrinks with our output (beside the others' on the same camps), as do the camps' hits taken
+// meanwhile; health lost comes back by a recall and the walk out, a trip per usable health (above
+// the recall line).
+float upkeep_cost(const World& world, const Upkeep& upkeep, float others, const Build& now, const Build& b) {
+    const auto out = [&](const Build& x) { return std::max(1.0f, raw_output(world.me().facts(), x.strength, x.focus)); };
+    const float turns = static_cast<float>(std::max(1, upkeep.turns));
+    const float steps = upkeep.spawn_turns > 0 ? upkeep.spawn_steps / static_cast<float>(upkeep.spawn_turns) : 0.0f;
+    const float clear = (others + out(now) * now.camp_dealt) / (others + out(b) * b.camp_dealt);
+    const float camp = upkeep.camp_taken / turns * clear * b.camp_taken / now.camp_taken;
+    const float taken = (camp + upkeep.champ_taken / turns) * b.taken / now.taken;
+    const float usable = b.max_health * (1.0f - params::recall_health_fraction);
+    // Counted from one clearing turn in one: before our first camp hit, gold (priced by this
+    // saving) is still worth farming.
+    const float clearing = static_cast<float>(upkeep.camp_turns + 1) / static_cast<float>(upkeep.turns + 1);
+    return clearing * clear + taken * (static_cast<float>(b.recall) + steps) / usable;
+}
+
+// Our mean steps from spawn while alive: the walk back out after a heal.
+float spawn_steps() { return upkeep.spawn_turns > 0 ? upkeep.spawn_steps / static_cast<float>(upkeep.spawn_turns) : 0.0f; }
+
+// Rounds `damage` costs, priced as upkeep_cost prices it: a heal trip (a recall and the walk `out`
+// back out) per usable health.
+float heal_rounds(const World& world, float damage, float out) {
+    const float usable = my_max_health() * (1.0f - params::recall_health_fraction);
+    return damage / usable * (static_cast<float>(recall_turns(world)) + out);
+}
+
+// The emblem to complete next and the share of a turn it saves (upkeep_cost): a Power emblem in
+// the main stat (6 shards' stats for 5), a Jungle one in it (-30% camp damage) or a Durability one
+// in Health (-10% damage taken), whichever saves most; one already begun is finished first, priced
+// by the shards left to buy (`cost` in gold).
+struct Emblem {
+    int family, stat;
+    float saved;
+    unsigned cost;
+};
+
+// `bought`: the stats of shards bought since the turn's start; `items`: what we would then own.
+Emblem best_emblem(const World& world, const Build& bought = {}, const cambc::enum_map<cambc::item_type>* items = nullptr) {
+    const auto& f = world.me().facts();
+    const auto& owned = items ? *items : my_items();
+    const auto& self = world.me();
+    const Build now{self.strength + bought.strength, self.focus + bought.focus, self.max_health + bought.max_health,
+                    has_family(owned, jungle) ? 0.7f : 1.0f, has_family(owned, durability) ? 0.9f : 1.0f,
+                    has_family(owned, monster) ? 1.15f : 1.0f,
+                    has_family(owned, home) ? home_recall_time : recall_turns(world)};
+    float others = 0;
+    const Upkeep u = world.map().monolith_only && upkeep.camp_taken <= 0 ? siege_upkeep(world, others) : upkeep;
+    const float base = upkeep_cost(world, u, others, now, now);
+    const auto value = [&](int family, int stat) __attribute__((always_inline)) -> Emblem {
+        const unsigned left = 5 - owned[shard_of(family, stat)];
+        Build b = now;
+        add_shards(b, f, stat, static_cast<float>(left));
+        add_completion(b, f, family, stat);
+        if (family == jungle) b.camp_taken = 0.7f;
+        if (family == durability) b.taken = 0.9f;
+        if (family == monster) b.camp_dealt = 1.1f;
+        if (family == home) b.recall = home_recall_time;
+        return {family, stat, base - upkeep_cost(world, u, others, now, b), left * shard_price};
+    };
+    if (f.passive == Passive::gem_focus && owned[shard_of(monster, health_stat)] > 0) return value(monster, health_stat);
+    if (f.passive == Passive::gem_focus && owned[shard_of(monster, focus_stat)] > 0) return value(monster, focus_stat);
+    if (f.passive == Passive::reset_on_kill && owned[shard_of(monster, strength_stat)] > 0) return value(monster, strength_stat);
+    // In the stat it was begun in: the main stat follows our use and can change.
+    const int begun[8][2] = {{jungle, strength_stat}, {jungle, focus_stat}, {power, strength_stat}, {power, focus_stat}, {durability, health_stat},
+                             {bruiser, strength_stat}, {bruiser, focus_stat}, {bruiser, health_stat}};
+    for (const auto& [family, stat] : begun)
+        if (owned[shard_of(family, stat)] > 0) return value(family, stat);
+    if (self.type == cambc::champion_type::willow && owned[shard_of(jungle, health_stat)] > 0)
+        return value(jungle, health_stat);
+    if (f.passive == Passive::gem_focus) {
+        for (const int family : {power, jungle, home})
+            if (owned[shard_of(family, health_stat)] > 0) return value(family, health_stat);
+        Emblem best = value(power, health_stat);
+        if (const auto e = value(bruiser, health_stat); e.saved > best.saved) best = e;
+        if (const auto e = value(bruiser, focus_stat); e.saved > best.saved) best = e;
+        if (const auto e = value(jungle, health_stat); e.saved > best.saved) best = e;
+        if (const auto e = value(durability, health_stat); e.saved > best.saved) best = e;
+        if (!has_family(owned, monster))
+            if (const auto e = value(monster, health_stat); e.saved > best.saved) best = e;
+        if (!has_family(owned, home))
+            if (const auto e = value(home, health_stat); e.saved > best.saved) best = e;
+        if (const auto e = value(power, focus_stat); e.saved > best.saved) best = e;
+        if (!has_family(owned, monster))
+            if (const auto e = value(monster, focus_stat); e.saved > best.saved) best = e;
+        return best;
+    }
+    const int main = main_stat(world);
+    Emblem best = value(power, main);
+    if (const auto e = value(jungle, main); e.saved > best.saved) best = e;
+    if (const auto e = value(durability, health_stat); e.saved > best.saved) best = e;
+    if (const auto e = value(bruiser, main); e.saved > best.saved) best = e;
+    if (const auto e = value(bruiser, health_stat); e.saved > best.saved) best = e;
+    if (self.type == cambc::champion_type::willow && !has_family(owned, jungle))
+        if (const auto e = value(jungle, health_stat); e.saved > best.saved) best = e;
+    // Vendetta's high base Strength makes +10% on camps worth more than a sixth shard.
+    if (f.passive == Passive::reset_on_kill && !has_family(owned, monster))
+        if (const auto e = value(monster, strength_stat); e.saved > best.saved) best = e;
+    // Treasure first, in the stat the model picks and priced as the emblem it delays: +20% gold
+    // from round ~200 buys 5-8 more shards a champion (ladder), more than any first passive saves.
+    // Vendetta's in Health, as 74% of ladder Vendettas: the model prices Health only by heal trips.
+    if (!has_family(owned, treasure)) {
+        int stat = f.passive == Passive::reset_on_kill ? health_stat : best.stat;
+        for (int s = strength_stat; s <= health_stat; ++s)
+            if (owned[shard_of(treasure, s)] > 0) stat = s;
+        return {treasure, stat, best.saved, (5 - owned[shard_of(treasure, stat)]) * shard_price};
+    }
+    return best;
+}
+
+// True if any shard was bought.
+bool buy_shards(const World& world) {
+    unsigned gold = my_gold();
+    if (gold < shard_price) return false;
+    const unsigned start = gold;
+    Build bought;
+    while (gold >= shard_price) {
+        const auto [family, stat, saved, cost] = best_emblem(world, bought);
+        const unsigned have = my_items()[shard_of(family, stat)];
+        const unsigned count = std::min<unsigned>(5 - have, gold / shard_price);
+        if (!buy(shard_of(family, stat), count)) break;
+        gold -= shard_price * count;
+        add_shards(bought, world.me().facts(), stat, static_cast<float>(count));
+        if (have + count == 5) add_completion(bought, world.me().facts(), family, stat);
+    }
+    return gold < start;
+}
+
+// Gold paid to us per base gold of a capture: the Treasure and Vesper Vale bonuses add.
+float gold_paid(const World& world) {
+    float rate = has_family(my_items(), treasure) ? 1.2f : 1.0f;
+    if (world.me().facts().passive == Passive::bonus_gold)
+        rate += static_cast<float>(cambc::constants::passive_abilities::vesper_vale_bonus_gold_percent) / 100.0f;
+    return rate;
+}
+
+// The next emblem (best_emblem), the rounds it saves us over our share of the gems still to farm,
+// and the gems a gold is worth (its part of that saving). Kept while our share and stats hold: the
+// upkeep counters under them move every turn, and every farm value would be rebuilt.
+struct Prices {
+    Emblem next;
+    float gain, per_gold;
+};
+
+const Prices& prices(const World& world) {
+    struct Key {
+        float share, strength, focus, max_health;
+        int main;
+        bool home, monster;
+        bool operator==(const Key&) const = default;
+    };
+    static Key last{-1};
+    static Prices kept;
+    const auto& self = world.me();
+    if (const Key now{gems_share(world), self.strength, self.focus, self.max_health, main_stat(world),
+                      self.facts().passive == Passive::gem_focus && has_family(my_items(), home),
+                      self.facts().passive == Passive::gem_focus && has_family(my_items(), monster)}; !(now == last)) {
+        last = now;
+        kept.next = best_emblem(world);
+        kept.gain = now.share * kept.next.saved * rounds_per_gem;
+        kept.per_gold = now.share * kept.next.saved / static_cast<float>(std::max(1u, kept.next.cost));
+    }
+    return kept;
+}
+
+struct PurchaseQuote {
+    Emblem next{};
+    unsigned count = 0;
+    float gain = 0;
+};
+
+// Everything `gold_in` more gold buys, as buy_shards buys it, and the rounds it saves us over our
+// share of the gems still to farm. The saving is kept while our gold and stats hold.
+PurchaseQuote affordable_prefix(const World& world, unsigned gold_in = 0) {
+    const unsigned budget = my_gold() + gold_in;
+    if (budget < shard_price) return {};
+    const auto& self = world.me();
+    struct Key {
+        unsigned shards;
+        float strength, focus, max_health;
+        bool operator==(const Key&) const = default;
+    };
+    static Key last{~0u};
+    static PurchaseQuote kept;
+    const Key key{budget / shard_price, self.strength, self.focus, self.max_health};
+    const float rounds = gems_share(world) * rounds_per_gem;
+    if (key == last) return {kept.next, kept.count, kept.gain * rounds};
+    last = key;
+    const auto& f = self.facts();
+    auto owned = my_items();
+    const auto build = [&](const Build& bought) {
+        return Build{self.strength + bought.strength, self.focus + bought.focus, self.max_health + bought.max_health,
+                     has_family(owned, jungle) ? 0.7f : 1.0f, has_family(owned, durability) ? 0.9f : 1.0f,
+                     has_family(owned, monster) ? 1.15f : 1.0f,
+                     has_family(owned, home) ? home_recall_time : recall_turns(world)};
+    };
+    const Build now = build({});
+    PurchaseQuote quote{best_emblem(world)};
+    Build bought;
+    for (unsigned gold = budget; gold >= shard_price;) {
+        const auto e = quote.count == 0 ? quote.next : best_emblem(world, bought, &owned);
+        const unsigned have = owned[shard_of(e.family, e.stat)];
+        const unsigned count = std::min<unsigned>(5 - have, gold / shard_price);
+        gold -= shard_price * count;
+        quote.count += count;
+        add_shards(bought, f, e.stat, static_cast<float>(count));
+        owned[shard_of(e.family, e.stat)] += count;
+        if (have + count == 5) {
+            add_completion(bought, f, e.family, e.stat);
+            owned[shard_of(e.family, e.stat)] = 0;
+            owned[emblem_of(e.family, e.stat)] += 1;
+        }
+    }
+    float others = 0;
+    const Upkeep u = world.map().monolith_only && upkeep.camp_taken <= 0 ? siege_upkeep(world, others) : upkeep;
+    quote.gain = upkeep_cost(world, u, others, now, now) - upkeep_cost(world, u, others, now, build(bought));
+    kept = quote;
+    return {quote.next, quote.count, quote.gain * rounds};
+}
+
+// With an empty bag, the gold to complete the next emblem goes home to shop, riding a recall unless walking is
+// quicker.
+[[gnu::flatten]] bool wants_shop(const World& world, Pathing& pathing, Safety& safety, const Aims& aims) {
+    if ((bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing)) || aims.damage > 0 || !may_shop(world)) return false;
+    const auto gold = my_gold();
+    const bool prism = world.me().type == cambc::champion_type::prism;
+    if (gold < shard_price || (!prism && gold < emblem_price && !emblem_begun(world))) return false;
+    const vec2 here = my_position();
+    if (test(world.map().ally_spawn, here) || safety.threatened(here)) return false;
+    // The trip costs the recall and the walk back out; arriving by recall, the heal takes the turn.
+    if (prism) {
+        if (winning_bag(world) || closing(world, pathing)) return false;
+        const int back = pathing.to_ally_spawn().at(here);
+        if (back == unreachable) return false;
+        const int hurt = my_health() < my_max_health() ? 1 : 0;
+        const float value = affordable_prefix(world).gain + heal_rounds(world, my_max_health() - my_health(), spawn_steps());
+        if (!std::isfinite(value) || !(value > static_cast<float>(std::min(back, recall_turns(world) + hurt) + back))) return false;
+    } else {
+        const auto stop = home_trip(world, pathing, recall_turns(world), winning_bag(world));
+        if (stop.short_gold > 0) return false;
+        const int back = pathing.to_ally_spawn().at(here);
+        if (back != unreachable && stop.heal + affordable_prefix(world).gain < static_cast<float>(std::min(back, stop.channel + stop.hurt) + back)) return false;
+    }
+    bool awake = false;
+    world.each_stirring([&](int g) { awake = awake || awake_over(world, g, here); });
+    return !awake;
+}
+
+} // namespace
+
+float camp_hit_factor() {
+    const auto& owned = my_items();
+    return (has_family(owned, jungle) ? 0.7f : 1.0f) * (has_family(owned, durability) ? 0.9f : 1.0f);
+}
+
+float camp_dealt_factor() { return has_family(my_items(), monster) ? 1.15f : 1.0f; }
+
+} // namespace aph

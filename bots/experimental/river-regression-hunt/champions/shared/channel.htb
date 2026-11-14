@@ -1,0 +1,124 @@
+#include "../../params.h"
+#include <algorithm>
+#include <array>
+#include <bit>
+#include <cmath>
+#include <limits>
+#include <memory>
+#include <optional>
+#include <span>
+#include <vector>
+
+namespace aph {
+
+namespace {
+
+// Our tribute channel goes on unless it is unsafe and fleeing or fighting back pays. True if the
+// turn ends with it; `home` gets want_home's answer if asked.
+bool continue_tribute(const World& world, Pathing& pathing, Safety& safety, Aims& aims, std::optional<bool>& home) {
+    auto& me = cambc::self();
+    decision = 'T';
+    // The enemy's winning tribute in reach of a ready stun or a lock is the game: ours waits, unless
+    // ours wins first or, winning later, an ally stops theirs in time.
+    const auto* ender = game_ender(world);
+    const auto* stop = ender && ender->channel == Channel::tribute ? ender : stoppable_winning_tribute(world);
+    if (stop && !(winning_bag(world) && ally_stops(world, *stop))) {
+        throw_if_stale();
+        try {
+            me.cancel_submit_gems();
+        } catch (const std::exception&) {
+        }
+        if (!me.is_submitting_gems()) return false;
+    }
+    if (tribute_ok(world, safety, aims, my_channel_time())) return true;
+    // Damage does not interrupt a tribute: cancelling pays only to flee or to fight back.
+    if (aims.damage <= 0 && !*(home = want_home(world, pathing, safety, aims)) && !attack_target(world)
+        && (winning_bag(world) || !prey(world, safety)))
+        return true;
+    decision = 't';
+    throw_if_stale();
+    try {
+        me.cancel_submit_gems();
+    } catch (const std::exception&) {
+        return true;
+    }
+    return false;
+}
+
+// The recall lands sooner than walking home would, dashing whenever the dash is ready (dash_route::paced):
+// it lands at the start of the turn after its last turn end, and a walk of n turns arrives in the nth.
+bool recall_beats_walk(const World& world, Pathing& pathing) {
+    const int steps = pathing.to_ally_spawn().at(my_position());
+    if (steps == unreachable) return true;
+    const int dash = world.me().facts().slot_of(AbilityKind::dash);
+    const int turns = dash < 0 ? steps : dash_route::paced(steps, std::min(my_cooldown(dash), dash_route::phases - 1));
+    return static_cast<int>(my_channel_time()) < turns;
+}
+
+// Whether our recall (start_recall begins one every turn end) is the way home: to retreat, to shop or to
+// heal from a siege when it lands before a walk would, to bank a bag by way of home, to land as a held
+// capture pays, or out of a pocket no walk leaves. Never in an awake camp member's reach, stunned or not:
+// it strikes before the recall lands. `home` gets want_home's answer.
+bool keep_recall(const World& world, Pathing& pathing, Safety& safety, Aims& aims, std::optional<bool>& home) {
+    decision = 'K';
+    if (game_ender(world)) return false;
+    home = want_home(world, pathing, safety, aims);
+    decision = 'k';
+    if (camp_reaches(world, my_position())) return false;
+    decision = 'K';
+    // The old keep, back after the A/B of 2026-10-28 (with the old walk it won +53 games of 271 against the
+    // recall rules, over 3 opponents × 2 fuels). Was (the user's recall rules, 2026-10-27):
+    // if (*home && !can_tribute_safely(world, pathing, safety, aims) && !near_home(world, pathing)
+    //     && recall_spot(world, safety, my_position()))
+    //     return true;
+    if (*home && !safety.threatened(my_position()) && !can_tribute_safely(world, pathing, safety, aims)
+        && recall_outruns(world, safety) && recall_beats_walk(world, pathing))
+        return true;
+    decision = 'k';
+    if (holding_capture(world, pathing)) {
+        if (!capture_recall(world, pathing, safety, aims)) return false;
+        decision = 'Q';
+        return true;
+    }
+    // Wanting home, the home keep's reach test binds these too: else we alternate a retreat step with a
+    // standing turn on a recall the pursuer cancels.
+    if ((!*home || recall_outruns(world, safety))
+        && (recall_to_bank(world, pathing, safety, aims) || (wants_shop(world, pathing, safety, aims) && recall_beats_walk(world, pathing))))
+        // Was (2026-10-27): (wants_shop(world, pathing, safety, aims) && !near_home(world, pathing))
+        return true;
+    // Was (2026-10-27): if (siege_heal_trip(aims, safety) && !near_home(world, pathing)) return sieged = true;
+    if (siege_heal_trip(aims, safety) && recall_beats_walk(world, pathing)) return sieged = true; // the trip keeps the siege until home
+    // No walk leaves a pocket a crystal took us into.
+    return !test(pathing.foot(), my_position()) && (my_gems() == 0 || retaining_gems(world, pathing));
+}
+
+// Our recall dropped, so the turn can act; false if it could not be (the turn then ends with it).
+bool drop_recall() {
+    throw_if_stale();
+    try {
+        cambc::self().cancel_recall();
+    } catch (const std::exception&) {
+        return false;
+    }
+    return true;
+}
+
+// Recalling every turn end and cancelling next turn when not wanted makes a wanted recall a
+// turn shorter. Damage before then cancels it at no cost. A stunned champion cannot start one:
+// the engine refuses it, and the thrown error costs ~3.9k fuel.
+void start_recall(const World& world) {
+    auto& me = cambc::self();
+    if (stunned_turn || !world.me().alive || channelling()) return;
+    // Ren's reflected damage can kill us in our own turn: dead, we read as off the map.
+    const vec2 here = my_position();
+    if (here.x < 0 || test(world.map().ally_spawn, here)) return;
+    throw_if_stale();
+    try {
+        me.recall();
+    } catch (const cambc::error&) {
+    }
+}
+
+} // namespace
+
+} // namespace aph

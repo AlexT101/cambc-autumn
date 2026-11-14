@@ -1,0 +1,6 @@
+// The best group to clear, by gems a round.
+namespace stellar::states::farm {
+inline constexpr int max_score = 1;
+inline int score(aph::Turn& t) { return aph::steps::wants::any(t) ? max_score : 0; }
+inline bool run(aph::Turn& t) { return aph::steps::farm(t); }
+} // namespace stellar::states::farm

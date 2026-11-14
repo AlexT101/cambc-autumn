@@ -1,0 +1,834 @@
+#include "../../params.h"
+#include <algorithm>
+#include <array>
+#include <bit>
+#include <cmath>
+#include <limits>
+#include <memory>
+#include <optional>
+#include <span>
+#include <vector>
+
+namespace aph {
+
+namespace {
+
+// Around awake camps and credible enemies when a way exists, else straight. Routes are replanned
+// every turn, so only danger near us is worth the extra search.
+void step_safely(Pathing& pathing, const Field& field, Safety& safety) {
+    if (!my_can_move()) return;
+    if (!safety.avoid_within(my_position(), vision_radius)) {
+        pathing.step_towards(field);
+        return;
+    }
+    const auto& avoid = safety.avoid();
+    if (!pathing.step_towards(field, &avoid)) pathing.step_towards(field);
+}
+
+// Out of the camps' reach first, along the cheapest neighbour: walking home past an awake camp
+// takes a hit every step, while a recall started outside its reach goes home untouched.
+bool flee_camps(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
+    if (!my_can_move()) return false;
+    const vec2 here = my_position();
+    if (safety.camp_damage(here) <= 0) return false;
+    // A camp hits every tile in its reach alike, so one step's damage cannot tell the way out from
+    // a walk along the edge of its reach: count the hits still to come before leaving it.
+    static bitboard exits{cambc::uninitialized};
+    or_into(world.map().standable, safety.camp_area(), exits);
+    exits ^= safety.camp_area();
+    const int longest = world.map().max_camp_reach;
+    int walk_out = 1;
+    while (walk_out <= longest && !any_within(exits, here, walk_out)) ++walk_out;
+    // A step changes the walk out by at most one: only a step that shortens it needs telling apart.
+    const auto cost = [&](vec2 p) {
+        const float camp = safety.camp_damage(p);
+        float damage = safety.damage_bound(p);
+        if (camp > 0 && walk_out > 1) damage += camp * static_cast<float>(p != here && any_within(exits, p, walk_out - 1) ? walk_out - 2 : walk_out - 1);
+        return damage;
+    };
+    const auto& blocked = pathing.blocked();
+    std::optional<vec2> best;
+    float best_damage = cost(here);
+    int best_home = home.at(here);
+    for (auto d : directions) {
+        const vec2 p = here + d;
+        if (!in_bounds(p) || test(blocked, p)) continue;
+        const float damage = cost(p);
+        const int steps = home.at(p);
+        if (damage < best_damage || (damage == best_damage && steps < best_home)) best = p, best_damage = damage, best_home = steps;
+    }
+    return best && pathing.try_move(*best);
+}
+
+// Inside danger a route home is only the shortest walk, ties in compass order, which can lead
+// along the enemies we flee: take the homeward step that can be hit least, then the nearest home,
+// then the farthest from them. A sideways step goes first only when it can be hit less, and one
+// that lengthens the walk only when it leaves every reach and no shorter one does: still in reach,
+// it only delays, as the pursuer takes the step back next turn.
+void retreat_step(const World& world, Pathing& pathing, Safety& safety, const Field& home) {
+    if (!my_can_move()) return;
+    const vec2 here = my_position();
+    if (!safety.avoid_within(here, vision_radius)) {
+        pathing.step_towards(home);
+        return;
+    }
+    const auto& avoid = safety.avoid();
+    if (!test(avoid, here) && pathing.step_towards(home, &avoid)) return;
+    const int steps = home.at(here);
+    const auto& blocked = pathing.blocked();
+    struct Option {
+        vec2 p;
+        float damage;
+        int steps, gap;
+    };
+    Unwritten<Option, 8> scratch;
+    auto& options = scratch.a;
+    int n = 0;
+    bool clear = false;
+    const auto add = [&](bool longer) {
+        for (auto d : directions) {
+            const vec2 p = here + d;
+            if (!in_bounds(p) || test(blocked, p)) continue;
+            const int s = home.at(p);
+            if (s == unreachable || (s > steps) != longer) continue;
+            const float damage = safety.damage_bound(p);
+            if (longer && damage > 0) continue;
+            int gap = unreachable;
+            for (const auto& e : world.enemies)
+                if (e.alive && e.visible) gap = std::min(gap, dist(p, e.pos));
+            options[n++] = {p, damage, s, gap};
+            clear |= damage <= 0;
+        }
+    };
+    add(false);
+    if (!clear) add(true);
+    std::stable_sort(options.begin(), options.begin() + n, [](const Option& a, const Option& b) {
+        if (a.damage != b.damage) return a.damage < b.damage;
+        if (a.steps != b.steps) return a.steps < b.steps;
+        return a.gap > b.gap;
+    });
+    for (int i = 0; i < n; ++i)
+        if (pathing.try_move(options[i].p)) return;
+    pathing.step_towards(home);
+}
+
+const bitboard* pack_zone(const World& world);
+
+// Our ground: no farther from our spawn than from theirs.
+bool own_ground(const World& world, vec2 p) {
+    const auto& map = world.map();
+    const int us = map.from_ally_spawn().at(p), them = map.from_enemy_spawn().at(p);
+    return us == unreachable || them == unreachable || us <= them;
+}
+
+constexpr int pack_radius = Strike::max_reach + 1;
+
+// The tiles within pack_radius of every member of an enemy subset (seen this round or
+// last) that outmatches us and the allies near us, by health times damage a side; hurt or carrying, at less.
+// Retreat starts inside it, and every advance (farm, bank, chase) keeps out of it, so what made us
+// retreat cannot pull us straight back in.
+// The zone is the union of boxes, one per minimal outmatching subset: the board is drawn only
+// when asked for.
+struct PackBox {
+    int x0, x1, y0, y1;
+};
+
+struct PackZone {
+    int round = -1;
+    int boxes = 0;
+    std::array<PackBox, 255> box; // at most one per subset
+    bool drawn = false;
+    // Our health and bag as this round's first query read them: they can change during the turn
+    // (a kill takes a bag).
+    int frozen = -1;
+    float health = 0, max_health = 0;
+    int bag = 0;
+};
+
+PackZone& pack_zone_state(const World& world) {
+    static PackZone pz;
+    if (pz.frozen != world.round) {
+        pz.frozen = world.round;
+        pz.health = my_health();
+        pz.max_health = my_max_health();
+        pz.bag = bag_at_stake(world);
+    }
+    return pz;
+}
+
+// The boxes as seen from `here`: our side counts us and the allies near `here`, at its ground's ratio.
+void build_pack_boxes(const World& world, vec2 here, PackZone& pz) {
+    pz.boxes = 0;
+    pz.drawn = false;
+    const auto& map = world.map();
+    struct Member {
+        vec2 pos;
+        float health, damage;
+    };
+    Unwritten<Member, 8> scratch;
+    auto& members = scratch.a;
+    int n = 0;
+    for (const auto& e : world.enemies)
+        if (n < static_cast<int>(members.size()) && e.alive && e.age(world.round) <= 1 && !test(map.near_enemy_spawn, e.pos))
+            members[n++] = {e.pos, e.health, output(e)};
+    if (n > 0) {
+        const float health = pz.health;
+        float our_health = 0, our_damage = 0;
+        for (const auto& a : world.allies)
+            if (a.alive && (a.is_self || (a.visible && dist(here, a.pos) <= params::pack_ally_radius))) {
+                our_health += a.is_self ? health : a.health;
+                our_damage += output(a);
+            }
+        const bool hurt = health < params::hurt_health_fraction * pz.max_health || pz.bag >= params::brake_bag;
+        // A pack in our half has come to fight there.
+        const bool home = own_ground(world, here);
+        const float healthy = home ? params::home_retreat_ratio : params::retreat_ratio;
+        const float ours = (hurt ? std::min(healthy, params::hurt_retreat_ratio) : healthy) * our_health * our_damage;
+        // Only minimal outmatching subsets: a superset's tiles lie within its subsets'.
+        std::array<unsigned, 32> minimal;
+        int m = 0;
+        const int r = pack_radius;
+        // By mask, each built from the mask without its highest member, so that sums add the
+        // members in index order, as a loop over them would.
+        struct Subset {
+            float health, damage;
+        };
+        static std::array<Subset, (1u << std::tuple_size_v<std::remove_reference_t<decltype(members)>>)> subsets;
+        subsets[0] = {0, 0};
+        for (unsigned mask = 1; mask < (1u << n); ++mask) {
+            // A covered mask's supersets are covered too, so its sums are never read.
+            bool covered = false;
+            for (int k = 0; k < m && !covered; ++k) covered = (minimal[k] & mask) == minimal[k];
+            if (covered) continue;
+            const int top = 31 - __builtin_clz(mask);
+            const auto& e = members[top];
+            const auto& rest = subsets[mask ^ (1u << top)];
+            auto& sub = subsets[mask];
+            sub = {rest.health + e.health, rest.damage + e.damage};
+            if (sub.health * sub.damage <= ours) continue;
+            if (m < static_cast<int>(minimal.size())) minimal[m++] = mask;
+            // The box within r of every member.
+            int x0 = -1 << 20, x1 = 1 << 20, y0 = -1 << 20, y1 = 1 << 20;
+            for (unsigned left = mask; left; left &= left - 1) {
+                const vec2 p = members[static_cast<std::size_t>(__builtin_ctz(left))].pos;
+                x0 = std::max(x0, p.x - r), x1 = std::min(x1, p.x + r), y0 = std::max(y0, p.y - r), y1 = std::min(y1, p.y + r);
+            }
+            if (x0 > x1 || y0 > y1) continue;
+            pz.box[pz.boxes++] = {x0, x1, y0, y1};
+        }
+    }
+}
+
+PackZone& pack_boxes(const World& world) {
+    auto& pz = pack_zone_state(world);
+    if (pz.round != world.round) {
+        pz.round = world.round;
+        build_pack_boxes(world, world.me().pos, pz);
+    }
+    return pz;
+}
+
+// After a re-read of vision: the next query builds the boxes from what we see now.
+void forget_pack_zone(const World& world) { pack_zone_state(world).round = -1; }
+
+bool in_pack_zone(const World& world, vec2 p) {
+    // Each box lies within pack_radius of every member of its subset.
+    bool near = false, recent = false;
+    for (const auto& e : world.enemies)
+        if (e.alive && e.age(world.round) <= 1)
+            recent = true, near |= (static_cast<unsigned>(p.x - e.pos.x + pack_radius) <= 2u * pack_radius)
+                                   & (static_cast<unsigned>(p.y - e.pos.y + pack_radius) <= 2u * pack_radius);
+    if (!near) {
+        if (recent) pack_zone_state(world); // a later query this round reads what we have now
+        return false;
+    }
+    const auto& pz = pack_boxes(world);
+    for (int i = 0; i < pz.boxes; ++i)
+        if (p.x >= pz.box[i].x0 && p.x <= pz.box[i].x1 && p.y >= pz.box[i].y0 && p.y <= pz.box[i].y1) return true;
+    return false;
+}
+
+// Adds the tiles of a box inside the map as a few squares: a host square costs about what a
+// single tile does, a whole-board operation far more.
+void draw_box(bitboard& b, int x0, int x1, int y0, int y1) {
+    const int side = std::min(x1 - x0, y1 - y0) / 2 * 2 + 1;
+    if (side == 1) {
+        for (int y = y0; y <= y1; ++y)
+            for (int x = x0; x <= x1; ++x) set_tile(b, {x, y});
+        return;
+    }
+    const int r = side / 2;
+    for (int cy = y0 + r;; cy = std::min(cy + side, y1 - r)) {
+        for (int cx = x0 + r;; cx = std::min(cx + side, x1 - r)) {
+            draw_square(b, {cx, cy}, static_cast<float>(r));
+            if (cx == x1 - r) break;
+        }
+        if (cy == y1 - r) break;
+    }
+}
+
+const bitboard* pack_zone(const World& world) {
+    static bitboard zone;
+    auto& pz = pack_boxes(world);
+    if (pz.boxes == 0) return nullptr;
+    if (!pz.drawn) {
+        pz.drawn = true;
+        clear_board(zone);
+        const int width = world.map().width, height = world.map().height;
+        for (int i = 0; i < pz.boxes; ++i) {
+            const auto& b = pz.box[i];
+            const int x0 = std::max(b.x0, 0), x1 = std::min(b.x1, width - 1), y0 = std::max(b.y0, 0), y1 = std::min(b.y1, height - 1);
+            if (x0 <= x1 && y0 <= y1) draw_box(zone, x0, x1, y0, y1);
+        }
+    }
+    return &zone;
+}
+
+// pack_zone() holds every tile within r of p, worked out from its boxes.
+bool pack_covers(const World& world, vec2 p, int r) {
+    const auto& pz = pack_boxes(world);
+    if (pz.boxes == 0) return false;
+    const int x0 = std::max(0, p.x - r), x1 = std::min(world.map().width - 1, p.x + r);
+    const int y0 = std::max(0, p.y - r), y1 = std::min(world.map().height - 1, p.y + r);
+    for (int i = 0; i < pz.boxes; ++i)
+        if (const auto& b = pz.box[i]; b.x0 <= x0 && x1 <= b.x1 && b.y0 <= y0 && y1 <= b.y1) return true;
+    // Row by row, the boxes that hold the row's first tile not yet held.
+    for (int y = y0; y <= y1; ++y) {
+        int x = x0;
+        for (bool grew = true; grew && x <= x1;) {
+            grew = false;
+            for (int i = 0; i < pz.boxes; ++i)
+                if (const auto& b = pz.box[i]; b.y0 <= y && y <= b.y1 && b.x0 <= x && x <= b.x1) x = b.x1 + 1, grew = true;
+        }
+        if (x <= x1) return false;
+    }
+    return true;
+}
+
+bool outmatched(const World& world, Pathing& pathing) { return in_pack_zone(world, world.me().pos) && !paying_soon(world, pathing); }
+
+// Whether p lies in the pack zone as seen from p (the allies near it, its ground): outmatched() there.
+bool in_pack_zone_from(const World& world, vec2 p) {
+    if (p == world.me().pos) return in_pack_zone(world, p);
+    bool near = false;
+    for (const auto& e : world.enemies)
+        if (e.alive && e.age(world.round) <= 1)
+            near |= (static_cast<unsigned>(p.x - e.pos.x + pack_radius) <= 2u * pack_radius)
+                    & (static_cast<unsigned>(p.y - e.pos.y + pack_radius) <= 2u * pack_radius);
+    if (!near) return false;
+    static PackZone from;
+    static vec2 from_at{-1, -1};
+    const auto& own = pack_zone_state(world);
+    if (from.round != world.round || from_at != p) {
+        from.round = world.round, from_at = p;
+        from.health = own.health, from.max_health = own.max_health, from.bag = own.bag;
+        build_pack_boxes(world, p, from);
+    }
+    for (int i = 0; i < from.boxes; ++i)
+        if (p.x >= from.box[i].x0 && p.x <= from.box[i].x1 && p.y >= from.box[i].y0 && p.y <= from.box[i].y1) return true;
+    return false;
+}
+
+// Whether an advance must keep out of the pack zone: wherever outmatched() would send us back out of it,
+// carrying or not, or the advance and the retreat trade a tile each turn.
+bool keeps_out_of_pack(const World& world, Pathing& pathing) { return bag_at_stake(world) > 0 || !paying_soon(world, pathing); }
+
+// Rounds of walking until no awake monster can pick us, at most one more than the longest camp reach.
+int camp_exit_rounds(const World& world, Safety& safety, vec2 here) {
+    const auto& open = world.map().standable;
+    const auto out = [&](vec2 p) { return in_bounds(p) && test(open, p) && safety.camp_damage(p) <= 0; };
+    const int longest = world.map().max_camp_reach;
+    for (int r = 1; r <= longest; ++r)
+        for (int i = -r; i <= r; ++i)
+            if (out({here.x + i, here.y - r}) || out({here.x + i, here.y + r}) || out({here.x - r, here.y + i})
+                || out({here.x + r, here.y + i}))
+                return r;
+    return longest + 1;
+}
+
+// Camps keep hitting while we walk out of their reach: leave while the health still covers that.
+// A siege (Aims::siege) keeps its own health limits for its group's hits.
+bool camp_trapped(const World& world, Safety& safety, vec2 here, float health, bool sieging) {
+    if (sieging) return false;
+    const float dps = safety.camp_damage(here);
+    if (dps <= 0) return false;
+    const auto exit_cost = [&](int rounds) { return dps * (1.5f * static_cast<float>(rounds) + 1.0f); };
+    // The exit takes 1 to max_camp_reach + 1 rounds: the bounds settle most cases without the search.
+    if (health > exit_cost(world.map().max_camp_reach + 1)) return false;
+    if (health <= exit_cost(1)) return true;
+    return health <= exit_cost(camp_exit_rounds(world, safety, here));
+}
+
+// No enemy can see `here` before a recall kept now lands, nor hit it blind. Sight is symmetric: an enemy
+// sees us from a tile we would see from here (our shadowcast, radius 8), or from a bush, which sees out but
+// not in; standing in a bush, only from inside our own cluster. A ground spell or a landing needs no sight:
+// any tile in its reach. An enemy reaches one of those tiles by walking (dashers: 2 more, over holes) for
+// the recall's remaining turns, from wherever the tracker allows it to be (`possible`; where it stands if
+// seen; its spawn if it may respawn). An enemy alive, unseen and untracked could be anywhere.
+// Which enemies could cut a recall here short (`may`: some tile they could be on reaches; `must`: one we see
+// does, or every tile the tracker allows it, by enemy bit). `horizon` < 0: every enemy, one the tracker lost
+// anywhere (the recall line). Else only those seen within `horizon` rounds, over the recall's turns left;
+// one the tracker lost was judged while it had it.
+struct RecallThreat {
+    bool may = false;
+    std::uint32_t must = 0;
+};
+RecallThreat recall_threat(const World& world, vec2 here, int horizon) {
+    // A recall starts at every turn end (start_recall) and is kept at the next turn start, one turn end
+    // in: recall_turns - 1 rounds left, one more turn for turn order.
+    const bool recalling = horizon >= 0 && my_state().contains(cambc::champion_state::recalling);
+    const int turns = recalling ? static_cast<int>(my_channel_time()) + 1 : recall_turns(world);
+    const auto& s = world.map();
+    static bitboard sees{cambc::uninitialized}, strike{cambc::uninitialized}, square{cambc::uninitialized},
+        grown{cambc::uninitialized}, both{cambc::uninitialized};
+    static cambc::distance_field field;
+    bool sees_read = false;
+    int grown_key = -1;
+    const auto meets = [&](const bitboard& tiles) {
+        and_into(tiles, grown, both);
+        return !board_empty(both);
+    };
+    const auto inside = [&](const bitboard& tiles) {
+        copy_into(tiles, both);
+        drop(both, grown);
+        return board_empty(both);
+    };
+    RecallThreat r;
+    for (int k = 0; k < static_cast<int>(world.enemies.size()); ++k) {
+        const auto& e = world.enemies[k];
+        if (!e.alive && (e.respawn_earliest < 0 || e.respawn_earliest > world.round + turns)) continue;
+        if (horizon >= 0 && e.alive && (e.age(world.round) >= horizon || (!e.visible && !e.tracked))) continue;
+        if (e.alive && !e.visible && !(horizon >= 0 ? e.tracked : e.tracked_recently(world.round))) {
+            r.may = true;
+            continue;
+        }
+        const auto& f = e.facts();
+        int blind = -1;
+        for (const auto& a : f.abilities) {
+            if (a.lands()) blind = std::max(blind, a.radius);
+            else if ((a.kind == AbilityKind::damage || a.stuns) && a.target == Targeting::ground) blind = std::max(blind, a.reach());
+        }
+        const bool dasher = f.has_dash();
+        const int key = (blind + 1) * 2 + (dasher ? 1 : 0);
+        if (key != grown_key) {
+            grown_key = key;
+            if (!sees_read) {
+                clear_board(square);
+                square.draw_chebyshev(here, static_cast<float>(vision_radius));
+                // In a bush whose cluster is not found yet: every bush within 8 (a cast from a bush fails).
+                const bool bush = test(s.bushes, here);
+                const auto* own = bush ? s.found_bush_cluster(here) : nullptr;
+                if (own) and_into(own->tiles, square, sees);
+                else if (bush) and_into(s.bushes, square, sees);
+                else {
+                    s.walls_and_bushes.shadow_cast_into(here, static_cast<std::uint16_t>(vision_radius), sees);
+                    and_into(s.bushes, square, both);
+                    or_into(sees, both, sees);
+                }
+                sees_read = true;
+            }
+            copy_into(sees, strike);
+            if (blind >= 0) {
+                clear_board(square);
+                square.draw_chebyshev(here, static_cast<float>(blind));
+                or_into(strike, square, strike);
+            }
+            field.compute(dasher ? s.walls : s.blocked_for_them, strike, grown, static_cast<std::uint16_t>(turns + (dasher ? self_dash_steps : 0)));
+        }
+        const bool may = !e.alive ? meets(s.enemy_spawn) : e.visible ? test(grown, e.pos) : meets(e.possible);
+        r.may |= may;
+        if (may && e.alive && (e.visible || inside(e.possible))) r.must |= std::uint32_t{1} << k;
+    }
+    return r;
+}
+
+bool recall_unreachable_within(const World& world, vec2 here, int horizon) { return !recall_threat(world, here, horizon).may; }
+
+bool recall_unreachable_now(const World& world, vec2 here) { return recall_unreachable_within(world, here, -1); }
+
+bool recall_unreachable(const World& world, vec2 here) {
+    // Asked several times a turn (farm, the planner, want_home, the turn order): nothing it reads changes
+    // while we stand on one tile.
+    static int kept_round = -1;
+    static vec2 kept_at{-1, -1};
+    static bool kept = false;
+    if (world.round == kept_round && here == kept_at) return kept;
+    kept_round = world.round, kept_at = here;
+    return kept = recall_unreachable_now(world, here);
+}
+
+// The health fraction at which we go home: lower while no enemy can interrupt the recall.
+float recall_line(const World& world) {
+    return recall_unreachable(world, my_position()) ? params::safe_recall_health_fraction : params::recall_health_fraction;
+}
+
+// The recall rules (the user, 2026-10-27): near home walk; else recall from a tile no awake camp member
+// reaches and that no enemy we reckon with can cut short, or hidden in a bush; getting there, away from them.
+
+// Turns of the recall under way gone by, the turn end it began on not counted (start_recall begins one
+// every turn end: kept the first time, it is at stage 0). 0 when not recalling.
+int recall_stage(const World& world) {
+    if (!my_state().contains(cambc::champion_state::recalling)) return 0;
+    return std::max(0, recall_turns(world) - 1 - static_cast<int>(my_channel_time()));
+}
+
+// A recall reckons with the enemies seen within track_horizon rounds of its start: one weighed when it
+// began counts until it lands, so aging out cannot turn the decision mid-recall.
+int recall_horizon(const World& world) { return params::track_horizon + recall_stage(world); }
+bool reckoned(const World& world, const ChampionBelief& e, int horizon) { return e.alive && e.age(world.round) < horizon; }
+
+// What the enemies we see see (sight is symmetric; a bush sees out, not in): their shadowcasts, a cluster
+// one stands in transparent to it. Once a round.
+const bitboard& enemy_sight(const World& world) {
+    static bitboard sight{cambc::uninitialized}, opaque{cambc::uninitialized}, seen{cambc::uninitialized};
+    static int kept = -1;
+    if (kept == world.round) return sight;
+    kept = world.round;
+    clear_board(sight);
+    const auto& map = world.map();
+    for (const auto& e : world.enemies) {
+        if (!e.alive || !e.visible) continue;
+        const auto* own = test(map.bushes, e.pos) ? map.found_bush_cluster(e.pos) : nullptr;
+        if (own) xor_into(map.walls_and_bushes, own->tiles, opaque); // walls_and_bushes & ~own cluster
+        else copy_into(map.walls_and_bushes, opaque);
+        set_tile(opaque, e.pos, false);
+        opaque.shadow_cast_into(e.pos, static_cast<std::uint16_t>(vision_radius), seen);
+        or_into(sight, seen, sight);
+    }
+    return sight;
+}
+
+// Memory: where the enemy could believe we are, as its tracker would hold us. Every tile we could have
+// walked to unseen since an enemy we see could last see us; our tile alone when one can, or after a round
+// not noted (unknown counts as seen). Noted once a round, by the retreat state's first score.
+struct Exposure {
+    bitboard tiles{cambc::uninitialized};
+    int round = -1;
+};
+Exposure& exposure() {
+    static Exposure e;
+    return e;
+}
+void note_exposure(const World& world) {
+    auto& x = exposure();
+    if (x.round == world.round) return;
+    const bool next = x.round >= 0 && world.round == x.round + 1;
+    x.round = world.round;
+    const vec2 here = my_position();
+    if (!world.me().alive || !in_bounds(here)) {
+        x.round = -1;
+        return;
+    }
+    const auto& sight = enemy_sight(world);
+    if (next && !test(sight, here)) {
+        static bitboard grown{cambc::uninitialized};
+        square_dilate(x.tiles, 1, grown);
+        and_into(grown, world.map().standable, x.tiles);
+        drop(x.tiles, sight);
+    } else
+        clear_board(x.tiles);
+    set_tile(x.tiles, here);
+}
+
+// In a bush the enemy could believe us on at least min(its cluster's size, 8) bush tiles of.
+bool bush_hidden(const World& world, vec2 here) {
+    const auto& map = world.map();
+    const auto& x = exposure();
+    if (!test(map.bushes, here) || x.round != world.round) return false;
+    static bitboard both{cambc::uninitialized};
+    and_into(x.tiles, map.bushes, both);
+    const int size = static_cast<int>(board_count(map.bush_cluster(here).tiles));
+    return static_cast<int>(board_count(both)) >= std::min(size, 8);
+}
+
+// Within walk_home_steps of our spawn and no enemy we reckon with nearer it (where last seen): walk home.
+bool near_home(const World& world, Pathing& pathing) {
+    const auto& home = pathing.to_ally_spawn();
+    const int steps = home.at(my_position());
+    if (steps > params::walk_home_steps) return false;
+    const int horizon = recall_horizon(world);
+    for (const auto& e : world.enemies)
+        if (reckoned(world, e, horizon) && in_bounds(e.pos) && home.at(e.pos) < steps) return false;
+    return true;
+}
+
+// An enemy we reckon with in sight.
+bool enemy_seen_now(const World& world) {
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible) return true;
+    return false;
+}
+
+// Enemies we see, or know could cut a recall at `p` short (every tile they could be on reaches it): the
+// recall must then hide or outdistance them. Otherwise (the base case) a tile off camp reach will do.
+bool pressed(const World& world, vec2 p) { return enemy_seen_now(world) || recall_threat(world, p, recall_horizon(world)).must; }
+
+// A recall kept here lands: no awake camp member reaches us (stunned or not), and, pressed, no enemy could
+// cut it short or we are hidden in a bush.
+// Some awake camp member's own reach covers p: Safety's reach shrinks for a nearer champion, who shields us
+// only while it stays, not for a whole recall.
+bool camp_reaches(const World& world, vec2 p) {
+    const auto& groups = world.map().groups;
+    for (int g = 0; g < static_cast<int>(groups.size()); ++g) {
+        const auto& c = world.camps[g];
+        if (c.state != CampState::alive || c.awake == Awake::asleep) continue;
+        for (std::size_t i = 0; i < groups[g].members.size(); ++i)
+            if (c.health[i] > 0 && dist(p, groups[g].members[i].pos) <= groups[g].members[i].reach) return true;
+    }
+    return false;
+}
+
+bool recall_spot_with(const World& world, Safety& safety, vec2 here, const RecallThreat& r) {
+    (void)safety;
+    if (camp_reaches(world, here)) return false;
+    if (!enemy_seen_now(world) && !r.must) return true;
+    return !r.may || bush_hidden(world, here);
+}
+bool recall_spot(const World& world, Safety& safety, vec2 here) {
+    if (camp_reaches(world, here)) return false; // no threat work needed
+    return recall_spot_with(world, safety, here, recall_threat(world, here, recall_horizon(world)));
+}
+
+// The way home. Near home, walk it (the router dashes where that pays). Where a recall would land, stand
+// (the turn end starts one). With no enemy in sight nor able to cut a recall short, to the nearest tile
+// out of every awake camp's reach. Else away from them: the step (or staying) farthest by their walk,
+// then out of their sight (a bush, behind a wall), then nearer home; off camp reach while any is.
+void retreat_move(const World& world, Pathing& pathing, Safety& safety) {
+    if (!my_can_move()) return;
+    const auto& map = world.map();
+    const vec2 here = my_position();
+    const auto& home = pathing.to_ally_spawn();
+    if (near_home(world, pathing)) {
+        pathing.step_towards(home);
+        return;
+    }
+    // One threat reading serves the spot check and the moves (recall_spot would read it again).
+    const auto threat = recall_threat(world, here, recall_horizon(world));
+    if (recall_spot_with(world, safety, here, threat)) return;
+    if (!enemy_seen_now(world) && !threat.must) {
+        // Off every awake member's own reach (camp_reaches' board).
+        static bitboard safe{cambc::uninitialized}, camps{cambc::uninitialized};
+        clear_board(camps);
+        for (int g = 0; g < static_cast<int>(map.groups.size()); ++g) {
+            const auto& c = world.camps[g];
+            if (c.state != CampState::alive || c.awake == Awake::asleep) continue;
+            for (std::size_t i = 0; i < map.groups[g].members.size(); ++i)
+                if (c.health[i] > 0) draw_square(camps, map.groups[g].members[i].pos, static_cast<float>(map.groups[g].members[i].reach));
+        }
+        or_into(map.standable, camps, safe);
+        safe ^= camps;
+        pathing.step_towards(safe);
+        return;
+    }
+    // Their walk to each tile, from where we see them or the tracker has those that press us.
+    static bitboard from{cambc::uninitialized}, reached{cambc::uninitialized};
+    static cambc::distance_field field;
+    clear_board(from);
+    for (int k = 0; k < static_cast<int>(world.enemies.size()); ++k) {
+        const auto& e = world.enemies[k];
+        if (!e.alive) continue;
+        if (e.visible) set_tile(from, e.pos);
+        else if (threat.must >> k & 1) or_into(from, e.possible, from);
+    }
+    if (board_empty(from)) copy_into(map.enemy_spawn, from);
+    field.compute(map.blocked_for_them, from, reached);
+    const auto& sight = enemy_sight(world);
+    const auto& blocked = pathing.blocked();
+    struct Option {
+        vec2 p;
+        bool camp, hidden;
+        int away, home;
+    };
+    const auto option = [&](vec2 p) {
+        return Option{p, camp_reaches(world, p), !test(sight, p), steps_at(field, p), home.at(p)};
+    };
+    const auto better = [](const Option& a, const Option& b) {
+        if (a.camp != b.camp) return !a.camp;
+        if (a.away != b.away) return a.away > b.away;
+        if (a.hidden != b.hidden) return a.hidden;
+        return a.home < b.home;
+    };
+    Option best = option(here);
+    for (const auto d : directions) {
+        const vec2 p = here + d;
+        if (!in_bounds(p) || test(blocked, p) || !test(map.standable, p)) continue;
+        if (const Option o = option(p); better(o, best)) best = o;
+    }
+    if (best.p != here) pathing.try_move(best.p);
+}
+
+// An enemy that could kill us before our next turn overrides finishing a camp or a capture.
+bool want_home(const World& world, Pathing& pathing, Safety& safety, const Aims& aims) {
+    return want_home_at(world, pathing, safety, aims, my_position());
+}
+
+// want_home as if we stood on `here`: an advance (Pathing::set_advance) never steps where it holds.
+bool want_home_at(const World& world, Pathing& pathing, Safety& safety, const Aims& aims, vec2 here) {
+    world.throw_if_stale();
+    if (test(world.map().ally_spawn, here)) return false;
+    const float health = my_health();
+    // A hold keeps us only while last round's loss, repeated to the payout, leaves us alive: camps
+    // hit from out of sight and bush attackers stay unseen.
+    const auto hold_lasts = [&] {
+        if (!holding_capture(world, pathing)) return false;
+        const auto& c = world.camps[world.map().group_at(here)];
+        const int rounds = c.held_since >= 0 ? std::max(0, c.payout_round() - world.round) : capture_rounds();
+        return aims.damage * static_cast<float>(rounds + 1) < health;
+    };
+    const bool low = health < params::recall_health_fraction * my_max_health()
+                     && health < (recall_unreachable(world, here) ? params::safe_recall_health_fraction : params::recall_health_fraction) * my_max_health()
+                     && !finishing_camp(world) && !hold_lasts();
+    if (low || (in_pack_zone_from(world, here) && !paying_soon(world, pathing)) || camp_trapped(world, safety, here, health, aims.siege)) return true;
+    // Willow holds no fight: an enemy likely to hit it, as threatened() weighs them, sends it home,
+    // bar on a capture, which pays without one.
+    if (world.me().type == cambc::champion_type::willow && !holding_capture(world, pathing) && !contesting(world)
+        && safety.credible_enemy_may_hit_within(here, 0) && safety.bound(here).threat)
+        return true;
+    // Out of sight and not lethal, nobody can win a fight here or pursue us.
+    const bool lethal = safety.lethal(here);
+    if (!lethal && !enemy_seen(world)) return false;
+    // Healthy on our own ground, they have no reason to come for us, unless we carry a bag: a kill takes it.
+    const bool pursued = !paying_soon(world, pathing)
+                         && !(own_ground(world, here) && health >= params::hurt_health_fraction * my_max_health()
+                              && bag_at_stake(world) < params::brake_bag);
+    const bool linked = partner(world) != nullptr;
+    const auto t = safety.stand(here, pursued ? params::pursuit_steps : 0, lethal || linked, lethal, params::pursuit_steps);
+    return t.lost || ((lethal || linked) && t.self_falls);
+}
+
+// No enemy seen this round or last could walk into reach before the recall lands: standing
+// still to channel while a pack closes in only gets it cancelled.
+bool recall_outruns(const World& world, Safety& safety) {
+    const vec2 here = my_position();
+    const int turns = static_cast<int>(my_channel_time());
+    for (const auto& e : world.enemies)
+        if (e.alive && e.age(world.round) <= 1
+            && (e.visible ? safety.approach(e, here) : dist(here, e.pos) - safety.strike_of(e).reach) <= turns)
+            return false;
+    return true;
+}
+
+// A visible enemy within `range` of `from` that one basic attack kills.
+const ChampionBelief* sure_kill(const World& world, vec2 from, int range) {
+    const float health = my_health();
+    const float strength = my_strength() * damage_scale(world.me().facts().passive, health, my_max_health());
+    for (const auto& e : world.enemies) {
+        if (!e.alive || !e.visible || dist(from, e.pos) > range || e.retaliation() >= health) continue;
+        const float shield = e.shield > 0 ? shield_value(e.handle) : 0.0f;
+        if (e.health + shield <= strength * e.taken) return &e;
+    }
+    return nullptr;
+}
+
+// Nothing but `enemy` could hit us at p before our next turn.
+bool only_threat(Safety& safety, vec2 p, int enemy) {
+    if (safety.camp_damage(p, true, true) > 0) return false;
+    std::array<Safety::ThreatAt, 16> at;
+    const int n = safety.threats_at(p, at);
+    for (int i = 0; i < n; ++i)
+        if (at[i].enemy != enemy && at[i].blow.hits) return false;
+    return true;
+}
+
+// A sure kill from a tile a step away (melee: the walk keeps the attack) or a ready dash away,
+// where nothing but the victim reaches us: the victim's tile, else {-1, -1}.
+vec2 step_to_kill(const World& world, Pathing& pathing, Safety& safety, int range, bool melee) {
+    const vec2 here = my_position();
+    const bool walk = melee && my_can_move();
+    const bool dash = world.me().facts().has_dash() && my_can_cast();
+    if ((!walk && !dash) || !sure_kill(world, here, range + (dash ? 2 : 1))) return {-1, -1};
+    const auto strike = [&](const ChampionBelief& kill) {
+        try {
+            attack_champion(kill.handle);
+            return true;
+        } catch (const cambc::error&) {
+            return false;
+        }
+    };
+    if (walk) {
+        const auto& blocked = pathing.blocked();
+        for (const auto d : directions) {
+            const vec2 p = here + d;
+            if (!in_bounds(p) || test(blocked, p)) continue;
+            if (const auto* kill = sure_kill(world, p, range); kill && only_threat(safety, p, kill->index) && pathing.try_move(p))
+                return strike(*kill) ? kill->pos : vec2{-1, -1};
+        }
+    }
+    if (dash) {
+        static bitboard tiles{cambc::uninitialized};
+        clear_board(tiles);
+        const ChampionBelief* victim = nullptr;
+        for (auto p : Tiles<5 * 5>{pathing.dash_landings()})
+            if (const auto* kill = sure_kill(world, p, range); kill && (!victim || kill == victim) && only_threat(safety, p, kill->index))
+                victim = kill, tiles.set(p);
+        if (victim && dash_onto(world, pathing, tiles) && strike(*victim)) return victim->pos;
+    }
+    return {-1, -1};
+}
+
+// After our hits: an enemy we killed stays a live threat around its tile in World (dash landings,
+// retreat steps) and, once refresh() has read it alive, in Safety: read vision again.
+void see_kills(World& world, Pathing& pathing, Safety& safety) {
+    const bool stunned = world.read_stuns();
+    for (const auto& e : world.enemies)
+        if (e.alive && e.visible && !is_alive(e.handle)) {
+            see_again(world, pathing, safety);
+            return;
+        }
+    if (stunned) {
+        std::destroy_at(&safety);
+        std::construct_at(&safety, world);
+    }
+    safety.refresh();
+}
+
+void retreat(World& world, Pathing& pathing, Safety& safety, Aims& aims) {
+    world.throw_if_stale();
+    auto& me = cambc::self();
+    decision = 'R';
+    aims.claim = -1;
+    aims.banking = bankable_bag(world, pathing) > 0 && !retaining_gems(world, pathing);
+    const bool melee = world.me().facts().walk_and_attack_independent();
+    const int range = world.me().facts().attack_range();
+    const vec2 here = my_position();
+    vec2 dead{-1, -1};
+    // A sure kill first. A ranged attack spends the walk, so only where standing is no worse:
+    // nothing else reaches us here, or the dash still lands out of every reach.
+    if (const auto* kill = my_can_attack() ? sure_kill(world, here, range) : nullptr;
+        kill && (melee || only_threat(safety, here, kill->index) || dash_clears(world, pathing, kill->pos))) {
+        try {
+            attack_champion(kill->handle);
+            dead = kill->pos;
+        } catch (const cambc::error&) {
+        }
+    }
+    // A kill a step or a dash off, where only the victim reaches us; else the homeward step may still land beside it.
+    if (dead.x < 0 && my_can_attack()) dead = step_to_kill(world, pathing, safety, range, melee);
+    // A melee kill one step off waits for the step, which may land beside it.
+    const bool held = melee && my_can_attack() && sure_kill(world, here, range + 1);
+    if (melee && !held) attack_enemy(world);
+    if (!my_can_attack()) reset_and_attack_enemy(world, true);
+    cast_at_enemies(world, escape_step_value);
+    if (!me.is_alive()) return;
+    if (!my_can_attack() || !my_can_cast()) see_kills(world, pathing, safety);
+    // A tribute survives damage; a recall does not.
+    if (can_tribute_safely(world, pathing, safety, aims)) {
+        bank_gems(world, pathing, safety, aims, false);
+        return;
+    }
+    // The escape dash shares the one cast: the reset only after it, from a melee attack or a ranged walk.
+    // It leaves the reach of threats to our tile, not a dash home: back after the A/B of 2026-10-28 (the old
+    // retreat won +92 games of 292 over 3 opponents × 2 fuels). Was (no escape dash, the user, 2026-10-27):
+    // (void)dead;
+    dash_away(world, pathing, pathing.to_ally_spawn(), dead);
+    if (reset_and_attack_enemy(world)) see_kills(world, pathing, safety);
+    else see_stuns(world, safety); // Heart of Ruin's landing
+    // Was (the recall rules' walk, 2026-10-27): retreat_move(world, pathing, safety);
+    if (!flee_camps(world, pathing, safety, pathing.to_ally_spawn())) retreat_step(world, pathing, safety, pathing.to_ally_spawn());
+    if (melee && attack_enemy(world)) reset_and_attack_enemy(world, true);
+    reset_and_attack_enemy(world);
+}
+
+} // namespace
+
+} // namespace aph
