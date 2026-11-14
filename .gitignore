@@ -43,6 +43,7 @@ sdk/templates/ocaml/
 maps/*/
 !maps/gen-bench/
 !maps/generated/
+!maps/other/
 
 # Local oarena (github.com/frkns/local-oarena): its checkout, launcher and state; big-arm runs the team's
 local-oarena/

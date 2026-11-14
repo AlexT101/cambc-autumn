@@ -2179,7 +2179,7 @@ oc32-cg-fs-nh vs oc32-cv was stopped at block 95 (coordinator), at fresh **+0.59
 `variants/oc16-fsnh` (ocean-16d6f78 + oc31-fs-nh's safety.cc, abilities.cc and params.h hunks; the base already has
 the chase fuel gate).
 
-**Off-distribution check** (`autogen.py`, once, more_maps/autogen, both sides, both bodies, 3 noise seeds; pts ±95% CI):
+**Off-distribution check** (`autogen.py`, once, maps/other/autogen, both sides, both bodies, 3 noise seeds; pts ±95% CI):
 
 | Folder (maps) | bsk vs v86 | cg-fs-nh vs v86 | spy2 vs cg-fs-nh |
 |---|---|---|---|

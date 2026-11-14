@@ -1,11 +1,11 @@
-"""One-off overfit check on more_maps/autogen/* (user, 2026-11-09: diverse, not the ladder distribution; informative only).
+"""One-off overfit check on maps/other/autogen/* (user, 2026-11-09: diverse, not the ladder distribution; informative only).
     py autogen.py run [--seeds 3] [--jobs 8]      play every bot below against the pick-model bodies on each folder
     py autogen.py read CAND REF                   paired per folder: CAND's mean minus REF's per map, 95% CI over maps"""
 import sys, os, json, math, subprocess, time, numpy as np
 T = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, T)
 import fgate  # noqa: E402
 from fgate import R, local, CAMBC, LOGS, ENG  # noqa: E402
-A = f'{R}more_maps/autogen'; FOLDERS = ['bc26', 'cambc1', 'fcode', 'vae']
+A = f'{R}maps/other/autogen'; FOLDERS = ['bc26', 'cambc1', 'fcode', 'vae']
 BOTS = ['oc-base23', 'oc32s-bsk', 'oc32s-spy2', 'oc32-cg-fs-nh']
 def rn(bot, k, o, f): return f'fga{ENG}-{bot.removeprefix("oc-")}-dvn{k}{o}-{f}'
 def nmaps(f): return len([x for x in os.listdir(f'{A}/{f}') if x.endswith('.map26a')])
