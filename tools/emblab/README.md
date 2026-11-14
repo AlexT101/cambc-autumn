@@ -4,8 +4,7 @@ Learns which emblems our bot should buy (ocean from round 4; astraeus before), a
 draft, from games whose drafts and emblem choices are randomised. The target is winning (and the wealth margin,
 tributed + carried at the end, if cross-validation on wins says it helps), so combat value counts as fully as
 farming. Python 3 and Node 22+, no other dependencies. It reuses the draft lab's vehicles, batch runner and outcomes
-(tools/draftlab/README.md). [RUNBOOK.md](RUNBOOK.md) is the step-by-step for a run;
-[PLAN-round5.md](PLAN-round5.md) is the audit of round 4 and the plan round 5 follows ("Round 5" below).
+(tools/draftlab/README.md). [RUNBOOK.md](RUNBOOK.md) is the step-by-step for a run.
 
 ```
 py tools/emblab/lab.py init --lab NAME [--source REF]   # freeze REF's bot (config "bot", default ocean), the map table, the prior
@@ -16,12 +15,11 @@ node tools/emblab/dfit.mjs --labs r2 --variant static --dr --out replays/emblab/
 node tools/emblab/dfit.mjs --labs r3 --mapdr --out replays/emblab/r3/dmodel-mapdr.json   # + map-keyed policies, nested (mapdr.mjs; *.mappolicy.json)
 node tools/emblab/dfit.mjs --labs r4 --mapdr --mapsplits area,gems_side --mapcuts 2,4,6   # the map-keyed search over named splits only
 py tools/emblab/candidate.py SELECTION --key 0-2 [--flat] --source BOT --out bots/variants/NAME   # a candidate bot from a selection
-node tools/emblab/fit.mjs --labs main,pilot [--search] [--boot 20]   # round 1: whole-game fit (model.json, model.md)
-py tools/emblab/policy.py [model.policy.json] [--min-p10 0]   # astraeus's learned table from round 1 (src/economy/emblem_table.h)
+node tools/emblab/fit.mjs --labs main,pilot [--search] [--boot 20]   # round 1: whole-game fit (model.json, model.md); dfit.mjs imports its tables
 node tools/emblab/ladder_emblems.mjs [replays/ladder]    # top teams' emblem orders (ladder_emblems.jsonl)
 ```
 
-Maps: with `pool` in `config.json` (round 3 on, [PLAN-draft3.md](../draftlab/PLAN-draft3.md)), `init` measures
+Maps: with `pool` in `config.json` (round 3 on), `init` measures
 the pool's maps as the draft lab does (globs less `holdout`), writes the ladder compositions of the `top` (10)
 best-rated other teams since `patch_since` (the draft lab's `ladder_data`, ours left out), and takes for the `model`
 draft source the deployed team per map (`model.mjs teams`) of `draft_lab`: a draft lab, or `shipped`, the lab named
@@ -35,16 +33,15 @@ the ladder, `fall-custom`, `gen`, `gen-s1` and `fresh-4003` to `fresh-4120`. Rou
 
 Rounds: round 1 (`pilot`, `main`, 172k games, 1c0d627) forced uniformly random arms at k < 8 from a pre-drawn table
 and was fitted whole-game (fit.mjs); its table shipped as CHANGES 232. Round 2 (`r2`, from 8fad72c) draws arms in
-the game and is fitted per decision (dfit.mjs); PLAN.md has the reasoning.
+the game and is fitted per decision (dfit.mjs).
 
 ## Round 5: the edit lab (ocean, 2026-11-10)
 
-Many policy-level A/Bs in one run ([PLAN-round5.md](PLAN-round5.md) sections 3-7; results in research/EXPERIMENTS.md
-"Emblem lab round 5"). Rounds 1-4 randomised single decisions inside a shared build; round 5 randomises whole
+Many policy-level A/Bs in one run (results in research/EXPERIMENTS.md "Emblem lab round 5"). Rounds 1-4 randomised single decisions inside a shared build; round 5 randomises whole
 policies per team-game, so what it scores is what a candidate bot plays.
 
 ```
-py tools/emblab/edits.py build --base bots/variants/BOT --out replays/emblab/LAB/edits.json [--r4] [--structural]   # the library; prints its hash
+py tools/emblab/edits.py build --base bots/variants/BOT --out replays/emblab/LAB/edits.json [--structural]   # the library; prints its hash
 py tools/emblab/edits.py table --registry edits.json --base bots/variants/BOT --out bots/variants/NAME EDIT...   # a candidate bot with those edits
 py tools/emblab/elab.py init | drafts | run | status | check --lab LAB    # the lab (config.json first)
 py tools/emblab/efit.py fit --lab LAB [--gate] [--by opp|picks] [--from B --to B]   # estimates; --gate: the calibration report
@@ -53,8 +50,7 @@ py tools/emblab/efit.py step --lab LAB                                    # the 
 
 - **Edit** (`edits.py`): a list of `learned_arm` cells, lab flags (`structural.py`; hooks in `evehicle.py FLAG_PATCHES`),
   or nothing (a placebo). Tiers: anchors (changes an A/B has measured), placebos, pooled (a passive family as
-  everyone's k-th emblem, overwriting or inserted), typed rows and typed cells (`typed_r4.py`: per type, round 4's
-  best-ranked and random controls), structural. Two edits conflict when they touch one cell or flag. The registry is
+  everyone's k-th emblem, overwriting or inserted), typed rows, structural. Two edits conflict when they touch one cell or flag. The registry is
   append-only and hashed.
 - **Vehicle** (`evehicle.make_edit`): the base bot with only `shop.cc` patched. At the first emblem choice it copies
   `learned_arm`, applies this map and side's edit ids (`trainer_table.h`, `Entry.force`) and sets the flags. Release

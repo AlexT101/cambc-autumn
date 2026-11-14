@@ -17785,7 +17785,7 @@ future switching overhead is not established. Hourly cadence remains enabled,
 next due 09:36:58 UTC. Fourteen coordination/recovery tests pass. Later changed
 summary trajectories are logged and relayed to the user as behaviour/version-change
 evidence, with engine/seed/nondeterminism caveats, never as an automatic repin.
-[Implementation, evidence paths and recovery](notes/ladder-scrims-2026-11-06/VERSION-CHECK.md).
+(The check, `tools/ladder_version_check.py`, and its operator guide were removed on 2026-11-14.)
 
 
 ## Live v106 reserve read against v105 (2026-11-10 09:07 UTC; Fish complete, Mite partial)

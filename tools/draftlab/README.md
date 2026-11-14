@@ -65,8 +65,7 @@ node tools/draftlab/model.mjs ladder --lab L    # ladder.jsonl fit with team eff
 - **Pool** (`pool`, `holdout` in `config.json`): globs of maps and suites, less the held-out suites, which are never
   measured or played, and less maps outside the published sizes (`write_maps`, `PUBLISHED_SIZE` 28 to 100 a side (29 until draft18, 2026-11-11, though the rules say 28 from 2026-11-05):
   13 of `fall-custom`'s edge cases, from 2026-10-31; draft3 and emblem round 3 still had them). draft2: the ladder, `fall-custom`, `gen` (6001), `gen-s1` (6002) and `fresh-6003` to
-  `fresh-6176` (45k maps); held out `fresh-6177` to `fresh-6196`. draft3's and emblem round 3's (`lab.py POOL`;
-  [PLAN-draft3.md](PLAN-draft3.md)): the ladder, `fall-custom` and `fresh-9100` to `9280` (suites no A/B used); held
+  `fresh-6176` (45k maps); held out `fresh-6177` to `fresh-6196`. draft3's and emblem round 3's (`lab.py POOL`): the ladder, `fall-custom` and `fresh-9100` to `9280` (suites no A/B used); held
   out `fresh-9300` to `9379` (both labs' judging and confirming suites). From 2026-11-03 the pool's generated maps are `fresh-77000` to `77195`
   (50,176 maps, seeds no A/B or lab had used), the holdout unchanged.
 - **Prior games** (`prior_games`, `prior_maps`, `prior_weight`): another lab's games (draft2: night1's, under the
@@ -174,7 +173,7 @@ py tools/draftlab/parity.py --lab replays/draftlab/draft2 --bot DIR --counters m
   Directories are not recursed. On 2026-10-28 all 2411 maps of the pool matched (night1's model); after the cost
   rewrite, the 70 ladder maps and 125 others across suites, pick counts and edge cases (no `altar_ratio`, no `camp_near`,
   no camps, dash and crystal access, crystal-only spawns) matched (night1's 02:14 snapshot). On 2026-10-30, with the
-  25 features (draft2-noctr's team): every map of draft3's pool and holdouts matched (PLAN-draft3.md).
+  25 features (draft2-noctr's team): every map of draft3's pool and holdouts matched.
 - **parity.py** builds a debug copy with `params::draft_parity` on (`bots/variants/dl-parity`; it measures every
   feature), plays it against itself with `cambc run-batch --rounds 1`, and reads the `FEAT key values`,
   `TEAM key picks team` and `FEATFUEL key fuel` lines its draft bot prints in draft round 0 from the replays'
@@ -206,7 +205,7 @@ py tools/draftlab/parity.py --lab replays/draftlab/draft2 --bot DIR --counters m
   max 2.2M (a bit-parallel BFS per sampled tile, stopped early; 2.85M before); `narrow` with its playable mask
   0.3-0.6M, max 0.73M; `camp_altar` up to 0.26M; `dash_gain`, `spawn_ring`, `max_group` next to nothing. All 25
   together ran the first turn out on some of those maps: a header naming `sight_gap` or `narrow` ships only after
-  `firstturn.py` passes on it (PLAN-draft3.md). 2026-10-31, split maps model-drafted and the cheaper passes (the
+  `firstturn.py` passes on it. 2026-10-31, split maps model-drafted and the cheaper passes (the
   73 maps that ran out with the split-maps commit, the 200 heaviest split maps, 100 random split, 100 random others
   and giant; 880 team-drafts): none ran out; start-up plus model draft on split maps median 4.3M, max 7.0M
   (fresh-9178 dash-lattice), others median 1.7M, max 4.1M, fall-custom `giant` (256x256) 8.25M (it ran out on

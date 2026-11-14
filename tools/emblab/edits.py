@@ -2,13 +2,13 @@
 all game: a list of learned_arm cells (a table edit), lab flags (a structural edit, shop.cc hooks in evehicle.py), or
 nothing (a placebo). A lab team plays the base plus a few non-conflicting edits (elab.py); efit.py estimates each.
 
-    py tools/emblab/edits.py build --base bots/variants/oc-wakecold-500 --out replays/emblab/r5/edits.json [--r4] [--structural]
+    py tools/emblab/edits.py build --base bots/variants/oc-wakecold-500 --out replays/emblab/r5/edits.json [--structural]
     py tools/emblab/edits.py table --registry edits.json --base BOT --out bots/variants/NAME ID_OR_NAME...   # a candidate bot
 
 The registry is append-only (an id never changes meaning) and carries a sha256 of its edits, printed by build: note
 it before play. Edit fields: id (from 1), name, tier, cells [[picks - 3, type, ordinal, arm]], flags [[name, value]],
 need (the draft pick a team must hold for the edit to do anything, or null), expect (an A/B's points, where known)."""
-import argparse, collections, hashlib, json, random, re, shutil, sys
+import argparse, collections, hashlib, json, re, shutil, sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -82,7 +82,7 @@ def family_at(table, main, family, k, mode="ow", stat=None, types=None):
     return diff(table, new)
 
 
-def library(base, r4=False, structural=False, seed=5):
+def library(base, structural=False):
     """Every edit, in id order. `base`: the bot directory whose table the edits change."""
     text = (Path(base) / "src/economy/emblem_table.h").read_text()
     table, edits = read_table(text), []
@@ -127,9 +127,6 @@ def library(base, r4=False, structural=False, seed=5):
     # Each type's rows back to the current logic.
     for t in range(13):
         add(f"row-off-{TYPES[t]}", "typed-row", mapped(table, lambda p, tt, k, a: NONE, types={t}), need=pick_of(t))
-    if r4:
-        import typed_r4
-        typed_r4.add_edits(add, table, main, random.Random(seed), family_at)
     if structural:
         import structural as st
         st.add_edits(add, table, main)
@@ -192,12 +189,11 @@ def main():
     ap.add_argument("--base")
     ap.add_argument("--out")
     ap.add_argument("--registry")
-    ap.add_argument("--r4", action="store_true", help="add the typed edits ranked by round 4's sums (typed_r4.py)")
-    ap.add_argument("--structural", action="store_true", help="add the structural (flag) edits (structural.py); after --r4's, so ids hold")
+    ap.add_argument("--structural", action="store_true", help="add the structural (flag) edits (structural.py)")
     ap.add_argument("ids", nargs="*")
     a = ap.parse_args()
     if a.command == "build":
-        edits = library(ROOT / a.base, a.r4, a.structural)
+        edits = library(ROOT / a.base, a.structural)
         out = Path(a.out)
         if out.is_file():  # append-only: an existing id keeps its meaning
             old = load(out)["edits"]

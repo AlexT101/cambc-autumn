@@ -1,4 +1,4 @@
-"""Emblem lab round 5, the edit lab: many policy-level A/Bs in one run (PLAN-round5.md). A lab team plays the base
+"""Emblem lab round 5, the edit lab: many policy-level A/Bs in one run. A lab team plays the base
 bot's own draft and emblem table plus a few non-conflicting edits from a registry (edits.py), all game; the outcome
 is the win and the assignment is the plan, so vehicles are release builds that log nothing. efit.py estimates every
 edit and writes alloc.json, the edits still in play and their shares, which each batch's plan reads.

@@ -1,4 +1,4 @@
-// Map-keyed emblem policies (PLAN-draft3.md, open question "map-conditioned emblems"), from dfit.mjs --mapdr.
+// Map-keyed emblem policies, from dfit.mjs --mapdr.
 // Each map gets a bin in every partition: 8 quantile bins of each standardised draft feature, and k-means clusters
 // of all of them for k 2-6. drStats sums the doubly robust D = Gamma(candidate) - Gamma(base) per (fold, cell,
 // partition bin, candidate). A policy config is a granularity (cell = picks x type x ordinal; type x ordinal bucket;

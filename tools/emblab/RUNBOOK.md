@@ -149,9 +149,9 @@ py research/notes/ideas-2026-11-09/freshgate-tools/fgate.py variants/oc-emb5-tb2
 
 - **The slot pool forgot the lab's weight.** A member file is created and then locked; another job's scan in
   between unlinks it, and that process's group counts at weight 1 for the rest of its life. A batch took 25 minutes
-  instead of 6.5 (19 of 86 slots). `py tools/emblab/slot_keeper.py job-<lab.py's pid> 35 <pid>` keeps the weight
-  registered; start one with every lab process and check `lab.log`'s batch times.
+  instead of 6.5 (19 of 86 slots). Fixed since: cpu_slots.py locks and writes member records before publishing
+  them. Still check `lab.log`'s batch times.
 - **`pkill -f` / `pgrep -f` match their own shell.** A watcher that started a keeper for "its own" command line
   registered a phantom waiting group, which holds every other job back: match `^python3 tools/emblab/lab.py ...`
-  from a script file, and never leave a keeper running after its lab.
+  from a script file.
 - **A fit while the lab plays takes the lab's slots** (`with_slots.py`): 720k games took 17 minutes on 36 slots.

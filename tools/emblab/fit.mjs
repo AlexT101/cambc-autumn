@@ -302,7 +302,7 @@ function best(gains) {
 }
 
 // Also writes <out>.policy.json: per pick count, type and bucket, the best arm, its gain (logit), bootstrap agreement
-// and 10th percentile (tools/emblab/policy.py turns it into astraeus's table).
+// and 10th percentile (the retired policy.py turned it into astraeus's table).
 function report(th, boots, table, out, mz) {
   const lines = [], cells = [];
   lines.push('Champion strength b_c by pick count (win points, x25 logit, on the average map):');

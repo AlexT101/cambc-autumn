@@ -38,7 +38,7 @@ def main():
         shutil.rmtree(bot / "src", ignore_errors=True)
     shutil.copytree(src / "src", bot / "src", dirs_exist_ok=True)
     (bot / "RELEASE_CODE").unlink(missing_ok=True)
-    if (src / "RELEASE_CODE").exists():  # make_trace_bot.py --release-guard
+    if (src / "RELEASE_CODE").exists():  # live_trace_bot.py --release-guard
         (bot / "RELEASE_CODE").write_bytes(b"")
     r = subprocess.run(["cambc", "build", str(bot.relative_to(ws))], cwd=ws, capture_output=True, text=True)
     if r.returncode:

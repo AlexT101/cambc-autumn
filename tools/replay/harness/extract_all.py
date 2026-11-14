@@ -1,12 +1,10 @@
-"""Run tools/replay/extract.mjs on a version's games: the ladder replays and the re-runs.
+"""Run tools/replay/extract.mjs on a version's games: the ladder replays and the release re-runs.
 
-    py tools/replay/harness/extract_all.py [--version v38] [--kinds ladder,trace] [--keys K1,K2] [--threads 2] [--force]
+    py tools/replay/harness/extract_all.py [--version vN] [--kinds ladder,release] [--keys K1,K2] [--threads 2] [--force]
 
-kinds (output under <dir>/extract/; v38: replays/v38-top20):
+kinds (output under <dir>/extract/, <dir> = replays/<version>):
   ladder   manifest `replay`                    -> extract/ladder
-  trace    runs/batch/<key>/trace.repl26a       -> extract/rerun
   release  runs/batch/<key>/release.repl26a     -> extract/release
-  rec      runs/batch/<key>/rec.repl26a         -> extract/rec
 
 Each output dir is an extract.mjs cache (`<sha16>/{meta.json,events.jsonl.gz,rounds.json.gz}`, `maps/`,
 `index.json`, `enums.json`) plus `keys.json`: {key: {dir, source, sha256}}. Resumable: extract.mjs skips
@@ -25,10 +23,9 @@ import versions
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[2]
-CFG = versions.get()
-V38 = CFG.dir
+CFG = DIR = None
 EXTRACT = REPO / "tools/replay/extract.mjs"
-KINDS = {"ladder": "ladder", "trace": "rerun", "release": "release", "rec": "rec"}
+KINDS = {"ladder": "ladder", "release": "release"}
 CHUNK = 60  # replay paths per extract.mjs call: Windows caps a command line at 32k characters
 
 
@@ -40,7 +37,7 @@ def games():
 def replay_for(kind, key, g):
     if kind == "ladder":
         return REPO / g["replay"]
-    return V38 / "runs/batch" / key / f"{kind}.repl26a"
+    return DIR / "runs/batch" / key / f"{kind}.repl26a"
 
 
 def sha16(p):
@@ -49,7 +46,7 @@ def sha16(p):
 
 
 def run_kind(kind, keys, G, threads, force):
-    out = V38 / "extract" / KINDS[kind]
+    out = DIR / "extract" / KINDS[kind]
     out.mkdir(parents=True, exist_ok=True)
     files = {k: replay_for(kind, k, G[k]) for k in keys}
     files = {k: p for k, p in files.items() if p.exists()}
@@ -79,14 +76,14 @@ def run_kind(kind, keys, G, threads, force):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     versions.add_arg(ap)
-    ap.add_argument("--kinds", default="ladder,trace")
+    ap.add_argument("--kinds", default="ladder")
     ap.add_argument("--keys", default="")
     ap.add_argument("--threads", type=int, default=2)
     ap.add_argument("--force", action="store_true")
     args = ap.parse_args()
-    global CFG, V38
+    global CFG, DIR
     CFG = versions.get(args.version)
-    V38 = CFG.dir
+    DIR = CFG.dir
     G = games()
     keys = [k for k in args.keys.split(",") if k] or list(G)
     unknown = [k for k in keys if k not in G]

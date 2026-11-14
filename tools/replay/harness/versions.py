@@ -1,6 +1,6 @@
-"""The submissions the replay harness can re-run: commit, bot, workspace and trace bot per version.
+"""The live submissions the replay harness can re-run: source, bot, data directory and trace bot per version.
 
-Every pipeline script takes `--version NAME` (default v38) and the loader `v38lib.use(NAME)`.
+Every pipeline script takes `--version NAME` (default: the newest version found).
 Generated data goes under `dir` (gitignored): ws/, inputs/, runs/batch/, extract/.
 """
 import json
@@ -8,26 +8,10 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[2]
-DEFAULT = "v38"
+VERSIONS = {}
 
-VERSIONS = {
-    # The 830 games against 2026-10-22's top 20; the committed manifest.
-    "v38": {"commit": "5b02a02", "bot": "bots/hyperion", "dir": "replays/v38-top20",
-            "manifest": "tools/replay/harness/manifest.json", "trace_bot": "tools/replay/harness/trace-bot"},
-    # Ladder submission 47 (live 2026-10-24T05:29Z). Its manifest is built from the replay folders by
-    # build_manifest.py, since the set grows as games are downloaded.
-    "v47": {"commit": "f7d54e9e", "bot": "bots/astraeus", "dir": "replays/v47",
-            "manifest": "replays/v47/manifest.json", "trace_bot": "tools/replay/harness/trace-bot-v47",
-            "since": "2026-10-24T05:17:00Z"},
-    # Submission 66 (astraeus at 4a7c25f6), engine 2.0.0 and cambc 4.0.0: the 610
-    # unranked games of replays/v66-farm against four opponents.
-    "v66": {"commit": "4a7c25f6", "bot": "bots/astraeus", "dir": "replays/v66",
-            "manifest": "replays/v66/manifest.json", "trace_bot": "tools/replay/harness/trace-bot-v66",
-            "folders": ["replays/v66-farm/*"]},
-}
-
-# Live versions (v87 on) are rebuilt from the scheduler's frozen build workspace rather than a commit: `src` is the
-# masked source exactly as uploaded. The scheduler's gates.jsonl names each version's workspace (a label can have
+# Live versions (v87 on) are rebuilt from the scheduler's frozen build workspace: `src` is the source exactly as
+# uploaded. The scheduler's gates.jsonl names each version's workspace (a label can have
 # several), so every version it lists is registered here; batch.py's release re-runs then prove the attribution. Their
 # games ran on cambc 5.0.1 and come from the scrim log (scrim_manifest.py). pipeline.py runs the live chain for them.
 SCHED = Path.home() / "tmp-offload/handoff/sched"
@@ -49,9 +33,9 @@ def _live_versions():
             if len(ws) == 1: seen.setdefault(rec["version"], set()).add(ws[0])
     for num, wss in sorted(seen.items()):
         src = Path(next(iter(wss))) / "bots/ocean/src"
-        if len(wss) > 1 or f"v{num}" in VERSIONS or not src.is_dir():
+        if len(wss) > 1 or not src.is_dir():
             continue  # an ambiguous record is left out rather than guessed
-        VERSIONS[f"v{num}"] = {"commit": None, "src": str(src), "bot": "bots/ocean", "dir": f"replays/v{num}", "live": True,
+        VERSIONS[f"v{num}"] = {"src": str(src), "bot": "bots/ocean", "dir": f"replays/v{num}",
                                "manifest": f"replays/v{num}/manifest.json", "trace_bot": f"replays/v{num}/trace-bot"}
 
 
@@ -63,21 +47,22 @@ def _baseline_versions():
     # has written its gates.jsonl record. A gates.jsonl row wins: its workspace is the one uploaded.
     for d in sorted((REPO / "bots/baselines").glob("v[0-9]*")):
         if d.name not in VERSIONS and (d / "src/model/prio_stream.h").is_file():
-            VERSIONS[d.name] = {"commit": None, "src": str(d / "src"), "bot": "bots/ocean", "dir": f"replays/{d.name}", "live": True,
+            VERSIONS[d.name] = {"src": str(d / "src"), "bot": "bots/ocean", "dir": f"replays/{d.name}",
                                 "manifest": f"replays/{d.name}/manifest.json", "trace_bot": f"replays/{d.name}/trace-bot"}
 
 
 _baseline_versions()
+VERSIONS = dict(sorted(VERSIONS.items(), key=lambda kv: int(kv[0].lstrip("v"))))
+DEFAULT = next(reversed(VERSIONS), None)
 
 class Version:
     def __init__(self, name):
         if name not in VERSIONS:
-            raise SystemExit(f"unknown version {name}; one of {', '.join(VERSIONS)}")
+            raise SystemExit(f"unknown version {name}; one of {', '.join(VERSIONS) or 'none (no scheduler gates.jsonl or bots/baselines/v<N>)'}")
         v = VERSIONS[name]
         self.name = name
         self.number = int(name.lstrip("v"))
-        self.commit = v["commit"]
-        self.src = Path(v["src"]) if v.get("src") else None
+        self.src = Path(v["src"])
         self.bot = v["bot"]
         self.dir = REPO / v["dir"]
         self.manifest = REPO / v["manifest"]
@@ -87,10 +72,6 @@ class Version:
         self.inputs = self.dir / "inputs" / "ladder"
         self.extract = self.dir / "extract"
         self.release = self.ws / "bots" / f"{name}-release"
-        self.rec = self.ws / "bots" / f"{name}-rec"
-        self.slot_prefix = f"{name}-trace-s"
-        self.folders = v.get("folders")
-        self.live = bool(v.get("live"))
         self.direct = self.dir / "runs" / "direct"
 
 
@@ -99,4 +80,5 @@ def get(name=None):
 
 
 def add_arg(ap):
-    ap.add_argument("--version", default=DEFAULT, choices=list(VERSIONS), help="the submission to work on (default %(default)s)")
+    ap.add_argument("--version", default=DEFAULT, required=DEFAULT is None, choices=list(VERSIONS),
+                    help="the submission to work on (default %(default)s, the newest)")

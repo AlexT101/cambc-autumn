@@ -1,5 +1,5 @@
 """A live version's trace bot: its exact source plus the combat lab's verdict logging (CS / CC lines with the margin,
-HG turn-end reach lines; research/combat-lab/fishcal-notes.md), the noisiest debug traces muted.
+HG turn-end reach lines), the noisiest debug traces muted.
 
     py tools/replay/harness/live_trace_bot.py --version v105              # -> replays/v105/trace-bot
     py tools/replay/harness/live_trace_bot.py --src SRC_DIR --out BOT_DIR [--debug-blocks] [--no-hg] [--no-d]

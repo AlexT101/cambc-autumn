@@ -10,7 +10,7 @@ use std::sync::Arc;
 use std::task::{Context as TaskCx, Poll, Waker};
 use wasmtime::{Config, Engine, InstancePre, Linker, Module, OptLevel, Store};
 
-/// cambc's engine settings (tools/fastengine/floor: compiled modules are byte-identical to cambc's).
+/// cambc's engine settings (compiled modules are byte-identical to cambc's).
 pub fn cambc_config() -> Config {
     let mut c = Config::new();
     c.consume_fuel(crate::fuel::mode() == crate::fuel::Mode::Exact);

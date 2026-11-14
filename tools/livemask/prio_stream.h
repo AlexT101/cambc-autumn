@@ -1,6 +1,6 @@
 #pragma once
 // Live builds only (written in by stream_patch.py; never in git): our priorities as replays show them,
-// coded from a secret key and facts every ally knows at round 1. A successor to prio_mask.h.
+// coded from a secret key and facts every ally knows at round 1.
 //
 // A priority is rank << 16 | payload. Coded:
 // - the payload's low 14 bits are xored with a mask drawn per round and champion; its top 2 bits (0

@@ -37,7 +37,6 @@ from pathlib import Path
 R = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(R / 'tools'))
 import ladder_scrims as ls  # noqa: E402
-from ladder_version_check import VersionCheck  # noqa: E402
 from ladder_opp_check import OpponentDetector  # noqa: E402
 
 H = Path(os.environ.get('LIVE_SCHED_DIR', Path.home() / 'tmp-offload/handoff/sched'))
@@ -45,9 +44,7 @@ HAND = H.parent
 Q, QDONE = Path('/home/ubuntu/tmp-offload/live-queue.txt'), Path('/home/ubuntu/tmp-offload/live-queue.done')
 STATE, LOG = H / 'state.json', H / 'sched.log'
 BASELINE = 86          # every candidate's gate pairs against v86's r2 games: never cut it
-# 2026-11-10 (user): no v1 probes. Each one drained live testing ~10-15 min an hour to switch the selection to v1.
 # Opponent changes use a rolling observation snapshot, separate from the fixed testing pins.
-VERSION_CHECK = False
 # 2026-11-12 (user): v115 rests on the book; candidates go live only in quota-sized batches (live_batches.py), which
 # replaces the gate/submit flow below.
 BATCH_MODE = True
@@ -293,7 +290,7 @@ def pick(st):
 # ---------------------------------------------------------------- build
 
 MASK = R / 'tools/livemask'
-# 2026-11-09 ~08:50: per-round stream mask (stream_patch.py, prioxor bb91acd9a) from v87-reup on; v93-v97 used mask_patch.py.
+# 2026-11-09 ~08:50: per-round stream mask (stream_patch.py, prioxor bb91acd9a) from v87-reup on.
 MASK_PATCH, MASK_HEADER = 'stream_patch.py', 'prio_stream.h'
 MASK_FILES = (MASK_HEADER, MASK_PATCH)
 UNMASKED = {R / 'bots/variants/oc-base23'}   # the v86 control, already prepared: submitted uncoded
@@ -338,7 +335,7 @@ def build(c):
             return None, 'cannot find test_draft in params.h'
         params.write_text(txt)
         c['note_td'] = 'test_draft turned off in the build copy'
-    # Code our priorities per game (prio_mask/; the key stays in ~/.config/cambc-secret). Only the v86 control goes
+    # Code our priorities per game (livemask/). Only the v86 control goes
     # up uncoded, to check that live replays repeat. No patch, no build: never submit uncoded by accident.
     c['masked'] = not unmasked(c)
     if c['masked']:
@@ -500,8 +497,6 @@ def runner_alive():
 
 
 def main():
-    from live_r6_campaign import Campaign
-    from live_opponent_campaign import Panel
     from live_batches import Batches
     lock = open(H / 'sched.lock', 'a+')
     try:
@@ -513,10 +508,7 @@ def main():
     lock.write(str(os.getpid()))
     lock.flush()
     log(f'scheduler start pid {os.getpid()}')
-    version_check = VersionCheck(ls, H, log, wake)
     opponent_detector = OpponentDetector(ls, save, log, wake, now)
-    campaign = Campaign(sys.modules[__name__], opponent_detector)
-    panel = Panel(sys.modules[__name__], opponent_detector)
     batches = Batches(sys.modules[__name__], opponent_detector)
     while not (H / 'STOP').exists():
         try:
@@ -524,15 +516,6 @@ def main():
             if not runner_alive():
                 log('runner dead: restarting')
                 sh([str(R / 'tools/live_restart_runner.sh')])
-            if VERSION_CHECK and version_check.tick(st):
-                time.sleep(15)
-                continue
-            if campaign.tick(st):
-                time.sleep(30)
-                continue
-            if panel.tick(st):
-                time.sleep(30)
-                continue
             if BATCH_MODE:
                 batches.tick(st)
                 time.sleep(30)

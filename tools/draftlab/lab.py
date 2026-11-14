@@ -30,7 +30,7 @@ PUBLISHED_SIZE = (28, 100)  # smallest and largest side of a published map (camb
 # deploys). prior_games / prior_maps: another lab's games and map table, fitted at prior_weight (never scored) so
 # Thompson has a model from the first batch. features: the model's map features (model.mjs FEATURES names; init writes
 # them all for null; a config without the key is a lab from before draft3, fitted on the first 19).
-# Defaults: draft3 (tools/draftlab/PLAN-draft3.md): no prior, batch 0 explores, counters off (ctr 1e9) from the start.
+# Defaults: draft3: no prior, batch 0 explores, counters off (ctr 1e9) from the start.
 # From 2026-11-03 our side also plays "current" teams: the source bot's own draft (current_lab, read by init from its
 # draft_model.h), in batch 0 (explore_mix) and after (mix).
 # The pool is fresh suites no A/B or earlier lab has used: from 2026-11-03 fresh-77000..77195 (50,176 maps; draft3 and

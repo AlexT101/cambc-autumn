@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Patch a copied ocean bot so its priorities show coded per round in replays (prio_stream.h, next to this file).
-A successor to mask_patch.py: apply one or the other, never both.
 
     python3 stream_patch.py BOT_DIR [--key-file F] [--zero]
 
@@ -79,7 +78,7 @@ def main():
     ap.add_argument('--zero', action='store_true')
     a = ap.parse_args()
     src = Path(a.bot) / 'src'
-    if (src / 'model/prio_stream.h').exists() or (src / 'model/prio_mask.h').exists():
+    if (src / 'model/prio_stream.h').exists() or (src / 'model/prio_mask.h').exists():  # prio_mask.h: the retired per-game mask
         sys.exit('stream_patch: already patched')
     comms = (src / 'model/comms.cc').read_text() if (src / 'model/comms.cc').is_file() else ''
     room = [e for e in TAG_ROOM if 'chase_shift' in comms] [:1] if 'chase_shift' in comms else TAG_ROOM[1:]

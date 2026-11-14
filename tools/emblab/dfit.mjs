@@ -1,4 +1,4 @@
-// Emblem lab round-2 fit (tools/emblab/PLAN.md): one row per forced new-emblem decision (k < 12), the outcome
+// Emblem lab round-2 fit: one row per forced new-emblem decision (k < 12), the outcome
 // whether that team won. The arm was drawn in the game from a known proposal q(a | state) (evehicle.py), so given
 // the state at the decision (which q depends on, through the current logic's values v) the arm is as good as random.
 //   node tools/emblab/dfit.mjs --labs r2 [--out replays/emblab/r2/dmodel.json] [--search] [--boot N] [--threads 90]

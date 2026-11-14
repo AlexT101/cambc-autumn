@@ -1,16 +1,14 @@
 """Batch exact re-runs of a version's ladder games against opponent puppets, with validation.
 
-    py tools/replay/harness/batch.py [--version v38] [--keys K1,K2 | --keys-file F] [--jobs N]
-                                   [--stages gen,build,release,rec,validate,summary] [--force] [--log-limit BYTES]
+    py tools/replay/harness/batch.py [--version vN] [--keys K1,K2 | --keys-file F] [--jobs N]
+                                   [--stages gen,build,release,validate,summary] [--force]
 
-Paths below are under the version's directory (versions.py; v38: replays/v38-top20, bots v38-release
-and v38-rec).
+Paths below are under the version's directory (versions.py: replays/<version>, release bot ws/bots/<version>-release).
 
 For each game (manifest.json `games`, key `<group8>-<position>`):
   gen       puppet ws/bots/p-<key> from inputs/ladder/<key>.json.gz (files rewritten only when changed)
-  build     the puppet in release and debug mode, in parallel (v38-release and v38-rec first)
-  release   v38-release --release vs the puppet (cambc run-batch)     -> runs/batch/<key>/release.repl26a
-  rec       v38-rec (debug run) vs the puppet, big --log-limit         -> rec.repl26a, rec.stdout
+  build     the release bot, then each puppet in release and debug mode (direct_batch.py plays the debug one)
+  release   the release bot --release vs the puppet (cambc run-batch)  -> runs/batch/<key>/release.repl26a
   validate  inputs, round hashes, result and our per-turn fuel vs the ladder -> <key>/validation.json
   summary   runs/batch/validation.json (one row per game) and VALIDATION.md
 
@@ -26,22 +24,20 @@ import os
 import subprocess
 import sys
 import time
-import zipfile
 from pathlib import Path
 
 import versions
 
 ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).resolve().parent
-CFG = versions.get()
+CFG = V = WS = OUT = REL = None
 
 
 def configure(cfg):
-    global CFG, V, WS, OUT, REL, REC
-    CFG, V, WS, OUT, REL, REC = cfg, cfg.dir, cfg.ws, cfg.batch, cfg.release, cfg.rec
+    global CFG, V, WS, OUT, REL
+    CFG, V, WS, OUT, REL = cfg, cfg.dir, cfg.ws, cfg.batch, cfg.release
 
 
-configure(CFG)
 WASM = {"release": ".cambc/build-release/bot-injected.wasm", "debug": ".cambc/build/bot-injected.wasm"}
 
 
@@ -94,7 +90,6 @@ def stage_gen(keys, G, jobs):
 def stage_build(keys, jobs):
     t0 = time.time()
     run(["cambc", "build", str(REL), "--release"])
-    run(["cambc", "build", str(REC)])
 
     def one(k):
         run(["cambc", "build", str(puppet_dir(k)), "--release"])
@@ -107,10 +102,8 @@ def stage_build(keys, jobs):
     return time.time() - t0
 
 
-def stamp_for(k, mode):
-    bot = REL if mode == "release" else REC
-    build = "release" if mode == "release" else "debug"
-    return {"bot": sha(bot / WASM[build]), "puppet": sha(puppet_dir(k) / WASM[build])}
+def stamp_for(k):
+    return {"bot": sha(REL / WASM["release"]), "puppet": sha(puppet_dir(k) / WASM["release"])}
 
 
 def read_stamp(k):
@@ -118,18 +111,19 @@ def read_stamp(k):
     return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
 
 
-def stage_run(keys, G, mode, jobs, force, log_limit):
-    """mode 'release' or 'rec'. Returns (keys run, seconds)."""
+def stage_run(keys, G, jobs, force):
+    """The release re-runs. Returns (keys run, seconds)."""
+    mode = "release"
     name = f"{mode}.repl26a"
     todo = []
     for k in keys:
         st = read_stamp(k)
-        if force or not (OUT / k / name).exists() or st.get(mode) != stamp_for(k, mode):
+        if force or not (OUT / k / name).exists() or st.get(mode) != stamp_for(k):
             todo.append(k)
     if not todo:
         log(f"{mode}: all {len(keys)} up to date")
         return [], 0.0
-    bot = REL if mode == "release" else REC
+    bot = REL
     lines = []
     for k in todo:
         g = G[k]
@@ -142,11 +136,7 @@ def stage_run(keys, G, mode, jobs, force, log_limit):
         lines.append(f"{a} {b} {mp} {tmp}")
     manifest = OUT / f"_{mode}-manifest.txt"
     manifest.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    cmd = ["cambc", "run-batch", str(manifest), "--jobs", str(jobs), "--color", "never"]
-    if mode == "release":
-        cmd.append("--release")
-    else:
-        cmd += ["--log-limit", str(log_limit)]
+    cmd = ["cambc", "run-batch", str(manifest), "--jobs", str(jobs), "--color", "never", "--release"]
     log(f"{mode}: running {len(todo)} games")
     t0 = time.time()
     r = run(cmd, check=False)
@@ -159,10 +149,8 @@ def stage_run(keys, G, mode, jobs, force, log_limit):
             log(f"{mode}: {k} produced no replay (see _{mode}-run-batch.log)")
             continue
         os.replace(tmp, OUT / k / name)
-        if mode == "rec":
-            extract_stdout(k, G[k])
         st = read_stamp(k)
-        st[mode] = stamp_for(k, mode)
+        st[mode] = stamp_for(k)
         (OUT / k / "stamp.json").write_text(json.dumps(st))
         v = OUT / k / "validation.json"
         if v.exists():
@@ -172,13 +160,7 @@ def stage_run(keys, G, mode, jobs, force, log_limit):
     return done, dt
 
 
-def extract_stdout(k, g):
-    with zipfile.ZipFile(OUT / k / "rec.repl26a") as z:
-        data = z.read(f"team-{g['our_side']}.stdout")
-    (OUT / k / "rec.stdout").write_bytes(data.replace(b"\0", b""))
-
-
-def stage_validate(keys, G, jobs, force, log_limit):
+def stage_validate(keys, G, jobs, force):
     todo = [k for k in keys if force or not (OUT / k / "validation.json").exists()]
     if not todo:
         log("validate: all up to date")
@@ -190,8 +172,8 @@ def stage_validate(keys, G, jobs, force, log_limit):
         rows.append({
             "key": k, "inputs": str(V / "inputs" / "ladder" / f"{k}.json.gz"), "ladderFuel": str(ROOT / g["fuel"]),
             "team": 0 if g["our_side"] == "a" else 1,
-            "release": str(OUT / k / "release.repl26a"), "rec": str(OUT / k / "rec.repl26a"), "recStdout": str(OUT / k / "rec.stdout"),
-            "out": str(OUT / k / "validation.json"), "logLimit": log_limit,
+            "release": str(OUT / k / "release.repl26a"),
+            "out": str(OUT / k / "validation.json"),
             "extra": {"map": g["map"], "our_side": g["our_side"], "opponent": g["opponent"], "opp_rank": g["opp_rank"], "kind": g["kind"],
                       "ladder": {"result": g["result"], "rounds": g["rounds"], "our_score": g["our_score"], "opp_score": g["opp_score"]},
                       "puppet": json.loads(info_p.read_text(encoding="utf-8")) if info_p.exists() else None, "stamp": read_stamp(k)},
@@ -230,11 +212,6 @@ def first_div(r):
     return "; ".join(parts)
 
 
-def rx(rec):
-    st = (rec or {}).get("stdout") or {}
-    return f"{st.get('r', '-')}/{st.get('x', '-')}"
-
-
 def stage_summary(G):
     rows = []
     for k in G:
@@ -242,14 +219,14 @@ def stage_summary(G):
         if not p.exists():
             continue
         v = json.loads(p.read_text(encoding="utf-8"))
-        rel, rec = v.get("release"), v.get("rec")
+        rel = v.get("release")
         row = {
             "key": k, "map": v["map"], "our_side": v["our_side"], "opponent": v["opponent"], "rounds": v["ladder"]["rounds"],
             "score": f"{v['ladder']['our_score']}-{v['ladder']['opp_score']}",
             "opp_rollovers": (v.get("puppet") or {}).get("rollovers"),
             "puppet_errors": (v.get("puppetErrors") or {}).get("count"),
         }
-        for name, r in (("release", rel), ("rec", rec)):
+        for name, r in (("release", rel),):
             if not r:
                 row[name] = None
                 continue
@@ -261,40 +238,29 @@ def stage_summary(G):
                 "fuel_diffs": (r.get("fuel") or {}).get("diffs"), "fuel_first_turn_only": (r.get("fuel") or {}).get("firstTurnOnly"),
                 "fuel_diff_turns": [{x: e.get(x) for x in ("index", "what", "round", "id", "turn", "delta", "first", "rollover")} for e in (r.get("fuel") or {}).get("list", [])],
             }
-        if rec and rec.get("stdout"):
-            row["rec"]["stdout"] = rec["stdout"]
-            row["rec"]["same_replay_as_release"] = rec.get("sameReplayAsRelease")
-        row["exact"] = bool(rel and rel["exact"] and rec and rec["exact"])
+        row["exact"] = bool(rel and rel["exact"])
         rows.append(row)
     (OUT / "validation.json").write_text(json.dumps(rows, indent=1))
     n = len(rows)
     ex = sum(r["exact"] for r in rows)
-    rel_ex = sum(bool(r["release"] and r["release"]["exact"]) for r in rows)
-    rec_ex = sum(bool(r["rec"] and r["rec"]["exact"]) for r in rows)
     rel_f = sum(bool(r["release"] and r["release"]["fuel_diffs"]) for r in rows)
-    rec_f = [r for r in rows if r["rec"] and r["rec"]["fuel_diffs"]]
-    rec_f_other = [r for r in rec_f if not r["rec"]["fuel_first_turn_only"]]
     md = [
         f"# {CFG.name} re-run validation", "",
         "Generated by `tools/replay/harness/batch.py`. Exact = every input of both teams, every round-start snapshot hash and the result",
         "match the ladder game. Fuel = our team's per-turn fuel against the ladder `.fuel` (number of differing turns; \"first turns\"",
-        "means only bots' first turns differ, the known recorder residual).", "",
-        f"- Games validated: {n}; exact in both runs: {ex}; release exact: {rel_ex}; recorder exact: {rec_ex}.",
-        f"- Release fuel differs in {rel_f} games; recorder fuel differs in {len(rec_f)} games "
-        f"({sum(r['rec']['fuel_diffs'] for r in rec_f)} turns), {len(rec_f_other)} of them beyond first turns.", "",
-        "| key | map | side | opponent | rounds | score | opp rollovers | release | rec | release fuel | rec fuel | rec @r/@x | first divergence |",
-        "|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+        "means only bots' first turns differ).", "",
+        f"- Games validated: {n}; release exact: {ex}; release fuel differs in {rel_f} games.", "",
+        "| key | map | side | opponent | rounds | score | opp rollovers | release | release fuel | first divergence |",
+        "|---|---|---|---|---|---|---|---|---|---|",
     ]
     for r in sorted(rows, key=lambda r: (r["exact"], r["key"])):
-        rel, rec = r["release"], r["rec"]
+        rel = r["release"]
         mark = lambda x: "-" if not x else ("exact" if x["exact"] else f"{x['rounds_matched']}/{x['rounds'][0]} hashes")
         div = first_div({"exact": rel["exact"], "firstInputDiff": rel["first_input_diff"], "firstRoundDiff": rel["first_round_diff"], "resultMatch": rel["result_match"]}) if rel else "not run"
-        md.append(f"| {r['key']} | {r['map']} | {r['our_side']} | {r['opponent']} | {r['rounds']} | {r['score']} | {r['opp_rollovers']} | {mark(rel)} | {mark(rec)} | "
-                  f"{fuel_cell({'diffs': rel['fuel_diffs'], 'firstTurnOnly': rel['fuel_first_turn_only']}) if rel else '-'} | "
-                  f"{fuel_cell({'diffs': rec['fuel_diffs'], 'firstTurnOnly': rec['fuel_first_turn_only']}) if rec else '-'} | {rx(rec)} | {div} |")
+        md.append(f"| {r['key']} | {r['map']} | {r['our_side']} | {r['opponent']} | {r['rounds']} | {r['score']} | {r['opp_rollovers']} | {mark(rel)} | "
+                  f"{fuel_cell({'diffs': rel['fuel_diffs'], 'firstTurnOnly': rel['fuel_first_turn_only']}) if rel else '-'} | {div} |")
     (OUT / "VALIDATION.md").write_text("\n".join(md) + "\n", encoding="utf-8")
-    log(f"summary: {n} games, {ex} exact in both runs (release {rel_ex}, rec {rec_ex}); rec fuel differs in {len(rec_f)} ({len(rec_f_other)} beyond first turns)")
-
+    log(f"summary: {n} games, {ex} release exact; release fuel differs in {rel_f}")
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -302,9 +268,8 @@ def main():
     ap.add_argument("--keys")
     ap.add_argument("--keys-file")
     ap.add_argument("--jobs", type=int, default=3)
-    ap.add_argument("--stages", default="gen,build,release,rec,validate,summary")
+    ap.add_argument("--stages", default="gen,build,release,validate,summary")
     ap.add_argument("--force", action="store_true", help="redo runs and validation for the selected games")
-    ap.add_argument("--log-limit", type=int, default=64_000_000)
     args = ap.parse_args()
     configure(versions.get(args.version))
     G = games()
@@ -325,11 +290,10 @@ def main():
         times["gen"] = time.time() - t0
     if "build" in stages:
         times["build"] = stage_build(keys, args.jobs)
-    for mode in ("release", "rec"):
-        if mode in stages:
-            _, times[mode] = stage_run(keys, G, mode, args.jobs, args.force, args.log_limit)
+    if "release" in stages:
+        _, times["release"] = stage_run(keys, G, args.jobs, args.force)
     if "validate" in stages:
-        times["validate"] = stage_validate(keys, G, args.jobs, args.force, args.log_limit)
+        times["validate"] = stage_validate(keys, G, args.jobs, args.force)
     if "summary" in stages:
         stage_summary(G)
     times["total"] = time.time() - t0

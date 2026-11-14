@@ -143,7 +143,7 @@ def show(rs, top=None):
 
 
 def gate(kinds, rows, edits, expect):
-    """The calibration gate's numbers (PLAN-round5.md section 5)."""
+    """The calibration gate's numbers."""
     fit = Fit(kinds, rows, edits)
     rs = {r["name"]: r for r in fit.rows()}
     print(f"{fit.games} games, {fit.teams} lab teams")

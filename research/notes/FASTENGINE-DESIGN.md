@@ -1,8 +1,8 @@
 # A faster, fuel-exact engine for cambc 4.0.0: measurements and design
 
 2026-11-01. Investigation, then Stage 0 and 0b of the plan (§5). Machine: AMD Ryzen AI 7 445 laptop (6 cores, 12 threads), cambc 4.0.0
-(build-id `207dc997…`). Raw numbers are in measurements.json; every tool used is under
-[tools/fastengine/](../../tools/fastengine/) (see "Reproducing" at the end).
+(build-id `207dc997…`). Raw numbers are in measurements.json. Every tool used was under `tools/fastengine/` (see
+"Reproducing" at the end); all but the runner were removed on 2026-11-14 and are in git history before that.
 
 ## Verdict
 
@@ -11,7 +11,7 @@
   49.0.2, configured as cambc is, produces compiled modules byte-identical to cambc's. Even if everything except
   the bot code cost nothing, a game could get at most 5.4-7.8x faster. Realistic targets are lower.
 - **A ~2.4x gain is available now, proven byte-exact** (Stage 0 and 0b, §5). An in-process patch of stock cambc
-  ([turbo.c](../../tools/fastengine/turbo/turbo.c); `CAMBC_TURBO=1` in `tools/cambc_env.py`, or `LD_PRELOAD`)
+  (`turbo.c`; `CAMBC_TURBO=1` in `tools/cambc_env.py`, or `LD_PRELOAD`)
   replaces cambc's export lookups, guest-pointer checks and altar-lock scan with exact C versions and memoises the
   hottest game read.
   - One core: demeter v astraeus on 00ambush 1.13 → 0.47 s (2.38x); 2.1-2.6x over six games.
@@ -75,11 +75,11 @@ The binary keeps its symbols, so its structure is readable.
   CPU-s.
 - **Profile:**
   - samply at 4-20 kHz, user and kernel; kernel time is ~2%.
-  - Samples were classified by [prof_analyze.py](../../tools/fastengine/prof_analyze.py) from the leaf frame and
+  - Samples were classified by `prof_analyze.py` from the leaf frame and
     whether a JIT frame is on the stack. "JIT" means the instruction pointer was in anonymous executable memory,
     i.e. the bots' compiled code, fuel metering included.
   - An earlier user-space-only samply build (from before `perf_event_paranoid` was lowered) gave the same split.
-- **Call counts and prices:** [fuelhook.c](../../tools/fastengine/fuelhook/fuelhook.c), an `LD_PRELOAD` hook that
+- **Call counts and prices:** `fuelhook.c`, an `LD_PRELOAD` hook that
   counts every entry to each import's wasmtime trampoline (all host calls) and every `charge_fuel` (price, caller).
   It adds time but no fuel: replays stayed byte-identical.
 - **Fuel:** totals come from the replays' `.fuel` files.
@@ -139,7 +139,7 @@ The split of "engine work" into its three parts is medium-confidence (it relies 
 
 ### 2.4 Cost of a host call in a lean runner
 
-[floor bench-calls](../../tools/fastengine/floor/src/bench.rs) times, in wasmtime 49.0.2 with cambc's config, a
+`floor bench-calls` times, in wasmtime 49.0.2 with cambc's config, a
 WASM loop calling an import 20M times:
 
 | | ns per call | fuel off |
@@ -244,7 +244,7 @@ Notes on the table:
 
   Stage 0b (the final library): the whole A/B corpus in release and in debug builds (2328 games), 100 against idle
   and 26 fuel-probe runs, every replay file byte-identical (§5.7).
-- **Native engine.** cambc's native engine is callable from our own process ([dlengine.c](../../tools/fastengine/dlengine/dlengine.c)):
+- **Native engine.** cambc's native engine is callable from our own process (`dlengine.c`):
   - load a copy of the binary with `DF_1_PIE` cleared through `dlopen`;
   - resolve `Game_*` addresses from the symbol table;
   - `Game_FromMapFileBytes` (0.12 ms), then `Game_Runner_Init`; `Game_API_Map_GetNumCampGroups` then returns 12 on
@@ -267,7 +267,7 @@ Notes on the table:
   - The fuel probes in `tools/probes/`: `probe-fuel*`, `probe-endturn-fuel`, `probe-fueladjust*`,
     `probe-suspend-*`, `probe-firstturn`.
   - Debug builds (`fuel_pause` imports, `debug_block` output).
-  - [verify.py](../../tools/fastengine/turbo/verify.py) already does the paired run-and-compare for the patch;
+  - `verify.py` already does the paired run-and-compare for the patch;
     the same harness works for a new runner.
 - **On a mismatch:**
   - The first differing `.fuel` entry gives the turn.
@@ -277,7 +277,7 @@ Notes on the table:
 
 ## 5. Stage 0 and 0b, measured: the in-process patch
 
-[turbo.c](../../tools/fastengine/turbo/turbo.c) (`LD_PRELOAD`, or `CAMBC_TURBO=1` through `tools/cambc_env.py`) now
+`turbo.c` (`LD_PRELOAD`, or `CAMBC_TURBO=1` through `tools/cambc_env.py`) now
 applies four patches. It acts only in a process whose GNU build-id is cambc 4.0.0's, so python, cmake and the wasi-sdk
 clang under `~/.cache/cambc` are untouched. Before patching it checks every function it replaces or relies on in full
 (FNV-1a of the function's bytes, 16 functions) and every GOT slot it rewrites; a mismatch turns that patch off.
@@ -444,7 +444,7 @@ demeter v astraeus-d7d9dab on 00ambush and 01big-world, final patch, 10 kHz (the
 
 The final library (`turbo.c` sha256 `bd4f0d29…`), stock cambc as reference, every map from both sides, `cambc
 run-batch` with 4 jobs on CPUs 2-5, stock and patched alternating by chunks of 20 games
-([verify.py](../../tools/fastengine/turbo/verify.py)). Bots: demeter and astraeus-d7d9dab (both `test_draft` off),
+(`verify.py`). Bots: demeter and astraeus-d7d9dab (both `test_draft` off),
 copied outside the repo unchanged.
 
 | corpus | build | games | every member identical | whole replay file identical | CPU per game, stock → patched |
@@ -556,7 +556,7 @@ Notes on the routes:
 
 ## 8. Reproducing
 
-All from the repo root; build products go anywhere outside the repo.
+These scripts were removed on 2026-11-14 (git history has them), and need cambc 4.0.0. All from the repo root; build products go anywhere outside the repo.
 
 ```
 # profile (needs perf_event_paranoid <= 1) and time games; then classify

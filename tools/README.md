@@ -15,7 +15,6 @@ CAMBC_BIN=$PWD/tools/fastengine/runner/fastrunner FASTRUNNER_MODE=native py tool
 - **Few suites per A/B.** Each suite of `ab.py` is its own run-batch polling the slots under one global lock (`fair.lock`): 103 suites at once put the 96-core box at 85% system time and ~1 game/s for everyone else (2026-11-03). Merge many small suites into one directory of symlinks (e.g. `maps/suites/merged/fresh-92all`).
 - **Frozen bots:** run_batched.py plays copies in `replays/frozen/<hash of source and SDK>/<name>/`, so editing a bot mid-batch never changes the batch's games, and batches of the same source share one build; `results.json` lists them (`frozen`) and so does ab.py's `summary.json` (each side's `frozen` hashes). `py tools/frozen_janitor.py [--keep-days 7] [--delete]` prunes copies and the fast runner's compile cache (`~/.cache/fastrunner`, shared by every worktree) by last use, a dry run unless `--delete`: an entry goes once unused for `--keep-days` (at least 2; reuse touches a frozen copy, games read its wasm) and no running process refers to it (command line, cwd, open or mapped files, the manifests it names, the bot dirs its ab.py / run_batched.py / solo.py command names); a copy whose `build.lock` is held is skipped. On 2026-11-11 the two held 74 GB and 103 GB. A deleted copy costs its next batch a build (~25 s), a library its next game a native compile (~7 s).
 - **WASM cache** (`tools/cambc_env.py`): every match process used to compile both bots' WASM with Cranelift, ~80% of its CPU. Tools that play matches give cambc `CAMBC_WASMTIME_CACHE` (wasmtime's cache, in the git common dir as `cambc-wasmtime/`, keyed by the module's bytes) and `RAYON_NUM_THREADS=1`; replays are byte-identical. A full A/B went from ~154 s to ~25 s (2026-10-29, 96 cores; plus ~25 s to build a new bot). A script that runs `cambc run`/`run-batch` itself should pass `env=cambc_env.env()`.
-- **Turbo** (`CAMBC_TURBO`, opt-in, Linux x86-64, cambc 4.0.0 only, so it does nothing under 5.0.x; superseded by fastrunner): with `CAMBC_TURBO=1`, `cambc_env.env()` preloads [turbo.c](fastengine/turbo/turbo.c), built into the git common dir's `cambc-turbo/` (an absolute path names a built library instead), so `CAMBC_TURBO=1 py tools/ab.py ...` runs every match on a patched cambc 4.0.0: about 2.4x faster a game alone, 1.9x at 4 games at once (1.5x in the debug builds `ab.py` plays), with byte-identical replays (any other cambc build runs stock). Re-check after a cambc or patch change with `python3 tools/fastengine/turbo/verify.py --turbo LIB --out DIR BOT_A BOT_B --suites ladder,gen,fresh [--debug]`; [DESIGN.md](../research/notes/FASTENGINE-DESIGN.md) §5 has the patches and parity runs.
 
 ## Copying bots: tools/copybot
 
@@ -194,28 +193,6 @@ node tools/mapgen/mapgen.mjs suite --seed 150003 --mix varied-v1 --out DIR   # a
 node tools/mapgen/mapgen.mjs gen classic --seed 3 --calib 1        # calibration 1's map
 ```
 
-## Map fuzzing: tools/fuzz
-
-`py tools/fuzz/fuzz.py run NAME [--screen 400] [--ref astraeus] [--climb 8 --gens 4] [--shrink 2]` hunts for maps on which astraeus farms pathologically against bots/idle.
-- **Maps:** every preset in `mapgen list` plus `mutate random`, each played from both sides through run_batched.py.
-- **Score,** from the extracted replays (higher is worse):
-  - gem rate against the typical rate for the map's offer;
-  - never reaching 1000;
-  - gems hoarded, never tributed;
-  - side asymmetry;
-  - own groups never captured;
-  - stalls;
-  - deaths to camps;
-  - out-of-fuel turns and errors;
-  - with `--ref`, a reference bot's rate on the same map.
-- **Search:** hill-climbs the worst maps with single `mapgen mutate` ops.
-- **Output** in `replays/fuzz/NAME/`:
-  - `report.md`: the worst maps, each with a description; failures by preset; the edits kept; the edit types that made maps worse;
-  - `worst/*.map26a`, for `cambc run --map`;
-  - `maps.jsonl`.
-- **Other commands:** `rescore` re-scores a run without replaying; `vs NAME BOT` plays the worst maps head-to-head.
-- Details in [fuzz/README.md](fuzz/README.md); the metrics and score are `score.py`'s. A 600-map screen plus a 5-generation climb takes ~12 min on 80 slots and ~1.2 GB.
-
 ## Forced drafts: tools/variants
 
 The draft is compiled in, so a forced draft is a bot copy in `bots/variants/<name>/` (gitignored); the source defaults to ocean. In astraeus and ocean the copy's `draft_order()` returns the forced draft, past their map model, tables, Vesper Vale gate, team lock and `test_draft`; the map model still measures the map, so play is otherwise the source's. In older bots, which only have `draft_preference`, `test_draft` on ignores the forced draft.
@@ -269,10 +246,6 @@ py tools/ab.py astraeus variants/astraeus-cap100000-at10000000 --no-test-draft -
   `py tools/fuel/census/budget.py DIR [BASEDIR]`: the budget table. `census.h` prints each label's inclusive fuel on every turn as `CHIST` 1k-bucket histograms every 100 rounds (labels in `hist_wanted`, plus `@turn`).
   For each label, budget.py prints the share of turns it ran, p50/p90/p99/p99.9, max and mean; with BASEDIR it prints both side by side.
   The `@slack.*` rows are the fuel left at decide's end on turns a gate cut and that still finished, by the gate's file.
-- **Fight-simulation profile** (`tools/fuel/simprof/`): `patch_prof.py` instruments a copy (like the census), `an.py DIR` lists every `simulate()` of turns whose sims cost 8k+, by caller (`rep.py`, `sides.py`: summaries of the same).
-- **Per-site fuel profile** (`tools/fuel/fuelprof/`): exact wasmtime fuel by charge site from a patched copy of the native fastrunner (`setup.sh`; the main runner is untouched), symbolised by source line through a `-g` build (`symbolise.py`, `query.py`; `wbodies.py` reads the wasm's function bodies). It also writes the profile of turns that finished on 88k+ and of out-of-fuel episodes (`DIR/heavy`, `DIR/oof`). See setup.sh for use.
-- **Fuel by wasm function** without a patched runner: `py tools/fuel/siteprof.py WASM TRACE... [--vs WASM2 TRACE2...]` reads the stock fastrunner's `FASTRUNNER_TRACE_SITES=1 FASTRUNNER_TRACE_FUEL=FILE` traces (native mode): the fuel between host calls, charged to the calling function (not inclusive).
-- `py tools/fuel/census/trace_scope.py DIR SCOPE`: per map, the fuel from entering a census scope to the next traced event, on traced out-of-fuel turns.
 - cap_variant.py: keep `--run-fuel` at or below 30M (at 100M instances trap near round 1000, `probe-fueladjust`); a turn that ran out resumes uncapped.
 
 Host prices (50x50, 2026-10-19):
@@ -369,20 +342,6 @@ py tools/version_record.py 50                        # our version 50's record p
   is live or selected, and restarts a dead runner with `live_restart_runner.sh`. Its state dir (`LIVE_SCHED_DIR`,
   default `~/tmp-offload/handoff/sched`) holds `state.json`, `sched.log`, `gates.jsonl`, `refsets.json` (the ref set
   per opponent new gates use; read each loop), `build/`, and the `STOP` / `PAUSE` / `HOLD` files.
-- **live_r6_campaign.py** handles only the explicitly authorized existing-v113 Mite-r6 bridge followed by the
-  prepared whole-506 Fish-r2/Mite-r6 gate. Ops installs a hash-bound `r6-campaign.json` after v114 drains and the
-  authorized reference transaction. It selects existing113 without uploading, tracks its52 new Mite groups
-  separately from historical113 completion, verifies prepared source/SDK/WASM/mask/smoke provenance, then uploads
-  that artifact without a build fallback. Upload intent is persisted before the call; an ambiguous interrupted
-  upload holds for reconciliation instead of uploading twice. Wrong pins, outside selections, dropped/suspect
-  groups or missing collected replays hold; read-only API rate limits wait. It never repins or extends itself.
-- **live_opponent_campaign.py**, **live_panel_evidence.py** and **live_panel_observations.py** implement the
-  explicitly reviewed conditional113/whole506 fourteen-opponent panel. They are inert without `live-panel.json`
-  or before the r6 campaign completes. The complete primary Fish/Mite paired-map results determine entry;
-  existing own submissions are reselected, each new opponent's first validated capture is frozen for both arms,
-  and reports remain separate by opponent without conditioning on draft choices. Sparse same-own-version hourly
-  observations update detector snapshots only. See `research/notes/ideas-2026-11-11/live-opponent-panel.md` for fixed
-  scope, quota estimate, recovery barriers and the prospective closeness rule.
 - **version_record.py** needs the website cookie (`%APPDATA%/cambc/web-cookie.txt`, as fetch_replays.py): the API shows submission versions only with it. `--kind`, `--json FILE` for per-game rows.
 
 ## Draft lab: tools/draftlab
@@ -419,21 +378,20 @@ pitfalls, in [emblab/RUNBOOK.md](emblab/RUNBOOK.md).
 ```
 py tools/emblab/lab.py init --lab NAME [--source REF]        # freeze REF's bot (config "bot", default ocean), the map table, the prior
 py tools/emblab/lab.py run --lab NAME --games 80000 --hours 3   # resumable; `touch <lab>/stop` ends it; status: lab.py status --lab NAME
-py tools/emblab/edits.py build --base bots/variants/BOT --out LAB/edits.json [--r4] [--structural]   # round 5: the edit library (table / list: a candidate bot, the registry)
+py tools/emblab/edits.py build --base bots/variants/BOT --out LAB/edits.json [--structural]   # round 5: the edit library (table / list: a candidate bot, the registry)
 py tools/emblab/elab.py init|drafts|run|status|check --lab LAB   # round 5, the edit lab: whole-policy edits per team-game, release vehicles
 py tools/emblab/efit.py fit --lab LAB [--gate] [--by opp]     # its estimates (Bradley-Terry over edits); `step`: the screen's allocation
-py tools/emblab/slot_keeper.py job-<lab.py pid> 35 <pid>      # repairs a legacy process whose slot membership was lost before the atomic-publication fix
+node tools/emblab/fit.mjs --labs main,pilot [--boot 20]       # round 1: whole-game fit; dfit.mjs imports its tables
 node tools/emblab/dfit.mjs --labs r4,r4b [--dr | --mapdr] [--fitall]   # per-decision fit, DR / map-keyed selections; streams decisions/*.zst
 py tools/emblab/with_slots.py 64 node tools/emblab/dfit.mjs ... --threads '{slots}'   # the fit on CPU slots taken from the pool
 py tools/emblab/select.py MODEL.json [--maps] [--on LATER.json]   # selection rules on the fit's dumped sums; --on: replication on later games
 py tools/emblab/candidate.py SEL.json --key RULE --buy --source BOT --out bots/variants/NAME   # a candidate bot (--buy: arms at the purchase only)
-node tools/emblab/fit.mjs --labs main,pilot [--boot 20]       # round 1: whole-game fit; policy.py writes emblem_table.h
 node tools/emblab/ladder_emblems.mjs [replays/ladder]         # top teams' emblem orders
 py tools/emblab/pilot.py --lab pilot                          # log checks and effect sizes before a main run
 ```
 
-Modules behind these: `evehicle.py` (the lab's vehicles), `structural.py` and `typed_r4.py` (round 5's structural
-and typed edits, for `edits.py build`), `mapdr.mjs` (map-keyed policies for `dfit.mjs --mapdr`).
+Modules behind these: `evehicle.py` (the lab's vehicles), `structural.py` (round 5's structural edits, for
+`edits.py build`), `mapdr.mjs` (map-keyed policies for `dfit.mjs --mapdr`).
 
 ## Constant tuning: tools/tune
 
@@ -498,30 +456,20 @@ py tools/replay/hold_metrics.py EXTRACT_DIR [...]                      # per bot
 py tools/replay/fight_metrics.py EXTRACT_DIR [...]                     # per bot: deaths and kills a game, deaths to champions/camps, kill share at equal numbers, captures, captured and tributed gems
 py tools/replay/audit_beliefs.py batch-X                               # a bot's world beliefs (debug_beliefs "BD" lines) against replay truth
 py tools/replay/fight_calibration.py batch-X                           # fight-model predictions (debug_fights) against outcomes
-py tools/replay/osc_detect.py DIR... [--bot astraeus-trace] [--out replays/osc]  # ping-pong, stuck, branch/claim/prey flips per champion, from bots/variants/astraeus-trace's per-turn D lines
-#   --bridge-oof: an out-of-fuel turn prints no D line; don't split the run there (compare bots with it on). Trace hooks for current astraeus: research/hyperion/fuel-campaign-6/trace.patch
-py tools/replay/osc_compare.py REF_OUT CAND_OUT...  # osc_detect outputs: episode turns by kind, OOF turns, paired bootstrap CI by game
 ```
 
 `engine.mjs` (the game's own engine WASM, snapshot decoder) is the library behind these; the Python ones share the `analysis/` package (analyze.py's reports) and `narrative/` (narrate.py's timelines and fights). Schema and units: [replay/README.md](replay/README.md).
 
 ## Replay harness: tools/replay/harness
 
-Re-runs our ladder games of a submission (v38 against top-20 teams; v47's ladder and scrim games) with our real
-code against a puppet of the opponent's recorded inputs, proves each re-run matches the ladder game, and traces our
-per-turn decisions fuel-exactly. Every script takes `--version` (default v38; `versions.py`). `py tools/replay/harness/v38lib.py` loads a game's trace joined with its extract. Setup, pipeline,
-validation, loader API and caveats: [replay/harness/README.md](replay/harness/README.md).
+Re-runs a live submission's scrim games (v87 on) with our real code against a puppet of the opponent's recorded
+inputs, proves each re-run matches its game, and plays a trace bot (the source plus the combat lab's decision lines)
+against the same puppets. Every script takes `--version` (default: the newest `versions.py` finds in the scheduler's
+gates.jsonl or `bots/baselines/`). Steps, trust and caveats: [replay/harness/README.md](replay/harness/README.md).
 
 ```
-py tools/replay/harness/setup_ws.py                 # workspace replays/v38-top20/ws (patched SDK, v38 release + recorder)
-py tools/replay/harness/batch.py --jobs 12          # puppets, release + recorder re-runs, validation
-py tools/replay/harness/trace_batch.py --all --slots 8
-py tools/replay/harness/v38lib.py summary           # per-game trace availability and trust
-py tools/replay/harness/pipeline.py --version v47   # v47: manifest from replay folders, then the whole chain
-py tools/replay/harness/pipeline.py --version v112  # a live version (cambc 5.0.1): scrim manifest to traced direct re-runs
+py tools/replay/harness/pipeline.py --version v112 --jobs 32   # scrim manifest, workspace, puppets, release re-runs, traced direct re-runs
 ```
-
-The pipeline's other scripts (`decode_all.mjs`, `extract_all.py`, `direct_batch.py`, `scrim_manifest.py`, ...) are in its README.
 
 ## Combat lab frame bank: tools/combatlab
 
@@ -544,22 +492,18 @@ node tools/combatlab/spotcheck.mjs replays/combatlab/NAME/frames.jsonl --n 40   
 - Fork analysis (each script's docstring has its usage): `fork_regret.py DIR...` writes a row per fork (ocean's action, every arm's scores net of noise); on those rows `fork_patterns.py` finds situation x action patterns on one half of the games and tests them on the other, `fork_branch_table.py` gives every action class's gain per predicate, `fork_rules.py` scores fixed one-arm rules, `fork_verdicts.py` the forced want_home / chase verdict arms, and `fork_examples.py` replays chosen forks with traces. `mapjson.mjs` decodes maps to JSON for them.
 - Scenario reports on `fastrunner scenario --lab --decisions` output: `alt_report.py` (ocean's strike-search choice against its next-best candidates, `--alt K`), `alt_replicate.py` (whether those gains replicate across opponents), `flip_report.py` (flipped want_home / chase verdicts, `--flip`). `labify_reply.py BOT DST` is labify.py plus a reply-model bot's feature block for `--hitlog`.
 
-## Engine speed research: tools/fastengine
+## Fast runner: tools/fastengine
 
-The fast runner's source (`runner/`, design in [RUNNER.md](../research/notes/RUNNER.md)) and the probes behind it:
+The fast runner's source (`runner/`, design in [RUNNER.md](../research/notes/RUNNER.md)) and its check scripts:
 
 ```
 python3 tools/fastengine/runner/scripts/compare.py BOT_A BOT_B --out DIR --cpus 0-93   # stock vs fastrunner: replay identity, winners, time
 python3 tools/fastengine/runner/scripts/cmp_bundles.py A.repl26a B.repl26a           # member-by-member bundle diff (first differing fuel turn)
 python3 tools/fastengine/runner/scripts/bench.py BOT_A BOT_B MAP                     # one match under several runners, pinned, interleaved
 python3 tools/fastengine/runner/scripts/prof.py PROFILE.json.gz                      # where a fastrunner game spends its time (samply)
-tools/fastengine/profile_games.sh OUTDIR "botA botB map"                             # samply profiles of stock cambc games; prof_analyze.py reads them
 ```
 
 - `python3 tools/fastengine/runner/scripts/check_unlimited.py`: native unlimited fuel, side swapping and default parity against stock.
-- `fuelhook/`: an LD_PRELOAD hook counting every host-call fuel charge (import prices off a real game, unchanged); `hook_report.py` and `calls_report.py` tabulate its output, `make_tramp_table.py` builds its patch table.
-- `turbo/` (turbo.c, verify.py), `floor/` (wasmtime cache probes), `dlengine/` (cambc's engine loaded as a library):
-  earlier routes to speed, kept for reference.
 
 ## Live priority mask: tools/livemask
 
@@ -568,27 +512,12 @@ it adds `prio_stream.h` (a per-round xor of our priority payload) keyed from `li
 (e.g. to re-run a live game with traces), run the same patch on a copy of its directory.
 - From v106 (2026-11-10) the key is the committed `livemask.key`. v87-v105 used an older key kept outside the repo, in
   `~/.config/cambc-secret/comms.key`: pass `--key-file` with it to rebuild those.
-- `--zero` compiles the mask out, for identity checks. `mask_patch.py` / `prio_mask.h` are the older per-game mask (v93-v97).
+- `--zero` compiles the mask out, for identity checks.
 
 ## Rule probes: tools/probes
 
 Probe bots that settle the rules in `cambc-rules.yaml`: how to run them and which probe checks which rule are in
 [probes/README.md](probes/README.md).
-
-## Replay exposure: tools/antire
-
-What our ladder replays show other teams. Replays record priorities but not the shared or draft bytes
-(`cambc-rules.yaml` memory.replay). From v93, live builds code ocean's priorities per game: the live scheduler patches
-the mask into its build copy (`tools/livemask/`; from v106 with the committed key, earlier with the key in
-`~/.config/cambc-secret/`). The code keeps the order of ranks and allies decode it exactly, so play is identical at 100M; at the real
-budget its fuel changes some games, as any fuel change does. Bots in the repo are uncoded, so local games are unchanged;
-our live replays from v93 on show coded values (any resubmission of the v86 control, `variants/oc-base23`, goes up uncoded).
-
-```
-node tools/antire/prio_sets.mjs REPLAY                  # every priority set: round, team, champion index, value
-node tools/antire/same_play.mjs A.repl26a B.repl26a      # same game step by step, priority sets aside
-python3 tools/antire/fuel_delta.py GAMES_A GAMES_B       # per-turn fuel of B - A on identical bench.py games
-```
 
 ## Docs: tools/docs-sync
 
@@ -631,19 +560,7 @@ advancement and a notification outbox are saved together, with event-ID deduplic
 in the append-only wake journal. Invalid comparisons hold their snapshot for review.
 Tests: `python -m unittest discover -s tools/tests -p test_ladder_opp_check.py -v`.
 
-### Retired hourly v1 checks
-
-Off since 2026-11-10 (`live_sched.py`'s `VERSION_CHECK`; its opp-check replaces it, with no draining).
-`ladder_version_check.py` integrates with `live_sched.py`:
-it drains ordinary live scrims, temporarily activates platform v1, queues one
-unpinned five-map group each against current Mite and Fish, restores the previous
-selection mode, and compares saved deterministic game summaries. The first cycle
-calibrates; later changes are logged and wake the coordinator. It never repins or
-queues a repin. `ladder_coordination.py` shares a creation/switch lock with
-`ladder_scrims.py`. Operational state, evidence and recovery instructions are in
-[the operator guide](../research/notes/ladder-scrims-2026-11-06/VERSION-CHECK.md). Tests:
-`python -m unittest discover -s tools/tests -p test_ladder_version_check.py -v`.
-
+`ladder_coordination.py` is the creation/switch lock that `ladder_scrims.py` and the scheduler share.
 
 ## Fresh-map gate
 

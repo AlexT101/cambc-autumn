@@ -1,4 +1,4 @@
-"""First draft turn fuel of a bot's model draft (tools/draftlab/PLAN-draft3.md, "Features: what ships").
+"""First draft turn fuel of a bot's model draft.
 
 Builds a release copy of BOT (bots/variants/firstturn-<name>) whose draft bot prints, in draft round 0, the fuel used
 of the 10M first turn: on entering play_draft (start-up), after the model draft (map read, engine fields, compute,
