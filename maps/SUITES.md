@@ -191,7 +191,7 @@ Single-seed generated suites, `suites/fresh/fresh-<seed>/` (256 maps each, the d
 | 536200-536239 | 40 | ladder | `--mix ladder` (astraeus port combination confirm: `ap-combo`) | 2026-11-06 |
 | 536300-536309 | 10 | varied | `--mix varied` (astraeus port robustness: `ap-varied`) | 2026-11-06 |
 | 536400-536439 | 40 | ladder | `--mix ladder` (astraeus port second confirm: `ap-conf2`) | 2026-11-06 |
-| 541000-541039 | 40 | ladder | `--mix ladder` (perma-lock confirm: `fresh-541000-541039`; research/ladder-scrims-2026-11-06/fix-lock.md) | 2026-11-06 |
+| 541000-541039 | 40 | ladder | `--mix ladder` (perma-lock confirm: `fresh-541000-541039`; research/notes/ladder-scrims-2026-11-06/fix-lock.md) | 2026-11-06 |
 | 541100-541119 | 20 | ladder | `--mix ladder` (perma-lock dev: its one-site maps are `lock-one-dev`, its multi-site maps `lock-multi-dev`) | 2026-11-06 |
 | 544000-544039 | 40 | ladder | `--mix ladder` (cooked comebacks dev: `cb-e`; research/ideas-2026-11-05/comeback.md) | 2026-11-06 |
 | 544100-544139 | 40 | ladder | `--mix ladder` (cooked comebacks confirm: `cb-c`) | 2026-11-06 |
@@ -562,7 +562,7 @@ Directories of relative symlinks (`../../fresh/fresh-<seed>/<map>`) merging many
 | `tc3-panel-8074` | 2560 | 807401-807410 | tc3 panel set |
 | `tc3-merge-8075` | 10240 | 807501-807540 | combo3 as merged, before the audit fixes |
 | `tc3-varied-8076` | 2560 | 807601-807610 | tc3 robustness (`--mix varied`) |
-| `lock-one-dev` | 1602 | 541100-541119 | one-site maps (altar tiles within 3, at most 2 tiles), by research/ladder-scrims-2026-11-06/lock-tools/sites.mjs |
+| `lock-one-dev` | 1602 | 541100-541119 | one-site maps (altar tiles within 3, at most 2 tiles), by research/notes/ladder-scrims-2026-11-06/lock-tools/sites.mjs |
 | `lock-multi-dev` | 3376 | 541100-541119 | the multi-site maps of at most 8 altar tiles (perma-lock L4) |
 | `lock-one-ladder` | 47 | ladder maps | the 32 one-tile and 15 one-site 2-tile ladder maps |
 | `cb-e` | 10240 | 544000-544039 | cooked comebacks dev (research/ideas-2026-11-05/comeback.md) |

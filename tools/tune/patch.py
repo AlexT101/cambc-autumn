@@ -1,4 +1,4 @@
-"""Patched copies of a tunified bot (research/diana-2026-11-03/tunify.py) with no compile: the tune block is
+"""Patched copies of a tunified bot (tools/tune/tunify.py) with no compile: the tune block is
 rewritten in the built wasm and in the fast runner's cached native library and wasmtime module for that wasm,
 which hold the wasm's data segment verbatim, saved under the patched wasm's cache keys."""
 import json, os, struct, threading

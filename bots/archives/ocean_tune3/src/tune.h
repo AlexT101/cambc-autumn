@@ -1,5 +1,5 @@
 #pragma once
-// Tuned constants (research/diana-2026-11-03/tunify.py): tune.py patches the values after the magic in the built wasm.
+// Tuned constants (tools/tune/tunify.py): tune.py patches the values after the magic in the built wasm.
 struct DianaTune {
     char magic[16];
     float f[17];

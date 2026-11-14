@@ -1,8 +1,0 @@
-1a2
-> #include "opp_class.h"
-1803a1805
->     opp::observe(*this);
-2072a2075
->             if (side == 1) opp::note(b.index, priority);
-3076a3080
-> #include "model/opp_class.cc"

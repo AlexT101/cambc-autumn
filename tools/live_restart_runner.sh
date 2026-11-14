@@ -1,6 +1,6 @@
 #!/bin/bash
 # Restart without an idle quota reserve; coordinate teammate priority when requested.
-R=$(cd "$(dirname "$0")/.." && pwd); D=$R/research/ladder-scrims-2026-11-06/data
+R=$(cd "$(dirname "$0")/.." && pwd); D=$R/research/notes/ladder-scrims-2026-11-06/data
 OLD=$(cat $D/run.lock 2>/dev/null)
 if [ -n "$OLD" ] && kill -0 $OLD 2>/dev/null; then touch $D/STOP; while kill -0 $OLD 2>/dev/null; do sleep 2; done; fi
 rm -f $D/STOP

@@ -23,7 +23,7 @@ static_assert(health_stat == static_cast<int>(cambc::item_stat::health));
 
 unsigned shards_needed(int family) { return family == greed ? greed_shards : shards_per_emblem; }
 
-// The build arms of research/ideas-2026-11-12/vfish, one copy of the bot each; a merge keeps one value of each.
+// The build arms of research/notes/ideas-2026-11-12/vfish, one copy of the bot each; a merge keeps one value of each.
 // greed_rule, for the gold carry: `none` never prices Greed; `priced` buys a Greed step when it outranks every
 // other emblem; `first` buys nothing else while the forecast completes the Greed; `last` lets it outrank only the
 // stat emblems (a passive that beats those goes before it).

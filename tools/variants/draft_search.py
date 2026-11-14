@@ -1,4 +1,4 @@
-"""Draft search (research/hyperion/DRAFT.md, 2026-10-24): astraeus copies with forced per-pick-count drafts
+"""Draft search (research/notes/DRAFT.md, 2026-10-24): astraeus copies with forced per-pick-count drafts
 (params::draft_three/four/five) against proxies of top-10 teams: the source bot playing each team's main drafts
 (TEAMS). A library: import it, call run() with (picks, draft, counters, jobs) requests, then compare().
 astraeus has no draft_counters table since CHANGES 178-182, so counters must be empty.
@@ -54,7 +54,7 @@ def show(d):
 
 
 # Main drafts (most common composition, in its most common order) of the top 10 but GEDD, from ranked games on
-# engine 2.0.0, 2026-10-26 00:24 to 10-27 10:00Z (research/hyperion/DRAFT.md). Fish and Mite share their 4-pick draft.
+# engine 2.0.0, 2026-10-26 00:24 to 10-27 10:00Z (research/notes/DRAFT.md). Fish and Mite share their 4-pick draft.
 TEAMS = {
     "fish": {3: "vesper hor marcella", 4: "vesper vendetta hor cassi", 5: "vesper vendetta hor cassi marcella"},
     "mite": {3: "vesper hor vendetta", 4: "vesper vendetta hor cassi", 5: "vesper vendetta hor tavi marcella"},

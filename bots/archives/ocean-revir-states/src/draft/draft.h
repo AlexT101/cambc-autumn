@@ -101,7 +101,7 @@ struct PlanHeader {
     static PlanHeader read(const DraftPlan& plan);
 };
 
-// Map facts for play-side conditioning (research/ideas-2026-11-06/draft-features.md): what map-conditioned constants
+// Map facts for play-side conditioning (research/notes/draft-features.md): what map-conditioned constants
 // read, measured or computed by the draft so champions skip it on their first turn. At PlanHeader::bits:
 //  - 1 bit: the draft's precompute (analyse) finished in its first turn. Local builds resign without it.
 //  - 1 bit: the facts follow; then the facts at their widths (exact integers, so play derives the same doubles

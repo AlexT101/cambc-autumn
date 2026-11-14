@@ -2,7 +2,7 @@
 // learned_arm[picks - 3][champion_type][ordinal]: family * 3 + stat of the champion's ordinal-th new emblem, or
 // 255 for the current logic's choice. Round 2 of the emblem lab (tools/emblab candidate.py --flat,
 // dmodel-dr.policy2.json [0-2] over the round-1 table), then Skirmish in the type's usual stat at ordinal 4 of
-// the 37 rows with none by then (research/ideas-2026-11-10/emblab4/collectors.py --family skirmish --at 4).
+// the 37 rows with none by then (research/notes/ideas-2026-11-10/emblab4/collectors.py --family skirmish --at 4).
 // Round 5 (tools/emblab elab.py, CHANGES 504): Prism's rows to the current logic; Collectors in the type's usual stat
 // at ordinal 8 of the rows with none by then (not Vesper Vale's); Issac's ordinal 0 Durability-Health; Vesper Vale's
 // ordinal 7 Collectors-Health (4 and 5 picks).

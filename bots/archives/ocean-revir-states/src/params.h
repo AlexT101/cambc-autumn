@@ -242,7 +242,7 @@ inline constexpr int deny_gems = 112;
 // relative_efficiency: holders and farm's gold weigh (gold efficiency / the team's mean)^efficiency_power.
 inline constexpr float efficiency_power = 1.4653788f;
 
-// Cooked comebacks (economy/comeback.cc, research/ideas-2026-11-05/comeback.md): while the enemy has at least
+// Cooked comebacks (economy/comeback.cc, research/notes/ideas-2026-11-05/comeback.md): while the enemy has at least
 // enemy_min tributed and leads by gap (cooked until the lead falls below gap_off), farm's mirror pull counts a
 // group's walk as steps - pull_lam * max(0, steps - pull_c * mirror_steps), mirror_steps from the mirror of our
 // tile; enemy-side groups' worth weighs 1 + deny_w; and a lost chase is taken against a carrier of bar_bag or more
@@ -255,7 +255,7 @@ inline constexpr float bar = 2;
 inline constexpr int bar_bag = 40;
 inline constexpr int pack_radius = 4;
 } // namespace comeback
-// research/ladder-scrims-2026-11-06/fix-combat.md.
+// research/notes/ladder-scrims-2026-11-06/fix-combat.md.
 namespace fixc {
 // A bag at stake this big: the pack zone outmatches us at bag_ratio.
 inline constexpr int bag_big = 100;

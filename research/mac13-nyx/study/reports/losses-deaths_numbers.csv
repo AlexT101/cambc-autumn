@@ -1,5 +1,0 @@
-numbers at the first hit,loser deaths/game,winner deaths/game,loser cost/game,winner cost/game,excess [95% CI],examples
-"grouped, even+",3.76,1.25,329,90.0,239 [181 .. 302],4e007ea7c5c7aa71 r1318 #4 (1157); b29a405bf7050285 r613 #2 (758)
-"grouped, outnumbered",2.83,0.67,197,53.8,143 [83.1 .. 195],1a53508aef8b96ee r942 #2 (884); 656bf4a601ee85dc r406 #0 (414)
-alone v2+,1.38,0.34,132,22.7,110 [77.6 .. 146],9af6ba6844bffaa0 r985 #4 (891); 4191a660ddfda314 r549 #3 (605)
-alone v1,0.70,0.32,68.9,21.9,47.0 [25.6 .. 71.1],9d6fc57971ae72fb r1001 #6 (673); 9af6ba6844bffaa0 r1655 #4 (554)

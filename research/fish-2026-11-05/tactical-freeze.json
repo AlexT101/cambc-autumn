@@ -1,6 +1,0 @@
-{
-  "models": {
-    "tools/fish/tactical_model.py": "ae1983e5a9f0809bd86d819fe309e6a1f690bbaa029d784f5f7862b59de7fea9"
-  },
-  "note": "Frozen after discovery-only spell and Prism analysis, before confirmation features or decisions were inspected."
-}

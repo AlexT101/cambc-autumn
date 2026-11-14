@@ -1,4 +1,4 @@
-// fix-combat (research/ladder-scrims-2026-11-06/fix-combat.md): hidden bush steps, and a lost retreat fought instead.
+// fix-combat (research/notes/ladder-scrims-2026-11-06/fix-combat.md): hidden bush steps, and a lost retreat fought instead.
 #include "../bot_parts.h"
 
 namespace aph {

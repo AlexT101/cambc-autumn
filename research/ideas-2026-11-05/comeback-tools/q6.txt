@@ -1,6 +1,0 @@
-w-free cb-e 200000 --sprt 0.50,0.51
-w-free-g4 cb-e 200000 --sprt 0.50,0.51
-w-dp-g4 cb-e 200000 --sprt 0.50,0.51
-w-items15 cb-e 200000 --sprt 0.50,0.51
-w-itemsd cb-e 200000 --sprt 0.50,0.51
-w-itemsh cb-e 200000 --sprt 0.50,0.51

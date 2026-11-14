@@ -1,10 +1,10 @@
 """Live-ladder scrim job: unranked match groups against chosen teams, on a frozen set of maps and sides.
-Requires `cambc login`. Data in research/ladder-scrims-2026-11-06/ (README.md, SET.md); replays in replays/ladder-scrims/.
+Requires `cambc login`. Data in research/notes/ladder-scrims-2026-11-06/ (README.md, SET.md); replays in replays/ladder-scrims/.
 
     py tools/ladder_scrims.py plan --version 78 --sets core,ext --opps fish,mite      # append set tasks
     py tools/ladder_scrims.py plan --version 78 --sets core --opps vvvvv --one-side   # calibration: one side per map
     py tools/ladder_scrims.py plan --version 78 --repeat fish,mite                    # determinism: rerun ref groups
-    setsid nohup py tools/ladder_scrims.py run >> research/ladder-scrims-2026-11-06/data/run.log 2>&1 &
+    setsid nohup py tools/ladder_scrims.py run >> research/notes/ladder-scrims-2026-11-06/data/run.log 2>&1 &
     py tools/ladder_scrims.py status        # tasks, in-flight groups, quota
     py tools/ladder_scrims.py report [--version 78] [--by map|side|purpose]
 
@@ -42,7 +42,7 @@ import time
 from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA = ROOT / "research" / "ladder-scrims-2026-11-06" / "data"
+DATA = ROOT / "research" / "notes" / "ladder-scrims-2026-11-06" / "data"
 REPLAYS = ROOT / "replays" / "ladder-scrims"
 MY_TEAM = "547efb5b-57e5-4355-8501-3b331f506d62"
 UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")

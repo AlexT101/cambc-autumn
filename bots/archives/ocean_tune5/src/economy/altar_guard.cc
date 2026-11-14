@@ -1,4 +1,4 @@
-// Altar control (research/ideas-2026-11-05/altar.md): on a one-altar map, when the enemy is near the
+// Altar control (research/notes/ideas-2026-11-05/altar.md): on a one-altar map, when the enemy is near the
 // win and well ahead, or while one of us carries a winning bag, our strongest bodies hold the altar,
 // where a kill takes the bag, while the rest farm and bank there.
 #include "../bot_parts.h"

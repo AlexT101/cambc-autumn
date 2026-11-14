@@ -1,2 +1,0 @@
-maps/02the-pack.map26a
-maps/suites/fresh/fc13-largegroups-v2/groups-100-3.map26a

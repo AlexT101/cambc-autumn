@@ -126,7 +126,7 @@ inline bool lab_stand(int reason, bool verdict) {
 }
 
 
-// The forced-action block (fastrunner forkgame, research/combat-lab/lab2-notes.md), behind its own magic: ops the
+// The forced-action block (fastrunner forkgame, research/notes/combat-lab-forks.md), behind its own magic: ops the
 // runner sets for the turn of `round` (a hold is the runner rewriting `round` before each turn of its span). They run
 // at the start of decide; ocean then plays the rest of the turn on what they left unspent (a world re-read, as after
 // its own reveal). With round -1 the copy plays as without it.

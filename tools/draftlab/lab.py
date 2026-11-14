@@ -45,7 +45,7 @@ DEFAULTS = {
     "batch_games": 100000, "fit_threads": 32, "plan_threads": 16, "outcome_threads": 16, "threads": cpu_slots.SIZE, "patch_since": "2026-10-26T00:24", "timeout": 900,
     "prior_games": None, "prior_maps": None, "prior_weight": 0, "features": None,
     "initial_lam": {"b": 256, "w": 1280, "syn": 320, "ctr": 1e9, "side": 0.1}, "initial_alpha": 0,
-    # draft6 (research/ideas-2026-11-05/draft6.md): opponents {"self": share, NAME: share, ...} picks the bot playing
+    # draft6 (research/notes/ideas-2026-11-05/draft6.md): opponents {"self": share, NAME: share, ...} picks the bot playing
     # the other side of each game ("self": the source on both sides, every game before draft6); opponent_bots
     # {NAME: bot dir} are frozen bots whose vehicles draft from the plan's oppVehicles tables. max_games caps the run.
     "opponents": None, "opponent_bots": {}, "max_games": None,

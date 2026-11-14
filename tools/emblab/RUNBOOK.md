@@ -129,7 +129,7 @@ py tools/emblab/select.py replays/emblab/r5/dmodel-static.json --write tb-z2 --o
 py tools/emblab/candidate.py replays/emblab/r5/sel-tb-z2.json --key tb-z2 --buy --source bots/variants/ocean-<sha7> --out bots/variants/oc-emb5-tb2
 FAST="CAMBC_BIN=$PWD/tools/fastengine/runner/fastrunner FASTRUNNER_MODE=native CAMBC_SLOTS=86"
 env $FAST python3 tools/ab.py variants/oc-emb5-tb2 variants/ocean-<sha7> --no-test-draft --suites maps/suites/merged/emb5-h1
-py research/ideas-2026-11-09/freshgate-tools/fgate.py variants/oc-emb5-tb2 variants/ocean-<sha7> --fish-body Flp4 --mite-body Mt3qro --max-seeds 24
+py research/notes/ideas-2026-11-09/freshgate-tools/fgate.py variants/oc-emb5-tb2 variants/ocean-<sha7> --fish-body Flp4 --mite-body Mt3qro --max-seeds 24
 ```
 
 - **Build with `--buy`.** The vehicle draws an arm at the purchase only; ocean's forecasts (`prices()`,

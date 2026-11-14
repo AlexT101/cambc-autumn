@@ -263,7 +263,7 @@ inline constexpr float reveal_prior = 1.6499189f;
 // relative_efficiency: holders and farm's gold weigh (gold efficiency / the team's mean)^efficiency_power.
 inline constexpr float efficiency_power = 1.4653788f;
 
-// Cooked comebacks (economy/comeback.cc, research/ideas-2026-11-05/comeback.md): while the enemy has at least
+// Cooked comebacks (economy/comeback.cc, research/notes/ideas-2026-11-05/comeback.md): while the enemy has at least
 // enemy_min tributed and leads by gap (cooked until the lead falls below gap_off), farm's mirror pull counts a
 // group's walk as steps - pull_lam * max(0, steps - pull_c * mirror_steps), mirror_steps from the mirror of our
 // tile; enemy-side groups' worth weighs 1 + deny_w; and a lost chase is taken against a carrier of bar_bag or more
@@ -276,7 +276,7 @@ inline constexpr float bar = 2;
 inline constexpr int bar_bag = 40;
 inline constexpr int pack_radius = 4;
 } // namespace comeback
-// research/ladder-scrims-2026-11-06/fix-combat.md.
+// research/notes/ladder-scrims-2026-11-06/fix-combat.md.
 namespace fixc {
 // Path first steps and retreat ties take a hidden bush first; within a visible enemy's ready strike reach +
 // bush_threat, the bush rank goes ahead of pull, aim and steps, and a hidden bush step is let off bush_margin x
@@ -294,14 +294,14 @@ inline constexpr int unseen_rounds = 2;
 inline constexpr std::uint64_t min_fuel = 50000;
 inline constexpr std::uint64_t slack_fuel = 40000; // the slack pass, asked for when the full one finds no clean way
 } // namespace escape
-// Willow's early fights (research/ideas-2026-11-07/willow.md, "Early aggression"): before round willow_fight_until,
+// Willow's early fights (research/notes/ideas-2026-11-07/willow.md, "Early aggression"): before round willow_fight_until,
 // a healthy Willow with an ally within willow_stand_ally stands in an enemy's reach (the fight simulation decides,
 // as for the other types), chases as they do, and after a follow hit takes the reset unless the heal lands.
 inline constexpr int willow_fight_until = 250;
 inline constexpr int willow_stand_ally = 2;
 // The reactive Tribute emblem (shop.cc reactive_tribute) prices from a bag of this many gems.
 inline constexpr int trib_min_bag = 100;
-// Mid-game gold (research/ideas-2026-11-08/gold-price.md): per_gold x (1 + (mid_gold - 1) h), h a hump on the higher
+// Mid-game gold (research/notes/ideas-2026-11-08/gold-price.md): per_gold x (1 + (mid_gold - 1) h), h a hump on the higher
 // tributed score, 0 -> 1 over [0, mid_gold_rise], 1 to mid_gold_hold, 1 -> 0 by mid_gold_end. Win models of ladder and
 // our own games put gold at ~1.5x per_gold's median there; x1.25 is the A/B's best.
 inline constexpr float mid_gold = 1.25f;

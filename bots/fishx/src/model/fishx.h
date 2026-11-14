@@ -1,5 +1,5 @@
 #pragma once
-// The Fish exploiter (research/ideas-2026-11-09/oppmodel/fish.md): on while the classifier's Fish share is high.
+// The Fish exploiter (research/notes/ideas-2026-11-09/oppmodel/fish.md): on while the classifier's Fish share is high.
 #include "opp_class.h"
 #include "../params.h"
 namespace aph::fishx {

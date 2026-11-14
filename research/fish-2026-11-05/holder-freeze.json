@@ -1,6 +1,0 @@
-{
-  "models": {
-    "tools/fish/holder_model.py": "51ef6c2a31223147555b7d36f502a5160c658e93ef43bd42b1c1b54e2383e83d"
-  },
-  "note": "Frozen after farm/stun/Prism confirmation results were inspected, before any confirmation capture-holder observations were extracted. Treat as a later exploratory replication, not a fully untouched holdout."
-}

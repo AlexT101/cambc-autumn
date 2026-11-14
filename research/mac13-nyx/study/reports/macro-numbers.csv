@@ -1,6 +1,0 @@
-numbers,winner fights,winner mean swing,loser fights,loser mean swing
--2 or fewer,479,21.1,872,-32.3
--1,715,12.9,863,-14.8
-+0,1360,15.7,1360,-15.7
-+1,863,14.8,715,-12.9
-+2 or more,873,32.3,479,-21.1

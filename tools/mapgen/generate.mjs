@@ -634,7 +634,7 @@ const HOME_GROUPS = { d: 2, dd: 3, ddd: 0.6, g: 1, Wd: 1.2, Wdd: 0.8, Wg: 0.5, E
 const LETTER = { W: 'wolf', E: 'elk', G: 'golem', M: 'monolith', g: 'gem_cluster', d: 'gold_cluster' };
 
 // Calibration 4's make-ups: the 40 05 maps of 2026-11-12 (share of a map's team A groups, maps weighted equally, in %;
-// research/ideas-2026-11-12/ladderv3/groups05.mjs). Mostly one monster guarding a compact block of clusters; 'big:'
+// research/notes/ideas-2026-11-12/ladderv3/groups05.mjs). Mostly one monster guarding a compact block of clusters; 'big:'
 // is 10 cells or more here. Monolith groups come from `monoliths` (placed mid-map), not this table.
 const GROUPS_05 = {
   Wgg: 7.9, 'big:guarded': 5.9, Wddd: 4.5, Wdd: 4.3, Wggg: 3.4, g: 2.9, WWdd: 2.9, ggggggggg: 2.7, d: 2.6, Eddd: 2.6, WWd: 2.4, Egggg: 2,
@@ -1304,7 +1304,7 @@ const DEFAULTS = {
 };
 
 // ---- calibration 2 (2026-11-05): DEFAULTS_V2 and V2_PRESETS, fitted to the 128 ladder maps (42 of them the 04*
-// maps of SDK 5.0.0), each map weighted equally; research/mapgen-vs-ladder-2026-11-05.md. Calibration 1 (DEFAULTS,
+// maps of SDK 5.0.0), each map weighted equally; research/notes/mapgen-vs-ladder-2026-11-05.md. Calibration 1 (DEFAULTS,
 // the 2026-10-30 rates) is kept as it was, so `--calib 1` and `suite --mix varied-v1` remake older maps exactly.
 // Long side (bands, % of maps), aspect (long / short: square, 1.05-1.35, 1.4-1.8, 2-3.1; W > H four times in five),
 // picks by area, the altar make-up (pairs + self-mirrored altars) and shared groups by symmetry, as on the ladder.
@@ -1347,7 +1347,7 @@ const V2_PRESETS = {
   vaults: { size: 'ladder', aspect: 'ladder', altars: undefined, picks: 'area' },
 };
 
-// ---- calibration 3 (2026-11-08, `suite --mix ladder-v2`; research/mapgen-vs-ladder-2026-11-05.md, "Calibration 3"):
+// ---- calibration 3 (2026-11-08, `suite --mix ladder-v2`; research/notes/mapgen-vs-ladder-2026-11-05.md, "Calibration 3"):
 // calibration 2 with the ladder's group shapes (LADDER_SHAPES; lines on few maps, line_mult), gem balls (gem-only
 // groups of 3+ cells) on fewer maps (ball_mult: the ladder has one on 28% of maps, calibration 2 on 50%), gold-only
 // and cluster-only groups bunched on fewer maps (gold_mult, cluster_mult), composed groups mostly 6-9 cells
@@ -1361,7 +1361,7 @@ const DEFAULTS_V3 = {
 // classic and monolith-only drew no bushes on 17% and 40% of maps (the ladder: 3%).
 const V3_PRESETS = { classic: { shared_camp: undefined, bushes: { patches: 3, strips: 2, none: 0.1 } }, 'monolith-only': { bushes: { patches: 2, strips: 1, none: 0.1 } } };
 
-// ---- calibration 4 (2026-11-12, the 05 part of `suite --mix ladder-v3`; research/ideas-2026-11-12/ladderv3/):
+// ---- calibration 4 (2026-11-12, the 05 part of `suite --mix ladder-v3`; research/notes/ideas-2026-11-12/ladderv3/):
 // calibration 3 refitted to the 40 05 maps, one author's style: 3x3 spawns with every camp 5 or more tiles away,
 // groups from GROUPS_05 in SHAPES_05's blocks (on most maps every group guarded; a few maps all clusters or
 // singletons), shared groups almost only on mirrored maps, more walls, fewer holes, bushes absent or plentiful.
@@ -1376,7 +1376,7 @@ const DEFAULTS_V4 = {
 };
 const V4_PRESETS = {};
 
-// ---- the full-pool layer (2026-11-12, `suite --mix ladder-v4`; research/ideas-2026-11-12/ladderv3/README.md, "Full
+// ---- the full-pool layer (2026-11-12, `suite --mix ladder-v4`; research/notes/ladder-v3.md, "Full
 // pool"): a classifier on every metric, against all 168 ladder maps, still told calibrations 3 and 4 from the ladder,
 // on three things the per-metric fit never saw: the ladder keeps its 2-tile frame open (41% of maps, generated 19%),
 // has hole-framed arenas (13% with under half the frame playable, generated 7%) and close spawns (14% under spawn_rel

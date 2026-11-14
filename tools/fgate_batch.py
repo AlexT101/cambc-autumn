@@ -26,7 +26,7 @@ serve every candidate, so a changed bot needs a new dir.
   (suffix -Lall), so REF's cached 128 runs are never reused for it or mixed with it.
 - Results: gate-logs/fgate-<cand>--<ref><bodies><fuel>[-Lall][-Pv3]-batch.json, and a "Results against <ref>" table.
 - --pool v3 (opt-in, 2026-11-12) draws the fresh batches from FGATE_HOME/pool-v3: `--mix ladder-v3` maps (ladder-v2's
-  plus the 05 maps' style at their 42/170 share of ranked play; research/ideas-2026-11-12/ladderv3/). Its batch
+  plus the 05 maps' style at their 42/170 share of ranked play; research/notes/ladder-v3.md). Its batch
   configs and parts live under suites-v3/ and its run names end -Pv3, so no v2 batch or cached REF run is reused for
   it. Grow it with `py tools/fgate_batch.py grow SEEDS DIR... --pool v3`.
 - --pool v4 (opt-in) is the same for FGATE_HOME/pool-v4: `--mix ladder-v4` maps (ladder-v3 with the full-pool layer:
@@ -225,7 +225,7 @@ def suite(maps, n, j):
 
 
 def ready_body(v):
-    """A body dir built elsewhere (e.g. research/ideas-2026-11-12/mitefit/mkbody.py: --mite-body mf-c1): variants/<v>
+    """A body dir built elsewhere (e.g. research/notes/ideas-2026-11-12/mitefit/mkbody.py: --mite-body mf-c1): variants/<v>
     carrying the run-time import, used as it is."""
     h = ROOT / 'bots/variants' / v / 'src/experiment_config.h'
     return h.is_file() and 'import_module' in h.read_text()
@@ -241,7 +241,7 @@ def body(fg, version):
         fcntl.flock(fh, fcntl.LOCK_EX)
         if not (mark.exists() and dst.is_dir()):
             fg.build_seed(1); fg.build_body(1, version)  # in fg.R, where the shared markers say they are
-            rb = load('fgate_runtime_body', ROOT / 'research/ideas-2026-11-11/conditional-batch506/runtime_body.py')
+            rb = load('fgate_runtime_body', ROOT / 'research/notes/ideas-2026-11-11/conditional-batch506/runtime_body.py')
             if dst.exists(): raise SystemExit(f'{dst} exists without its marker {mark}: remove it and rerun')
             rb.prepare(Path(fg.R) / f'bots/variants/spar-dvn1-{version}', dst)
             mark.touch()
@@ -324,7 +324,7 @@ def main(argv=None):
         ap.error(f'{LIB} is not built: cd tools/fastengine/runner && CARGO_TARGET_DIR=target-rt cargo build --release')
     os.environ.setdefault('CAMBC_BIN', str(ROOT / 'tools/fastengine/runner/fastrunner'))
     os.environ.setdefault('FASTRUNNER_MODE', 'native')
-    fg = load('fgate_blocks', ROOT / 'research/ideas-2026-11-09/freshgate-tools/fgate.py')
+    fg = load('fgate_blocks', ROOT / 'research/notes/ideas-2026-11-09/freshgate-tools/fgate.py')
     # local.R names the primary checkout; in a worktree, read the cells from the summaries this tree's ab.py writes.
     fg.local.R = f'{ROOT}/'
     import ab

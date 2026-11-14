@@ -73,7 +73,7 @@ py tools/fetch_replays.py --top 11 --since 2026-10-31 --kind ranked --max-groups
 (`~/cambc/web-cookie.txt` on Linux, `%APPDATA%/cambc/web-cookie.txt` on Windows: the `Cookie:` header of a
 logged-in browser session) is read when present and only adds submission versions; replays themselves (without
 `--no-replays`) need `cambc login` and `--threads 1`. To show the user what the top teams draft, summarise the
-groups per team as in [ladder-drafts-2026-11-03.md](../../research/ladder-drafts-2026-11-03.md).
+groups per team as in ladder-drafts-2026-11-03.md.
 
 ## 5. Fresh maps and the fast runner
 

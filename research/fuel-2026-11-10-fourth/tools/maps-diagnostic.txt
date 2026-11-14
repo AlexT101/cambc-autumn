@@ -1,3 +1,0 @@
-maps/suites/nooof/v1440010/gen-continent-144001002812.map26a
-maps/suites/nooof/s1440000/gen-ladder-144000000022.map26a
-maps/suites/nooof/s1440000/gen-monolith-144000008003.map26a

@@ -953,7 +953,7 @@ PlanHeader PlanHeader::read(const DraftPlan& plan) {
 namespace {
 
 // params::test_draft: the 10 most common compositions per pick count among the ladder's top 10
-// teams (research/hyperion/DRAFT.md), each in its most common pick order.
+// teams (research/notes/DRAFT.md), each in its most common pick order.
 namespace test_compositions {
 using C = cambc::champion_draft;
 constexpr C three[][3] = {

@@ -10,12 +10,12 @@ CAMBC_BIN=$PWD/tools/fastengine/runner/fastrunner FASTRUNNER_MODE=native py tool
 ./copybot -r REF astraeus variants/astraeus-<sha7>   # a frozen bot (leaves out .cambc/; -f replaces DST)
 ```
 
-- **fastrunner** (`CAMBC_BIN`, Linux x86-64, cambc 5.0.1; the default for A/Bs, AGENTS.md) plays every match with [the fast runner](fastengine/runner/), cambc's own engine driven by a new runner preloaded into cambc, with stock's replays, fuel, stdout and `.camstat` byte for byte (1164/1164 games on 4.0.0; 1360/1360 on 5.0.0, both modes; on 5.0.1 1344/1344 at the port and 2352/2352 in a re-check on current bots, release and debug, its out-of-fuel counts equal to the replays' 183k rollovers; under any other cambc build the launcher runs stock, which `run_batched.py` and `bench.py` refuse unless `FASTRUNNER_ALLOW_STOCK=1`) but no debug drawings (`team-?.debug` is empty). `FASTRUNNER_MODE=native` (needs clang) translates each bot's wasm to C with wasmtime's exact fuel metering and compiles it (about 7 s a bot, cached); the default runs bots on wasmtime. On the whole machine (11 CPUs, 1164 games of the default suites) ab.py ran at 77k games/h native (4.7x) and 57k exact (3.5x), against 16k for stock (turbo was 1.4x). With fastrunner, `run_batched.py` hands a whole batch to one `run-batch`, which takes a CPU slot per game itself; builds still run stock cambc. Native builds are profile-guided (`FASTRUNNER_PGO=0` turns it off): a new bot takes ~2 s more to build and its code runs ~30% faster; with the engine's statistics recorded only for a `.camstat` and fewer page faults, a game costs ~16% less CPU than before round 3 (2026-11-03), and bundles (libdeflate) ~24% less disk. Build it once: `cd tools/fastengine/runner && ./setup_vendor.sh && cargo build --release` (needs clang's `llvm-profdata` for PGO). [RUNNER.md](../research/fastengine/RUNNER.md) has the design, numbers and limits; `tools/fastengine/runner/scripts/compare.py` re-checks it against stock (`--camstat` compares `.camstat` too).
+- **fastrunner** (`CAMBC_BIN`, Linux x86-64, cambc 5.0.1; the default for A/Bs, AGENTS.md) plays every match with [the fast runner](fastengine/runner/), cambc's own engine driven by a new runner preloaded into cambc, with stock's replays, fuel, stdout and `.camstat` byte for byte (1164/1164 games on 4.0.0; 1360/1360 on 5.0.0, both modes; on 5.0.1 1344/1344 at the port and 2352/2352 in a re-check on current bots, release and debug, its out-of-fuel counts equal to the replays' 183k rollovers; under any other cambc build the launcher runs stock, which `run_batched.py` and `bench.py` refuse unless `FASTRUNNER_ALLOW_STOCK=1`) but no debug drawings (`team-?.debug` is empty). `FASTRUNNER_MODE=native` (needs clang) translates each bot's wasm to C with wasmtime's exact fuel metering and compiles it (about 7 s a bot, cached); the default runs bots on wasmtime. On the whole machine (11 CPUs, 1164 games of the default suites) ab.py ran at 77k games/h native (4.7x) and 57k exact (3.5x), against 16k for stock (turbo was 1.4x). With fastrunner, `run_batched.py` hands a whole batch to one `run-batch`, which takes a CPU slot per game itself; builds still run stock cambc. Native builds are profile-guided (`FASTRUNNER_PGO=0` turns it off): a new bot takes ~2 s more to build and its code runs ~30% faster; with the engine's statistics recorded only for a `.camstat` and fewer page faults, a game costs ~16% less CPU than before round 3 (2026-11-03), and bundles (libdeflate) ~24% less disk. Build it once: `cd tools/fastengine/runner && ./setup_vendor.sh && cargo build --release` (needs clang's `llvm-profdata` for PGO). [RUNNER.md](../research/notes/RUNNER.md) has the design, numbers and limits; `tools/fastengine/runner/scripts/compare.py` re-checks it against stock (`--camstat` compares `.camstat` too).
 - **CPU slots** (`tools/cpu_slots.py`; fastrunner mirrors it): every bench game and every `run_batched.py` run (so `ab.py`, `solo.py`, the labs and the tuner) takes slots from one machine-wide pool of `CAMBC_SLOTS` (default cores - 2), file locks in the git common dir shared by all worktrees, so leave `--threads` at its default (the whole pool) and concurrent agents share the cores game by game. Jobs share by group, not process: a tool and everything it starts is one group (`CAMBC_SLOT_GROUP`, default `job-<pid>` of the first Python tool), weighted by `CAMBC_SLOT_WEIGHT` (default 1; the draft and emblem labs 2). A group keeps a free slot only below its weighted share or when no other waiting group is below its own; a lone job takes every slot, and running games are never stopped (2026-11-03, 8 slots: 10 processes against 1 held 4.0 / 4.0; weight 2 against 1, 4.9 / 3.0). Member records are locked and written before atomic publication, so concurrent cleanup cannot erase a live group's weight. `python3 -m unittest tools.tests.test_cpu_slots` forces the registration race; the runner's `slot_registration_tests` stress concurrent cleanup. `CAMBC_SLOT_DIR` points a test at another pool. A heavy analysis (numpy, scikit-learn) runs as `python3 tools/pooled.py N -- CMD`: it holds up to N slots and sets OpenMP/BLAS threads to the number held, where unpooled it would start a thread per core; a SIGTERM or SIGHUP is passed on to CMD, and pooled keeps the slots until CMD exits. Spaces in `CAMBC_SLOT_GROUP` become `_` in Python but not in the runner, so a name with spaces makes two groups: use none. On Windows every `run-batch` reconfigures both bots' builds as it starts, so a batch there is one `run-batch` holding the slots free at its start (at least 4) until it ends.
 - **Few suites per A/B.** Each suite of `ab.py` is its own run-batch polling the slots under one global lock (`fair.lock`): 103 suites at once put the 96-core box at 85% system time and ~1 game/s for everyone else (2026-11-03). Merge many small suites into one directory of symlinks (e.g. `maps/suites/merged/fresh-92all`).
 - **Frozen bots:** run_batched.py plays copies in `replays/frozen/<hash of source and SDK>/<name>/`, so editing a bot mid-batch never changes the batch's games, and batches of the same source share one build; `results.json` lists them (`frozen`) and so does ab.py's `summary.json` (each side's `frozen` hashes). `py tools/frozen_janitor.py [--keep-days 7] [--delete]` prunes copies and the fast runner's compile cache (`~/.cache/fastrunner`, shared by every worktree) by last use, a dry run unless `--delete`: an entry goes once unused for `--keep-days` (at least 2; reuse touches a frozen copy, games read its wasm) and no running process refers to it (command line, cwd, open or mapped files, the manifests it names, the bot dirs its ab.py / run_batched.py / solo.py command names); a copy whose `build.lock` is held is skipped. On 2026-11-11 the two held 74 GB and 103 GB. A deleted copy costs its next batch a build (~25 s), a library its next game a native compile (~7 s).
 - **WASM cache** (`tools/cambc_env.py`): every match process used to compile both bots' WASM with Cranelift, ~80% of its CPU. Tools that play matches give cambc `CAMBC_WASMTIME_CACHE` (wasmtime's cache, in the git common dir as `cambc-wasmtime/`, keyed by the module's bytes) and `RAYON_NUM_THREADS=1`; replays are byte-identical. A full A/B went from ~154 s to ~25 s (2026-10-29, 96 cores; plus ~25 s to build a new bot). A script that runs `cambc run`/`run-batch` itself should pass `env=cambc_env.env()`.
-- **Turbo** (`CAMBC_TURBO`, opt-in, Linux x86-64, cambc 4.0.0 only, so it does nothing under 5.0.x; superseded by fastrunner): with `CAMBC_TURBO=1`, `cambc_env.env()` preloads [turbo.c](fastengine/turbo/turbo.c), built into the git common dir's `cambc-turbo/` (an absolute path names a built library instead), so `CAMBC_TURBO=1 py tools/ab.py ...` runs every match on a patched cambc 4.0.0: about 2.4x faster a game alone, 1.9x at 4 games at once (1.5x in the debug builds `ab.py` plays), with byte-identical replays (any other cambc build runs stock). Re-check after a cambc or patch change with `python3 tools/fastengine/turbo/verify.py --turbo LIB --out DIR BOT_A BOT_B --suites ladder,gen,fresh [--debug]`; [DESIGN.md](../research/fastengine/DESIGN.md) §5 has the patches and parity runs.
+- **Turbo** (`CAMBC_TURBO`, opt-in, Linux x86-64, cambc 4.0.0 only, so it does nothing under 5.0.x; superseded by fastrunner): with `CAMBC_TURBO=1`, `cambc_env.env()` preloads [turbo.c](fastengine/turbo/turbo.c), built into the git common dir's `cambc-turbo/` (an absolute path names a built library instead), so `CAMBC_TURBO=1 py tools/ab.py ...` runs every match on a patched cambc 4.0.0: about 2.4x faster a game alone, 1.9x at 4 games at once (1.5x in the debug builds `ab.py` plays), with byte-identical replays (any other cambc build runs stock). Re-check after a cambc or patch change with `python3 tools/fastengine/turbo/verify.py --turbo LIB --out DIR BOT_A BOT_B --suites ladder,gen,fresh [--debug]`; [DESIGN.md](../research/notes/FASTENGINE-DESIGN.md) §5 has the patches and parity runs.
 
 ## A/B: ab.py and run_batched.py
 
@@ -66,11 +66,11 @@ py tools/solo.py astraeus astraeus --suites ladder --one-side --maps 3   # smoke
 - `maps/` holds the ladder maps as SDK updates ship them (`00ambush`, `01big-world`, ...); delete any uuid-suffixed copies an update adds. Ladder replays drop the prefix; extract.mjs and mapgen accept either.
 - **Ladder sets** ([ladder_set.py](ladder_set.py)): from 2026-11-12 `maps/` also holds the platform's 42 `05*` maps (in ranked play since 2026-11-11 23:10 UTC; `cambc maps pull` does not serve them yet, so they were cut, sha256-verified, from captured ranked replays; 40 so far, 05chiseled_brick and 05rocket missing). Every tool that reads `maps/` as "the ladder" uses the 128 maps of 2026-11-05 pinned in `ladder128.txt`, so earlier runs, REF caches and seeded suites stay comparable: run_batched.py and ab.py (`ladder`; `--ladder new|all`, suites `ladder-new`, `ladder-all`), solo.py, fgate (`--ladder all` has its own configs and run names, suffix `-Lall`), tune.py pools naming `maps`, the draft and emblem labs' `maps/*.map26a` (config `"ladder": "all"` for every map) and mapgen (mutation sources and the ladder metrics; same-seed suites are byte-identical to before the 05 maps).
 - `maps/suites/legacy/gen/` (seed 6001), `maps/suites/legacy/gen-s1/` (6002; `maps/gen` and `maps/gen-s1` until 2026-11-11) and the `maps/suites/fresh/fresh-<seed>/` are generated 256-map suites, not in git (`.gitignore`): rebuild them with the commands below (~2 s a suite). Generate at most ~30k maps in one command (larger runs can exhaust memory). For a held-out test take seeds no A/B has used (`maps/SUITES.md`, EXPERIMENTS). Suites made from 2026-11-05 on (`--mix ladder`, the new default) are not comparable with earlier fresh suites: `maps/gen`, `maps/gen-s1` and the `maps/suites/fresh/fresh-*` of 2026-10-30 to 2026-11-05 are `varied` suites of calibration 1, which `--mix varied-v1` remakes byte for byte (mutations only when `maps/` holds the same ladder maps: they draw their source from it at run time). Before 2026-10-30, A/Bs used other maps under the same names (seeds 6003-6196 of the older generator, before that 4001-5120, 2901-2934, 1201/1202). `index.json` records each map's kind (its family), preset (or mutated ladder map and its edits), spec and metrics, the suite's `mix`, and from calibration 2 on its `calib` and `select`.
-- **Calibration.** generate.mjs has two sets of defaults. Calibration 2 (`DEFAULTS_V2`, `V2_PRESETS`; the default of `gen`, `mutate` and every mix but the -v1 ones) is fitted to the 128 ladder maps of 2026-11-05, each map weighted equally (the 42 `04*` maps of SDK 5.0.0 are a third): ladder sizes and aspects (sides from 28), picks by area, the ladder's altar make-ups (pairs plus 0-3 self-mirrored altars, odd sides forced when a map needs them), the nearest altar contested on ~3 maps in 4, altars with 7+ open neighbours, camp groups drawn from the ladder's make-ups (wolf + gold, wolf + gems, gem carpets, ...; `LADDER_GROUPS`) with per-map tilts, shared groups on the axis by symmetry, home camps 1-3 tiles from a spawn, gem-only economies, winding barriers (walls or dash-crossable hole lines), dash cuts, and a tidy pass that removes most leaky diagonals and 1-wide gaps. It also fixes calibration 1's camp spacing (every camp kept `camp_spawn_gap` 5 away, so `spawn_reach_gap` never brought a monster nearer). Calibration 1 (`DEFAULTS`, the 2026-10-30 rates) is unchanged: `--calib 1` for `gen` and `mutate`. Before and after: [mapgen-vs-ladder-2026-11-05.md](../research/mapgen-vs-ladder-2026-11-05.md). Calibration 3 (2026-11-08; `DEFAULTS_V3`, `V3_PRESETS`, `--calib 3`, `--mix ladder-v2`) is calibration 2 plus: the ladder's group shapes (`LADDER_SHAPES`: 2x2 squares, pluses, 2x3 and 3x3 blocks, monsters on the best-connected cells, big groups as near-full blocks, lines on few maps), gem-only groups of 3+ cells (gem balls) on 30% of maps, not 50% (the ladder: 28%; per-map `ball_mult`, and `gold_mult` for gold-only groups), more shared groups under rotation, slightly more lakes, and classic and monolith-only with bushes and without classic's `shared_camp` (under calibration 2 it failed every classic map without a shared group, so classic came out mostly mirrored). Calibration 2 is unchanged: `--mix ladder` still makes the same maps byte for byte.
+- **Calibration.** generate.mjs has two sets of defaults. Calibration 2 (`DEFAULTS_V2`, `V2_PRESETS`; the default of `gen`, `mutate` and every mix but the -v1 ones) is fitted to the 128 ladder maps of 2026-11-05, each map weighted equally (the 42 `04*` maps of SDK 5.0.0 are a third): ladder sizes and aspects (sides from 28), picks by area, the ladder's altar make-ups (pairs plus 0-3 self-mirrored altars, odd sides forced when a map needs them), the nearest altar contested on ~3 maps in 4, altars with 7+ open neighbours, camp groups drawn from the ladder's make-ups (wolf + gold, wolf + gems, gem carpets, ...; `LADDER_GROUPS`) with per-map tilts, shared groups on the axis by symmetry, home camps 1-3 tiles from a spawn, gem-only economies, winding barriers (walls or dash-crossable hole lines), dash cuts, and a tidy pass that removes most leaky diagonals and 1-wide gaps. It also fixes calibration 1's camp spacing (every camp kept `camp_spawn_gap` 5 away, so `spawn_reach_gap` never brought a monster nearer). Calibration 1 (`DEFAULTS`, the 2026-10-30 rates) is unchanged: `--calib 1` for `gen` and `mutate`. Before and after: [mapgen-vs-ladder-2026-11-05.md](../research/notes/mapgen-vs-ladder-2026-11-05.md). Calibration 3 (2026-11-08; `DEFAULTS_V3`, `V3_PRESETS`, `--calib 3`, `--mix ladder-v2`) is calibration 2 plus: the ladder's group shapes (`LADDER_SHAPES`: 2x2 squares, pluses, 2x3 and 3x3 blocks, monsters on the best-connected cells, big groups as near-full blocks, lines on few maps), gem-only groups of 3+ cells (gem balls) on 30% of maps, not 50% (the ladder: 28%; per-map `ball_mult`, and `gold_mult` for gold-only groups), more shared groups under rotation, slightly more lakes, and classic and monolith-only with bushes and without classic's `shared_camp` (under calibration 2 it failed every classic map without a shared group, so classic came out mostly mirrored). Calibration 2 is unchanged: `--mix ladder` still makes the same maps byte for byte.
 - **Mix** (`suite --mix`):
   - `ladder` (the default with `--out`): `LADDER_PLAN`, ladder-like presets (`ladder` 112, `classic` 30, 16 others 2-6 each) and 64 ladder maps under random edits, no stress families, at fixed counts, keeping the first candidates to succeed (1.3x oversampled) so the suite has the sampler's distribution. Every metric of the report is within ~6 points of the ladder (KS 0.11 or less; the ladder's own sampling noise is ~0.12). Use it to judge changes.
   - `ladder-v2`: the same plan under calibration 3. On 41 numeric and 33 share metrics it has no ladder mismatch at p < 0.01, against 8 for `ladder` (gem balls on 50% of maps against 28%, group shapes, cluster-only groups spread over too many maps). Preferred for new programmes; `ladder` stays the default until programmes on it finish, and the two don't share win rates. Its mutations are `ladder`'s.
-  - `ladder-v3` (2026-11-12): `ladder-v2`'s 256 maps (the same entries, candidate seeds and maps for a seed) plus 84 in the 05 maps' style (`P05_PLAN`: calibration 4's `ladder05` 63, the 05 maps under random edits 21), 340 a suite. Ranked play draws the 170 pool maps uniformly (113,965 games from 11-11 23:10, top teams' too), so the 42 `05*` maps are 42/170 of it and 84/340 matches. Calibration 4 (`DEFAULTS_V4`, `--calib 4`) is calibration 3 refitted to the 40 05 maps in `maps/` (pinned in `tools/ladder05.txt`): 3x3 spawns with every camp 5+ tiles away and a group right at that limit on about half the maps, make-ups from `GROUPS_05` (mostly one monster guarding a compact block; per-map multipliers keep singletons, pairs and cluster-only groups on few maps) in `SHAPES_05`'s blocks, shared groups almost only on mirrored maps, more walls, fewer holes, bushes absent or plentiful. Against all 168 published maps in `maps/` it shows no mismatch at p < 0.01 on the 41 numeric and 33 share metrics (`ladder-v2`: 2), and its 05 part none against the 05 maps (`ladder-v2`: 12); [ladderv3](../research/ideas-2026-11-12/ladderv3/README.md). `--mix ladder-05` makes the 05 part alone.
+  - `ladder-v3` (2026-11-12): `ladder-v2`'s 256 maps (the same entries, candidate seeds and maps for a seed) plus 84 in the 05 maps' style (`P05_PLAN`: calibration 4's `ladder05` 63, the 05 maps under random edits 21), 340 a suite. Ranked play draws the 170 pool maps uniformly (113,965 games from 11-11 23:10, top teams' too), so the 42 `05*` maps are 42/170 of it and 84/340 matches. Calibration 4 (`DEFAULTS_V4`, `--calib 4`) is calibration 3 refitted to the 40 05 maps in `maps/` (pinned in `tools/ladder05.txt`): 3x3 spawns with every camp 5+ tiles away and a group right at that limit on about half the maps, make-ups from `GROUPS_05` (mostly one monster guarding a compact block; per-map multipliers keep singletons, pairs and cluster-only groups on few maps) in `SHAPES_05`'s blocks, shared groups almost only on mirrored maps, more walls, fewer holes, bushes absent or plentiful. Against all 168 published maps in `maps/` it shows no mismatch at p < 0.01 on the 41 numeric and 33 share metrics (`ladder-v2`: 2), and its 05 part none against the 05 maps (`ladder-v2`: 12); [ladderv3](../research/notes/ladder-v3.md). `--mix ladder-05` makes the 05 part alone.
   - `ladder-v4` (2026-11-12): `ladder-v3` with the full-pool layer (`POOL_FIT` in generate.mjs; plan entries pick it with `{ fit: 'pool' | 'pool05' }`) on its generated entries; the mutated ones are unchanged. A classifier on all 130 per-map metrics still told `ladder-v3` from the 168 maps (AUC 0.63 against a null of 0.50) on what compare.py's list never tested: the ladder keeps its 2-tile frame open (41% of maps, v3 19%), has hole-framed arenas (13% with under half the frame playable, v3 7%) and close spawns (14% under spawn_rel 0.5, v3 4%, which the spawn gates excluded). The layer opens the frame on maps without winding barriers (whose ends it keeps, so their detours stay), adds shaped arenas and `near` spawns, and gives the 05 part fewer barriers. On held-out seeds the classifier no longer separates it (0.54 against 0.50 ± 0.05), and no metric of compare.py's list differs at p < 0.01 against the 168 or the 05 maps.
   - `paradigms` (2026-11-08): `PARADIGM_PLAN`, 12 layouts none of the ladder mixes draws, about 21 maps each, from [paradigms.mjs](mapgen/paradigms.mjs), under calibration 3's ladder rates for everything else (sizes, with sides under 50 weighted 1.35x because the layouts fail more attempts on small maps; symmetry, picks, spawns, altars, camp groups, gems and gold), 1.5x oversampled, first kept. On 2,048 maps against the 128 ladder maps (compare.py, mapfeat.py) every economy, size and count test passes (altar tiles, picks, symmetry, spawn shape, groups and camps per side, shared groups, gem balls, gems, gold, group sizes per map); the layouts differ by design: fewer winding maps (a walk of 2 or more times the spawns' Chebyshev distance on 7%, the ladder 20%), walls and holes on more maps (no holes on 24%, the ladder 37%), wider chokes. Use it for robustness against unfamiliar layouts, not to judge a change. The layouts:
     - ring-road: an impassable core (lake, mesa or walled jungle; lakes now and then with a bridged plaza) ringed by a road and gated walls;
@@ -207,7 +207,7 @@ py tools/variants/matrix.py --focus --cols astraeus@                      # each
 py tools/variants/matrix.py --resume replays/matrix-TIMESTAMP             # --report: rewrite reports only
 ```
 
-[draft_search.py](variants/draft_search.py) is a library for astraeus's per-pick-count drafts (`params::draft_three/four/five`) against proxies of the top-10 teams (the source bot, `DS_SRC`, playing each team's main drafts), with paired results cached in `DS_DB` (default `replays/ds/db.jsonl`) and keyed by a hash of the source bot and the maps, so a changed bot never reuses old games (method in [DRAFT.md](../research/hyperion/DRAFT.md)).
+[draft_search.py](variants/draft_search.py) is a library for astraeus's per-pick-count drafts (`params::draft_three/four/five`) against proxies of the top-10 teams (the source bot, `DS_SRC`, playing each team's main drafts), with paired results cached in `DS_DB` (default `replays/ds/db.jsonl`) and keyed by a hash of the source bot and the maps, so a changed bot never reuses old games (method in [DRAFT.md](../research/notes/DRAFT.md)).
 
 [ds_run.py](variants/ds_run.py) drives it in stages (`run`/`report`/`combo`/`vehicle`: screen, rest of pool, `--fresh DIR`, a vehicle for an `ab.py` head-to-head on `draft_search.suite_dir(P, ...)`); `--picks 3,4` shares vehicles across pick counts.
 
@@ -243,13 +243,13 @@ py tools/ab.py astraeus variants/astraeus-cap100000-at10000000 --no-test-draft -
   py tools/fuel/census/census.py replays/fuel/cen
   ```
 
-  `maps.txt` is 28 maps heavy in out-of-fuel turns (2026-10-29); its findings head [TODO.md](../research/hyperion/TODO.md)'s ranked list.
+  `maps.txt` is 28 maps heavy in out-of-fuel turns (2026-10-29).
   With `instrument.py --trace`, `py tools/fuel/census/trace.py replays/fuel/cen [--site farm.cc:1271]` gives, for each turn that ran out, the last fuel check it passed, what that check needed and the work after it. `py tools/fuel/census/tail.py replays/fuel/cen [A B]` tabulates the same by site (with the work veto's asks after it, given model/pathing.cc's two fuel() lines around `veto_fn_` in the copy), finished turns' spend after decide's last check (CLC) and after the farm loop's (CLF), and the components of OOF turns that passed no check at all.
   `py tools/fuel/census/gates.py replays/fuel/cen` (needs `--trace`): per fuel gate, the fuel left when it fires, how often its turn still ran out, the fuel left after decide, gate order within a turn, and the first gate of turns that ran out.
   `py tools/fuel/census/budget.py DIR [BASEDIR]`: the budget table. `census.h` prints each label's inclusive fuel on every turn as `CHIST` 1k-bucket histograms every 100 rounds (labels in `hist_wanted`, plus `@turn`).
   For each label, budget.py prints the share of turns it ran, p50/p90/p99/p99.9, max and mean; with BASEDIR it prints both side by side.
   The `@slack.*` rows are the fuel left at decide's end on turns a gate cut and that still finished, by the gate's file.
-  Check a change that adds ungated work against [budget-v87.txt](../research/fuelcap-2026-11-09/budget-v87.txt).
+  Check a change that adds ungated work against [budget-v87.txt](../research/notes/fuel-budget-v87.txt).
 - **Fight-simulation profile** (`tools/fuel/simprof/`): `patch_prof.py` instruments a copy (like the census), `an.py DIR` lists every `simulate()` of turns whose sims cost 8k+, by caller (`rep.py`, `sides.py`: summaries of the same).
 - **Per-site fuel profile** (`tools/fuel/fuelprof/`): exact wasmtime fuel by charge site from a patched copy of the native fastrunner (`setup.sh`; the main runner is untouched), symbolised by source line through a `-g` build (`symbolise.py`, `query.py`; `wbodies.py` reads the wasm's function bodies). It also writes the profile of turns that finished on 88k+ and of out-of-fuel episodes (`DIR/heavy`, `DIR/oof`). See setup.sh for use.
 - **Fuel by wasm function** without a patched runner: `py tools/fuel/siteprof.py WASM TRACE... [--vs WASM2 TRACE2...]` reads the stock fastrunner's `FASTRUNNER_TRACE_SITES=1 FASTRUNNER_TRACE_FUEL=FILE` traces (native mode): the fuel between host calls, charged to the calling function (not inclusive).
@@ -294,7 +294,7 @@ py tools/version_record.py 50                        # our version 50's record p
 - **fetch_replays.py** needs `cambc login` and `--threads 1` (downloads rate-limit). Options: `--kind ranked|unranked|all`, `--since`, `--max-groups N`, `--out` (`replays/ladder/`), `--no-replays` (only `group.json`: no login, any threads). Each group gets `<time>-<teamA>-vs-<teamB>-<id>/` with `<n>-<map>.repl26a` and `group.json`, which holds every game's map, result and both drafts. `--top N` reads as many ladder pages (25 teams each) as it needs.
 - **bulk_replays.py** keeps ranked games between two of the day's top 15 teams and deletes each zip once extracted.
 - **scrim_ladder.py spends the team's unranked quota** (`cambc match-groups quota`; each group frees about an hour after it was queued): dry-run first. We are side A unless `--sides alt`; `--avoid` takes earlier run folders, so repeated maps go to the side not yet played. Replays go to `replays/scrims/<timestamp>/`.
-- **ladder_scrims.py** is the long-running scrim job behind `research/ladder-scrims-2026-11-06/` (README, SET.md):
+- **ladder_scrims.py** is the long-running scrim job behind `research/notes/ladder-scrims-2026-11-06/` (README, SET.md):
   `plan --version N --sets core,ext --opps fish,mite` appends five-game tasks of the frozen set (`--maps a,b,c,d,e`
   an ad-hoc map list instead, `--groups K` a cap), `run` (setsid nohup) creates every pending task of the live
   version back to back as far as the rolling 100-groups-an-hour quota allows (keeping `--reserve` free;
@@ -333,7 +333,7 @@ py tools/version_record.py 50                        # our version 50's record p
     can proceed. Confirmation after creates retains the lock and the existing suspect-group protection.
     A successful advisory quota read survives a deferred version check; the live version is always checked
     again under the switch lock. A definite server quota refusal ends the create pass promptly.
-  - **Latest book as REST:** `research/ideas-2026-11-13/rbook/loss_live.py upload` uses the tracked
+  - **Latest book as REST:** `research/notes/ideas-2026-11-13/rbook/loss_live.py upload` uses the tracked
     `live_test.sh --rest` helper after local verification. The uploaded book becomes REST immediately while
     its live checks continue; ranked activation is not evidence that qualification passed. Ordinary strength
     test uploads keep the existing REST. The coordinator serializes use of `~/tmp-offload/rbook-mask/prepared.json`.
@@ -362,7 +362,7 @@ py tools/version_record.py 50                        # our version 50's record p
   or before the r6 campaign completes. The complete primary Fish/Mite paired-map results determine entry;
   existing own submissions are reselected, each new opponent's first validated capture is frozen for both arms,
   and reports remain separate by opponent without conditioning on draft choices. Sparse same-own-version hourly
-  observations update detector snapshots only. See `research/ideas-2026-11-11/live-opponent-panel.md` for fixed
+  observations update detector snapshots only. See `research/notes/ideas-2026-11-11/live-opponent-panel.md` for fixed
   scope, quota estimate, recovery barriers and the prospective closeness rule.
 - **version_record.py** needs the website cookie (`%APPDATA%/cambc/web-cookie.txt`, as fetch_replays.py): the API shows submission versions only with it. `--kind`, `--json FILE` for per-game rows.
 
@@ -424,7 +424,7 @@ no compile; an iteration is one fast-runner batch, pipelined with scoring (~300 
 [tune/README.md](tune/README.md).
 
 ```
-python3 research/diana-2026-11-03/tunify.py bots/BOT              # once: constants -> a patchable block
+python3 tools/tune/tunify.py bots/BOT              # once: constants -> a patchable block
 python3 tools/tune/tune.py init --run R --bot bots/BOT --opps variants/a,baselines/v94
 python3 tools/tune/tune.py run --run R --hours 6                  # resumable; replays/tune/R/
 python3 tools/tune/tune.py status --run R
@@ -513,21 +513,21 @@ py tools/combatlab/fork_sweep.py --games 16 --both-sides --seed 1 --out DIR [--h
 node tools/combatlab/spotcheck.mjs replays/combatlab/NAME/frames.jsonl --n 40                            # specs against the replays' snapshots
 ```
 
-- Fight starts from local games as scenario specs in [the lab's format](../research/combat-lab/PLAN.md), one per line of `frames.jsonl`, with `games.txt` (the games used) and `report.md` (kinds, champions, rounds, fight lengths, observed outcomes by kind, skips by reason, bots). Games come from each batch's `manifest.txt` (or `results.json`), only when both bots match `--bots` (ocean and astraeus variants; never fish), sampled evenly per batch with `--games`; `--copy` keeps the selected replays, with a manifest, under `NAME/replays/` (old batches get deleted; the copies are an input of their own).
+- Fight starts from local games as scenario specs in [the lab's format](../research/notes/combat-lab.md), one per line of `frames.jsonl`, with `games.txt` (the games used) and `report.md` (kinds, champions, rounds, fight lengths, observed outcomes by kind, skips by reason, bots). Games come from each batch's `manifest.txt` (or `results.json`), only when both bots match `--bots` (ocean and astraeus variants; never fish), sampled evenly per batch with `--games`; `--copy` keeps the selected replays, with a manifest, under `NAME/replays/` (old batches get deleted; the copies are an input of their own).
 - Replays are decoded by `extract.mjs` into `--cache` (default `replays/combatlab/cache/`, shared by banks, ~100 KB a game; `--prune` deletes each game's once used). Engagements are `analysis/fights.py`'s clusters; the frame is the end of round `first_damage - --lead` (2). Fighters: champions dealing or taking champion damage in the first `--core-window` (5) rounds, plus alive champions within `--margin` (4) of one. Skipped: a fighter dead or channelling (a recall cancelled by the frame's round, our bots' every-turn feint, is kept and listed in `context.feints`), a fighter in champion damage between the frame and the first hit, or a champion respawning within 20 rounds near the zone.
 - Specs carry every ward on the map (`wards`: owner, team, position, disabled, the owner's recharge), which the runner places as their owners.
 - Beyond the spec: champions have `name`, `maxHp`, `prio` and `ward` (`[charges, recharge]`); `fight` has `counts`, `pick_counts` (Cassi and Issac as one), `first_damage`, `length`, `core`; `context` has the bots, tributed gems, groups' capture state, wards, locks, late joiners; `observed` is the real game's next 10 and 30 rounds among the fighters (kills, deaths, gems taken, hp, who left the zone). Per-camp hp comes from camp damage events (scaled to `rounds.json`'s group totals) and per-camp sleep is simulated (clusters sleep as if their range were 3), since `rounds.json` keeps only group totals. `spotcheck.mjs` compares every field with the engine's snapshot at the frame (half its sample from frames with shields, stuns or awake camps).
 - About 0.2 s a game on 16 threads for extraction, and the frames under a second per 30 games; output streams, so banks scale with disk.
-- Play them with `fastrunner scenario SPECS.jsonl --bot-a BOT --bot-b BOT --rollouts N --rounds H --out OUT.jsonl --jobs J` (`FASTRUNNER_ENGINE=wasm`; output, setup and limits in [RUNNER.md](../research/fastengine/RUNNER.md#the-scenario-layer-fastrunner-scenario-2026-11-07)).
-- `labify.py SRC DST` (names under `bots/`) copies the bot with `./copybot` and patches in `lab.h`'s control block: a warm start, the decision outputs (branch, `want_home`, `stand_lost_at`, `plan_strikes`' choice) and inputs (strike bans, forced `want_home` / chase verdicts) that `fastrunner scenario --lab` reads and writes. Each patch anchor must match once, so a bot whose code moved fails loudly. Rebuild with `cambc build bots/DST`. Details in [RUNNER.md](../research/fastengine/RUNNER.md#lab-bots---lab).
+- Play them with `fastrunner scenario SPECS.jsonl --bot-a BOT --bot-b BOT --rollouts N --rounds H --out OUT.jsonl --jobs J` (`FASTRUNNER_ENGINE=wasm`; output, setup and limits in [RUNNER.md](../research/notes/RUNNER.md#the-scenario-layer-fastrunner-scenario-2026-11-07)).
+- `labify.py SRC DST` (names under `bots/`) copies the bot with `./copybot` and patches in `lab.h`'s control block: a warm start, the decision outputs (branch, `want_home`, `stand_lost_at`, `plan_strikes`' choice) and inputs (strike bans, forced `want_home` / chase verdicts) that `fastrunner scenario --lab` reads and writes. Each patch anchor must match once, so a bot whose code moved fails loudly. Rebuild with `cambc build bots/DST`. Details in [RUNNER.md](../research/notes/RUNNER.md#lab-bots---lab).
 - `labify.py` also patches in `lab.h`'s forced-action block (`LabAct`, `lab_act_run` at the start of ocean's `decide`): a walk, dash, attack, cast or end of turn that `fastrunner forkgame` sets for a round, after which the bot plays the rest of the turn itself.
-- `fork_sweep.py` drives `fastrunner forkgame` (target-lab2's library, wasm engine). It plays real games, forks the full state at triggered rounds (`--trigger near:D,close:D,branch:CHARS,death:N,kill:N,every:K`), plays the bots' own line and every legal action of the deciding champion (× `--holds`) for `max(--marks)` rounds, and scores each arm. It writes `DIR/forks.jsonl` and `DIR/regret.jsonl` (each arm's value and parts, the best arm, and regret against ocean's own choice). `--analyze DIR --weights k=v,...` re-scores without replaying. Usage and results are in [lab2-notes.md](../research/combat-lab/lab2-notes.md), and the runner side is in [RUNNER.md](../research/fastengine/RUNNER.md#forks-of-real-games-fastrunner-forkgame-2026-11-08).
+- `fork_sweep.py` drives `fastrunner forkgame` (target-lab2's library, wasm engine). It plays real games, forks the full state at triggered rounds (`--trigger near:D,close:D,branch:CHARS,death:N,kill:N,every:K`), plays the bots' own line and every legal action of the deciding champion (× `--holds`) for `max(--marks)` rounds, and scores each arm. It writes `DIR/forks.jsonl` and `DIR/regret.jsonl` (each arm's value and parts, the best arm, and regret against ocean's own choice). `--analyze DIR --weights k=v,...` re-scores without replaying. Usage and results are in [lab2-notes.md](../research/notes/combat-lab-forks.md), and the runner side is in [RUNNER.md](../research/notes/RUNNER.md#forks-of-real-games-fastrunner-forkgame-2026-11-08).
 - Fork analysis (each script's docstring has its usage): `fork_regret.py DIR...` writes a row per fork (ocean's action, every arm's scores net of noise); on those rows `fork_patterns.py` finds situation x action patterns on one half of the games and tests them on the other, `fork_branch_table.py` gives every action class's gain per predicate, `fork_rules.py` scores fixed one-arm rules, `fork_verdicts.py` the forced want_home / chase verdict arms, and `fork_examples.py` replays chosen forks with traces. `mapjson.mjs` decodes maps to JSON for them.
 - Scenario reports on `fastrunner scenario --lab --decisions` output: `alt_report.py` (ocean's strike-search choice against its next-best candidates, `--alt K`), `alt_replicate.py` (whether those gains replicate across opponents), `flip_report.py` (flipped want_home / chase verdicts, `--flip`). `labify_reply.py BOT DST` is labify.py plus a reply-model bot's feature block for `--hitlog`.
 
 ## Engine speed research: tools/fastengine
 
-The fast runner's source (`runner/`, design in [RUNNER.md](../research/fastengine/RUNNER.md)) and the probes behind it:
+The fast runner's source (`runner/`, design in [RUNNER.md](../research/notes/RUNNER.md)) and the probes behind it:
 
 ```
 python3 tools/fastengine/runner/scripts/compare.py BOT_A BOT_B --out DIR --cpus 0-93   # stock vs fastrunner: replay identity, winners, time
@@ -590,143 +590,6 @@ py tools/htb/tests/run.py        # hgen's test suite: run after changing hgen
 
 Run hgen before `cambc build`, `run` and `submit`, and commit `src/`.
 
-## Fish behavior reconstruction: tools/fish
-
-`tools/fish/` extracts pre-input actor perspectives from pinned ladder replays and evaluates
-narrow, frozen predictors for Intercontinental Fish. [Report and commands](../research/fish-2026-11-05/README.md).
-
-- `manifest.py ROOT OUT`: select Fish games, deduplicate replay hashes, split whole match groups.
-- `extract.mjs MANIFEST CACHE [train|test|all] [LIMIT]`: decode with each replay's engine; preserve
-  turn-start and pre-input perspectives, check priority writes and next-round persistence.
-- `features.py MANIFEST CACHE train|test OUT.gz`: produce priority, attack, heal and tribute-attempt observations.
-- `fit_priority.py TRAIN.gz RANKS.json BOUNDS.json`: recover observed roster ranks and bound the carrying multiplier.
-- `model.py`: quiet priority-write value, basic-attack target and exploratory heal-target predictors;
-  no prediction of when to take these actions.
-- `evaluate.py FEATURES.gz OUT.json`: exact predictions, coverage, baselines, per-game counts and every counterexample.
-- `audit.mjs MANIFEST CACHE`: independently account for every recorded bot input and completed turn.
-- `show_turn.py SHA16 ROUND ACTOR [--cache DIR]`: inspect an exact turn and its pre-input perspectives.
-
-Continuation: [camp targets, stuns, holders and banking](../research/fish-2026-11-05/CONTINUATION.md).
-
-- `breadth.py MANIFEST CACHE OUT.gz`: actor-local camp attack/spell candidates, prepared-recall
-  endpoints, adjacent-altar frames and first-hit destination labels with static map distances.
-- `farm_model.py`, `tactical_model.py`: frozen camp-target, opening baseline, Cassi stun-target
-  and Prism winning-deposit hypotheses. The last is refuted as an exact necessary condition.
-- `evaluate_breadth.py FEATURES.gz OUT.json [--altar-cache DIR]`: exact agreement, baselines,
-  per-game counts and every failed prediction in a sibling `*.errors.json.gz`.
-- `altar_context.mjs MANIFEST CACHE OUT [PART PARTS]`: actor-visible adjacent lock/item snapshots;
-  validates pre-decision cached state against raw replay state. Shards may run concurrently.
-- `commitments.py MANIFEST CACHE OUT.gz`: the next-turn keep/cancel choice for prepared recalls;
-  keeping it for one turn is not necessarily a commitment to return to spawn.
-- `holders.py MANIFEST CACHE OUT.gz`: competing holders on empty groups, start-state inputs
-  and same-turn departure labels. `holder_model.py` predicts stay for the highest-ranked holder;
-  `evaluate_holders.py FEATURES.gz OUT.json` records coverage, errors and pairwise stay/leave counts.
-- `summarize_breadth.py FEATURES.gz OUT.json [--altar-cache DIR]`: descriptive recall counts,
-  camp tie-breaks, spell baselines and quiet unlocked per-type gem-threshold sweeps.
-- `pin_confirmation.py`: pin/deduplicate the fixed Fish subset of `replays/bush-ladder/matches.tsv`
-  and record the farming model hash; this is specific to the November 5 investigation.
-
-Later continuation: [new destinations and action decisions](../research/fish-2026-11-05/DECISIONS.md).
-
-- `decision_data.py MANIFEST CACHE OUT.jsonl.gz [--limit N]`: causal turn-start observations
-  for lower capture holders, final-turn recall, attacks/heals/damage casts, and post-payout /
-  spawn destinations. Actor-local camp memory; future events only label/censor destination
-  and recall outcomes. Use the final `decisions-v2.jsonl.gz` caches, not the temporary v1.
-- `decision_model.py`: causal feature transforms and frozen executable heuristics / shallow
-  surrogate policies; accepts inputs separately from outcomes. Not a complete Fish policy.
-- `fit_decisions.py DISCOVERY.jsonl.gz OUT.json`: fit depth-three trees with minimum 60 rows
-  per leaf, plus a bounded reward-rate grid; writes a sibling `.sweep.json`. Discovery only.
-- `evaluate_decisions.py FEATURES.jsonl.gz TREES.json OUT.json`: action/no-action confusion,
-  partial coverage, baselines, per-game counts, destination censoring and recall arrival
-  outcomes; every error is written to sibling `.errors.jsonl.gz`.
-- `pin_decisions.py RAW_REPLAY_ROOT OUT_MANIFEST.json`: remove both old cohorts' known groups
-  and hashes, pin a third cohort, and freeze models/feature code before decoding its play.
-  Refuses to overwrite the pinned manifest; the November 5 run retained 43 games/nine groups.
-- `audit_decisions.py MANIFEST CACHE FEATURES.jsonl.gz OUT.json`: verify freeze hashes,
-  cohort disjointness, raw hashes, both ordered drafts, Fish side and every row's start-state
-  provenance. Complements `audit.mjs`'s independent raw input accounting.
-
-Route/entry continuation: [report and reproduction](../research/fish-2026-11-05/ROUTES.md).
-
-- `routes_data.py MANIFEST CACHE DECISIONS.jsonl.gz OUT.jsonl.gz`: add actor-local camp
-  visits, transitions, territory and remembered allied occupation to destination episodes;
-  extract adjacent held-camp entry, timer-4 same-channel arrival, and farm/home/tribute
-  endpoint observations. Inputs and outcomes are separate. Use `routes-v3.jsonl.gz`; v1/v2
-  are incomplete dead-coordinate failures retained locally.
-- `routes_model.py`: causal route scoring and entry/economic-trip tree evaluation.
-- `fit_routes.py DISCOVERY.jsonl.gz OUT.json`: depth-three trees and a 192-point route grid;
-  discovery only, preserves the entire grid in `.sweep.json`.
-- `evaluate_routes.py FEATURES.jsonl.gz TREES.json OUT.json`: model/baseline confusion,
-  per-game counts, endpoint censoring and every failure in `.errors.jsonl.gz`.
-- `pin_routes.py RAW_ROOT`: freeze the fourth cohort and model files before decoding;
-  excludes all three earlier manifests by known groups, match ids and replay hashes.
-  Ten newest eligible groups contributed 46 games after duplicate removal.
-- `audit_routes.py MANIFEST CACHE FEATURES.jsonl.gz OUT.json`: check frozen hashes, cohort
-  identity/drafts and actor-start feature provenance. Raw input accounting uses `audit.mjs`.
-- `summarize_routes.py MANIFEST RESULTS.json OUT.json`: paired match-group bootstrap and
-  representative failures; no fitting.
-- `audit_incoming_payout.py MANIFEST CACHE FEATURES.jsonl.gz TREES.json OUT.json`: retrospective
-  follow-through-payout endpoint audit, with every opportunity retained in `.rows.jsonl.gz`.
-  Added after fourth-cohort errors were inspected; not another independent confirmation.
-
-Destination choice continuation: [report](../research/fish-2026-11-05/CHOICE.md);
-drafts and emblems: [report](../research/fish-2026-11-05/DRAFTS-EMBLEMS.md).
-
-- `choice_data.py CACHE ROUTES.jsonl.gz OUT.jsonl.gz`: add the actor's visible allies at each
-  route-episode start (`choice-v1.jsonl.gz` per cache).
-- `choice_model.py`: conditional-logit candidate features and the frozen argmax prediction.
-- `fit_choice.py OUT.json SOURCES... [--l2]`: Newton fit of the logit on clean hit episodes.
-- `evaluate_choice.py FEATURES.jsonl.gz FIT.json OUT.json`: logit vs wait baseline, per-game
-  counts, every failure in `.errors.jsonl.gz`.
-- `pin_fifth.py RAW_ROOT...`: pin every Fish game outside the four earlier manifests and hash
-  code/models before decoding (`fifth-manifest.json`, `choice-freeze.json`).
-- `probe_shared.mjs REPLAY [EVERY]`: read shared/draft memory through the visualiser export
-  `(game, team, offset, out, length)`; replays carry no memory writes, so it reads zeros.
-- `farm2_*.py`: astraeus-style reward-rate camp-choice features, fits, held-out evaluation and
-  heading traces ([FARM-CHOICE.md](../research/fish-2026-11-05/FARM-CHOICE.md) has the commands).
-- `combat_*.py`: contact-turn and end-tile observations, frozen combat rules (positioning,
-  spells, reset, chase) and their evaluation ([COMBAT.md](../research/fish-2026-11-05/COMBAT.md)).
-- `misc_*.py`, `misc_locks.mjs`: shopping, altar-lock, teleport, ward and opening analyses
-  ([MISC.md](../research/fish-2026-11-05/MISC.md)); `misc_rows.spawn_tiles` widens the spawn by one
-  row/column (cached `spawnA` maxima are exclusive), see MISC.md's correction.
-- `econ_*.py`: home-trip gate, recall keep, walk-vs-recall and tribute rules ([ECONOMY.md](../research/fish-2026-11-05/ECONOMY.md)).
-- `team_*.py`, `team_decode.mjs`: priority modes and turn order, camp-phase aggro, camp micro and Willow
-  ([TEAM.md](../research/fish-2026-11-05/TEAM.md)); `team_decode.mjs` decodes camp attacks and real turn order.
-- `tactic_*.py`: spell targets with gems, dash landings, spawn healing, capture holding, channel
-  interrupts ([TACTICS.md](../research/fish-2026-11-05/TACTICS.md)).
-- `pin_cohort.py NAME --raw DIR... --freeze FILE...`: pin every Fish game outside all
-  existing manifests as `NAME-manifest.json` and hash frozen files into `NAME-freeze.json`.
-- `farm3_decode.mjs`, `farm3_describe.py`: per-round observer snapshots into
-  `replays/fish-farm3/obs/` and descriptive farming statistics (time budget, payout sequences, solo
-  big camps, sides, steals). `farm3_memory.py COHORT` → `farm3_fit.py` → `farm3_evaluate.py`: team-union
-  camp memory (newest earlier-acting teammate sighting per group) under the farm2 logit;
-  `farm3_explore.py OUT TEST...`: the structural tests; `farm3_audit.py`: forced vs free rows for every
-  farm and camp-target headline ([FARM3.md](../research/fish-2026-11-05/FARM3.md)).
-- `engage_rows.py COHORT [--team-cache DIR]`: every Fish turn per actor (own view, enemy memory,
-  walk distances); `engage_range.py` / `engage_retreat.py`: range-4-8 and retreat opportunities;
-  `engage_eval.py` scores the frozen rules, `engage_lost.py` pursuit beyond sight against a mirror
-  placebo, `engage_show.py` prints one line a turn, `engage_audit.py` forced vs free rows
-  ([ENGAGE.md](../research/fish-2026-11-05/ENGAGE.md)). `--team-cache` replaces the observer path for
-  every cohort: pass a directory holding all of them.
-- `micro_decode.mjs OUT_DIR [--jobs N] [--resume] MANIFEST...`: observer decode of every champion
-  action's effect (damage incl. AoE and splash, kills, stuns), labels only; `micro_rows.py COHORT`:
-  contact-turn rows with causal earlier-actor context; `micro_{focus,spells,space,camps,bushward}.py`:
-  focus fire and kill securing, stuns and ground spells, spacing, camp-fire fights, bushes and wards;
-  `micro_audit.py`: forced vs free rows for the MICRO, COMBAT, TACTICS and DECISIONS rules
-  ([MICRO.md](../research/fish-2026-11-05/MICRO.md)).
-- **Forced vs free audit:** a rule's headline must be scored on rows where the alternative was legal
-  (exclusive spells forbid walking, ranged walk-or-attack, one cast a turn, cooldowns and ward rate);
-  `rule-audit-{micro,engage,farm}.json` hold the splits.
-- `drafts_emblems.mjs`, `drafts_emblems_report.py`: per-game drafts, item purchases and emblem
-  formation from observer snapshots, and the per-pick-count tables.
-  All new output-producing scripts refuse to overwrite evidence.
-- **Fidelity scorecard** (`tools/fish/scorecard/`, [SCORECARD.md](../research/fish-bot-2026-11-06/SCORECARD.md)): the same
-  ~110 behavioural statistics (turn budget, spacing, farming, economy, priority encoding, combat rule agreement,
-  wards, outcome) on Fish's ladder cohorts and on local games where a bot plays Fish's role, and a gap table.
-  `py tools/fish/scorecard/run.py BOT [--name N]` plays BOT against `variants/astraeus-37e1eb6` on the 128 ladder maps
-  (fast runner), decodes (`build.py local`), scores (`metrics.py`) and compares (`compare.py`, against `fish` and
-  `control-ast37`) into `replays/fish-scorecard/N/scorecard.{md,json}`. `metric_defs.py` defines every metric.
-
 ## Rolling live opponent checks
 
 `ladder_opp_check.py`, called by `live_sched.py`, keeps a detector-only source-group
@@ -759,58 +622,16 @@ selection mode, and compares saved deterministic game summaries. The first cycle
 calibrates; later changes are logged and wake the coordinator. It never repins or
 queues a repin. `ladder_coordination.py` shares a creation/switch lock with
 `ladder_scrims.py`. Operational state, evidence and recovery instructions are in
-[the operator guide](../research/ladder-scrims-2026-11-06/VERSION-CHECK.md). Tests:
+[the operator guide](../research/notes/ladder-scrims-2026-11-06/VERSION-CHECK.md). Tests:
 `python -m unittest discover -s tools/tests -p test_ladder_version_check.py -v`.
 
-### Warding research and fuel-matched gates
 
-`research/ideas-2026-11-10/warding-tools/` holds the Mite/Ad Astra ward audit,
-reproducible isolated ocean498 variants, and `run_gate.py ARM --fuel 100000|200000`.
-The wrapper verifies frozen source hashes before using `freshgate-tools/fgate.py`.
-Its `--fuel N` option gives both teams that budget and separates run, lock and
-result names; cached summaries must have matching fuel metadata. Normal-budget
-names stay unchanged. `test_fuel_namespace.py` checks that separation. Evidence,
-limits and the ten-condition design are in [warding.md](../research/ideas-2026-11-10/warding.md).
-
-`research/ideas-2026-11-10/reserve-tools/` contains source-sealed normal-fuel gates for the current498 farm-reserve/queue-guard factorial. `run_gate.py ARM --jobs 4` verifies the unchanged base and arm, then uses fixed Flp4/Mt3q and native release games. `slack8k.patch` and `queueguard.patch` reconstruct the three arms; `sources.json` records their seals. Provenance, prior evidence, smoke validation and the distinction from the live106 bundle are in [reserve-followup.md](../research/ideas-2026-11-10/reserve-followup.md).
-
-`research/ideas-2026-11-10/skirmish-tools/` contains the frozen full498 fifth-emblem Skirmish port. `run_gate.py oc-skirmish5-498 --jobs 4` verifies candidate/reference source seals and runs one normal-fuel Flp4/Mt3q transfer gate with seed311. `skirmish5.patch` reconstructs the table-only policy; `sources.json` pins both sources. Old-base/Mt3qro evidence, mechanism checks and prospective confirmation requirements are kept separate in [skirmish-498.md](../research/ideas-2026-11-10/skirmish-498.md).
-
-`research/ideas-2026-11-10/cumulative500-tools/run_gate.py oc-wakecold-500 --jobs 4` verifies frozen approved500/494 source seals and runs their normal-fuel Flp4/Mt3q cumulative gate (seed319). `--check` verifies and prints the command without playing. Valid494 reference caches are reused unchanged; working501 is excluded. This is whole-bundle evidence, not individual attribution or automatic promotion. Protocol: [cumulative500.md](../research/ideas-2026-11-10/cumulative500.md).
-
-`research/ideas-2026-11-10/fuel501-tools/run_gate.py` is the preserved, cancelled501 strength-gate proposal: only `--check` may verify/print the historical protocol; execution refuses to launch games. Explicit user policy removed this unstarted gate and future strength-gate requirements for fuel-only cuts accepted as behavior-preserving by their implementer, including incidental identity exceptions.501 remains approved for training. [Independent review and cancellation](../research/ideas-2026-11-10/fuel501-review.md).
-
-Ward screening policy update: `warding-tools/run_gate.py oc-wlate-498 --fuel 200000` now caps the unplayed behavioral screen at8blocks (`--ci0 --ahead0`), retaining valid early statistical stops. `late_screen.py` validates terminal paired cells and requires a fresh95% lower bound above0pp; it never launches/admit100k. The100k wrapper refuses without explicit `--screen-admission` referencing a positive audited proof. `test_late_screen.py` checks those boundaries without games. No extension chasing gain; the former parallel budget programme is superseded. See [warding.md](../research/ideas-2026-11-10/warding.md).
-
-Cancelled component-study launchers: `reserve-tools/run_gate.py`, `skirmish-tools/run_gate.py`, and `cumulative500-tools/run_gate.py` now refuse execution under the explicit user pause/cancellation; `--check` preserves read-only source/protocol inspection. No replacement strength runs. Completed and policy-stopped partial evidence remain intact; only genuine remaining candidate ports may be prepared against501 without launch.
-
-
-- `research/ideas-2026-11-10/ward-fish503/run_screen.py`: sealed, fixed512-map Fish-only ward screen on frozen503 at200k (2048games); `--check` verifies seals, `--report` validates completed paired results. No automatic extension/100k. Protocol and tests in the adjacent README/test_screen.py.
-
-
-- `research/ideas-2026-11-10/ward504/run_gate.py`: sealed504 full200k camp/campall gates using standard fgate, exact block validation, disabled width stop and three-way decisions; `--check` verifies protocol/source/map/tool seals. Adjacent test_stops.py exercises the actual fgate width condition.
-
-
-- `research/ideas-2026-11-10/draft504/run.py`: one sealed, explicitly authorized504 draft refit, with `--check`, source/prestart-base guards, production-fuel training, F92 export/parity/first-turn validation and audited200k-first evaluation. `fit.py` and `reserve.py` back worker counts with shared CPU slots; `audit.py` checks paired cells; `test_start.py` checks stale-base holds. Queue admission and final review barriers remain coordinator-owned. [Protocol](../research/ideas-2026-11-10/draft504/README.md).
-
-
-- `research/ideas-2026-11-10/cond504/run.py chanM|bagfF`: sealed exclusive queue wrappers for full200k current504 conditional exploiters; `--check` verifies inputs and preflight without games. `smoke.py` schedules release validity and separate runtime-classifier debug fixtures; `gate.py` validates complete paired cells and targeted/off-target evidence. `stats.py` and eight tests fix prospective first-cross decisions, with no width stop. `seal.py` refuses resealing started tests. [Protocol](../research/ideas-2026-11-10/cond504/README.md).
-
-
-- `research/ideas-2026-11-10/cond504/mirror.py`: mandatory fixed direct candidate-vs-frozen504 mirror after either conditional gate terminal;8,192 unique maps, both sides,200k, exact-cell audits and map-paired intervals. No repeated noise cells or automatic extensions; `test_mirror.py` validates pairing and duplicate/missing-cell rejection.
-
-
-- `research/ideas-2026-11-10/ocean504-v86/{run,seal,test_run}.py`: fixed user-requested506-versus-v86 direct benchmark; seal historical sources/SDK, queue-only release100k fresh+ladder panels, audit complete map pairs and uncertainty. See [protocol/results](../research/ideas-2026-11-10/ocean504-v86/README.md). Artifact naming retains504; selected candidate is506.
-
-
-- `research/ideas-2026-11-10/ward-compile-ahead/{ahead,test_ahead}.py`: audited snapshot of the owner-bound external ward compile helper; four shared-slot workers prepare existing opponent builds only, without changing or launching tests. [Design and timing](../research/ideas-2026-11-10/ward-compile-ahead/README.md).
-
-### Fresh-map gate
+## Fresh-map gate
 
 `py tools/fgate.py CAND REF` (bot dirs under `bots/`, `test_draft` off) is the standard A/B gate. CAND and REF each play the synthetic Fish and Mite bodies on the same fresh `--mix ladder-v2` maps, both sides, and the gate reads a three-way decision off the fresh maps.
 
 - **A batch** is 2,560 fresh maps the gate has not played yet plus the 128 pinned ladder maps (`--ladder all`: every map under `maps/`, its own configs and run names): 21,504 games in four `ab.py` runs (CAND and REF against each body), 20,480 of them on fresh maps. REF's runs are cached by run name (`fb<engine>-<bot>-<body>-m<maps>b<batch>[-fuelN]`) and serve every candidate, so a changed bot needs a new dir: a cached run is reused only if it played the frozen copy (source and SDK hash) the bot has now, from its summary's `frozen` record or, for runs before that record, the copy its suite logs name; otherwise the gate stops and names it (delete `replays/ab/<run>` to replay it), and it stops too if a bot changes mid-gate. CAND and REF must agree on `test_draft`. From a worktree, the gate plays and reads that tree's bots, runs and summaries; the bodies are built where the shared markers say (the primary checkout) and copied in. The same holds for `--blocks`. `--batch-maps N` changes the step and `--max-batches N` caps the gate.
-- **Opponents** are compiled once per body version (`variants/rt-Flp4`, `rt-Mt3q`, made from noise body 1 by `research/ideas-2026-11-11/conditional-batch506/runtime_body.py`): the noise seed and draft salt that `spar-dvnK` bakes in are read per game from the runner (`ab.py --experiment-config`). Fresh map i of the pool plays noise seed i + 1; batch j's ladder maps play noise j + 1. The bodies run unmetered, which plays the same games as their ordinary code with unlimited fuel. CAND and REF keep the exact fuel budget: 100k a turn, or `--fuel N`. A bot without the run-time import cannot be configured or unmetered, so an ocean mirror never is.
+- **Opponents** are compiled once per body version (`variants/rt-Flp4`, `rt-Mt3q`, made from noise body 1 by `research/notes/ideas-2026-11-11/conditional-batch506/runtime_body.py`): the noise seed and draft salt that `spar-dvnK` bakes in are read per game from the runner (`ab.py --experiment-config`). Fresh map i of the pool plays noise seed i + 1; batch j's ladder maps play noise j + 1. The bodies run unmetered, which plays the same games as their ordinary code with unlimited fuel. CAND and REF keep the exact fuel budget: 100k a turn, or `--fuel N`. A bot without the run-time import cannot be configured or unmetered, so an ocean mirror never is.
 - **Decision**, read after each batch on the fresh map units (a unit is 0.5 + CAND's mean minus REF's over a map's four paired games): REJECT (low SPRT 0.4975/0.50 at H0), ACCEPT (high SPRT 0.505/0.5075 at H1; the gate then plays on to the LIVE BAR, ln 99, on maps the screen never saw, unless `--screen`), ZONE (low H1 and high H0: judgement; `--zone-stop` ends there), NARROWED (95% half-width ≤ `--ci`, default 0.25 points; 0 disables), IDENTICAL (no paired game differs). It prints Fish, Mite, one-site and multi-site splits, the ladder side read and a "Results against REF" table, and writes `~/tmp-offload/diverse/gate-logs/fgate-<cand>--<ref><bodies>[-fuelN]-batch.json`.
 - **Size.** A unit's standard deviation is about 27 points, so a batch narrows the fresh read to ±1.05 points, 4 batches to ±0.52 and 16 to ±0.26. A change of +2 points reaches ACCEPT in about 3 batches, +1.5 in 4, +1 in 9; a loss of 1 point reaches REJECT in about 4. A change within a quarter point of zero runs to NARROWED at about 18 batches. `--max-batches N --ci 0` is a fixed read of at most N batches.
 - **Pool:** `~/tmp-offload/gatebatch/pool` (`FGATE_HOME`), 97,535 fresh ladder-v2 maps (mapgen seeds 2417000-2417383; 38 whole batches), byte-new against the ladder and one per layout key, in a fixed shuffled order that every gate walks from batch 0, so early batches are shared by every candidate; `--first-batch J` starts later, on maps earlier gates have not played, for a held-out confirmation. `py tools/fgate_batch.py grow SEEDS DIR...` appends generated maps after the existing ones.
@@ -819,54 +640,9 @@ Cancelled component-study launchers: `reserve-tools/run_gate.py`, `skirmish-tool
 - **Runner:** the batch gate loads `tools/fastengine/runner/target-rt/release/libfastrunner.so` (`FGATE_RUNNER_LIB`), built from this tree with `CARGO_TARGET_DIR=target-rt cargo build --release`. Metered games are byte-identical to the shared library's, which other jobs keep using. A hung unmetered body cannot run out of fuel, so each game has a 600 s watchdog (`--game-timeout`); a timed-out game is a failed game, counted in the report.
 - **`--blocks`** is the gate as it was before 2026-11-11, for reproducing older reads: 256-game noise blocks on 1,024 fresh maps and the ladder, a compiled opponent pair a block, metered bodies. The two modes play different opponent populations, so their runs and result files are separate and their win rates against the bodies do not compare.
 
-`fgate.py --blocks CAND REF` forwards the noise-block game/statistical options unchanged to `research/ideas-2026-11-09/freshgate-tools/fgate.py` and prepares opponent compilation ahead of demand. Its default is 16 process workers and the current plus eight future noise blocks; every worker holds one shared CPU slot and uses the normal generated-source and frozen-build locks. `--compile-workers N`, `--compile-lookahead N`, and `--no-compile-ahead` control this resource optimization; `CAMBC_COMPILE_AHEAD=0` also disables scoped integration in queued gates. No extra scored games or warm-up games are played. Ordinary `ab.py` comparisons continue to build their two fixed bots normally.
+`fgate.py --blocks CAND REF` forwards the noise-block game/statistical options unchanged to `research/notes/ideas-2026-11-09/freshgate-tools/fgate.py` and prepares opponent compilation ahead of demand. Its default is 16 process workers and the current plus eight future noise blocks; every worker holds one shared CPU slot and uses the normal generated-source and frozen-build locks. `--compile-workers N`, `--compile-lookahead N`, and `--no-compile-ahead` control this resource optimization; `CAMBC_COMPILE_AHEAD=0` also disables scoped integration in queued gates. No extra scored games or warm-up games are played. Ordinary `ab.py` comparisons continue to build their two fixed bots normally.
 
 `gate_compile_ahead.py --plan PLAN [--check]` implements the owner-bound helper and a gate-phase scope. Exact process identity, source/tool seals, a stop marker, and draining outstanding compiles bound its lifetime. Queued conditional, draft, and tuning final gates use this scope; training and mandatory mirror phases do not. The historical research gate stays unchanged for active sealed experiments. Lightweight checks: `tools/tests/test_{gate_compile_ahead,fgate_entrypoint}.py` and conditional lifecycle tests.
 
-`experiment_config.py` validates optional per-map REF-only native opponent inputs for `ab.py` / `run_batched.py --experiment-config FILE`. The runner accepts the resulting per-game `--runtime-config` manifest fields; only explicitly configured synthetic Fish/Mite replicas use unmetered native code. Ocean candidate/reference and mirrors stay metered. Configured preparation uses one-slot C++ builds and a `run-batch --prepare-only` cache preparation holding up to 16 slots (what fair share grants) before ordinary shared-pool games. `--game-timeout SECONDS` provides an opt-in owned-worker timeout (run-batch only), retaining errors without retry. See [runtime opponent API and validation](../research/ideas-2026-11-11/runtime-opponents/README.md) for schema, cache/PGO semantics and isolated-library evidence.
+`experiment_config.py` validates optional per-map REF-only native opponent inputs for `ab.py` / `run_batched.py --experiment-config FILE`. The runner accepts the resulting per-game `--runtime-config` manifest fields; only explicitly configured synthetic Fish/Mite replicas use unmetered native code. Ocean candidate/reference and mirrors stay metered. Configured preparation uses one-slot C++ builds and a `run-batch --prepare-only` cache preparation holding up to 16 slots (what fair share grants) before ordinary shared-pool games. `--game-timeout SECONDS` provides an opt-in owned-worker timeout (run-batch only), retaining errors without retry. See runtime opponent API and validation for schema, cache/PGO semantics and isolated-library evidence.
 
-### Latest-host partial loss books
-
-`research/ideas-2026-11-13/rbook/loss_host.py --work WORK --host-version 132
---name rbook-host531 --commit-bot charybdis` verifies source identity against the
-actual unmasked upload and its commit, then prepares an immutable reference and
-an isolated replay template. It refuses existing destinations and applies no extra
-fuel patches. `loss_refresh.py --host-profile WORK/host-profile.json` uses that
-reference for benchmarks/forced fallback and freezes the profile on selection/resume.
-Use fresh fingerprint caches after changing host; raw/extracted replay caches can be copied.
-
-`--partial-baseline fish --partial-baseline mite --minimum-baseline-fraction .6`
-requires at least60% known cells per opponent. Unknown target cells and natural wins
-never qualify; entries with unknown collateral are deferred in `deferred-candidates.json`.
-`--minimum-source-fraction .7` permits a partial winning-source sweep independently.
-Default old-host/full-baseline behavior stays unchanged. `BOOK_JOBS` bounds stage
-bench/fallback parallelism (the loss builder uses8).
-
-`loss_cycle.py --work WORK` reads `refresh-plan.json`, exports eligible Fish source
-cell lists, waits for baseline/source thresholds and reference-bench.DONE, builds,
-then invokes the existing coordinated release transaction once. No repins or queue
-changes before that transaction. Existing cycle state refuses blind restarts.
-Optional plan `upload_deadline` passes `BOOK_UPLOAD_DEADLINE_EPOCH` to live_test.sh;
-late uploads stop, restarting a scheduler already stopped for the transaction.
-Checks continue after upload, and the latest book is REST under current user policy.
-
-For an urgent starter, `loss_refresh.py --existing-sources-only` explicitly replaces
-`--after-step`; it uses existing proven recordings plus explicitly labeled provisional
-sources, without waiting for a new source campaign. Matching baseline thresholds and
-unknown-collateral deferral remain enforced. Cycle plans opt in with
-`existing_sources_only: true`. Partial books with fewer than24 long entries must test
-all available long fallback cases; no handovers or invalid reads still fail.
-
-A per-work `validation-policy.json` with `pinned_only: true` and an explicit reason
-opts out of additional current-opponent samples, while preserving every provisional
-target and forced/shared-draft collateral check. The policy is frozen in build state
-and the release digest. An original r8 source remains r8 evidence even when its
-provisional target is r9. `loss_cycle.py --resume-local` only resumes a reconciled
-held cycle with ready local artifacts and no release state; it never retries an
-upload attempt.
-
-Pinned-only validation policy may include `recovery_cells` with `opponent`, `map`
-and `side`. These are mandatory wins on matching host-baseline win cells after
-removing a regressive entry. Planning refuses duplicates, unknown/loss baselines,
-or any remaining book entry on the recovery cell. The artifact validator recomputes
-these requirements, so removing a recovery check from the plan fails validation.

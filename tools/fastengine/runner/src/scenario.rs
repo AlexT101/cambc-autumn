@@ -1,4 +1,4 @@
-//! `fastrunner scenario`: the combat lab's scenarios (research/combat-lab/PLAN.md, "Scenario setup" and "Scenario
+//! `fastrunner scenario`: the combat lab's scenarios (research/notes/combat-lab.md, "Scenario setup" and "Scenario
 //! spec") on the wasm engine backend. Per scenario: load the map, draft the spec's picks (each team's draft bot runs
 //! with its picks substituted, once per (bot, map, team, picks); its draft memory is cached and written directly
 //! afterwards), buy items on spawn in round 1, idle to the last champion turn of round `round - 1`, set the

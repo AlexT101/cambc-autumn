@@ -1,4 +1,4 @@
-"""Staged draft search on draft_search.py (research/hyperion/DRAFT.md, Phase 3). From the repo root:
+"""Staged draft search on draft_search.py (research/notes/DRAFT.md, Phase 3). From the repo root:
 
   DS_SRC=bots/variants/astraeus-<sha7> DS_DB=replays/ds/<name>.jsonl py tools/variants/ds_run.py CMD --picks P ...
   run --picks 3,4 --n 160                 screen every CANDS entry of each count on the first 160 jobs of its pool

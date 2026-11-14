@@ -312,7 +312,7 @@ bool awake_over(const World& world, int g, vec2 p);
 bool finishing_camp(const World& world);
 bool finishing_camp(const World& world, vec2 p); // as if we stood at p
 
-// combat/fixc.cc (research/ladder-scrims-2026-11-06/fix-combat.md)
+// combat/fixc.cc (research/notes/ladder-scrims-2026-11-06/fix-combat.md)
 int fixc_bush_rank(const World& world, vec2 p);
 bool fixc_bush_threat(const World& world, Safety& safety);
 bool fixc_commit(const World& world, Pathing& pathing);

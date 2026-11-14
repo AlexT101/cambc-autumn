@@ -156,7 +156,7 @@ def is_fastrunner(cli):
 # The launcher runs stock cambc under a cambc build it was not ported to (or with its library unbuilt): games stay
 # right but run ~4.7x slower, and release builds report no out-of-fuel counts (14:44-15:19 on 2026-11-09).
 FASTRUNNER_DOWN = ("{cli} is the fast runner, but `{cli} __fastrunner` does not answer, so stock cambc would play every "
-                   "game: the installed cambc is not the build it was ported to (research/fastengine/RUNNER.md), or "
+                   "game: the installed cambc is not the build it was ported to (research/notes/RUNNER.md), or "
                    "its library is not built. Port or rebuild it, or set FASTRUNNER_ALLOW_STOCK=1 to play stock")
 
 

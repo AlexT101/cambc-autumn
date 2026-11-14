@@ -1,7 +1,7 @@
 # Constant tuning (SPSA, fast runner, no compiles)
 
 ```
-python3 research/diana-2026-11-03/tunify.py bots/BOT [NAME...]   # once: chosen params.h constants -> a patchable block
+python3 tools/tune/tunify.py bots/BOT [NAME...]   # once: chosen params.h constants -> a patchable block
 python3 tools/tune/tune.py init --run R --bot bots/BOT --opps variants/a,baselines/v94,... [--maps 64 --pairs 4]
 python3 tools/tune/tune.py run --run R --hours 6                  # resumes; touch replays/tune/R/STOP to end after a batch
 python3 tools/tune/tune.py status --run R
@@ -28,8 +28,8 @@ python3 tools/tune/tune.py apply --run R --out bots/variants/BOT-R # a copy with
   iteration, so ranges, gains, weights and games can be changed while it runs. `history.jsonl` has every iteration
   (means, x); `games.jsonl` has every game (an iteration a line: its names, sign vectors `deltas`, per-name `cn`,
   `games` as [map, opponent, side], each candidate's per-game score), about 40 KB an iteration at 64 maps x 4
-  opponents, for map-conditioned analysis (research/ideas-2026-11-05/mapcond.md).
+  opponents, for map-conditioned analysis (research/notes/ideas-2026-11-05/mapcond.md).
 - **Judge the result** with a normal A/B (`apply`, then `ab.py` on suites the pool never used, `--no-test-draft`):
   the tuning score is against its panel, on its pool.
 
-The single reviewed [504 economy/crew/shop run](../../research/ideas-2026-11-10/tune504/README.md) adds an exact-site source map for selected constants outside params.h, preserves mutable map-conditioned defaults, exports ordinary constants, and checks source/config/map seals. Its isolated launcher schedules default/export release100M identity, fixed600-iteration100k training, and a first200k exported-candidate gate. It acquires fair shared slots for metadata parsing too. This is an explicitly authorized one-off protocol, not an automatic tuning chain.
+The single reviewed 504 economy/crew/shop run adds an exact-site source map for selected constants outside params.h, preserves mutable map-conditioned defaults, exports ordinary constants, and checks source/config/map seals. Its isolated launcher schedules default/export release100M identity, fixed600-iteration100k training, and a first200k exported-candidate gate. It acquires fair shared slots for metadata parsing too. This is an explicitly authorized one-off protocol, not an automatic tuning chain.

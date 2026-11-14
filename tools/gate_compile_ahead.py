@@ -206,9 +206,9 @@ def snapshot_manifest(path, bots, gate_source):
     """Seal current inputs for the standard future-gate entry point before any games."""
     paths={Path(gate_source),Path(__file__).resolve(),R/'tools/fgate.py',R/'tools/run_batched.py',R/'tools/ab.py',R/'tools/cpu_slots.py',
            R/'tools/cambc_env.py',R/'copybot',CLI}
-    for directory in ('sdk/cpp','research/ideas-2026-11-08/diverse-tools','research/ideas-2026-11-08/spar-tools',
-                      'research/ideas-2026-11-09/freshgate-tools','research/ideas-2026-11-09/oppfidelity-tools',
-                      'research/ideas-2026-11-09/fishfid','research/ideas-2026-11-10/opporder'):
+    for directory in ('sdk/cpp','research/notes/ideas-2026-11-08/diverse-tools','research/notes/ideas-2026-11-08/spar-tools',
+                      'research/notes/ideas-2026-11-09/freshgate-tools','research/notes/ideas-2026-11-09/oppfidelity-tools',
+                      'research/notes/ideas-2026-11-09/fishfid','research/notes/ideas-2026-11-10/opporder'):
         paths.update(p for p in (R/directory).iterdir() if p.is_file() and p.suffix in ('.py','.sh','.h','.json'))
     sources={}
     for bot in (*bots,'variants/oc-tune3'):

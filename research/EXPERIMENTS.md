@@ -1,7 +1,7 @@
 # Experiments
 
 What has been tried, so it isn't repeated: lessons, and the ideas that lost, were level and dropped, or are held.
-Kept changes are in [hyperion/CHANGES.md](hyperion/CHANGES.md), not here. The untrimmed file (every measurement and
+Kept changes are in [CHANGES.md](CHANGES.md), not here. The untrimmed file (every measurement and
 the per-round fuel details) is `git show 1d5ddf0:research/EXPERIMENTS.md`.
 
 Win rates are against the bot's previous version, all maps from both sides at the real fuel budget, unless noted.
@@ -52,7 +52,7 @@ followed replay divergence at indices38,2,24,12. Thus handover can preserve a wi
 after an opponent update, but these selected cells do not establish a general
 success rate. The four failed provisional lines are excluded from the next book;
 only actual current-pin winning recordings are retained. [Full provenance and
-CRC audit](ideas-2026-11-13/rbook/r14-release.json).
+CRC audit](notes/ideas-2026-11-13/rbook/r14-release.json).
 
 ## (charybdis 531 book, 2026-11-13) Corrected v134 restores three collateral wins
 
@@ -65,11 +65,11 @@ variant. All three deliberate regression-repair checks won against pinned Mite r
 v134 became REST21:12:11 and completed qualification21:17:54. These are targeted
 repair checks, not a broad strength estimate. Hour36 current Mite changed its
 00lanes/b fourth pick from Cassi & Issac to Prism; its win there is not proof of
-r13 compatibility. [Release and replay evidence](ideas-2026-11-13/rbook/qualified531-release.json).
+r13 compatibility. [Release and replay evidence](notes/ideas-2026-11-13/rbook/qualified531-release.json).
 
 ## (charybdis 529, 2026-11-13) Full book-free live ladder: gain against Mite, Fish level
 
-Unmasked v129 (`bbc7cddb6`, Charybdis 529) versus book-free v128 (525 + fuel 01-02), **all 170 ladder maps, both sides, Fish r8 and Mite r13: 680 unique cells**. Exact opponent source groups match between versions. Fish **194/340 vs 197/340** (-3; paired flips 56 for / 59 against); Mite **226/340 vs 204/340** (+22;65 for / 43 against). Total **420/680 (61.8%) vs 401/680 (59.0%)**, +19 wins / +2.8 points. The gain is concentrated against this Mite pin; Fish is essentially level. These completed outcomes supersede early partial reads. Uploaded candidate source was verified byte-identical to the frozen commit, with own drafts and no book masking. [Per-cell evidence and protocol](ideas-2026-11-13/chy529-live/README.md). All 680 replays and summaries are retained; the ZIP CRC audit passed.
+Unmasked v129 (`bbc7cddb6`, Charybdis 529) versus book-free v128 (525 + fuel 01-02), **all 170 ladder maps, both sides, Fish r8 and Mite r13: 680 unique cells**. Exact opponent source groups match between versions. Fish **194/340 vs 197/340** (-3; paired flips 56 for / 59 against); Mite **226/340 vs 204/340** (+22;65 for / 43 against). Total **420/680 (61.8%) vs 401/680 (59.0%)**, +19 wins / +2.8 points. The gain is concentrated against this Mite pin; Fish is essentially level. These completed outcomes supersede early partial reads. Uploaded candidate source was verified byte-identical to the frozen commit, with own drafts and no book masking. [Per-cell evidence and protocol](notes/ideas-2026-11-13/chy529-live/README.md). All 680 replays and summaries are retained; the ZIP CRC audit passed.
 
 ## (charybdis 531, 2026-11-13) Fuel pass on 530 (Codex): -2.87% exhausted turns, target of 10% not met
 
@@ -204,7 +204,7 @@ reproduced exactly against their recorded opponent puppets (seeded priority, for
 02harvest a fills an x2 hole; Fish's 04yin_yang a and 05space_station b overlap old-pin Mite entries.
 This is replay qualification, not a strength gate or proof of the current Mite version. None admitted to
 ranked REST: target-pin live validation and combined-book checks remain. Script, provenance and artifacts:
-[rbook-foreign/README.md](ideas-2026-11-13/rbook-foreign/README.md).
+[rbook-foreign/README.md](notes/ideas-2026-11-13/rbook-foreign/README.md).
 
 ## (charybdis book v126, 2026-11-13) Exact-book sweep and reporting correction
 
@@ -214,7 +214,7 @@ book coverage, not host strength. All 182 ordinary Fish cells already compare ex
 The unpinned Fish divergence alarm was an oppwatch.py bug: one entry per map/side overwrote Fish with Mite.
 Comparing all entries gives 8/8 exact wins across two checks of four cells. Mite really differs on its three
 covered check cells at round indices 2, 3 and 272; drafts still match. 03one_gem a has only a Fish entry.
-Details and the authorized programmatic refresh: [rbook/TAKEOVER.md](ideas-2026-11-13/rbook/TAKEOVER.md).
+Details and the authorized programmatic refresh: [rbook/TAKEOVER.md](notes/ideas-2026-11-13/rbook/TAKEOVER.md).
 
 ## (charybdis = 525, 2026-11-13) Exact fuel cuts: altar stands and the shop's shared emblem prefix take out-of-fuel turns at 100k down 5.5% (Fish body) and 6.3% (Mite body); the live priority mask costs +7%
 
@@ -269,7 +269,7 @@ Patches (diffs against `variants/chy-525`, `patch -p1` in the bot dir) and scrip
 
 ## (charybdis = 525, 2026-11-13) Cassi's one-turn kill zone against Fish r8's Vesper: the pair already retreats and Cassi dies in the chase; leaving earlier is level (49.87% at 200k) and leaves her deaths unchanged
 
-Note, patches and scripts: [ideas-2026-11-13/cassi-one-turn-kill-zone/README.md](ideas-2026-11-13/cassi-one-turn-kill-zone/README.md).
+Note, patches and scripts: [ideas-2026-11-13/cassi-one-turn-kill-zone/README.md](notes/ideas-2026-11-13/cassi-one-turn-kill-zone/README.md).
 - **Idea.** The fed Vesper two-shots Cassi late. While a seen enemy can kill a linked body in one turn, the pair
   should read the stand over that enemy's approach and leave before the run starts.
 - **Live data** (132 games against Fish's Vesper):
@@ -312,7 +312,7 @@ Results against chy-525 (fgate `--pool v4 --fish-body fr8-g25 --mite-body mf-f9`
 
 ## (charybdis = 525, 2026-11-13) Bag-carrier prey against Fish r8: isolated Fish carriers away from its Vesper are rare and we already take them; abandoned before building
 
-Note, scripts and the trace patch: [ideas-2026-11-13/bag-carrier-prey/README.md](ideas-2026-11-13/bag-carrier-prey/README.md).
+Note, scripts and the trace patch: [ideas-2026-11-13/bag-carrier-prey/README.md](notes/ideas-2026-11-13/bag-carrier-prey/README.md).
 - **Idea.** A kill takes the victim's bag, and Fish r8 banks late. Pursue a non-Vesper carrier of a bag worth a life
   while Fish's Vesper is far, 2+ of ours are near, and no enemy who could join out-strikes us.
 - **The body is fit to read it.** fr8-g25's carriers hold 75-80% of live's carrier rounds and bags. Spells (50+ gems,
@@ -335,7 +335,7 @@ Note, scripts and the trace patch: [ideas-2026-11-13/bag-carrier-prey/README.md]
 
 ## (charybdis = 525, 2026-11-13) Why games against Fish r8 are won: no team beats it more on the same cells; wins part from losses only in fights after r200; banning our Vesper (the one cross-team draft signal) loses against the bodies
 
-Note and scripts: [ideas-2026-11-13/fwin/README.md](ideas-2026-11-13/fwin/README.md).
+Note and scripts: [ideas-2026-11-13/fwin/README.md](notes/ideas-2026-11-13/fwin/README.md).
 
 - **Data.**
   - 5,083 platform games against Fish r8 since 11-12 14:00.
@@ -378,7 +378,7 @@ Note and scripts: [ideas-2026-11-13/fwin/README.md](ideas-2026-11-13/fwin/README
 
 ## (charybdis = 525, 2026-11-13) Dropping our Vesper against fed-Vesper teams, per map: the ban loses where it acts, a ban on the enemy's revealed Vesper would too, and the live signal is map difficulty
 
-Note, patch and scripts: [ideas-2026-11-13/draft-drop-our-vesper/README.md](ideas-2026-11-13/draft-drop-our-vesper/README.md).
+Note, patch and scripts: [ideas-2026-11-13/draft-drop-our-vesper/README.md](notes/ideas-2026-11-13/draft-drop-our-vesper/README.md).
 Follow-up to the entry above: `variants/draft-drop-our-vesper` is the same one-line ban as `fw-nv`, built
 independently, with identical games and reads (fgate v4, fr8-g25 + mf-f9, 200k: **48.41% (47.73-49.08)** of 5,120
 fresh maps, Fish 47.73%, Mite 49.09%; REJECT at batch 2). No 100k run.
@@ -398,7 +398,7 @@ fresh maps, Fish 47.73%, Mite 49.09%; REJECT at batch 2). No 100k run.
 
 ## (charybdis = 525, 2026-11-13) Camp-death gem denial: a doomed hoarder dying to a camp instead of to Fish fits 0-3 of 78 live hoard kills; abandoned before building
 
-Note and scripts: [ideas-2026-11-13/camp-death-gem-denial/README.md](ideas-2026-11-13/camp-death-gem-denial/README.md).
+Note and scripts: [ideas-2026-11-13/camp-death-gem-denial/README.md](notes/ideas-2026-11-13/camp-death-gem-denial/README.md).
 - **Idea.** A camp kill destroys the victim's bag and pays no kill gold, and camps attack before champion turns. A
   doomed hoarding Prism could end its turn where a camp lands the last blow before Fish's killer acts.
 - **Data.** In 244 live Fish r8 games, Fish champions killed 78 of our carriers of 100+ gems (24,172 gems).
@@ -415,7 +415,7 @@ Note and scripts: [ideas-2026-11-13/camp-death-gem-denial/README.md](ideas-2026-
 
 ## (charybdis = 524, 2026-11-12) The out-scaled Prism against Fish r8: bag focus + the any-risk channel beat 524 by 1.1-1.3 head-to-head and gain against Mite and Flp4, level against the Fish r8 body; c2 shipped as charybdis 525
 
-Note, patches and scripts: [ideas-2026-11-12/r8-scale/README.md](ideas-2026-11-12/r8-scale/README.md) (branch
+Note, patches and scripts: [ideas-2026-11-12/r8-scale/README.md](notes/ideas-2026-11-12/r8-scale/README.md) (branch
 `r8-scale-20261112`). Arms are copies of charybdis 524 (`variants/r8s-*`, reference `variants/r8s-base`), read by
 `fgate --pool v4` at 100k against Flp4 / Mt3q ("std") and fr8-g25 / Mt3q ("fr8"), by study A's live fork, and
 head-to-head on fresh ladder-v4 maps. The programme's test was a gain against the Fish r8 body, which no arm met;
@@ -465,7 +465,7 @@ head-to-head on fresh ladder-v4 maps. The programme's test was a gain against th
 
 ## (charybdis = 524, 2026-11-12) Converting the hoard against Fish r8: thirteen arms, none passes; allies banking in parallel is level against the bodies and loses 0.65 head-to-head
 
-Note, patches and scripts: [ideas-2026-11-12/r8-convert/README.md](ideas-2026-11-12/r8-convert/README.md) (branch
+Note, patches and scripts: [ideas-2026-11-12/r8-convert/README.md](notes/ideas-2026-11-12/r8-convert/README.md) (branch
 `r8-convert-20261112`). Arms are copies of charybdis 524 (`variants/rc-*`, reference `variants/rc-524`), read by
 `fgate --pool v3` at 100k against Flp4 / Mt3q ("std") and fr8-g25 / Mt3q ("fr8"), by a 640-game replay probe against
 fr8-g25, by study A's live fork, and head-to-head on fresh ladder-v4 maps.
@@ -496,8 +496,8 @@ fr8-g25, by study A's live fork, and head-to-head on fresh ladder-v4 maps.
 
 Two independent studies of the same 345 games (198-147; 340 distinct, 195-145), each with exact re-runs of
 `bots/baselines/v118` on Fish's recorded inputs (345/345 release re-runs exact, fuel included):
-[ideas-2026-11-12/v118-fish/README.md](ideas-2026-11-12/v118-fish/README.md) (study A) and
-[ideas-2026-11-12/v118-fish-b/README.md](ideas-2026-11-12/v118-fish-b/README.md) (study B). Per-game rows:
+[ideas-2026-11-12/v118-fish/README.md](notes/ideas-2026-11-12/v118-fish/README.md) (study A) and
+[ideas-2026-11-12/v118-fish-b/README.md](notes/ideas-2026-11-12/v118-fish-b/README.md) (study B). Per-game rows:
 `replays/pulls/v118-fish-2026-11-12.json`.
 
 - **Where the losses are.** A winning bag (score + bag at 1,000+) held: 193 of 214 won; without one, 5 of 131. A
@@ -590,7 +590,7 @@ suggests draft18's fit is not short of data: a later draft round should bring a 
 
 ## Emblem lab round 6 on c520-ps (2026-11-12, the lab filler's first round): six emblem edits, 50.80% at 200k and 50.59% at 100k on fresh ladder-v3 maps
 
-The lab filler (research/ideas-2026-11-12/labs, user 2026-11-12: labs on idle compute) ran round 5's edit lab
+The lab filler (research/notes/ideas-2026-11-12/labs, user 2026-11-12: labs on idle compute) ran round 5's edit lab
 (tools/emblab `elab.py`, same 331-edit library rebuilt on the base) on `variants/c520-ps` (520 + psafe-a), its own
 fresh ladder-v2 pool (seeds 7700000-7700199, 50,905 maps), against a second lab team (0.5) and the Fish/Mite bodies
 at noise seeds 952/953. 3.6M games in ~3.5 h on a shared box; the vehicles played as plain bots at 100M (3/3).
@@ -616,7 +616,7 @@ the accept line (50.5) and the CI clear of 50, but the gate's SPRT did not reach
 
 ## Ladder-v4 mapgen, the full pool on every feature (2026-11-12): a classifier still told ladder-v3 from the 168 maps (open frames, arenas, close spawns); ladder-v4 fixes that; win rates and order don't move
 
-Notes: [ideas-2026-11-12/ladderv3/README.md](ideas-2026-11-12/ladderv3/README.md), "Full pool".
+Notes: [notes/ladder-v3.md](notes/ladder-v3.md), "Full pool".
 
 - **The gap.** A classifier on all 130 per-map features told ladder-v3 from the 168 published maps: AUC 0.63, against
   a null of 0.50 ± 0.03. It did so on things compare.py's list never tested:
@@ -646,7 +646,7 @@ Results against the bodies (rt-Flp4 and mf-c1, 100k fuel; pool-v4 b000-b003, 40,
 
 ## Ladder-v3 mapgen for the 170-map pool (2026-11-12): ranked play is uniform over the 170 (05 maps 24.7%); ladder-v3 matches them; the bots' order and win rates don't move
 
-Notes: [ideas-2026-11-12/ladderv3/README.md](ideas-2026-11-12/ladderv3/README.md). Ranked play since the 05 maps went
+Notes: [notes/ladder-v3.md](notes/ladder-v3.md). Ranked play since the 05 maps went
 live (113,965 games, top-8 games too) draws every pool map equally (chi-square p 0.98), so the 42 05 maps are 24.7% of
 it, not about half. `--mix ladder-v3` is ladder-v2's 256 maps plus 84 in the 05 style (calibration 4, fitted to the
 40 05 maps in `maps/`: guarded compact blocks, 3x3 spawns with camps 5+ away, few shared groups, more walls). On
@@ -667,7 +667,7 @@ plays pool-v3 (16 batches, 632 05-style maps in each); it is opt-in.
 
 ## Mite's rules from replays (2026-11-12): its priority is a state machine; it retreats below 0.4 health or with 11+ gems, never for numbers; Vesper is its gold sink and killer; its draft is a map-feature model
 
-Analysis only; no games. Details: [ideas-2026-11-12/mitere](ideas-2026-11-12/mitere/README.md). Data: 495 ranked Mite
+Analysis only; no games. Details: [ideas-2026-11-12/mitere](notes/ideas-2026-11-12/mitere/README.md). Data: 495 ranked Mite
 replays (11-10 to 11-12), our 375 live scrims against r7, and 48k capture rows.
 
 - **Map pool:** the platform pool is now 170 maps. 42 `05*` maps entered ranked play at 11-11 23:10.
@@ -737,7 +737,7 @@ replays (11-10 to 11-12), our 375 live scrims against r7, and 48k capture rows.
 
 ## Forking live Mite games, and per-composition constants (2026-11-12): forks work and find a known gain at about a fresh gate's cost a game; the body plays on 5-7 points weaker than Mite from live positions; no pick-count interaction in 2.7M SPSA games
 
-Notes, the runner subcommand and scripts: [ideas-2026-11-12/forkcomp/README.md](ideas-2026-11-12/forkcomp/README.md).
+Notes, the runner subcommand and scripts: [ideas-2026-11-12/forkcomp/README.md](notes/ideas-2026-11-12/forkcomp/README.md).
 
 - **Live forks.** `fastrunner livefork` (a runner copy, wasm engine) replays a live game exactly: our release build
   against the harness puppet, 1,650 of 1,650 Mite games (v105-v112) on the live score. At rounds 100/300/600 it swaps
@@ -759,7 +759,7 @@ Notes, the runner subcommand and scripts: [ideas-2026-11-12/forkcomp/README.md](
 
 ## Fuel in fights on charybdis 520 (2026-11-12): the Prism's own fuel no longer pays, the team's +1.5 at 200k is spread thin, the step guard's gate cannot be bought; goal steps not started on fuel they cannot finish take out-of-fuel turns down 10% (level; CHANGES 521)
 
-Notes, scripts and patches: [ideas-2026-11-12/fightfuel/README.md](ideas-2026-11-12/fightfuel/README.md). REF
+Notes, scripts and patches: [ideas-2026-11-12/fightfuel/README.md](notes/ideas-2026-11-12/fightfuel/README.md). REF
 `variants/chy-life` (= charybdis 520), rt bodies, real 100k fuel. Arms: debug builds under `--fuel 200000`, every
 instance charging itself back to 100k but for the arm's exemption, paired with the capped base on fgate pool batch 0
 (10,240 games an arm; a paired read moves by about ±0.45). Gates: fgate on batches 1-6 and 75-86 (REF's half cached).
@@ -831,7 +831,7 @@ cheaper escape plan (the plan free is +0.12).
 
 ## Prism deaths on charybdis (charybdis = 519, 2026-11-12): failed retreats and a fuel test on its carry picks; fix, own fall and Health shards pass the live bar at +1.23 (CHANGES 520)
 
-Notes, scripts and patches: [ideas-2026-11-12/prismlife/README.md](ideas-2026-11-12/prismlife/README.md). Arms are
+Notes, scripts and patches: [ideas-2026-11-12/prismlife/README.md](notes/ideas-2026-11-12/prismlife/README.md). Arms are
 `variants/pl-*` (knobs on 519), the candidates `variants/chy-carry` and `variants/chy-life`. Real 100k fuel, rt bodies.
 
 **How it dies** (2,560 games, and 1,280-game debug traces): 0.373 deaths a Prism game; games without one are won 92.9%,
@@ -885,7 +885,7 @@ scopes moved nothing; 30k credited after farm's loop gave +8.2% gems and -8.5% d
 
 ## Prism safety on the game-ending tribute (charybdis = 517, 2026-11-12): a hurt Prism with the winning bag heals before its channel; +0.17 to +0.29, zone
 
-Notes, data and scripts: [ideas-2026-11-11/prismsafe/README.md](ideas-2026-11-11/prismsafe/README.md). Arms are
+Notes, data and scripts: [ideas-2026-11-11/prismsafe/README.md](notes/ideas-2026-11-11/prismsafe/README.md). Arms are
 `variants/psafe-{ab,a,b,0,abF}` (patches beside the README).
 
 **The mechanism** (REF, 2,560 games against the bodies at 200k): 52% of games have a winning bag (the Prism's gems
@@ -1053,7 +1053,7 @@ conditional coverage, stdout-cap sensitivity and reproduction: [report](charybdi
 
 ## (ocean = 506, 2026-11-11) How real Fish wins early fights: the whole pack fights, on our half; the bodies neither attack nor defend like it; two chasing bodies move nothing, none adopted
 
-Write-up, tables and tools: [ideas-2026-11-11/fishfight/README.md](ideas-2026-11-11/fishfight/README.md). Live
+Write-up, tables and tools: [ideas-2026-11-11/fishfight/README.md](notes/ideas-2026-11-11/fishfight/README.md). Live
 v115's 520 scrims against Fish r2 and Mite r6; 506 against Flp4 / Mt3q on the ladder maps (256 games each) and on
 gen + gen-s1 (1,024 each). No ocean candidate, no fgate games.
 
@@ -1085,7 +1085,7 @@ prints the targets.
 
 ## (ocean = 506, 2026-11-11) One-site overruns: early fights lost to real packs, a snowball that runs both ways; the bodies fight too weakly to test a fix, none built
 
-Write-up, tables and tools: [ideas-2026-11-11/overruns/README.md](ideas-2026-11-11/overruns/README.md). Analysis
+Write-up, tables and tools: [ideas-2026-11-11/overruns/README.md](notes/ideas-2026-11-11/overruns/README.md). Analysis
 of live v115's 520 scrims against Fish r2 and Mite r6 and of 506's 512 local games against Flp4 / Mt3q. No bot
 change and no games played.
 
@@ -1123,7 +1123,7 @@ numbers into kills (targets in the README), then the pack zone's margin as the f
 
 ## (ocean = 506, 2026-11-11) Keeping a hoarding Prism alive: it dies fighting on after a second enemy arrives; an earlier retreat line cuts the deaths 13-18% and the win rate stays level; eight arms, none passes
 
-Notes and scripts: [ideas-2026-11-11/badmaps/README.md](ideas-2026-11-11/badmaps/README.md) ("Prism's hoard"). Arms are copies of
+Notes and scripts: [ideas-2026-11-11/badmaps/README.md](notes/ideas-2026-11-11/badmaps/README.md) ("Prism's hoard"). Arms are copies of
 `variants/oc-dfuel-506` built by `ideas-2026-11-11/badmaps/tools/mkarms.py`; their code is one patch
 (`patches/bm-dear-fall.patch`) with four switches in `params.h`.
 
@@ -1165,7 +1165,7 @@ game on 1,024 fresh maps (seeds 1212020-023), base 0.251 on 2,000 games, arms on
 
 Shipped as CHANGES 507-ocean: `cm2-k3`, frozen as `variants/oc-comms-507`.
 
-Note, encodings, traces and the live read: [comms/README.md](ideas-2026-11-11/comms/README.md). Code:
+Note, encodings, traces and the live read: [comms/README.md](notes/ideas-2026-11-11/comms/README.md). Code:
 `ideas-2026-11-11/comms/cm2-dev.patch` on `variants/oc-dfuel-506` (`bots/variants/cm2-dev`, every knob off,
 `bench.py` wide 52/52 identical); `mkarm.py` freezes arms.
 
@@ -1294,7 +1294,7 @@ Results against `oc-dfuel-506`:
 
 ## (ocean = 506, 2026-11-11) Big camp groups: Fish and Mite clear Golem groups early with the whole team and we don't; copying the team clear loses on every map class
 
-Notes and scripts: [ideas-2026-11-11/biggroups/diagnosis.md](ideas-2026-11-11/biggroups/diagnosis.md). Candidates are
+Notes and scripts: [ideas-2026-11-11/biggroups/diagnosis.md](notes/ideas-2026-11-11/biggroups/diagnosis.md). Candidates are
 copies of `variants/oc-dfuel-506` (= ocean 506); `bots/variants/` is not tracked, so each one's diff is in
 `ideas-2026-11-11/biggroups/patches/`. Maps, logs and decoded replays: `~/tmp-offload/biggroups/`.
 
@@ -1351,7 +1351,7 @@ the shared-herd kite or the wolf herd.
 
 ## (ocean = 506, 2026-11-11) Bad maps (wheel and the ladder tail): the losses are Prism's hoard dying, one-site overruns and big groups; five fixes built, none wins on fresh maps
 
-Notes, data paths and scripts: [ideas-2026-11-11/badmaps/README.md](ideas-2026-11-11/badmaps/README.md). Candidates are
+Notes, data paths and scripts: [ideas-2026-11-11/badmaps/README.md](notes/ideas-2026-11-11/badmaps/README.md). Candidates are
 copies of `variants/oc-dfuel-506` (= ocean 506); `bots/variants/` is not tracked, so each one's diff is in
 `ideas-2026-11-11/badmaps/patches/`.
 
@@ -1522,7 +1522,7 @@ The plan and the audit of round 4: [tools/emblab/PLAN-round5.md](../tools/emblab
 tools/emblab/README.md "Round 5". Base `variants/oc-fuel-501` (CHANGES 501); own drafts, release builds, fast runner.
 Lab `replays/emblab/r5` (3,680,000 games: calibration 320k, screen 2.40M, replication 960k) and `r5p` (160k, placebos
 only); pool fresh-3130000..399, held out `merged/emb5-h1..h3`, `-c1..c3`, `-v1..v3` (maps/SUITES.md). Scripts and
-checks: `research/ideas-2026-11-10/emblab5/`. A/Bs are 20,480 games a suite, plain bots.
+checks: `research/notes/ideas-2026-11-10/emblab5/`. A/Bs are 20,480 games a suite, plain bots.
 
 **Design.** A lab team plays the base plus up to 3 non-conflicting edits from a library of 330, fixed and hashed before
 play (`9488128508c514c3`): 12 anchors, 16 placebos, 127 pooled (a passive family as everyone's k-th emblem, overwriting
@@ -1657,7 +1657,7 @@ and mean fuel +0.28%; dropped. Details and the preserved handoff are in this cam
 ## Emblem lab round 4 on ocean (2026-11-10, tools/emblab; CHANGES 499 from its A/B screen): 1.84M games, no table from the fit beats ocean's, and the dense per-decision design cannot see what the A/Bs see
 
 Run by [RUNBOOK.md](../tools/emblab/RUNBOOK.md) (written from this run) on ocean b0eeff17e (= CHANGES 496).
-Tools and tables: `tools/emblab/` (README "Round 4"), `research/ideas-2026-11-10/emblab4/`; data in
+Tools and tables: `tools/emblab/` (README "Round 4"), `research/notes/ideas-2026-11-10/emblab4/`; data in
 `replays/emblab/{r4,r4b,r4c,r4d}`.
 
 **The lab.**
@@ -1937,9 +1937,9 @@ and they read -0.5, as sharing sightings has before. Open: priority bits 14-15 a
 
 ## (fishx = ocean-16d6f78 + classifier, 2026-11-10) Cohesion exploiter: packing near allies moves cohesion a little and wins nothing
 
-Idea (fish-re, [oppmodel/fish.md](ideas-2026-11-09/oppmodel/fish.md) "Deaths"): Fish is no better at equal numbers but
+Idea (fish-re, [oppmodel/fish.md](notes/ideas-2026-11-09/oppmodel/fish.md) "Deaths"): Fish is no better at equal numbers but
 packs (1.54 mates within 5 vs our 1.14), so we meet it outnumbered. Notes and data:
-[oppmodel/cohesion.md](ideas-2026-11-09/oppmodel/cohesion.md); tools ~/tmp-offload/fishcoh/tools.
+[oppmodel/cohesion.md](notes/ideas-2026-11-09/oppmodel/cohesion.md); tools ~/tmp-offload/fishcoh/tools.
 
 - **Live (544 latest-Fish games, r20-400).** Nearest teammate within 2: Fish 52%, us 39%. Early deaths level (1,530 vs
   1,579), nearest ally at death about as near; foes - mates >= 2 at 38% of our deaths vs 27% of Fish's. Our contact
@@ -1970,7 +1970,7 @@ contact against a seen pack), not a heavier discount.
 ## (ocean = ocean-16d6f78, 2026-11-09) Camp health weight: farm already prices live health; abandonments come from other branches
 
 Idea (user): weigh a camp's live health, preferring to finish low-health camps. Tools and patches:
-[ideas-2026-11-09/camphp-tools/](ideas-2026-11-09/camphp-tools/).
+[ideas-2026-11-09/camphp-tools/](notes/ideas-2026-11-09/camphp-tools/).
 
 - **Today's bot.** Camps never regenerate. Farm's rate already uses each member's last-seen health (`clear_health`,
   `fastest_clear`, `min_camp_damage`), so a part-cleared group is priced by the clear it has left; there is no
@@ -2012,7 +2012,7 @@ first mostly hands the enemy a cleared group to hold.
 ## (ocean, 2026-11-10) Prism's bag: a recall line and health buying as functions of its gems; both level or lost
 
 The user's idea: Prism's recall health threshold, and its health items, as functions of the gems it carries (and of
-game state and map features). Arms on `variants/ocean-16d6f78`. Tools and the a2/bt patches are in [ideas-2026-11-10/prismhp-tools](ideas-2026-11-10/prismhp-tools/); data in `~/tmp-offload/prismhp/`
+game state and map features). Arms on `variants/ocean-16d6f78`. Tools and the a2/bt patches are in [ideas-2026-11-10/prismhp-tools](notes/ideas-2026-11-10/prismhp-tools/); data in `~/tmp-offload/prismhp/`
 (`tools/pdeaths.py`, `traj.py`, `hazard.py`, `fit.py`, `pair.py`).
 
 **Data**
@@ -2148,7 +2148,7 @@ Earlier packing arms (pair-pack, pos-crew, open-pack) moved Elk/Golem gold but n
 ## (ocean line, 2026-11-09) Fresh-map gate: the line holds off the ladder maps; the oc32 parts are being re-read
 
 The final tournament plays fresh maps from the ladder's distribution. dgate's bodies looked up Fish's and Mite's picks
-by exact map, and it played only the 128 ladder maps. `fgate.py` (research/ideas-2026-11-09/freshgate-tools,
+by exact map, and it played only the 128 ladder maps. `fgate.py` (research/notes/ideas-2026-11-09/freshgate-tools,
 diverse-panel.md "Fresh-map gate") fixes both:
 - each block adds a 128-map slice of 1,024 fresh `--mix ladder-v2` maps;
 - the bodies draft from a feature pick model;
@@ -2190,7 +2190,7 @@ the chase fuel gate).
 
 The line's gain over v86 holds on every folder: no sign of overfitting.
 
-**Fish body fidelity (Flp2)** (`research/ideas-2026-11-09/fishfid/patch_fish2.py` on Flp; `fgate.py --fish-body Flp2`).
+**Fish body fidelity (Flp2)** (`research/notes/ideas-2026-11-09/fishfid/patch_fish2.py` on Flp; `fgate.py --fish-body Flp2`).
 Two changes:
 - Banking: a non-Prism bag is held while gems < 8 × (altar walk − 2) (FISH_MODEL 8.3), in place of the 25-gem floor.
 - Emblems: each Fish champion's modal emblem order, from real Fish games since 11-08T16.
@@ -2565,7 +2565,7 @@ read about zero (+0.10, and -0.04 with Mite -0.62), so 479's oc-base31 drops the
 ## (ocean = oc-base25, 2026-11-09) Feint tributes: Mite's turn-end habit on our bot passes the live bar on dgate (+1.0 pts)
 
 Asked (user): "test feint tributes locally in our bot to see if it works, can use multiple variants". Tools
-`research/ideas-2026-11-09/feint-tools/` (`build.sh` rebuilds the variants), data `~/tmp-offload/feint/`.
+`research/notes/ideas-2026-11-09/feint-tools/` (`build.sh` rebuilds the variants), data `~/tmp-offload/feint/`.
 - **Why it can pay.** A tribute started at the turn end costs no action: the turn has acted, and next turn
   `continue_tribute` keeps it or cancels it to act (damage doesn't interrupt it; stun or lock cancel it with the gems kept).
   A bag of ≤10 completes at our next turn start. It replaces the recall feint, which the base almost never keeps there:
@@ -2883,7 +2883,7 @@ games, no mismatch; bench replays 51/52 identical, the other diverging through t
 ## (ocean = oc-base25, 2026-11-09) Opponent tribute fidelity: Mite's tribute habit and both teams' lock policies in the spar bodies
 
 Asked: make the local opponents reproduce the Fish/Mite tribute behaviour local gates miss (section "Why v90-v93 lose
-live"), and check fidelity on 470. Tools `research/ideas-2026-11-09/oppfidelity-tools/`, data `~/tmp-offload/oppfidelity/`.
+live"), and check fidelity on 470. Tools `research/notes/ideas-2026-11-09/oppfidelity-tools/`, data `~/tmp-offload/oppfidelity/`.
 - **Only Mite feints; Fish doesn't.** Live r2, one-site maps, rounds ≤ 600 (v86/87/89/95; `episodes.py`, `chanturns.py`):
   - Mite: 11.1 tribute starts a game, 1.71 manual cancels (3.21 against v91/v93); 90% are cancelled on the channel's
     first turn and 64% restart within 3 rounds. On a channel's first turn with one of ours seen within 5 it cancels
@@ -2955,7 +2955,7 @@ live"), and check fidelity on 470. Tools `research/ideas-2026-11-09/oppfidelity-
 
 The user asked how the nuke guard works (`v87-rv-ngd`: one seen enemy's ready abilities alone, a hard ban, from outside every
 zone) and to test a general form: a price instead of a ban, enemies counted together, and a check on whether we kill first.
-Data first, then four arms. Tools, arm patches and the probe patch: `research/ideas-2026-11-09/nukeguard2-tools/`.
+Data first, then four arms. Tools, arm patches and the probe patch: `research/notes/ideas-2026-11-09/nukeguard2-tools/`.
 - **Live data** (4,631 v83-v95 scrims against Fish and Mite; `steps.py`). A step is lethal when the enemies the mover saw,
   by a wall-free compute_strike bound with cooldowns, add up to its health before its next turn.
   - Our steps from a safe tile into a lethal one: 0.70 a game against Fish, 0.50 against Mite. Of these, 26-34% die before
@@ -3032,12 +3032,12 @@ farm biases toward the planned group (x1.5).
 
 ## (ocean, 2026-11-07) Rejection audit
 
-Every rejected, level or null verdict was reclassified by power: (a) decided, (b) underpowered, (c) flawed. The table is in [rejection-audit.md](ideas-2026-11-07/rejection-audit.md). Most "level" calls were 1-20k games with upper bounds of +0.5 to +1.3; 36 frozen pairs that still exist and differ only by the idea were rerun to a decision. Every pair ran on both sides' own drafts (all `test_draft` off) under fastrunner.
+Every rejected, level or null verdict was reclassified by power: (a) decided, (b) underpowered, (c) flawed. The table is in [rejection-audit.md](notes/ideas-2026-11-07/rejection-audit.md). Most "level" calls were 1-20k games with upper bounds of +0.5 to +1.3; 36 frozen pairs that still exist and differ only by the idea were rerun to a decision. Every pair ran on both sides' own drafts (all `test_draft` off) under fastrunner.
 
 **Method.**
 - **Common gates:** ab.py `--sprt 0.50,0.5025` (H1 +0.25), each run with its own seed. The screen was at 2x fuel (200k) on unused `audit-p1` (791001-791600, 153,600 maps); its minimum was 200 games for the first five runs and 20,000 after.
 - **Held out:** each H1 went to 40,960 real-budget games on `audit-p2a` (792001-792080). Every held-out run whose CI still held 0 was rerun as a real-budget SPRT, minimum 40,960 games, on a second unused pool, `audit-p3` (793001-793600).
-- **Rare gates:** paired per map and side against a base-vs-base mirror on the same maps (deterministic, so games the change never touches score 0), in 12,800-game chunks until the paired CI decided. Scripts, queues and logs: [audit-tools/](ideas-2026-11-07/audit-tools/) (`paired.py`, `driver2.sh`, `driver3.sh`).
+- **Rare gates:** paired per map and side against a base-vs-base mirror on the same maps (deterministic, so games the change never touches score 0), in 12,800-game chunks until the paired CI decided. Scripts, queues and logs: [audit-tools/](notes/ideas-2026-11-07/audit-tools/) (`paired.py`, `driver2.sh`, `driver3.sh`).
 - **Caution:** an SPRT can stop after a few thousand games when nearly every map pair splits 1-1, where its normal approximation is poor (sge's first H0 at 2,747 games). That is why the later runs use a 20,000-game minimum.
 
 **Winners at the real budget** (2x SPRT H1, then a real-budget confirmation on unused maps):
@@ -3196,7 +3196,7 @@ ca-last): 4.5 fires per 100 games, 1.24:1, the victim dies in 15% of fires (28% 
 
 ## (ocean, 2026-11-08/09) Spread: who holds captures and gets gold; every reweighting and every yield loses or is level
 
-[research/ideas-2026-11-08/spread.md](ideas-2026-11-08/spread.md); scripts and logs `~/tmp-offload/spread/`. Arms are
+[research/notes/ideas-2026-11-08/spread.md](notes/ideas-2026-11-08/spread.md); scripts and logs `~/tmp-offload/spread/`. Arms are
 `variants/v87-sp-*` = oc-base25 (v87) + one diff; own drafts, release, fastrunner. Old screens: `merged/spread-scr-1303`
 (ladder-v2), own seeds 13060xx; the yield family was then gated on dgate (rule 5, 0.505/0.5075).
 
@@ -3277,7 +3277,7 @@ Results against oc-base23 (v86), in points (cand − v86):
 
 ## (ocean, 2026-11-09) Why v90-v93 lose live: v86's lucky draw, then a real ~5-point gap on altar/lock play
 
-Tools `research/ideas-2026-11-09/liveforensic-tools/`, data `~/tmp-offload/liveforensic/`. Inputs: the r2 replays of
+Tools `research/notes/ideas-2026-11-09/liveforensic-tools/`, data `~/tmp-offload/liveforensic/`. Inputs: the r2 replays of
 v86-v95 (512 paired cells each), decoded per game, and new local runs of oc-base27 and oc-base28 (= 27 + 470) against
 spar-oc29-F/M (live picks, 512 games each, `lf-c2[78]-o29[FM]`).
 - **Part of the chain's slide is v86's own draw.** Any build change rerolls most games: two unrelated builds flip
@@ -3353,7 +3353,7 @@ source of losses. Rejected: none of these is queued for live.
 
 ## (ocean, 2026-11-09) One diverse gate for every stage (dgate.py); v87-nh-6-3 H0 there
 
-[diverse-panel.md "One gate"](ideas-2026-11-08/diverse-panel.md).
+[diverse-panel.md "One gate"](notes/ideas-2026-11-08/diverse-panel.md).
 - **What it is.** `diverse-tools/dgate.py CAND BASE` is one sequential test that replaces the screen, the held out
   and the panel. The cand and the base play the 128 ladder maps against Fish's and Mite's live picks, played first by
   v87 and v91, then by v87 noise seeds 1, 2, ...
@@ -3424,7 +3424,7 @@ source of losses. Rejected: none of these is queued for live.
   | mp-contact | −0.15 ±0.41 (high H0, stopped) | 16,640 | −0.11 | −0.18 | −0.14 | −0.15 |
 
   - The knob step is `oc32s-knob`, from the body-knob regression ([diverse-panel.md "Losses of the oc32
-    line"](ideas-2026-11-08/diverse-panel.md)). It moves fight_weight, fight_camp_prior, pair_hold_share and
+    line"](notes/ideas-2026-11-08/diverse-panel.md)). It moves fight_weight, fight_camp_prior, pair_hold_share and
     bush_margin ×1.2214, and chip_value ×0.8187.
   - Final reads: sp-y2 +0.20 ±0.26 of 30,592 units; the knob step +0.17 ±0.25 (NARROWED, ZONE crossed), with Fish
     +0.40 and Mite −0.05.
@@ -3467,11 +3467,11 @@ source of losses. Rejected: none of these is queued for live.
   | v87-sp-y2 | +0.18 ±0.25 (ZONE crossed) | 36,608 | +0.67 | -0.32 | +0.72 | -0.14 |
   | v87-rv-ctxg2 | +0.09 ±0.25 (ZONE crossed) | 24,832 | -0.12 | +0.31 | +0.38 | -0.08 |
 - **Map-feature conditions** pass the seed split only by picking maps: with a map split too, no condition beats its
-  whole arm (-0.25 to +0.02). Nothing was built from them ([diverse-panel.md "Flip analysis"](ideas-2026-11-08/diverse-panel.md)).
+  whole arm (-0.25 to +0.02). Nothing was built from them ([diverse-panel.md "Flip analysis"](notes/ideas-2026-11-08/diverse-panel.md)).
 
 ## (ocean, 2026-11-08) Diverse panel: noise-seeded live-draft opponents; per-map r 0.10 → 0.37, chain still reads above live
 
-[research/ideas-2026-11-08/diverse-panel.md](ideas-2026-11-08/diverse-panel.md), tools in `diverse-tools/`. This
+[research/notes/ideas-2026-11-08/diverse-panel.md](notes/ideas-2026-11-08/diverse-panel.md), tools in `diverse-tools/`. This
 answers the user's overfit question (opponents built from other tunings, randomness and ladder drafts).
 - **Setup.** Each design was calibrated on the 128 ladder maps with oc-base23/25/26/27/29 and oc-s2-soupk27
   (v86-v91) as cands, 256 games per run, ~50k games in all.
@@ -3532,7 +3532,7 @@ answers the user's overfit question (opponents built from other tunings, randomn
 
 ## (ocean, 2026-11-08) Carry: Fish and Mite out-earn the same picks by +14-18% at r200; neither copied habit ships
 
-Write-up `research/ideas-2026-11-08/carry.md`, tools and patches `carry-tools/`. Data: 500 v89 live games against
+Write-up `research/notes/ideas-2026-11-08/carry.md`, tools and patches `carry-tools/`. Data: 500 v89 live games against
 Fish and r2 Mite, paired with the same (map, side, drafts) game against spar-oc29.
 - **Spar's fidelity table was partly wrong.** Local replays were keyed by file name, which the F and M runs share, so
   232 of 500 Fish rows read a Mite-drafted game. `fidelity.py` and `early_types.py` are fixed. Corrected r200: team
@@ -3562,7 +3562,7 @@ Fish and r2 Mite, paired with the same (map, side, drafts) game against spar-oc2
 
 ## (ocean, 2026-11-08) Spar: live drafts make a local opponent see the ladder maps (r 0.06 → 0.34); not yet a gate
 
-Tool, no ocean change; full note: [spar.md](ideas-2026-11-08/spar.md) (tools in `spar-tools/`).
+Tool, no ocean change; full note: [spar.md](notes/ideas-2026-11-08/spar.md) (tools in `spar-tools/`).
 - **Setup:** an ocean-family opponent that plays Fish's or Mite's exact live picks per ladder (map, side). The table
   is keyed by `map_hash`, and the bodies are `bots/variants/spar-*`, rebuilt by `build_panel.sh`.
   - Cand = the live versions (oc-base23/25/26/27), so every local game pairs with a live cell.
@@ -3601,7 +3601,7 @@ Tool, no ocean change; full note: [spar.md](ideas-2026-11-08/spar.md) (tools in 
 
 ## (ocean, 2026-11-08) Big levers: loss modes against Fish and Mite; local tests are blind to the losing maps
 
-Analysis only; full note: [big-levers.md](ideas-2026-11-08/big-levers.md) (tools in `big-levers-tools/`).
+Analysis only; full note: [big-levers.md](notes/ideas-2026-11-08/big-levers.md) (tools in `big-levers-tools/`).
 - **Data:** 2,555 v86-89 scrims against Fish and Mite (1,762 distinct), decoded.
 - **The losses are a symmetric snowball.**
   - End owned-gem gap -594 (captures -346, kill transfers -264).
@@ -3627,7 +3627,7 @@ Analysis only; full note: [big-levers.md](ideas-2026-11-08/big-levers.md) (tools
 59.75% over the last 73): SPSA found noise-sized moves, as in oc3-oc5. Biggest moves: fight_weight .688 -> .802 (soup-k
 independently ships .819 in oc-base29, so it was kept at .819), fight_camp_prior 490 -> 373, efficiency_power
 1.47 -> 1.74, life_value 277 -> 238, tribute_value 83 -> 71, brake_bag 19 -> 22, bag_big 100 -> 109.
-Candidate `variants/oc-tuned6` = oc-base29 + the other 22 moved constants (`research/ideas-2026-11-08/tune3-tools/port_tune.py`;
+Candidate `variants/oc-tuned6` = oc-base29 + the other 22 moved constants (`research/notes/ideas-2026-11-08/tune3-tools/port_tune.py`;
 the same port on oc-base25 replays identically to `tune.py apply`'s bot at 100M, def 16/16 and wide 52/52). Fast
 runner, own drafts, fresh `--mix ladder-v2` suites `merged/tune3-v2*` (seeds 1000400-1001179, maps/SUITES.md).
 
@@ -3650,7 +3650,7 @@ A knob as `constant + sum w_i f_i(map[, state])` (`model/context.h`; PlanFacts g
 v12; bench-identical at zero weights). Arms from fits on played games: **g2** = mid_gold 1.25 -> 1.75 on one-site maps and
 multi-site maps with a spawn walk <= 40 (~55% of games); **d1** = invade deny 0.25 where the walk is over 40. Own drafts,
 fast runner, `--mix ladder` suites `merged/ctx-*` (seeds 1060000-1063059). Write-up
-`research/ideas-2026-11-08/context-knobs.md`, g2 on oc-base26 as `context-knobs-g2.patch`; tools `~/tmp-offload/ctxknob/bin`.
+`research/notes/ideas-2026-11-08/context-knobs.md`, g2 on oc-base26 as `context-knobs-g2.patch`; tools `~/tmp-offload/ctxknob/bin`.
 
 - d1: screen ran out at 102,400 games, 50.04% (49.79-50.29), LLR -1.36; no split. Dropped.
 - g2, results against oc-base25 (screen) and oc-base26 (the rest, only g2's diff):
@@ -3672,7 +3672,7 @@ fast runner, `--mix ladder` suites `merged/ctx-*` (seeds 1060000-1063059). Write
 The user's idea: use Willow's base Strength (55) to make her an early carry, a DPS shop or a farmer. Arms on
 `variants/oc-base25` via `params::willow_role` (dev copy `wr-dev`, off = bench-identical), own drafts, real budget,
 fast runner, screens `--sprt 0.50,0.5025` with own seeds on the Willow maps of `merged/wr-scr-1030` (rates below are of
-Willow games, half the ladder mix). Write-up research/ideas-2026-11-08/willow-role.md; scripts and logs
+Willow games, half the ladder mix). Write-up research/notes/ideas-2026-11-08/willow-role.md; scripts and logs
 `~/tmp-offload/willow2/`.
 
 - Forensics first (863 of our Willow sides in v84-86 scrims, Fish's 2,911): no failure case for carry, farmer or shop
@@ -3698,13 +3698,13 @@ Willow games, half the ladder mix). Write-up research/ideas-2026-11-08/willow-ro
 ## (ocean, 2026-11-08) Heart of Ruin's passive and camp dashes; merged as CHANGES 467 and 468
 
 Against oc-base25, real budget, own drafts, fast runner; arms in `variants/hor-*` (`params::hor` switches on
-`variants/hor-dev`), data and scripts in `~/tmp-offload/hor/`, write-up research/ideas-2026-11-08/hor-passive.md.
+`variants/hor-dev`), data and scripts in `~/tmp-offload/hor/`, write-up research/notes/ideas-2026-11-08/hor-passive.md.
 Ladder data first: top teams do not play to the passive (they farm and dash *healthier* than we do); the real gap is
 camp-dash openings (Fish 44%, Mite 63% of camp engagements opened by a dash, ours 7-10%).
 
 - **C, exact valuation. `hor-c-fight` merged (CHANGES 467):** every Heart of Ruin's passive averaged over its remaining
   health in the fight simulation. Screen (hor-scr-1050a) 50.5% of 47,390, H1; held out 50.43% (50.12-50.75) of 61,812,
-  H1 (hor-held-1051a all 40,960 at LLR +1.59, then hor-held-1051b to the crossing; `research/ideas-2026-11-08/hor-tools/pooled_held.py`,
+  H1 (hor-held-1051a all 40,960 at LLR +1.59, then hor-held-1051b to the crossing; `research/notes/ideas-2026-11-08/hor-tools/pooled_held.py`,
   ab.py's LLR over the joined pairs); varied 50.57% of 20,478 (hor-varied-1052 + -1052b, LLR +2.27, not H0); panel
   +0.57 pooled, H1 at 0.4975/0.50 (base-td +0.57, astraeus-td +0.81 ±0.75, proteus-td +0.34 ±0.68).
 - `hor-c-farm` (camp clears at the passive halfway through the clear): H0 on hor-scr-1050b, 49.5% of 30,186 (level at
@@ -3729,7 +3729,7 @@ camp-dash openings (Fish 44%, Mite 63% of camp engagements opened by a dash, our
 
 ## (ocean, 2026-11-08/09) v87 Heart of Ruin: contested camp landings H0; 468's hurt landing floor and enemy fight_scale level on dgate; closed
 
-Against oc-base25 (v87), own drafts, real budget, release, fast runner; write-up research/ideas-2026-11-08/hor-camp-dash.md,
+Against oc-base25 (v87), own drafts, real budget, release, fast runner; write-up research/notes/ideas-2026-11-08/hor-camp-dash.md,
 arms `variants/v87-*`, data `~/tmp-offload/v87hor/`. Screen suite v87hor-scr-1241 (ladder-v2), SPRT 0.50/0.5025.
 
 - **Contested camp landings (the user's camp-dash idea) rejected, all three H0.** Live, with an enemy 5-6 tiles away
@@ -3765,11 +3765,11 @@ arms `variants/v87-*`, data `~/tmp-offload/v87hor/`. Screen suite v87hor-scr-124
 
 ## (ocean, 2026-11-08) Exclusive spells and Marcella's gold: six arms, all H0
 
-Leads (1) and (2) of `research/ideas-2026-11-08/fight-execution.md`, on `variants/oc-base25` with compile-time knobs:
+Leads (1) and (2) of `research/notes/ideas-2026-11-08/fight-execution.md`, on `variants/oc-base25` with compile-time knobs:
 `excl_spell_gain` (strike search's worth of a non-stunning exclusive unit spell, g*), `excl_retreat_gain` (the same on
 the retreat branch's cast while the walk is open, r200; b200 = both 2.0), `marcella_gold_w` (Marcella's
 `kept_efficiency` in capture routing, m200). Own drafts, fastrunner, `merged/sp-scr-1070`, `--sprt 0.50,0.5025
---sprt-min-games 20000`, own `--sprt-seed` each (10701-10706). Write-up `research/ideas-2026-11-08/spell-marcella.md`;
+--sprt-min-games 20000`, own `--sprt-seed` each (10701-10706). Write-up `research/notes/ideas-2026-11-08/spell-marcella.md`;
 scripts and logs `~/tmp-offload/spell/`.
 
 | Arm | Games | Win % | 95% CI | SPRT |
@@ -3891,7 +3891,7 @@ What each port is (the idea's own diff, read against its frozen base):
 
 ## Combat lab experiments 1-2 (ocean v83, 2026-11-07; lab only, nothing shipped)
 
-The combat lab (`research/combat-lab/PLAN.md`, `fastrunner scenario`): lab copies of v83 (`variants/lab-v83`) and
+The combat lab (`research/notes/combat-lab.md`, `fastrunner scenario`): lab copies of v83 (`variants/lab-v83`) and
 astraeus (`variants/lab-astraeus-8c0343f`) replay bank2 fight frames for 30 rounds. Reward from the deciding
 team's side: hp/max hp of each live fighter, -1 a death, +0.01 a gem, ours minus theirs. Each experiment ran
 ocean vs ocean, ocean vs astraeus and astraeus vs ocean on the same 20k frames; frames are split by hashed id, and a
@@ -3921,7 +3921,7 @@ are an opponent it never saw. Lab copies' hooks cost ~217 fuel a turn: never shi
 
 ## Soup tune (ocean, 2026-11-06/07): flat, stopped
 
-Joint SPSA of the "constant soup" (`research/ideas-2026-11-06/soup.md`): oc-base10 plus the pool2 L/M members as
+Joint SPSA of the "constant soup" (`research/notes/ideas-2026-11-06/soup.md`): oc-base10 plus the pool2 L/M members as
 gates, the round-1 thresholds, the scan constants and oc5's 24. **Flat: nothing kept**; stopped by the coordinator
 (base10 is now ~5 points behind live).
 
@@ -3953,7 +3953,7 @@ gates, the round-1 thresholds, the scan constants and oc5's 24. **Flat: nothing 
 ## Backlog (ocean, 2026-11-06)
 
 A serial queue of low-priority items, each a variant of `variants/oc-base10` with `params::bl::` knobs. The design
-and status of every item are in research/ideas-2026-11-06/BACKLOG.md.
+and status of every item are in research/notes/ideas-2026-11-06/BACKLOG.md.
 - With the knobs off, each variant replays oc-base10 identically at 100M (bench.py, default 16 and wide 52).
 - Screens: 2x fuel, SPRT 0.50/0.51, own drafts, one `--sprt-seed` per arm (660001+), on `maps/suites/merged/bl-dev`
   (s660000-s660039, 20,480 games).
@@ -4352,13 +4352,13 @@ differs from draft6-f92's on 45% of maps. Against oc-base11, own drafts, fast ru
 Draft6's model was not stale for the current player: refitting on it moves picks among near-ties. The earlier
 refit gains came from the lab's design (mixed opponents, ladder-mix pool), not from fresh data as such. A pooled
 fit (draft6's games at weight 0.5) gave a NaN model (`oc-draft7-alt`, broken; not a test of pooling). Details:
-research/ideas-2026-11-06/draft7.md.
+research/notes/ideas-2026-11-06/draft7.md.
 
 ## Obese bags at a negative value, round 2 (ocean, 2026-11-06; level)
 
 The user's refinement: a bag provably untributable by round 2000 is worth m x its gems with m < 0 (a burden to
 inherit), not 0. Plus an optional penalty for the disabled body. Design, tables and replays: section 8 of
-research/ladder-scrims-2026-11-06/fix-kill.md; scripts in `obese2-tools/`.
+research/notes/ladder-scrims-2026-11-06/fix-kill.md; scripts in `obese2-tools/`.
 - Dev copy `bots/variants/oc-obese-dev` (oc-base10 + `params::obese::`, V0's port; a tribute already under way that
   ends in time now keeps a bag live). Knobs off: bench identical at 100M, 16/16 and 52/52.
 - **Fires in 0.7% of ladder-like games** (144 of 20,480 at 2x on fresh 600100-600139). All of them are in the last
@@ -4377,7 +4377,7 @@ research/ladder-scrims-2026-11-06/fix-kill.md; scripts in `obese2-tools/`.
 ## Draft-side map facts and a first turn that always finishes, draftcond and draftfin (ocean, 2026-11-06)
 
 `variants/oc-draftcond` and `variants/oc-draftfin`, both from oc-base10. The design, byte budget and fuel tables are in
-[ideas-2026-11-06/draft-features.md](ideas-2026-11-06/draft-features.md).
+[notes/draft-features.md](notes/draft-features.md).
 
 **draftcond** moves `condition_on_map`'s features from the champion's first turn into the draft memory (`PlanFacts`).
 It also gives the draft memory an outputs block for a draft-side model's constants.
@@ -4432,7 +4432,7 @@ group only. Knobs: `comeback::ambush`, `hop`, `precomputed`, `check_gambits`. Ar
   - all drafts: p50 +245k, p99 +2.5M, max +4.8M;
   - ladder: p50 +212k, max +2.07M (whole first turn max 9.44M).
   - At the real budget, 238 drafts cap only the gambit slot. 4 of those are ladder drafts (01big-world, 04comb,
-    both sides), so the slot does not fit there yet. A merge would need a size bound first (see draft-features.md).
+    both sides), so the slot does not fit there yet. A merge would need a size bound first (see notes/draft-features.md).
 - **Trigger rate 46%** of games (CAND cooked and hunting; s670100-39, 2x), so an SPRT screen:
   - SPRT H0 for every arm (seeds 670001-670005): amb 46.7% of 345, hop 49.0% of 896, amb-ip 49.8%, hop-ip 46.1%,
     both-ip 48.7%.
@@ -4491,7 +4491,7 @@ Do the attack counter fix (feintfix fix 1), areaclear and campdmg2 pay off once 
 ## Algorithm polyfills (ocean, 2026-11-06)
 
 The user's idea: fushia's `algo/topk.h` (SIMD top-k and sort on packed integer keys) as a model for cheaper
-algorithms and data structures in ocean. Profile, candidates and tables: research/ideas-2026-11-06/algo-polyfill.md;
+algorithms and data structures in ocean. Profile, candidates and tables: research/notes/ideas-2026-11-06/algo-polyfill.md;
 files in `/home/ubuntu/tmp-offload/algo/`.
 - **Nothing to replace.** On the decision path (turn-end queue off, 38.8k a turn), sorts are ~5 fuel a turn, malloc
   and free 74, bulk memset/memcpy ~0, memcmp and `vector::assign` ~60; there are no heaps or maps outside the draft.
@@ -4563,7 +4563,7 @@ turn windows (ptw). This pass looked for the fuel. Scripts, benches, profiles an
 
 Round 1's recipe one tier down. The 49.9-50.1% "level" changes that were cut (32, tier L) are pooled on oc-base10,
 and a mildly negative tier (15, tier M, roughly 49.0+) goes to the constant soup only. Candidate table, ports, soup
-parameter table and every number: research/ideas-2026-11-06/pool2.md. **Null: the pool does not win at the real
+parameter table and every number: research/notes/ideas-2026-11-06/pool2.md. **Null: the pool does not win at the real
 budget.**
 - *Arms* (one tree, `variants/oc-pool2-dev`, every member behind a soup constant; all off replays identically to
   oc-base10 at 100M, 16/16 and 52/52, tunified too): `oc-pool2-1` (the 31 L members) and `oc-pool2-2` (the 14 at
@@ -4598,7 +4598,7 @@ budget.**
 ## Pooled level changes (ocean, 2026-11-06)
 
 The user's idea: the many 50.1-50.8% "level" variants of 2026-11-05/06 pooled into one. Inventory, ports, every table
-and the ablations: research/ideas-2026-11-06/pool.md. **The pool wins: oc-pool1t 53.3% on two unused suites.**
+and the ablations: research/notes/ideas-2026-11-06/pool.md. **The pool wins: oc-pool1t 53.3% on two unused suites.**
 - *Members* (each behind a `params::pool` flag on a copy of `variants/oc-base9`; all flags off replays identically to
   oc-base9 at 100M, 16/16 and 52/52): cooked comeback deny + pull + snipe (cbdp), proteus's turn windows (ptw), escort
   clearing (fixm b3w), bush steps (fixc bt3), reactive Tribute emblem (kill T1b), banking-loop reserve 60% (fuelbud
@@ -4634,7 +4634,7 @@ and the ablations: research/ideas-2026-11-06/pool.md. **The pool wins: oc-pool1t
     -4, and games where it fell net +13.
   - The replays of the largest OOF-rise losses show no 20+ gem death right after the dying champion's own OOF turn.
     Those games are lost to big-bag deaths, and those are level over all games (140 against 144).
-  - Details: research/ideas-2026-11-06/pool.md section 6.
+  - Details: research/notes/ideas-2026-11-06/pool.md section 6.
 
 ## Turn-end feint fixes, feintfix (astraeus, 2026-11-06)
 
@@ -4766,7 +4766,7 @@ It ran 11:45-16:45 UTC: 939 iterations, 1.92M games. The mean candidate win rate
 - `pick_up_radius` 6 -> 7, `threat_radius` 7 -> 8, `tribute_window` 10 -> 11
 - the rest within 6%: `lock_stage_steps`, `chain_bag_limit`, `brake_bag` and `track_horizon` are unchanged.
 
-*Port* (`research/ideas-2026-11-05/oc5-tools/port.py`):
+*Port* (`research/notes/ideas-2026-11-05/oc5-tools/port.py`):
 - Every value is an exact float32 `constexpr`, and safety.h's static_assert is restored.
 - The diff to oc-iw8-clean (params.h, fight.cc, capture.cc) was applied to `variants/oc-base9` as
   `bots/variants/oc-tuned5` (the version that would ship) and to `variants/oc-base8` as `bots/variants/oc-tuned5-b8`.
@@ -5034,7 +5034,7 @@ entry. Scripts, bench JSONs and the A/B log: `/home/ubuntu/tmp-offload/fuel8/` (
 
 ## Fuel budgeting (ocean, 2026-11-06)
 
-Details, scripts and every knob: `research/ideas-2026-11-05/fuelbud.md`. Fast runner, own drafts, real budget;
+Details, scripts and every knob: `research/notes/ideas-2026-11-05/fuelbud.md`. Fast runner, own drafts, real budget;
 SPRT 0.50/0.51 on `maps/suites/merged/fuelbud-dev` (533000-533039) unless noted. Phase 1 on oc-tuned4, the rest on
 `variants/oc-retest-clean` (= `bots/ocean`), against it, as knobs in `variants/oc-fb-dev` (identical at 100M with
 every knob off).
@@ -6025,7 +6025,7 @@ knob copy.
 - **Why the edge does not convert.** In wn's ptw-b games (4,000, 49.7%): deaths to champions 7.43 a game against
   8.07, kills +0.5, but gems lost at death 153 against 155, gems collected +0.4%, gold +1.1%. The deaths saved carry
   no bags.
-- Scripts: `research/ideas-2026-11-05/ptw-tools/` (variant builder, benches, A/B queue, `b2b.py` back-to-back
+- Scripts: `research/notes/ideas-2026-11-05/ptw-tools/` (variant builder, benches, A/B queue, `b2b.py` back-to-back
   deaths and the two order models, `b2b3.py` the victim's branch, `sides.py` and `deaths.py` per-side totals);
   summaries in `replays/ab/ptw-*`, benches in `replays/fuel/ptw/`. No SPRT was used: every A/B above is a full
   fixed-size run. A fresh suite made for a confirm, `maps/suites/merged/ptw-c` (543080-543119, `--mix ladder`), is
@@ -6051,13 +6051,13 @@ cancellation risk, and the recent tribute rate), shared by the endgame rules oth
 - **What carries the gain:** the bags and a long (600-round) rate window. The walk, channel, risk and lock terms add
   ≤0.3 points to the sign; they matter for timing, and the projection runs late (+53 to +76 rounds bias 0-50 rounds
   from the end).
-- Design, API and tables: research/ladder-scrims-2026-11-06/race.md.
+- Design, API and tables: research/notes/ladder-scrims-2026-11-06/race.md.
 
 ## Kill assignment and reactive Tribute emblem (ocean, 2026-11-06)
 
 The user's ideas on who takes a killing blow: a big-bag carrier refusing the kill when an ally could take it, a
 kill-gold funnel, routing the victim's gems to a small-bag ally, a Tribute emblem priced from the bag, and later
-"obese" bags. Design, counts and tables: research/ladder-scrims-2026-11-06/fix-kill.md; scripts in `kill-tools/`.
+"obese" bags. Design, counts and tables: research/notes/ladder-scrims-2026-11-06/fix-kill.md; scripts in `kill-tools/`.
 - Dev copy `bots/variants/oc-kill-dev`: `variants/oc-retest-clean` with `params::kill::` knobs, all off. With them
   off, bench replays are identical at 100M (16/16, 52/52).
 - Suites: kill-dev (542000-542039, 20,480 games) and kill-confirm (542100-542139). Late-round subsets: kill-late (662
@@ -6127,7 +6127,7 @@ The LOSSES.md macro candidates, plus the user's big-bag ideas:
 Where things are:
 - Dev copy `bots/variants/oc-fixm-dev` (`params::fixm`), from `variants/oc-retest-clean`. With the knobs off, bench
   replays are byte-identical at 100M (16/16, 52/52).
-- Design, why bags reach 2-3k, the tables and the forensics: research/ladder-scrims-2026-11-06/fix-macro.md.
+- Design, why bags reach 2-3k, the tables and the forensics: research/notes/ladder-scrims-2026-11-06/fix-macro.md.
 
 **Level everywhere, none significant.** These are against oc-retest-clean with own drafts. Full runs are 20,480 games
 on fresh 538000-538039 and 5,120 at 2x fuel:
@@ -6220,7 +6220,7 @@ live gate.
     - The carrier died 30% of the time.
   - Enemy 100+ tributes landed: 589 against 577. Our deaths: +8%.
   - Level to slightly negative live; iw8 was merged on the local evidence.
-- Forensics: research/ladder-scrims-2026-11-06/fix-macro.md "Live gate".
+- Forensics: research/notes/ladder-scrims-2026-11-06/fix-macro.md "Live gate".
 
 ## Perma-lock when ahead (ocean, 2026-11-06)
 
@@ -6229,7 +6229,7 @@ whenever the enemy breaks it, ideally just before their channel lands. Altar til
 site of at most 2 tiles.
 - Dev copy `bots/variants/oc-lock-dev` (`params::plock`, economy/perma_lock.cc), from `variants/oc-retest-clean`.
 - With the knobs off, bench replays are byte-identical at 100M (16/16, 52/52).
-- Design, knobs, gate firing tables and every variant: research/ladder-scrims-2026-11-06/fix-lock.md.
+- Design, knobs, gate firing tables and every variant: research/notes/ladder-scrims-2026-11-06/fix-lock.md.
 - All runs are against oc-retest-clean, own drafts, fast runner.
 
 Dev: `lock-one-dev`, the 1,602 one-site maps of fresh 541100-541119 (3,204 games), with SPRT stopping losers.
@@ -6303,7 +6303,7 @@ lock-one-dev, 3,204 games each.
 ## Altar control (ocean, 2026-11-05)
 
 Idea A (user ideas 4-5): when the enemy nears the win, our strongest bodies hold the altar its carriers must
-reach. Design, evidence and knobs: research/ideas-2026-11-05/altar.md. Dev copy `bots/variants/oc-altar-dev`
+reach. Design, evidence and knobs: research/notes/ideas-2026-11-05/altar.md. Dev copy `bots/variants/oc-altar-dev`
 (`params::altar`). Everything against `variants/oc-base1`, own drafts, real fuel, fast runner.
 
 Dev screen d1 on one-altar maps only (`maps/suites/merged/altar-one-dev`: the 588 one-altar maps of
@@ -6472,7 +6472,7 @@ mix, 40 suites):
 ## Farm turn fuel (ocean, 2026-11-05)
 
 Track Z: exact fuel savings in the farm turn, so that at the real budget the loop cuts less often or later. Every
-decision at unlimited fuel is unchanged. Design and evidence: research/ideas-2026-11-05/fuel.md. Dev copy
+decision at unlimited fuel is unchanged. Design and evidence: research/notes/ideas-2026-11-05/fuel.md. Dev copy
 `bots/variants/oc-fuel-dev`, knobs `params::fuel::`. With all knobs off its bench.py replays at 100M are identical to
 oc-base1's (and +0.3% fuel). Every step's replays at 100M are byte-identical to oc-base1's: 16/16 default and 52/52
 wide. Everything is against `variants/oc-base1`, own drafts, real fuel, fast runner.
@@ -6661,7 +6661,7 @@ round on top of oc2 finds about nothing head-to-head; the small panel gain is no
 ## Map-conditioned constants: diagnostic (ocean, 2026-11-05)
 
 Could constants pay as functions of draft-time map features, θ(map) = θ0 + W·z? Existing data only, no games.
-Details, the logging patch and a contextual-SPSA design are in `research/ideas-2026-11-05/mapcond.md`; scripts are in
+Details, the logging patch and a contextual-SPSA design are in `research/notes/ideas-2026-11-05/mapcond.md`; scripts are in
 `mapcond-tools/`.
 
 - **Data.** tune.py keeps no per-game scores (`work/` is deleted, despite the docstring's "games/"). Its seeded
@@ -6904,7 +6904,7 @@ ones**: the `maps/fresh-*` used by every result above are `varied` suites of cal
 maps, 29% with 6+ altars, half the guarded camp groups the ladder has). `--mix varied-v1` remakes those maps byte for
 byte (index.json records `mix: varied-v1`); a rebuild of `maps/gen` or `maps/gen-s1` (no `--out`) still defaults to
 it. On 20 held-out suites the ladder mix's mean KS against the ladder is 0.067 (calibration 1's suites 0.209) and 8% of
-its maps are beyond the ladder's p90 nearest-neighbour distance (35%): [mapgen-vs-ladder-2026-11-05.md](mapgen-vs-ladder-2026-11-05.md#after-calibration-2).
+its maps are beyond the ladder's p90 nearest-neighbour distance (35%): [notes/mapgen-vs-ladder-2026-11-05.md](notes/mapgen-vs-ladder-2026-11-05.md#after-calibration-2).
 astraeus mirror games: 256/256 complete on a ladder suite (sides 28-29 included). No bot has been A/B'd on the new
 suites yet, so how much a win rate moves between the two kinds is unknown. The first, ocean's draft (below), moved
 not at all: 53.0% on both kinds.
@@ -6937,11 +6937,11 @@ turns); both bots lose ~23% more turns to fuel on the new suites than on the old
 
 The panel is astraeus, proteus, demeter, ocean-td and v67, as frozen `variants/panel-*` copies. On its own suite
 (fresh-514510..514519, 5,120 games each) oc-base1 reads 55.6 / 53.7 / 56.3 / 74.4 / 69.9. The rule and the
-invocations are in [ideas-2026-11-05/PANEL.md](ideas-2026-11-05/PANEL.md).
+invocations are in [ideas-2026-11-05/PANEL.md](notes/ideas-2026-11-05/PANEL.md).
 
 ## Idea C: object permanence and bush play (ocean, 2026-11-05)
 
-Design, evidence and knobs: [ideas-2026-11-05/bush.md](ideas-2026-11-05/bush.md). Dev copy `variants/oc-bush-dev`,
+Design, evidence and knobs: [ideas-2026-11-05/bush.md](notes/ideas-2026-11-05/bush.md). Dev copy `variants/oc-bush-dev`,
 knobs `params::bush::`, all off = oc-base1 byte-identical (bench 16/16). Against oc-base1, own drafts, fast runner,
 real fuel; `bush-s1` = fresh-512000..512019, `bush-s2` = fresh-512020..512039 (ladder mix, 5,120 maps each).
 
@@ -7707,7 +7707,7 @@ The veto removal replays byte-identically at 100M to 19f22154 with the veto neve
 
 ## Draft (2026-10-24, astraeus against top-10 team proxies)
 
-Details and the per-team table in [hyperion/DRAFT.md](hyperion/DRAFT.md#astraeus-draft-search-2026-10-24).
+Details and the per-team table in [notes/DRAFT.md](notes/DRAFT.md#astraeus-draft-search-2026-10-24).
 
 - 3 picks: Marcella Vendetta HoR over Prism Vesper HoR, +16.5 ±6.5 on all maps, +17.3 on a fresh suite (CHANGES 134).
 - 4 picks: no single swap beat Prism Vesper Marcella HoR; Ryth for HoR -8.7 ±6.7 on all maps.
@@ -8145,7 +8145,7 @@ From here `maps/` holds the 128-map pool (42 new `04*` maps), so the ladder suit
 
 ## Phase 3: drafts after patch 2.0.0 (2026-10-27, astraeus 3ff5e55)
 
-Details and tables in [hyperion/DRAFT.md](hyperion/DRAFT.md#phase-3-draft-search-2026-10-27-astraeus-3ff5e55).
+Details and tables in [notes/DRAFT.md](notes/DRAFT.md#phase-3-draft-search-2026-10-27-astraeus-3ff5e55).
 Single swaps of each draft against the source bot playing the post-patch top-10 drafts (`tools/variants/ds_run.py`),
 paired, ~7.7k games; fresh suite `maps/fresh-1303`. No draft changed.
 
@@ -8828,7 +8828,7 @@ scripts: [river/audit/AUDIT.md](river/audit/AUDIT.md). In 40 ladder games agains
 
 ## Draft (2026-10-20, after the Heart of Ruin nerf)
 
-Hecate vs hecate with only the draft changed, each pick on maps of its pick count ([hyperion/DRAFT.md](hyperion/DRAFT.md)).
+Hecate vs hecate with only the draft changed, each pick on maps of its pick count ([notes/DRAFT.md](notes/DRAFT.md)).
 These predate Khaos's Prism-specific play (CHANGES 82), whose draft starts with Prism.
 
 - Heart of Ruin was the core (replacing it lost 12-48%); Marcella and Ryth were the best additions; Prism, Tavi and
@@ -12847,7 +12847,7 @@ Level in every run with about 45% more out-of-fuel turns, so the port was droppe
 
 ## Invade / opening steal (ocean, 2026-11-05)
 
-Idea B of the 2026-11-05 programme ([invade.md](ideas-2026-11-05/invade.md): evidence, design, knobs). Dev copy
+Idea B of the 2026-11-05 programme ([invade.md](notes/ideas-2026-11-05/invade.md): evidence, design, knobs). Dev copy
 `bots/variants/oc-invade-dev` (oc-base1 plus `params::invade::`; every knob off replays 52/52 byte-identical at 100M).
 Own drafts, fast runner, real budget, against `bots/variants/oc-base1` unless noted. Suites: `invade-a` (fresh
 511000-511019, 5120 maps), `invade-b` (511020-511039), `invade-fire12` (the 933 maps of both where B1's gates pass
@@ -13270,7 +13270,7 @@ validated on lab-c and sunfam2.
 ### Mirror pull, third pass: a learned cycle-constraint gate (ocean, 2026-11-05)
 
 The user's hypothesis: sunburst has many camps but few high-value ones (a cycle constraint), and the gate should be
-learned. Plan, features and every table are in research/ideas-2026-11-05/invade-cycle.md.
+learned. Plan, features and every table are in research/notes/ideas-2026-11-05/invade-cycle.md.
 
 **Rebase.** `variants/oc-mp-dev` is oc-base3 plus oc-late-dev's `params::late` (the patch applied cleanly). With the
 knobs off, bench at 100M replays 16/16 (default) and 52/52 (wide) byte-identical, fuel +0.03% / +0.02%.
@@ -13338,7 +13338,7 @@ moved), 527600-527609 (unused).
 ## spawncamp (ocean, 2026-11-05)
 
 The user's idea 7: camps hit from our spawn, where each turn end heals. Design, prevalence and replay study:
-research/ideas-2026-11-05/spawncamp.md. Dev copy `bots/variants/oc-spawncamp-dev` (knobs off: bench 16/16
+research/notes/ideas-2026-11-05/spawncamp.md. Dev copy `bots/variants/oc-spawncamp-dev` (knobs off: bench 16/16
 identical with oc-base1 at 100M). Against `bots/variants/oc-base1`, own drafts, fast runner, real fuel.
 - **Prevalence:** a striker within 3 of a spawn tile on 4.7% of ladder maps and 4.6% of ladder-mix maps
   (fresh-514000..514039); the stand choice changes the fire on 0.1-0.8%; a Monolith within 3 on 03homonoliths and
@@ -13385,7 +13385,7 @@ identical with oc-base1 at 100M). Against `bots/variants/oc-base1`, own drafts, 
 ## spawncamp round 2 (ocean, 2026-11-05)
 
 The user: "surely considering end of turn healing on spawn camps is useful? [...] like maybe in the scoring as a
-coeff". Design and reasoning: research/ideas-2026-11-05/spawncamp.md "Round 2". Dev copy
+coeff". Design and reasoning: research/notes/ideas-2026-11-05/spawncamp.md "Round 2". Dev copy
 `bots/variants/oc-spawn2-dev` (`params::spawn2::`, all off: bench.py at 100M identical to oc-fuel4, 16/16 and wide
 52/52). Against `bots/variants/oc-fuel4`, own drafts, fast runner, real fuel; `--sprt 0.50,0.51` on the dev
 subsets. Variants `bots/variants/oc-sp2-*`; logs `replays/ab/sp2-*`, `replays/ab/pchk-sp2-*`.
@@ -13438,7 +13438,7 @@ subsets. Variants `bots/variants/oc-sp2-*`; logs `replays/ab/sp2-*`, `replays/ab
 
 ## value (ocean, 2026-11-05)
 
-The user's idea 6: a gem/gold exchange rate. Design and fits: research/ideas-2026-11-05/value.md. Against
+The user's idea 6: a gem/gold exchange rate. Design and fits: research/notes/ideas-2026-11-05/value.md. Against
 `bots/variants/oc-base1`, own drafts, fast runner, real fuel, ladder mix (fresh-514210..514229 =
 `maps/suites/merged/df-c1,df-c2`), `--sprt 0.50,0.51`.
 - **Offline, 33,980 of our A/B games** (`replays/.analysis`, logistic win model with carried gems, capture gold,
@@ -13466,7 +13466,7 @@ The user's idea 6: a gem/gold exchange rate. Design and fits: research/ideas-202
 
 An audit's six gaps in gold pricing, each a knob in `bots/variants/oc-value2-dev` (`params::value2::`, all off:
 bench.py replays at 100M identical to oc-combo2, default 16/16, wide 52/52, 64 maps of fresh-519039 128/128), and
-the user's "fushia style spreading". Design, fushia analysis and every row: research/ideas-2026-11-05/value.md
+the user's "fushia style spreading". Design, fushia analysis and every row: research/notes/ideas-2026-11-05/value.md
 "Round 2". Against `variants/oc-combo2`, own drafts, fast runner, real fuel; dev suite `maps/suites/merged/v2-dev`
 (fresh-519000..519038, ladder mix), SPRT 0.50/0.51 or full (19,968 games); logs `replays/value2/`, `replays/ab/v2-*`.
 
@@ -13559,7 +13559,7 @@ Sources: `replays/ab/oc3-vs-astr-now-1105/summary.md`, `replays/ab/oc3-vs-panel-
 ### Round 3: a scaling-aware funnel (ocean = oc-base3, 2026-11-05 night)
 
 The user's follow-up: funnel harder by champion scaling (bodies that make better use of gold). Design, the offline
-fits and every row: `research/ideas-2026-11-05/value.md` "Round 3". Dev copy `bots/variants/oc-value3-dev`
+fits and every row: `research/notes/ideas-2026-11-05/value.md` "Round 3". Dev copy `bots/variants/oc-value3-dev`
 (`params::value3::`, off = oc-base3 at 100M: 16/16, 52/52, 128/128); against oc-base3, SPRT 0.50/0.51, own drafts,
 v3-dev (fresh-523000..523039, 20,480 games at most).
 
@@ -13891,12 +13891,12 @@ at 64.5% for positioning.
 ## Gem-aware fighting (ocean, 2026-11-05)
 
 Make fighting use the bags: ours in the strike search's death cost and in retreat, the enemy's in engage/retreat
-and recall interception. Design, evidence and code map: research/ideas-2026-11-05/gemfight.md. Dev copy
+and recall interception. Design, evidence and code map: research/notes/ideas-2026-11-05/gemfight.md. Dev copy
 `bots/variants/oc-gemfight-dev` (oc-combo2 + `params::gemfight::` knobs; all off: bench.py default 16/16 and wide
 52/52 identical to oc-combo2 at 100M), rebased as `bots/variants/oc-gemfight3-dev` on oc-base3 (identical to oc-base3,
 16/16 and 52/52). Fast runner, real fuel, own drafts (`--no-test-draft`), ladder mix. Suites: dev
 `maps/suites/merged/gf-dev` (fresh-520000..520039), confirm `gf-confirm` (520100..520139) and `gf-confirm2`
-(520300..520339). Logs `replays/ab/gf-*`; queue and helpers in research/ideas-2026-11-05/gemfight-tools/.
+(520300..520339). Logs `replays/ab/gf-*`; queue and helpers in research/notes/ideas-2026-11-05/gemfight-tools/.
 
 **Evidence** (`gemfight-tools/gemev.py`, per game): oc-combo2 vs astraeus (1,873 games) dies to champions carrying 10+
 gems 1.45 times (astraeus 2.00), losing 103 gems (12% of what it tributes). Enemy carriers with 10+ gems recall home
@@ -14016,7 +14016,7 @@ cohort (265 games, 56 groups, 21:40–23:40 UTC November 5). Reports: [FARM3.md]
 Exact fuel savings in ocean (`bots/variants/oc-base3` = `bots/ocean`): astraeus's farm-turn fuel campaign
 (3076ffa9, 7950979e), which ocean never got, ported three-way commit by commit, without its logic parts (the prices
 tolerance d737bcf6, the turn-1 spawn field 4a16bebf, the state-sized reserve 9dba3ed8/1310d649 and its refit, CHANGES
-409's beaten_near fix). Design, profile and the full list: `research/ideas-2026-11-05/fuel4.md`.
+409's beaten_near fix). Design, profile and the full list: `research/notes/ideas-2026-11-05/fuel4.md`.
 
 Two things made the plain port inexact (7/16 default, 23/52 wide, 66/128 pool at 100M):
 - CHANGES 405 tuned `max_exposure` (1.215) below `mid_exposure` (1.361), so `max_exposure` does not bound
@@ -14050,7 +14050,7 @@ turns at 38k, want_home 23k, the channels 17.7k. Frozen as `bots/variants/oc-fue
 
 Exact fuel savings in the strike search and want_home's stand, against `bots/variants/oc-fuel4` (= `bots/ocean`).
 Nothing shipped and no A/B run: the exact cuts found are worth hundredths of a percent of total fuel. Profile, oracles
-and the cuts: `research/ideas-2026-11-05/fuel5.md`.
+and the cuts: `research/notes/ideas-2026-11-05/fuel5.md`.
 
 | Fuel paused over (debug builds, real budget) | OOF turns, wide bench | OOF turns, pool (64 fresh-519039, both sides) |
 |---|---|---|
@@ -14077,7 +14077,7 @@ identical at 100M, 16/16, 52/52, 128/128). Own drafts, fast runner, real budget;
 (`oc-fuel5-dev`), confirm 528100-528139 (`oc-fuel5-conf`), varied 530000-530009 (`oc-fuel6-varied`). One winner, K1:
 CHANGES 422, frozen as `bots/variants/oc-fuel6`; **shipped** in `bots/ocean` with spawncamp round 2 ("oc-base4:
 CHANGES 416 and 422 merged" below). Plan, probes and benches:
-`research/ideas-2026-11-05/fuel6.md`.
+`research/notes/ideas-2026-11-05/fuel6.md`.
 
 | Candidate | Change | Games | Win % (95% CI) | OOF turns cand / ref |
 |---|---|---|---|---|
@@ -14115,7 +14115,7 @@ Sources: `replays/ab/f6-*`, `replays/ab/pchk-f6-k1-vs-*`, `replays/ab/p2-f6-k1-v
 
 Exact fuel savings (replays byte-identical at 100M on `tools/fuel/bench.py`'s default, wide and pool sets) in farm's
 group loop, prey and the step guard, against `bots/variants/oc-retest-clean` (= `bots/ocean`). **No exact saving
-worth an A/B; nothing frozen, no CHANGES entry.** Plan, profile and tools: `research/ideas-2026-11-05/fuel7.md`,
+worth an A/B; nothing frozen, no CHANGES entry.** Plan, profile and tools: `research/notes/ideas-2026-11-05/fuel7.md`,
 `fuel7-tools/`. Suites: dev 537000-537039 (`maps/suites/merged/fuel7-dev`), confirm 537100-537139 (`fuel7-conf`).
 
 | Candidate | Change | Exact (def / wide / pool) | Mean fuel a turn (pool) |
@@ -14403,7 +14403,7 @@ Sources: `replays/ab/her-vs-astr1106/`, `her-vs-astr1105-s535/`, `her-vs-ocbase3
 
 What astraeus has gained since ocean branched (5b66bde0) that ocean lacks, each as an off-by-default knob in
 `bots/variants/oc-astport-dev` (`params::astport::`) on `bots/variants/oc-retest-clean` (= `bots/ocean`). Inventory,
-classes and the code sites: `research/ideas-2026-11-05/astr-port.md`; scripts `research/ideas-2026-11-05/astport-tools/`.
+classes and the code sites: `research/notes/ideas-2026-11-05/astr-port.md`; scripts `research/notes/ideas-2026-11-05/astport-tools/`.
 Nothing fuel-only was left to port (CHANGES 415 took it all); the candidates are CHANGES 410 (less what 411 removed),
 412, and the four logic parts 415 left out (d737bcf6, 4a16bebf, 9dba3ed8/1310d649 with the a650e7e1 refit, 9cb65c88's
 beaten_near fix).
@@ -14484,7 +14484,7 @@ also read level-to-ahead (rsv2 51.1/51.3, the refit 50.2 over 30,720) and shippe
 
 ## Live scrims: HER (v78) against Fish and Mite on the frozen set (2026-11-06)
 
-`research/ladder-scrims-2026-11-06/` (README, SET.md; job `tools/ladder_scrims.py`). Unranked groups on the live
+`research/notes/ladder-scrims-2026-11-06/` (README, SET.md; job `tools/ladder_scrims.py`). Unranked groups on the live
 platform, submission v78 = `bots/ocean` = `variants/oc-retest-clean`, own draft. Live games are deterministic
 (repeating a pinned group reproduced all ten games exactly), so one round per version is the whole sample.
 Core set v1 (40 maps, both sides), opponents pinned to their 04:54 bots:
@@ -14547,7 +14547,7 @@ Sources: `replays/fuel/fc7/m3-*.json`, `replays/fuel/fc7/ab/m3.*`.
 ## Cooked comebacks (ocean, 2026-11-06)
 
 The user's idea: gambits for a game that is cooked (far behind; normal play comes back 8-16% of the time). Design,
-evidence, every variant and the tools are in `research/ideas-2026-11-05/comeback.md` (tools in `comeback-tools/`).
+evidence, every variant and the tools are in `research/notes/ideas-2026-11-05/comeback.md` (tools in `comeback-tools/`).
 Base `bots/ocean` (= `variants/oc-retest-clean`); dev copy `variants/oc-comeback-dev` (knobs in
 `params::comeback`, off = bench byte-identical, 16/16), each variant `variants/oc-cb-<name>`. All A/Bs at 2x fuel
 (200k a turn), own drafts, fast runner; screens on `cb-e` (544000-544039) with SPRT 0.50/0.51, confirms on `cb-c`
@@ -14624,7 +14624,7 @@ Sources: `replays/fuel/fc7/m5-*.json`, `replays/fuel/fc7/ab/m5.*`.
 ## Draft model features: one-altar and misspecification (ocean, 2026-11-06)
 
 Offline, no games: draft5's 1,088,482 games, 5-fold CV over maps scored on wins (changes x1e-4, fold SE; the deployed
-model is 0.59876, its map terms worth 233). Details, tables and scripts: `research/ideas-2026-11-05/draftfeat.md`.
+model is 0.59876, its map terms worth 233). Details, tables and scripts: `research/notes/ideas-2026-11-05/draftfeat.md`.
 - **one_altar** alone -0.42 ±0.16 (4/5 folds; -6.6 ±3.3 on one-altar maps); odd_altar -0.72 ±0.26; bins and squares
   of the altar count about the same; zero_altar is constant (no pool map has 0 altars). Special, but small: a few
   points per champion (Vendetta -3.5 to -3.9, Prism +2.7 to +2.9 on 3-4 picks; Tavi +2.8, Varg -3.0 on 5).
@@ -14649,7 +14649,7 @@ model is 0.59876, its map terms worth 233). Details, tables and scripts: `resear
 
 ## fix-combat: LOSSES.md candidates 2, 3, 4, 9, bush play and lost-chase commits (ocean, 2026-11-06)
 
-`research/ladder-scrims-2026-11-06/fix-combat.md` (design, tables, forensics). Base `variants/oc-retest-clean` (live
+`research/notes/ladder-scrims-2026-11-06/fix-combat.md` (design, tables, forensics). Base `variants/oc-retest-clean` (live
 v78); knobs `params::fixc::` in `bots/variants/oc-fixc-dev` (all off: default 16/16 and wide 52/52 bench replays
 identical at 100M). Own drafts, fast runner, 20,480 games a row on fresh ladder-mix suites (539000-539039 screen,
 539100-539139 held out, 539200-539279 SPRT), most at 2x fuel (200k, both sides) to take fuel out.
@@ -14803,7 +14803,7 @@ current main bot (53874b0b), not round 1's `variants/astraeus-37e1eb6`. New ladd
 
 ## Draft6 lab (ocean, 2026-11-06)
 
-Full record: `research/ideas-2026-11-05/draft6.md`; tools in `research/ideas-2026-11-05/draft6-tools/`; lab
+Full record: `research/notes/ideas-2026-11-05/draft6.md`; tools in `research/notes/ideas-2026-11-05/draft6-tools/`; lab
 `replays/draftlab/draft6` (+ `-f92`, `-ctr`, `-s4` link labs sharing its games). This is a draft-lab refit for ocean on
 fresh data. The player is `variants/oc-base7`. Opponents are mixed by thirds: ocean itself, `variants/astraeus-now-1106`
 and `variants/panel-proteus`, each drafting from its own vehicles. The model gains a per-opponent offset and per-opponent
@@ -15039,7 +15039,7 @@ ladder maps 57.0% (50.9-62.9) of 256. By kind (`ab_classes.py --by kind`), mutat
 and ladder-like presets 56.7% (15,360). Out-of-fuel turns: ocean 173.6k, astraeus 93.9k. Results:
 `replays/ab/oc11-vs-astr1107/`.
 
-**astport2** (`research/ideas-2026-11-07/astport2.md`): astraeus's 437 (fuel merge 10, unconditional) and knobs
+**astport2** (`research/notes/ideas-2026-11-07/astport2.md`): astraeus's 437 (fuel merge 10, unconditional) and knobs
 `own_feint` (439) and `enemy_feint` (440), on `variants/oc-base11` as `variants/oc-astport2`. With the knobs off it
 replays identically to oc-base11 at 100M (16/16 default, 52/52 wide). With a knob on, the default and wide bench games
 that differ were 15/16 and 36/52 for both knobs, 10/16 and 29/52 for own_feint, and 7/16 and 17/52 for enemy_feint.
@@ -15103,7 +15103,7 @@ the real budget 0 lost, unfinished, capped or PLAN-CHECK.
 
 ## Willow arms (ocean, 2026-11-07)
 
-Analysis first: research/ideas-2026-11-07/willow.md, from 16,467 ladder replays with a Willow, split by version era.
+Analysis first: research/notes/ideas-2026-11-07/willow.md, from 16,467 ladder replays with a Willow, split by version era.
 Fish's Willow takes 2.8% of its team's camp gems and ours 12.7%. Fish's stays within 2 of some teammate (ours 3-4;
 1.5 allies in heal range in quiet rounds, ours 0.9), not near the carry. It heals 6.6 times per 100 rounds against
 our 5.2.
@@ -15199,7 +15199,7 @@ Merged into bots/ocean, frozen as `variants/oc-base16`. Sources: `replays/ab/wpo
 
 ## Behaviour-gap arms (ocean, 2026-11-07)
 
-Analysis first: research/ideas-2026-11-07/behaviour-gaps.md, a census of every champion type in 18,599 ladder
+Analysis first: research/notes/ideas-2026-11-07/behaviour-gaps.md, a census of every champion type in 18,599 ladder
 replays (all of Fish's and Mite's 11-05 games, 500 of each other top team's, and every capture game since v82 went
 live, which v82 played). The four biggest gaps that a knob can move: we dash ~40% more (Vendetta, Vesper, Issac, Ren:
 9.3-11.6 per 100 alive rounds against Fish's 6.2-7.6); we spread out early (Heart of Ruin, Vendetta, Cassi, Issac: 1.0-1.5
@@ -15262,7 +15262,7 @@ arms lose (follow the group early, no travel dash) or are level (Cassi's camp st
 
 ## Behaviour-gap arms, round 2 (ocean, 2026-11-07)
 
-Analysis first: research/ideas-2026-11-07/behaviour-gaps-2.md, team-level gaps (gem flow, camps, fights, draft,
+Analysis first: research/notes/ideas-2026-11-07/behaviour-gaps-2.md, team-level gaps (gem flow, camps, fights, draft,
 altars) in round 1's 18,599 ladder games (our side all v82). The ranked gaps: escorts at big camps (idle allies
 within 5 at Elk/Golem payouts 0.89 against Fish's 1.52, d −1.03), Monoliths (our share of a game's Monolith
 captures 0.57 against 0.90, d −0.88, z +9.3 ours, +32.9 pool), early locks (1.53 by round 250 against 0.81, d
@@ -15434,7 +15434,7 @@ read-only (no bot changed). Real budget, fast runner, own drafts unless noted; W
 ## State-dependent behaviour model (ocean, 2026-11-07; level)
 
 The user's idea: shift behaviour by game state (ahead / behind on gems, gold or items) instead of one fixed policy,
-from a fitted model, aiming at +5 points. Design and data: research/ideas-2026-11-07/state-modes.md. Two passes of a
+from a fitted model, aiming at +5 points. Design and data: research/notes/ideas-2026-11-07/state-modes.md. Two passes of a
 randomized factorial, against `variants/oc-base19` (oc-base17 without cbdp and the one-altar altar control; see
 "CHANGES 459/460 removals measured"), own drafts, fast runner, real budget.
 - **State** (model/modes.cc, read every 4th round): lead = tributed lead + carried lead (ours from comms, theirs as
@@ -15480,7 +15480,7 @@ randomized factorial, against `variants/oc-base19` (oc-base17 without cbdp and t
   camp risk) have no effect at 2x / 0.5x in any state, in self-play. Not tried: knobs that change where the team
   goes (camp sides, contested camps, home defence), opponents other than ocean (the effects are against a mirror),
   states finer than three bands, and per-map-type cells. The `oc-mode-*` variants, their suites (fresh-470000..478079)
-  and replays are deleted; fits and scripts are in research/ideas-2026-11-07/state-modes-tools/.
+  and replays are deleted; fits and scripts are in research/notes/ideas-2026-11-07/state-modes-tools/.
 
 
 ## Current ocean against v82, the live version (ocean, 2026-11-07)
@@ -15513,7 +15513,7 @@ read-only. No direct A/B had been run. Real budget, fast runner; Wilson 95% CIs 
 ## Willow early aggression (ocean, 2026-11-07/08; merged as CHANGES 463)
 
 The user's idea: Willow's base Strength (55) is the highest of the ranged types, so use it early. Analysis in
-research/ideas-2026-11-07/willow.md, "Early aggression": on camps ours is already as aggressive as Fish's (same
+research/notes/ideas-2026-11-07/willow.md, "Early aggression": on camps ours is already as aggressive as Fish's (same
 damage, hits and last-hit share); the gap is in fights. Fish's Willow deals twice our champion damage, takes part
 in 38% of fights against 23%, and lands four times the kills.
 
@@ -15749,7 +15749,7 @@ read in play. Details in CHANGES 461. Checks:
   - Out-of-fuel turns level: 2,583 → 2,551, 13.7 → 14.0 per 1000 game rounds (Fish 15.4 → 16.4, Mite 11.9 → 11.3).
   - **Big-levers' 8 bad maps:** 8 cells played, 0 won by v90; the same 8 cells were won 0, 0, 1, 0 times by v86-v89.
     Over the 200 cells all of v86-v90 played, 28 are lost and 71 won by every version. Per-cell results (map, side,
-    opponent; r2) for v86-v90 are in `research/ladder-scrims-2026-11-06/data/cells-r2.tsv`.
+    opponent; r2) for v86-v90 are in `research/notes/ladder-scrims-2026-11-06/data/cells-r2.tsv`.
   - **Drift since v86** (465-468, then the soup-k knobs): step by step -9 (v87), -2 (v88), -1 (v89), -12 (v90);
     pooled over the chain -24 of 342 flips, z -1.30. Directly against v86 on v90's 200 games: -13 (19 / 32, z -1.82;
     Fish -2, Mite -11 z -2.40).
@@ -15777,7 +15777,7 @@ read in play. Details in CHANGES 461. Checks:
     multi-site -5; only-their-HoR -10 (32 / 42).
   - Out-of-fuel turns level: 4,906 → 4,757, 10.9 → 10.6 per 1000 game rounds (Fish 12.6 → 12.3, Mite 9.2 → 8.7).
   - **Big-levers' 8 bad maps:** v91 won 5 of its 32 cells there (v86 2, v87 3, v88 4, v89 3). Of the 200 cells all of
-    v86-v91 played, 24 are lost and 64 won by every version. `research/ladder-scrims-2026-11-06/data/cells-r2.tsv` now
+    v86-v91 played, 24 are lost and 64 won by every version. `research/notes/ladder-scrims-2026-11-06/data/cells-r2.tsv` now
     holds v86-v91.
   - **Drift since v86:** step by step -9 (v87), -2 (v88), -1 (v89), -10 (v91 vs v89); directly against v86 -22 (74 /
     96, z -1.69; Fish -11, Mite -11), 65.8 → 61.5%. No single step is significant, but the line has slid about 4
@@ -15919,7 +15919,7 @@ read in play. Details in CHANGES 461. Checks:
   +3 (z +0.23), against v102 (ocean-removals) -5 (z -0.35). **Level with all**, consistent with its fresh-map read (bsk
   against cg-fs-nh +0.30 +-0.62); its local dgate LIVE BAR +1.00 doesn't show live.
 - **Submitted (00:38 UTC) as v104**: `variants/live-ocean-opp-live` = ocean-16d6f78 (origin/main 16d6f7803, the new
-  ocean base after the removals merge) + the opponent classifier (research/ideas-2026-11-09/oppmodel; no behaviour
+  ocean base after the removals merge) + the opponent classifier (research/notes/ideas-2026-11-09/oppmodel; no behaviour
   change, 100M bench 52/52 identical, +71 fuel a turn) + its live trace (plain printf `OPPL` lines, +210 a turn in all).
   Level locally against ocean-16d6f78: 49.5% (46.7-52.2) of 1,280, fresh ladder-v2 f0 48.4% of 256 (the first, +280
   fuel version read 47.0% of 1,280 and was not queued). It is the new base's first live read and the classifier's live
@@ -15973,7 +15973,7 @@ read in play. Details in CHANGES 461. Checks:
 
 ## Counter-picking from ladder data (ocean, 2026-11-07/08; no arm)
 
-Analysis in research/ideas-2026-11-07/counterpick.md.
+Analysis in research/notes/ideas-2026-11-07/counterpick.md.
 - **Data:** big-arm's archive, 11-04 to 11-07: 762,746 games of 808 teams; the top subset (both ratings ≥ 2000) has
   142,985 games.
 - **Model:** logistic. Antisymmetric champion, champion x map and synergy terms, team-day effects, rating, and 66
@@ -15995,7 +15995,7 @@ Analysis in research/ideas-2026-11-07/counterpick.md.
 
 ## Team-specific counters (ocean, 2026-11-08; no arm)
 
-Analysis in research/ideas-2026-11-07/counterpick.md, "Team-specific counters".
+Analysis in research/notes/ideas-2026-11-07/counterpick.md, "Team-specific counters".
 - **Question:** are counters specific to the team that holds the champion (u[T, c, d]), and averaged away when pooled?
 - **Model:** the ladder model with three random-effect blocks added: team x champion (tc), u[T, c, d], and team x
   champion x map (tcm, style by map).
@@ -16337,7 +16337,7 @@ carrier-only use does not change that.
 
 ## Gold price: enemy term, split, exchange rate (ocean = oc-base23, 2026-11-08; mid125 merged as CHANGES 466)
 
-The user's three ideas on `per_gold` / `gems_share` (analysis and design: research/ideas-2026-11-08/gold-price.md).
+The user's three ideas on `per_gold` / `gems_share` (analysis and design: research/notes/ideas-2026-11-08/gold-price.md).
 Dev copy `bots/variants/oc-gp-dev` (`params::gp::`, off: bench 100M identical to oc-base23, 16/16, wide 52/52);
 arms `variants/oc-gp-<arm>`. Against `variants/oc-base23`, own drafts, fast runner, real fuel, SPRT 0.50/0.5025 (one
 seed per screen; none decided, all ran the suite).
@@ -16438,7 +16438,7 @@ Neither pooled lower bound is above 0: ocean stays at 1.25. The earlier x1.5 pan
 
 On maps whose gem income lies 75%+ in one area at most 12 across (6 ladder maps, ~2% of ladder-mix maps), where the
 scrims read 42% against Fish and Mite (60% overall). Details, mechanism and patches:
-[ideas-2026-11-08/gem-zone.md](ideas-2026-11-08/gem-zone.md). Against oc-base25, own drafts, on the 724 zone maps of
+[ideas-2026-11-08/gem-zone.md](notes/ideas-2026-11-08/gem-zone.md). Against oc-base25, own drafts, on the 724 zone maps of
 fresh-644000..644116 (1,448 games) and held out on the 691 of fresh-664000..664116 (1,382).
 
 | Variant | Dev | Confirm |
@@ -16516,7 +16516,7 @@ ceiling is ~1% and can only be set by flags, which the ladder fixes. Hand flatte
 
 ## Camp-group draft features (ocean = oc-base25, 2026-11-08; no arm)
 
-Write-up: research/ideas-2026-11-08/campfeat.md. These are the teammate's features: gem and gold cluster group
+Write-up: research/notes/ideas-2026-11-08/campfeat.md. These are the teammate's features: gem and gold cluster group
 counts, "exactly one" flags, and a light (no Golem or Monolith), compact (seen whole from one tile), high-value
 group (`hv_compact`, `hv_rate`).
 - **Draft:** on draft7's lab (1M games, map-grouped CV, 1e-4 log loss), an offset screen over F92:
@@ -16534,7 +16534,7 @@ group (`hv_compact`, `hv_rate`).
 
 ## Tavi's shop: reserve, respec, Greed by selling, Willow pair (ocean = oc-base25, 2026-11-08; nothing merged)
 
-Write-up: research/ideas-2026-11-08/tavi-shop.md. Rule: Tavi sells any number of items a turn on spawn, at full
+Write-up: research/notes/ideas-2026-11-08/tavi-shop.md. Rule: Tavi sells any number of items a turn on spawn, at full
 refund (probe-tavi-sell). Screens ran on own drafts, on the Tavi maps of seeds 1040000-1040399 (10,827 maps): Tavi is
 in 10.7% of ocean's drafts, so overall effect = Tavi-game effect x 0.107. SPRT 0.50,0.5025.
 - **T3, Greed by selling** (on spawn with gold + refund >= 750): all five modes H0, at 48.5-49.9% of 4.9k-20k games.
@@ -16552,7 +16552,7 @@ in 10.7% of ocean's drafts, so overall effect = Tavi-game effect x 0.107. SPRT 0
 Mite wards 159 times a game to ocean's 106, mostly the newest unseen bush in reach, and watches camp tiles (12% of its
 wards; ocean almost never). In the same 933 r2 scrims the ward-only hits are level (15.1 a game each), and ocean's hits
 come from an unseen attacker more often (14.5% vs 8.4%): the extra wards are information, not damage. Details and the
-arms: [ideas-2026-11-08/mite-wards.md](ideas-2026-11-08/mite-wards.md). Against oc-base25, own drafts, on
+arms: [ideas-2026-11-08/mite-wards.md](notes/ideas-2026-11-08/mite-wards.md). Against oc-base25, own drafts, on
 `mw-scr-1110` (`--mix ladder-v2`), each arm its own SPRT `--sprt 0.50,0.5025` (resumed after the disk-full crash with
 its earlier pairs):
 
@@ -16705,7 +16705,7 @@ the old assignment also sets `walk_only` false. It therefore has no reachable us
 would undo an intentional decision change: the ranged walk spent the attack and disrupted farming. K1 won 51.3%
 of 20,480 confirmation games and passed the panel. Full searches still offer a walk-only leaf when a strike is
 reachable; removing that separate candidate (K5) lost. No behavioral restoration is warranted by this review.
-Evidence: [fuel6.md, results and interpretation](ideas-2026-11-05/fuel6.md#results-k1-wins-frozen-as-variantsoc-fuel6-everything-else-lost-or-was-level),
+Evidence: [fuel6.md, results and interpretation](notes/ideas-2026-11-05/fuel6.md#results-k1-wins-frozen-as-variantsoc-fuel6-everything-else-lost-or-was-level),
 CHANGES 352/422, and the `ffa016c74` plan.cc diff.
 
 **Validation.** Release and benchmark builds passed. Native fastrunner, 100M fuel, `bench.py --set wide`, 26 maps
@@ -16815,7 +16815,7 @@ the candidates keep the cluster estimate (exact <= estimate on the same tiles).
 
 ## Bad ladder maps: camp_bound and bank_floor (ocean = oc-base29, 2026-11-08; queued live, not merged)
 
-Ocean's live losses to Fish/Mite concentrate on maps both top bots exploit (research/ideas-2026-11-08/big-levers.md). Two fixes from live replays, frozen as `bots/variants/bm-cb29` (+ `-td`) = oc-base29 + the diff in combat/fight.cc, model/safety.{h,cc}, economy/bank.cc:
+Ocean's live losses to Fish/Mite concentrate on maps both top bots exploit (research/notes/ideas-2026-11-08/big-levers.md). Two fixes from live replays, frozen as `bots/variants/bm-cb29` (+ `-td`) = oc-base29 + the diff in combat/fight.cc, model/safety.{h,cc}, economy/bank.cc:
 - **camp_bound (A):** visible enemies in reach of a live, awake member of a group damaged within 2 rounds, a group that reaches neither us nor an ally we see, are "held by their own clear": `stand_lost_at` drops them from pursuit/join, and `recall_line` ignores them unless their blow hits us (with only those near, the line is halfway between recall and safe). Evidence: puppet reruns of v89's 00fragment games (debug traces) show our tank leaving the mirrored centre clear at 44% on `stand_lost_at` (the pursuer, Fish's Issac, was busy on its own group), then `drawn_home` at 38%; Fish cleared its group at r29 and stole ours at r37.
 - **bank_floor (B):** `min_bank` becomes clamp(total map gems/4, 1, 25) (half a side's gems). This affects only gem-scarce maps (on the ladder: 03ultrastarvation 9, 00fragment 17, 01elk-arena 18, 01hooks 22; ~5% of local maps have <50 gems a side). Evidence: on ultrastarvation live, captures were equal (432/461) but tributes were 269/589, and we died carrying 171 gems against Fish's 31 (Fish tributes 52 times a game at an average bag of 11, we 11 times at 25).
 
@@ -16857,7 +16857,7 @@ Results against oc-base23 (oc-base25's win %, 95% CI):
 
 ## Draft against live drafts (ocean = oc-base25, 2026-11-08; no arm)
 
-[draftlive.md](ideas-2026-11-08/draftlive.md):
+[draftlive.md](notes/ideas-2026-11-08/draftlive.md):
 - **The opponents:** Fish and Mite draft a fixed team per (map, side) whatever we pick (archive).
 - **The lab:** 80 of our teams per ladder map (F92's top 40 + 40 random) against spar-oc29-F/M, 40,960 games.
 - **F92 is calibrated against their real picks.** Its within-cell slope is 1.1, uniform by opponent, pick count and
@@ -17074,7 +17074,7 @@ The details are in [fuelcap-2026-11-09/PROOF.md](fuelcap-2026-11-09/PROOF.md).
 
 ## SPSA constant tune of v87 (v87-spsa-s87, v87 = oc-base25, 2026-11-09): ZONE, coordinator's call
 
-**Tune.** Run s87b: 26 oc6 knobs of oc-tune3 (oc-base25 tunified), with oc6's ranges and gains, scored on win .75 / gems .25. Opponents were v87 noise seeds 1360001-4 on Fish's and Mite's live picks, using the old `-F/-M` bodies; the dgate plays `-Fl/-Mt3`. The pool was the 128 ladder maps. Each iteration played 24 maps × 8 opponents × 8 candidates = 1536 games. It stopped at 804 iterations (1.24M games). Tools: `research/ideas-2026-11-09/spsa87-tools/`; run files: `~/tmp-offload/spsa87/`.
+**Tune.** Run s87b: 26 oc6 knobs of oc-tune3 (oc-base25 tunified), with oc6's ranges and gains, scored on win .75 / gems .25. Opponents were v87 noise seeds 1360001-4 on Fish's and Mite's live picks, using the old `-F/-M` bodies; the dgate plays `-Fl/-Mt3`. The pool was the 128 ladder maps. Each iteration played 24 maps × 8 opponents × 8 candidates = 1536 games. It stopped at 804 iterations (1.24M games). Tools: `research/notes/ideas-2026-11-09/spsa87-tools/`; run files: `~/tmp-offload/spsa87/`.
 
 **Port.** `port_tune.py` wrote the values into a copy of oc-base25, `variants/v87-spsa-s87`. Of the 26 knobs, 22 changed; four ints rounded back to their defaults: threat_radius, track_horizon, tribute_window and bush_threat. bench.py identity against the applied tune bot holds: 16/16 def and 52/52 wide replays identical, with fuel 0.03% lower because constexpr is cheaper than the tune block's loads.
 - The first post pipeline failed BENCH-NOT-IDENTICAL. It had run four `bench.py run`s in parallel, and their `cambc build`s raced in cmake configure, both in each bot's own `.cambc/build` and in the shared `hyperion` opponent's. Three of the four never built. Building serially and then benching serially fixes it.
@@ -17250,7 +17250,7 @@ Files: ~/tmp-offload/onesite/ (tools/sitecmp.mjs, tools/armsplit.py, tools/split
 
 ## Mite exploiters on ocean-16d6f78 (mite-re, 2026-11-09/10): both lock arms REJECT, the fight arm not gated, nothing merged
 
-**Question.** Can a Mite-specific mode, switched on by the opponent classifier's posterior (a forced-on stub here), beat ocean against Mite while staying sound if the classifier is wrong? The arms came from reverse-engineering 1,533 real Mite games against us (11-09 12:00 onwards, Mite's current version) plus Mite's games against other teams. The findings are in research/ideas-2026-11-09/oppmodel/mite.md.
+**Question.** Can a Mite-specific mode, switched on by the opponent classifier's posterior (a forced-on stub here), beat ocean against Mite while staying sound if the classifier is wrong? The arms came from reverse-engineering 1,533 real Mite games against us (11-09 12:00 onwards, Mite's current version) plus Mite's games against other teams. The findings are in research/notes/ideas-2026-11-09/oppmodel/mite.md.
 
 **What Mite does that an exploiter could use.**
 - Mite hits our lock only while it carries gems, and it never tributes at a locked altar. With our lock up on one-site maps, it scores ~0. The base already exploits this: our lock is up 53% of rounds, and our relock gap is a median 35 rounds.
@@ -17365,7 +17365,7 @@ Verdict: not merged. The flag predicts our deaths well, but the window is small 
 
 Question (mite-re): does Mite's kill edge come from its item build, and is our shop leaving kills on the table? Data:
 1,533 real Mite-vs-us games (11-09 12:00+) and 544 Fish-vs-us games (11-08+), with live ocean on the other side;
-big-arm archive 11-08/09 for emblem sequences. Tools: [shopmite-tools/](ideas-2026-11-09/shopmite-tools/).
+big-arm archive 11-08/09 for emblem sequences. Tools: [shopmite-tools/](notes/ideas-2026-11-09/shopmite-tools/).
 
 - **Mite's higher r600 stats are gold, not allocation.** Gold earned by r600, Mite vs us: Marcella 1259 vs 762 (Fish
   1340 vs 736), Heart of Ruin 716 vs 402. Stat shares per champion are close (Marcella Focus .61 vs .57, Health .35 vs
@@ -17394,10 +17394,10 @@ big-arm archive 11-08/09 for emblem sequences. Tools: [shopmite-tools/](ideas-20
 | fgate sm-nopow | fresh −0.09 (±0.50), 4,352 units | stopped (null) |
 
 Caveat: the bodies shop like ocean and seldom fight Vesper, so neither gate prices Health on Vesper as live play would.
-Patch: [sm-greed.patch](ideas-2026-11-09/shopmite-tools/sm-greed.patch).
+Patch: [sm-greed.patch](notes/ideas-2026-11-09/shopmite-tools/sm-greed.patch).
 
 ## Burst safety (burst-safety, ocean-16d6f78, 2026-11-10): the belief is right; the deaths are double-turn traps in retreat; escape-plan arm moved nothing, not gated
-- Tools: research/ideas-2026-11-10/burst-tools/ (bl.py: at every turn end of ours, each enemy's ready burst before our next turn from its real Strength, Focus, cooldowns, emblems and the true turn order, walls ignored; bsum/onset/onset2/twoply/seq summaries; bxjoin joins the BX trace of burst-trace.patch, the bot's own lethal() at its turn end).
+- Tools: research/notes/ideas-2026-11-10/burst-tools/ (bl.py: at every turn end of ours, each enemy's ready burst before our next turn from its real Strength, Focus, cooldowns, emblems and the true turn order, walls ignored; bsum/onset/onset2/twoply/seq summaries; bxjoin joins the BX trace of burst-trace.patch, the bot's own lethal() at its turn end).
 - Live (1,533 Mite games since 11-09 12:00, 544 Fish since 11-08): turn ends where the enemies we see hold a ready burst >= our health: 6.3 / 6.8 a game, death before our next turn 46% / 53% (0.1% otherwise). They are 2.9 / 3.6 of our ~6-7 unlinked deaths a game.
 - Belief: the bot's lethal() agrees with that truth at ~80% of those turn ends (locally, mirror and Mt3q/Flp4, 3x fuel trace); the visible-burst estimate's median ratio to truth is 1.00. Cooldowns and Focus are read exactly while visible. No belief bug found.
 - Where: 85-90% of these turn ends are in retreat (branch R), usually after a long retreat run (median several turns), with no non-lethal tile within a step in ~70%. The strike search's own lethal ends are rare (0.1-0.16 a game, die 10-20%): its 0.234 x damage pricing is not the main leak.
@@ -17411,7 +17411,7 @@ Patch: [sm-greed.patch](ideas-2026-11-09/shopmite-tools/sm-greed.patch).
 - Case: user's live game (group 01a1c337-8cd1, game 02, vs Mite): r36 our Cassi (hp 60) killed by an Elk group (2 Elks, range 4) after 15 rounds of farming it; no enemy within ~25 tiles. She walked home on the Elk's range edge, counting Issac (1 from the Elk) as the target; Issac moved after her to range 4 and the tie went to her (first actor).
 - Cause: Safety::find_members lowers a camp member's reach to us by every champion's current position (`reach = min(reach, d - first(o))`), even for allies still free to move before the camp phase.
 - Frequency: live (809 games vs Mite/Fish since 11-09 20:00) our r<=50 camp deaths ~0 (1 in 449 Mite games before 11-10, none since; Fish 0). Local (ocean-16d6f78 vs Mt3q/Flp4, 512 each): r<=50 camp deaths 0.016 a game (as the bodies), all camp deaths 0.22-0.27, of which an ally nearer the camp two rounds before 0.03-0.04. Early camp damage taken ~1,100 a game, both sides.
-- Arm cl-lethal (research/ideas-2026-11-10/burst-tools/cl-lethal.patch): camp members also get a loose reach (every champion still free to move steps away: 1 + dash range if ready, 0 if acted, stunned or channelling); only lethal() adds max(0, loose - camp damage). Other camp pricing unchanged.
+- Arm cl-lethal (research/notes/ideas-2026-11-10/burst-tools/cl-lethal.patch): camp members also get a loose reach (every champion still free to move steps away: 1 + dash range if ready, 0 if acted, stunned or channelling); only lethal() adds max(0, loose - camp damage). Other camp pricing unchanged.
 - fgate vs oc-wdash-494: fresh 49.7% (49.5-50.0) of 17,280 units, ladder 50.1% (49.8-50.3); fresh Fish -0.28, Mite -0.26 points. Rejected; the cautious camp lethal costs more farming than the rare death it saves.
 - Exact re-run (v104 = live-ocean-opp-live + tools/livemask with the old key, puppet opponent; release and debug byte-identical to the live replay). Trace, r35: Cassi (60 hp, acts first) at (6,5): Elk (10,2)'s reach to her is cut to 1 by Issac (distance 1, yet to act), so (6,4) at distance 4 reads 0. Issac (420 hp, acts last): the reach to him is cut to 3 by Cassi (distance 4, first next round); camp_damage reads 120 on every tile but (6,0), 0 there; retreat walks him to (8,2) and dashes to (6,0); the Elk hits Cassi, both die. The landing is ranked by the dash code's own copy of the shelter rule (self_abilities.cc threats_near/danger), so a Safety-only fix (priced 901 at (6,0)) changed nothing.
 - Live (809 games since 11-09 20:00, shieldleft.py): our camp deaths right after a teammate's move made the victim the camp's nearest target: Mite 0.028 a game (15 of 144 camp deaths in 533 games), Fish 0.043 (12 of 59 in 276); in rounds 1-50, 1 in 809 games.
@@ -17447,7 +17447,7 @@ Verdict: the fix is right on the case and fires rarely; every arm reads ~0.25 po
 - Case 1, live 01a1c303 (04pinwheel, v104, reproduced exactly by a puppet re-run, debug build too): from r839 the enemy Prism (7,200 hp, Focus 1,250) channels 699 gems at altar (2,25) for 47 turns (976 if it lands; game_ender needs 723). Our Prism (536 gems, stun ready throughout) alternates bank (B, steps to (8,22)) and retreat (R: `stand_lost_at` at (8,22), a walker the channeller could cancel to become); Vesper and Issac, each carrying a lock, alternate farm/bank and R the same way. Nothing sends a lock or stun holder at a tribute that does not end the game (CHANGES 485 removed 429's deny); the stun was 3 steps out of reach (7 vs 4) behind the same retreat edge; Cassi's stun was across the map.
 - Case 2, live 01a1c2fb (01elk_arena, Ryth r190-194): not the same cause. Ryth steps off and back onto group 23's capture tile each turn while Vesper holds it (on at payout: the 40 gold split two ways). From the replay, `yield_capture` (Vesper is the value holder) against farm's walk back; not confirmed by a trace (the puppet re-run diverges from round 1 with every build we have). Capture-tile episodes are ~6% of all oscillation.
 - Frequency (period-2 tile alternation >= 6 rounds, osc.py): local (oc-wdash-494, 512 games vs Flp4/Mt3q on fresh f0) 38 champion-rounds a game, 87% of games, 1.1 a game during enemy 100+ tributes; live (696 games since 11-09 21:45) 38.7 a game, 87% of games, 3.2 during big tributes (112 games, 55 won). 72% of local episodes have an enemy in sight: want_home's edge against a goal step.
-- Arms (tools and patches: research/ideas-2026-11-10/livelock/): `dny<K>`/`dnyr<f>`: a visible enemy tribute of K+ gems (or f of what they still need) that we hold a hard stop for goes to stop_game_ender's lock/stun route unless our bag >= max(40, its bag / 3). On the puppet re-run of case 1, Vesper locks at r848 (37 turns left). `pp<N>`: a quiet turn that walks us back to last turn's start keeps the work guard off the tile it left for N rounds: oscillation 38 -> 13 champion-rounds a game (big-tribute 1.1 -> 0.31).
+- Arms (tools and patches: research/notes/ideas-2026-11-10/livelock/): `dny<K>`/`dnyr<f>`: a visible enemy tribute of K+ gems (or f of what they still need) that we hold a hard stop for goes to stop_game_ender's lock/stun route unless our bag >= max(40, its bag / 3). On the puppet re-run of case 1, Vesper locks at r848 (37 turns left). `pp<N>`: a quiet turn that walks us back to last turn's start keeps the work guard off the tile it left for N rounds: oscillation 38 -> 13 champion-rounds a game (big-tribute 1.1 -> 0.31).
 - Deny loses where it fires (dny100, 47 of 512 games changed): 20 wins against the base's 26, our deaths 451 against 346; the cancelled bodies restart (big tributes started 588 against 471). Safety's retreat was right: the channeller cancels and fights.
 
 **Results against oc-wdash-494** (fgate, Flp4/Mt3q; fresh units = maps):
@@ -17491,7 +17491,7 @@ Smoke checks:
 - chan-M against the Fish body: all 48 replays are identical to ocean-opp's. Against the Mite body: all 48 differ.
 - bagf-F changes 22 of 48 games against Fish, and 10 against Mite (fuel reroll only).
 
-**Gate.** `research/ideas-2026-11-10/condarms/cgate.py`: fgate's runs and SPRTs against ocean-16d6f78 (Flp4 / Mt3q), with three changes:
+**Gate.** `research/notes/ideas-2026-11-10/condarms/cgate.py`: fgate's runs and SPRTs against ocean-16d6f78 (Flp4 / Mt3q), with three changes:
 - a new 1,024-map ladder-v2 pool (seeds 1510001-1510004) that no gate had played;
 - noise blocks 38-117, unused on these bodies;
 - the decision reads only the half the arm acts in.
@@ -17529,7 +17529,7 @@ The user asked whether, once the classifier knows the team, its priority formula
   - otherwise quiet by health.
   - Rank windows follow from interval overlap; enemy_next_rank uses the same bound.
   - On real games: wrong sets −30%, false "before us" 27% → 15%, misses 3.5% → 6.0% (within 5 tiles: 0% → 5.4%). The cost is ~+0 fuel (5 enemies, once per update).
-- **Body:** Mt3q maps ocean's order onto Mite's values, so its contact acts first. Mt3qro (research/ideas-2026-11-10/opporder/patch_prio_ro.py on Mt3p, in fgate VERSIONS) writes Mite's formula. On Mt3qro the predictor behaves as on real games: false "before us" 27.7% → 13.7%, misses 6.0%. oo-mord beats it 77.7% of 256 on f0.
+- **Body:** Mt3q maps ocean's order onto Mite's values, so its contact acts first. Mt3qro (research/notes/ideas-2026-11-10/opporder/patch_prio_ro.py on Mt3p, in fgate VERSIONS) writes Mite's formula. On Mt3qro the predictor behaves as on real games: false "before us" 27.7% → 13.7%, misses 6.0%. oo-mord beats it 77.7% of 256 on f0.
 - Results against ocean-16d6f78 (fgate, Flp4/Mt3qro; the arm is off against Fish, so F is the classifier's cost):
 
 | arm | fresh | units | ladder | Fish / Mite fresh | outcome |
@@ -17752,7 +17752,7 @@ Each arm lowers farm.cc's after-loop reserve (`after_loop`) by `loop_slack` on t
 
 ## Mite r4 to r5: matched live v105 comparison (2026-11-10, Codex coordinator)
 
-Same ocean submission v105, 80 common map/side cells against the two pinned Mite versions. Read through `tools/ladder_scrims.py::games` (deduplicated, suspect groups excluded); source is `research/ladder-scrims-2026-11-06/data/games.jsonl`. This isolates the opponent pin update from our v106 mask-key change.
+Same ocean submission v105, 80 common map/side cells against the two pinned Mite versions. Read through `tools/ladder_scrims.py::games` (deduplicated, suspect groups excluded); source is `research/notes/ladder-scrims-2026-11-06/data/games.jsonl`. This isolates the opponent pin update from our v106 mask-key change.
 
 | Metric | Mite r4 | Mite r5 |
 |---|---:|---:|
@@ -17785,7 +17785,7 @@ future switching overhead is not established. Hourly cadence remains enabled,
 next due 09:36:58 UTC. Fourteen coordination/recovery tests pass. Later changed
 summary trajectories are logged and relayed to the user as behaviour/version-change
 evidence, with engine/seed/nondeterminism caveats, never as an automatic repin.
-[Implementation, evidence paths and recovery](ladder-scrims-2026-11-06/VERSION-CHECK.md).
+[Implementation, evidence paths and recovery](notes/ladder-scrims-2026-11-06/VERSION-CHECK.md).
 
 
 ## Live v106 reserve read against v105 (2026-11-10 09:07 UTC; Fish complete, Mite partial)
@@ -17798,15 +17798,15 @@ Mite r5 has only 80 common cells because v105 ended there: v106 41/80 versus v10
 
 Forty common map/side cells per cohort: Mite r5 placed 6,982 wards (62.9% bush,15.6% camp), Ad Astra 4,030 (100% bush), Ocean-v105 4,086 (74.9% bush,1.5% camp). Confirmed ward-only basic-attack shares 8.35%, 5.14%, 8.98%; no demonstrated Ocean ward-value deficit. Opponents/drafts differ; five Ad Astra games predate the 5.0.1 switch, and excluding those cells preserves findings. Mite's camp wards mostly retain future information (769/1,088 add no immediate sight). This is descriptive policy evidence, not causal strength evidence.
 
-Prepared independent full 498 arms `oc-wtile-498` (exact sight ranks tiles in the existing chosen bush cluster), `oc-wbush-498` (bush-only planned-ward ablation), `oc-wcamp-498` (bounded nearby cleared-camp fallback, avoiding the earlier expensive map scan). All release builds and 64 matched smoke games passed with no errors or unfinished draft handoffs. Replayed placements confirm each mechanism; no strength conclusion or merge. Six fresh gates compare each against `oc-campsh-498` under normal and doubled fuel, with Flp4/Mt3q fixed and separate cache/result namespaces. Queue ops owns priority admission before pending training. [Evidence, provenance and commands](ideas-2026-11-10/warding.md).
+Prepared independent full 498 arms `oc-wtile-498` (exact sight ranks tiles in the existing chosen bush cluster), `oc-wbush-498` (bush-only planned-ward ablation), `oc-wcamp-498` (bounded nearby cleared-camp fallback, avoiding the earlier expensive map scan). All release builds and 64 matched smoke games passed with no errors or unfinished draft handoffs. Replayed placements confirm each mechanism; no strength conclusion or merge. Six fresh gates compare each against `oc-campsh-498` under normal and doubled fuel, with Flp4/Mt3q fixed and separate cache/result namespaces. Queue ops owns priority admission before pending training. [Evidence, provenance and commands](notes/ideas-2026-11-10/warding.md).
 
 ### Alive-camp ward ablation — 2026-11-10
 
-Event-level follow-up found 686/1,088 Mite camp wards on alive groups, versus 269 cleared and 133 respawning, with only two same-group replacements. Added sealed `oc-wcampall-498`, removing only the dead-group restriction from the cheap camp arm. Its 16 normal/doubled-fuel smoke games pass release/error/draft/replay checks; camp placements rise to 422/410 versus 301/274 for the dead-camp arm on those cells. No strength claim. Eight independent arm/base fuel gates are now prepared; the original six commands and all frozen sources remain unchanged. See [warding evidence](ideas-2026-11-10/warding.md).
+Event-level follow-up found 686/1,088 Mite camp wards on alive groups, versus 269 cleared and 133 respawning, with only two same-group replacements. Added sealed `oc-wcampall-498`, removing only the dead-group restriction from the cheap camp arm. Its 16 normal/doubled-fuel smoke games pass release/error/draft/replay checks; camp placements rise to 422/410 versus 301/274 for the dead-camp arm on those cells. No strength claim. Eight independent arm/base fuel gates are now prepared; the original six commands and all frozen sources remain unchanged. See [warding evidence](notes/ideas-2026-11-10/warding.md).
 
 ## Livelock follow-up: alternative goals and capture routing (Codex, frozen ocean 497, 2026-11-10)
 
-This continues “Livelock by a big enemy tribute” above. Source base is the unchanged `variants/oc-coord-fuel497-f8a064fba6` (= `oc-fuel-497`); subsequent ocean changes are not overlaid on these tests. Patches and mechanism evidence: [livelock-goals](ideas-2026-11-10/livelock-goals/README.md). Large artifacts: `~/tmp-offload/livelock-goals/`.
+This continues “Livelock by a big enemy tribute” above. Source base is the unchanged `variants/oc-coord-fuel497-f8a064fba6` (= `oc-fuel-497`); subsequent ocean changes are not overlaid on these tests. Patches and mechanism evidence: [livelock-goals](notes/ideas-2026-11-10/livelock-goals/README.md). Large artifacts: `~/tmp-offload/livelock-goals/`.
 
 - **Capture routing, newly confirmed in local traces:** a champion yielding an ally's capture can be walking to a *different* camp whose route crosses that capture tile. The arbitrary yield step reverses that route and clears its claim. In 256 fresh-map debug games, 727 of 2,176 yield steps were aimed at other work; 389 returned to the vacated tile next turn. Letting a non-holder continue to its existing goal reduced yield-associated oscillation from 44 to 9 episodes (288 to 56 champion-rounds, −81%). Total oscillation stayed level because enemy-retreat loops dominate. The original live Ryth game still lacks an exact branch reproduction; the local trace confirms this family of failure, not that original turn's branch with certainty.
 - **Alternative altar:** `lg497-altwalk` detects a quiet bank→retreat reversal and uses the existing altar-avoidance mechanism to try another reachable altar for its walking time, with no gem cap. On the preserved original-source puppet, positions match the original through r840; Prism then goes to the opposite altar and completes its 536-gem tribute in r917 (original game won in r1001). This is route evidence only: after divergence, the puppet cannot react. It also exposes repeated switching of the avoided altar when both routes start at the same unsafe step.
@@ -17832,23 +17832,23 @@ The retained trace explains its missed Vesper loop: his bank step is a detour aw
 
 ### Planned-ward timing ablation — 2026-11-10
 
-Ocean's routine end placement already follows movement/combat, but 379/4,086 observed v105 placements have a later main action; 179 non-bush cases are definitely early planned wards. Current Ad Astra has only 1/4,017 such cases. Added sealed `oc-wlate-498` on full498: remove only the early planned call/re-observation, retain end planned placement and early reveal. This also saves that early check and allows reveal to take precedence; it is not a pure clock-time intervention. Sixteen release smokes pass errors, handoff, ordered-draft and hard replay checks. Observably early placements fall 132→16 normal /140→17 doubled; non-bush planned placements remain 451/410, and immediate ward attacks remain7/3. Two separate fuel gates prepared; prior eight commands/sources unchanged. No strength claim. [Evidence](ideas-2026-11-10/warding.md).
+Ocean's routine end placement already follows movement/combat, but 379/4,086 observed v105 placements have a later main action; 179 non-bush cases are definitely early planned wards. Current Ad Astra has only 1/4,017 such cases. Added sealed `oc-wlate-498` on full498: remove only the early planned call/re-observation, retain end planned placement and early reveal. This also saves that early check and allows reveal to take precedence; it is not a pure clock-time intervention. Sixteen release smokes pass errors, handoff, ordered-draft and hard replay checks. Observably early placements fall 132→16 normal /140→17 doubled; non-bush planned placements remain 451/410, and immediate ward attacks remain7/3. Two separate fuel gates prepared; prior eight commands/sources unchanged. No strength claim. [Evidence](notes/ideas-2026-11-10/warding.md).
 
 ## Replay camp metadata identity fix (2026-11-10)
 
-Self-mirrored camps invalidate the extractor's runtime-index shifts. Replaced them with coordinate joins for static rewards and mirror groups; schema 3 uses new internal map-cache hashes, retaining old blobs and the existing filename convention. Read-only audit: 69/868 groups on 40 maps had wrong reward/timer metadata, and 52 had wrong mirror labels. Active draft/emblem training uses independent features and direct outcomes, so it is unaffected. Historical reward-weighted camp reports are potentially stale; see [impact audit](ideas-2026-11-10/replay-camp-metadata.md). No existing dataset or bot/gate source changed.
+Self-mirrored camps invalidate the extractor's runtime-index shifts. Replaced them with coordinate joins for static rewards and mirror groups; schema 3 uses new internal map-cache hashes, retaining old blobs and the existing filename convention. Read-only audit: 69/868 groups on 40 maps had wrong reward/timer metadata, and 52 had wrong mirror labels. Active draft/emblem training uses independent features and direct outcomes, so it is unaffected. Historical reward-weighted camp reports are potentially stale; see [impact audit](notes/replay-camp-metadata.md). No existing dataset or bot/gate source changed.
 
 Validation: five focused mapping tests; all 868 groups match direct engine members/rewards and exact reflected tile sets; four full extractions into a separate root have zero hard errors and identical events, rounds, drafts, champion records and outcomes. Original map blobs and copied legacy sentinels remain unchanged. No strength claim or gate promotion.
 
 ## Current 498 farm reserve and queue-guard attribution programme (2026-11-10)
 
-Read-only source audit confirms submitted v106 included both 8k less after-loop reserve and q1 queue recovery, plus its changed priority-mask key. Neither policy is in full498. Old local bundle: fresh +0.150±0.250 at 317 blocks; Fish fresh +0.014±0.339, ladder+0.642±0.349. Those data do not isolate the live Fish lead or answer current-base reserve-only strength. See [coverage and provenance](ideas-2026-11-10/reserve-followup.md).
+Read-only source audit confirms submitted v106 included both 8k less after-loop reserve and q1 queue recovery, plus its changed priority-mask key. Neither policy is in full498. Old local bundle: fresh +0.150±0.250 at 317 blocks; Fish fresh +0.014±0.339, ladder+0.642±0.349. Those data do not isolate the live Fish lead or answer current-base reserve-only strength. See [coverage and provenance](notes/ideas-2026-11-10/reserve-followup.md).
 
 Authorized three independent normal-fuel arms against frozen oc-campsh-498: oc-rs8-498 (reserve only), oc-q1-498 (exact original guard only), and oc-rs8q1-498 (union). All final release builds and 64 smoke conditions pass errors/early/handoff/hard replay checks; all 48 candidate/reference ordered draft pairs match. Source factorial assertions and patch reconstruction match all seals. Smoke trajectories differ, so OOF totals are descriptive only. Ops admitted the three source-verified fresh gates under round.lock at 12:19:27, after all existing behavior gates and before draft10 continuation/new training; no strength result, live promotion or merge yet.
 
 ### Ward exact-tile gate at normal fuel (2026-11-10 12:41 UTC)
 
-Sealed oc-wtile-498 vs full498, fixed Flp4/Mt3q, release/native 5.0.1, own drafts: 52 blocks/6,656 fresh paired units, NARROWED (ZONE crossed). Fresh +0.101±0.249 points (Fish +0.060±0.339; Mite +0.143±0.361); ladder −0.394±0.295. No established fresh gain, acceptance screen or promotion; this is not a formal low-SPRT rejection. Doubled-fuel condition started with verified 200k summary metadata and unchanged source seals. Full evidence and budget caveat: [warding study](ideas-2026-11-10/warding.md).
+Sealed oc-wtile-498 vs full498, fixed Flp4/Mt3q, release/native 5.0.1, own drafts: 52 blocks/6,656 fresh paired units, NARROWED (ZONE crossed). Fresh +0.101±0.249 points (Fish +0.060±0.339; Mite +0.143±0.361); ladder −0.394±0.295. No established fresh gain, acceptance screen or promotion; this is not a formal low-SPRT rejection. Doubled-fuel condition started with verified 200k summary metadata and unchanged source seals. Full evidence and budget caveat: [warding study](notes/ideas-2026-11-10/warding.md).
 
 
 ## Camp crew initiation: exact surviving v107 death and a pre-heal guard (Codex, full ocean 498, 2026-11-10)
@@ -17863,7 +17863,7 @@ Its historical release counterfactual matches the live game through the round28 
 
 The census retains a limit: on gen-ladder-131200200111, Issac and HoR defer their own wake at493, but Prism wakes the Golem at494 while they recall nearby; Issac and linked Cassi die at501. The matched baseline has identical inputs until493 and already loses Issac/linked Cassi at497; the candidate delays the death to501 but does not prevent it. Both selected debug games eventually win; that is not strength evidence. Do not claim that self-initiation protection solves all camp deaths.
 
-Queue ops admitted unique normal/200k fgate entries at12:48:19UTC, after tile200k and before bush100k: final pair`c107-wakeheal2`/`oc-campsh-498`, Flp4/Mt3q, fresh ladder-v2, release/own drafts, real seed206/max1000/jobs4 and200k seed205/max8/jobs2. The200k diagnostic completed8blocks/1,024fresh units at0.000±0.224pp95%, ladder+0.195±0.244, pooled+0.098±0.166: NARROWED/unresolved, no demonstrated gain and not rejection. The real-budget gate concluded **NARROWED (ZONE crossed)** at29blocks/3,712fresh units: fresh+0.330±0.250pp95% (50.080–50.580%), Fish+0.323±0.327, Mite+0.337±0.370, ladder+0.007±0.302, pooled+0.168±0.196; lowLLR+6.998, high−4.537, no screen/live-bar pass. Judgment-eligible small-gain fallback while the extension is judged; no automatic promotion or merge. Old wakeheal entries were held before launch after the two exclusions were added under a new frozen identity. Details, patches and failed hypotheses: [camp107-crew](ideas-2026-11-10/camp107-crew/README.md); artifacts/source seals/admission records:`~/tmp-offload/camp107-mechanism/`.
+Queue ops admitted unique normal/200k fgate entries at12:48:19UTC, after tile200k and before bush100k: final pair`c107-wakeheal2`/`oc-campsh-498`, Flp4/Mt3q, fresh ladder-v2, release/own drafts, real seed206/max1000/jobs4 and200k seed205/max8/jobs2. The200k diagnostic completed8blocks/1,024fresh units at0.000±0.224pp95%, ladder+0.195±0.244, pooled+0.098±0.166: NARROWED/unresolved, no demonstrated gain and not rejection. The real-budget gate concluded **NARROWED (ZONE crossed)** at29blocks/3,712fresh units: fresh+0.330±0.250pp95% (50.080–50.580%), Fish+0.323±0.327, Mite+0.337±0.370, ladder+0.007±0.302, pooled+0.168±0.196; lowLLR+6.998, high−4.537, no screen/live-bar pass. Judgment-eligible small-gain fallback while the extension is judged; no automatic promotion or merge. Old wakeheal entries were held before launch after the two exclusions were added under a new frozen identity. Details, patches and failed hypotheses: [camp107-crew](notes/ideas-2026-11-10/camp107-crew/README.md); artifacts/source seals/admission records:`~/tmp-offload/camp107-mechanism/`.
 
 A separately frozen extension, `c107-wakecrew3`, handles a sleeping group with one living striker. It defers a basic/spell wake when the current nearest champion is another ally whose estimated exit exposure is lethal, allowing a finishing hit and crediting a stun of that striker. It confirms actual asleep state before refusing and exempts the ally’s spawn. In the retained Golem case it matches wakeheal2 until Prism’s494attack, waits494–497, and lets Issac/HoR heal at498; linked Cassi survives. Prism then starts the camp and escapes alive. Its historical release preserves the original28fix. Bench versus498:44/52identical,+0.09%fuel on those; versus wakeheal2:50/52identical,+0.03%. The256-game debug census has2affected games/6champion-rounds, longest wait4rounds. One other2-round trigger is conservative: baseline’s stun/Prism cover already keeps Cassi alive, so it is not counted as a saved death. Separate real/200k gates (seeds208/207) were admitted at13:16:43; normal finished34blocks/4,352fresh units **NARROWED (ZONE crossed)**: +0.224±0.250pp95% (49.974–50.474%), Fish+0.115±0.332, Mite+0.333±0.369, ladder−0.138±0.294, pooled+0.043±0.193; lowLLR+5.367, high−6.166, no screen/live-bar pass. The200k diagnostic concluded8blocks/1,024fresh units NARROWED: −0.024±0.229pp fresh, Fish0.000±0.358, Mite−0.049±0.345, ladder+0.220±0.257; no rejection or acceptance. On the common first29blocks, a post-hoc paired extension-minus-self read is−0.135±0.138pp fresh; diagnostic, not a separate gate or rejection. The coordinator selected the simpler wakeheal2 for a prospective fixed unused-map confirmation before any confirmation outcomes, retaining the unresolved ally-wake failure as separate future work. No merge yet. Independent read-only review found no blocking issue, while noting conservative misses for cleave/enhanced-basic stun, future target handoff, and static dead-member proximity; these are documented in the research README.
 
@@ -17887,7 +17887,7 @@ Independent follow-up found Willow's early awake-camp death persists on current5
 
 Independent review found no blocking correctness issue, while clarifying that net HP loss is not damage attribution and camp-fled ends on any health rise above its trigger (or death/spawn), not necessarily full healing. Changed benchmark cases expose conservative support abandonment: Pilgrimage B retreats from real but manageable camp fire at301; baseline stays safe540HP and heals303, candidate next heals369. The eventual loss is not uniquely attributable to that first decision. Hooks A's final gain also begins with a manageable-fire retreat, so neither selected outcome is a rescue count.
 
-The separate `c500-wfollow-blind` adds only a chosen-target visibility restriction. The exact failing target was not observed this turn; both benchmark support-cost examples followed observed targets. Full500 platform release retains the100HP escape/heal/work sequence. Hooks becomes fully baseline-identical; Pilgrimage's first difference moves301→1014, removing the early support absence.100M bench41/52identical, identical-subset fuel−0.0035%; no strength claim. The crowd-ranked target need not be protected Prism, remote ward sight counts, and a ward replacement may leave its observed-this-turn flag true, suppressing protection. Thus this narrows coverage rather than proving current nearby support. Both independent standard gates admitted16:11:59, normal seed215/max1000/jobs4 and doubled seed216/max8/jobs2; broad sources/evidence remain unchanged. Frozen500 only, no working501 overlays. Exact patches, seals, costs and review caveats are in [camp107-crew](ideas-2026-11-10/camp107-crew/README.md).
+The separate `c500-wfollow-blind` adds only a chosen-target visibility restriction. The exact failing target was not observed this turn; both benchmark support-cost examples followed observed targets. Full500 platform release retains the100HP escape/heal/work sequence. Hooks becomes fully baseline-identical; Pilgrimage's first difference moves301→1014, removing the early support absence.100M bench41/52identical, identical-subset fuel−0.0035%; no strength claim. The crowd-ranked target need not be protected Prism, remote ward sight counts, and a ward replacement may leave its observed-this-turn flag true, suppressing protection. Thus this narrows coverage rather than proving current nearby support. Both independent standard gates admitted16:11:59, normal seed215/max1000/jobs4 and doubled seed216/max8/jobs2; broad sources/evidence remain unchanged. Frozen500 only, no working501 overlays. Exact patches, seals, costs and review caveats are in [camp107-crew](notes/ideas-2026-11-10/camp107-crew/README.md).
 
 
 **New user screening rule supersedes the Willow paired admissions before play:** existing bounded8block200k screens run first (hurt seed214, blind216, at most1,024fresh units each). Only valid complete fresh95% lower>0 authorizes100k; ladder/central estimates/NARROWED alone do not. Inconclusive is not rejection but leaves100k held, without automatic200k extensions. Ops holds both pending100k entries, and wrappers enforce explicit source/log-pinned reviewed authorization before any100k game work. Original launchers and new-policy hashes retained. Both200k/source/cache identities unchanged; original already-running bankviahome normal gate continues by explicit coordinator instruction.
@@ -17901,7 +17901,7 @@ The separate `c500-wfollow-blind` adds only a chosen-target visibility restricti
 
 ### Ward exact-tile fuel comparison completed (2026-11-10 13:06 UTC)
 
-The 200k gate stopped NARROWED at 34 blocks/4,352 fresh paired units: −0.270±0.247 points (Fish −0.322±0.326; Mite −0.218±0.367), ladder −0.195±0.297. No acceptance screen; low LLR −2.286 did not cross formal rejection. Normal 100k was +0.101±0.249. Neither supports promotion. Balanced common 32-block/1,024-map secondary contrast is raised-minus-normal−0.470±0.428 conditional descriptive points; both teams' budgets change. Close the tile-ranking branch without the conditional cheaper-tile follow-up. Remaining bush/camp/timing gates are independent. [Full evidence](ideas-2026-11-10/warding.md).
+The 200k gate stopped NARROWED at 34 blocks/4,352 fresh paired units: −0.270±0.247 points (Fish −0.322±0.326; Mite −0.218±0.367), ladder −0.195±0.297. No acceptance screen; low LLR −2.286 did not cross formal rejection. Normal 100k was +0.101±0.249. Neither supports promotion. Balanced common 32-block/1,024-map secondary contrast is raised-minus-normal−0.470±0.428 conditional descriptive points; both teams' budgets change. Close the tile-ranking branch without the conditional cheaper-tile follow-up. Remaining bush/camp/timing gates are independent. [Full evidence](notes/ideas-2026-11-10/warding.md).
 
 ### Skirmish fifth-emblem continuation reached judgment zone (2026-11-10 14:40 UTC)
 
@@ -17913,11 +17913,11 @@ The shared-pool move at14:06 changed resource scheduling only, not frozen source
 
 ### 2026-11-10 — Ocean498 reserve attribution: q1 control near neutral
 
-Sealed `oc-q1-498` applies only submitted v106's original queue-round/fuel_ok guard to full `oc-campsh-498`. Release own drafts, engine5.0.1/native, normal100k fuel, fixed Flp4/Mt3q. Standard fresh gate ended NARROWED (ZONE crossed),46blocks/5888 fresh paired units: **fresh +0.025±0.249pp**, Fish+0.110±0.355, Mite−0.059±0.355; ladder−0.132±0.262. HighLLR−9.258/low+2.324, no acceptance screen/livebar. Near-neutral unresolved result; no standalone promotion and no formal low rejection. Reserve-only continues; bundle pending, so interaction remains unknown. [Provenance and full factorial](ideas-2026-11-10/reserve-followup.md). Raw result `~/tmp-offload/reserve-coverage-2026-11-10/results/q1-100000.json`.
+Sealed `oc-q1-498` applies only submitted v106's original queue-round/fuel_ok guard to full `oc-campsh-498`. Release own drafts, engine5.0.1/native, normal100k fuel, fixed Flp4/Mt3q. Standard fresh gate ended NARROWED (ZONE crossed),46blocks/5888 fresh paired units: **fresh +0.025±0.249pp**, Fish+0.110±0.355, Mite−0.059±0.355; ladder−0.132±0.262. HighLLR−9.258/low+2.324, no acceptance screen/livebar. Near-neutral unresolved result; no standalone promotion and no formal low rejection. Reserve-only continues; bundle pending, so interaction remains unknown. [Provenance and full factorial](notes/ideas-2026-11-10/reserve-followup.md). Raw result `~/tmp-offload/reserve-coverage-2026-11-10/results/q1-100000.json`.
 
 ### 2026-11-10 — Ocean498 bush-only warding rejected at doubled fuel
 
-Sealed `oc-wbush-498` forbids non-bush planned wards while preserving immediate reveals. Versus full `oc-campsh-498`, release own drafts, native5.0.1, fixedFlp4/Mt3q and matched200k fuel: **REJECT**,130blocks/16640 fresh paired units, **fresh−0.625±0.391pp**, lowLLR−3.141/high−7.852. Fish+0.066±0.528, Mite−1.316±0.574; ladder−0.014±0.381. No promotion; normal100k still running and remains a separate decision. This restriction does not transfer Ad Astra's observed all-bush behavior successfully at doubled fuel. [Study, caveats and other arms](ideas-2026-11-10/warding.md). Raw result `~/tmp-offload/warding-2026-11-10/results/bush-200000.json`.
+Sealed `oc-wbush-498` forbids non-bush planned wards while preserving immediate reveals. Versus full `oc-campsh-498`, release own drafts, native5.0.1, fixedFlp4/Mt3q and matched200k fuel: **REJECT**,130blocks/16640 fresh paired units, **fresh−0.625±0.391pp**, lowLLR−3.141/high−7.852. Fish+0.066±0.528, Mite−1.316±0.574; ladder−0.014±0.381. No promotion; normal100k still running and remains a separate decision. This restriction does not transfer Ad Astra's observed all-bush behavior successfully at doubled fuel. [Study, caveats and other arms](notes/ideas-2026-11-10/warding.md). Raw result `~/tmp-offload/warding-2026-11-10/results/bush-200000.json`.
 
 ### Live v108 chanM: no matched Mite gain; Fish half is not an identity control (2026-11-10 15:05 UTC)
 
@@ -17931,7 +17931,7 @@ No promotion or merge from this readout; pins unchanged and no new scrims reques
 
 ### 2026-11-10 — Bush-only warding rejected at normal fuel; branch closed
 
-Sealed `oc-wbush-498` versus full `oc-campsh-498`, release own drafts, native5.0.1, fixed Flp4/Mt3q and normal100k fuel: **REJECT** after 216 blocks / 27,648 fresh paired units. Fresh **−0.427±0.307pp**, Fish −0.148±0.419, Mite −0.705±0.446; low LLR −3.070 / high −10.701. Ladder +0.716±0.300 diverges from fresh performance, so pooled +0.145±0.215 is not a promotion claim. Both budgets now formally reject (200k fresh −0.625±0.391); retain planned non-bush wards and close this branch without a cheaper follow-up. Camp and timing arms remain independent. [Study and evidence](ideas-2026-11-10/warding.md); raw pair `~/tmp-offload/warding-2026-11-10/results/bush-{100000,200000}.json`.
+Sealed `oc-wbush-498` versus full `oc-campsh-498`, release own drafts, native5.0.1, fixed Flp4/Mt3q and normal100k fuel: **REJECT** after 216 blocks / 27,648 fresh paired units. Fresh **−0.427±0.307pp**, Fish −0.148±0.419, Mite −0.705±0.446; low LLR −3.070 / high −10.701. Ladder +0.716±0.300 diverges from fresh performance, so pooled +0.145±0.215 is not a promotion claim. Both budgets now formally reject (200k fresh −0.625±0.391); retain planned non-bush wards and close this branch without a cheaper follow-up. Camp and timing arms remain independent. [Study and evidence](notes/ideas-2026-11-10/warding.md); raw pair `~/tmp-offload/warding-2026-11-10/results/bush-{100000,200000}.json`.
 
 ### Current-mask v105 baseline calibration prepared (2026-11-10 15:21 UTC)
 
@@ -18057,7 +18057,7 @@ Evidence: `~/tmp-offload/handoff/codex/live-analysis/v109-readout.json` (all mat
 
 ### Frozen502 tribute Safety audit (2026-11-10; read-only)
 
-[Audit and exact live cases](ideas-2026-11-10/tribute-safety-audit502.md): immediate Safety hits already model bush visibility; future walk-in arrival remains conservative. The attractive Prism carrying 784 cancel/restart case instead enabled 2830.3 damage against an approaching enemy that could enter the bush within the 11-turn window. Hidden wards, ground-target spells, walk-in, locks and sampled visibility prevent calling it a proven false cancel. Prior C1’s 48.8% and 65% increase in later bag deaths also argue against blanket relaxation. **No justified candidate or test admission; no implementation or games.**
+[Audit and exact live cases](notes/ideas-2026-11-10/tribute-safety-audit502.md): immediate Safety hits already model bush visibility; future walk-in arrival remains conservative. The attractive Prism carrying 784 cancel/restart case instead enabled 2830.3 damage against an approaching enemy that could enter the bush within the 11-turn window. Hidden wards, ground-target spells, walk-in, locks and sampled visibility prevent calling it a proven false cancel. Prior C1’s 48.8% and 65% increase in later bag deaths also argue against blanket relaxation. **No justified candidate or test admission; no implementation or games.**
 
 ## Ocean fuel fifth pass (2026-11-10, CHANGES 503)
 
@@ -18132,26 +18132,26 @@ Evidence: `~/tmp-offload/handoff/codex/live-analysis/v110-readout.json`, `pair11
 
 ### Prospective Fish-only camp-ward screen on503 (2026-11-10)
 
-[Protocol](ideas-2026-11-10/ward-fish503/README.md): one post-hoc Fish lead from498(+0.375±0.340pp) is tested independently on512 new ladder-v2 maps, both sides versus fixedFlp4, CAND/REF release200k,2048games maximum. Exact old ward diff only on committed503;502 preparation was superseded before play and same generator selection reused, then two Food-content collisions replaced before play under the bounded novelty audit. Positive fresh paired95%lower>0 with valid complete cells is required even to consider a separately authorized100k test. No Mite, old pooled-gate revival, automatic extension, classifier claim or promotion. Results pending.
+[Protocol](notes/ideas-2026-11-10/ward-fish503/README.md): one post-hoc Fish lead from498(+0.375±0.340pp) is tested independently on512 new ladder-v2 maps, both sides versus fixedFlp4, CAND/REF release200k,2048games maximum. Exact old ward diff only on committed503;502 preparation was superseded before play and same generator selection reused, then two Food-content collisions replaced before play under the bounded novelty audit. Positive fresh paired95%lower>0 with valid complete cells is required even to consider a separately authorized100k test. No Mite, old pooled-gate revival, automatic extension, classifier claim or promotion. Results pending.
 
 
 ### Fish-only alive-camp ward screen on503: HOLD (2026-11-10)
 
-The [prospective fixed screen](ideas-2026-11-10/ward-fish503/README.md) completed exactly512 newly sealed ladder-v2 maps/2048 release200k games, both sides of candidate/reference against fixedFlp4. Fresh paired Fish gain **−0.879pp,95%CI[−3.827,+2.070]**: **HOLD**, not statistical rejection. The prespecified positive-lower-bound requirement failed; no100k test, extension, new candidate, live action or merge is authorized. This independent screen does not confirm the old498 post-hoc Fish+0.375±0.340 lead.
+The [prospective fixed screen](notes/ideas-2026-11-10/ward-fish503/README.md) completed exactly512 newly sealed ladder-v2 maps/2048 release200k games, both sides of candidate/reference against fixedFlp4. Fresh paired Fish gain **−0.879pp,95%CI[−3.827,+2.070]**: **HOLD**, not statistical rejection. The prespecified positive-lower-bound requirement failed; no100k test, extension, new candidate, live action or merge is authorized. This independent screen does not confirm the old498 post-hoc Fish+0.375±0.340 lead.
 
 Source/map/protocol/launcher seals rechecked after completion; exact1024 map-side cells per arm, zero run errors, early losses, draft handoff failures or capped drafts. Both arms remain on frozen503; no fuel503 attribution claim. Two initial prior-Food map collisions were replaced prospectively before any game, within the approved bounded novelty scope. Evidence `~/tmp-offload/ward-fish503-screen/{result,terminal-summary-audit,manifest,novelty}.json`. Local queue remains idle.
 
 
 ### User-reopened full camp ward gates on504 (2026-11-10)
 
-[Protocol](ideas-2026-11-10/ward504/README.md): exact original cleared-camp and alive-inclusive498 bot.cc diffs on committed504, new `oc504-wcamp`/`oc504-wcampall` identities. Release200k, Flp4/Mt3q, both sides, standard fixed1024 fresh-map pool plus128 ladder diagnostics; shared504 reference cells. `--ci0` now truly disables width-only stopping; `--zone-stop`, no lookahead, ordinary1000block cap. REJECT/ACCEPT/ZONE follow the established sequential rules; ZONE is judgement review, not rejection or CI-proven gain. Unresolved cap stays unresolved, no automatic repeat. No100k in parallel/automatic admission. Repeated noise-map units are not distinct new maps. Earlier498 results and Fish-only503512-map HOLD remain separate. Both release builds and source checks pass; per-block exact metadata/cell validation precedes decisions. Admission/dispatch owned by ops.
+[Protocol](notes/ideas-2026-11-10/ward504/README.md): exact original cleared-camp and alive-inclusive498 bot.cc diffs on committed504, new `oc504-wcamp`/`oc504-wcampall` identities. Release200k, Flp4/Mt3q, both sides, standard fixed1024 fresh-map pool plus128 ladder diagnostics; shared504 reference cells. `--ci0` now truly disables width-only stopping; `--zone-stop`, no lookahead, ordinary1000block cap. REJECT/ACCEPT/ZONE follow the established sequential rules; ZONE is judgement review, not rejection or CI-proven gain. Unresolved cap stays unresolved, no automatic repeat. No100k in parallel/automatic admission. Repeated noise-map units are not distinct new maps. Earlier498 results and Fish-only503512-map HOLD remain separate. Both release builds and source checks pass; per-block exact metadata/cell validation precedes decisions. Admission/dispatch owned by ops.
 
 
 ## Explicit draft17 on Ocean504 prepared (2026-11-10)
 
 The user requested one draft lab followed sequentially by one tuning run, after the running ward gates. Draft17 is a deliberate refit for504's changed champion economics and post-draft10 fuel/camp behavior; canceled automatic draft11–16 stay canceled. One800k collection at production100k, new ladder-v2 training seeds2412000–99, heldout2412900–03, fixed Flp4/Mt3q-centered opponent mix, no champion lock. The controlled top-eight composition prior is sealed from Nov10 01:26, not claimed as current meta. Current-team sampling exactly reproduces the shipped draft10-F92 model.
 
-Only a new draft_model.h may be exported. Native parity, release build, strict first-turn10M validation and a200k-first held-out sequential gate precede coordinator review. Precision-only stopping is disabled; ZONE and unresolved caps are not rejection. No automatic normal-fuel gate, merge, live test or refill. Tuning remains behind an explicit final draft-disposition barrier. Before the first heavy phase, both approved-base policy and committed Ocean source must still match sealed504; a newer base holds for review, while a started experiment remains frozen. Four start-preflight tests and the read-only sealed-input check pass; no training result exists at preparation. [Protocol](ideas-2026-11-10/draft504/README.md); artifacts `~/tmp-offload/localq/rounds/draft17`.
+Only a new draft_model.h may be exported. Native parity, release build, strict first-turn10M validation and a200k-first held-out sequential gate precede coordinator review. Precision-only stopping is disabled; ZONE and unresolved caps are not rejection. No automatic normal-fuel gate, merge, live test or refill. Tuning remains behind an explicit final draft-disposition barrier. Before the first heavy phase, both approved-base policy and committed Ocean source must still match sealed504; a newer base holds for review, while a started experiment remains frozen. Four start-preflight tests and the read-only sealed-input check pass; no training result exists at preparation. [Protocol](notes/ideas-2026-11-10/draft504/README.md); artifacts `~/tmp-offload/localq/rounds/draft17`.
 
 ## Ocean main against ocean-16d6f78 (2026-11-10)
 
@@ -18163,7 +18163,7 @@ in 46,785. `replays/ab/ocean-vs-16d6f78-60k/`.
 
 ## One economy/crew/shop tune on frozen504 (2026-11-10, prepared)
 
-User requested one sequential draft lab then a thoughtful constants tuning run. Root approved [tune8's sourcewide inventory and protocol](ideas-2026-11-10/tune504/README.md):27 explicit float ranges, including shop income priors, holder gold pricing, farm commitment and cycle time omitted by the prior params-only tuner. Combat threat calibration, learned headers, engine/encoding facts and compute budgets stay fixed. Prior tune1 already trained fresh and ended fresh−0.188±0.250pp versus ladder+0.539±0.250; it did not establish a gain.
+User requested one sequential draft lab then a thoughtful constants tuning run. Root approved [tune8's sourcewide inventory and protocol](notes/ideas-2026-11-10/tune504/README.md):27 explicit float ranges, including shop income priors, holder gold pricing, farm commitment and cycle time omitted by the prior params-only tuner. Combat threat calibration, learned headers, engine/encoding facts and compute budgets stay fixed. Prior tune1 already trained fresh and ended fresh−0.188±0.250pp versus ladder+0.539±0.250; it did not establish a gain.
 
 Tune8 is scheduled only after both504 ward gates, the complete draft17 lab, and explicit coordinator disposition (`draft17-reviewdone`).100k SPSA selection:600iterations/691,200scored games on10,240 reserved ladder-v2 training maps, equal Flp4/Mt3q noise1001–1003; endpoint is mean iterates301–600. Its plain-source export gets the sole first200k fixed-candidate gate, standard1024-map pool/noise1–1000 with `--ci0 --zone-stop`; ZONE is review, cap unresolved. No automatic100k, merge, source rebase, or next tune.
 
@@ -18173,7 +18173,7 @@ Eight lightweight control tests and independent source/resource review passed; n
 
 All 104 normal pinned groups collected at 21:23:34 UTC; independent proof excludes 8 fillers, oppchecks and suspect groups, leaving 512 unique cells. v111 won **160/256 Fish r2 and 160/256 Mite r5**. Versus intended v105, Fish is160 vs164/256 (flips +2/−6; descriptive map-cluster −1.56±2.16pp), Mite r5 is44 vs42/80 (+2/−0; +2.50±3.42pp). Draft/seed/map/engine/pin/source-group contexts match, but submitted105 differs in priority-mask key as well as Greed; its older Mite pins are excluded. Same-mask106/107 are different-feature diagnostics, not isolated controls.
 
-Old local Greed evidence remains unresolved: fresh+0.206±0.250pp, Fish+0.184±0.327/Mite+0.228±0.369, NARROWED/ZONE. No Greed merge/exploiter promotion follows. The already-authorized current-mask105 control was reverified prospectively and should supply full256 Mite r5 cells; actual future submission/context still needs checking. No additional tests or repins. [Full readout, exact replay examples and source checks](ideas-2026-11-10/live-greed111/README.md). Artifacts: `~/tmp-offload/handoff/codex/live-analysis/greed111/`.
+Old local Greed evidence remains unresolved: fresh+0.206±0.250pp, Fish+0.184±0.327/Mite+0.228±0.369, NARROWED/ZONE. No Greed merge/exploiter promotion follows. The already-authorized current-mask105 control was reverified prospectively and should supply full256 Mite r5 cells; actual future submission/context still needs checking. No additional tests or repins. [Full readout, exact replay examples and source checks](notes/ideas-2026-11-10/live-greed111/README.md). Artifacts: `~/tmp-offload/handoff/codex/live-analysis/greed111/`.
 
 The note also preserves a source-coverage correction: current504 contains neither v106's exact8k farm-reserve subtraction nor its global queue_round guard;503's12k non-quiet turn-order reserve is different. The user's canceled attribution programme remains closed; absence does not authorize revival.
 
@@ -18183,7 +18183,7 @@ The note also preserves a source-coverage correction: current504 contains neithe
 
 One-site−0.788±0.472 versus multi-site+0.402±0.300 is diagnostic subgroup evidence; no conditional ward candidate follows without a mechanism and prospective validation. Original498 and bounded Fish503 evidence remain separate. The cleared-camp504 gate continues under its own rule.
 
-Independent terminal audit rechecked all303 block records and2,424 summary hashes: complete matched release200k/engine5.0.1, zero errors/early losses/broken handoffs/capped drafts, unchanged source/map/tool manifest87173c…. Shared reference games account for part of the620,544 candidate-plus-reference cached games; these are not new distinct maps. Evidence `~/tmp-offload/ward504-full/{campall-result,campall-terminal-audit}.json`; [protocol and terminal note](ideas-2026-11-10/ward504/README.md).
+Independent terminal audit rechecked all303 block records and2,424 summary hashes: complete matched release200k/engine5.0.1, zero errors/early losses/broken handoffs/capped drafts, unchanged source/map/tool manifest87173c…. Shared reference games account for part of the620,544 candidate-plus-reference cached games; these are not new distinct maps. Evidence `~/tmp-offload/ward504-full/{campall-result,campall-terminal-audit}.json`; [protocol and terminal note](notes/ideas-2026-11-10/ward504/README.md).
 
 
 ## Current504 conditional exploiters: full targeted continuation queued (2026-11-10)
@@ -18192,7 +18192,7 @@ The user requested more local games for the inconclusive Fish/Mite conditional e
 
 The full200k release/native programme uses a new shared1,024-map ladder-v2 pool (reserved2414000–07), noise1004–2003, Flp4/Mt3q and own drafts. Target-opponent fresh paired-map units decide under gain50.0/50.25 SPRT, distinct harm49.75/50.0 and off-target harm review. First-cross latches prevent reopening a closed gain test; joint gain-H0/harm-H1 is SMALL/UNRESOLVED review, not a positive result. No width/eight-block stop;1,000-block cap unresolved. Other-opponent effects remain shipping constraints, including classifier overhead/mistakes.
 
-Eight lightweight decision checks, source review and final independent seal review passed. Builds, release smoke, debug runtime activation and all strength games are scheduled phases, not completed validation. Manifest86a82e8a2bf37b1ea6602c34391af77d5755fbc611d55024c9a0eebb9d6ece89 in `~/tmp-offload/cond504`; [prospective protocol](ideas-2026-11-10/cond504/README.md). A changed approved/committed base holds before heavy work; frozen experiments may resume. No automatic100k, repin, live test or review token.
+Eight lightweight decision checks, source review and final independent seal review passed. Builds, release smoke, debug runtime activation and all strength games are scheduled phases, not completed validation. Manifest86a82e8a2bf37b1ea6602c34391af77d5755fbc611d55024c9a0eebb9d6ece89 in `~/tmp-offload/cond504`; [prospective protocol](notes/ideas-2026-11-10/cond504/README.md). A changed approved/committed base holds before heavy work; frozen experiments may resume. No automatic100k, repin, live test or review token.
 
 ## Ocean main against ocean-7862c1b (2026-11-10)
 
@@ -18208,7 +18208,7 @@ release, real fuel, fast runner, on the same 29,952 maps as "Ocean main against 
 
 At the user's request, both still-unstarted current504 conditional jobs were held and amended with a mandatory direct Ocean mirror after their targeted gate, including early statistical terminals. Each arm plays frozen504 on8,192 unique new ladder-v2 maps×both sides=16,384 release/native200k games. The mirror has no opponent-noise repeats or outcome-based stopping; identical deterministic cells count once. Reserved map seeds2415000–31 (+32–35 solely for duplicate replacement) are distinct from the main conditional pool and the separate504-v86 benchmark.
 
-Report absolute head-to-head win rate and map-paired95% normal/empirical-Bernstein intervals separately from Fish/Mite replica deltas. Crossing50% is not proof of safety; target, off-target and mirror results jointly require coordinator review before100k or shipping. Extra debug Ocean fixtures record real classifier posteriors/activation without forced stubs. Primary completion markers explicitly remain incomplete until the mirror finishes. Twelve lightweight scoring/boundary tests pass; runtime checks remain queued. Explicit mapgen `--jobs1` now matches its one acquired shared slot. [Amended protocol](ideas-2026-11-10/cond504/README.md).
+Report absolute head-to-head win rate and map-paired95% normal/empirical-Bernstein intervals separately from Fish/Mite replica deltas. Crossing50% is not proof of safety; target, off-target and mirror results jointly require coordinator review before100k or shipping. Extra debug Ocean fixtures record real classifier posteriors/activation without forced stubs. Primary completion markers explicitly remain incomplete until the mirror finishes. Twelve lightweight scoring/boundary tests pass; runtime checks remain queued. Explicit mapgen `--jobs1` now matches its one acquired shared slot. [Amended protocol](notes/ideas-2026-11-10/cond504/README.md).
 
 ## Ocean main against pre-removal ocean-ba65375 (2026-11-10)
 
@@ -18232,29 +18232,29 @@ Exact shipped `oc-dfuel-506` (183a1295c) versus `oc-base23` (dd7002a8), rebuilt 
 
 Exhausted-turn counts506/v86: fresh24,473/37,489; ladder1,613/2,406. These are descriptive, not a separate fuel-cut gate. Existing ward controller4112940 resumed at its original identity after all benchmark children drained. Initial larger preparation was reduced before any games at the user's request; then506 was explicitly selected after main advanced. Path/job names retain504 for compatibility, but actual candidate is506.
 
-[Protocol, provenance and complete result](ideas-2026-11-10/ocean504-v86/README.md); raw evidence `~/tmp-offload/ocean504-v86`. No new games or automatic follow-on authorized by this result.
+[Protocol, provenance and complete result](notes/ideas-2026-11-10/ocean504-v86/README.md); raw evidence `~/tmp-offload/ocean504-v86`. No new games or automatic follow-on authorized by this result.
 
 
 ## (infrastructure, 2026-11-10) Bounded compile-ahead speeds the unchanged ward gate
 
 External compile-only helper prepares the existing cleared-camp504 gate's current/nexttwo noise blocks with four process-isolated shared-pool slots. Uses identical generation locks, frozen source/SDK cache identity and build.lock; no sealed gate edits, warm/scored games, sample/stopping changes or automatic future test. Bound to exact ownerPID/start/command; stops new dispatch on exit and drains its own compiles.
 
-Uninterrupted baseline median99.94s/block (benchmark-pause interval excluded); next five fully prepared blocks549–553 took20.20/25.20/21.21/24.21/22.20s, median22.20s, about4.5× throughput. All prepared body hashes match authoritative gate audits. This is an adjacent-block timing observation, not strength evidence. [Implementation and timing proof](ideas-2026-11-10/ward-compile-ahead/README.md).
+Uninterrupted baseline median99.94s/block (benchmark-pause interval excluded); next five fully prepared blocks549–553 took20.20/25.20/21.21/24.21/22.20s, median22.20s, about4.5× throughput. All prepared body hashes match authoritative gate audits. This is an adjacent-block timing observation, not strength evidence. [Implementation and timing proof](notes/ideas-2026-11-10/ward-compile-ahead/README.md).
 
 ### Default bounded compile-ahead (2026-11-10)
 
-New noise-based fresh gates use `tools/fgate.py`: 16 compile workers, eight future noise blocks, shared-slot accounting and ordinary source/build locks; no extra games or changed stopping rules. Queued conditional and draft/tune final gates inherit phase-scoped cleanup and an optout. All 43 lightweight checks passed. Active ward same-process rollout preserved its sealed inputs: six warmed blocks had median21.77s versus immediately preceding four-worker median31.39s, with changing-load caveat (earlier four-worker window22.20s; original serial99.94s). This supports keeping preparation ahead, not a controlled16-v4 speed claim. [Implementation, lifecycle and timing evidence](ideas-2026-11-10/compile-ahead-default/README.md).
+New noise-based fresh gates use `tools/fgate.py`: 16 compile workers, eight future noise blocks, shared-slot accounting and ordinary source/build locks; no extra games or changed stopping rules. Queued conditional and draft/tune final gates inherit phase-scoped cleanup and an optout. All 43 lightweight checks passed. Active ward same-process rollout preserved its sealed inputs: six warmed blocks had median21.77s versus immediately preceding four-worker median31.39s, with changing-load caveat (earlier four-worker window22.20s; original serial99.94s). This supports keeping preparation ahead, not a controlled16-v4 speed claim. [Implementation, lifecycle and timing evidence](notes/ideas-2026-11-10/compile-ahead-default/README.md).
 
 
 ## Live v112 conditional-policy bundle completed (2026-11-10)
 
-All 104 groups finished at 22:52:08 UTC: Fish r2 177/256 (69.14%), Mite r5 159/256 (62.11%). Against v105, matched deltas are Fish +5.08 ± 6.95 points and Mite 0.00 ± 12.16 on only 80 same-pin cells, with the known priority-mask confound. Against same-mask v108/v109 single conditional arms, all paired differences remain unresolved; the bundle does not demonstrate an additional gain. No promotion. Await current-mask v105 control v113 and the prospective local conditional tests. [Complete matched chart and saved-input audit](ideas-2026-11-10/live-stack112.md).
+All 104 groups finished at 22:52:08 UTC: Fish r2 177/256 (69.14%), Mite r5 159/256 (62.11%). Against v105, matched deltas are Fish +5.08 ± 6.95 points and Mite 0.00 ± 12.16 on only 80 same-pin cells, with the known priority-mask confound. Against same-mask v108/v109 single conditional arms, all paired differences remain unresolved; the bundle does not demonstrate an additional gain. No promotion. Await current-mask v105 control v113 and the prospective local conditional tests. [Complete matched chart and saved-input audit](notes/ideas-2026-11-10/live-stack112.md).
 
 ### Cleared-camp 504: prescribed ZONE at 653 blocks (2026-11-10)
 
-`oc504-wcamp` vs `oc-emb5-504`, release 200k, Flp4/Mt3q, finished **ZONE** with fresh −0.036±0.169pp; Fish +0.024±0.229, Mite −0.096±0.249. Low LLR +2.979/high −22.181; no positive screen. This is judgement review, not formal rejection. No established gain supports 100k testing or shipping. All 653 block records/5,224 summary hashes pass terminal audit, zero validity failures, unchanged seals. The 83,584 paired noise-map units reuse 1,024 maps. Both reopened full ward comparisons are terminal; earlier evidence remains separate. [Complete record](ideas-2026-11-10/ward504/README.md).
+`oc504-wcamp` vs `oc-emb5-504`, release 200k, Flp4/Mt3q, finished **ZONE** with fresh −0.036±0.169pp; Fish +0.024±0.229, Mite −0.096±0.249. Low LLR +2.979/high −22.181; no positive screen. This is judgement review, not formal rejection. No established gain supports 100k testing or shipping. All 653 block records/5,224 summary hashes pass terminal audit, zero validity failures, unchanged seals. The 83,584 paired noise-map units reuse 1,024 maps. Both reopened full ward comparisons are terminal; earlier evidence remains separate. [Complete record](notes/ideas-2026-11-10/ward504/README.md).
 
-Native-cache diagnosis found about 13s of remaining serial preparation per 20.21s block. A bounded 16-slot prewarm prototype passed resource tests/review, but its owner ended before launch: **no warming was run, no benefit established, no default warm integration**. [Measured timing and preserved prototype](ideas-2026-11-10/compile-ahead-default/native-cache-diagnosis.md).
+Native-cache diagnosis found about 13s of remaining serial preparation per 20.21s block. A bounded 16-slot prewarm prototype passed resource tests/review, but its owner ended before launch: **no warming was run, no benefit established, no default warm integration**. [Measured timing and preserved prototype](notes/ideas-2026-11-10/compile-ahead-default/native-cache-diagnosis.md).
 
 
 ## (ocean, 2026-11-11) Fish/Mite draft nudge on 506: neither helps
@@ -18279,7 +18279,7 @@ Results against oc-dfuel-506 (win% = 50 + change over all maps, 95% CI over maps
 Verdict: no nudge reaches the 50.5 bar or is established above 50; nothing shipped, no 100k run. Light nudges only
 swap our marginal pick, which the model cannot rank (predicted -2.2 points on changed maps, measured -0.8 ±0.5);
 Prism and Willow are worth 8.7 and 3.6 points to this bot. Details, pick-rate table and limits:
-[ideas-2026-11-11/draftnudge/README.md](ideas-2026-11-11/draftnudge/README.md).
+[ideas-2026-11-11/draftnudge/README.md](notes/ideas-2026-11-11/draftnudge/README.md).
 
 ### Fresh-map gate in large batches (2026-11-11)
 
@@ -18323,7 +18323,7 @@ Not carried over: a compiled opponent pair a block and compile-ahead (only in `-
 
 ## (ocean, 2026-11-11) Pack zone margin on 506: fewer enemy-started fights, no local win; pg-z8 built for a live read
 
-[research/ideas-2026-11-11/packgive](ideas-2026-11-11/packgive/README.md). The pack zone counts members from `pack_margin` tiles beyond their one-turn reach (1 two-turn reach, 3 the edge of sight), to stop the farm walk into a pack still closing (live Fish: 136 fights it starts with the numbers at -0.40 kills each; the step towards the pack is a farm step in 59 of 76 traced).
+[research/notes/ideas-2026-11-11/packgive](notes/ideas-2026-11-11/packgive/README.md). The pack zone counts members from `pack_margin` tiles beyond their one-turn reach (1 two-turn reach, 3 the edge of sight), to stop the farm walk into a pack still closing (live Fish: 136 fights it starts with the numbers at -0.40 kills each; the step towards the pack is a farm step in 59 of 76 traced).
 
 Results against oc-dfuel-506 (`fgate.py --fuel 200000 --first-batch 35`, fresh ladder-v2 maps, Flp4/Mt3q bodies):
 
@@ -18342,7 +18342,7 @@ Results against oc-dfuel-506 (`fgate.py --fuel 200000 --first-batch 35`, fresh l
 
 ## (ocean, 2026-11-11) Live draft read against real Fish and Mite: no draft effect the scrims can separate from zero; nothing built
 
-[research/ideas-2026-11-11/livedraft](ideas-2026-11-11/livedraft/README.md). Our draft changed at three versions only (v81, v83, v115), so each step is read as changed cells against unchanged cells on the live scrims (9,525 games against Fish, 9,950 against Mite), with the ladder archive and v115's decoded deaths beside it. No games played.
+[research/notes/ideas-2026-11-11/livedraft](notes/ideas-2026-11-11/livedraft/README.md). Our draft changed at three versions only (v81, v83, v115), so each step is read as changed cells against unchanged cells on the live scrims (9,525 games against Fish, 9,950 against Mite), with the ladder archive and v115's decoded deaths beside it. No games played.
 
 Results against oc-comms-507: no candidate, no gate.
 
@@ -18399,11 +18399,11 @@ Results against chy-draft18 (changed cells: points on the maps whose team change
 Verdict: nothing reaches 50.5 or is established above 50; stronger nudges lose in every direction; no 100k run, no
 candidate. The fitted residual's own in-sample claim on the cells it changes is +0.05 logit, +0.2 points overall:
 it reorders near-ties. Don't retry a champion-value nudge on this model; a per-opponent draft needs a new mechanism.
-Details: [ideas-2026-11-11/chynudge/README.md](ideas-2026-11-11/chynudge/README.md).
+Details: [ideas-2026-11-11/chynudge/README.md](notes/ideas-2026-11-11/chynudge/README.md).
 
 ## (charybdis = chy-draft18, 2026-11-11) Comms slots ported to charybdis: +0.30 ±0.22 against the bodies (ZONE); charybdis itself is +4.75 on ocean 506 there
 
-Note: [chyport/README.md](ideas-2026-11-11/chyport/README.md). `tools/fgate.py`, 100k, unplayed fresh maps
+Note: [chyport/README.md](notes/ideas-2026-11-11/chyport/README.md). `tools/fgate.py`, 100k, unplayed fresh maps
 (pool batches 32-34 and 38-50; the pool grew to 53 batches), unmetered Flp4 / Mt3q.
 
 - `variants/chy18-cm2k3` (chy-draft18 + ocean's 507-ocean; charybdis's Prism leave reads the slot's cell with
@@ -18457,7 +18457,7 @@ are in `bots/variants/ch517-*`, gitignored). `ch517-pf` is 517 plus `remaining-a
 
 ## (charybdis = chy18-cm2k3, 2026-11-11) Gem price and the race: gold priced to the enemy's win in standings is +0.20 (ZONE); the cook on standings and the enemy clock alone do not help; wheel is lost in the ring, not in the price
 
-Note, data and arms: [ideas-2026-11-11/gemprice/README.md](ideas-2026-11-11/gemprice/README.md) (diffs in `patches/`).
+Note, data and arms: [ideas-2026-11-11/gemprice/README.md](notes/ideas-2026-11-11/gemprice/README.md) (diffs in `patches/`).
 The user's leads on wheel: the gem/gold price reading the enemy's state, crystals, `min_bank` from map features.
 
 - **Diagnosis** (chy18-cm2k3 on wheel x24 noise seeds and 13 weak maps x8, both bodies, 200k): wheel 31% against Mt3q,
@@ -18482,7 +18482,7 @@ The user's leads on wheel: the gem/gold price reading the enemy's state, crystal
 ## (charybdis, 2026-11-11) Ally positions from the comms slots in existing decisions: all level
 
 On `variants/chy18-cm2k3`, the consumers of told ally tiles whose radius is wider than our sight
-(`research/ideas-2026-11-11/allypos/README.md`). `fgate.py` at 200k fuel against chy18-cm2k3, unmetered Flp4/Mt3q:
+(`research/notes/ideas-2026-11-11/allypos/README.md`). `fgate.py` at 200k fuel against chy18-cm2k3, unmetered Flp4/Mt3q:
 
 | arm | change | win% (95% CI) | games | paired games differ |
 |---|---|---|---|---|
@@ -18534,7 +18534,7 @@ G1, F2, H4, H5b, H6, C6). Own drafts, real budget, `ab.py` on fresh `--mix ladde
 ## (charybdis, 2026-11-12) Camp kills without captures: incidental or free; the fixes do not win where they act
 
 User: champions "hit the middle one gem camp groups but dont capture it ... they kill but don't capture" (live v108,
-`02treasure_box`, 16 single-cluster groups round the altar). Full note: `research/ideas-2026-11-11/campkill/README.md`.
+`02treasure_box`, 16 single-cluster groups round the altar). Full note: `research/notes/ideas-2026-11-11/campkill/README.md`.
 
 - Cause, from the replay and debug traces: kills outpace captures. While holding a capture, `hold_capture` hits other
   groups in reach for free; Cassi's damage spell, overkilling her target, is redirected to another harmless group
@@ -18623,7 +18623,7 @@ The user asked: "try combining positive variants like 50.1 changes together to s
 on `variants/charybdis-cb9f86d` (= 517): cm (comms slots, cm2-k3), gp (gp-race), ck (allypos C + K), and later ps
 (psafe-a, at the coordinator's request). The draft nudge was left out (user: "probably remove this"). Each read is on
 maps none of its parts was picked on: 200k on pool batches 16-31, and 100k on 51-62 (53-62 grown from mapgen seeds
-2425000-2425099). Details and patches: [combo/README.md](ideas-2026-11-11/combo/README.md).
+2425000-2425099). Details and patches: [combo/README.md](notes/ideas-2026-11-11/combo/README.md).
 
 Results against charybdis-cb9f86d:
 
@@ -18661,7 +18661,7 @@ The combo stack (cm2-k3 comms slots + psafe-a, +0.27 on 517) ported onto `varian
 patches applied with offsets only, and 518-519's review fixes do not overlap either part: A1/A2/B1 handle the enemy's
 winning tribute, psafe-a our own Prism's, and no fix touches the comms or crew code. psafe-a alone ran beside it.
 Maps: pool batches 63-74, grown for this read from mapgen seeds 2448000-2448129 (`--mix ladder-v2`), unplayed by any
-gate. Details and patches: [port519/README.md](ideas-2026-11-11/port519/README.md).
+gate. Details and patches: [port519/README.md](notes/ideas-2026-11-11/port519/README.md).
 
 Results against charybdis-p3 (519), 100k, fgate, unmetered Flp4/Mt3q bodies:
 
@@ -18682,7 +18682,7 @@ to take into charybdis is the user's and teammate's call.
 
 No games played. Data: big-arm capture rows for every BattleCats match since 11-05 (58,964) and the 3,564 decoded
 replays since 11-08 (1,605 of the current version, from 11-10 09:00 UTC; 956 of them against us). Full note,
-numbers and tools: [battlecats/README.md](ideas-2026-11-12/battlecats/README.md).
+numbers and tools: [battlecats/README.md](notes/ideas-2026-11-12/battlecats/README.md).
 
 - **Draft:** a fixed table per (map, side); 99.4% of current ranked games repeat their cell. Our picks add nothing
   to predicting its later picks, so it does not counter-pick.
@@ -18727,7 +18727,7 @@ numbers and tools: [battlecats/README.md](ideas-2026-11-12/battlecats/README.md)
 ## (charybdis, 2026-11-12) Unspent gold in the recall value: enemy side no effect, own side REJECT
 
 User idea: put unspent gold into the recall value, as a share of gold earned plus a constant, or depending on game
-state or time. Base and REF `variants/charybdis-p3` (519). Details, fits and patches: `research/ideas-2026-11-12/recallgold/`.
+state or time. Base and REF `variants/charybdis-p3` (519). Details, fits and patches: `research/notes/ideas-2026-11-12/recallgold/`.
 
 - **Enemy side** (`params::recall_value`, 66.3, the worth of cancelling an enemy's kept recall). The recall takes its
   gold home to shop, and that gold is hidden. Against the bodies, the gold on a kept recall we cancelled averaged 101.
@@ -18756,7 +18756,7 @@ Results against charybdis-p3 (fgate 200k, pool batches 0-11):
 ## (charybdis, 2026-11-12) BattleCats exploits behind a three-team priority classifier: inert on the bodies, queued live
 
 User: "dont need to build stand in. but do classify them. try a few quick / simple exploits ... (finals is bo21)"; then
-"fix mite classification". Base `variants/charybdis-p3` (519). Details: `research/ideas-2026-11-12/bcexploit/`.
+"fix mite classification". Base `variants/charybdis-p3` (519). Details: `research/notes/ideas-2026-11-12/bcexploit/`.
 
 - **Classifier** (`model/opp_detect`; variants `bcx-det`, `bcx-x`, `bcx-live`). Per instance, from the priorities of
   enemies in sight: a class holds once its core reads reach 2-3 and at most one counted read in 11 falls outside its
@@ -18794,7 +18794,7 @@ The port519 parts were ported onto `variants/chy-life` (= 520): psafe-a alone as
 - 520's Health shards just make psafe-a fire less.
 
 Maps: pool batch 75 (unplayed) and 76-86, grown from mapgen seeds 2471000-2471129 (`--mix ladder-v2`); no gate had
-played them. Details and patches: [port520/README.md](ideas-2026-11-12/port520/README.md).
+played them. Details and patches: [port520/README.md](notes/ideas-2026-11-12/port520/README.md).
 
 Results against chy-life (520), 100k, fgate, unmetered Flp4/Mt3q bodies:
 
@@ -18816,7 +18816,7 @@ live at priority 89, in place of the dropped c519-cmps line.
 ## (mitefit, 2026-11-12) A current-Mite body (mf-c2) calibrates on live; a Mite-only constant tune is null
 
 The task was to fit a body to current Mite (live pin r7) and tune our constants against it. Details:
-[mitefit/README.md](ideas-2026-11-12/mitefit/README.md).
+[mitefit/README.md](notes/ideas-2026-11-12/mitefit/README.md).
 
 **The body, `variants/mf-c2`.** It is c520-ps with:
 - Mite r7's exact picks per ladder map and side. Mite's draft is deterministic per cell. Elsewhere it uses an r7
@@ -18908,7 +18908,7 @@ no exception to replay identity was used.
 
 ## (fishr8, 2026-11-12) Fish r8: a Vesper carry, a fed Vesper killing Prism's hoard; body fr8-g25 (10 points easy); opp_detect r8 fix; two counters fail from live positions
 
-Notes and scripts: [ideas-2026-11-12/fishr8/README.md](ideas-2026-11-12/fishr8/README.md).
+Notes and scripts: [ideas-2026-11-12/fishr8/README.md](notes/ideas-2026-11-12/fishr8/README.md).
 
 **What changed.**
 - Draft:
@@ -18975,7 +18975,7 @@ rounds), and half the calls never become damage.
 User idea: "when vv and prism are picked in same draft, perhaps try routing them to separate ways when camp value
 splits the map (so they can easily pick up camps as they are more high value than others)". "vv" read as Vesper
 (+33% gold); Vendetta has no capture passive. Base and REF `variants/chy-emb6-524` (524). Patch, scripts:
-`research/ideas-2026-11-12/vpsplit/`.
+`research/notes/ideas-2026-11-12/vpsplit/`.
 
 - **The split (draft).** The line runs from our spawn's centre to theirs. Our half's groups (Monoliths aside) fall
   left or right of it, outside a band of half the spawn's width. The split is on when the poorer side holds at least
@@ -19035,7 +19035,7 @@ Prism's bag inside the pack, not from who holds the gold.
 ## (charybdis, 2026-11-12) A team focus call like Fish r8's: we already converge, and the smallest call changes nothing
 
 User: "have we tried stealing the focus call?" Base `variants/chy-tfocus-b525` (= 525). Notes, scripts and patch:
-[ideas-2026-11-12/tfocus/README.md](ideas-2026-11-12/tfocus/README.md).
+[ideas-2026-11-12/tfocus/README.md](notes/ideas-2026-11-12/tfocus/README.md).
 
 - **Convergence.** A reachable pair is two of a team's strikers in one round that could each have hit the other's
   target. Fish r8 live puts 85.7% of them on one target. Our planner puts 84.3% (525 against the bodies) and 76.4% (v117/v118, live
@@ -19056,7 +19056,7 @@ overrides the safety pricing, and the dilution bound is about 0.3 points.
 ## (charybdis, 2026-11-12) Interrupting Fish r8's big tributes: lock and stun cancels only delay the bag; level
 
 Lead: Fish r8 starts 4.2 tributes of 100+ gems a game (fishr8 README). Base `variants/chy-525` (= 525). Notes,
-scripts and patches: [ideas-2026-11-12/bigtrib/README.md](ideas-2026-11-12/bigtrib/README.md).
+scripts and patches: [ideas-2026-11-12/bigtrib/README.md](notes/ideas-2026-11-12/bigtrib/README.md).
 
 - **Live r8** (244 games, `btrib.py`):
   - Winning starts (1.9 a game) are already fought by the game-ender: 302 stunned and 66 locked, but Fish restarts,
@@ -19085,7 +19085,7 @@ to lock is closed.
 
 ## (charybdis, 2026-11-13) The rest of ATLAS on 525 (fixes 3, 5, the press) against fr8-g25 and mf-f9: +0.5 at 200k, nothing at 100k; no way of paying for it holds
 
-Note, patches and tools: [ideas-2026-11-12/atlas525/README.md](ideas-2026-11-12/atlas525/README.md). Follow-up to
+Note, patches and tools: [ideas-2026-11-12/atlas525/README.md](notes/ideas-2026-11-12/atlas525/README.md). Follow-up to
 "The rest of ATLAS (fixes 3, 5, the press) at the real budget" on 517. Results against chy-525 (fgate `--pool v4
 --fish-body fr8-g25 --mite-body mf-f9`, batches 0-3, 81,920 fresh games an arm; OOF a game CAND / REF, Fish body):
 
@@ -19114,7 +19114,7 @@ Note, patches and tools: [ideas-2026-11-12/atlas525/README.md](ideas-2026-11-12/
 
 The user's brief: a "Fish version" of charybdis that drafts Vesper Vale instead of Prism and feeds her, as strong as
 possible head to head against charybdis 525 (target 50%). Notes, scripts and every arm's patch:
-[ideas-2026-11-12/vfish/README.md](ideas-2026-11-12/vfish/README.md). Shipped as `bots/scylla` (CHANGES 526).
+[ideas-2026-11-12/vfish/README.md](notes/ideas-2026-11-12/vfish/README.md). Shipped as `bots/scylla` (CHANGES 526).
 
 Against charybdis 525 (`variants/chy-bagfocus-525`), own drafts, release, 100k fuel, fresh ladder-v4 maps. dev0 is
 4,080 games reused for every arm (+-1.4); g1 is 20,400 games no arm had played.
@@ -19162,7 +19162,7 @@ All20 current Mite book replays remain exact r13 wins despite a changed older ro
 snapshot; a direct r13 comparison is required before declaring that pin stale. REST131
 is retained under the user's latest-book policy; qualification failed on8 current-Fish
 losses. Fish refresh queued behind the teammate's531 campaign, loss-only, no new upload.
-Evidence: [increment2 live audit](ideas-2026-11-13/rbook/increment2-live-results.json).
+Evidence: [increment2 live audit](notes/ideas-2026-11-13/rbook/increment2-live-results.json).
 
 ### 2026-11-13 — Charybdis 531 seeding book, v133 (qualification pending)
 
@@ -19185,7 +19185,7 @@ uploaded source files match the verified starter, unmasked. The 37 essential che
 (31 Fish r9 targets, six Mite r13 collateral cells) are pending. Latest-book REST
 policy is independent of qualification. Winning qualification replays will supply
 the next increment without another 119-loss source sweep.
-Evidence: [release audit](ideas-2026-11-13/rbook/starter531-release.json) and
+Evidence: [release audit](notes/ideas-2026-11-13/rbook/starter531-release.json) and
 `/home/ubuntu/tmp-offload/rbook/loss-v132-starter-expanded/`.
 
 ### 2026-11-13 — Book-free Charybdis 531 against new Fish r9
@@ -19198,8 +19198,8 @@ version at creation, opponent source provenance, and no suspect/dropped groups.
 This campaign collected outcomes and drafts only, not replay archives. It is a
 new-opponent baseline for the531 book;529's earlier Fishr8 results are not a
 same-pin comparison. The older531/r8/Miter13 ablation remains parked.
-Evidence: [results and audit](ideas-2026-11-13/chy531-live/fish-r9-results.json),
-[audit script](ideas-2026-11-13/chy531-live/audit_fish_r9.py).
+Evidence: [results and audit](notes/ideas-2026-11-13/chy531-live/fish-r9-results.json),
+[audit script](notes/ideas-2026-11-13/chy531-live/audit_fish_r9.py).
 
 ### 2026-11-13 — Mite r13 is stale; latest531 baseline moved to r14
 
@@ -19209,7 +19209,7 @@ r13, but against current Mite loses00rows/b and04two_kingdoms/a while retaining
 CRC and each task/source provenance check passed. A separate current00lanes/b
 observation also changes Mite's fourth draft pick from Cassi & Issac to Prism.
 This establishes changed opponent behavior, not a count of intervening uploads.
-Evidence: [direct comparison](ideas-2026-11-13/rbook/mite-r13-stale-v134.json).
+Evidence: [direct comparison](notes/ideas-2026-11-13/rbook/mite-r13-stale-v134.json).
 
 At21:22 UTC the coordinator moved the Mite campaign to r14 and queued v132/531
 on all170 maps from both sides (69 groups,340 unique cells). Its first submitted
@@ -19225,7 +19225,7 @@ and345 outcome records collected, five fillers excluded. Complete170-map/both-si
 coverage and fixed-pin/own-version provenance passed the final audit. This is an
 outcome-only baseline for book eligibility, not an archived source campaign or a
 same-pin comparison with older Mite results.
-Evidence: [r14 results](ideas-2026-11-13/chy531-live/mite-r14-results.json).
+Evidence: [r14 results](notes/ideas-2026-11-13/chy531-live/mite-r14-results.json).
 
 v133 qualification completed: Fish 6/31, Mite collateral 3/6; all 37 source-pin
 proofs and ZIP CRCs passed. All six Fish wins came after replay divergence. Forced
@@ -19263,7 +19263,7 @@ v136 qualified4/6foreign targets and1/3collateral cells:5/9total, all provenance
 and ZIP CRCs clean. Fish00swirl/b won;05bento/a lost. Mite02treasure_box/b,
 05harmonica/b,05ring/b won;02cuts/b lost and regressed Fishr9's natural win.
 The02cuts/bMite entry is removed, with explicit Fish recovery required.
-[Qualification evidence](ideas-2026-11-13/rbook/r14-foreign-qualification.json).
+[Qualification evidence](notes/ideas-2026-11-13/rbook/r14-foreign-qualification.json).
 
 After same-host detector proof of Mite r14 drift, a34-entry candidate retains
 7provenFishr9 lines and27old-pin Mite continuations on confirmed132/r15losses.
@@ -19273,7 +19273,7 @@ passed; fallback24games/133handovers/invalid0. Wide100M51/52identity has only th
 declared Fish00swirl/b forced draft; fresh normal fuel130/300identity,mean+0.3%,
 identical-game fuel+0.07%. Uploaded as13722:51:35,1.117MB,64sourcefiles identical.
 27Mite target qualifications and02cuts/bFish recovery remain pending.
-[Release evidence](ideas-2026-11-13/rbook/r15-release.json).
+[Release evidence](notes/ideas-2026-11-13/rbook/r15-release.json).
 
 ### 2026-11-13 — Final532 draft20 with inherited40-entry book (v138)
 
@@ -19281,7 +19281,7 @@ The r15 qualification of137 converted25/27 confirmed531losses and restored the
 02cuts/bFishr9win; all28pins/ZIPCRCs passed. FreshFishr10 then invalidated the old
 Fishpin. A40-entry531candidate (31cachedFishprovisionals+9provenMite) passed local
 gates but missed the initial cutoff and remained unuploaded. One v119 recording
-failed exact reproduction and was excluded. [Local evidence](ideas-2026-11-13/rbook/r10-local-candidate.json).
+failed exact reproduction and was excluded. [Local evidence](notes/ideas-2026-11-13/rbook/r10-local-candidate.json).
 
 User explicitly authorized immediate532(9ad13ba)+this40book afterbuild/smoke/size,
 with combinedtests afterupload. All40recorded drafts are preserved; their loss
@@ -19294,7 +19294,7 @@ difference startsatround1043,samedraft/winner/finalround1324/score0:1008. A pair
 no-next-turn-preparation diagnostic didnotremoveit; causeunresolved. This supports
 strong observed similarity, NOT strict equivalence. Normal-budget high-level
 choices may change from added fuel, even when fallbacklogic is unchanged.
-[Release and diagnostic evidence](ideas-2026-11-13/rbook/532-book40-release.json).
+[Release and diagnostic evidence](notes/ideas-2026-11-13/rbook/532-book40-release.json).
 
 v138 became live=selected=REST at23:49:20. The remaining local checks passed:
 40/40 combined exact,24fallback games/130handovers with0invalid reads,40forced
@@ -19315,4 +19315,4 @@ completed partial samples are Fish12/43 and Mite22/29; these are selected sample
 not full-ladder win rates. No532 book-free live comparison exists. All live work
 stopped, pending campaigns cancelled; parent verified v138 active=selected and
 frozen after the deadline. The strict299/300 unseen identity exception remains
-unresolved. [Final evidence](ideas-2026-11-13/rbook/532-book40-release.json).
+unresolved. [Final evidence](notes/ideas-2026-11-13/rbook/532-book40-release.json).

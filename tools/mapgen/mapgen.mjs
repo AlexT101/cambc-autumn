@@ -41,7 +41,7 @@ const PLAN = [
 ];
 // The ladder mix's plan (`suite --mix ladder`, the default with --out since 2026-11-05): calibration 2's ladder-like presets
 // and ladder maps under random edits, no stress families, in counts whose maps match the 128 ladder maps'
-// distribution (research/mapgen-vs-ladder-2026-11-05.md, "After").
+// distribution (research/notes/mapgen-vs-ladder-2026-11-05.md, "After").
 const LADDER_PLAN = [
   ['ladder', 112], ['classic', 30], ['small-brawl', 4], ['maze', 3], ['caves', 2], ['lanes', 2], ['lakes', 4], ['jungle', 2], ['monolith', 5], ['rows', 3],
   ['contested-centre', 4], ['tiny', 6], ['huge', 4], ['monolith-only', 3], ['shared-gems', 3], ['vaults', 3], ['altar-poor', 2],

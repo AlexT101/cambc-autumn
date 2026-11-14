@@ -619,7 +619,7 @@ bool on_cleared_group(const World& world) {
 
 // The least fuel decide's goal steps (a bag, a shopping trip, a chase, a contest, a siege, the farm) and the siege and
 // farm finish on: with less at their start the turn ran out 98% and 99.7% of the time (5,120 games at the real budget,
-// research/ideas-2026-11-12/fightfuel).
+// research/notes/ideas-2026-11-12/fightfuel).
 inline constexpr std::uint64_t goal_least = 4000, farm_least = 6000;
 void decide(World& world, Pathing& pathing, Safety& safety, Memory& memory) {
     comeback::cooked(world); // every turn: the cook's hysteresis reads each round's scores

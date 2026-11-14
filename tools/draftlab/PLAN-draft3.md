@@ -161,7 +161,7 @@ reference is a frozen copy (`git archive <sha> bots/astraeus`, AGENTS.md).
 
 ## Draft memory
 
-Not full: per [DRAFT-COMPUTE.md](../../research/hyperion/DRAFT-COMPUTE.md), 747-984 of the 1024 bytes are free on
+Not full: per [DRAFT-COMPUTE.md](../../research/notes/DRAFT-COMPUTE.md), 747-984 of the 1024 bytes are free on
 the bench maps and the tightest known map (gen-dense-camps) leaves 82; everything in it is an optional fuel cache,
 and the v8 index only fills leftover room. A few bits of map information for the emblem chooser (a map class, or
 two or three quantised features) would fit ahead of the index. Champions could also measure features themselves in

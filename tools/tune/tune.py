@@ -6,7 +6,7 @@
     py tools/tune/tune.py apply --run NAME --out bots/diana-t1          # a copy of the bot with the current values built in
     py tools/tune/tune.py play --run NAME --values a.json --games N      # one scored batch of fixed values (default: current)
 
-The bot must be tunified first (research/diana-2026-11-03/tunify.py: the chosen params.h constants read one block
+The bot must be tunified first (tools/tune/tunify.py: the chosen params.h constants read one block
 behind a magic). Each candidate is the base build with that block rewritten in its wasm and in the fast runner's
 cached native library and wasmtime module (patch.py), so a candidate costs no compile; its games are byte-identical
 to a fresh build's.
@@ -330,7 +330,7 @@ def cmd_run(a):
         res = batch.finish()
         x = json.loads((run / "state.json").read_text())["x"]
         names = list(cfg["params"])
-        # Per-game log for map-conditioned analysis (research/ideas-2026-11-05/mapcond.md). Δ and c_k are logged
+        # Per-game log for map-conditioned analysis (research/notes/ideas-2026-11-05/mapcond.md). Δ and c_k are logged
         # because a mid-run config edit would break replaying plan() from the seed.
         rec_g = {"k": k + 1, "names": names, "deltas": [[d.get(n, 0) for n in names] for d in deltas],
                  "cn": [ck.get(n) for n in names],

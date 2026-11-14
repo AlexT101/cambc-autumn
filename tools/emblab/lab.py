@@ -27,7 +27,7 @@ DEFAULTS = {
     # p_force[k]: the chance the k-th new emblem is drawn (mode 0); a uniform_share of team-games draw uniformly
     # (mode 1) at p_uniform instead. corr_model: the fit whose static gains steer mode 0's proposal.
     "seed": 1, "p_force": [0.35] + [0.5] * 11, "uniform_share": 0.1, "p_uniform": 0.2, "corr_model": "replays/emblab/main/model.json",
-    "draft_mix": {"explore": 0.4, "ladder": 0.3, "night1": 0.3}, "explore_exclude": ["stellar"], "vehicles": 4, "threads": None, "timeout": 900, "log_limit": 8 << 20, "night1": "research/night1-games.jsonl.gz",
+    "draft_mix": {"explore": 0.4, "ladder": 0.3, "night1": 0.3}, "explore_exclude": ["stellar"], "vehicles": 4, "threads": None, "timeout": 900, "log_limit": 8 << 20, "night1": "tools/emblab/night1-games.jsonl.gz",
     # Round 4 on. bot: the bot directory init freezes. explore_require / explore_require_share: that share of
     # random teams hold these champions (the draft's team lock), the rest are free. opponents: {"self": share,
     # KIND: share}: who plays the other side of a game; "self" is a second lab team on the same vehicle, any other

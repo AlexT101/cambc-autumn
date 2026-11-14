@@ -29,7 +29,7 @@ export const FEATURES = [
   ['altars', 'log1p'], ['altar_ratio'], ['altar_centre'], ['gems_side', 'log1p'], ['gold_side', 'log1p'], ['big_share'],
   ['cluster_share'], ['contested_share'], ['big_camp_share'], ['dash_short'], ['camp_near', 'log1p'],
   ['dash_gain', 'log'], ['narrow'], ['spawn_ring'], ['max_group', 'log1p'], ['camp_altar', 'log'], ['sight_gap'],
-  // draftfeat (2026-11-06, research/ideas-2026-11-05/draftfeat.md): mapgen metrics left out before, then derived ones
+  // draftfeat (2026-11-06, research/notes/ideas-2026-11-05/draftfeat.md): mapgen metrics left out before, then derived ones
   // (derived.mjs: one_altar, squares and products of the transformed base features).
   ['monoliths', 'log1p'], ['golems', 'log1p'], ['camps_side', 'log1p'], ['walls'], ['shared_groups', 'log1p'],
   ['one_altar'], ['sq_area'], ['sq_reach_frac'], ['sq_spawn_dist'], ['sq_detour'], ['sq_choke_rel'], ['sq_openness'],

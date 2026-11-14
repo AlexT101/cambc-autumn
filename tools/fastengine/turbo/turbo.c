@@ -1,5 +1,5 @@
 // Speed up stock cambc 4.0.0 in-process (LD_PRELOAD) without changing any game, replay or fuel.
-// research/fastengine/DESIGN.md (§5, §9) has the measurements and the parity runs.
+// research/notes/FASTENGINE-DESIGN.md (§5, §9) has the measurements and the parity runs.
 //
 // Patch 1, altar_locks: cambc's import calls runner::engine::ffi::visible_altar_locks(game, persp_a, persp_b,
 // out, cap, count_out). It reads the bitboard metadata, then for the ally and then the enemy altar-lock occupancy

@@ -1,4 +1,4 @@
-// Cooked comebacks (research/ideas-2026-11-05/comeback.md): while far behind, normal play rarely wins,
+// Cooked comebacks (research/notes/ideas-2026-11-05/comeback.md): while far behind, normal play rarely wins,
 // so a gambit that lifts the comeback rate pays even if it loses more of the games already lost.
 // The cook comes from the scores (every body reads the same); while it lasts, farm's mirror pull and
 // denial (economy/farm.cc mirror_pull) and accept_lost's snipe are on.

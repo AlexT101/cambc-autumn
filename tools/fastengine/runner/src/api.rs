@@ -1,5 +1,5 @@
 //! The game API imports, reproduced from cambc 5.0.1's runner::api::{imports, primitives::imports,
-//! metadata_imports} closures (specs: research/fastengine/RUNNER.md). Each import validates guest
+//! metadata_imports} closures (specs: research/notes/RUNNER.md). Each import validates guest
 //! pointers exactly as cambc does (order and error codes matter), charges the same host fuel, and
 //! calls the same engine function, which writes straight into guest memory.
 #![allow(non_snake_case, clippy::too_many_arguments)]

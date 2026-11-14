@@ -82,7 +82,7 @@ What round 5 measured about the method:
   game's, so a fit with map effects would gain roughly 17%.
 - **Rank halving beats confidence bounds:** dropping edits whose upper bound falls under the 20th best's lower
   bound cost more games than the plan's halving at equal power; six rank cuts on cumulative estimates cost 22% fewer
-  appearances than the plan's three (`research/ideas-2026-11-10/emblab5/simsched2.py`).
+  appearances than the plan's three (`research/notes/ideas-2026-11-10/emblab5/simsched2.py`).
 
 ## Round 4 (ocean, 2026-11-10)
 
@@ -116,7 +116,7 @@ Numbers and tables: research/EXPERIMENTS.md "Emblem lab round 4 on ocean".
 
 - **A table is a joint change; the lab measures single cells.** 1.28M games scored "no learned table at all" as
   level (+0.25 ± 0.77 points a team) where a clean A/B reads 47.0%, and scored its own selections 2 to 4 points
-  above what they play (47.9-48.4%). Checked on the lab's data (`research/ideas-2026-11-10/emblab4/selfheal.py`,
+  above what they play (47.9-48.4%). Checked on the lab's data (`research/notes/ideas-2026-11-10/emblab4/selfheal.py`,
   `pooled_edits.py`):
   - The base heals one deviation: a champion drawn away from a passive the base wanted owns it within three more
     emblems 60% of the time. Every cell is scored with the rest of the build as the base has it, so a selection's
@@ -145,7 +145,7 @@ Numbers and tables: research/EXPERIMENTS.md "Emblem lab round 4 on ocean".
   but 560k games gave a few hundred draws per arm at a main champion's first emblem: it needs 10M+ games, or draws
   limited to a handful of arms.
 - **What measured correctly was the clean A/B of a policy-level change** (a whole table, a family at an ordinal:
-  `research/ideas-2026-11-10/emblab4/collectors.py`), 20,480 games for ±0.7 points. The next lab should randomise
+  `research/notes/ideas-2026-11-10/emblab4/collectors.py`), 20,480 games for ±0.7 points. The next lab should randomise
   whole tables or build orders per team-game, not single decisions inside a shared build.
 
 ## How it works (round 2)

@@ -40,7 +40,7 @@ session are marked **[amended]**. The user has not yet said to start.
   | on top of Skirmish: Prospector 3rd / Collectors 6th / Monster 9th / Durability 10th / Home 12th / all five | 50.0 / 50.1 / 50.1 / 49.9 / 50.0 / 50.1% of 61,440 |
 
 - **Data and tools left by round 4:** `replays/emblab/{r4,r4b,r4c,r4d}` (games, compressed decisions),
-  `replays/emblab/r4/dmodel-*.{json,md,drsums.bin}`, `research/ideas-2026-11-10/emblab4/` (scripts, `collectors.py`
+  `replays/emblab/r4/dmodel-*.{json,md,drsums.bin}`, `research/notes/ideas-2026-11-10/emblab4/` (scripts, `collectors.py`
   for family-at-ordinal bots, `scripts/abwave.sh` for a wave of A/Bs under one kept slot weight).
 - **Maps used up:** fresh-3100000..3100399 (round 4's pool), 3110000..3110119 (`merged/emb4-h1..h3`, about 45 A/Bs),
   3120000..3120119 (`merged/emb4-c1..c3`). Round 5 needs new ones (section 6).
@@ -92,7 +92,7 @@ session are marked **[amended]**. The user has not yet said to start.
   owned sets with teammates still on the 50%-random policy (more variance), with support only near the base, the
   current logic and the steered arms. A 20,480-game A/B gives ±0.35 (1 se) in minutes.
 - **Reuse** from round 4: the force-mask regression (audit 5), priors for the type-specific edits
-  (`research/ideas-2026-11-10/emblab4/rank_edits.py`), a Collectors-by-families-owned slice to set thresholds, and
+  (`research/notes/ideas-2026-11-10/emblab4/rank_edits.py`), a Collectors-by-families-owned slice to set thresholds, and
   the plumbing (`lab.py` plan and finish, the trainer table, the bodies, suites).
 - **Retire** `dfit.mjs`, `select.py` and `candidate.py` as decision tools.
 - **[amended] First, one A/B that checks audit 1:** round 4's final selection
@@ -204,7 +204,7 @@ Steps 1-4 are data only, so CAL can start within the hour.
 ## 9. Practical notes from round 4
 
 - Long runs in tmux; weight 35-40 for the lab when the box is loaded (the user asked for high weights);
-  `research/ideas-2026-11-10/emblab4/scripts/abwave.sh` runs several A/Bs under one slot group with a keeper.
+  `research/notes/ideas-2026-11-10/emblab4/scripts/abwave.sh` runs several A/Bs under one slot group with a keeper.
 - Never `pkill -f` / `pgrep -f` a pattern that is in your own command line; kill by tmux session or pid.
 - A killed `fgate.py` leaves lock files in `~/tmp-offload/diverse/locks/` that stall the next gate on the same
   bots: remove your own stale ones.

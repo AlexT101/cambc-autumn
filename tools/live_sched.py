@@ -263,7 +263,7 @@ def upload_name(src, given=None):
     bot = min(diffs, key=diffs.get)
     if diffs[bot]:
         return f'{bot.capitalize()} variant {Path(src).name}'[:80]
-    nums = re.findall(rf'^## (\d+)[^\n]*\({bot}\b', (R / 'research/hyperion/CHANGES.md').read_text(), re.M)
+    nums = re.findall(rf'^## (\d+)[^\n]*\({bot}\b', (R / 'research/CHANGES.md').read_text(), re.M)
     _, sha = sh(['git', 'log', '-1', '--format=%h', '--', f'bots/{bot}'], cwd=R)
     return ' '.join(f"{bot.capitalize()} {nums[-1] if nums else ''} ({sha.strip()[:7]})".split())[:80]
 

@@ -5,7 +5,7 @@ compile a batch (fgate_batch.py; --help lists its options).
 
 --blocks: the gate as it was before 2026-11-11, for reproducing older reads: 256-game noise blocks, a compiled
 opponent pair a block, with bounded compile-ahead (16 workers, 8 blocks). Its statistical/game arguments pass
-unchanged to research/ideas-2026-11-09/freshgate-tools/fgate.py; resource overrides: --no-compile-ahead,
+unchanged to research/notes/ideas-2026-11-09/freshgate-tools/fgate.py; resource overrides: --no-compile-ahead,
 --compile-workers N, --compile-lookahead N. The two modes play different opponent populations (metered against
 unmetered bodies, a seed a block against a seed a map), so their runs and result files are separate.
 """
@@ -74,7 +74,7 @@ def main():
     if not 1<=resource.compile_workers<=32 or not 0<=resource.compile_lookahead<=32:
         parser.error('compile workers must be1..32 and lookahead0..32')
     import fgate_batch as fb
-    source=fb.ROOT/'research/ideas-2026-11-09/freshgate-tools/fgate.py'
+    source=fb.ROOT/'research/notes/ideas-2026-11-09/freshgate-tools/fgate.py'
     spec=importlib.util.spec_from_file_location('default_fgate',source)
     fg=importlib.util.module_from_spec(spec);spec.loader.exec_module(fg)
     sys.argv=[str(source),*argv]

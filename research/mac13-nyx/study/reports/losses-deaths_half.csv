@@ -1,4 +1,0 @@
-half,loser deaths/game,winner deaths/game,loser cost/game,winner cost/game,excess [95% CI],examples
-own,6.09,1.38,521,110,411 [296 .. 526],4e007ea7c5c7aa71 r1318 #4 (1157); 9af6ba6844bffaa0 r985 #4 (891)
-mid,1.29,0.38,91.8,22.9,68.9 [37.0 .. 107],a218de6c1c08aa5b r531 #3 (488); 747b1f740f4b590a r498 #4 (362)
-enemy,1.28,0.83,115,55.3,59.4 [33.5 .. 87.2],9af6ba6844bffaa0 r1655 #4 (554); d34bbecc7b7feb90 r547 #3 (525)

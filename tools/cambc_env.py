@@ -7,7 +7,7 @@ module's bytes, so a bot compiles once; replays are byte-identical either way. R
 cache miss from starting a thread per core in every concurrent match. run-batch passes both to its matches.
 
 CAMBC_TURBO (opt-in) preloads tools/fastengine/turbo's library into cambc, which patches cambc 4.0.0 in-process for
-~2x speed with byte-identical replays (research/fastengine/DESIGN.md): 1 builds it into the git common dir's
+~2x speed with byte-identical replays (research/notes/FASTENGINE-DESIGN.md): 1 builds it into the git common dir's
 cambc-turbo/ (rebuilt when turbo.c changes), an absolute path names a built one. Linux x86-64 only; elsewhere, and on
 any other cambc build (the library checks the build-id), cambc runs stock.
 """

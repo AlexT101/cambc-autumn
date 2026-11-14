@@ -1,5 +1,5 @@
-//! `fastrunner forkgame`: stateful forks of real games for the combat lab (research/combat-lab/lab2-notes.md,
-//! research/fastengine/RUNNER.md "Forks of real games"), on the wasm engine backend.
+//! `fastrunner forkgame`: stateful forks of real games for the combat lab (research/notes/combat-lab-forks.md,
+//! research/notes/RUNNER.md "Forks of real games"), on the wasm engine backend.
 //!
 //! Per game, two passes of the same deterministic game:
 //! - pass 1 plays it whole (normal draft, every champion's bot live from round 1) and records each round start's

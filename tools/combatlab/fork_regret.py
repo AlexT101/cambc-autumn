@@ -213,7 +213,7 @@ def build(dirs, marks):
     for d in dirs:
         d = Path(d)
         games = {json.loads(l)["id"]: json.loads(l) for l in open(d / "games.jsonl")}
-        mps = load_maps([g["map"] for g in games.values()], ROOT / "research/combat-lab/.mapcache.jsonl")
+        mps = load_maps([g["map"] for g in games.values()], ROOT / "tools/combatlab/.mapcache.jsonl")
         forks, arms = {}, defaultdict(lambda: defaultdict(dict))
         for l in open(d / "forks.jsonl"):
             try:

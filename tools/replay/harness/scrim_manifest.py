@@ -1,4 +1,4 @@
-"""Harness manifest for one live version's scrims, from the scrim log (research/ladder-scrims-2026-11-06).
+"""Harness manifest for one live version's scrims, from the scrim log (research/notes/ladder-scrims-2026-11-06).
 
     py tools/replay/harness/scrim_manifest.py --version v105 [--opps fish,mite]
 
@@ -10,7 +10,7 @@ import argparse, json, sys, zipfile
 import versions
 
 REPO = versions.REPO
-GAMES = REPO / "research/ladder-scrims-2026-11-06/data/games.jsonl"
+GAMES = REPO / "research/notes/ladder-scrims-2026-11-06/data/games.jsonl"
 OPPS = {"fish": "Intercontinental Fish", "mite": "Mite"}
 
 
@@ -46,7 +46,7 @@ def main():
             "our_side": g["side"], "result": g["result"], "rounds": g["rounds"], "end_reason": g["end_reason"],
             "our_score": ours, "opp_score": theirs, "our_draft": g["our_picks"], "opp_draft": g["opp_picks"],
             "opponent": g["opp_name"], "opp_rank": None, "opp_id": g["opp_id"], "refset": g.get("refset"),
-            "created": g["created"], "seed": g["seed"], "source": "research/ladder-scrims-2026-11-06", "replay_exists": True,
+            "created": g["created"], "seed": g["seed"], "source": "research/notes/ladder-scrims-2026-11-06", "replay_exists": True,
             "our_kills": g.get("our_kills"), "opp_kills": g.get("opp_kills"),
         })
     keys = [f"{r['group'][:8]}-{r['position']}" for r in rows]
