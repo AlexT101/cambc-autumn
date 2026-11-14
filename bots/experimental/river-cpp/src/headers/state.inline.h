@@ -1,0 +1,41 @@
+// Inline functions and templates, defined after every class: src/unity.cpp includes this after
+// every header (the declarations are in them).
+#pragma once
+
+namespace aph {
+// Debug (debug_state_lines): each state's colour, and the line or dot drawn for the state that ended the
+// turn. Its target is the last walk's goal (aim, else the nearest goal tile) unless the state notes one;
+// some fall back to their place (an altar, our spawn). A dot: nowhere to go.
+inline std::uint32_t state_colour(const char* name)
+{
+    static constexpr std::pair<const char*, std::uint32_t> colours[] = {
+        {"farm", 0x30C030},  {"capture", 0xC0F000}, {"bank", 0xFFD000},    {"retreat", 0xFFFFFF}, {"chase", 0xFF2020},
+        {"ender", 0xFF00FF}, {"contest", 0xFF8000}, {"siege", 0x9040FF},   {"mend", 0x00FFFF},    {"channel", 0x2050FF},
+        {"spent", 0x909090}, {"idle", 0x505050},    {"support", 0xA06030},
+    };
+    for (const auto& [n, c] : colours)
+        if (std::strcmp(n, name) == 0) return c;
+    return 0x000000;
+}
+
+inline void draw_state_line(Turn& t, const char* name)
+{
+    const vec2 me = my_position();
+    if (!in_bounds(me)) return; // dead
+    const auto& map = t.world.map();
+    vec2 to = _state_target;
+    const auto nearest = [&](const auto& tiles) {
+        vec2 best{-1, -1};
+        for (const vec2 p : tiles)
+            if (best.x < 0 || dist(p, me) < dist(best, me)) best = p;
+        return best;
+    };
+    std::vector<vec2> altars;
+    for (const auto& a : map.altars) altars.push_back(a.pos);
+    if (!in_bounds(to) && std::strcmp(name, "bank") == 0) to = nearest(altars);
+    if (!in_bounds(to) && std::strcmp(name, "retreat") == 0) to = nearest(map.ally_spawn_tiles);
+    if (in_bounds(to) && to != me) cambc::debug::draw_line(me, to, state_colour(name));
+    else cambc::debug::draw_dot(me, state_colour(name));
+}
+
+}

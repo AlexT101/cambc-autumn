@@ -1,0 +1,1164 @@
+#include <cambc.h>
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <optional>
+#include <vector>
+
+// Dash-aware routes, measured against an exact search. The movement rules (cambc-rules.yaml turn.walk,
+// abilities.dash and cooldown, map.corners): each turn one walk step to a free neighbour and, while the
+// dash is ready, one dash of at most 2 king steps onto a free tile, in either order. A dash path may cross
+// holes, altars, allies and unseen enemies, not walls, visible camps, visible enemies or the enemy spawn,
+// and each step checks only the tile stepped onto. A dash cast in round t is ready again in round t + 8,
+// so the cooldown read at a turn's start runs 7..1 after one and 0 when ready.
+namespace aph::dash_route {
+
+inline constexpr int phases = 8; // cooldown at a turn's start: 0 ready, else turns to wait
+inline constexpr std::uint16_t never = 0xFFFF;
+
+inline constexpr std::array<vec2, 8> steps8 = {vec2{0, 1}, vec2{1, 1}, vec2{1, 0}, vec2{1, -1},
+                                               vec2{0, -1}, vec2{-1, -1}, vec2{-1, 0}, vec2{-1, 1}};
+
+// The 24 tiles within 2, each with the tiles a 2-step path could pass (none for a single step).
+struct DashOffset {
+    vec2 d;
+    std::array<vec2, 3> via;
+    int vias = 0;
+};
+inline const std::array<DashOffset, 24>& dash_offsets() {
+    static const auto table = [] {
+        std::array<DashOffset, 24> t{};
+        int n = 0;
+        for (int dy = -2; dy <= 2; ++dy)
+            for (int dx = -2; dx <= 2; ++dx) {
+                if (dx == 0 && dy == 0) continue;
+                auto& o = t[n++];
+                o.d = {dx, dy};
+                if (std::max(std::abs(dx), std::abs(dy)) == 1) continue;
+                for (int my = std::max(-1, dy - 1); my <= std::min(1, dy + 1); ++my)
+                    for (int mx = std::max(-1, dx - 1); mx <= std::min(1, dx + 1); ++mx)
+                        if ((mx != 0 || my != 0) && (mx != dx || my != dy)) o.via[o.vias++] = {mx, my};
+            }
+        return t;
+    }();
+    return table;
+}
+
+// One search's board: where we may stand (walk or land), where a dash path may pass, and the goals.
+struct Board {
+    int w = 0, h = 0;
+    std::vector<std::uint8_t> stand, cross, goal;
+    bool in(vec2 p) const { return p.x >= 0 && p.y >= 0 && p.x < w && p.y < h; }
+    int at(vec2 p) const { return p.y * w + p.x; }
+    vec2 tile(int i) const { return {i % w, i / w}; }
+    bool standable(vec2 p) const { return in(p) && stand[at(p)]; }
+    void read(const bitboard& stand_b, const bitboard& cross_b, const bitboard& goals_b) {
+        const auto& layout = cambc::detail::layout();
+        w = layout.width, h = layout.height;
+        stand.assign(static_cast<std::size_t>(w * h), 0);
+        cross.assign(stand.size(), 0);
+        goal.assign(stand.size(), 0);
+        const auto bit = [&](const bitboard& b, int x, int y) {
+            return (b.ptr()[(y >> 3) * layout.chunk_stride + (x >> 3)] >> (((y & 7) << 3) | (x & 7))) & 1;
+        };
+        for (int y = 0; y < h; ++y)
+            for (int x = 0; x < w; ++x) {
+                const int i = y * w + x;
+                stand[i] = static_cast<std::uint8_t>(bit(stand_b, x, y));
+                cross[i] = static_cast<std::uint8_t>(bit(cross_b, x, y) | stand[i]);
+                goal[i] = static_cast<std::uint8_t>(bit(goals_b, x, y) & stand[i]);
+            }
+    }
+    // Every landing of a dash from p.
+    template <class F> void dashes(vec2 p, F&& f) const {
+        for (const auto& o : dash_offsets()) {
+            const vec2 l = p + o.d;
+            if (!standable(l)) continue;
+            bool ok = o.vias == 0;
+            for (int k = 0; k < o.vias && !ok; ++k) {
+                const vec2 m = p + o.via[k];
+                ok = in(m) && cross[at(m)];
+            }
+            if (ok) f(l);
+        }
+    }
+    template <class F> void walks(vec2 p, F&& f) const {
+        for (const auto d : steps8)
+            if (standable(p + d)) f(p + d);
+    }
+    // Every end of one turn from p: (tile, dashed), repeats included.
+    template <class F> void turns(vec2 p, int c, bool dasher, F&& f) const {
+        f(p, false);
+        walks(p, [&](vec2 q) { f(q, false); });
+        if (!dasher || c != 0) return;
+        dashes(p, [&](vec2 l) {
+            f(l, true);
+            walks(l, [&](vec2 q) { f(q, true); });
+        });
+        walks(p, [&](vec2 q) { dashes(q, [&](vec2 l) { f(l, true); }); });
+    }
+};
+
+inline int after(int c, bool dashed) { return dashed ? phases - 1 : std::max(0, c - 1); }
+
+// Turns to a goal from every (tile, cooldown), by a search back from the goals: moves are symmetric
+// between standable tiles (a dash path reversed is a dash path), so a turn's predecessors are its own
+// moves, with the cooldown run backwards.
+struct Exact {
+    const Board* b = nullptr;
+    bool dasher = false;
+    std::vector<std::uint16_t> v;
+    std::uint16_t value(vec2 p, int c) const { return b->in(p) ? v[static_cast<std::size_t>(b->at(p) * phases + c)] : never; }
+    void solve(const Board& board, bool dashes) {
+        b = &board, dasher = dashes;
+        const int n = board.w * board.h;
+        v.assign(static_cast<std::size_t>(n * phases), never);
+        std::vector<std::uint32_t> queue;
+        queue.reserve(static_cast<std::size_t>(n * phases));
+        const auto label = [&](vec2 p, int c, std::uint16_t value) {
+            auto& slot = v[static_cast<std::size_t>(board.at(p) * phases + c)];
+            if (slot != never) return;
+            slot = value;
+            queue.push_back(static_cast<std::uint32_t>(board.at(p) * phases + c));
+        };
+        for (int i = 0; i < n; ++i)
+            if (board.goal[i])
+                for (int c = 0; c < phases; ++c) label(board.tile(i), c, 0);
+        for (std::size_t head = 0; head < queue.size(); ++head) {
+            const int s = static_cast<int>(queue[head]);
+            const vec2 p = board.tile(s / phases);
+            const int c = s % phases;
+            const auto next = static_cast<std::uint16_t>(v[static_cast<std::size_t>(s)] + 1);
+            // Without a dash: from cooldown c + 1, or 0 to 0.
+            for (const int from : {c + 1, c == 0 ? 0 : -1}) {
+                if (from < 0 || from >= phases) continue;
+                label(p, from, next);
+                board.walks(p, [&](vec2 q) { label(q, from, next); });
+            }
+            if (!dasher || c != phases - 1) continue;
+            // With one, from cooldown 0: a dash, a walk then a dash, or a dash then a walk.
+            board.dashes(p, [&](vec2 l) {
+                label(l, 0, next);
+                board.walks(l, [&](vec2 q) { label(q, 0, next); });
+            });
+            board.walks(p, [&](vec2 q) { board.dashes(q, [&](vec2 l) { label(l, 0, next); }); });
+        }
+    }
+};
+
+// A walking distance field over `open` tiles from the goals, as the host computes one.
+inline void walk_field(const Board& b, const std::vector<std::uint8_t>& open, std::vector<std::uint16_t>& f) {
+    f.assign(static_cast<std::size_t>(b.w * b.h), never);
+    std::vector<int> queue;
+    for (int i = 0; i < b.w * b.h; ++i)
+        if (b.goal[i]) f[i] = 0, queue.push_back(i);
+    for (std::size_t head = 0; head < queue.size(); ++head) {
+        const vec2 p = b.tile(queue[head]);
+        const auto next = static_cast<std::uint16_t>(f[queue[head]] + 1);
+        for (const auto d : steps8) {
+            const vec2 q = p + d;
+            if (!b.in(q) || !open[b.at(q)] || f[b.at(q)] != never) continue;
+            f[b.at(q)] = next;
+            queue.push_back(b.at(q));
+        }
+    }
+}
+
+struct Move {
+    vec2 end{-1, -1};
+    bool dashed = false;
+};
+
+// Turns a policy takes from (p, c), following its own moves; -1 if it does not arrive within `limit`.
+template <class Policy> int rollout(const Board& b, Policy& policy, vec2 p, int c, int limit) {
+    for (int t = 0; t <= limit; ++t) {
+        if (b.goal[b.at(p)]) return t;
+        const Move m = policy.decide(p, c);
+        if (m.end.x < 0) return -1;
+        c = after(c, m.dashed);
+        p = m.end;
+    }
+    return -1;
+}
+
+// The exact policy: a move one turn nearer.
+struct ExactPolicy {
+    const Exact& e;
+    Move decide(vec2 p, int c) const {
+        Move best;
+        int best_v = e.value(p, c);
+        e.b->turns(p, c, e.dasher, [&](vec2 q, bool dashed) {
+            const int v = e.value(q, after(c, dashed));
+            if (v < best_v) best_v = v, best = {q, dashed};
+        });
+        return best;
+    }
+};
+
+// Scores each end of the turn by a field and the cooldown it leaves; the lowest wins, a walk on ties.
+template <class Score, class B = Board> struct FieldPolicy {
+    const B& b;
+    bool dasher;
+    Score score;
+    Move decide(vec2 p, int c) const {
+        Move best;
+        int best_s = 1 << 30;
+        b.turns(p, c, dasher, [&](vec2 q, bool dashed) {
+            if (q == p && c == 0 && !dashed) return; // standing with the dash ready changes nothing
+            const int s = score(q, after(c, dashed));
+            if (s < best_s || (s == best_s && !dashed && best.dashed)) best_s = s, best = {q, dashed};
+        });
+        return best;
+    }
+};
+
+// Turns to cover s steps from cooldown c, dashing at every chance and a dash worth 2 steps: the least t
+// with t + 2 ceil((t - c) / 8) >= s. Past c, u more turns cover 10k + j + 2 for u = 8k + j (j in 1..8).
+inline int paced(int s, int c) {
+    if (s <= 0) return 0;
+    if (s <= c) return s;
+    const int r = s - c;
+    const int k = r > 10 ? (r - 1) / 10 : 0;
+    return c + phases * k + std::max(1, r - 10 * k - 2);
+}
+
+// Turns from a tile with cooldown c, by three fields: walking (fw), with crossings open (fc), and walking
+// to the nearest launch tile beside a crossing (fx). Round a crossing: paced walking. Over one: walk to its
+// launch tile (early dashes only if one is ready again on arrival), wait for the dash, cross with a walk and
+// a dash in one turn, then pace the rest.
+inline int timed(int fw, int fc, int fx, int c) {
+    int best = fw == never ? 1 << 20 : paced(fw, c);
+    if (fc == never || fx == never || fc >= fw) return fc == never ? best : std::min(best, paced(fc, c));
+    const int a = fx, rest = std::max(0, fc - a - 2);
+    int t;
+    if (a == 0) t = c + 1 + paced(std::max(0, rest - 1), phases - 1);
+    else {
+        const int early = std::max(0, a - 1 - c) / (phases + 2);
+        t = std::max(a - 1 - 2 * early, c) + 1 + paced(rest, phases - 1);
+    }
+    return std::min(best, t);
+}
+
+// Turns from a launch distance `a` and `rest` beyond the landing, cooldown c: walk to the launch tile
+// (early dashes only if one is ready again on arrival), wait for the dash, cross with a walk and a dash in
+// one turn (a launch tile reached at the turn's start crosses with a dash and a walk), then pace the rest.
+inline int crossing_turns(int a, int rest, int c) {
+    if (a == 0) return c + 1 + paced(std::max(0, rest - 1), phases - 1);
+    const int early = std::max(0, a - 1 - c) / (phases + 2);
+    return std::max(a - 1 - 2 * early, c) + 1 + paced(rest, phases - 1);
+}
+
+// The crossing on our route: down the field with crossings open to the first launch tile, a tile with a
+// crossing one nearer. Its launch distance from any tile on that route then follows from the field, and
+// the steps beyond its landing are fixed. Past the crossing (or with none within `reach`): paced walking.
+struct RoutedPolicy {
+    const Board& b;
+    const std::vector<std::uint16_t>& fw;
+    const std::vector<std::uint16_t>& fc;
+    const std::vector<std::uint8_t>& crossing;
+    int reach = 24;
+    int ends = 0; // 0 every end of the turn; 1 no walk before a dash; 2 a walk before one only from the best step
+    // Steps beyond the landing of the crossing on p's route; -1 with none, -2 beyond reach.
+    int beyond(vec2 p) const {
+        if (fc[b.at(p)] == never || (fw[b.at(p)] != never && fc[b.at(p)] >= fw[b.at(p)])) return -1;
+        vec2 q = p;
+        for (int a = 0; a <= reach; ++a) {
+            const int here = fc[b.at(q)];
+            if (here == 0) return -1;
+            vec2 next{-1, -1};
+            for (const auto d : steps8) {
+                const vec2 x = q + d;
+                if (!b.in(x) || fc[b.at(x)] != here - 1) continue;
+                if (crossing[b.at(x)]) return here - 2;
+                if (next.x < 0 && b.stand[b.at(x)]) next = x;
+            }
+            if (next.x < 0) return -1;
+            q = next;
+        }
+        return -2;
+    }
+    Move decide(vec2 p, int c) const {
+        const int rest = beyond(p);
+        const auto score = [&](vec2 q, int cq) {
+            const int i = b.at(q);
+            int v = fw[i] == never ? 1 << 20 : paced(fw[i], cq);
+            if (rest == -2 && fc[i] != never) v = std::min(v, paced(fc[i], cq));
+            if (rest >= 0 && fc[i] != never) {
+                const int a = fc[i] - 2 - rest;
+                v = std::min(v, a < 0 ? paced(fc[i], cq) : crossing_turns(a, rest, cq));
+            }
+            return v >= (1 << 20) ? 1 << 30 : v * 4096 + (fc[i] == never ? 4095 : fc[i]);
+        };
+        Move best;
+        int best_s = 1 << 30;
+        const auto consider = [&](vec2 q, bool dashed) {
+            if (q == p && c == 0 && !dashed) return;
+            const int s = score(q, after(c, dashed));
+            if (s < best_s || (s == best_s && !dashed && best.dashed)) best_s = s, best = {q, dashed};
+        };
+        if (ends == 0) {
+            b.turns(p, c, true, consider);
+            return best;
+        }
+        consider(p, false);
+        b.walks(p, [&](vec2 q) { consider(q, false); });
+        const vec2 step = best.end;
+        if (c != 0) return best;
+        b.dashes(p, [&](vec2 l) {
+            consider(l, true);
+            b.walks(l, [&](vec2 q) { consider(q, true); });
+        });
+        if (ends == 2 && step.x >= 0 && step != p) b.dashes(step, [&](vec2 l) { consider(l, true); });
+        return best;
+    }
+};
+
+// A decision tree's turns for one end of the turn, in thousandths relative to here: trained on the exact
+// search's turns over every end of the turn from the first states of real routes (tools: scratchpad
+// tree_export.py). Features relative to here, so that a few leaves rank the ends.
+struct TreeFeatures {
+    int dashed, c, ca, dfw, dfc, reach, rest, ap, ae, gap, fxp, fxe, fdiff;
+};
+inline constexpr int no_estimate = 999;
+inline int estimate(int fw, int fc, int rest, int ca) { // fw, fc -1 for none
+    int v = fw >= 0 ? paced(fw, ca) : no_estimate;
+    if (rest == -2 && fc >= 0) v = std::min(v, paced(fc, ca));
+    if (rest >= 0 && fc >= 0) {
+        const int a = fc - 2 - rest;
+        v = std::min(v, a < 0 ? paced(fc, ca) : crossing_turns(a, rest, ca));
+    }
+    return v;
+}
+inline int capped(int x, int m) { return x < 0 || x > m ? m : x; }
+inline TreeFeatures tree_features(int fwp, int fcp, int c, int rest, int fxp, int fwe, int fce, int ca, bool dashed, int reach, int fxe) {
+    const int fp = estimate(fwp, fcp, rest, c), fe = estimate(fwe, fce, rest, ca);
+    TreeFeatures f;
+    f.dashed = dashed ? 1 : 0, f.c = c, f.ca = ca, f.reach = reach;
+    f.dfw = fwe >= 0 && fwp >= 0 ? fwe - fwp : fwe < 0 && fwp >= 0 ? 9 : fwp < 0 && fwe >= 0 ? -9 : 0;
+    f.dfc = fce >= 0 && fcp >= 0 ? fce - fcp : 9;
+    f.rest = rest < 0 ? rest : std::min(rest, 40);
+    f.ap = capped(rest >= 0 ? fcp - 2 - rest : -1, 30);
+    f.ae = capped(rest >= 0 && fce >= 0 ? fce - 2 - rest : -1, 30);
+    f.gap = fwp >= 0 && fcp >= 0 ? capped(fwp - fcp, 60) : 60;
+    f.fxp = capped(fxp, 30), f.fxe = capped(fxe, 30);
+    f.fdiff = fe < no_estimate && fp < no_estimate ? std::min(fe - fp, 20) : 20;
+    return f;
+}
+
+// Generated by tree_export.py: depth 4, 16 leaves, trained on 297955 rows.
+inline int tree_turns(const TreeFeatures& f) {
+    if (f.fdiff <= 1) {
+        if (f.fdiff <= 0) {
+            if (f.fdiff <= -1) {
+                if (f.rest <= 0) {
+                    return -981;
+                }
+                return -701;
+            }
+            if (f.dfw <= 1) {
+                return 12;
+            }
+            return 1011;
+        }
+        if (f.ca <= 6) {
+            if (f.gap <= 0) {
+                return 989;
+            }
+            return 758;
+        }
+        if (f.ap <= 0) {
+            return 1884;
+        }
+        return 1052;
+    }
+    if (f.fdiff <= 3) {
+        if (f.fdiff <= 2) {
+            if (f.dfc <= -1) {
+                return 1662;
+            }
+            return 2055;
+        }
+        if (f.dfc <= -1) {
+            return 2304;
+        }
+        return 3024;
+    }
+    if (f.fdiff <= 6) {
+        if (f.fdiff <= 4) {
+            return 3916;
+        }
+        return 4831;
+    }
+    if (f.rest <= 1) {
+        return 6749;
+    }
+    return 5958;
+}
+
+struct TreePolicy {
+    const RoutedPolicy& routed;
+    const std::vector<std::uint16_t>& fx;
+    Move decide(vec2 p, int c) const {
+        const Board& b = routed.b;
+        const auto field = [](std::uint16_t v) { return v == never ? -1 : static_cast<int>(v); };
+        const int rest = routed.beyond(p), h = b.at(p);
+        Move best;
+        std::int64_t best_s = std::int64_t{1} << 40;
+        b.turns(p, c, true, [&](vec2 q, bool dashed) {
+            if (q == p && c == 0 && !dashed) return;
+            const int i = b.at(q), ca = after(c, dashed);
+            const auto f = tree_features(field(routed.fw[h]), field(routed.fc[h]), c, rest, field(fx[h]), field(routed.fw[i]), field(routed.fc[i]), ca,
+                                         dashed, dist(p, q), field(fx[i]));
+            const std::int64_t s = std::int64_t{tree_turns(f)} * 4096 + (routed.fc[i] == never ? 4095 : routed.fc[i]);
+            if (s < best_s || (s == best_s && !dashed && best.dashed)) best_s = s, best = {q, dashed};
+        });
+        return best;
+    }
+};
+
+// 7x7 windows around a tile as 64-bit masks, row r at bits 8r..8r+6, the tile itself at bit 27; column 7
+// and row 7 stay empty, so a king step never wraps. Read straight from a board's 8x8 chunk words.
+namespace window {
+inline constexpr std::uint64_t col0 = 0x0101010101010101ull, col7 = 0x8080808080808080ull;
+inline constexpr std::uint64_t inside = 0x007F7F7F7F7F7F7Full;
+inline constexpr std::uint64_t centre = std::uint64_t{1} << 27;
+inline std::uint64_t dilate(std::uint64_t m) {
+    const std::uint64_t t = m | ((m << 1) & ~col0) | ((m >> 1) & ~col7);
+    return (t | (t << 8) | (t >> 8)) & inside;
+}
+inline std::uint64_t of(const bitboard& b, vec2 p) {
+    const auto& layout = cambc::detail::layout();
+    const int x0 = p.x - 3, y0 = p.y - 3, stride = static_cast<int>(layout.chunk_stride), H = layout.height;
+    const int chunks = (layout.width + 7) >> 3, k0 = x0 >> 3, sh = x0 - 8 * k0;
+    const std::uint64_t* words = b.ptr();
+    std::uint64_t out = 0;
+    for (int r = 0; r < 7; ++r) {
+        const int y = y0 + r;
+        if (y < 0 || y >= H) continue;
+        const std::uint64_t* row = words + (y >> 3) * stride;
+        const int s = (y & 7) * 8;
+        std::uint32_t v = 0;
+        if (k0 >= 0 && k0 < chunks) v = static_cast<std::uint32_t>((row[k0] >> s) & 0xFF);
+        if (k0 + 1 >= 0 && k0 + 1 < chunks) v |= static_cast<std::uint32_t>((row[k0 + 1] >> s) & 0xFF) << 8;
+        out |= static_cast<std::uint64_t>((v >> sh) & 0x7F) << (r * 8);
+    }
+    return out;
+}
+inline std::uint64_t on_map(vec2 p) {
+    const auto& layout = cambc::detail::layout();
+    const int x0 = p.x - 3, y0 = p.y - 3;
+    const int lo = std::max(0, -x0), hi = std::min(6, layout.width - 1 - x0);
+    if (lo > hi) return 0;
+    const std::uint64_t row = ((std::uint64_t{1} << (hi - lo + 1)) - 1) << lo;
+    std::uint64_t out = 0;
+    for (int r = 0; r < 7; ++r)
+        if (y0 + r >= 0 && y0 + r < layout.height) out |= row << (r * 8);
+    return out;
+}
+inline vec2 tile(vec2 p, int bit) { return {p.x - 3 + (bit & 7), p.y - 3 + (bit >> 3)}; }
+inline std::uint64_t bit(vec2 p, vec2 q) { return std::uint64_t{1} << ((q.y - p.y + 3) * 8 + (q.x - p.x + 3)); }
+} // namespace window
+
+// The routed policy for play, on host fields: walking, and with the crossings open. The turn's moves come
+// from two windows: where we may end a move (not `walls`), and where a dash path may pass (not walls,
+// camps, visible enemies or their spawn).
+class Router {
+public:
+    // One turn's moves: a walk to `walk` and a dash to `land` (either may be off the map), the walk first
+    // if `walk_first`; `turns` its estimate from there.
+    struct Plan {
+        vec2 walk{-1, -1}, land{-1, -1};
+        bool walk_first = false;
+        int turns = no_estimate;
+    };
+    // Crossings only shorten routes, so the field with them open (fc) is never above the walking one: it is
+    // the one routed on, the walking field computed only for a route that crosses (to weigh walking
+    // round). Kept while the goals and walls are, if it still reaches us.
+    void prepare(const bitboard& goals, const bitboard& walls, const bitboard& no_dash, const bitboard* crossings, vec2 me, int cap) {
+        static bitboard open{cambc::uninitialized};
+        walls_ = &walls, no_dash_ = &no_dash, crossings_ = crossings, me_ = me;
+        layers_ = static_cast<std::uint16_t>(std::min(cap, static_cast<int>(unreachable)));
+        const bool same = kept_ && crossed_ == (crossings != nullptr) && layers_ == kept_layers_ && boards_equal(goals, goals_)
+                          && boards_equal(walls, kept_walls_) && steps_at(fc_, me) != unreachable;
+        crossed_ = crossings != nullptr;
+        if (same) return;
+        trace_n_ = 0, fw_ready_ = !crossed_, kept_ = true, kept_layers_ = layers_;
+        copy_into(goals, goals_);
+        copy_into(walls, kept_walls_);
+        if (crossed_) {
+            copy_into(walls, open);
+            drop(open, *crossings);
+        }
+        search(crossed_ ? open : walls, fc_);
+    }
+    // Off the map: none (the host rejects the read).
+    int fc(vec2 p) const { return in_bounds(p) ? field(steps_at(fc_, p)) : -1; }
+    int fw(vec2 p) const {
+        if (!in_bounds(p)) return -1;
+        if (!crossed_) return fc(p);
+        if (!fw_ready_) search(kept_walls_, fw_), fw_ready_ = true;
+        return field(steps_at(fw_, p));
+    }
+    // Steps beyond the landing of the crossing on p's route; -1 with none, -2 farther than `reach`. The
+    // tiles walked down are kept with the answer: a later call from one of them reuses it.
+    int beyond(vec2 p, int reach) const {
+        if (!crossed_) return -1;
+        for (int k = 0; k < trace_n_; ++k)
+            if (trace_[k] == p) return trace_rest_;
+        int here = fc(p);
+        if (here < 0) return -1;
+        if (!any_within(*crossings_, p, reach + 1)) return -2;
+        trace_n_ = 0;
+        vec2 q = p;
+        int last = 0; // the direction last stepped: tried first
+        for (int a = 0; a <= reach; ++a) {
+            if (here == 0) return trace_n_ = 0, -1;
+            if (trace_n_ < static_cast<int>(trace_.size())) trace_[trace_n_++] = q;
+            if (test(*near_crossings_, q))
+                for (const auto d : steps8) {
+                    const vec2 x = q + d;
+                    if (in_bounds(x) && test(*crossings_, x) && fc(x) == here - 1) return trace_rest_ = here - 2;
+                }
+            int next = -1;
+            for (int k = 0; k < 8 && next < 0; ++k) {
+                const int d = (last + k) & 7;
+                const vec2 x = q + steps8[d];
+                if (in_bounds(x) && fc(x) == here - 1 && !test(*crossings_, x)) next = d;
+            }
+            if (next < 0) return trace_n_ = 0, -1;
+            q = q + steps8[next], last = next, --here;
+        }
+        trace_n_ = 0;
+        return -2;
+    }
+    // A turn's estimate from q: with a crossing ahead, its timing against walking round; else pacing fc.
+    int turns_from(vec2 q, int rest, int ca) const {
+        const int f = fc(q);
+        if (rest < 0) return f < 0 ? no_estimate : paced(f, ca);
+        return estimate(fw(q), f, rest, ca);
+    }
+    // A dash from `from` can land on l: free, and one step away or by a tile a dash path may pass.
+    bool lands(vec2 from, vec2 l) const {
+        if (!in_bounds(l) || l == from || dist(from, l) > 2 || test(*walls_, l)) return false;
+        if (dist(from, l) == 1) return true;
+        for (int y = std::max(from.y, l.y) - 1; y <= std::min(from.y, l.y) + 1; ++y)
+            for (int x = std::max(from.x, l.x) - 1; x <= std::min(from.x, l.x) + 1; ++x)
+                if (const vec2 m{x, y}; m != from && m != l && in_bounds(m) && !test(*no_dash_, m)) return true;
+        return false;
+    }
+    // The estimate rises with either field, so among ends of one kind only the nearest by the field we
+    // route on (fc) can win: each kind is ranked on that one read, and only its best is estimated. A move
+    // gains at most its length on fc, so a search stops at the first that gains it all; the 24 landings
+    // are tried farthest along the best step's direction first.
+    Plan decide(vec2 p, int c, std::optional<vec2> aim = std::nullopt, bool walk = true) const {
+        const int rest = beyond(p, c + phases + 4);
+        const auto nearest = [&](vec2 q) {
+            const int f = fc(q);
+            return f < 0 ? 1 << 29 : f;
+        };
+        Plan best;
+        int best_fc = 1 << 30;
+        const auto consider = [&](vec2 q, int ca, const Plan& plan) {
+            if (q.x < 0) return;
+            const int f = fc(q), t = turns_from(q, rest, ca), fq = f < 0 ? 1 << 29 : f;
+            if (t < best.turns || (t == best.turns && fq < best_fc)) best = plan, best.turns = t, best_fc = fq;
+        };
+        // The nearest tile of a kind from `from`: equally near ones by the tiebreak, read only on a tie.
+        struct Nearest {
+            vec2 q{-1, -1};
+            int f = 1 << 30, tie = -1;
+        };
+        // Takes q if it beats n and `allowed` (read only then) passes.
+        const auto offer = [&](Nearest& n, vec2 from, vec2 q, int f, auto allowed) {
+            if (f > n.f || f >= (1 << 29)) return;
+            int t = -1;
+            if (f == n.f && n.q.x >= 0) {
+                if (n.tie < 0) n.tie = step_tiebreak(*map_, from, n.q, aim);
+                if ((t = step_tiebreak(*map_, from, q, aim)) >= n.tie) return;
+            }
+            if (!allowed()) return;
+            n.q = q, n.f = f, n.tie = t;
+        };
+        // The best landing from `from`, never `back`: done once one gains the whole 2.
+        const auto best_landing = [&](vec2 from, vec2 toward, vec2 back) {
+            Nearest n;
+            const int floor = nearest(from) - 2;
+            const vec2 d{toward.x - from.x, toward.y - from.y};
+            for (const auto& o : landing_order(d)) {
+                const vec2 l = from + o;
+                if (!in_bounds(l)) continue;
+                offer(n, from, l, nearest(l), [&] { return l != back && lands(from, l) && !skips_bush(*map_, from, l); });
+                if (n.f <= floor && n.q.x >= 0) break;
+            }
+            return n;
+        };
+        const int here_fc = nearest(p);
+        // The best step (every one read: the tiebreak picks among equals), or staying while the dash cools.
+        Nearest steps;
+        if (walk)
+            for (const auto d : steps8)
+                if (const vec2 q = p + d; in_bounds(q)) offer(steps, p, q, nearest(q), [&] { return !test(*walls_, q); });
+        const vec2 step = steps.q;
+        if (c > 0 || !walk) consider(p, std::max(0, c - 1), Plan{});
+        // A step no nearer only paces the cooldown: estimated from each tile's own route, two such tiles
+        // can each rate the other faster and turn us back and forth. Waiting gets there as soon.
+        if (nearest(step) < here_fc) {
+            Plan plan;
+            plan.walk = step;
+            consider(step, std::max(0, c - 1), plan);
+        }
+        if (c != 0) return best;
+        // The best landing, the best walk from it, and the best dash after the step.
+        const auto lands_ = best_landing(p, step.x >= 0 ? step : p, p);
+        const vec2 land = lands_.q;
+        if (land.x < 0) return best;
+        {
+            Plan plan;
+            plan.land = land;
+            consider(land, phases - 1, plan);
+        }
+        Nearest afters;
+        if (walk)
+            for (const auto d : steps8) {
+                const vec2 q = land + d;
+                if (!in_bounds(q) || q == p) continue;
+                offer(afters, land, q, nearest(q), [&] { return !test(*walls_, q); });
+            }
+        if (afters.q.x >= 0) {
+            Plan plan;
+            plan.land = land, plan.walk = afters.q;
+            consider(afters.q, phases - 1, plan);
+        }
+        // A dash after the step reaches 3 nearer at best: only worth looking if the others did not.
+        if (step.x >= 0 && std::min(lands_.f, afters.f) > here_fc - 3) {
+            const auto jumps = best_landing(step, step + vec2{step.x - p.x, step.y - p.y}, p);
+            if (jumps.q.x >= 0) {
+                Plan plan;
+                plan.walk = step, plan.land = jumps.q, plan.walk_first = true;
+                consider(jumps.q, phases - 1, plan);
+            }
+        }
+        return best;
+    }
+    // The 24 offsets within 2, nearest first to twice `d` (a step's direction; 0 for none).
+    static const std::array<vec2, 24>& landing_order(vec2 d) {
+        static std::array<std::array<vec2, 24>, 9> orders = [] {
+            std::array<std::array<vec2, 24>, 9> t{};
+            for (int k = 0; k < 9; ++k) {
+                const vec2 dir{k % 3 - 1, k / 3 - 1}, aim{2 * dir.x, 2 * dir.y};
+                int n = 0;
+                for (int y = -2; y <= 2; ++y)
+                    for (int x = -2; x <= 2; ++x)
+                        if (x != 0 || y != 0) t[k][n++] = {x, y};
+                std::stable_sort(t[k].begin(), t[k].end(), [&](vec2 a, vec2 b) {
+                    const int da = std::max(std::abs(a.x - aim.x), std::abs(a.y - aim.y)), db = std::max(std::abs(b.x - aim.x), std::abs(b.y - aim.y));
+                    const int ra = std::max(std::abs(a.x), std::abs(a.y)), rb = std::max(std::abs(b.x), std::abs(b.y));
+                    return da != db ? da < db : ra > rb;
+                });
+            }
+            return t;
+        }();
+        return orders[static_cast<std::size_t>((std::clamp(d.y, -1, 1) + 1) * 3 + std::clamp(d.x, -1, 1) + 1)];
+    }
+    void set_map(const StaticMap* map) { map_ = map, near_crossings_ = &map->near_crossable; }
+
+private:
+    static int field(int v) { return v == unreachable ? -1 : v; }
+    void search(const bitboard& walls, cambc::distance_field& f) const {
+        static bitboard origin, visited{cambc::uninitialized};
+        clear_board(origin);
+        set_tile(origin, me_);
+        f.compute_to_with_expansion_count(walls, goals_, origin, visited, layers_);
+    }
+    mutable cambc::distance_field fw_, fc_;
+    bitboard goals_{cambc::uninitialized}, kept_walls_{cambc::uninitialized};
+    vec2 me_{-1, -1};
+    std::uint16_t layers_ = 0, kept_layers_ = 0;
+    bool kept_ = false;
+    mutable bool fw_ready_ = false;
+    mutable std::array<vec2, 32> trace_;
+    mutable int trace_n_ = 0, trace_rest_ = -1;
+    const bitboard* walls_ = nullptr;
+    const bitboard* no_dash_ = nullptr;
+    const bitboard* crossings_ = nullptr;
+    const bitboard* near_crossings_ = nullptr;
+    const StaticMap* map_ = nullptr;
+    bool crossed_ = false;
+};
+
+// Router as a rollout policy.
+struct RouterPolicy {
+    const Router& router;
+    Move decide(vec2 p, int c) const {
+        const auto plan = router.decide(p, c);
+        if (plan.turns >= no_estimate) return {};
+        const vec2 end = plan.walk_first ? plan.land : plan.walk.x >= 0 ? plan.walk : plan.land.x >= 0 ? plan.land : p;
+        return {end, plan.land.x >= 0};
+    }
+};
+
+// Pathing::route() while the dash is ready (2026-10-27), as a policy: a search over the 7x7 window around
+// us, a step costing 2 and a dash `price`, the window's rim seeded at 2 a walking step and the goals at 0;
+// a dash when its price and the cost to go from its landing beat the best step's. Walking can't reach the
+// goals: the field with crossings open, a dash over a crossing (dash_over). Cooling down: walking only.
+struct TheirPolicy {
+    const Board& b;
+    const std::vector<std::uint16_t>& walk; // walking field
+    const std::vector<std::uint16_t>& open; // the field with crossings open
+    const std::vector<std::uint8_t>& crossing;
+    int price = 3;
+    bool walk_after = false; // also walk after a dash, by the walking field
+    Move descend(vec2 p, const std::vector<std::uint16_t>& f, bool dashed) const {
+        Move best{p, dashed};
+        int best_f = f[b.at(p)];
+        b.walks(p, [&](vec2 q) {
+            if (f[b.at(q)] < best_f) best_f = f[b.at(q)], best = {q, dashed};
+        });
+        return best;
+    }
+    Move decide(vec2 p, int c) const {
+        if (c != 0) return descend(p, walk, false);
+        constexpr int R = 3, N = 2 * R + 1;
+        std::array<int, N * N> to_go;
+        to_go.fill(1 << 30);
+        const auto cell = [&](vec2 q) { return (q.y - p.y + R) * N + (q.x - p.x + R); };
+        const auto inside = [&](vec2 q) { return std::abs(q.x - p.x) <= R && std::abs(q.y - p.y) <= R && b.in(q); };
+        // Dijkstra by levels over the window, from the goals and the seeded rim.
+        std::vector<std::pair<int, vec2>> heap;
+        bool seeded = false;
+        for (int dy = -R; dy <= R; ++dy)
+            for (int dx = -R; dx <= R; ++dx) {
+                const vec2 q = p + vec2{dx, dy};
+                if (!inside(q) || !b.stand[b.at(q)]) continue;
+                int seed = 1 << 30;
+                if (b.goal[b.at(q)]) seed = 0;
+                else if ((std::abs(dx) == R || std::abs(dy) == R) && walk[b.at(q)] != never) seed = 2 * walk[b.at(q)];
+                if (seed < (1 << 30)) to_go[cell(q)] = seed, heap.push_back({seed, q}), seeded = true;
+            }
+        if (!seeded) {
+            if (open[b.at(p)] == never) return {p, false};
+            // route_on with crossings open; a first step onto a crossing is dash_over.
+            bool to_crossing = false;
+            int best_f = open[b.at(p)];
+            for (const auto d : steps8) {
+                const vec2 q = p + d;
+                if (b.in(q) && crossing[b.at(q)] && open[b.at(q)] < best_f) to_crossing = true;
+            }
+            if (to_crossing) {
+                Move best;
+                int best_at = open[b.at(p)] - 1;
+                b.dashes(p, [&](vec2 l) {
+                    if (open[b.at(l)] < best_at) best_at = open[b.at(l)], best = {l, true};
+                });
+                if (best.end.x >= 0) return best;
+            }
+            return descend(p, open, false);
+        }
+        const auto relax = [&](vec2 q, int cost) {
+            if (!inside(q) || !b.stand[b.at(q)] || cost >= to_go[cell(q)]) return;
+            to_go[cell(q)] = cost;
+            heap.push_back({cost, q});
+        };
+        while (!heap.empty()) {
+            auto it = std::min_element(heap.begin(), heap.end(), [](const auto& x, const auto& y) { return x.first < y.first; });
+            const auto [cost, q] = *it;
+            *it = heap.back();
+            heap.pop_back();
+            if (cost > to_go[cell(q)]) continue;
+            b.walks(q, [&](vec2 r) { relax(r, cost + 2); });
+            b.dashes(q, [&](vec2 r) { relax(r, cost + price); });
+        }
+        int step = 1 << 30, jump = 1 << 30;
+        Move walk_move{p, false}, dash_move;
+        b.walks(p, [&](vec2 q) {
+            if (2 + to_go[cell(q)] < step) step = 2 + to_go[cell(q)], walk_move = {q, false};
+        });
+        b.dashes(p, [&](vec2 l) {
+            if (price + to_go[cell(l)] < jump) jump = price + to_go[cell(l)], dash_move = {l, true};
+        });
+        if (jump < step) {
+            if (!walk_after) return dash_move;
+            Move m = descend(dash_move.end, walk, true);
+            return m;
+        }
+        return step < (1 << 30) ? walk_move : Move{p, false};
+    }
+};
+
+// Vendetta: a kill readies both abilities. With the dash cooling, a unit we can kill now, from here or a
+// step away (one hit, or two with the reset), is killed first if from where we strike it a dash can then
+// leave the reach of every camp awake after it. The dash is then the router's to use: this turn after
+// one hit, the next after two (the reset takes the turn's cast). True if it struck.
+inline bool vendetta_kill(Pathing& pathing, const World& world, const bitboard& walls) {
+    const auto& f = world.me().facts();
+    if (f.passive != Passive::reset_on_kill || !my_can_attack()) return false;
+    const vec2 me = my_position();
+    const auto& map = world.map();
+    // Within 2 of a camp tile, once a map: elsewhere no camp is in reach of a step and a hit.
+    static bitboard near_camps{cambc::uninitialized};
+    static const StaticMap* near_of = nullptr;
+    if (near_of != &map) square_dilate(map.camp_tiles, 2, near_camps), near_of = &map;
+    const bool camps = test(near_camps, me);
+    bool enemies = false;
+    for (const auto& e : world.enemies) enemies |= e.alive && e.visible && dist(me, e.pos) <= 2;
+    if (!camps && !enemies) return false;
+    const int reset = ready(world, AbilityKind::attack_reset);
+    const bool walk = my_can_move();
+    const auto& live = my_record();
+    const float camp_hit = my_camp_hit(world), hit = live.strength * damage_scale(f.passive, live.health, live.max_health);
+    const auto hits = [&](float need, float per) { return need <= per ? 1 : reset >= 0 && need <= 2 * per ? 2 : 0; };
+    // Whether a dash from q can land out of reach of every live striker of the groups awake after the
+    // kill (`group`'s too), the one killed (at `killed`) left out: each drawn as its reach square.
+    static bitboard reach{cambc::uninitialized}, out{cambc::uninitialized};
+    const auto& near = map.groups_near(me, 3 + map.max_camp_reach);
+    const auto escapes = [&](vec2 q, int group, vec2 killed) {
+        copy_into(walls, reach);
+        for (int g : near) {
+            const auto& c = world.camps[g];
+            if (c.state != CampState::alive || (g != group && c.awake == Awake::asleep)) continue;
+            const auto& members = map.groups[g].members;
+            for (std::size_t i = 0; i < members.size(); ++i)
+                if (c.health[i] > 0 && members[i].strength > 0 && members[i].pos != killed)
+                    reach.draw_chebyshev(members[i].pos, static_cast<float>(members[i].reach));
+        }
+        not_into(reach, out);
+        and_into(out, dash_landings_from(map, q), out);
+        return !board_empty(out);
+    };
+    // Where to strike t from: here, or a free step beside it.
+    const auto stand = [&](vec2 t, int group) -> std::optional<vec2> {
+        if (dist(me, t) <= 1) return escapes(me, group, t) ? std::optional{me} : std::nullopt;
+        if (!walk || dist(me, t) > 2) return std::nullopt;
+        for (const auto d : steps8)
+            if (const vec2 q = me + d; in_bounds(q) && dist(q, t) <= 1 && !test(walls, q) && escapes(q, group, t)) return q;
+        return std::nullopt;
+    };
+    struct Target {
+        int hits = 3;
+        vec2 from{-1, -1};
+        int group = -1, member = -1;
+        cambc::handle_champion_t handle{};
+    } best;
+    for (const auto& e : world.enemies) {
+        if (!enemies || !e.alive || !e.visible || dist(me, e.pos) > 2) continue;
+        const int n = hits(e.health + e.shield, hit * e.taken);
+        if (n == 0 || n >= best.hits) continue;
+        if (const auto q = stand(e.pos, -1)) best = {n, *q, -1, -1, e.handle};
+    }
+    for (int g : camps ? map.groups_near(me, 2) : std::vector<int>{}) {
+        const auto& c = world.camps[g];
+        if (c.state != CampState::alive) continue;
+        const auto& members = map.groups[g].members;
+        for (std::size_t i = 0; i < members.size(); ++i) {
+            const vec2 t = members[i].pos;
+            if (!(c.health[i] > 0) || dist(me, t) > 2 || !cambc::vision::has_camp(t)) continue;
+            const int n = hits(c.health[i], camp_hit);
+            if (n == 0 || n >= best.hits) continue;
+            if (const auto q = stand(t, g)) best = {n, *q, g, static_cast<int>(i), {}};
+        }
+    }
+    if (best.hits > 2) return false;
+    if (best.from != me && !pathing.try_move(best.from)) return false;
+    const auto strike = [&] {
+        try {
+            if (best.group >= 0) throw_if_stale(), cambc::self().attack(map.groups[best.group].camp(best.member));
+            else attack_champion(best.handle);
+            return true;
+        } catch (const cambc::error&) {
+            return false;
+        }
+    };
+    if (!strike()) return true;
+    if (best.hits == 2 && self_cast(reset)) (void)strike();
+    // Debug: VKILL round hits target dash-cooldown-after (0: the kill readied it).
+    debug_block({
+        std::printf("VKILL %d %d %s %d\n", world.round, best.hits, best.group >= 0 ? "camp" : "enemy", my_cooldown(f.slot_of(AbilityKind::dash)));
+    });
+    return true;
+}
+
+// Play: a dasher's step towards `goals` by the router, Pathing::step_towards' first resort. Nullopt leaves
+// it to Pathing's own route: not a dasher, no way found, or a move that failed (a hidden blocker, which
+// that route then goes round). False: waiting for the dash at a crossing.
+inline constexpr bool enabled = true; // test switch
+// With `base` (a static field's walls), the plan ignores units: one in the way fails the move (nullopt), so
+// they block only next to us, and the plan's field is kept while the target is.
+inline std::optional<bool> step(Pathing& pathing, const World& world, const bitboard& goals, const bitboard* avoid, int max_steps,
+                                std::optional<vec2> aim, const bitboard* base = nullptr) {
+    const auto& f = world.me().facts();
+    const int slot = f.slot_of(AbilityKind::dash);
+    if (!enabled || slot < 0) return std::nullopt;
+    const vec2 me = my_position();
+    if (test(goals, me)) return std::nullopt;
+    // Not this turn: cast already (it reads 8), or no cast left (ready next turn). With enemies too near
+    // for a travel dash, not while they stay: planned as a whole cooldown, so we walk rather than wait.
+    int c = std::min(my_cooldown(slot), phases);
+    if (c == 0 && !my_can_cast()) c = 1;
+    else if (c == 0 && enemy_within(world, me, travel_dash_clearance)) c = phases;
+    static Router router;
+    static bitboard walls{cambc::uninitialized}, no_dash{cambc::uninitialized}, t{cambc::uninitialized},
+        crossings{cambc::uninitialized};
+    static int kind = -1;
+    const auto& map = world.map();
+    if (const int k = dash_kind(f); k != kind) {
+        kind = k;
+        copy_into(map.crossable, crossings);
+        drop(crossings, pathing.static_walls());
+    }
+    const auto walls_at = [&](vec2 at) {
+        copy_into(base ? *base : pathing.blocked(), walls);
+        if (avoid && !test(*avoid, at)) or_into(walls, *avoid, walls);
+        if (pathing.guard()) or_into(walls, *pathing.guard(), walls);
+        set_tile(walls, at, false);
+    };
+    walls_at(me);
+    vec2 here = me;
+    const bool struck = c > 0 && vendetta_kill(pathing, world, walls);
+    if (struck) {
+        here = my_position();
+        c = std::min(my_cooldown(slot), phases);
+        if (c == 0 && !my_can_cast()) c = 1;
+        if (here != me) walls_at(here);
+        if (test(goals, here)) return true;
+    }
+    camps_into(no_dash);
+    occupancy_into(team::enemy, t);
+    or_into(no_dash, t, no_dash);
+    or_into(no_dash, map.walls, no_dash);
+    or_into(no_dash, map.enemy_spawn, no_dash);
+    router.set_map(&map);
+    router.prepare(goals, walls, no_dash, map.crossable.is_empty() ? nullptr : &crossings, here, max_steps);
+    const bool walk = my_can_move();
+    auto plan = router.decide(here, c, aim, walk);
+    // A landing that wakes a camp or draws a killing blow: this turn without the dash.
+    if (plan.land.x >= 0 && (wakes_camp(world, plan.land) || landing_suicidal(world, plan.land))) plan = router.decide(here, std::max(c, 1), aim, walk);
+    // Debug: DRS round cooldown move (0 none found, 1 wait, 2 walk, 3 dash, 4 walk then dash, 5 dash then walk).
+    debug_block({
+        const int move = plan.turns >= no_estimate ? 0 : plan.land.x < 0 ? (plan.walk.x < 0 ? 1 : 2) : plan.walk_first ? 4 : plan.walk.x < 0 ? 3 : 5;
+        std::printf("DRS %d %d %d\n", world.round, c, move);
+    });
+    // A landing an advance may not take (Pathing::refuses): this turn without the dash.
+    if (plan.land.x >= 0 && pathing.refuses(plan.land)) plan = router.decide(here, std::max(c, 1), aim, walk);
+    if (plan.turns >= no_estimate) return struck ? std::optional{true} : std::nullopt;
+    if (plan.land.x < 0) {
+        if (plan.walk.x < 0) return struck;
+        if (pathing.try_move(plan.walk)) return true;
+        return struck ? std::optional{true} : std::nullopt;
+    }
+    if (plan.walk_first) {
+        if (!pathing.try_move(plan.walk)) return std::nullopt;
+        if (self_cast(slot, plan.land)) pathing.invalidate();
+        return true;
+    }
+    if (!self_cast(slot, plan.land)) return struck ? std::optional{true} : std::nullopt;
+    pathing.invalidate();
+    if (plan.walk.x >= 0 && my_can_move()) (void)pathing.try_move(plan.walk);
+    return true;
+}
+
+// Measurement: the real router on this query, outside debug blocks so that its fuel counts. The cooldown
+// as probe() reads it; the walls as route() builds them.
+inline Router _router;
+inline bool _router_ready = false;
+inline int _router_prepare_fuel = 0, _router_decide_fuel = 0;
+inline int dash_cooldown_now(const World& world) {
+    const auto& f = world.me().facts();
+    if (!f.has_dash() || !my_can_move()) return -1;
+    int slot = -1;
+    for (int k = 0; k < 2; ++k)
+        if (f.abilities[k].kind == AbilityKind::dash) slot = k;
+    if (slot < 0) return -1;
+    int c = my_cooldown(slot);
+    if (c >= phases) return -1;
+    if (c == 0 && !my_can_cast()) c = 1;
+    return c;
+}
+inline void measure(Pathing& pathing, const World& world, const bitboard& goals, const bitboard* avoid) {
+    _router_ready = false;
+    const int c = dash_cooldown_now(world);
+    if (c < 0) return;
+    const vec2 me = my_position();
+    if (test(goals, me)) return;
+    static bitboard walls{cambc::uninitialized};
+    copy_into(pathing.blocked(), walls);
+    if (avoid && !test(*avoid, me)) or_into(walls, *avoid, walls);
+    if (pathing.guard()) or_into(walls, *pathing.guard(), walls);
+    set_tile(walls, me, false);
+    // Where a dash path cannot pass: walls, camps, visible enemies, their spawn.
+    static bitboard no_dash{cambc::uninitialized}, t{cambc::uninitialized};
+    const auto& map = world.map();
+    const bool crossings = !map.crossable.is_empty();
+    const auto f0 = cambc::detail::sdk_fuel_remaining();
+    camps_into(no_dash);
+    occupancy_into(team::enemy, t);
+    or_into(no_dash, t, no_dash);
+    or_into(no_dash, map.walls, no_dash);
+    or_into(no_dash, map.enemy_spawn, no_dash);
+    _router.set_map(&map);
+    _router.prepare(goals, walls, no_dash, crossings ? &map.crossable : nullptr, me, unreachable);
+    const auto f1 = cambc::detail::sdk_fuel_remaining();
+    (void)_router.decide(me, c); // its walls hold the avoided tiles route() keeps out
+    const auto f2 = cambc::detail::sdk_fuel_remaining();
+    _router_prepare_fuel = static_cast<int>(f0 - f1), _router_decide_fuel = static_cast<int>(f1 - f2);
+    _router_ready = true;
+}
+
+// Debug: one route query of ours scored. The exact turns, then each policy's own turns from here, on
+// the board route() sees: its walls are where we cannot stand, the dash_landings rules where a path
+// cannot pass. DRQ cooldown exact walk greedy_walk greedy_cross paced (-1: never arrives).
+inline constexpr bool dump_boards = false;
+inline constexpr bool trace_stuck = false;
+inline constexpr int dump_every = 0; // training rows from every n-th query, 0 for none
+inline void probe(Pathing& pathing, const World& world, const bitboard& goals, const bitboard* avoid) {
+    const auto& f = world.me().facts();
+    if (!f.has_dash() || !my_can_move()) return;
+    int slot = -1;
+    for (int k = 0; k < 2; ++k)
+        if (f.abilities[k].kind == AbilityKind::dash) slot = k;
+    if (slot < 0) return;
+    int c = my_cooldown(slot);
+    if (c >= phases) return; // cast this turn
+    if (c == 0 && !my_can_cast()) c = 1;
+    const vec2 me = my_position();
+    const auto& map = world.map();
+    static bitboard walls{cambc::uninitialized}, stand{cambc::uninitialized}, cross{cambc::uninitialized},
+        camps{cambc::uninitialized}, t{cambc::uninitialized};
+    copy_into(pathing.blocked(), walls);
+    if (avoid && !test(*avoid, me)) or_into(walls, *avoid, walls);
+    if (pathing.guard()) or_into(walls, *pathing.guard(), walls);
+    set_tile(walls, me, false);
+    not_into(walls, stand);
+    camps_into(camps);
+    occupancy_into(team::enemy, t);
+    or_into(map.walls, camps, cross);
+    or_into(cross, t, cross);
+    or_into(cross, map.enemy_spawn, cross);
+    not_into(cross, cross);
+    static Board b;
+    b.read(stand, cross, goals);
+    if (!b.in(me) || b.goal[b.at(me)]) return;
+    static Exact exact, walking;
+    exact.solve(b, true);
+    walking.solve(b, false);
+    const int best = exact.value(me, c), walk = walking.value(me, 0);
+    // Debug: every 50th query's board, for an independent check (DRB w h me c best stand cross goal, hex rows).
+    static int queries = 0;
+    if (dump_boards && ++queries % 50 == 0 && b.w * b.h <= 70 * 70) {
+        std::printf("DRB %d %d %d %d %d %d ", b.w, b.h, me.x, me.y, c, best == never ? -1 : best);
+        for (const auto* layer : {&b.stand, &b.cross, &b.goal}) {
+            for (int i = 0; i < b.w * b.h; i += 4) {
+                int nib = 0;
+                for (int k = 0; k < 4 && i + k < b.w * b.h; ++k) nib |= (*layer)[i + k] << k;
+                std::printf("%x", nib);
+            }
+            std::printf(" ");
+        }
+        std::printf("\n");
+    }
+    static std::vector<std::uint16_t> fw, fc;
+    static std::vector<std::uint8_t> open;
+    walk_field(b, b.stand, fw);
+    open = b.stand;
+    for (int y = 0; y < b.h; ++y)
+        for (int x = 0; x < b.w; ++x)
+            if (test(map.crossable, {x, y})) open[b.at({x, y})] = 1;
+    walk_field(b, open, fc);
+    // Launch tiles: standable, beside a crossing tile.
+    static std::vector<std::uint16_t> fx;
+    static Board launch;
+    launch = b;
+    for (int i = 0; i < b.w * b.h; ++i) {
+        launch.goal[i] = 0;
+        if (!b.stand[i]) continue;
+        const vec2 q = b.tile(i);
+        for (const auto d : steps8)
+            if (b.in(q + d) && test(map.crossable, q + d) && !b.stand[b.at(q + d)]) launch.goal[i] = 1;
+    }
+    walk_field(launch, b.stand, fx);
+    const int limit = 3 * std::min<int>(std::max(best, walk), 300) + 30;
+    const auto field_score = [&](const std::vector<std::uint16_t>& field) {
+        return [&](vec2 q, int) { return static_cast<int>(field[b.at(q)]); };
+    };
+    FieldPolicy<decltype(field_score(fw))> walker{b, false, field_score(fw)};
+    FieldPolicy<decltype(field_score(fw))> greedy_walk{b, true, field_score(fw)};
+    FieldPolicy<decltype(field_score(fc))> greedy_cross{b, true, field_score(fc)};
+    const auto paced_score = [&](vec2 q, int cq) { return fc[b.at(q)] == never ? 1 << 30 : paced(fc[b.at(q)], cq) * 4096 + fc[b.at(q)]; };
+    FieldPolicy<decltype(paced_score)> pacer{b, true, paced_score};
+    static std::vector<std::uint8_t> crossing;
+    crossing.assign(open.size(), 0);
+    for (int y = 0; y < b.h; ++y)
+        for (int x = 0; x < b.w; ++x) crossing[b.at({x, y})] = test(map.crossable, {x, y}) && !b.stand[b.at({x, y})];
+    TheirPolicy theirs{b, fw, fc, crossing}, theirs_walk{b, fw, fc, crossing, 3, true};
+    const auto timed_score = [&](vec2 q, int cq) {
+        const int i = b.at(q);
+        const int t = timed(fw[i], fc[i], fx[i], cq);
+        return t >= (1 << 20) ? 1 << 30 : t * 4096 + (fc[i] == never ? 4095 : fc[i]);
+    };
+    FieldPolicy<decltype(timed_score)> timer{b, true, timed_score};
+    RoutedPolicy routed{b, fw, fc, crossing}, routed1{b, fw, fc, crossing, 24, 1}, routed2{b, fw, fc, crossing, 24, 2};
+    TreePolicy treed{routed, fx};
+    RouterPolicy real{_router};
+    std::printf("DRQ %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n", c, best == never ? -1 : best, walk == never ? -1 : walk, fc[b.at(me)] == never ? -1 : fc[b.at(me)], rollout(b, walker, me, c, limit),
+                rollout(b, greedy_walk, me, c, limit), rollout(b, greedy_cross, me, c, limit), rollout(b, pacer, me, c, limit),
+                rollout(b, theirs, me, c, limit), rollout(b, theirs_walk, me, c, limit), rollout(b, timer, me, c, limit), rollout(b, routed, me, c, limit),
+                rollout(b, routed1, me, c, limit), rollout(b, routed2, me, c, limit), rollout(b, treed, me, c, limit),
+                _router_ready ? rollout(b, real, me, c, limit) : -3, _router_prepare_fuel, _router_decide_fuel);
+    // Debug: training rows. From the first states of the routed and exact routes, every end of the turn:
+    // DRX query state | here: fw fc cooldown rest fx exact | end: fw fc cooldown_after dashed reach fx exact (-1: none).
+    static int dumped = 0;
+    if (dump_every > 0 && best != never && ++dumped % dump_every == 0) {
+        const auto field = [](std::uint16_t v) { return v == never ? -1 : static_cast<int>(v); };
+        const auto rows = [&](vec2 p, int cc, int state) {
+            const int rest = routed.beyond(p), h = b.at(p);
+            std::array<int, 64> seen{};
+            int n_seen = 0;
+            b.turns(p, cc, true, [&](vec2 q, bool dashed) {
+                const int i = b.at(q), ca = after(cc, dashed), key = (i << 1) | (dashed ? 1 : 0);
+                for (int k = 0; k < n_seen; ++k)
+                    if (seen[k] == key) return;
+                if (n_seen < 64) seen[n_seen++] = key;
+                std::printf("DRX %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n", dumped, state, field(fw[h]), field(fc[h]), cc, rest,
+                            field(fx[h]), field(exact.value(p, cc)), field(fw[i]), field(fc[i]), ca, dashed ? 1 : 0, dist(p, q), field(fx[i]),
+                            field(exact.value(q, ca)));
+            });
+        };
+        ExactPolicy ep{exact};
+        for (int which = 0; which < 2; ++which) {
+            vec2 p = me;
+            int cc = c;
+            for (int k = 0; k < 3 && !b.goal[b.at(p)]; ++k) {
+                rows(p, cc, which * 4 + k);
+                const Move m = which == 0 ? routed.decide(p, cc) : ep.decide(p, cc);
+                if (m.end.x < 0) break;
+                cc = after(cc, m.dashed), p = m.end;
+            }
+        }
+    }
+    static int traces = 0;
+    if (trace_stuck && traces < 12 && best != never && _router_ready && rollout(b, real, me, c, limit) < 0) {
+        ++traces;
+        vec2 p = me;
+        int cc = c;
+        std::printf("DRT start %d,%d c %d exact %d\n", p.x, p.y, cc, best);
+        for (int t = 0; t < 24 && !b.goal[b.at(p)]; ++t) {
+            const int i = b.at(p);
+            const Move m = real.decide(p, cc);
+            if (cc == 0 && t < 8) {
+                std::printf("DRL at %d,%d:", p.x, p.y);
+                for (auto l : Tiles<5 * 5>{dash_landings_from(world.map(), p, avoid)})
+                    std::printf(" %d,%d fc%d fw%d w%d", l.x, l.y, _router.fc(l), _router.fw(l), test(walls, l) ? 1 : 0);
+                std::printf(" | crossings:");
+                for (const auto d : steps8)
+                    if (b.in(p + d) && test(map.crossable, p + d)) std::printf(" %d,%d fc%d", (p + d).x, (p + d).y, _router.fc(p + d));
+                std::printf("\n");
+            }
+            std::printf("DRT t%d at %d,%d c%d fw %d fc %d | host fw %d fc %d rest %d | exactV %d -> %d,%d%s\n", t, p.x, p.y, cc, fw[i] == never ? -1 : fw[i],
+                        fc[i] == never ? -1 : fc[i], _router.fw(p), _router.fc(p), _router.beyond(p, cc + 12), exact.value(p, cc),
+                        m.end.x, m.end.y, m.dashed ? " dash" : "");
+            if (m.end.x < 0) break;
+            cc = after(cc, m.dashed), p = m.end;
+        }
+    }
+}
+
+} // namespace aph::dash_route

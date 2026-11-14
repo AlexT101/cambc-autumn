@@ -1,0 +1,6 @@
+// Keeps routes off steps that hand the enemy a fight; never ends the turn.
+namespace ren::states::guard {
+inline constexpr int max_score = 11;
+inline int score(aph::Turn& t) { return aph::steps::wants::any(t) ? max_score : 0; }
+inline bool run(aph::Turn& t) { return aph::steps::guard(t); }
+} // namespace ren::states::guard

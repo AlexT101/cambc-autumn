@@ -1,0 +1,6 @@
+// Carrying a bag: bank it, wait for a safe tribute, or chain a capture.
+namespace prism::states::bank {
+inline constexpr int max_score = 7;
+inline int score(aph::Turn& t) { return aph::steps::wants::bank(t) ? max_score : 0; }
+inline bool run(aph::Turn& t) { return aph::steps::bank(t); }
+} // namespace prism::states::bank

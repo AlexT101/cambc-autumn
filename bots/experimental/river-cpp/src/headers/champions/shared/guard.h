@@ -1,0 +1,37 @@
+#pragma once
+
+#include "../../../params.h"
+#include <algorithm>
+#include <array>
+#include <bit>
+#include <cmath>
+#include <limits>
+#include <memory>
+#include <optional>
+#include <span>
+#include <vector>
+#include "../../comms.h"
+
+namespace aph {
+class World;
+class Pathing;
+class Safety;
+}
+
+namespace aph {
+namespace {
+void guard_steps(const World& world, Pathing& pathing, Safety& safety);
+
+// open_for_us as packed row-major bits, read without host calls; null if the export's layout is
+// not the one expected.
+const std::uint8_t* open_bits(const World& world);
+
+// The tiles a step (or a ready dash) could end on that want_home would leave at once: stopping
+// there hands the enemy the first strike. Cassi and Issac also keep off tiles where one would fall.
+const bitboard* step_guard(const World& world, Safety& safety, vec2 here, int radius);
+
+// step_guard from where we stand, worked out when a step or dash first needs it.
+void guard_steps(const World& world, Pathing& pathing, Safety& safety);
+
+}
+}

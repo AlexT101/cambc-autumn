@@ -1,0 +1,55 @@
+// Inline functions and templates, defined after every class: src/unity.cpp includes this after
+// every header (the declarations are in them).
+#pragma once
+
+namespace aph {
+namespace {
+template <class F> [[gnu::always_inline]] inline void each_bit(Grid g, F&& f)
+{
+    for (; g; g &= g - 1) f(std::countr_zero(g));
+}
+
+// Offers the leaf at each end tile in `ends`; mid(c, w, d) names the walk and dash cells for one
+// it improves.
+template <class Mid> void Search::offer(Grid ends, float v, const Node& s, std::int16_t& leaf, Mid&& mid) {
+    ends &= ~guarded;
+    const std::uint16_t r = ends ? removed(s) : 0;
+    each_bit(ends, [&](int c) {
+        ++offers;
+        float x = v;
+        if (s.touched) {
+            float cost, on_us;
+            if (!wake_at(s.touched, c, cost, on_us) || s.hurt + on_us >= health) return;
+            x -= cost;
+        }
+        const auto place = [&](bool keep, float val, std::int8_t mate, bool first) __attribute__((always_inline)) {
+            auto& fr = (keep ? search_tables.kept : best)[c];
+            Grid& got = keep ? kept_has : has;
+            if (!(got & gbit(c))) fr.n = 0;
+            if (leaf < 0 && n_leaves == static_cast<int>(search_tables.leaves.size())) return;
+            const int i = fr.admit(val, r);
+            got |= gbit(c);
+            if (i < 0) return;
+            if (leaf < 0) {
+                leaf = static_cast<std::int16_t>(n_leaves++);
+                auto& l = search_tables.leaves[leaf];
+                l.seq.n = s.depth;
+                for (int k = 0; k < s.depth; ++k) l.seq.a[k] = stack[k];
+                for (int k = 0; k < n_hors; ++k) l.hor[k] = h[hor_unit[k]];
+            }
+            std::int8_t w = -1, d = -1;
+            mid(c, w, d);
+            fr.e[i] = {val, leaf, w, d, mate, first, r};
+        };
+        // A cast left over goes to a heal now, or to the shield, priced with the tile's danger.
+        place(s.cast && shield >= 0, x, -1, false);
+        if (s.cast && heal >= 0) {
+            std::int8_t who;
+            bool first;
+            if (const float hv = heal_from(c, who, first); hv > 0) place(false, x + hv, who, first);
+        }
+    });
+}
+
+}
+}

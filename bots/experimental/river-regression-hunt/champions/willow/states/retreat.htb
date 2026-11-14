@@ -1,0 +1,6 @@
+// Home, the fastest way (recall or walking): hurt or outmatched, to shop, to heal, to bank by way of home.
+namespace willow::states::retreat {
+inline constexpr int max_score = 20;
+inline int score(aph::Turn& t) { return aph::steps::retreat_score(t, max_score); }
+inline bool run(aph::Turn& t) { return aph::steps::retreat(t); }
+} // namespace willow::states::retreat

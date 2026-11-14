@@ -1,0 +1,6 @@
+// On spawn and hurt: fight from where we heal.
+namespace stellar::states::mend {
+inline constexpr int max_score = 13;
+inline int score(aph::Turn& t) { return aph::steps::wants::mend(t) ? max_score : 0; }
+inline bool run(aph::Turn& t) { return aph::steps::mend(t); }
+} // namespace stellar::states::mend

@@ -1,0 +1,97 @@
+#include <algorithm>
+#include <array>
+#include <cstring>
+#include <span>
+#include <vector>
+
+// A champion's states (champions/<name>/states/), as Khaos's: each scores how much it wants the turn (0:
+// not at all, never above its max_score) and runs it. Listed by max score, highest first, each scored
+// when its turn comes (the states before it set what it reads): the best score runs, and a run that
+// leaves the turn unended (it found nothing to do) passes it to the next. A score below the max waits:
+// before the first state listed at or under it, it is scored again (what the states between did counts)
+// and runs if it still reaches that state's max, else waits again at its new score.
+namespace aph {
+
+struct State {
+    const char* name;
+    int max_score;
+    int (*score)(Turn&);
+    bool (*run)(Turn&);
+};
+
+// Debug (debug_state_lines): each state's colour, and the line or dot drawn for the state that ended the
+// turn. Its target is the last walk's goal (aim, else the nearest goal tile) unless the state notes one;
+// some fall back to their place (an altar, our spawn). A dot: nowhere to go.
+inline std::uint32_t state_colour(const char* name) {
+    static constexpr std::pair<const char*, std::uint32_t> colours[] = {
+        {"farm", 0x30C030},  {"capture", 0xC0F000}, {"bank", 0xFFD000},    {"retreat", 0xFFFFFF}, {"chase", 0xFF2020},
+        {"ender", 0xFF00FF}, {"contest", 0xFF8000}, {"siege", 0x9040FF},   {"mend", 0x00FFFF},    {"channel", 0x2050FF},
+        {"spent", 0x909090}, {"idle", 0x505050},    {"support", 0xA06030},
+    };
+    for (const auto& [n, c] : colours)
+        if (std::strcmp(n, name) == 0) return c;
+    return 0x000000;
+}
+inline void draw_state_line(Turn& t, const char* name) {
+    const vec2 me = my_position();
+    if (!in_bounds(me)) return; // dead
+    const auto& map = t.world.map();
+    vec2 to = _state_target;
+    const auto nearest = [&](const auto& tiles) {
+        vec2 best{-1, -1};
+        for (const vec2 p : tiles)
+            if (best.x < 0 || dist(p, me) < dist(best, me)) best = p;
+        return best;
+    };
+    std::vector<vec2> altars;
+    for (const auto& a : map.altars) altars.push_back(a.pos);
+    if (!in_bounds(to) && std::strcmp(name, "bank") == 0) to = nearest(altars);
+    if (!in_bounds(to) && std::strcmp(name, "retreat") == 0) to = nearest(map.ally_spawn_tiles);
+    if (in_bounds(to) && to != me) cambc::debug::draw_line(me, to, state_colour(name));
+    else cambc::debug::draw_dot(me, state_colour(name));
+}
+
+void run_states(Turn& t, std::span<const State> states) {
+    const auto scored = [&](const State& s) {
+        if constexpr (debug_state_lines) debug_block({ _state_target = vec2{-1, -1}; });
+        return s.score(t);
+    };
+    const auto ran = [&](const State& s) {
+        if (!s.run(t)) return false;
+        if constexpr (debug_state_lines) debug_block({ draw_state_line(t, s.name); });
+        return true;
+    };
+    struct Waiting {
+        const State* state;
+        int score;
+    };
+    std::array<Waiting, 4> waiting{};
+    int n = 0, high = 0; // high: the best waiting score
+    // The waiting states that reach `level`, the best first (ties in list order): true if one ended the turn.
+    const auto due = [&](int level) {
+        while (high >= level) {
+            int k = 0;
+            for (int i = 1; i < n; ++i)
+                if (waiting[i].score > waiting[k].score) k = i;
+            const State& s = *waiting[k].state;
+            std::copy(waiting.begin() + k + 1, waiting.begin() + n, waiting.begin() + k), --n;
+            if (const int score = scored(s); score >= level) {
+                if (ran(s)) return true;
+            } else if (score > 0)
+                waiting[n++] = {&s, score};
+            high = 0;
+            for (int i = 0; i < n; ++i) high = std::max(high, waiting[i].score);
+        }
+        return false;
+    };
+    for (const auto& s : states) {
+        if (high >= s.max_score && due(s.max_score)) return;
+        if (const int score = scored(s); score >= s.max_score) {
+            if (ran(s)) return;
+        } else if (score > 0 && n < static_cast<int>(waiting.size()))
+            waiting[n++] = {&s, score}, high = std::max(high, score);
+    }
+    due(1);
+}
+
+} // namespace aph
