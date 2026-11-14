@@ -141,7 +141,7 @@ fresh-93020..93059 (generated 2026-11-03) are unplayed. Generate new suites for 
 `ls -d replays/batch-*` for a suite's name before using it:
 
 ```
-./copybot -r HEAD astraeus variants/astraeus-before      # before the header change is committed
+./tools/copybot -r HEAD astraeus variants/astraeus-before      # before the header change is committed
 FAST="CAMBC_BIN=$PWD/tools/fastengine/runner/fastrunner FASTRUNNER_MODE=native"
 env $FAST python3 tools/ab.py astraeus variants/astraeus-before --no-test-draft --suites $(echo maps/fresh-93{20..39} maps/fresh-930{00..19} | tr ' ' ,)
 env $FAST python3 tools/ab.py astraeus variants/astraeus-before --no-test-draft --suites $(echo maps/fresh-930{20..59} | tr ' ' ,)   # confirm

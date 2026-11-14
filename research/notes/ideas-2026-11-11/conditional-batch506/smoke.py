@@ -52,7 +52,7 @@ def play(arm,bot,body,label,debug=False):
 def trace_copy(arm):
     trace='variants/oc506-'+arm+'-runtime-trace'
     assert not (R/'bots'/trace).exists(),'Partial trace preparation needs review'
-    command(['./copybot',CAND[arm],trace],D/arm/'trace-build.log')
+    command(['./tools/copybot',CAND[arm],trace],D/arm/'trace-build.log')
     root=R/'bots'/trace/'src'
     if arm=='chanM':
         p=root/'model/turn_order.cc';s=p.read_text();old='    if (oppx::mite(world)) {\n        wish.offer(protect, value);'

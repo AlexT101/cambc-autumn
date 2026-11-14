@@ -6,10 +6,10 @@ cite them. Missing numbers are fuel-only work, bug fixes, cleanups, superseded a
 `git show a8b0b5c6:research/CHANGES.md` (to 274).
 
 - hyperion was named hecate until 2026-10-21. `bots/hecate` was items 1-31 and `bots/baselines/hyperion-v1` was
-  items 1-81; both were deleted 2026-11-02 (`./copybot -r cde47ec6 hecate variants/hecate` restores one).
+  items 1-81; both were deleted 2026-11-02 (`./tools/copybot -r cde47ec6 hecate variants/hecate` restores one).
   `bots/baselines/v37` is ladder submission v37, the teammate's Khaos line after v36.
 - `bots/astraeus_teacher` (442-449), `bots/fish`, `bots/hermes` and `bots/ocean_manip` were deleted 2026-11-11, with
-  `tools/teacher_ab.py` (`./copybot -r 5d92828d0 fish variants/fish` restores one). river, river_ac, fushia, demeter,
+  `tools/teacher_ab.py` (`./tools/copybot -r 5d92828d0 fish variants/fish` restores one). river, river_ac, fushia, demeter,
   diana, proteus and the ocean_tune copies moved to `bots/archives/` the same day.
 - 507 is used twice, as 449 is: ocean's comms slots, then `bots/charybdis` (507-515, its own line from ocean 506).
   The next entry is 516.

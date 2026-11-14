@@ -569,7 +569,7 @@ FASTRUNNER_LIB=.../target-wasm/release/libfastrunner.so FASTRUNNER_ENGINE=wasm F
 
 ### Lab bots (`--lab`)
 
-`py tools/combatlab/labify.py SRC DST` copies an ocean or astraeus directory with `./copybot` and patches it (each anchor must match exactly once, or it stops): `tools/combatlab/lab.h`'s 512-byte
+`py tools/combatlab/labify.py SRC DST` copies an ocean or astraeus directory with `./tools/copybot` and patches it (each anchor must match exactly once, or it stops): `tools/combatlab/lab.h`'s 512-byte
 `LabBlock` global behind the magic `CAMBC-LAB-BLK-1`, which the runner finds in the bot's linear memory and reads
 and writes between turns at no fuel to the bot. With flags 0 and no inputs the copy plays as the original. Lab ocean
 is `bots/variants/lab-v83` (from `bots/baselines/v83`), lab astraeus `bots/variants/lab-astraeus-8c0343f`.

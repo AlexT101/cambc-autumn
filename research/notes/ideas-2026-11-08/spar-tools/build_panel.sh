@@ -6,8 +6,8 @@ cd /home/ubuntu/cambc-autumn; T=research/notes/ideas-2026-11-08/spar-tools; SRC=
 $T/makespar.sh $SRC oc29
 for o in F M; do
   for i in $(seq 1 12); do python3 $T/jitter.py variants/spar-oc29-$o variants/spar-j$i-$o $((1200000+i)); done
-  ./copybot -f variants/spar-oc29-$o variants/spar-o29s-$o >/dev/null
+  ./tools/copybot -f variants/spar-oc29-$o variants/spar-o29s-$o >/dev/null
   sed -i 's/^inline constexpr float life_value = [0-9.]*f;/inline constexpr float life_value = 443.0f;/; s/^inline constexpr float hurt_health_fraction = [0-9.]*f;/inline constexpr float hurt_health_fraction = 0.55f;/' bots/variants/spar-o29s-$o/src/params.h
-  ./copybot -f variants/spar-o29s-$o variants/spar-o29gs-$o >/dev/null
+  ./tools/copybot -f variants/spar-o29s-$o variants/spar-o29gs-$o >/dev/null
   sed -i 's/^inline float gold_price_scale = [0-9.]*f;/inline float gold_price_scale = 2.0f;/' bots/variants/spar-o29gs-$o/src/params.h
 done

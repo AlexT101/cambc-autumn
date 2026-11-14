@@ -205,7 +205,7 @@ def scope(directory, manifest, blocks, gate_source, bodies, first=1, last=1000,
 def snapshot_manifest(path, bots, gate_source):
     """Seal current inputs for the standard future-gate entry point before any games."""
     paths={Path(gate_source),Path(__file__).resolve(),R/'tools/fgate.py',R/'tools/run_batched.py',R/'tools/ab.py',R/'tools/cpu_slots.py',
-           R/'tools/cambc_env.py',R/'copybot',CLI}
+           R/'tools/cambc_env.py',R/'tools/copybot',CLI}
     for directory in ('sdk/cpp','research/notes/ideas-2026-11-08/diverse-tools','research/notes/ideas-2026-11-08/spar-tools',
                       'research/notes/ideas-2026-11-09/freshgate-tools','research/notes/ideas-2026-11-09/oppfidelity-tools',
                       'research/notes/ideas-2026-11-09/fishfid','research/notes/ideas-2026-11-10/opporder'):

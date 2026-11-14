@@ -74,7 +74,7 @@ def build_seed(k):
             d = f'{R}bots/{mdir(k, o)}'
             p = 'Flp' if o == 'F' else 'Mt3p'
             if not os.path.isdir(f'{R}bots/variants/spar-dvn{k}-{p}'):
-                subprocess.run([f'{R}copybot', f'variants/spar-dvn{k}-{base}', f'variants/spar-dvn{k}-{p}'], cwd=R, check=True, capture_output=True)
+                subprocess.run([f'{R}tools/copybot', f'variants/spar-dvn{k}-{base}', f'variants/spar-dvn{k}-{p}'], cwd=R, check=True, capture_output=True)
                 subprocess.run([sys.executable, f'{T}/patch_fm.py', f'{R}bots/variants/spar-dvn{k}-{p}', o, str(k)], cwd=R, check=True, capture_output=True)
         open(mark, 'w').close()
 
@@ -89,7 +89,7 @@ def build_body(k, v):
         if os.path.exists(mark): return
         d = f'{R}bots/variants/spar-dvn{k}-{v}'
         if not os.path.isdir(d):
-            subprocess.run([f'{R}copybot', f'variants/spar-dvn{k}-{base}', f'variants/spar-dvn{k}-{v}'], cwd=R, check=True, capture_output=True)
+            subprocess.run([f'{R}tools/copybot', f'variants/spar-dvn{k}-{base}', f'variants/spar-dvn{k}-{v}'], cwd=R, check=True, capture_output=True)
             subprocess.run([sys.executable, f'{T}/{cmd[0]}', d] + cmd[1:], cwd=R, check=True, capture_output=True)
         open(mark, 'w').close()
 

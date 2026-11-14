@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[4]
 name, sets = sys.argv[1], sys.argv[2:]
 dst = ROOT / 'bots/variants' / f'oc-lock-{name}'
-subprocess.run([str(ROOT / 'copybot'), '-f', 'variants/oc-lock-dev', f'variants/oc-lock-{name}'], check=True, stdout=subprocess.DEVNULL)
+subprocess.run([str(ROOT / 'tools' / 'copybot'), '-f', 'variants/oc-lock-dev', f'variants/oc-lock-{name}'], check=True, stdout=subprocess.DEVNULL)
 p = dst / 'src/params.h'
 s = p.read_text()
 head, body = s.split('namespace plock {', 1)

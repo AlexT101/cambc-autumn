@@ -5,7 +5,7 @@ from pathlib import Path
 R = Path('/home/ubuntu/cambc-autumn')
 src, dst, seed = sys.argv[1], sys.argv[2], int(sys.argv[3]); sd = float(sys.argv[4]) if len(sys.argv) > 4 else 0.03
 KNOBS = ['life_value', 'gem_value', 'camp_risk', 'home_power', 'crew_stickiness', 'chip_value', 'hurt_retreat_ratio', 'home_retreat_ratio']
-subprocess.run([str(R / 'copybot'), '-f', src, dst], check=True, capture_output=True)
+subprocess.run([str(R / 'tools' / 'copybot'), '-f', src, dst], check=True, capture_output=True)
 p = R / 'bots' / dst.removeprefix('bots/') / 'src/params.h'; s = p.read_text(); rng = random.Random(seed)
 for k in KNOBS:
     m = re.search(rf'^inline constexpr float {k} = ([0-9.]+)f;', s, re.M); assert m, k

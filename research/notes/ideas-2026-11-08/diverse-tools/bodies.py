@@ -36,7 +36,7 @@ def flit(x):
     return t + ('' if '.' in t or 'e' in t else '.0') + 'f'
 
 def write(dst, changes):
-    subprocess.run([str(R / 'copybot'), '-f', SRC, dst], check=True, capture_output=True)
+    subprocess.run([str(R / 'tools' / 'copybot'), '-f', SRC, dst], check=True, capture_output=True)
     d = R / 'bots' / dst / 'src'; th = (d / 'tune.h').read_text(); ph = (d / 'params.h').read_text()
     fl = [v for _, v in TJ['floats']]; it = [v for _, v in TJ['ints']]
     for n, (op, v) in changes.items():

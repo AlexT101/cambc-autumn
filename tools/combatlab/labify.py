@@ -1,4 +1,4 @@
-"""Make a combat-lab copy of an ocean or astraeus bot directory: ./copybot, then the control block's hooks.
+"""Make a combat-lab copy of an ocean or astraeus bot directory: ./tools/copybot, then the control block's hooks.
 
     python3 tools/combatlab/labify.py BOT DST     # e.g. baselines/v83 variants/lab-v83
 
@@ -146,7 +146,7 @@ def main():
     if len(sys.argv) != 3:
         sys.exit(__doc__)
     src, dst = sys.argv[1], sys.argv[2]
-    subprocess.run([sys.executable, str(ROOT / "copybot"), src, dst], check=True)
+    subprocess.run([sys.executable, str(ROOT / "tools" / "copybot"), src, dst], check=True)
     d = ROOT / "bots" / dst.removeprefix("bots/") / "src"
     shutil.copy(HERE / "lab.h", d / "lab.h")
     patch(d / "util.h", [
