@@ -1946,7 +1946,7 @@ packs (1.54 mates within 5 vs our 1.14), so we meet it outnumbered. Notes and da
   samples at Fish's foes-mates mix and our hazard: about 13% fewer deaths in contact, the ceiling of this lever.
 - **Arm.** farm.cc: a group's value x 1 within 6 of the nearest live ally's anchor (its claimed group's centre, else its
   seen or told tile), falling linearly to 0.75 at 14 and beyond (a discount, so the prune bounds hold).
-  fc1-coh75 = while fishx::on (classifier Fish >= 0.8), fc2-coh75 = always. bots/fishx: params::coh_mode, and
+  fc1-coh75 = while fishx::on (classifier Fish >= 0.8), fc2-coh75 = always. bots/archives/fishx: params::coh_mode, and
   params::fishx_deny = false turns the parked deny arms off.
 - **Mechanism.** Ours within 5: 1.17-1.20 -> 1.27-1.31 (Fish 1.54). Against Flp4 (packs like live Fish), fresh
   slice f0: our deaths 5.4 -> 5.1 a game, the body's 10.1 -> 9.4, gold level. Against Flp3 (spreads), ladder: our
