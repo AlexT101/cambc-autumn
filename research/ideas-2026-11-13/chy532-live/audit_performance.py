@@ -24,7 +24,8 @@ def audit():
     for opp, (refset, pin) in PINS.items():
         parts = {f'chy532-book40-{opp}-{refset}', f'chy532-v138-full-{opp}-{refset}'}
         mine = {t['id']: t for t in tasks if t['version'] == 138 and t.get('part') in parts}
-        assert not set(mine).intersection(dropped)
+        cancelled = set(mine).intersection(dropped)
+        assert not cancelled.intersection(created)
         planned = {(g['map'], g['side']) for t in mine.values() for g in t['games'] if not g.get('filler')}
         assert planned <= expected
         groups = set()
@@ -59,6 +60,7 @@ def audit():
                             wins=wins, losses=len(cells)-wins,
                             win_rate=wins/len(cells) if cells else None,
                             created_groups=len(groups), collected_groups=len(groups.intersection(finished)),
+                            cancelled_groups=len(cancelled),
                             interpretation='full ladder' if complete else 'partial; qualification cells are loss-weighted',
                             results=[dict(map=m, side=s, result=r['result'], match=r['match'])
                                      for (m, s), r in sorted(cells.items())])

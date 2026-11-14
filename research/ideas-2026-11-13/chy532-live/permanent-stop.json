@@ -1,0 +1,17 @@
+{
+  "at": "2026-11-13T23:56:39.674809+00:00",
+  "instruction": "Stop all unrankeds permanently",
+  "scheduler_stop": true,
+  "runner_stop": true,
+  "automatic_restart_authorized": false,
+  "final_submission": 138,
+  "cancelled_pending_groups": 995,
+  "cancelled_after_steps": [
+    "chy532-v138-full-mite-r15",
+    "hold-control",
+    "loss-book-fish-r9-rest-v131",
+    "loss-book-mite-r13-snapshot-check"
+  ],
+  "verified_no_restart_timers": true,
+  "shutdown_complete_at": "2026-11-13T23:59:28Z"
+}

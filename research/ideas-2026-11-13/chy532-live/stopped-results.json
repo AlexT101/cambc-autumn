@@ -1,0 +1,478 @@
+{
+  "at": "2026-11-13T23:59:28Z",
+  "version": 138,
+  "code": "532 9ad13ba",
+  "book_enabled": true,
+  "complete": false,
+  "provenance": "clean",
+  "opponents": {
+    "fish": {
+      "refset": "r10",
+      "source_group": "01a1d732-2d11-7f85-85fa-f4953aad836c",
+      "complete": false,
+      "expected_cells": 340,
+      "planned_cells": 340,
+      "cells": 43,
+      "wins": 12,
+      "losses": 31,
+      "win_rate": 0.27906976744186046,
+      "created_groups": 9,
+      "collected_groups": 9,
+      "cancelled_groups": 60,
+      "interpretation": "partial; qualification cells are loss-weighted",
+      "results": [
+        {
+          "map": "00ambush",
+          "side": "a",
+          "result": "win",
+          "match": "01a1d755-ae6b-78b6-b5be-3407bd1f8280"
+        },
+        {
+          "map": "00ambush",
+          "side": "b",
+          "result": "loss",
+          "match": "01a1d755-af11-782c-acb7-fa97d0e922ec"
+        },
+        {
+          "map": "00anvil",
+          "side": "a",
+          "result": "loss",
+          "match": "01a1d755-ae6b-7bb6-9d08-12874f3273f3"
+        },
+        {
+          "map": "00anvil",
+          "side": "b",
+          "result": "loss",
+          "match": "01a1d755-af11-74f2-8592-200f8f822c13"
+        },
+        {
+          "map": "00breadcrumbs",
+          "side": "a",
+          "result": "win",
+          "match": "01a1d755-ae6b-75a0-907c-356d1732e849"
+        },
+        {
+          "map": "00breadcrumbs",
+          "side": "b",
+          "result": "win",
+          "match": "01a1d755-af11-7135-99a9-4b4ff8f4c179"
+        },
+        {
+          "map": "00collision",
+          "side": "a",
+          "result": "loss",
+          "match": "01a1d755-ae6b-7960-a0a3-1dc814f37265"
+        },
+        {
+          "map": "00collision",
+          "side": "b",
+          "result": "loss",
+          "match": "01a1d755-af11-7e67-ace0-3bc7c1aaa713"
+        },
+        {
+          "map": "00contest",
+          "side": "a",
+          "result": "loss",
+          "match": "01a1d755-ae6b-78c6-bdc1-fc4a70b7f580"
+        },
+        {
+          "map": "00contest",
+          "side": "b",
+          "result": "loss",
+          "match": "01a1d755-af11-7bbe-b12a-a47fdbc8a151"
+        },
+        {
+          "map": "00corners",
+          "side": "a",
+          "result": "loss",
+          "match": "01a1d751-17dd-7375-b739-8f71a325dc1a"
+        },
+        {
+          "map": "00gem_fields",
+          "side": "a",
+          "result": "win",
+          "match": "01a1d751-17dd-770e-86fa-2c055b011de9"
+        },
+        {
+          "map": "00gem_fields",
+          "side": "b",
+          "result": "loss",
+          "match": "01a1d751-1871-77f5-b649-9dac133fca81"
+        },
+        {
+          "map": "00road_of_riches",
+          "side": "b",
+          "result": "win",
+          "match": "01a1d751-17dd-7d5b-bd0f-b488e0ba111b"
+        },
+        {
+          "map": "00rows",
+          "side": "a",
+          "result": "win",
+          "match": "01a1d751-17dd-7a96-934c-7b632bd38aa1"
+        },
+        {
+          "map": "00rows",
+          "side": "b",
+          "result": "loss",
+          "match": "01a1d751-1871-7d6b-8450-ce73c87befae"
+        },
+        {
+          "map": "00rushbait_v2",
+          "side": "b",
+          "result": "loss",
+          "match": "01a1d751-17dd-74d2-b27f-abdf798cc3b0"
+        },
+        {
+          "map": "00vault",
+          "side": "b",
+          "result": "loss",
+          "match": "01a1d751-1871-7825-8ff2-268c5a18004b"
+        },
+        {
+          "map": "01starvation",
+          "side": "a",
+          "result": "win",
+          "match": "01a1d751-1871-7bf1-8bc5-7108ebb87d5a"
+        },
+        {
+          "map": "01yellow_brick_road",
+          "side": "a",
+          "result": "loss",
+          "match": "01a1d751-1871-7ea5-bef8-7f3a789d6428"
+        },
+        {
+          "map": "02arena",
+          "side": "a",
+          "result": "loss",
+          "match": "01a1d751-191b-7591-8474-6dc02520778b"
+        },
+        {
+          "map": "02fields",
+          "side": "b",
+          "result": "win",
+          "match": "01a1d751-191b-7567-94e6-f8bbd9ddff93"
+        },
+        {
+          "map": "02geodes",
+          "side": "b",
+          "result": "loss",
+          "match": "01a1d751-191b-7d99-a49c-d467aa72fcc1"
+        },
+        {
+          "map": "02harvest",
+          "side": "b",
+          "result": "loss",
+          "match": "01a1d751-191b-7922-a3fb-2f37002835b8"
+        },
+        {
+          "map": "03showdown",
+          "side": "a",
+          "result": "loss",
+          "match": "01a1d751-191b-7b1a-871e-1152e4fd447c"
+        },
+        {
+          "map": "03the_front",
+          "side": "a",
+          "result": "win",
+          "match": "01a1d751-19b6-7ea4-bd75-ca00db3eb338"
+        },
+        {
+          "map": "03twisty",
+          "side": "b",
+          "result": "loss",
+          "match": "01a1d751-19b6-7b5f-bded-1280633d0ef8"
+        },
+        {
+          "map": "03ultrastarvation",
+          "side": "a",
+          "result": "loss",
+          "match": "01a1d751-19b6-7e9b-9d90-1b0a01342f02"
+        },
+        {
+          "map": "04bowls",
+          "side": "a",
+          "result": "loss",
+          "match": "01a1d751-19b6-7a80-8e0d-ba0550cf2dad"
+        },
+        {
+          "map": "04bowls",
+          "side": "b",
+          "result": "loss",
+          "match": "01a1d751-1a77-7e18-a7cc-de53b270b4d9"
+        },
+        {
+          "map": "04braided_river",
+          "side": "a",
+          "result": "win",
+          "match": "01a1d751-19b6-7bce-8595-f4fcaa9fe852"
+        },
+        {
+          "map": "04bridges",
+          "side": "a",
+          "result": "loss",
+          "match": "01a1d751-1a77-74b6-8a13-04f00e4ed475"
+        },
+        {
+          "map": "04canyons",
+          "side": "a",
+          "result": "loss",
+          "match": "01a1d751-1a77-7f90-9adf-2ca7d4f17c7a"
+        },
+        {
+          "map": "04canyons",
+          "side": "b",
+          "result": "loss",
+          "match": "01a1d751-1b2e-7379-b5e7-a56d513d8a37"
+        },
+        {
+          "map": "04gap",
+          "side": "b",
+          "result": "win",
+          "match": "01a1d751-1a77-7216-9d74-a8ed73ee0fa9"
+        },
+        {
+          "map": "04horseshoes",
+          "side": "b",
+          "result": "loss",
+          "match": "01a1d751-1a77-7fa5-8548-d03e74b9e30c"
+        },
+        {
+          "map": "04plaza",
+          "side": "a",
+          "result": "loss",
+          "match": "01a1d751-1b2e-7e36-8688-8cc32b0de873"
+        },
+        {
+          "map": "04spiral_moat",
+          "side": "a",
+          "result": "loss",
+          "match": "01a1d751-1b2e-788b-af19-22c787cef991"
+        },
+        {
+          "map": "04terraces",
+          "side": "a",
+          "result": "loss",
+          "match": "01a1d751-1b2e-718c-9b5a-54b9b1669f4a"
+        },
+        {
+          "map": "04terraces",
+          "side": "b",
+          "result": "loss",
+          "match": "01a1d751-1bc3-7144-bb0e-f5ae6ade1d58"
+        },
+        {
+          "map": "04two_kingdoms",
+          "side": "a",
+          "result": "loss",
+          "match": "01a1d751-1b2e-7816-8082-8675191d6e5d"
+        },
+        {
+          "map": "04wilds",
+          "side": "a",
+          "result": "loss",
+          "match": "01a1d751-1bc3-74c5-a0b6-1b5189be21b3"
+        },
+        {
+          "map": "adgato_gemcombat4",
+          "side": "b",
+          "result": "win",
+          "match": "01a1d751-1bc3-7f4c-a373-7e0615cd3684"
+        }
+      ]
+    },
+    "mite": {
+      "refset": "r15",
+      "source_group": "01a1d706-59a1-78b3-9db5-8109569b1865",
+      "complete": false,
+      "expected_cells": 340,
+      "planned_cells": 29,
+      "cells": 29,
+      "wins": 22,
+      "losses": 7,
+      "win_rate": 0.7586206896551724,
+      "created_groups": 6,
+      "collected_groups": 6,
+      "cancelled_groups": 0,
+      "interpretation": "partial; qualification cells are loss-weighted",
+      "results": [
+        {
+          "map": "00corners",
+          "side": "a",
+          "result": "loss",
+          "match": "01a1d753-4e1b-73a8-8498-ffee92df2265"
+        },
+        {
+          "map": "00gem_fields",
+          "side": "a",
+          "result": "win",
+          "match": "01a1d753-4e1b-765b-8e49-762aff77919a"
+        },
+        {
+          "map": "00gem_fields",
+          "side": "b",
+          "result": "win",
+          "match": "01a1d753-538d-7823-a4bb-3ed854652e2f"
+        },
+        {
+          "map": "00great_wall",
+          "side": "b",
+          "result": "win",
+          "match": "01a1d753-4e1b-77e0-a4ce-6f230d89acf3"
+        },
+        {
+          "map": "00lanes",
+          "side": "a",
+          "result": "win",
+          "match": "01a1d753-4e1b-72a2-b06f-d73242407030"
+        },
+        {
+          "map": "00lanes",
+          "side": "b",
+          "result": "win",
+          "match": "01a1d753-538d-79b8-8703-e7f2529e3126"
+        },
+        {
+          "map": "00road_of_riches",
+          "side": "b",
+          "result": "win",
+          "match": "01a1d753-4e1b-7276-b0e7-0968a86e104b"
+        },
+        {
+          "map": "00rows",
+          "side": "b",
+          "result": "loss",
+          "match": "01a1d753-538d-72fd-bbaf-17035f3ac16e"
+        },
+        {
+          "map": "00rushbait_v2",
+          "side": "b",
+          "result": "loss",
+          "match": "01a1d753-538d-71b3-896f-5841d6c7a682"
+        },
+        {
+          "map": "01starvation",
+          "side": "a",
+          "result": "win",
+          "match": "01a1d753-538d-7b35-a8ec-321dc9402b6c"
+        },
+        {
+          "map": "01yellow_brick_road",
+          "side": "a",
+          "result": "win",
+          "match": "01a1d753-5c73-77a2-adf2-0df8caecb5d2"
+        },
+        {
+          "map": "02arena",
+          "side": "a",
+          "result": "loss",
+          "match": "01a1d753-5c73-7bc4-b92b-f17cc67ce766"
+        },
+        {
+          "map": "02fields",
+          "side": "b",
+          "result": "loss",
+          "match": "01a1d753-5c73-73ce-89ad-aba70adb0587"
+        },
+        {
+          "map": "02geodes",
+          "side": "b",
+          "result": "win",
+          "match": "01a1d753-5c73-7de1-84f1-257769fd0f2a"
+        },
+        {
+          "map": "02the_pack",
+          "side": "a",
+          "result": "win",
+          "match": "01a1d753-5c73-7c05-bd00-0268807bdeb7"
+        },
+        {
+          "map": "02the_pond",
+          "side": "b",
+          "result": "win",
+          "match": "01a1d753-6550-70cc-b62f-668499a0dba3"
+        },
+        {
+          "map": "03the_front",
+          "side": "a",
+          "result": "win",
+          "match": "01a1d753-6550-7e21-a701-6dba0e5329a2"
+        },
+        {
+          "map": "04bowls",
+          "side": "a",
+          "result": "win",
+          "match": "01a1d753-6550-72a8-b2cd-f1d4e40f6875"
+        },
+        {
+          "map": "04bowls",
+          "side": "b",
+          "result": "loss",
+          "match": "01a1d753-6a42-7564-a744-5d895b64958f"
+        },
+        {
+          "map": "04braided_river",
+          "side": "a",
+          "result": "win",
+          "match": "01a1d753-6550-7126-a77e-f12dca247852"
+        },
+        {
+          "map": "04bridges",
+          "side": "a",
+          "result": "win",
+          "match": "01a1d753-6550-7728-a6cb-a50de1586cfa"
+        },
+        {
+          "map": "04canyons",
+          "side": "a",
+          "result": "win",
+          "match": "01a1d753-6a42-7d43-9a3d-7bc54128f412"
+        },
+        {
+          "map": "04plaza",
+          "side": "a",
+          "result": "win",
+          "match": "01a1d753-6a42-7593-920b-d6f1c880a0fa"
+        },
+        {
+          "map": "04spiral_moat",
+          "side": "a",
+          "result": "win",
+          "match": "01a1d753-6a42-7fb0-8937-4c07ab09601b"
+        },
+        {
+          "map": "04terraces",
+          "side": "a",
+          "result": "win",
+          "match": "01a1d753-6a42-7a5c-825b-0be5f00ac1e2"
+        },
+        {
+          "map": "04terraces",
+          "side": "b",
+          "result": "loss",
+          "match": "01a1d753-7318-753d-a728-09749e3d198e"
+        },
+        {
+          "map": "04two_kingdoms",
+          "side": "a",
+          "result": "win",
+          "match": "01a1d753-7318-7550-8898-d695a99d01a6"
+        },
+        {
+          "map": "04wilds",
+          "side": "a",
+          "result": "win",
+          "match": "01a1d753-7318-775b-a201-a1792c1c4982"
+        },
+        {
+          "map": "05border",
+          "side": "a",
+          "result": "win",
+          "match": "01a1d753-7318-7d07-867c-df9c7bf1755b"
+        }
+      ]
+    }
+  },
+  "status": "permanently_stopped_by_user",
+  "full_sweep_complete": false
+}
