@@ -42,6 +42,7 @@ sdk/templates/ocaml/
 #   p2-*: phase 2 bundle sets (EXPERIMENTS "Phase 2")
 maps/*/
 !maps/gen-bench/
+!maps/generated/
 
 # Local oarena (github.com/frkns/local-oarena): its checkout, launcher and state; big-arm runs the team's
 local-oarena/
