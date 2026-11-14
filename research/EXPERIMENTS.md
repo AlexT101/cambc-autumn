@@ -19274,3 +19274,45 @@ declared Fish00swirl/b forced draft; fresh normal fuel130/300identity,mean+0.3%,
 identical-game fuel+0.07%. Uploaded as13722:51:35,1.117MB,64sourcefiles identical.
 27Mite target qualifications and02cuts/bFish recovery remain pending.
 [Release evidence](ideas-2026-11-13/rbook/r15-release.json).
+
+### 2026-11-13 — Final532 draft20 with inherited40-entry book (v138)
+
+The r15 qualification of137 converted25/27 confirmed531losses and restored the
+02cuts/bFishr9win; all28pins/ZIPCRCs passed. FreshFishr10 then invalidated the old
+Fishpin. A40-entry531candidate (31cachedFishprovisionals+9provenMite) passed local
+gates but missed the initial cutoff and remained unuploaded. One v119 recording
+failed exact reproduction and was excluded. [Local evidence](ideas-2026-11-13/rbook/r10-local-candidate.json).
+
+User explicitly authorized immediate532(9ad13ba)+this40book afterbuild/smoke/size,
+with combinedtests afterupload. All40recorded drafts are preserved; their loss
+eligibility baseline remains historical531/v132, not a new532strength claim.
+Version138 accepted23:40:14,1.240MB,unmasked64sourcefiles identical. New532+book
+combinedexact40/40 passed; activation andremaininggates/livechecks pending.
+
+On150genuinelyunmatchedmaps,bothsides,100Mfuel:299/300replayidentity. The one
+difference startsatround1043,samedraft/winner/finalround1324/score0:1008. A paired
+no-next-turn-preparation diagnostic didnotremoveit; causeunresolved. This supports
+strong observed similarity, NOT strict equivalence. Normal-budget high-level
+choices may change from added fuel, even when fallbacklogic is unchanged.
+[Release and diagnostic evidence](ideas-2026-11-13/rbook/532-book40-release.json).
+
+v138 became live=selected=REST at23:49:20. The remaining local checks passed:
+40/40 combined exact,24fallback games/130handovers with0invalid reads,40forced
+checks0bad. Wide100M49/52 differs only on forced recognized00lanes/a,b and
+00corners/a, each with changed draft. On the150unmatched maps at normal fuel,
+all300drafts match,145/300fullreplays match; mean52110->52185 (+75,+0.14%). Both
+win234/300 against the benchmark opponent, with14outcome flips andnet0; no broad
+strength inference. The strict high-fuel299/300 exception remains unresolved.
+Fish live qualification:8/31targets,1/2historical531collateral; Mite29pending.
+
+
+Final v138 outcome audit (user permanently stopped unrankeds): all62 essential
+outcomes have clean provenance. Fish targets8/31 and historical531 collateral1/2;
+Mite targets9/9 and historical531 collateral13/20. Required-win qualification failed.
+47/62 essential ZIP CRCs pass; remaining15 archives in3 Mite groups were not
+collected, explicitly cancelled at user request. Including two bulk Fish groups,
+completed partial samples are Fish12/43 and Mite22/29; these are selected samples,
+not full-ladder win rates. No532 book-free live comparison exists. All live work
+stopped, pending campaigns cancelled; parent verified v138 active=selected and
+frozen after the deadline. The strict299/300 unseen identity exception remains
+unresolved. [Final evidence](ideas-2026-11-13/rbook/532-book40-release.json).

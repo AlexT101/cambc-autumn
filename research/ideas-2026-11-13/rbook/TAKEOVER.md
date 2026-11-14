@@ -606,3 +606,109 @@ book-free final activation. Platform deadline23:59; parent owns final selection.
 
 22:56:39:137 live=selected and REST confirmed; helper restarted scheduler1633197
 independently, STOP removed. Fish recovery planned22:56:40;27Mite checks follow.
+
+## 2026-11-13 23:48 UTC: final532+40 submitted as138; tests in progress
+
+v137's r15 audit:25/27Mite target wins plus02cuts/bFishr9recoveryWIN, all28
+source/task pins and ZIP CRCs clean. Only02treasure_box/b and05ring/b failed.
+The removal-only32entry531successor passed all local gates but was NEVER uploaded:
+Fishr9 changed on the same137 probe. Its uploader remains stopped/HOLD.
+
+FreshFishr10 actualcapture`01a1d732-2d11-7f85-85fa-f4953aad836c`. Cache-only
+selection froze23:20:10 with105knownFish cells:32Fish provisionals+9provenMite.
+Unknown16Mite collateral tuples were deferred. Source119adgato_gemcombat5/b failed
+local replay reproduction at index2 and was dropped, leaving40=31Fish+9Mite.
+The531candidate completed40/40exact,24fallback/130handovers/invalid0,8forced0bad,
+1.240MB;wide51/52 differed on forced00corners/a despite matching final draft, so
+that difference is localized to a recognized book cell, not evidence about unseen
+maps. Freshnormal132/300identity,+156fuel/turn(+0.3%). It stayed LOCAL ONLY when
+the23:30cutoff closed. Evidence`r10-local-candidate.json`.
+
+User then explicitly requested committed532/newdraft+existing40book, and overrode
+pre-upload full gates: submit after source/build/smoke/size, tests parallel/postupload.
+Frozencommit`9ad13ba8347929f83383fe942dbe618d0429153c`, onlydraft_model.h differs
+from531. Newvariant`variants/rbook-chy532-book40-r10-r15`; immutable new532reference
+`variants/rbook-host532-base`. All40 recorded draft sequences are forced so the
+newmodel cannot make the inherited lines unreachable. Historical eligibility is
+531/v132, explicitly NOT a fabricated532natural-loss baseline.
+
+Singleupload138accepted23:40:14; nameCharybdis532(9ad13ba)+Fishr10/Miter15book40,
+1,240,360bytes unmasked, release smoke round1284/teamA,64uploadedfiles identical.
+Helper2769484/unit`rbook-chy532-book40-immediate-release` owns platformactivation,
+REST adoption, schedulerrestart and62essentialcells(33Fish+29Mite;13groups). At
+23:48 activation still pending,137fallback retained. Parent owns finalselection.
+No other upload is authorized absent a material regression/coordination.
+
+New532combinedexact40/40 passed. True-unseen150maps (zero geometrymatches), both
+sides at100M:299/300 identical. One small-brawl/a replay first changes an action at
+round1043:actor2 moves(7,8)->(7,9)base vs(6,9)book. Same drafts, winner, finalround
+1324 and score0:1008. Disabling onlynext-turnpreparation in both diagnostic copies
+didNOT eliminate it. Cause remains unresolved; DO NOT claim strictidentity or a
+confirmed preparation-threshold cause. Basecode retains a100k preparationbudget
+even under100M; that is a possible coupling, not proof. Off-book sourceinspection
+finds matched=false, shared-layout/plain-bit guards disabled, and no forceddraft
+on unmatchedgeometry. Further broaddiagnostics stopped.
+
+The25,600map screen's3geometrymatches were decoded: allterrain,spawns,campgroups
+includingrespawn match knownmaps. Gap andultrastarvation differchampioncount, so
+runtime rejects them;horseshoes issemanticgeometryduplicate with reordered camp
+serialization. These are not observed random hash collisions. Highfuel normal
+turn mean53320->53357;299identicalgames+0.07%fuel. Normalfuel forNEW532comparison
+still running; do not substitute the531 numbers as its result.
+
+Postgates2800370 correctly stopped on strictunseenidentity assertion; remaining
+independent gates resumed2845619/unit`rbook-chy532-book40-remaining-gates`. Work
+`/home/ubuntu/tmp-offload/rbook/chy532-book40-r10-r15` holds all evidence. Completed
+532reference firstdraftfuel5774cases:max8,454,503/10M,0unfinished/0capped/0unused;
+this pre-existing teammate measurement was reused, no duplicate firstturncampaign.
+Trackedreceipt`532-book40-release.json` will receive completedgates/liveaudit.
+
+### 23:55 update — v138 active; local evidence complete except strict identity
+
+The helper confirmed live=selected=REST138 at23:49:20 and restarted scheduler
+2853783. It exited0; the scheduler survives independently. New532+book exact40/40,
+fallback24games/130handovers/163974valid reads/0invalid, and40forced cells/0bad all
+passed. Wide100M49/52 identity differs only on00lanes/a,b and00corners/a, all forced
+recognized book cells with changed drafts. Normal-fuel unseen comparison:300/300
+drafts identical,145/300 full replays identical; mean52110->52185 (+75,+0.14%).
+Against this benchmark's astraeus opponent, both win234/300 with14outcome flips,
+net0. This is sample evidence, not a general strength guarantee.
+
+Strict unseen high-fuel identity remains299/300, not a pass. The late differing
+actor is Issac (id2/type4), not a different forced draft; cause remains unresolved.
+No diagnostic changes were uploaded. All69 protected first-book hashes and the
+v137fallback digest remain unchanged.
+
+Fish essential33:8/31 target wins,1/2 historical531collateral wins;02geodes/b
+collateral lost,00road_of_riches/b won. Mite29submitted in6groups23:52, backend
+results still pending at23:55. Read-only`audit_live.py` audits all62 exact task/source
+pins and ZIP CRCs when collected; parent owns full680performance sweep and final
+selection. Do not add138 to outcome-only until this full62replay audit completes.
+
+
+### Final stop — 2026-11-14 00:00 UTC
+
+User permanently cancelled all unrankeds at approximately23:56. No more games,
+replay downloads, uploads or service restarts. The qualification watcher is inactive
+(MainPID0), as are this worker's release and remaining-gate services. Parent verified
+all scheduler/runner/performance watchers stopped, persistent STOP/HOLD,995 pending
+unsubmitted groups dropped, and after-queue/current campaigns cancelled. Parent's
+post-deadline API check confirms v138 active=selected, frozen=true, upcoming=None.
+
+The final read-only outcome collection completed all15 already-created groups:
+75 raw rows,72 distinct cells. Fish12/43 (27.9%), Mite22/29 (75.9%). These selected,
+partially loss-weighted samples are NOT full-ladder win rates. The62 essential
+outcomes pass task/host/source-pin provenance: Fish targets8/31 and historical531
+collateral1/2; Mite targets9/9 and historical531 collateral13/20. Thus the required-win
+gate did NOT pass. There is no532 book-free live baseline to isolate draft versus
+book effects. Existing47/62 essential replay ZIPs pass CRC; the remaining15 cells
+in3 Mite groups are outcome-only, with archive collection cancelled by user.
+
+All local exact/fallback/forced checks completed as recorded above. Strict unseen
+high-fuel identity remains299/300 with one unresolved late divergence; do not label
+it fully passed. Normal unseen fuel overhead was+75/turn (+0.14%) in this sample.
+Final submitted source archive SHA256:
+`da3c59e6dfaa4b22874f559bc63970da9a4014e9af9409d322939ac1fece3731`.
+The authoritative final book receipt is `532-book40-release.json`; runtime detailed
+audit is `/home/ubuntu/tmp-offload/rbook/chy532-book40-r10-r15/live-qualification-audit.json`.
+No further worker monitoring or automatic work remains authorized.
